@@ -1,0 +1,11 @@
+# Bun configuration for Jiratown
+
+# Preload the OpenTUI Solid plugin for JSX transformation
+preload = ["@opentui/solid/preload"]
+
+[test]
+# Enable coverage by default
+coverage = true
+
+# Coverage threshold - fail if line coverage drops below 97%
+coverageThreshold = { line = 0.97 }

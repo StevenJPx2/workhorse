@@ -1,0 +1,36 @@
+{
+  "name": "jiratown",
+  "version": "0.1.0",
+  "description": "Terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets",
+  "type": "module",
+  "bin": {
+    "jiratown": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun run build.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "@opentui/core": "^0.1.90",
+    "@opentui/solid": "^0.1.90",
+    "citty": "^0.1.6",
+    "solid-js": "^1.9.5",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.4",
+    "typescript": "^5.7.3"
+  },
+  "keywords": [
+    "jira",
+    "tui",
+    "terminal",
+    "ai",
+    "agents",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -561,20 +561,20 @@ jiratown/
 
 ### Phase 1: Foundation (4-5 days)
 
-- [ ] Project scaffolding with OpenTUI + Solid.js
-- [ ] CLI entry point with citty
-- [ ] `jiratown setup` command (using @clack/prompts)
-  - [ ] Check for Gas Town, Beads, Atlassian MCP, GitHub MCP
-  - [ ] Offer to install missing dependencies
-  - [ ] Collect Jira cloud ID
-  - [ ] Configure default agent
-- [ ] Config file parsing/writing (TOML)
-  - [ ] Global config (`~/.jiratown/config.toml`)
-  - [ ] Project config (`.jiratown.toml` in git root)
-  - [ ] Config merging (project overrides global)
-- [ ] SQLite database setup with migrations
-- [ ] Git rig detection from remote URL
-- [ ] Basic TUI shell (Layout, TabBar)
+- [x] Project scaffolding with OpenTUI + Solid.js
+- [x] CLI entry point with citty
+- [x] `jiratown setup` command (using @clack/prompts)
+  - [x] Check for Gas Town, Beads, Atlassian MCP, GitHub MCP
+  - [x] Offer to install missing dependencies
+  - [x] Collect Jira cloud ID
+  - [x] Configure default agent
+- [x] Config file parsing/writing (TOML)
+  - [x] Global config (`~/.jiratown/config.toml`)
+  - [x] Project config (`.jiratown.toml` in git root)
+  - [x] Config merging (project overrides global)
+- [x] SQLite database setup with migrations
+- [x] Git rig detection from remote URL
+- [x] Basic TUI shell (Layout, TabBar)
 
 ### Phase 2: Ticket Management (4-5 days)
 
