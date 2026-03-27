@@ -55,20 +55,21 @@ Jiratown is a terminal UI dashboard that orchestrates multiple AI coding agents 
 2. **SQLite for state**: Single database at `~/.jiratown/jiratown.db` tracks all tickets
 3. **TOML for config**: User-friendly format at `~/.jiratown/config.toml`
 4. **MCP client managed internally**: Jiratown starts/stops the Atlassian MCP server
-5. **Context-aware**: When run from a repo, only shows that repo's tickets
-6. **Non-blocking notifications**: User decides when to act on blocked agents
+5. **Rig = Git remote URL**: Rig is auto-detected from `git remote get-url origin`, no manual config needed
+6. **Context-aware**: When run from a repo, only shows that repo's tickets (filtered by rig)
+7. **Non-blocking notifications**: User decides when to act on blocked agents
+8. **citty + @clack/prompts**: CLI framework (citty) with beautiful interactive prompts (@clack/prompts) for setup
 
 ## File Structure Reference
 
 ```
 src/
-├── index.ts          # CLI entry (commander)
-├── main.tsx          # TUI entry (render())
+├── index.ts          # CLI entry (citty)
 ├── commands/         # CLI commands (setup, add, dashboard)
 ├── app/              # Root components and state
 ├── components/       # UI components
 ├── hooks/            # Solid.js hooks for external integrations
-├── lib/              # Core logic (db, config, MCP client, etc.)
+├── lib/              # Core logic (db, config, detect-rig, MCP client, etc.)
 └── types/            # TypeScript types
 ```
 
@@ -131,6 +132,33 @@ while (true) {
   if (done) break
   const event = JSON.parse(new TextDecoder().decode(value))
   // Handle event
+}
+```
+
+### Rig Detection from Git Remote
+```typescript
+// Detect rig from current directory's git remote
+async function detectRig(): Promise<string | null> {
+  // Get git root
+  const gitRoot = await $`git rev-parse --show-toplevel`.text().catch(() => null)
+  if (!gitRoot) return null
+  
+  // Get remote URL (prefer origin)
+  const remoteUrl = await $`git remote get-url origin`.text().catch(() => null)
+  if (!remoteUrl) return null
+  
+  // Normalize URL to consistent format
+  // "git@github.com:user/repo.git" → "github.com/user/repo"
+  // "https://github.com/user/repo.git" → "github.com/user/repo"
+  return normalizeGitRemote(remoteUrl.trim())
+}
+
+function normalizeGitRemote(url: string): string {
+  return url
+    .replace(/^git@/, "")
+    .replace(/^https?:\/\//, "")
+    .replace(/:/, "/")
+    .replace(/\.git$/, "")
 }
 ```
 

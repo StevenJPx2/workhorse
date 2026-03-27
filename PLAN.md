@@ -47,11 +47,26 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **UI** | OpenTUI + Solid.js | Terminal user interface |
-| **Storage** | SQLite | Ticket state, events, rig config |
+| **Storage** | SQLite | Ticket state and events |
 | **Config** | TOML | User preferences, Jira cloud ID |
+| **CLI** | citty + @clack/prompts | CLI framework and interactive prompts |
 | **Jira API** | Atlassian MCP | Fetch tickets, post comments, transitions |
 | **Orchestration** | Gas Town | Multi-agent coordination, worktrees, beads |
 | **Agents** | OpenCode, Claude Code | AI coding agents |
+
+### Rig Detection
+
+A "rig" is identified by the **git remote URL** of the current repository. When you run `jiratown` in a directory:
+
+1. Detect the git root via `git rev-parse --show-toplevel`
+2. Get the remote URL via `git remote get-url origin`
+3. Normalize the URL (e.g., `git@github.com:user/repo.git` → `github.com/user/repo`)
+4. Use this as the rig identifier for filtering tickets
+
+This means:
+- No manual rig configuration needed
+- Just run `jiratown` in any git repository
+- Tickets are automatically scoped to the current repo
 
 ---
 
@@ -63,24 +78,23 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         User in Dashboard                                │
 │                                                                          │
-│   1. User enters: "AM-123" or "https://adeptmind.atlassian.net/.../AM-123"
+│   1. User runs `jiratown` in a git repository                           │
+│      → Rig auto-detected from git remote (e.g., github.com/user/repo)   │
 │                              │                                           │
 │                              ▼                                           │
-│   2. Dashboard looks up Jira project key "AM"                           │
-│      → Finds rig "myproject" in config                                  │
-│      → Or prompts user to select rig if ambiguous                       │
+│   2. User enters: "AM-123" or "https://adeptmind.atlassian.net/.../AM-123"
 │                              │                                           │
 │                              ▼                                           │
 │   3. Dashboard fetches Jira ticket details via Atlassian MCP            │
 │                              │                                           │
 │                              ▼                                           │
 │   4. Dashboard inserts ticket into SQLite with:                         │
-│      - rig = "myproject"                                                │
+│      - rig = "github.com/user/repo" (from git remote)                   │
 │      - agent = "opencode" (default, can override)                       │
 │      - status = "pending"                                               │
 │                              │                                           │
 │                              ▼                                           │
-│   5. User confirms / selects different agent / rig                      │
+│   5. User confirms / selects different agent                            │
 │                              │                                           │
 │                              ▼                                           │
 │   6. Dashboard creates Bead from Jira ticket                            │
@@ -175,11 +189,10 @@ jiratown add AM-123 --agent claude
 ```
 ~/.jiratown/
 ├── config.toml           # Global config (user-level defaults)
-├── jiratown.db           # SQLite database
-└── logs/                 # Session logs (optional)
+└── jiratown.db           # SQLite database
 
 /path/to/project/
-└── .jiratown.toml        # Project-specific config (overrides global)
+└── .jiratown.toml        # Project-specific config (optional, overrides global)
 ```
 
 ### Config Resolution Order
@@ -187,7 +200,7 @@ jiratown add AM-123 --agent claude
 Configuration is resolved with cascading overrides:
 
 1. **Global config** (`~/.jiratown/config.toml`) - User-level defaults
-2. **Project config** (`.jiratown.toml` in project root) - Project-specific overrides
+2. **Project config** (`.jiratown.toml` in git root) - Project-specific overrides
 
 Project config merges with global config. Project values override global values for the same keys.
 
@@ -201,33 +214,18 @@ cloud_id = "adeptmind.atlassian.net"  # Default Jira instance
 
 [defaults]
 agent = "opencode"  # or "claude"
-
-[[rigs]]
-name = "myproject"
-path = "/Users/stevenjohn/code/myproject"
-jira_project_key = "AM"
-
-[[rigs]]
-name = "another-repo"
-path = "/Users/stevenjohn/code/another-repo"
-jira_project_key = "AR"
 ```
 
-### Project-specific .jiratown.toml
+### Project-specific .jiratown.toml (optional)
 
 ```toml
 # /path/to/project/.jiratown.toml
 
 [jira]
 cloud_id = "differentcompany.atlassian.net"  # Override for this project
-project_key = "PROJ"                          # Default project key
 
 [defaults]
 agent = "claude"  # This project prefers Claude
-
-[github]
-owner = "my-org"
-repo = "my-project"
 ```
 
 This enables:
@@ -248,7 +246,7 @@ CREATE TABLE tickets (
   
   -- Gas Town integration
   bead_id TEXT,                     -- "bd-a1b2c3"
-  rig TEXT NOT NULL,
+  rig TEXT NOT NULL,                -- Git remote URL (e.g., "github.com/user/repo")
   worktree_path TEXT,
   
   -- Agent config
@@ -273,14 +271,6 @@ CREATE TABLE ticket_events (
   event_type TEXT,                  -- status_change|file_modified|test_result|escalation|comment
   payload TEXT,                     -- JSON blob
   timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tracks configured rigs (repos)
-CREATE TABLE rigs (
-  name TEXT PRIMARY KEY,
-  path TEXT NOT NULL UNIQUE,
-  jira_project_key TEXT,
-  default_agent TEXT DEFAULT 'opencode'
 );
 
 -- Indexes
@@ -340,8 +330,6 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 │           Enter ticket key or paste Jira URL                 │
 │                                                              │
 │  Agent:   ● OpenCode  ○ Claude Code                          │
-│                                                              │
-│  Rig:     myproject (auto-detected from AM prefix)           │
 │                                                              │
 │                          [Enter] Start   [Esc] Cancel        │
 ╰──────────────────────────────────────────────────────────────╯
@@ -478,7 +466,8 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 | **TUI Library** | OpenTUI (`@opentui/solid`) |
 | **Database** | SQLite (`better-sqlite3`) |
 | **Config** | TOML |
-| **CLI** | Commander |
+| **CLI** | citty (zero-dep CLI framework) |
+| **CLI Prompts** | @clack/prompts (interactive setup) |
 | **Jira API** | Atlassian MCP (`atlassian/atlassian-mcp-server`) |
 | **GitHub API** | GitHub MCP (`github/github-mcp-server`) |
 
@@ -493,7 +482,8 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
     "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^11.0.0",
     "toml": "^3.0.0",
-    "commander": "^12.0.0"
+    "citty": "^0.2.1",
+    "@clack/prompts": "^1.1.0"
   }
 }
 ```
@@ -510,13 +500,12 @@ jiratown/
 ├── build.ts                        # Bun build script
 │
 ├── src/
-│   ├── index.ts                    # CLI entry point
-│   ├── main.tsx                    # TUI entry point
+│   ├── index.ts                    # CLI entry point (citty)
 │   │
 │   ├── commands/
-│   │   ├── setup.ts                # `jiratown setup`
+│   │   ├── setup.ts                # `jiratown setup` (uses @clack/prompts)
 │   │   ├── add.ts                  # `jiratown add <ticket>`
-│   │   └── dashboard.ts            # `jiratown` (default)
+│   │   └── dashboard.ts            # `jiratown` (default - launches TUI)
 │   │
 │   ├── app/
 │   │   ├── App.tsx                 # Root component
@@ -535,7 +524,6 @@ jiratown/
 │   │   ├── BlockedView.tsx         # Blocked state UI
 │   │   ├── PRReviewView.tsx        # PR review comments UI
 │   │   ├── ReviewCommentCard.tsx   # Individual review comment + draft reply
-│   │   ├── RigSelector.tsx         # Rig dropdown
 │   │   └── AgentSelector.tsx       # Agent toggle
 │   │
 │   ├── hooks/
@@ -555,7 +543,7 @@ jiratown/
 │   │   ├── jira-sync.ts            # Jira ↔ Beads bidirectional sync
 │   │   ├── spawn.ts                # Bun.spawn helpers
 │   │   ├── parse-ticket.ts         # Parse AM-123 or URL
-│   │   └── detect-rig.ts           # Detect rig from cwd or ticket prefix
+│   │   └── detect-rig.ts           # Detect rig from git remote URL
 │   │
 │   └── types/
 │       ├── index.ts
@@ -574,18 +562,18 @@ jiratown/
 ### Phase 1: Foundation (4-5 days)
 
 - [ ] Project scaffolding with OpenTUI + Solid.js
-- [ ] CLI entry point with commander
-- [ ] `jiratown setup` command
+- [ ] CLI entry point with citty
+- [ ] `jiratown setup` command (using @clack/prompts)
   - [ ] Check for Gas Town, Beads, Atlassian MCP, GitHub MCP
   - [ ] Offer to install missing dependencies
   - [ ] Collect Jira cloud ID
   - [ ] Configure default agent
-  - [ ] Add initial rigs
 - [ ] Config file parsing/writing (TOML)
   - [ ] Global config (`~/.jiratown/config.toml`)
-  - [ ] Project config (`.jiratown.toml` in project root)
+  - [ ] Project config (`.jiratown.toml` in git root)
   - [ ] Config merging (project overrides global)
 - [ ] SQLite database setup with migrations
+- [ ] Git rig detection from remote URL
 - [ ] Basic TUI shell (Layout, TabBar)
 
 ### Phase 2: Ticket Management (4-5 days)
@@ -597,7 +585,6 @@ jiratown/
   - [ ] `addCommentToJiraIssue` wrapper
   - [ ] `transitionJiraIssue` wrapper
 - [ ] Ticket input modal (TicketInput component)
-- [ ] Rig detection (from cwd or ticket prefix)
 - [ ] SQLite CRUD for tickets
 - [ ] TicketPane with basic info display
 
@@ -668,7 +655,7 @@ jiratown/
 - [ ] Agent switching per ticket
 - [ ] Global view (`--all` flag)
 - [ ] Help screen (`?` key)
-- [ ] Context-aware behavior (detect current rig from cwd)
+- [ ] Context-aware behavior (detect rig from git remote)
 - [ ] Graceful shutdown (cleanup MCP, save state)
 
 ---
@@ -678,44 +665,34 @@ jiratown/
 ```
 $ jiratown setup
 
-╭─────────────────────────────────────────────────────────────╮
-│                     Jiratown Setup                          │
-╰─────────────────────────────────────────────────────────────╯
-
-Checking dependencies...
-  ✓ Bun v1.3.x
-  ✓ Gas Town (gt) v0.12.1
-  ✓ Beads (bd) v0.62.0
-  ✗ Atlassian MCP not found
-
-? Install Atlassian MCP? (Y/n)
-> y
-
-Installing atlassian-mcp-server...
-  ✓ Atlassian MCP installed
-
-? Jira cloud ID (e.g., yourcompany.atlassian.net):
-> adeptmind.atlassian.net
-
-? Default agent:
-  ● OpenCode (recommended)
-  ○ Claude Code
-
-? Add a rig (repository) now? (Y/n)
-> y
-
-  Rig name: myproject
-  Path: /Users/stevenjohn/code/myproject
-  Jira project key (optional, for auto-detection): AM
-
-? Add another rig? (y/n)
-> n
-
-✓ Config saved to ~/.jiratown/config.toml
-✓ Database created at ~/.jiratown/jiratown.db
-
-Run 'jiratown' in any configured repo to start!
+┌  Jiratown Setup
+│
+◇  Checking dependencies...
+│  ✓ Bun v1.3.x
+│  ✓ Gas Town (gt) v0.12.1
+│  ✓ Beads (bd) v0.62.0
+│  ✗ Atlassian MCP not found
+│
+◆  Install Atlassian MCP?
+│  ● Yes / ○ No
+│
+◇  Installing atlassian-mcp-server...
+│  ✓ Atlassian MCP installed
+│
+◆  Jira cloud ID (e.g., yourcompany.atlassian.net):
+│  adeptmind.atlassian.net
+│
+◆  Default agent:
+│  ● OpenCode (recommended)
+│  ○ Claude Code
+│
+◇  Config saved to ~/.jiratown/config.toml
+◇  Database created at ~/.jiratown/jiratown.db
+│
+└  Setup complete! Run 'jiratown' in any git repo to start.
 ```
+
+Note: Rigs are auto-detected from git remote URL - no manual configuration needed.
 
 ---
 
