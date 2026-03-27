@@ -174,16 +174,30 @@ jiratown add AM-123 --agent claude
 
 ```
 ~/.jiratown/
-├── config.toml           # Global config
+├── config.toml           # Global config (user-level defaults)
 ├── jiratown.db           # SQLite database
 └── logs/                 # Session logs (optional)
+
+/path/to/project/
+└── .jiratown.toml        # Project-specific config (overrides global)
 ```
 
-### config.toml
+### Config Resolution Order
+
+Configuration is resolved with cascading overrides:
+
+1. **Global config** (`~/.jiratown/config.toml`) - User-level defaults
+2. **Project config** (`.jiratown.toml` in project root) - Project-specific overrides
+
+Project config merges with global config. Project values override global values for the same keys.
+
+### Global config.toml
 
 ```toml
+# ~/.jiratown/config.toml
+
 [jira]
-cloud_id = "adeptmind.atlassian.net"
+cloud_id = "adeptmind.atlassian.net"  # Default Jira instance
 
 [defaults]
 agent = "opencode"  # or "claude"
@@ -198,6 +212,28 @@ name = "another-repo"
 path = "/Users/stevenjohn/code/another-repo"
 jira_project_key = "AR"
 ```
+
+### Project-specific .jiratown.toml
+
+```toml
+# /path/to/project/.jiratown.toml
+
+[jira]
+cloud_id = "differentcompany.atlassian.net"  # Override for this project
+project_key = "PROJ"                          # Default project key
+
+[defaults]
+agent = "claude"  # This project prefers Claude
+
+[github]
+owner = "my-org"
+repo = "my-project"
+```
+
+This enables:
+- **Multiple Jira instances**: Different projects can use different Atlassian clouds
+- **Per-project agent preference**: Some projects may work better with specific agents
+- **Team-shared config**: Commit `.jiratown.toml` to share settings across the team
 
 ### SQLite Schema
 
@@ -513,7 +549,7 @@ jiratown/
 │   │
 │   ├── lib/
 │   │   ├── db.ts                   # SQLite init + migrations
-│   │   ├── config.ts               # TOML parsing
+│   │   ├── config.ts               # TOML parsing + config merging (global + project)
 │   │   ├── atlassian.ts            # MCP client for Jira
 │   │   ├── github.ts               # MCP client for GitHub
 │   │   ├── jira-sync.ts            # Jira ↔ Beads bidirectional sync
@@ -546,6 +582,9 @@ jiratown/
   - [ ] Configure default agent
   - [ ] Add initial rigs
 - [ ] Config file parsing/writing (TOML)
+  - [ ] Global config (`~/.jiratown/config.toml`)
+  - [ ] Project config (`.jiratown.toml` in project root)
+  - [ ] Config merging (project overrides global)
 - [ ] SQLite database setup with migrations
 - [ ] Basic TUI shell (Layout, TabBar)
 

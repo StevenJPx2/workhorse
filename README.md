@@ -59,15 +59,18 @@ Press `+` or `n` to open the new ticket modal. Enter a Jira ticket key (e.g., `A
 | `e` | Escalate (post questions to Jira) |
 | `a` | Switch agent (OpenCode ↔ Claude) |
 | `j` | Open ticket in Jira |
-| `p` | View PR |
+| `p` | View PR in browser |
+| `g` | Open PR on GitHub |
 | `x` | Close ticket tab |
 | `r` | Resume blocked agent |
+| `c` | Reply only to PR comment |
+| `A` | Address all PR review comments |
 | `?` | Help |
 | `q` | Quit |
 
 ### Configuration
 
-Configuration is stored in `~/.jiratown/config.toml`:
+Global configuration is stored in `~/.jiratown/config.toml`:
 
 ```toml
 [jira]
@@ -82,6 +85,20 @@ path = "/Users/you/code/myproject"
 jira_project_key = "AM"
 ```
 
+Projects can override settings with a `.jiratown.toml` in the project root:
+
+```toml
+# .jiratown.toml (project-specific)
+[jira]
+cloud_id = "differentcompany.atlassian.net"  # Different Jira instance
+project_key = "PROJ"
+
+[defaults]
+agent = "claude"  # This project prefers Claude
+```
+
+Project config merges with global config, with project values taking precedence.
+
 ## How It Works
 
 1. **You enter a Jira ticket** → Jiratown fetches ticket details via Atlassian MCP
@@ -89,12 +106,46 @@ jira_project_key = "AM"
 3. **Spawns an agent** → OpenCode or Claude Code in an isolated git worktree
 4. **Streams progress** → Real-time updates as the agent works
 5. **Syncs to Jira** → Comments, status changes, PR links
+6. **Creates PR** → Agent pushes changes and opens a pull request via GitHub MCP
+7. **Handles reviews** → Agent drafts replies to reviewer comments, you approve/edit
+8. **Iterates on feedback** → Agent addresses change requests in combined commits
+9. **Completes** → PR merged, Jira ticket transitioned to Done
+
+## PR Review Workflow
+
+When your agent creates a PR and reviewers request changes:
+
+1. **Review comments appear** → Jiratown polls for new PR reviews via GitHub MCP
+2. **Agent drafts replies** → Each comment gets an auto-generated response
+3. **You review & edit** → Approve, modify, or add guidance to the draft
+4. **Choose action**:
+   - **Reply Only** (`c`) → Post the comment without code changes
+   - **Reply + Address** (`A`) → Agent implements fixes, pushes a single commit, and replies with commit reference
+5. **Re-request review** → Automatically request re-review after changes
+
+```
+┌─ Comment 1 ─────────────────────────────────────────────┐
+│ @reviewer1: "Consider using exponential backoff"        │
+│                                                         │
+│ Draft Reply:                                            │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Good suggestion! I'll update the retry logic.       │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ Your input (optional):                                  │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Use base 2, max 30s cap                             │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ [c] Reply Only    [a] Reply + Address with Changes      │
+└─────────────────────────────────────────────────────────┘
+```
 
 ## Development
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/jiratown
+git clone https://github.com/StevenJPx2/jiratown
 cd jiratown
 
 # Install dependencies
