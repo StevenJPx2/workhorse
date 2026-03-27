@@ -35,11 +35,19 @@ Jiratown is a terminal UI dashboard that orchestrates multiple AI coding agents 
 - Key components: `<box>`, `<text>`, `<input>`, `<select>`, `<scrollbox>`
 - Key hooks: `useKeyboard`, `useRenderer`, `onResize`
 
-### Atlassian MCP
-- MCP server for Jira API access
-- We manage the MCP server subprocess ourselves
-- Use `@modelcontextprotocol/sdk` for the client
+### Atlassian MCP (https://github.com/atlassian/atlassian-mcp-server)
+- Official **remote** MCP server for Jira/Confluence API access
+- Endpoint: `https://mcp.atlassian.com/v1/mcp`
+- Uses OAuth 2.1 or API tokens for authentication
+- For local clients, use `mcp-remote` as a proxy
 - Key tools: `getJiraIssue`, `addCommentToJiraIssue`, `transitionJiraIssue`
+
+### GitHub MCP (https://github.com/github/github-mcp-server)
+- Official **remote** MCP server for GitHub API access
+- Endpoint: `https://api.githubcopilot.com/mcp/`
+- Uses OAuth for authentication
+- Used for PR review workflow (IN_REVIEW state)
+- Key tools: `get_pull_request`, `list_pull_requests`, `create_pull_request_review`
 
 ## Architecture Decisions
 
@@ -67,16 +75,28 @@ src/
 ## Implementation Notes
 
 ### MCP Client Pattern
+
+We use **remote MCP servers** exclusively. Both Atlassian and GitHub provide hosted MCP servers.
+For local clients, use `mcp-remote` as a proxy to connect to remote servers.
+
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
-const transport = new StdioClientTransport({
+// Atlassian MCP (remote)
+const atlassianTransport = new StdioClientTransport({
   command: "npx",
-  args: ["-y", "@anthropic/mcp-atlassian"],
+  args: ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/mcp"],
 })
+
+// GitHub MCP (remote)
+const githubTransport = new StdioClientTransport({
+  command: "npx",
+  args: ["-y", "mcp-remote", "https://api.githubcopilot.com/mcp/"],
+})
+
 const client = new Client({ name: "jiratown", version: "1.0.0" })
-await client.connect(transport)
+await client.connect(atlassianTransport)
 ```
 
 ### Solid.js + OpenTUI Pattern

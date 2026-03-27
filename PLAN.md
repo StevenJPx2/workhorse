@@ -114,32 +114,36 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
                     └──────┬──────┘
                            │ gt sling (spawn polecat)
                            ▼
-                    ┌─────────────┐
-                    │  PLANNING   │ (Agent exploring codebase)
-                    └──────┬──────┘
-                           │ Plan approved
-                           ▼
-                    ┌─────────────┐
-              ┌────▶│IMPLEMENTING │◀────┐
-              │     └──────┬──────┘     │
-              │            │            │
-        Clarification      │      Test failed
-        received           │            │
-              │            ▼            │
-              │     ┌─────────────┐     │
-              └─────│   BLOCKED   │─────┘
-                    └──────┬──────┘
-                           │ (Escalate to Jira)
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │ PR_CREATED  │
-                    └──────┬──────┘
-                           │ (PR merged)
-                           ▼
-                    ┌─────────────┐
-                    │    DONE     │
-                    └─────────────┘
+              ┌───▶┌─────────────┐
+              │    │  PLANNING   │◀──────────────┐
+              │    └──────┬──────┘               │
+              │           │ Plan approved        │
+              │           ▼                      │
+              │    ┌─────────────┐               │
+              ├───▶│IMPLEMENTING │◀───┐          │
+              │    └──────┬──────┘    │          │
+              │           │           │          │
+        Clarification     │     Test failed      │
+        received          │           │          │
+              │           ▼           │          │
+              │    ┌─────────────┐    │          │
+              └────│   BLOCKED   │────┘          │
+                   └──────┬──────┘               │
+                          │ (Escalate to Jira)   │
+                          ▼                      │
+                   ┌─────────────┐               │
+                   │ PR_CREATED  │               │
+                   └──────┬──────┘               │
+                          │                      │
+                          ▼                      │
+                   ┌─────────────┐  Changes      │
+                   │ IN_REVIEW   │──requested────┘
+                   └──────┬──────┘
+                          │ Approved & merged
+                          ▼
+                   ┌─────────────┐
+                   │    DONE     │
+                   └─────────────┘
 ```
 
 ---
@@ -204,7 +208,7 @@ CREATE TABLE tickets (
   jira_key TEXT NOT NULL,
   jira_url TEXT,
   summary TEXT,
-  status TEXT DEFAULT 'pending',    -- pending|queued|planning|implementing|blocked|pr_created|done
+  status TEXT DEFAULT 'pending',    -- pending|queued|planning|implementing|blocked|pr_created|in_review|done
   
   -- Gas Town integration
   bead_id TEXT,                     -- "bd-a1b2c3"
@@ -327,6 +331,86 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
+### PR Review View
+
+```
+╭─ AM-123 ─ IN_REVIEW ─────────────────────────────────────────╮
+│                                                              │
+│  PR #42: Fix authentication timeout bug                      │
+│  ══════════════════════════════════════                      │
+│                                                              │
+│  Review Status: Changes Requested (2 comments)               │
+│                                                              │
+│  ┌─ Comment 1 ─────────────────────────────────────────────┐ │
+│  │ @reviewer1 (2h ago):                                    │ │
+│  │ "Consider using exponential backoff instead of fixed    │ │
+│  │  retry intervals."                                      │ │
+│  │                                                         │ │
+│  │ Draft Reply:                                            │ │
+│  │ ┌─────────────────────────────────────────────────────┐ │ │
+│  │ │ Good suggestion! I'll update the retry logic to use │ │ │
+│  │ │ exponential backoff with jitter. Will push a fix.   │ │ │
+│  │ └─────────────────────────────────────────────────────┘ │ │
+│  │                                                         │ │
+│  │ Your input (optional):                                  │ │
+│  │ ┌─────────────────────────────────────────────────────┐ │ │
+│  │ │ Use base 2, max 30s cap                             │ │ │
+│  │ └─────────────────────────────────────────────────────┘ │ │
+│  │                                                         │ │
+│  │ [c] Reply Only    [a] Reply + Address with Changes      │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  ┌─ Comment 2 ─────────────────────────────────────────────┐ │
+│  │ @reviewer2 (1h ago):                                    │ │
+│  │ "Missing test case for network timeout scenario."       │ │
+│  │ ...                                                     │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  [A] Address All Comments   [p] View PR   [j] View Jira     │
+│                                                              │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+### PR Review Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Poll PR for new reviews/comments                        │
+│                          │                                  │
+│                          ▼                                  │
+│  2. Agent drafts reply for each comment                     │
+│                          │                                  │
+│                          ▼                                  │
+│  3. User reviews drafts, adds optional guidance             │
+│                          │                                  │
+│              ┌───────────┴───────────┐                      │
+│              ▼                       ▼                      │
+│     [Reply Only]            [Reply + Changes]               │
+│         │                        │                          │
+│         ▼                        ▼                          │
+│  4a. Post comment         4b. Post comment +                │
+│      to PR                    cycle to PLANNING             │
+│         │                        │                          │
+│         │                        ▼                          │
+│         │                 5. Implement changes              │
+│         │                    (all in one commit)            │
+│         │                        │                          │
+│         │                        ▼                          │
+│         │                 6. Push commit                    │
+│         │                        │                          │
+│         │                        ▼                          │
+│         │                 7. Reply with commit ref          │
+│         │                        │                          │
+│         └────────────────────────┘                          │
+│                          │                                  │
+│                          ▼                                  │
+│  8. Re-request review (if changes made)                     │
+│                          │                                  │
+│                          ▼                                  │
+│  9. Return to IN_REVIEW, await next feedback                │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Key Integration Points
@@ -342,6 +426,9 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 | **Transition Jira** | Atlassian MCP `transitionJiraIssue` | Change status |
 | **Escalate** | `gt escalate` + Jira comment | Ask questions |
 | **Done** | `gt done` | Agent signals completion |
+| **Fetch PR** | GitHub MCP `get_pull_request` | Get PR details |
+| **Get Reviews** | GitHub MCP `get_pull_request_reviews` | Fetch review comments |
+| **Reply to Review** | GitHub MCP `create_pull_request_review` | Post reply comments |
 
 ---
 
@@ -356,7 +443,8 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 | **Database** | SQLite (`better-sqlite3`) |
 | **Config** | TOML |
 | **CLI** | Commander |
-| **Jira API** | Atlassian MCP (via `@modelcontextprotocol/sdk`) |
+| **Jira API** | Atlassian MCP (`atlassian/atlassian-mcp-server`) |
+| **GitHub API** | GitHub MCP (`github/github-mcp-server`) |
 
 ### Dependencies
 
@@ -409,6 +497,8 @@ jiratown/
 │   │   ├── FileChanges.tsx         # Modified files list
 │   │   ├── Notifications.tsx       # Bottom notification bar
 │   │   ├── BlockedView.tsx         # Blocked state UI
+│   │   ├── PRReviewView.tsx        # PR review comments UI
+│   │   ├── ReviewCommentCard.tsx   # Individual review comment + draft reply
 │   │   ├── RigSelector.tsx         # Rig dropdown
 │   │   └── AgentSelector.tsx       # Agent toggle
 │   │
@@ -416,6 +506,7 @@ jiratown/
 │   │   ├── useGasTown.ts           # gt CLI wrapper
 │   │   ├── useBeads.ts             # bd CLI wrapper
 │   │   ├── useJira.ts              # Atlassian MCP calls
+│   │   ├── useGitHub.ts            # GitHub MCP calls
 │   │   ├── useAgentFeed.ts         # Stream gt feed events
 │   │   ├── useDatabase.ts          # SQLite CRUD
 │   │   └── useConfig.ts            # Config file R/W
@@ -424,6 +515,7 @@ jiratown/
 │   │   ├── db.ts                   # SQLite init + migrations
 │   │   ├── config.ts               # TOML parsing
 │   │   ├── atlassian.ts            # MCP client for Jira
+│   │   ├── github.ts               # MCP client for GitHub
 │   │   ├── jira-sync.ts            # Jira ↔ Beads bidirectional sync
 │   │   ├── spawn.ts                # Bun.spawn helpers
 │   │   ├── parse-ticket.ts         # Parse AM-123 or URL
@@ -433,6 +525,7 @@ jiratown/
 │       ├── index.ts
 │       ├── ticket.ts
 │       ├── config.ts
+│       ├── github.ts               # GitHub types (PR, Review, Comment)
 │       └── gastown.ts              # Gas Town event types
 │
 └── README.md
@@ -447,7 +540,7 @@ jiratown/
 - [ ] Project scaffolding with OpenTUI + Solid.js
 - [ ] CLI entry point with commander
 - [ ] `jiratown setup` command
-  - [ ] Check for Gas Town, Beads, Atlassian MCP
+  - [ ] Check for Gas Town, Beads, Atlassian MCP, GitHub MCP
   - [ ] Offer to install missing dependencies
   - [ ] Collect Jira cloud ID
   - [ ] Configure default agent
@@ -459,8 +552,8 @@ jiratown/
 ### Phase 2: Ticket Management (4-5 days)
 
 - [ ] Atlassian MCP client implementation
-  - [ ] Start/stop MCP server subprocess
-  - [ ] JSON-RPC communication
+  - [ ] Connect via `mcp-remote` proxy to `https://mcp.atlassian.com/v1/mcp`
+  - [ ] Handle OAuth 2.1 authentication flow
   - [ ] `getJiraIssue` wrapper
   - [ ] `addCommentToJiraIssue` wrapper
   - [ ] `transitionJiraIssue` wrapper
@@ -493,7 +586,33 @@ jiratown/
 - [ ] Jira sync: link PRs when created
 - [ ] Event logging to SQLite
 
-### Phase 5: Notifications & Blocked State (2-3 days)
+### Phase 5: PR Review & Iteration (3-4 days)
+
+- [ ] GitHub MCP client implementation (`src/lib/github.ts`)
+  - [ ] Connect via `mcp-remote` proxy to `https://api.githubcopilot.com/mcp/`
+  - [ ] Handle OAuth authentication flow
+  - [ ] `get_pull_request` wrapper
+  - [ ] `list_pull_requests` wrapper
+  - [ ] `create_pull_request_review` wrapper
+- [ ] `useGitHub` hook (`src/hooks/useGitHub.ts`)
+- [ ] PR review polling (detect new comments/change requests)
+- [ ] `PRReviewView` component (`src/components/PRReviewView.tsx`)
+  - [ ] Display pending review comments
+  - [ ] Show agent's draft response for each comment
+  - [ ] User input field to modify/augment response
+  - [ ] Action buttons: Reply Only / Reply + Address Changes / Address All
+- [ ] `ReviewCommentCard` component (`src/components/ReviewCommentCard.tsx`)
+- [ ] Review response workflow:
+  - [ ] Agent analyzes comment and drafts reply
+  - [ ] User reviews draft, can edit or add guidance
+  - [ ] User chooses: **Reply only** or **Reply + Make Changes**
+  - [ ] If changes: cycle back to PLANNING with all PR feedback as context
+  - [ ] Make **one combined commit** addressing all requested changes
+  - [ ] Post reply comments referencing the commit
+- [ ] Re-request review after changes pushed
+- [ ] Sync PR review status to Jira (optional comment)
+
+### Phase 6: Notifications & Blocked State (2-3 days)
 
 - [ ] Notifications bar component
 - [ ] BlockedView component
@@ -503,7 +622,7 @@ jiratown/
 - [ ] View in Jira action (open browser)
 - [ ] Cancel ticket action
 
-### Phase 6: Polish (2-3 days)
+### Phase 7: Polish (2-3 days)
 
 - [ ] Keyboard shortcuts (full mapping)
 - [ ] Error handling & recovery
@@ -533,7 +652,7 @@ Checking dependencies...
 ? Install Atlassian MCP? (Y/n)
 > y
 
-Installing @anthropic/mcp-atlassian...
+Installing atlassian-mcp-server...
   ✓ Atlassian MCP installed
 
 ? Jira cloud ID (e.g., yourcompany.atlassian.net):
@@ -568,8 +687,8 @@ Run 'jiratown' in any configured repo to start!
 3. **Cost Tracking**: Show token/API usage per ticket
 4. **Session Resume**: Resume dashboard state after restart
 5. **Multiple Jira Instances**: Support multiple Jira cloud IDs
-6. **Webhook Support**: Real-time Jira updates via webhooks instead of polling
-7. **PR Review Integration**: Track PR review status
+6. **Webhook Support**: Real-time Jira/GitHub updates via webhooks instead of polling
+7. **Auto-merge**: Option to auto-merge PRs when all approvals received
 8. **Metrics Dashboard**: Success rate, average completion time, etc.
 
 ---
@@ -580,3 +699,5 @@ Run 'jiratown' in any configured repo to start!
 - [Beads](https://github.com/steveyegge/beads) - Git-backed issue tracker for agents
 - [OpenTUI](https://github.com/anomalyco/opentui) - Terminal UI library
 - [OpenCode](https://github.com/anomalyco/opencode) - AI coding agent
+- [Atlassian MCP Server](https://github.com/atlassian/atlassian-mcp-server) - Jira/Confluence API via MCP
+- [GitHub MCP Server](https://github.com/github/github-mcp-server) - GitHub API via MCP
