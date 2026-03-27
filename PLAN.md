@@ -44,15 +44,15 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
 
 ### Core Components
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **UI** | OpenTUI + Solid.js | Terminal user interface |
-| **Storage** | SQLite | Ticket state and events |
-| **Config** | TOML | User preferences, Jira cloud ID |
-| **CLI** | citty + @clack/prompts | CLI framework and interactive prompts |
-| **Jira API** | Atlassian MCP | Fetch tickets, post comments, transitions |
-| **Orchestration** | Gas Town | Multi-agent coordination, worktrees, beads |
-| **Agents** | OpenCode, Claude Code | AI coding agents |
+| Component         | Technology             | Purpose                                    |
+| ----------------- | ---------------------- | ------------------------------------------ |
+| **UI**            | OpenTUI + Solid.js     | Terminal user interface                    |
+| **Storage**       | SQLite                 | Ticket state and events                    |
+| **Config**        | TOML                   | User preferences, Jira cloud ID            |
+| **CLI**           | citty + @clack/prompts | CLI framework and interactive prompts      |
+| **Jira API**      | Atlassian MCP          | Fetch tickets, post comments, transitions  |
+| **Orchestration** | Gas Town               | Multi-agent coordination, worktrees, beads |
+| **Agents**        | OpenCode, Claude Code  | AI coding agents                           |
 
 ### Rig Detection
 
@@ -64,6 +64,7 @@ A "rig" is identified by the **git remote URL** of the current repository. When 
 4. Use this as the rig identifier for filtering tickets
 
 This means:
+
 - No manual rig configuration needed
 - Just run `jiratown` in any git repository
 - Tickets are automatically scoped to the current repo
@@ -210,10 +211,10 @@ Project config merges with global config. Project values override global values 
 # ~/.jiratown/config.toml
 
 [jira]
-cloud_id = "adeptmind.atlassian.net"  # Default Jira instance
+cloud_id = "adeptmind.atlassian.net" # Default Jira instance
 
 [defaults]
-agent = "opencode"  # or "claude"
+agent = "opencode" # or "claude"
 ```
 
 ### Project-specific .jiratown.toml (optional)
@@ -222,13 +223,14 @@ agent = "opencode"  # or "claude"
 # /path/to/project/.jiratown.toml
 
 [jira]
-cloud_id = "differentcompany.atlassian.net"  # Override for this project
+cloud_id = "differentcompany.atlassian.net" # Override for this project
 
 [defaults]
-agent = "claude"  # This project prefers Claude
+agent = "claude" # This project prefers Claude
 ```
 
 This enables:
+
 - **Multiple Jira instances**: Different projects can use different Atlassian clouds
 - **Per-project agent preference**: Some projects may work better with specific agents
 - **Team-shared config**: Commit `.jiratown.toml` to share settings across the team
@@ -243,23 +245,23 @@ CREATE TABLE tickets (
   jira_url TEXT,
   summary TEXT,
   status TEXT DEFAULT 'pending',    -- pending|queued|planning|implementing|blocked|pr_created|in_review|done
-  
+
   -- Gas Town integration
   bead_id TEXT,                     -- "bd-a1b2c3"
   rig TEXT NOT NULL,                -- Git remote URL (e.g., "github.com/user/repo")
   worktree_path TEXT,
-  
+
   -- Agent config
   agent TEXT DEFAULT 'opencode',    -- opencode|claude
   polecat_id TEXT,
-  
+
   -- PR tracking
   pr_url TEXT,
-  
+
   -- Timestamps
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  
+
   -- Jira sync state
   last_jira_sync TEXT
 );
@@ -439,37 +441,37 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 
 ## Key Integration Points
 
-| Action | Command/API | Description |
-|--------|-------------|-------------|
-| **Fetch Jira** | Atlassian MCP `getJiraIssue` | Get ticket details |
-| **Create Bead** | `bd create` | Create Gas Town work item |
-| **Spawn Agent** | `gt sling <bead> <rig>` | Start polecat on work |
-| **Stream Events** | `gt feed --json` | Real-time agent status |
-| **Agent Status** | `gt agents --json` | List active agents |
-| **Update Jira** | Atlassian MCP `addCommentToJiraIssue` | Post progress |
-| **Transition Jira** | Atlassian MCP `transitionJiraIssue` | Change status |
-| **Escalate** | `gt escalate` + Jira comment | Ask questions |
-| **Done** | `gt done` | Agent signals completion |
-| **Fetch PR** | GitHub MCP `get_pull_request` | Get PR details |
-| **Get Reviews** | GitHub MCP `get_pull_request_reviews` | Fetch review comments |
-| **Reply to Review** | GitHub MCP `create_pull_request_review` | Post reply comments |
+| Action              | Command/API                             | Description               |
+| ------------------- | --------------------------------------- | ------------------------- |
+| **Fetch Jira**      | Atlassian MCP `getJiraIssue`            | Get ticket details        |
+| **Create Bead**     | `bd create`                             | Create Gas Town work item |
+| **Spawn Agent**     | `gt sling <bead> <rig>`                 | Start polecat on work     |
+| **Stream Events**   | `gt feed --json`                        | Real-time agent status    |
+| **Agent Status**    | `gt agents --json`                      | List active agents        |
+| **Update Jira**     | Atlassian MCP `addCommentToJiraIssue`   | Post progress             |
+| **Transition Jira** | Atlassian MCP `transitionJiraIssue`     | Change status             |
+| **Escalate**        | `gt escalate` + Jira comment            | Ask questions             |
+| **Done**            | `gt done`                               | Agent signals completion  |
+| **Fetch PR**        | GitHub MCP `get_pull_request`           | Get PR details            |
+| **Get Reviews**     | GitHub MCP `get_pull_request_reviews`   | Fetch review comments     |
+| **Reply to Review** | GitHub MCP `create_pull_request_review` | Post reply comments       |
 
 ---
 
 ## Technology Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Runtime** | Bun |
-| **Language** | TypeScript |
-| **UI Framework** | Solid.js |
-| **TUI Library** | OpenTUI (`@opentui/solid`) |
-| **Database** | SQLite (`better-sqlite3`) |
-| **Config** | TOML |
-| **CLI** | citty (zero-dep CLI framework) |
-| **CLI Prompts** | @clack/prompts (interactive setup) |
-| **Jira API** | Atlassian MCP (`atlassian/atlassian-mcp-server`) |
-| **GitHub API** | GitHub MCP (`github/github-mcp-server`) |
+| Component        | Technology                                       |
+| ---------------- | ------------------------------------------------ |
+| **Runtime**      | Bun                                              |
+| **Language**     | TypeScript                                       |
+| **UI Framework** | Solid.js                                         |
+| **TUI Library**  | OpenTUI (`@opentui/solid`)                       |
+| **Database**     | SQLite (`better-sqlite3`)                        |
+| **Config**       | TOML                                             |
+| **CLI**          | citty (zero-dep CLI framework)                   |
+| **CLI Prompts**  | @clack/prompts (interactive setup)               |
+| **Jira API**     | Atlassian MCP (`atlassian/atlassian-mcp-server`) |
+| **GitHub API**   | GitHub MCP (`github/github-mcp-server`)          |
 
 ### Dependencies
 
