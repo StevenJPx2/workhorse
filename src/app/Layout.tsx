@@ -6,7 +6,7 @@
 
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createSignal, type JSX, Show } from "solid-js";
-import { TabBar } from "../components/TabBar.tsx";
+import { colors, spacing } from "../lib/theme.ts";
 
 export interface LayoutProps {
   /** Current rig name (for display) */
@@ -53,42 +53,38 @@ export function Layout(props: LayoutProps) {
       width={dimensions().width}
       height={dimensions().height}
       flexDirection="column"
+      backgroundColor={colors.bg.shell}
     >
       {/* Header */}
       <box
         height={1}
         flexDirection="row"
         justifyContent="space-between"
-        paddingLeft={1}
-        paddingRight={1}
+        paddingLeft={spacing.sm}
+        paddingRight={spacing.sm}
+        backgroundColor={colors.bg.elevated}
       >
-        <text bold color="cyan">
-          Jiratown
+        <text fg={colors.primary}>
+          <strong>Jiratown</strong>
         </text>
-        <text color="gray">
+        <text fg={colors.text.secondary}>
           {rigDisplay()} | [?] help | [q] quit
         </text>
       </box>
 
-      {/* Tab Bar */}
-      <TabBar />
-
-      {/* Separator */}
-      <box height={1} borderTop="single" borderColor="gray" />
-
-      {/* Main Content */}
+      {/* Main Content Area (includes TabBar passed as children) */}
       <box flexGrow={1} flexDirection="column">
         {props.children}
       </box>
 
-      {/* Footer / Notifications */}
+      {/* Footer - Status bar (for notifications, will be used later) */}
       <box
         height={1}
-        borderTop="single"
-        borderColor="gray"
-        paddingLeft={1}
+        backgroundColor={colors.bg.elevated}
+        paddingLeft={spacing.sm}
+        paddingRight={spacing.sm}
       >
-        <text color="gray">Ready</text>
+        <text fg={colors.text.dim}>No notifications</text>
       </box>
 
       {/* Help Modal */}
@@ -124,26 +120,28 @@ function HelpModal(props: HelpModalProps) {
       top={top()}
       width={modalWidth}
       height={modalHeight}
-      border="round"
-      borderColor="cyan"
+      border={true}
+      borderStyle="rounded"
+      borderColor={colors.primary}
+      backgroundColor={colors.bg.elevated}
       flexDirection="column"
-      padding={1}
+      padding={spacing.sm}
     >
-      <text bold color="cyan">
-        Keyboard Shortcuts
+      <text fg={colors.primary}>
+        <strong>Keyboard Shortcuts</strong>
       </text>
       <box height={1} />
-      <text>  [+] or [n]  Add new ticket</text>
-      <text>  [Tab]       Switch tabs</text>
-      <text>  [1-9]       Jump to tab</text>
-      <text>  [x]         Close current ticket</text>
-      <text>  [j]         Open in Jira</text>
-      <text>  [e]         Escalate / ask question</text>
-      <text>  [a]         Switch agent</text>
-      <text>  [?]         Toggle help</text>
-      <text>  [q]         Quit</text>
+      <text fg={colors.text.primary}>  [+] or [n]  Add new ticket</text>
+      <text fg={colors.text.primary}>  [Tab]       Switch tabs</text>
+      <text fg={colors.text.primary}>  [1-9]       Jump to tab</text>
+      <text fg={colors.text.primary}>  [x]         Close current ticket</text>
+      <text fg={colors.text.primary}>  [j]         Open in Jira</text>
+      <text fg={colors.text.primary}>  [e]         Escalate / ask question</text>
+      <text fg={colors.text.primary}>  [a]         Switch agent</text>
+      <text fg={colors.text.primary}>  [?]         Toggle help</text>
+      <text fg={colors.text.primary}>  [q]         Quit</text>
       <box flexGrow={1} />
-      <text color="gray">Press any key to close</text>
+      <text fg={colors.text.dim}>Press any key to close</text>
     </box>
   );
 }

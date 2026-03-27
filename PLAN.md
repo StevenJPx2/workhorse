@@ -577,6 +577,13 @@ jiratown/
 - [x] SQLite database setup with migrations
 - [x] Git rig detection from remote URL
 - [x] Basic TUI shell (Layout, TabBar)
+- [x] UI styling and theming
+  - [x] Define color palette (primary, secondary, accent, status colors)
+  - [x] Create theme constants/utilities (`src/lib/theme.ts`)
+  - [x] Style Layout component (borders, colors, spacing)
+  - [x] Style TabBar component (active/inactive tabs, hover states)
+  - [x] Style status badges (pending, queued, implementing, blocked, done)
+  - [x] Add consistent typography and spacing
 
 ### Phase 2: Ticket Management (4-5 days)
 

@@ -4,12 +4,14 @@
  * Manages global state and renders the main layout
  */
 
-import { createSignal, createEffect, onCleanup } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 import { useRenderer } from "@opentui/solid";
 import { Layout } from "./Layout.tsx";
 import { TabBar } from "../components/TabBar.tsx";
 import { getTicketsByRig, getAllTickets, initDatabase } from "../lib/db.ts";
 import { detectRig } from "../lib/detect-rig.ts";
+import { colors, spacing, getStatusConfig, getAgentColor } from "../lib/theme.ts";
+import { ActionBar } from "../components/Button.tsx";
 import type { Ticket } from "../types/ticket.ts";
 
 export interface AppProps {
@@ -67,11 +69,7 @@ export function App(props: AppProps) {
   };
 
   return (
-    <Layout
-      rig={rig()}
-      showAll={props.showAll ?? false}
-      onQuit={handleQuit}
-    >
+    <Layout rig={rig()} showAll={props.showAll ?? false} onQuit={handleQuit}>
       {/* Tab bar with tickets */}
       <TabBar
         tickets={tickets()}
@@ -80,10 +78,12 @@ export function App(props: AppProps) {
         onNew={handleNewTicket}
       />
 
+
+
       {/* Main content area */}
-      <box flexGrow={1} padding={1}>
+      <box flexGrow={1} padding={spacing.sm} paddingTop={spacing.md} backgroundColor={colors.bg.base}>
         {loading() ? (
-          <text color="gray">Loading...</text>
+          <text fg={colors.text.dim}>Loading...</text>
         ) : currentTicket() ? (
           <TicketView ticket={currentTicket()!} />
         ) : (
@@ -99,28 +99,44 @@ interface TicketViewProps {
 }
 
 function TicketView(props: TicketViewProps) {
+  const statusConfig = () => getStatusConfig(props.ticket.status);
+  const agentColor = () => getAgentColor(props.ticket.agent);
+
   return (
-    <box flexDirection="column" gap={1}>
+    <box flexDirection="column" gap={spacing.sm} flexGrow={1}>
       {/* Ticket header */}
-      <text bold color="white">
-        {props.ticket.id}: {props.ticket.summary ?? "No summary"}
+      <text fg={colors.text.primary}>
+        <strong>
+          {props.ticket.id}: {props.ticket.summary ?? "No summary"}
+        </strong>
       </text>
 
-      {/* Status line */}
-      <box flexDirection="row" gap={2}>
-        <text>
-          Status: <text color="cyan">{props.ticket.status.toUpperCase()}</text>
-        </text>
-        <text>
-          Agent: <text color="yellow">{props.ticket.agent}</text>
-        </text>
+      {/* Status and agent info */}
+      <box flexDirection="row" gap={spacing.lg}>
+        <box flexDirection="row">
+          <text fg={colors.text.secondary}>Status: </text>
+          <text fg={statusConfig().color}>
+            {statusConfig().indicator} {statusConfig().label}
+          </text>
+        </box>
+        <box flexDirection="row">
+          <text fg={colors.text.secondary}>Agent: </text>
+          <text fg={agentColor()}>{props.ticket.agent}</text>
+        </box>
       </box>
 
-      {/* Actions */}
-      <box height={1} />
-      <text color="gray">
-        [e] escalate  [a] switch agent  [j] open jira  [x] close
-      </text>
+      {/* Spacer */}
+      <box flexGrow={1} />
+
+      {/* Actions hint */}
+      <ActionBar
+        actions={[
+          { key: "e", action: "escalate" },
+          { key: "a", action: "switch agent" },
+          { key: "j", action: "open jira" },
+          { key: "x", action: "close" },
+        ]}
+      />
     </box>
   );
 }
@@ -132,17 +148,20 @@ interface EmptyStateProps {
 
 function EmptyState(props: EmptyStateProps) {
   return (
-    <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-      <text color="gray">No tickets</text>
+    <box
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      flexGrow={1}
+    >
+      <text fg={colors.text.secondary}>No tickets</text>
       <box height={1} />
-      <text color="gray">
-        Press [+] or [n] to add a ticket
-      </text>
+      <text fg={colors.text.dim}>Press [+] or [n] to add a ticket</text>
       {!props.showAll && props.rig && (
         <>
           <box height={1} />
-          <text color="gray" dim>
-            Showing tickets for: {props.rig}
+          <text fg={colors.text.dim}>
+            <em>Showing tickets for: {props.rig}</em>
           </text>
         </>
       )}

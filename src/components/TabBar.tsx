@@ -1,11 +1,12 @@
 /**
  * TabBar component for Jiratown TUI
  *
- * Displays ticket tabs and allows switching between them
+ * Displays ticket tabs as styled boxes
  */
 
 import { useKeyboard } from "@opentui/solid";
-import { createSignal, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
+import { colors, getStatusConfig } from "../lib/theme.ts";
 import type { Ticket } from "../types/ticket.ts";
 
 export interface TabBarProps {
@@ -23,118 +24,83 @@ export function TabBar(props: TabBarProps) {
   const tickets = () => props.tickets ?? [];
   const selected = () => props.selectedIndex ?? 0;
 
-  // Keyboard navigation for tabs
+  // Keyboard shortcuts
   useKeyboard((key) => {
-    // Tab key cycles through tabs
-    if (key.name === "tab" && !key.shift) {
-      const next = (selected() + 1) % Math.max(tickets().length, 1);
+    // + or n to add new ticket
+    if (key.name === "+" || key.name === "n") {
+      props.onNew?.();
+    }
+    // Tab to cycle through tickets
+    if (key.name === "tab" && !key.shift && tickets().length > 0) {
+      const next = (selected() + 1) % tickets().length;
       props.onSelect?.(next);
     }
-    if (key.name === "tab" && key.shift) {
-      const prev = selected() === 0 ? Math.max(tickets().length - 1, 0) : selected() - 1;
+    if (key.name === "tab" && key.shift && tickets().length > 0) {
+      const prev = selected() === 0 ? tickets().length - 1 : selected() - 1;
       props.onSelect?.(prev);
     }
-
     // Number keys 1-9 for quick tab switching
     const num = parseInt(key.name, 10);
     if (num >= 1 && num <= 9 && num <= tickets().length) {
       props.onSelect?.(num - 1);
     }
-
-    // + or n to add new ticket
-    if (key.name === "+" || key.name === "n") {
-      props.onNew?.();
-    }
   });
 
   return (
-    <box height={1} flexDirection="row" gap={1} paddingLeft={1}>
-      {/* New ticket button */}
+    <box
+      height={3}
+      flexDirection="row"
+      gap={1}
+      paddingLeft={1}
+      backgroundColor={colors.bg.shell}
+    >
+      {/* New ticket tab */}
       <box
         paddingLeft={1}
         paddingRight={1}
-        border="single"
-        borderColor="green"
+        border={true}
+        borderStyle="rounded"
+        borderColor={colors.success}
+        backgroundColor={colors.bg.base}
       >
-        <text color="green">[+] New</text>
+        <text fg={colors.success}>+</text>
       </box>
 
       {/* Ticket tabs */}
-      <For each={tickets()}>
-        {(ticket, index) => (
-          <Tab
-            ticket={ticket}
-            isSelected={index() === selected()}
-            index={index()}
-            onSelect={() => props.onSelect?.(index())}
-          />
-        )}
-      </For>
-
-      {/* Show hint if no tickets */}
-      <Show when={tickets().length === 0}>
-        <text color="gray" italic>
-          Press [+] or [n] to add a ticket
-        </text>
+      <Show
+        when={tickets().length > 0}
+        fallback={
+          <box paddingLeft={1} alignItems="center">
+            <text fg={colors.text.dim}>Press + or n to add a ticket</text>
+          </box>
+        }
+      >
+        <For each={tickets()}>
+          {(ticket, index) => {
+            const config = getStatusConfig(ticket.status);
+            const isSelected = () => index() === selected();
+            return (
+              <box
+                paddingLeft={1}
+                paddingRight={1}
+                border={["top", "right", "left"]}
+                borderStyle={isSelected() ? "double" : "single"}
+                borderColor={isSelected() ? colors.primary : colors.border.dim}
+                backgroundColor={
+                  isSelected() ? colors.bg.base : colors.bg.elevated
+                }
+                flexDirection="row"
+              >
+                <text fg={config.color}>{config.indicator}</text>
+                <text fg={isSelected() ? colors.text.primary : colors.text.dim}>
+                  {" "}
+                  {ticket.id}
+                </text>
+              </box>
+            );
+          }}
+        </For>
       </Show>
-    </box>
-  );
-}
-
-interface TabProps {
-  ticket: Ticket;
-  isSelected: boolean;
-  index: number;
-  onSelect: () => void;
-}
-
-function Tab(props: TabProps) {
-  const statusColor = () => {
-    switch (props.ticket.status) {
-      case "blocked":
-        return "red";
-      case "done":
-        return "green";
-      case "implementing":
-        return "yellow";
-      case "planning":
-        return "blue";
-      case "pr_created":
-      case "in_review":
-        return "magenta";
-      default:
-        return "white";
-    }
-  };
-
-  const statusIndicator = () => {
-    switch (props.ticket.status) {
-      case "blocked":
-        return "!";
-      case "done":
-        return "*";
-      case "implementing":
-      case "planning":
-        return ">";
-      default:
-        return " ";
-    }
-  };
-
-  return (
-    <box
-      paddingLeft={1}
-      paddingRight={1}
-      border="single"
-      borderColor={props.isSelected ? "cyan" : "gray"}
-      backgroundColor={props.isSelected ? "blue" : undefined}
-    >
-      <text color={statusColor()}>
-        {statusIndicator()}
-      </text>
-      <text color={props.isSelected ? "white" : "gray"}>
-        {props.ticket.id}
-      </text>
     </box>
   );
 }
