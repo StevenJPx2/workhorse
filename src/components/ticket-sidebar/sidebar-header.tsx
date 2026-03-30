@@ -3,6 +3,7 @@
  */
 
 import { colors } from "../../lib/theme/index.ts";
+import { Button, icons } from "../button/index.ts";
 
 export interface SidebarHeaderProps {
   /** Callback when "New" button is clicked */
@@ -20,17 +21,20 @@ export function SidebarHeader(props: SidebarHeaderProps) {
     <box
       height={3}
       flexDirection="row"
-      paddingTop={1}
+      alignItems="center"
       paddingX={1}
       justifyContent="space-between"
     >
       {/* Title */}
       <text fg={colors.text.secondary}>Tickets</text>
 
-      {/* New button - clickable */}
-      <box onMouseDown={props.onNew}>
-        <text fg={colors.success}>[+] New</text>
-      </box>
+      {/* New button */}
+      <Button
+        label="New"
+        icon={icons.add}
+        variant="success"
+        onPress={props.onNew}
+      />
     </box>
   );
 }

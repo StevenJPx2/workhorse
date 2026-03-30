@@ -2,6 +2,7 @@
  * TicketItem component - A single clickable ticket row in the sidebar
  */
 
+import { createSignal } from "solid-js";
 import { colors, getStatusConfig } from "../../lib/theme/index.ts";
 import type { Ticket } from "../../types/ticket.ts";
 
@@ -27,7 +28,22 @@ export interface TicketItemProps {
  * />
  */
 export function TicketItem(props: TicketItemProps) {
+  const [isHovered, setIsHovered] = createSignal(false);
   const statusConfig = () => getStatusConfig(props.ticket.status);
+
+  // Show highlight when selected or hovered
+  const isHighlighted = () => props.isSelected || isHovered();
+
+  // Background color: selected gets highlight, hovered gets subtle elevated bg
+  const bgColor = () => {
+    if (props.isSelected) return colors.bg.highlight;
+    if (isHovered()) return colors.bg.elevated;
+    return undefined;
+  };
+
+  // Text color: brighter when highlighted
+  const textColor = () =>
+    isHighlighted() ? colors.text.primary : colors.text.secondary;
 
   return (
     <box>
@@ -35,8 +51,10 @@ export function TicketItem(props: TicketItemProps) {
         height={1}
         flexDirection="row"
         paddingX={2}
-        backgroundColor={props.isSelected ? colors.bg.highlight : undefined}
+        backgroundColor={bgColor()}
         onMouseDown={props.onSelect}
+        onMouseOver={() => setIsHovered(true)}
+        onMouseOut={() => setIsHovered(false)}
       >
         {/* Status indicator */}
         <text fg={statusConfig().color}>{statusConfig().indicator}</text>
@@ -45,11 +63,7 @@ export function TicketItem(props: TicketItemProps) {
         <text> </text>
 
         {/* Ticket ID */}
-        <text
-          fg={props.isSelected ? colors.text.primary : colors.text.secondary}
-        >
-          {props.ticket.id}
-        </text>
+        <text fg={textColor()}>{props.ticket.id}</text>
       </box>
       {/* Divider */}
       <box height={1}>

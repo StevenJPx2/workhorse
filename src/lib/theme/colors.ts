@@ -45,10 +45,14 @@ export const colors = {
   },
 
   // Semantic colors
-  success: "#32CD32", // Lime green
-  warning: "#FFD700", // Gold
-  error: "#FF4444", // Red
+  success: "#2E8B57", // Sea green
+  successBright: "#3CB371", // Brighter green for hover
+  warning: "#DAA520", // Goldenrod
+  warningBright: "#FFD700", // Brighter gold for hover
+  error: "#CD5C5C", // Indian red
+  errorBright: "#FF6B6B", // Brighter red for hover
   info: "#00BFFF", // Sky blue
+  infoBright: "#40D4FF", // Brighter blue for hover
 
   // Agent colors
   agent: {
