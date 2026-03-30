@@ -289,38 +289,33 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 
 ```
 ╭─ Jiratown ─────────────────────────────── myproject ─ [?] help ─ [q] quit ─╮
-│                                                                             │
-│  [+] New   │ AM-123 │ AM-456 │ AM-789                                       │
-│                                                                             │
+│╭─ Tickets [+] New ─╮                                                        │
+││ ▶ AM-123          │ AM-123: Fix authentication timeout bug                 │
+││ ⬆ AM-456          │ ═══════════════════════════════════════════════════    │
+││ ○ AM-789          │                                                        │
+││                   │ Status    IMPLEMENTING          Agent     opencode     │
+││                   │ Phase     GREEN (5/5 passing)   Rig       myproject    │
+││                   │ Worktree  ../myproject-worktrees/AM-123                 │
+││                   │                                                        │
+││                   │ ┌─ Progress ──────────────────────────────────────────┐│
+││                   │ │ ✓ Fetched Jira ticket                               ││
+││                   │ │ ✓ Created bead bd-x7k2m                             ││
+││                   │ │ ✓ Planning complete                                 ││
+││                   │ │ ▶ Creating PR...                                    ││
+││                   │ └─────────────────────────────────────────────────────┘│
+││                   │                                                        │
+││                   │ [e] escalate  [a] switch agent  [o] open jira  [x] close│
+│╰───────────────────╯                                                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  AM-123: Fix authentication timeout bug                                     │
-│  ════════════════════════════════════════════════════════════════════════   │
-│                                                                             │
-│  Status    IMPLEMENTING          Agent     opencode                         │
-│  Phase     GREEN (5/5 passing)   Rig       myproject                        │
-│  Worktree  ../myproject-worktrees/AM-123                                    │
-│                                                                             │
-│  ┌─ Progress ─────────────────────────────────────────────────────────────┐ │
-│  │ ✓ Fetched Jira ticket                                                  │ │
-│  │ ✓ Created bead bd-x7k2m                                                │ │
-│  │ ✓ Planning complete                                                    │ │
-│  │ ✓ Tests written (5 cases)                                              │ │
-│  │ ✓ All tests passing                                                    │ │
-│  │ ▶ Creating PR...                                                       │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  ┌─ Files Modified ───────────────────────────────────────────────────────┐ │
-│  │  M src/auth/timeout.ts                    +45 -12                      │ │
-│  │  A src/auth/__tests__/timeout.test.ts     +78                          │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  [e] escalate   [a] switch agent   [j] open jira   [p] view pr   [x] close │
-│                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ ● AM-456 blocked - questions posted to Jira (3m ago)                        │
+│ No notifications                                                            │
 ╰─────────────────────────────────────────────────────────────────────────────╯
 ```
+
+The sidebar is clickable and supports keyboard navigation:
+- `j`/`k` or `↑`/`↓` to navigate tickets
+- `1-9` for quick jump
+- `n` or `+` for new ticket
+- Click on any ticket to select it
 
 ### New Ticket Modal
 
@@ -494,64 +489,77 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 
 ## Project Structure
 
+**Code Standards:**
+- All files must be **max 200 lines of code**
+- All file names use **kebab-case**
+- Related files are **colocated in folders** with `index.ts` exports
+
 ```
 jiratown/
 ├── package.json
 ├── tsconfig.json
 ├── bunfig.toml                     # Solid.js preload config
 ├── build.ts                        # Bun build script
+├── scripts/
+│   └── seed.ts                     # Dev seed data for testing
 │
 ├── src/
 │   ├── index.ts                    # CLI entry point (citty)
 │   │
 │   ├── commands/
-│   │   ├── setup.ts                # `jiratown setup` (uses @clack/prompts)
-│   │   ├── add.ts                  # `jiratown add <ticket>`
-│   │   └── dashboard.ts            # `jiratown` (default - launches TUI)
+│   │   ├── setup/                  # `jiratown setup`
+│   │   │   ├── index.ts
+│   │   │   ├── run.ts
+│   │   │   └── dependencies.ts
+│   │   ├── add/                    # `jiratown add <ticket>`
+│   │   │   ├── index.ts
+│   │   │   ├── run.ts
+│   │   │   └── parse-ticket.ts
+│   │   └── dashboard/              # `jiratown` (default - launches TUI)
+│   │       ├── index.ts
+│   │       └── run.tsx
 │   │
 │   ├── app/
-│   │   ├── App.tsx                 # Root component
-│   │   ├── Layout.tsx              # Shell with header/footer
-│   │   ├── store.ts                # Solid.js store for app state
-│   │   └── context.tsx             # App context providers
+│   │   ├── app.tsx                 # Root component
+│   │   └── layout.tsx              # Shell with header/sidebar/footer
 │   │
 │   ├── components/
-│   │   ├── TabBar.tsx              # Ticket tabs
-│   │   ├── TicketPane.tsx          # Main ticket view
-│   │   ├── TicketInput.tsx         # New ticket modal
-│   │   ├── AgentStatus.tsx         # Status + phase badge
-│   │   ├── ProgressLog.tsx         # Step-by-step progress
-│   │   ├── FileChanges.tsx         # Modified files list
-│   │   ├── Notifications.tsx       # Bottom notification bar
-│   │   ├── BlockedView.tsx         # Blocked state UI
-│   │   ├── PRReviewView.tsx        # PR review comments UI
-│   │   ├── ReviewCommentCard.tsx   # Individual review comment + draft reply
-│   │   └── AgentSelector.tsx       # Agent toggle
+│   │   ├── ticket-sidebar/         # Sidebar navigation
+│   │   │   ├── index.ts
+│   │   │   ├── ticket-sidebar.tsx
+│   │   │   ├── ticket-item.tsx
+│   │   │   ├── sidebar-header.tsx
+│   │   │   └── use-ticket-navigation.ts
+│   │   ├── button/                 # Button components
+│   │   │   ├── index.ts
+│   │   │   ├── button.tsx
+│   │   │   ├── key-hint.tsx
+│   │   │   └── action-bar.tsx
+│   │   ├── status-badge/           # Status display
+│   │   │   ├── index.ts
+│   │   │   ├── status-badge.tsx
+│   │   │   └── agent-badge.tsx
+│   │   └── ... (future components follow same pattern)
 │   │
 │   ├── hooks/
 │   │   ├── useGasTown.ts           # gt CLI wrapper
 │   │   ├── useBeads.ts             # bd CLI wrapper
-│   │   ├── useJira.ts              # Atlassian MCP calls
-│   │   ├── useGitHub.ts            # GitHub MCP calls
-│   │   ├── useAgentFeed.ts         # Stream gt feed events
-│   │   ├── useDatabase.ts          # SQLite CRUD
-│   │   └── useConfig.ts            # Config file R/W
+│   │   └── ... (future hooks)
 │   │
 │   ├── lib/
+│   │   ├── theme/                  # Theme system
+│   │   │   ├── index.ts
+│   │   │   ├── colors.ts
+│   │   │   ├── status.ts
+│   │   │   ├── presets.ts
+│   │   │   └── utils.ts
 │   │   ├── db.ts                   # SQLite init + migrations
-│   │   ├── config.ts               # TOML parsing + config merging (global + project)
-│   │   ├── atlassian.ts            # MCP client for Jira
-│   │   ├── github.ts               # MCP client for GitHub
-│   │   ├── jira-sync.ts            # Jira ↔ Beads bidirectional sync
-│   │   ├── spawn.ts                # Bun.spawn helpers
-│   │   ├── parse-ticket.ts         # Parse AM-123 or URL
+│   │   ├── config.ts               # TOML parsing + config merging
 │   │   └── detect-rig.ts           # Detect rig from git remote URL
 │   │
 │   └── types/
-│       ├── index.ts
 │       ├── ticket.ts
 │       ├── config.ts
-│       ├── github.ts               # GitHub types (PR, Review, Comment)
 │       └── gastown.ts              # Gas Town event types
 │
 └── README.md
@@ -576,14 +584,23 @@ jiratown/
   - [x] Config merging (project overrides global)
 - [x] SQLite database setup with migrations
 - [x] Git rig detection from remote URL
-- [x] Basic TUI shell (Layout, TabBar)
+- [x] Basic TUI shell (Layout with sidebar)
 - [x] UI styling and theming
   - [x] Define color palette (primary, secondary, accent, status colors)
-  - [x] Create theme constants/utilities (`src/lib/theme.ts`)
+  - [x] Create theme module (`src/lib/theme/`) with colors, status, presets, utils
   - [x] Style Layout component (borders, colors, spacing)
-  - [x] Style TabBar component (active/inactive tabs, hover states)
+  - [x] Style TicketSidebar (clickable items, keyboard navigation)
   - [x] Style status badges (pending, queued, implementing, blocked, done)
   - [x] Add consistent typography and spacing
+- [x] Clickable sidebar with mouse support
+- [x] Keyboard navigation (j/k, arrows, 1-9, n/+)
+- [ ] Basic reusable components
+  - [ ] Modal component (for dialogs and overlays)
+  - [ ] TextInput component (for form fields)
+  - [ ] Select/RadioGroup component (for agent selection)
+  - [ ] Card component (for content containers)
+  - [ ] Divider component (for visual separation)
+  - [ ] Button component (for actions and form submissions)
 
 ### Phase 2: Ticket Management (4-5 days)
 

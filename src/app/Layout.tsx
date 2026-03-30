@@ -6,14 +6,16 @@
 
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createSignal, type JSX, Show } from "solid-js";
-import { colors, spacing } from "../lib/theme.ts";
+import { colors, spacing } from "../lib/theme/index.ts";
 
 export interface LayoutProps {
   /** Current rig name (for display) */
   rig: string | null;
   /** Whether showing all tickets (global view) */
   showAll: boolean;
-  /** Children content */
+  /** Sidebar content (TicketSidebar) */
+  sidebar?: JSX.Element;
+  /** Main content area */
   children?: JSX.Element;
   /** Callback when quit is requested */
   onQuit?: () => void;
@@ -55,36 +57,30 @@ export function Layout(props: LayoutProps) {
       flexDirection="column"
       backgroundColor={colors.bg.shell}
     >
-      {/* Header */}
+      {/* Main Content Area - Horizontal layout with sidebar */}
+      <box flexGrow={1} flexDirection="row">
+        {/* Sidebar - full height, elevated background */}
+        {props.sidebar}
+
+        {/* Main content - takes remaining space */}
+        <box flexGrow={1} flexDirection="column" backgroundColor={colors.bg.base}>
+          {props.children}
+        </box>
+      </box>
+
+      {/* Footer - Status bar with notifications and helpers */}
       <box
         height={1}
         flexDirection="row"
         justifyContent="space-between"
-        paddingLeft={spacing.sm}
-        paddingRight={spacing.sm}
-        backgroundColor={colors.bg.elevated}
-      >
-        <text fg={colors.primary}>
-          <strong>Jiratown</strong>
-        </text>
-        <text fg={colors.text.secondary}>
-          {rigDisplay()} | [?] help | [q] quit
-        </text>
-      </box>
-
-      {/* Main Content Area (includes TabBar passed as children) */}
-      <box flexGrow={1} flexDirection="column">
-        {props.children}
-      </box>
-
-      {/* Footer - Status bar (for notifications, will be used later) */}
-      <box
-        height={1}
         backgroundColor={colors.bg.elevated}
         paddingLeft={spacing.sm}
         paddingRight={spacing.sm}
       >
         <text fg={colors.text.dim}>No notifications</text>
+        <text fg={colors.text.secondary}>
+          {rigDisplay()} | [?] help | [q] quit
+        </text>
       </box>
 
       {/* Help Modal */}
@@ -132,10 +128,10 @@ function HelpModal(props: HelpModalProps) {
       </text>
       <box height={1} />
       <text fg={colors.text.primary}>  [+] or [n]  Add new ticket</text>
-      <text fg={colors.text.primary}>  [Tab]       Switch tabs</text>
-      <text fg={colors.text.primary}>  [1-9]       Jump to tab</text>
+      <text fg={colors.text.primary}>  [j] / [k]   Navigate tickets</text>
+      <text fg={colors.text.primary}>  [1-9]       Jump to ticket</text>
       <text fg={colors.text.primary}>  [x]         Close current ticket</text>
-      <text fg={colors.text.primary}>  [j]         Open in Jira</text>
+      <text fg={colors.text.primary}>  [o]         Open in Jira</text>
       <text fg={colors.text.primary}>  [e]         Escalate / ask question</text>
       <text fg={colors.text.primary}>  [a]         Switch agent</text>
       <text fg={colors.text.primary}>  [?]         Toggle help</text>

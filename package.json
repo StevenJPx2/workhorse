@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun run build.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "seed": "bun run scripts/seed.ts"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",

@@ -7,11 +7,14 @@
 import { createSignal, createEffect } from "solid-js";
 import { useRenderer } from "@opentui/solid";
 import { Layout } from "./Layout.tsx";
-import { TabBar } from "../components/TabBar.tsx";
+import {
+  TicketSidebar,
+  SIDEBAR_WIDTH,
+} from "../components/ticket-sidebar/index.ts";
 import { getTicketsByRig, getAllTickets, initDatabase } from "../lib/db.ts";
 import { detectRig } from "../lib/detect-rig.ts";
-import { colors, spacing, getStatusConfig, getAgentColor } from "../lib/theme.ts";
-import { ActionBar } from "../components/Button.tsx";
+import { colors, spacing, getStatusConfig, getAgentColor } from "../lib/theme/index.ts";
+import { ActionBar } from "../components/button/index.ts";
 import type { Ticket } from "../types/ticket.ts";
 
 export interface AppProps {
@@ -53,7 +56,7 @@ export function App(props: AppProps) {
     renderer.destroy();
   };
 
-  const handleSelectTab = (index: number) => {
+  const handleSelect = (index: number) => {
     setSelectedIndex(index);
   };
 
@@ -69,19 +72,22 @@ export function App(props: AppProps) {
   };
 
   return (
-    <Layout rig={rig()} showAll={props.showAll ?? false} onQuit={handleQuit}>
-      {/* Tab bar with tickets */}
-      <TabBar
-        tickets={tickets()}
-        selectedIndex={selectedIndex()}
-        onSelect={handleSelectTab}
-        onNew={handleNewTicket}
-      />
-
-
-
+    <Layout
+      rig={rig()}
+      showAll={props.showAll ?? false}
+      onQuit={handleQuit}
+      sidebar={
+        <TicketSidebar
+          tickets={tickets()}
+          selectedIndex={selectedIndex()}
+          width={SIDEBAR_WIDTH}
+          onSelect={handleSelect}
+          onNew={handleNewTicket}
+        />
+      }
+    >
       {/* Main content area */}
-      <box flexGrow={1} padding={spacing.sm} paddingTop={spacing.md} backgroundColor={colors.bg.base}>
+      <box flexGrow={1} padding={spacing.sm}>
         {loading() ? (
           <text fg={colors.text.dim}>Loading...</text>
         ) : currentTicket() ? (
