@@ -539,12 +539,30 @@ jiratown/
 │   │   │   ├── index.ts
 │   │   │   ├── status-badge.tsx
 │   │   │   └── agent-badge.tsx
+│   │   ├── command-palette/        # Command palette (fuzzy search)
+│   │   │   ├── index.ts
+│   │   │   ├── command-palette.tsx
+│   │   │   ├── command-item.tsx
+│   │   │   └── use-fuzzy-search.ts
 │   │   └── ... (future components follow same pattern)
 │   │
 │   ├── hooks/
-│   │   ├── useGasTown.ts           # gt CLI wrapper
-│   │   ├── useBeads.ts             # bd CLI wrapper
-│   │   └── ... (future hooks)
+│   │   ├── index.ts                # Re-exports all hooks
+│   │   ├── use-interactive.ts      # Hover/press/focus state management
+│   │   ├── use-modal.ts            # Modal state management
+│   │   ├── use-focus-zone.ts       # Focus region management
+│   │   ├── use-selection.ts        # List selection logic
+│   │   ├── use-tickets.ts          # Ticket CRUD operations
+│   │   ├── use-config.ts           # Config load/save
+│   │   ├── use-database.ts         # SQLite wrapper
+│   │   ├── use-gas-town.ts         # gt CLI wrapper
+│   │   ├── use-beads.ts            # bd CLI wrapper
+│   │   ├── use-atlassian.ts        # Jira MCP client
+│   │   ├── use-github.ts           # GitHub MCP client
+│   │   ├── use-agent-feed.ts       # Agent event stream
+│   │   ├── use-command-palette.ts  # Command search/execute
+│   │   ├── use-pr-review.ts        # PR review workflow
+│   │   └── use-escalation.ts       # Escalation workflow
 │   │
 │   ├── lib/
 │   │   ├── theme/                  # Theme system
@@ -563,6 +581,203 @@ jiratown/
 │       └── gastown.ts              # Gas Town event types
 │
 └── README.md
+```
+
+---
+
+## Modularization & Hooks Architecture
+
+### Design Principles
+
+1. **Separation of Concerns**: UI components should be purely presentational; all business logic lives in hooks
+2. **Reusability**: Hooks can be composed and reused across different components
+3. **Testability**: Hooks can be unit tested independently of UI rendering
+4. **Single Responsibility**: Each hook handles one specific domain (theme, keyboard, tickets, etc.)
+
+### Hook Categories
+
+#### UI State Hooks
+Manage local UI state and user interactions:
+
+| Hook | Purpose | Location |
+|------|---------|----------|
+| `useTheme` | Theme switching and persistence | `src/lib/theme/context.tsx` |
+| `useKeyboard` | Global keyboard shortcut handling | `@opentui/solid` |
+| `useInteractive` | Hover/press/focus states for clickable elements | `src/hooks/use-interactive.ts` |
+| `useModal` | Modal open/close state management | `src/hooks/use-modal.ts` |
+| `useFocusZone` | Focus management within regions | `src/hooks/use-focus-zone.ts` |
+| `useSelection` | List selection state (single/multi) | `src/hooks/use-selection.ts` |
+
+#### Data Hooks
+Manage data fetching, caching, and mutations:
+
+| Hook | Purpose | Location |
+|------|---------|----------|
+| `useTickets` | CRUD operations for tickets | `src/hooks/use-tickets.ts` |
+| `useConfig` | Load/save configuration | `src/hooks/use-config.ts` |
+| `useDatabase` | SQLite connection and queries | `src/hooks/use-database.ts` |
+
+#### Integration Hooks
+Interface with external services and CLIs:
+
+| Hook | Purpose | Location |
+|------|---------|----------|
+| `useGasTown` | Gas Town CLI wrapper (`gt` commands) | `src/hooks/use-gas-town.ts` |
+| `useBeads` | Beads CLI wrapper (`bd` commands) | `src/hooks/use-beads.ts` |
+| `useAtlassian` | Atlassian MCP client | `src/hooks/use-atlassian.ts` |
+| `useGitHub` | GitHub MCP client | `src/hooks/use-github.ts` |
+| `useAgentFeed` | Stream `gt feed --json` events | `src/hooks/use-agent-feed.ts` |
+
+#### Feature Hooks
+Compose lower-level hooks for specific features:
+
+| Hook | Purpose | Location |
+|------|---------|----------|
+| `useTicketNavigation` | Keyboard nav for ticket list | `src/components/ticket-sidebar/` |
+| `useCommandPalette` | Command search and execution | `src/hooks/use-command-palette.ts` |
+| `usePRReview` | PR review workflow state | `src/hooks/use-pr-review.ts` |
+| `useEscalation` | Ticket escalation workflow | `src/hooks/use-escalation.ts` |
+
+### Component Structure
+
+Components should follow this pattern:
+
+```tsx
+// Good: Component uses hooks for all logic
+function TicketSidebar(props: TicketSidebarProps) {
+  const { theme } = useTheme();
+  const { tickets, select, selectedIndex } = useTickets();
+  const { navigateUp, navigateDown } = useTicketNavigation();
+  
+  // Pure rendering based on hook state
+  return <box>...</box>;
+}
+
+// Bad: Component contains business logic
+function TicketSidebar(props: TicketSidebarProps) {
+  const [tickets, setTickets] = createSignal([]);
+  
+  // Don't fetch data directly in component
+  createEffect(async () => {
+    const data = await db.query('SELECT * FROM tickets');
+    setTickets(data);
+  });
+  
+  return <box>...</box>;
+}
+```
+
+### Hook Composition Example
+
+```tsx
+// Feature hook composes multiple lower-level hooks
+function useTicketWorkflow(ticketId: string) {
+  const { theme } = useTheme();
+  const { ticket, updateTicket } = useTickets();
+  const { sling, escalate } = useGasTown();
+  const { createBead } = useBeads();
+  const { fetchIssue, addComment } = useAtlassian();
+  
+  const startWork = async () => {
+    const jiraData = await fetchIssue(ticketId);
+    const bead = await createBead(jiraData);
+    await sling(bead.id);
+    await updateTicket(ticketId, { status: 'implementing' });
+  };
+  
+  return { ticket, startWork, escalate };
+}
+```
+
+### `useInteractive` Hook
+
+The `useInteractive` hook provides a standardized way to handle hover and press states for interactive elements. This eliminates repetitive state management code across components.
+
+> **Note:** OpenTUI does not support `onFocus`/`onBlur` on box elements, so focus handling is not included.
+
+**API:**
+```tsx
+interface UseInteractiveOptions {
+  disabled?: boolean;           // Disable all interactions
+  onPress?: () => void;         // Click/press handler
+  onHover?: (hovered: boolean) => void;  // Hover state change
+}
+
+interface InteractiveProps {
+  onMouseOver: () => void;
+  onMouseOut: () => void;
+  onMouseDown: () => void;
+  onMouseUp: () => void;
+}
+
+interface UseInteractiveReturn {
+  isHovered: Accessor<boolean>;     // Currently hovered
+  isPressed: Accessor<boolean>;     // Currently being pressed
+  isHighlighted: Accessor<boolean>; // Alias for isHovered (convenience)
+  interactiveProps: InteractiveProps; // Spread onto element
+}
+```
+
+**Usage:**
+```tsx
+function Button(props: ButtonProps) {
+  const { theme } = useTheme();
+  const { isHighlighted, interactiveProps } = useInteractive({
+    disabled: props.disabled,
+    onPress: props.onPress,
+  });
+
+  const bgColor = () => isHighlighted() ? theme().bg.highlight : theme().bg.base;
+
+  return (
+    <box backgroundColor={bgColor()} {...interactiveProps}>
+      <text>{props.label}</text>
+    </box>
+  );
+}
+
+function TicketItem(props: TicketItemProps) {
+  const { theme } = useTheme();
+  const { isHovered, isHighlighted, interactiveProps } = useInteractive({
+    onPress: props.onSelect,
+  });
+
+  // Combine selection state with hover
+  const showHighlight = () => props.isSelected || isHighlighted();
+  const bgColor = () => {
+    if (props.isSelected) return theme().bg.highlight;
+    if (isHovered()) return theme().bg.elevated;
+    return undefined;
+  };
+
+  return (
+    <box backgroundColor={bgColor()} {...interactiveProps}>
+      <text>{props.ticket.id}</text>
+    </box>
+  );
+}
+```
+
+### Hooks Directory Structure
+
+```
+src/hooks/
+├── index.ts                    # Re-exports all hooks
+├── use-interactive.ts          # Hover/press/focus state management
+├── use-modal.ts                # Modal state management
+├── use-focus-zone.ts           # Focus region management
+├── use-selection.ts            # List selection logic
+├── use-tickets.ts              # Ticket CRUD operations
+├── use-config.ts               # Config load/save
+├── use-database.ts             # SQLite wrapper
+├── use-gas-town.ts             # gt CLI wrapper
+├── use-beads.ts                # bd CLI wrapper
+├── use-atlassian.ts            # Jira MCP client
+├── use-github.ts               # GitHub MCP client
+├── use-agent-feed.ts           # Agent event stream
+├── use-command-palette.ts      # Command search/execute
+├── use-pr-review.ts            # PR review workflow
+└── use-escalation.ts           # Escalation workflow
 ```
 
 ---
@@ -594,6 +809,16 @@ jiratown/
   - [x] Add consistent typography and spacing
 - [x] Clickable sidebar with mouse support
 - [x] Keyboard navigation (j/k, arrows, 1-9, n/+)
+- [ ] Core UI hooks (foundation for all components)
+  - [x] `useInteractive` - Hover/press states with interactiveProps spread syntax
+  - [ ] `useModal` - Modal open/close state, escape to close, focus trap
+  - [ ] `useFocusZone` - Focus management within regions (sidebar, main, modals)
+  - [ ] `useSelection` - List selection state (single/multi-select, keyboard nav)
+  - [ ] `useHotkeys` - Register/unregister keyboard shortcuts by context
+- [ ] Core data hooks
+  - [ ] `useTickets` - Ticket CRUD operations wrapping SQLite
+  - [ ] `useConfig` - Reactive config load/save with persistence
+  - [ ] `useDatabase` - SQLite connection management and query helpers
 - [ ] Basic reusable components
   - [ ] Modal component (for dialogs and overlays)
   - [ ] TextInput component (for form fields)
@@ -601,53 +826,64 @@ jiratown/
   - [ ] Card component (for content containers)
   - [ ] Divider component (for visual separation)
   - [x] Button component (for actions and form submissions)
+  - [ ] CommandPalette component (fuzzy search command launcher)
 
 ### Phase 2: Ticket Management (4-5 days)
 
-- [ ] Atlassian MCP client implementation
+- [ ] `useAtlassian` hook (Atlassian MCP client)
   - [ ] Connect via `mcp-remote` proxy to `https://mcp.atlassian.com/v1/mcp`
   - [ ] Handle OAuth 2.1 authentication flow
-  - [ ] `getJiraIssue` wrapper
-  - [ ] `addCommentToJiraIssue` wrapper
-  - [ ] `transitionJiraIssue` wrapper
-- [ ] Ticket input modal (TicketInput component)
-- [ ] SQLite CRUD for tickets
-- [ ] TicketPane with basic info display
+  - [ ] `fetchIssue(ticketId)` - Get ticket details
+  - [ ] `addComment(ticketId, comment)` - Post comment
+  - [ ] `transitionIssue(ticketId, status)` - Change status
+- [ ] Ticket input modal (TicketInput component using `useModal`)
+- [ ] TicketPane component (uses `useTickets` hook)
+- [ ] Integrate `useAtlassian` with `useTickets` for Jira sync
 
 ### Phase 3: Gas Town Integration (4-5 days)
 
-- [ ] `useGasTown` hook
-  - [ ] `gt sling` (spawn polecat)
-  - [ ] `gt agents --json` (list agents)
-  - [ ] `gt escalate` (post questions)
-  - [ ] `gt done` (mark complete)
-- [ ] `useBeads` hook
-  - [ ] `bd create` (create bead from Jira ticket)
-  - [ ] `bd update` (update status)
-  - [ ] `bd show` (get bead details)
-- [ ] Agent status polling
-- [ ] `useAgentFeed` hook (stream `gt feed --json`)
+- [ ] `useGasTown` hook (Gas Town CLI wrapper)
+  - [ ] `sling(beadId, rig, agent)` - Spawn polecat
+  - [ ] `listAgents()` - Get active agents (`gt agents --json`)
+  - [ ] `escalate(beadId, question)` - Post questions
+  - [ ] `markDone(beadId)` - Signal completion
+- [ ] `useBeads` hook (Beads CLI wrapper)
+  - [ ] `createBead(title, labels)` - Create bead from Jira ticket
+  - [ ] `updateBead(beadId, status)` - Update bead status
+  - [ ] `getBead(beadId)` - Get bead details
+- [ ] `useAgentFeed` hook (real-time event stream)
+  - [ ] Stream `gt feed --json` events
+  - [ ] Parse and dispatch events to appropriate handlers
+  - [ ] Auto-reconnect on disconnect
+- [ ] Agent status polling via `useGasTown.listAgents()`
 - [ ] Real-time UI updates from feed events
 
 ### Phase 4: Progress & Sync (3-4 days)
 
-- [ ] ProgressLog component (step-by-step display)
-- [ ] FileChanges component (modified files)
-- [ ] Jira sync: post progress comments
-- [ ] Jira sync: transition status on phase changes
-- [ ] Jira sync: link PRs when created
-- [ ] Event logging to SQLite
+- [ ] `useJiraSync` hook (Jira synchronization)
+  - [ ] `postProgress(ticketId, message)` - Post progress comment
+  - [ ] `transitionStatus(ticketId, status)` - Update Jira status
+  - [ ] `linkPR(ticketId, prUrl)` - Add PR link to ticket
+- [ ] `useEventLog` hook (event persistence)
+  - [ ] Log agent events to SQLite
+  - [ ] Query event history by ticket/agent
+  - [ ] Support event replay for debugging
+- [ ] ProgressLog component (uses `useEventLog`)
+- [ ] FileChanges component (uses `useAgentFeed` events)
 
 ### Phase 5: PR Review & Iteration (3-4 days)
 
-- [ ] GitHub MCP client implementation (`src/lib/github.ts`)
+- [ ] `useGitHub` hook (GitHub MCP client)
   - [ ] Connect via `mcp-remote` proxy to `https://api.githubcopilot.com/mcp/`
   - [ ] Handle OAuth authentication flow
-  - [ ] `get_pull_request` wrapper
-  - [ ] `list_pull_requests` wrapper
-  - [ ] `create_pull_request_review` wrapper
-- [ ] `useGitHub` hook (`src/hooks/useGitHub.ts`)
-- [ ] PR review polling (detect new comments/change requests)
+  - [ ] `getPullRequest(owner, repo, number)` - Get PR details
+  - [ ] `listPullRequests(owner, repo, state)` - List PRs
+  - [ ] `createReview(owner, repo, number, body, event)` - Submit review
+  - [ ] `listReviewComments(owner, repo, number)` - Get review comments
+- [ ] `usePRReview` hook (PR review workflow)
+  - [ ] Poll for new comments/change requests
+  - [ ] Track review state (pending, approved, changes_requested)
+  - [ ] Compose review responses
 - [ ] `PRReviewView` component (`src/components/PRReviewView.tsx`)
   - [ ] Display pending review comments
   - [ ] Show agent's draft response for each comment

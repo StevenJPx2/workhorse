@@ -13,17 +13,64 @@ import {
 } from "../components/ticket-sidebar/index.ts";
 import { getTicketsByRig, getAllTickets, initDatabase } from "../lib/db.ts";
 import { detectRig } from "../lib/detect-rig.ts";
-import { colors, spacing, getStatusConfig, getAgentColor } from "../lib/theme/index.ts";
+import { loadConfig, saveTheme } from "../lib/config.ts";
+import {
+  spacing,
+  getStatusConfig,
+  getAgentColor,
+  ThemeProvider,
+  useTheme,
+} from "../lib/theme/index.ts";
 import { ActionBar } from "../components/button/index.ts";
 import type { Ticket } from "../types/ticket.ts";
+import type { ThemeName } from "../types/config.ts";
 
 export interface AppProps {
   /** Show all tickets across all repositories */
   showAll?: boolean;
+  /** Initial theme from config */
+  initialTheme?: ThemeName;
 }
 
+/**
+ * Root App component wrapped with ThemeProvider
+ */
 export function App(props: AppProps) {
+  const [initialTheme, setInitialTheme] = createSignal<ThemeName>(
+    props.initialTheme ?? "default"
+  );
+
+  // Load theme from config on mount
+  createEffect(async () => {
+    const config = await loadConfig();
+    setInitialTheme(config.ui.theme);
+  });
+
+  const handleThemeChange = (themeName: ThemeName) => {
+    // Persist theme to config (fire and forget)
+    saveTheme(themeName).catch(console.error);
+  };
+
+  return (
+    <ThemeProvider
+      initialTheme={initialTheme()}
+      onThemeChange={handleThemeChange}
+    >
+      <AppContent showAll={props.showAll} />
+    </ThemeProvider>
+  );
+}
+
+interface AppContentProps {
+  showAll?: boolean;
+}
+
+/**
+ * Main app content (inside ThemeProvider)
+ */
+function AppContent(props: AppContentProps) {
   const renderer = useRenderer();
+  const { theme } = useTheme();
   const [rig, setRig] = createSignal<string | null>(null);
   const [tickets, setTickets] = createSignal<Ticket[]>([]);
   const [selectedIndex, setSelectedIndex] = createSignal(0);
@@ -89,7 +136,7 @@ export function App(props: AppProps) {
       {/* Main content area */}
       <box flexGrow={1} padding={spacing.sm}>
         {loading() ? (
-          <text fg={colors.text.dim}>Loading...</text>
+          <text fg={theme().text.dim}>Loading...</text>
         ) : currentTicket() ? (
           <TicketView ticket={currentTicket()!} />
         ) : (
@@ -105,13 +152,14 @@ interface TicketViewProps {
 }
 
 function TicketView(props: TicketViewProps) {
-  const statusConfig = () => getStatusConfig(props.ticket.status);
-  const agentColor = () => getAgentColor(props.ticket.agent);
+  const { theme } = useTheme();
+  const statusConfig = () => getStatusConfig(props.ticket.status, theme());
+  const agentColor = () => getAgentColor(props.ticket.agent, theme());
 
   return (
     <box flexDirection="column" gap={spacing.sm} flexGrow={1}>
       {/* Ticket header */}
-      <text fg={colors.text.primary}>
+      <text fg={theme().text.primary}>
         <strong>
           {props.ticket.id}: {props.ticket.summary ?? "No summary"}
         </strong>
@@ -120,13 +168,13 @@ function TicketView(props: TicketViewProps) {
       {/* Status and agent info */}
       <box flexDirection="row" gap={spacing.lg}>
         <box flexDirection="row">
-          <text fg={colors.text.secondary}>Status: </text>
+          <text fg={theme().text.secondary}>Status: </text>
           <text fg={statusConfig().color}>
             {statusConfig().indicator} {statusConfig().label}
           </text>
         </box>
         <box flexDirection="row">
-          <text fg={colors.text.secondary}>Agent: </text>
+          <text fg={theme().text.secondary}>Agent: </text>
           <text fg={agentColor()}>{props.ticket.agent}</text>
         </box>
       </box>
@@ -153,6 +201,8 @@ interface EmptyStateProps {
 }
 
 function EmptyState(props: EmptyStateProps) {
+  const { theme } = useTheme();
+
   return (
     <box
       flexDirection="column"
@@ -160,13 +210,13 @@ function EmptyState(props: EmptyStateProps) {
       justifyContent="center"
       flexGrow={1}
     >
-      <text fg={colors.text.secondary}>No tickets</text>
+      <text fg={theme().text.secondary}>No tickets</text>
       <box height={1} />
-      <text fg={colors.text.dim}>Press [+] or [n] to add a ticket</text>
+      <text fg={theme().text.dim}>Press [+] or [n] to add a ticket</text>
       {!props.showAll && props.rig && (
         <>
           <box height={1} />
-          <text fg={colors.text.dim}>
+          <text fg={theme().text.dim}>
             <em>Showing tickets for: {props.rig}</em>
           </text>
         </>

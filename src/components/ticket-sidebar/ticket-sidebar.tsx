@@ -3,7 +3,7 @@
  */
 
 import { For, Show } from "solid-js";
-import { colors } from "../../lib/theme/index.ts";
+import { useTheme } from "../../lib/theme/index.ts";
 import type { Ticket } from "../../types/ticket.ts";
 import { SidebarHeader } from "./sidebar-header.tsx";
 import { TicketItem } from "./ticket-item.tsx";
@@ -34,6 +34,8 @@ export interface TicketSidebarProps {
  * />
  */
 export function TicketSidebar(props: TicketSidebarProps) {
+  const { theme } = useTheme();
+
   // Set up keyboard navigation
   useTicketNavigation({
     ticketCount: () => props.tickets.length,
@@ -46,16 +48,16 @@ export function TicketSidebar(props: TicketSidebarProps) {
     <box
       width={props.width}
       flexDirection="column"
-      backgroundColor={colors.bg.elevated}
+      backgroundColor={theme().bg.elevated}
       borderStyle="rounded"
-      borderColor={colors.border.dim}
+      borderColor={theme().border.dim}
     >
       {/* Header with title and new button */}
       <SidebarHeader onNew={props.onNew} />
 
       {/* Divider */}
       <box height={1}>
-        <text fg={colors.border.dim}>
+        <text fg={theme().border.dim}>
           {"─".repeat(Math.max(0, props.width - 2))}
         </text>
       </box>
@@ -81,7 +83,7 @@ export function TicketSidebar(props: TicketSidebarProps) {
 
       {/* Footer branding */}
       <box height={1} paddingX={1}>
-        <text fg={colors.text.dim}>Jiratown</text>
+        <text fg={theme().text.dim}>Jiratown</text>
       </box>
     </box>
   );
@@ -89,9 +91,11 @@ export function TicketSidebar(props: TicketSidebarProps) {
 
 /** Empty state when no tickets exist */
 function EmptyState() {
+  const { theme } = useTheme();
+
   return (
     <box flexGrow={1} padding={1}>
-      <text fg={colors.text.dim}>No tickets</text>
+      <text fg={theme().text.dim}>No tickets</text>
     </box>
   );
 }

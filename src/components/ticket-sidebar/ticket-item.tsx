@@ -2,8 +2,8 @@
  * TicketItem component - A single clickable ticket row in the sidebar
  */
 
-import { createSignal } from "solid-js";
-import { colors, getStatusConfig } from "../../lib/theme/index.ts";
+import { useTheme, getStatusConfig } from "../../lib/theme/index.ts";
+import { useInteractive } from "../../hooks/index.ts";
 import type { Ticket } from "../../types/ticket.ts";
 
 export interface TicketItemProps {
@@ -28,22 +28,25 @@ export interface TicketItemProps {
  * />
  */
 export function TicketItem(props: TicketItemProps) {
-  const [isHovered, setIsHovered] = createSignal(false);
-  const statusConfig = () => getStatusConfig(props.ticket.status);
+  const { theme } = useTheme();
+  const { isHovered, interactiveProps } = useInteractive({
+    onPress: props.onSelect,
+  });
+  const statusConfig = () => getStatusConfig(props.ticket.status, theme());
 
   // Show highlight when selected or hovered
   const isHighlighted = () => props.isSelected || isHovered();
 
   // Background color: selected gets highlight, hovered gets subtle elevated bg
   const bgColor = () => {
-    if (props.isSelected) return colors.bg.highlight;
-    if (isHovered()) return colors.bg.elevated;
+    if (props.isSelected) return theme().bg.highlight;
+    if (isHovered()) return theme().bg.elevated;
     return undefined;
   };
 
   // Text color: brighter when highlighted
   const textColor = () =>
-    isHighlighted() ? colors.text.primary : colors.text.secondary;
+    isHighlighted() ? theme().text.primary : theme().text.secondary;
 
   return (
     <box>
@@ -52,9 +55,7 @@ export function TicketItem(props: TicketItemProps) {
         flexDirection="row"
         paddingX={2}
         backgroundColor={bgColor()}
-        onMouseDown={props.onSelect}
-        onMouseOver={() => setIsHovered(true)}
-        onMouseOut={() => setIsHovered(false)}
+        {...interactiveProps}
       >
         {/* Status indicator */}
         <text fg={statusConfig().color}>{statusConfig().indicator}</text>
@@ -67,7 +68,7 @@ export function TicketItem(props: TicketItemProps) {
       </box>
       {/* Divider */}
       <box height={1}>
-        <text fg={colors.border.dim}>
+        <text fg={theme().border.dim}>
           {"─".repeat(Math.max(0, props.width - 2))}
         </text>
       </box>

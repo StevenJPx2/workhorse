@@ -3,15 +3,19 @@
  */
 
 import { colors } from "./colors.ts";
+import type { Theme } from "./types.ts";
 
 /**
  * Get the color for a specific agent type
+ * @param agent - The agent name
+ * @param theme - Optional theme (defaults to base colors for backwards compatibility)
  */
-export function getAgentColor(agent: string): string {
+export function getAgentColor(agent: string, theme?: Theme): string {
+  const t = theme ?? colors;
   if (agent === "claude") {
-    return colors.agent.claude;
+    return t.agent.claude;
   }
-  return colors.agent.opencode;
+  return t.agent.opencode;
 }
 
 /**

@@ -4,7 +4,7 @@
  * Displays a ticket status with consistent styling
  */
 
-import { colors, spacing, getStatusConfig } from "../../lib/theme/index.ts";
+import { useTheme, spacing, getStatusConfig } from "../../lib/theme/index.ts";
 import type { TicketStatus } from "../../types/ticket.ts";
 
 export interface StatusBadgeProps {
@@ -30,7 +30,8 @@ export interface StatusBadgeProps {
  * <StatusBadge status="blocked" showLabel={false} />
  */
 export function StatusBadge(props: StatusBadgeProps) {
-  const config = () => getStatusConfig(props.status);
+  const { theme } = useTheme();
+  const config = () => getStatusConfig(props.status, theme());
   const showIndicator = () => props.showIndicator ?? true;
   const showLabel = () => props.showLabel ?? true;
   const compact = () => props.compact ?? false;

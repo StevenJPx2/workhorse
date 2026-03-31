@@ -6,7 +6,7 @@
 
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createSignal, type JSX, Show } from "solid-js";
-import { colors, spacing } from "../lib/theme/index.ts";
+import { spacing, useTheme } from "../lib/theme/index.ts";
 
 export interface LayoutProps {
   /** Current rig name (for display) */
@@ -23,6 +23,7 @@ export interface LayoutProps {
 
 export function Layout(props: LayoutProps) {
   const dimensions = useTerminalDimensions();
+  const { theme, themeName, toggleTheme } = useTheme();
   const [showHelp, setShowHelp] = createSignal(false);
 
   // Global keyboard shortcuts
@@ -35,6 +36,10 @@ export function Layout(props: LayoutProps) {
     }
     if (key.name === "escape") {
       setShowHelp(false);
+    }
+    // Theme toggle with 't'
+    if (key.name === "t" && !key.ctrl && !key.meta) {
+      toggleTheme();
     }
   });
 
@@ -55,7 +60,7 @@ export function Layout(props: LayoutProps) {
       width={dimensions().width}
       height={dimensions().height}
       flexDirection="column"
-      backgroundColor={colors.bg.shell}
+      backgroundColor={theme().bg.shell}
     >
       {/* Main Content Area - Horizontal layout with sidebar */}
       <box flexGrow={1} flexDirection="row">
@@ -63,7 +68,7 @@ export function Layout(props: LayoutProps) {
         {props.sidebar}
 
         {/* Main content - takes remaining space */}
-        <box flexGrow={1} flexDirection="column" backgroundColor={colors.bg.base}>
+        <box flexGrow={1} flexDirection="column" backgroundColor={theme().bg.base}>
           {props.children}
         </box>
       </box>
@@ -73,13 +78,15 @@ export function Layout(props: LayoutProps) {
         height={1}
         flexDirection="row"
         justifyContent="space-between"
-        backgroundColor={colors.bg.elevated}
+        backgroundColor={theme().bg.elevated}
         paddingLeft={spacing.sm}
         paddingRight={spacing.sm}
       >
-        <text fg={colors.text.dim}>No notifications</text>
-        <text fg={colors.text.secondary}>
-          {rigDisplay()} | [?] help | [q] quit
+        <text fg={theme().text.dim}>
+          Theme: {themeName()}
+        </text>
+        <text fg={theme().text.secondary}>
+          {rigDisplay()} | [t] theme | [?] help | [q] quit
         </text>
       </box>
 
@@ -97,9 +104,10 @@ interface HelpModalProps {
 
 function HelpModal(props: HelpModalProps) {
   const dimensions = useTerminalDimensions();
+  const { theme } = useTheme();
 
   const modalWidth = 50;
-  const modalHeight = 15;
+  const modalHeight = 16;
   const left = () => Math.floor((dimensions().width - modalWidth) / 2);
   const top = () => Math.floor((dimensions().height - modalHeight) / 2);
 
@@ -118,26 +126,27 @@ function HelpModal(props: HelpModalProps) {
       height={modalHeight}
       border={true}
       borderStyle="rounded"
-      borderColor={colors.primary}
-      backgroundColor={colors.bg.elevated}
+      borderColor={theme().primary}
+      backgroundColor={theme().bg.elevated}
       flexDirection="column"
       padding={spacing.sm}
     >
-      <text fg={colors.primary}>
+      <text fg={theme().primary}>
         <strong>Keyboard Shortcuts</strong>
       </text>
       <box height={1} />
-      <text fg={colors.text.primary}>  [+] or [n]  Add new ticket</text>
-      <text fg={colors.text.primary}>  [j] / [k]   Navigate tickets</text>
-      <text fg={colors.text.primary}>  [1-9]       Jump to ticket</text>
-      <text fg={colors.text.primary}>  [x]         Close current ticket</text>
-      <text fg={colors.text.primary}>  [o]         Open in Jira</text>
-      <text fg={colors.text.primary}>  [e]         Escalate / ask question</text>
-      <text fg={colors.text.primary}>  [a]         Switch agent</text>
-      <text fg={colors.text.primary}>  [?]         Toggle help</text>
-      <text fg={colors.text.primary}>  [q]         Quit</text>
+      <text fg={theme().text.primary}>  [+] or [n]  Add new ticket</text>
+      <text fg={theme().text.primary}>  [j] / [k]   Navigate tickets</text>
+      <text fg={theme().text.primary}>  [1-9]       Jump to ticket</text>
+      <text fg={theme().text.primary}>  [x]         Close current ticket</text>
+      <text fg={theme().text.primary}>  [o]         Open in Jira</text>
+      <text fg={theme().text.primary}>  [e]         Escalate / ask question</text>
+      <text fg={theme().text.primary}>  [a]         Switch agent</text>
+      <text fg={theme().text.primary}>  [t]         Toggle theme</text>
+      <text fg={theme().text.primary}>  [?]         Toggle help</text>
+      <text fg={theme().text.primary}>  [q]         Quit</text>
       <box flexGrow={1} />
-      <text fg={colors.text.dim}>Press any key to close</text>
+      <text fg={theme().text.dim}>Press any key to close</text>
     </box>
   );
 }

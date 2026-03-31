@@ -4,8 +4,8 @@
  * Supports filled/outline styles, icons, sizes, hover, and click handling.
  */
 
-import { createSignal } from "solid-js";
-import { colors } from "../../lib/theme/index.ts";
+import { useTheme } from "../../lib/theme/index.ts";
+import { useInteractive } from "../../hooks/index.ts";
 import { getVariantColor, getVariantBrightColor } from "./button-colors.ts";
 
 export interface ButtonProps {
@@ -62,41 +62,30 @@ export interface ButtonProps {
  * <Button label="Lg" size="lg" />  // extra padding
  */
 export function Button(props: ButtonProps) {
-  const [isHovered, setIsHovered] = createSignal(false);
+  const { theme } = useTheme();
+  const { isHighlighted: interactiveHighlighted, interactiveProps } =
+    useInteractive({
+      disabled: props.disabled,
+      onPress: props.onPress,
+    });
 
   const buttonColor = () => {
-    if (props.disabled) return colors.text.dim;
+    if (props.disabled) return theme().text.dim;
     if (props.color) return props.color;
-    return getVariantColor(props.variant);
+    return getVariantColor(props.variant, theme());
   };
 
   const buttonBrightColor = () => {
-    if (props.disabled) return colors.text.dim;
-    return getVariantBrightColor(props.variant);
-  };
-
-  const handlePress = () => {
-    if (!props.disabled && props.onPress) {
-      props.onPress();
-    }
-  };
-
-  const handleMouseOver = () => {
-    if (!props.disabled) {
-      setIsHovered(true);
-    }
-  };
-
-  const handleMouseOut = () => {
-    setIsHovered(false);
+    if (props.disabled) return theme().text.dim;
+    return getVariantBrightColor(props.variant, theme());
   };
 
   const iconPos = () => props.iconPosition ?? "left";
   const buttonStyle = () => props.style ?? "filled";
   const isFilled = () => buttonStyle() === "filled";
 
-  // Whether button is in highlighted state (focused or hovered)
-  const isHighlighted = () => props.focused || isHovered();
+  // Whether button is in highlighted state (focused, hovered, or prop)
+  const isHighlighted = () => props.focused || interactiveHighlighted();
 
   // Get horizontal padding based on size
   const paddingX = () => {
@@ -133,9 +122,9 @@ export function Button(props: ButtonProps) {
   // Text color based on style and state
   const textColor = () => {
     // Filled buttons always have light text
-    if (isFilled()) return colors.text.primary;
+    if (isFilled()) return theme().text.primary;
     // Outline buttons use variant color, brighter on hover
-    if (isHighlighted()) return colors.text.primary;
+    if (isHighlighted()) return theme().text.primary;
     return buttonColor();
   };
 
@@ -147,13 +136,13 @@ export function Button(props: ButtonProps) {
       return buttonColor();
     }
     // Outline: subtle background on hover only
-    if (isHighlighted()) return colors.bg.highlight;
+    if (isHighlighted()) return theme().bg.highlight;
     return undefined;
   };
 
   // Border color (outline style only)
   const borderColor = () => {
-    if (isHighlighted()) return colors.border.focus;
+    if (isHighlighted()) return theme().border.focus;
     return buttonColor();
   };
 
@@ -167,9 +156,7 @@ export function Button(props: ButtonProps) {
       borderColor={hasBorder() ? borderColor() : undefined}
       backgroundColor={bgColor()}
       paddingX={paddingX()}
-      onMouseDown={handlePress}
-      onMouseOver={handleMouseOver}
-      onMouseOut={handleMouseOut}
+      {...interactiveProps}
     >
       <text fg={textColor()}>{content()}</text>
     </box>

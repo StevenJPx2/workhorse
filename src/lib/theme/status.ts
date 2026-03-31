@@ -3,6 +3,7 @@
  */
 
 import { colors } from "./colors.ts";
+import type { Theme } from "./types.ts";
 
 export interface StatusConfig {
   color: string;
@@ -10,56 +11,72 @@ export interface StatusConfig {
   indicator: string;
 }
 
-export const statusConfig: Record<string, StatusConfig> = {
-  pending: {
-    color: colors.status.pending,
-    label: "PENDING",
-    indicator: "○",
-  },
-  queued: {
-    color: colors.status.queued,
-    label: "QUEUED",
-    indicator: "◎",
-  },
-  planning: {
-    color: colors.status.planning,
-    label: "PLANNING",
-    indicator: "◐",
-  },
-  implementing: {
-    color: colors.status.implementing,
-    label: "IMPLEMENTING",
-    indicator: "▶",
-  },
-  blocked: {
-    color: colors.status.blocked,
-    label: "BLOCKED",
-    indicator: "!",
-  },
-  pr_created: {
-    color: colors.status.pr_created,
-    label: "PR CREATED",
-    indicator: "⬆",
-  },
-  in_review: {
-    color: colors.status.in_review,
-    label: "IN REVIEW",
-    indicator: "◉",
-  },
-  done: {
-    color: colors.status.done,
-    label: "DONE",
-    indicator: "✓",
-  },
+/** Status indicator characters (theme-independent) */
+const STATUS_INDICATORS: Record<string, { label: string; indicator: string }> = {
+  pending: { label: "PENDING", indicator: "○" },
+  queued: { label: "QUEUED", indicator: "◎" },
+  planning: { label: "PLANNING", indicator: "◐" },
+  implementing: { label: "IMPLEMENTING", indicator: "▶" },
+  blocked: { label: "BLOCKED", indicator: "!" },
+  pr_created: { label: "PR CREATED", indicator: "⬆" },
+  in_review: { label: "IN REVIEW", indicator: "◉" },
+  done: { label: "DONE", indicator: "✓" },
 };
 
 /**
- * Get status configuration for a given status string
+ * Build status config using the current theme colors
  */
-export function getStatusConfig(status: string): StatusConfig {
+function buildStatusConfig(theme: Theme): Record<string, StatusConfig> {
+  return {
+    pending: {
+      color: theme.status.pending,
+      ...STATUS_INDICATORS.pending,
+    },
+    queued: {
+      color: theme.status.queued,
+      ...STATUS_INDICATORS.queued,
+    },
+    planning: {
+      color: theme.status.planning,
+      ...STATUS_INDICATORS.planning,
+    },
+    implementing: {
+      color: theme.status.implementing,
+      ...STATUS_INDICATORS.implementing,
+    },
+    blocked: {
+      color: theme.status.blocked,
+      ...STATUS_INDICATORS.blocked,
+    },
+    pr_created: {
+      color: theme.status.pr_created,
+      ...STATUS_INDICATORS.pr_created,
+    },
+    in_review: {
+      color: theme.status.in_review,
+      ...STATUS_INDICATORS.in_review,
+    },
+    done: {
+      color: theme.status.done,
+      ...STATUS_INDICATORS.done,
+    },
+  };
+}
+
+/** @deprecated Use getStatusConfig with theme parameter instead */
+export const statusConfig: Record<string, StatusConfig> = buildStatusConfig(colors);
+
+/**
+ * Get status configuration for a given status string
+ * @param status - The status string
+ * @param theme - Optional theme (defaults to base colors for backwards compatibility)
+ */
+export function getStatusConfig(status: string, theme?: Theme): StatusConfig {
+  const t = theme ?? colors;
+  const config = buildStatusConfig(t);
   return (
-    statusConfig[status] ?? {
-      color: colors.text.secondary,
+    config[status] ?? {
+      color: t.text.secondary,
       label: status.toUpperCase(),
       indicator: "?",
     }

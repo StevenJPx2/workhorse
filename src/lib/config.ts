@@ -15,6 +15,7 @@ import type {
   ConfigPaths,
   JiratownConfig,
   ResolvedConfig,
+  ThemeName,
 } from "../types/config.ts";
 import { getGitRoot } from "./detect-rig.ts";
 
@@ -27,6 +28,9 @@ const DEFAULT_CONFIG: ResolvedConfig = {
   },
   defaults: {
     agent: "opencode",
+  },
+  ui: {
+    theme: "default",
   },
 };
 
@@ -95,6 +99,9 @@ function mergeConfigs(
     defaults: {
       agent: overrides.defaults?.agent ?? base.defaults.agent,
     },
+    ui: {
+      theme: overrides.ui?.theme ?? base.ui.theme,
+    },
   };
 }
 
@@ -153,6 +160,14 @@ function configToToml(config: JiratownConfig): string {
     lines.push("");
   }
 
+  if (config.ui) {
+    lines.push("[ui]");
+    if (config.ui.theme) {
+      lines.push(`theme = "${config.ui.theme}"`);
+    }
+    lines.push("");
+  }
+
   return lines.join("\n");
 }
 
@@ -188,4 +203,16 @@ export async function saveProjectConfig(
   const configPath = join(gitRoot, ".jiratown.toml");
   const toml = configToToml(config);
   writeFileSync(configPath, toml, "utf-8");
+}
+
+/**
+ * Save theme preference to global config
+ */
+export async function saveTheme(themeName: ThemeName): Promise<void> {
+  const config = await loadConfig();
+  saveGlobalConfig({
+    jira: config.jira,
+    defaults: config.defaults,
+    ui: { theme: themeName },
+  });
 }

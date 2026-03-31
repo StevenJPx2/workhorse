@@ -3,6 +3,7 @@
  */
 
 export type AgentType = "opencode" | "claude";
+export type ThemeName = "default" | "gruvbox";
 
 export interface JiraConfig {
   cloud_id: string;
@@ -12,9 +13,14 @@ export interface DefaultsConfig {
   agent: AgentType;
 }
 
+export interface UiConfig {
+  theme: ThemeName;
+}
+
 export interface JiratownConfig {
   jira?: JiraConfig;
   defaults?: DefaultsConfig;
+  ui?: UiConfig;
 }
 
 /**
@@ -27,6 +33,9 @@ export interface ResolvedConfig {
   };
   defaults: {
     agent: AgentType;
+  };
+  ui: {
+    theme: ThemeName;
   };
 }
 

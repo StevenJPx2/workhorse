@@ -2,7 +2,7 @@
  * SidebarHeader component - Title bar with clickable [+] New button
  */
 
-import { colors } from "../../lib/theme/index.ts";
+import { useTheme } from "../../lib/theme/index.ts";
 import { Button, icons } from "../button/index.ts";
 
 export interface SidebarHeaderProps {
@@ -17,6 +17,8 @@ export interface SidebarHeaderProps {
  * <SidebarHeader onNew={() => openNewTicketModal()} />
  */
 export function SidebarHeader(props: SidebarHeaderProps) {
+  const { theme } = useTheme();
+
   return (
     <box
       height={3}
@@ -26,7 +28,7 @@ export function SidebarHeader(props: SidebarHeaderProps) {
       justifyContent="space-between"
     >
       {/* Title */}
-      <text fg={colors.text.secondary}>Tickets</text>
+      <text fg={theme().text.secondary}>Tickets</text>
 
       {/* New button */}
       <Button
