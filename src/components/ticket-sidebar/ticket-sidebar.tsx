@@ -2,7 +2,8 @@
  * TicketSidebar component - Main sidebar containing ticket list
  */
 
-import { For, Show } from "solid-js";
+import { type Accessor, For, Show } from "solid-js";
+import { useNavigation } from "../../lib/navigation-context.ts";
 import { useTheme } from "../../lib/theme/index.ts";
 import type { Ticket } from "../../types/ticket.ts";
 import { SidebarHeader } from "./sidebar-header.tsx";
@@ -10,8 +11,8 @@ import { TicketItem } from "./ticket-item.tsx";
 import { useTicketNavigation } from "./use-ticket-navigation.ts";
 
 export interface TicketSidebarProps {
-  /** List of tickets to display */
-  tickets: Ticket[];
+  /** Reactive accessor for tickets list */
+  tickets: Accessor<Ticket[]>;
   /** Currently selected ticket index */
   selectedIndex: number;
   /** Sidebar width in characters */
@@ -20,6 +21,8 @@ export interface TicketSidebarProps {
   onSelect: (index: number) => void;
   /** Callback when new ticket is requested */
   onNew: () => void;
+  /** Whether keyboard navigation is disabled (e.g., modal open) */
+  navigationDisabled?: () => boolean;
 }
 
 /**
@@ -35,13 +38,15 @@ export interface TicketSidebarProps {
  */
 export function TicketSidebar(props: TicketSidebarProps) {
   const { theme } = useTheme();
+  const navigation = useNavigation();
 
-  // Set up keyboard navigation
+  // Set up keyboard navigation (disabled when modals are open)
   useTicketNavigation({
-    ticketCount: () => props.tickets.length,
+    ticketCount: () => props.tickets().length,
     selectedIndex: () => props.selectedIndex,
     onSelect: props.onSelect,
     onNew: props.onNew,
+    disabled: () => props.navigationDisabled?.() ?? navigation.isLocked(),
   });
 
   return (
@@ -50,7 +55,7 @@ export function TicketSidebar(props: TicketSidebarProps) {
       flexDirection="column"
       backgroundColor={theme().bg.elevated}
       borderStyle="rounded"
-      borderColor={theme().border.dim}
+      borderColor={theme().bg.elevated}
     >
       {/* Header with title and new button */}
       <SidebarHeader onNew={props.onNew} />
@@ -62,10 +67,10 @@ export function TicketSidebar(props: TicketSidebarProps) {
         </text>
       </box>
 
-      {/* Ticket list */}
-      <Show when={props.tickets.length > 0} fallback={<EmptyState />}>
+      {/* Ticket list - using tickets() accessor for reactivity */}
+      <Show when={props.tickets().length > 0} fallback={<EmptyState />}>
         <box flexDirection="column">
-          <For each={props.tickets}>
+          <For each={props.tickets()}>
             {(ticket, index) => (
               <TicketItem
                 ticket={ticket}

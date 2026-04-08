@@ -21,8 +21,13 @@ export default defineCommand({
       description: "AI agent to use (opencode or claude)",
       alias: "a",
     },
+    offline: {
+      type: "boolean",
+      description: "Skip fetching from Jira (offline mode)",
+      default: false,
+    },
   },
   async run({ args }) {
-    await runAdd(args.ticket, { agent: args.agent });
+    await runAdd(args.ticket, { agent: args.agent, offline: args.offline });
   },
 });

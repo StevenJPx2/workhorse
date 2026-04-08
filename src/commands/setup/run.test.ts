@@ -78,6 +78,15 @@ mock.module("../../lib/db.ts", () => ({
   initDatabase: mockInitDatabase,
 }));
 
+// Mock atlassian auth
+const mockAuthenticateAtlassian = mock(() =>
+  Promise.resolve({ success: true })
+);
+
+mock.module("./atlassian-auth.ts", () => ({
+  authenticateAtlassian: mockAuthenticateAtlassian,
+}));
+
 // Now import the module under test
 import { runSetup } from "./run.ts";
 
@@ -104,6 +113,7 @@ describe("setup/run", () => {
     mockGetConfigPaths.mockClear();
     mockConfigExists.mockClear();
     mockInitDatabase.mockClear();
+    mockAuthenticateAtlassian.mockClear();
 
     // Default mock implementations
     mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
@@ -117,6 +127,9 @@ describe("setup/run", () => {
     mockEnsureConfigDir.mockImplementation(() => "/home/test/.jiratown");
     mockSaveGlobalConfig.mockImplementation(() => {});
     mockInitDatabase.mockImplementation(() => ({}));
+    mockAuthenticateAtlassian.mockImplementation(() =>
+      Promise.resolve({ success: true })
+    );
   });
 
   describe("runSetup", () => {
@@ -216,8 +229,8 @@ describe("setup/run", () => {
     it("should handle missing dependencies and user declining to continue", async () => {
       mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
         Promise.resolve({
-          available: [{ name: "Bun" }],
-          missing: [{ name: "Gas Town", installHint: "brew install gastown" }],
+          available: [],
+          missing: [{ name: "Bun", installHint: "https://bun.sh" }],
         })
       );
       mockConfirm.mockImplementation(() => Promise.resolve(false) as Promise<boolean | symbol>);
@@ -225,7 +238,7 @@ describe("setup/run", () => {
       await runSetup();
 
       expect(mockLog.warn).toHaveBeenCalledWith("\nMissing dependencies:");
-      expect(mockLog.message).toHaveBeenCalledWith("  - Gas Town: brew install gastown");
+      expect(mockLog.message).toHaveBeenCalledWith("  - Bun: https://bun.sh");
       expect(mockOutro).toHaveBeenCalledWith(
         "Setup cancelled. Please install missing dependencies and try again."
       );
@@ -234,15 +247,15 @@ describe("setup/run", () => {
     it("should handle missing dependencies without installHint", async () => {
       mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
         Promise.resolve({
-          available: [{ name: "Bun" }],
-          missing: [{ name: "Gas Town" }],
+          available: [],
+          missing: [{ name: "Bun" }],
         })
       );
       mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
 
       await runSetup();
 
-      expect(mockLog.message).toHaveBeenCalledWith("  - Gas Town");
+      expect(mockLog.message).toHaveBeenCalledWith("  - Bun");
       expect(mockOutro).toHaveBeenCalledWith(
         "Setup complete! Run 'jiratown' in any git repo to start."
       );
@@ -252,7 +265,7 @@ describe("setup/run", () => {
       mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
         Promise.resolve({
           available: [],
-          missing: [{ name: "Gas Town" }],
+          missing: [{ name: "Bun" }],
         })
       );
       mockConfirm.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>);
@@ -270,8 +283,8 @@ describe("setup/run", () => {
         Promise.resolve({
           available: [],
           missing: [
-            { name: "Gas Town" },
-            { name: "OpenCode" },
+            { name: "Bun" },
+            { name: "SomeDep" },
           ],
         })
       );
@@ -279,8 +292,8 @@ describe("setup/run", () => {
 
       await runSetup();
 
-      expect(mockLog.error).toHaveBeenCalledWith("Gas Town not found");
-      expect(mockLog.error).toHaveBeenCalledWith("OpenCode not found");
+      expect(mockLog.error).toHaveBeenCalledWith("Bun not found");
+      expect(mockLog.error).toHaveBeenCalledWith("SomeDep not found");
     });
 
     it("should verify spinner is used during save", async () => {

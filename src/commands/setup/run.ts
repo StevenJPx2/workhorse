@@ -11,7 +11,8 @@ import {
 } from "../../lib/config.ts";
 import { initDatabase } from "../../lib/db.ts";
 import type { AgentType, JiratownConfig } from "../../types/config.ts";
-import { checkAllDependencies, type Dependency } from "./dependencies.ts";
+import { checkAllDependencies } from "./dependencies.ts";
+import { authenticateAtlassian } from "./atlassian-auth.ts";
 
 /**
  * Run the setup flow
@@ -133,6 +134,32 @@ export async function runSetup(): Promise<void> {
     p.log.error(String(error));
     p.outro("Setup failed.");
     return;
+  }
+
+  // Authenticate with Atlassian MCP
+  const shouldAuth = await p.confirm({
+    message: "Connect to Jira now? (Opens browser for OAuth)",
+    initialValue: true,
+  });
+
+  if (!p.isCancel(shouldAuth) && shouldAuth) {
+    p.log.step("Opening browser for Atlassian authentication...");
+    p.log.message("Complete the OAuth flow in your browser.");
+
+    const authSpinner = p.spinner();
+    authSpinner.start("Waiting for authentication...");
+
+    const authResult = await authenticateAtlassian();
+
+    if (authResult.success) {
+      authSpinner.stop("Jira authentication successful!");
+    } else {
+      authSpinner.stop("Authentication skipped or failed");
+      if (authResult.error) {
+        p.log.warn(authResult.error);
+      }
+      p.log.message("You can authenticate later by running 'jiratown setup' again.");
+    }
   }
 
   p.outro("Setup complete! Run 'jiratown' in any git repo to start.");

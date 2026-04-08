@@ -21,14 +21,14 @@ export interface Ticket {
   summary: string | null;
   status: TicketStatus;
 
-  // Gas Town integration
-  bead_id: string | null;
+  // Worktree integration
   rig: string; // Git remote URL (e.g., "github.com/user/repo")
   worktree_path: string | null;
+  branch_name: string | null;
 
   // Agent config
   agent: AgentType;
-  polecat_id: string | null;
+  agent_pid: number | null;
 
   // PR tracking
   pr_url: string | null;

@@ -17,18 +17,6 @@ export const DEPENDENCIES: Dependency[] = [
     command: "bun",
     checkArgs: ["--version"],
   },
-  {
-    name: "Gas Town (gt)",
-    command: "gt",
-    checkArgs: ["--version"],
-    installHint: "Install from https://github.com/steveyegge/gastown",
-  },
-  {
-    name: "Beads (bd)",
-    command: "bd",
-    checkArgs: ["--version"],
-    installHint: "Install from https://github.com/steveyegge/beads",
-  },
 ];
 
 /**

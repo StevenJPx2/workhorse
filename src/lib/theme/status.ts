@@ -82,3 +82,47 @@ export function getStatusConfig(status: string, theme?: Theme): StatusConfig {
     }
   );
 }
+
+/**
+ * Agent state display configuration
+ */
+export interface AgentStateConfig {
+  color: string;
+  label: string;
+  indicator: string;
+}
+
+/** Agent state indicator characters */
+const AGENT_STATE_INDICATORS: Record<string, { label: string; indicator: string }> = {
+  idle: { label: "Idle", indicator: "○" },
+  starting: { label: "Starting", indicator: "◐" },
+  running: { label: "Running", indicator: "●" },
+  stopping: { label: "Stopping", indicator: "◑" },
+  stopped: { label: "Stopped", indicator: "◌" },
+  crashed: { label: "Crashed", indicator: "✗" },
+};
+
+/**
+ * Get agent state configuration for display
+ * @param state - Agent state string
+ * @param theme - Theme for colors
+ */
+export function getAgentStateConfig(state: string, theme?: Theme): AgentStateConfig {
+  const t = theme ?? colors;
+  const indicators = AGENT_STATE_INDICATORS[state] ?? { label: state, indicator: "?" };
+
+  // Map agent states to colors
+  const stateColors: Record<string, string> = {
+    idle: t.text.dim,
+    starting: t.status.queued,
+    running: t.status.implementing,
+    stopping: t.status.planning,
+    stopped: t.text.secondary,
+    crashed: t.status.blocked,
+  };
+
+  return {
+    color: stateColors[state] ?? t.text.secondary,
+    ...indicators,
+  };
+}

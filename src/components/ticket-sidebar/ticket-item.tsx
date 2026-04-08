@@ -48,6 +48,16 @@ export function TicketItem(props: TicketItemProps) {
   const textColor = () =>
     isHighlighted() ? theme().text.primary : theme().text.secondary;
 
+  // Truncate ID to fit: width - 2 (border) - 4 (paddingX*2) - 1 (indicator) - 1 (space)
+  const displayId = () => {
+    const maxLen = props.width - 8;
+    const id = props.ticket.id;
+    if (maxLen > 3 && id.length > maxLen) {
+      return id.slice(0, maxLen - 1) + "…";
+    }
+    return id;
+  };
+
   return (
     <box>
       <box
@@ -64,7 +74,7 @@ export function TicketItem(props: TicketItemProps) {
         <text> </text>
 
         {/* Ticket ID */}
-        <text fg={textColor()}>{props.ticket.id}</text>
+        <text fg={textColor()}>{displayId()}</text>
       </box>
       {/* Divider */}
       <box height={1}>

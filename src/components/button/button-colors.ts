@@ -37,7 +37,7 @@ export function getVariantBrightColor(
 ): string {
   switch (variant) {
     case "primary":
-      return theme.infoBright; // Use info bright since primary doesn't have a bright variant
+      return theme.primaryBright;
     case "success":
       return theme.successBright;
     case "warning":
@@ -46,5 +46,26 @@ export function getVariantBrightColor(
       return theme.errorBright;
     default:
       return theme.text.primary;
+  }
+}
+
+/**
+ * Get the dim/muted color for a button variant (unfocused state)
+ */
+export function getVariantDimColor(
+  variant: ButtonProps["variant"],
+  theme: Theme
+): string {
+  switch (variant) {
+    case "primary":
+      return theme.primaryDim;
+    case "success":
+      return theme.success;
+    case "warning":
+      return theme.warning;
+    case "danger":
+      return theme.error;
+    default:
+      return theme.text.dim;
   }
 }

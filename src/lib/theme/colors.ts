@@ -5,6 +5,7 @@
 export const colors = {
   // Primary brand colors
   primary: "#00BFFF", // Deep sky blue - main accent
+  primaryBright: "#40E0FF", // Brighter primary for hover
   primaryDim: "#0088BB", // Dimmed primary for borders
   secondary: "#9370DB", // Medium purple - secondary accent
 

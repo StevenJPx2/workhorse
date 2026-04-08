@@ -12,8 +12,6 @@ describe("dependencies", () => {
       
       const names = DEPENDENCIES.map((d) => d.name);
       expect(names).toContain("Bun");
-      expect(names).toContain("Gas Town (gt)");
-      expect(names).toContain("Beads (bd)");
     });
 
     it("should have valid dependency structure", () => {

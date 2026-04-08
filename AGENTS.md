@@ -74,7 +74,6 @@ bun test
 - `CONTEXT.md` - External dependency documentation
 - `src/lib/db.ts` - SQLite schema and queries
 - `src/lib/atlassian.ts` - MCP client for Jira
-- `src/hooks/useGasTown.ts` - Gas Town CLI integration
 
 ## Testing
 

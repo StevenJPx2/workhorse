@@ -12,7 +12,7 @@
 4. Keep Jira in sync with agent progress (comments, status transitions, PR links)
 5. Handle blocked states with non-blocking notifications
 
-Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orchestration.
+Uses native Jira MCP integration for seamless ticket management.
 
 ---
 
@@ -23,23 +23,22 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
 │                    Jiratown (OpenTUI + Solid.js)                │
 │  - Manages MCP client for Jira API                              │
 │  - SQLite for ticket state                                      │
-│  - Streams Gas Town events for real-time updates                │
+│  - Orchestrates agents via tmux sessions + git worktrees        │
 └─────────────────────────────────────────────────────────────────┘
                               │
               ┌───────────────┼───────────────┐
               ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐
-        │ Polecat  │   │ Polecat  │   │ Polecat  │
-        │ OpenCode │   │ Claude   │   │ OpenCode │
-        │ AM-123   │   │ AM-456   │   │ AR-789   │
-        └──────────┘   └──────────┘   └──────────┘
-              │               │               │
-              └───────────────┼───────────────┘
-                              ▼
-                    ┌──────────────────┐
-                    │    Gas Town      │
-                    │  (Orchestration) │
-                    └──────────────────┘
+   ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+   │ tmux: jiratown │ │ tmux: jiratown │ │ tmux: jiratown │
+   │      -AM-123   │ │      -AM-456   │ │      -AR-789   │
+   │ ┌────────────┐ │ │ ┌────────────┐ │ │ ┌────────────┐ │
+   │ │ worktree/  │ │ │ │ worktree/  │ │ │ │ worktree/  │ │
+   │ │  AM-123    │ │ │ │  AM-456    │ │ │ │  AR-789    │ │
+   │ │ ┌────────┐ │ │ │ │ ┌────────┐ │ │ │ │ ┌────────┐ │ │
+   │ │ │OpenCode│ │ │ │ │ │ Claude │ │ │ │ │ │OpenCode│ │ │
+   │ │ └────────┘ │ │ │ │ └────────┘ │ │ │ │ └────────┘ │ │
+   │ └────────────┘ │ │ └────────────┘ │ │ └────────────┘ │
+   └────────────────┘ └────────────────┘ └────────────────┘
 ```
 
 ### Core Components
@@ -51,7 +50,7 @@ Powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent orc
 | **Config**        | TOML                   | User preferences, Jira cloud ID            |
 | **CLI**           | citty + @clack/prompts | CLI framework and interactive prompts      |
 | **Jira API**      | Atlassian MCP          | Fetch tickets, post comments, transitions  |
-| **Orchestration** | Gas Town               | Multi-agent coordination, worktrees, beads |
+| **Orchestration** | tmux + git worktrees   | Isolated sessions and workspaces per ticket|
 | **Agents**        | OpenCode, Claude Code  | AI coding agents                           |
 
 ### Rig Detection
@@ -98,18 +97,19 @@ This means:
 │   5. User confirms / selects different agent                            │
 │                              │                                           │
 │                              ▼                                           │
-│   6. Dashboard creates Bead from Jira ticket                            │
-│      bd create "AM-123: Fix auth timeout" --labels jira:AM-123          │
+│   6. Dashboard creates git worktree for ticket                          │
+│      git worktree add ../worktrees/AM-123 -b feat/AM-123                │
 │                              │                                           │
 │                              ▼                                           │
-│   7. Dashboard spawns Gas Town polecat                                  │
-│      gt sling bd-xyz123 <rig> --agent opencode                          │
+│   7. Dashboard creates tmux session and spawns agent                    │
+│      tmux new-session -d -s jiratown-AM-123 -c ../worktrees/AM-123      │
+│      tmux send-keys -t jiratown-AM-123 'opencode' Enter                 │
 │                              │                                           │
 │                              ▼                                           │
-│   8. Gas Town creates worktree, starts agent session                    │
+│   8. Agent works on ticket in isolated worktree                         │
 │                              │                                           │
 │                              ▼                                           │
-│   9. Dashboard streams agent events via `gt feed --json`                │
+│   9. Dashboard monitors agent process and updates UI                    │
 │                              │                                           │
 │                              ▼                                           │
 │  10. Dashboard syncs progress back to Jira (comments, status)           │
@@ -122,12 +122,12 @@ This means:
                     ┌─────────────┐
                     │   PENDING   │ (Just entered ticket)
                     └──────┬──────┘
-                           │ Fetch Jira + Create Bead
+                           │ Fetch Jira details
                            ▼
                     ┌─────────────┐
-                    │   QUEUED    │ (Bead created, waiting for agent)
+                    │   QUEUED    │ (Ready for agent)
                     └──────┬──────┘
-                           │ gt sling (spawn polecat)
+                           │ Spawn agent in worktree
                            ▼
               ┌───▶┌─────────────┐
               │    │  PLANNING   │◀──────────────┐
@@ -246,14 +246,14 @@ CREATE TABLE tickets (
   summary TEXT,
   status TEXT DEFAULT 'pending',    -- pending|queued|planning|implementing|blocked|pr_created|in_review|done
 
-  -- Gas Town integration
-  bead_id TEXT,                     -- "bd-a1b2c3"
+  -- Worktree integration
   rig TEXT NOT NULL,                -- Git remote URL (e.g., "github.com/user/repo")
-  worktree_path TEXT,
+  worktree_path TEXT,               -- Path to git worktree
+  branch_name TEXT,                 -- Branch name (e.g., "feat/AM-123")
 
   -- Agent config
   agent TEXT DEFAULT 'opencode',    -- opencode|claude
-  polecat_id TEXT,
+  agent_pid INTEGER,                -- Process ID of running agent
 
   -- PR tracking
   pr_url TEXT,
@@ -299,7 +299,7 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 ││                   │                                                        │
 ││                   │ ┌─ Progress ──────────────────────────────────────────┐│
 ││                   │ │ ✓ Fetched Jira ticket                               ││
-││                   │ │ ✓ Created bead bd-x7k2m                             ││
+││                   │ │ ✓ Created worktree                                  ││
 ││                   │ │ ✓ Planning complete                                 ││
 ││                   │ │ ▶ Creating PR...                                    ││
 ││                   │ └─────────────────────────────────────────────────────┘│
@@ -439,14 +439,14 @@ The sidebar is clickable and supports keyboard navigation:
 | Action              | Command/API                             | Description               |
 | ------------------- | --------------------------------------- | ------------------------- |
 | **Fetch Jira**      | Atlassian MCP `getJiraIssue`            | Get ticket details        |
-| **Create Bead**     | `bd create`                             | Create Gas Town work item |
-| **Spawn Agent**     | `gt sling <bead> <rig>`                 | Start polecat on work     |
-| **Stream Events**   | `gt feed --json`                        | Real-time agent status    |
-| **Agent Status**    | `gt agents --json`                      | List active agents        |
+| **Create Worktree** | `git worktree add`                      | Create isolated workspace |
+| **Create Session**  | `tmux new-session -d -s jiratown-{id}`  | Create isolated tmux session |
+| **Spawn Agent**     | `tmux send-keys`                        | Start agent in tmux session |
+| **Monitor Agent**   | `tmux capture-pane` / process management| Track agent status        |
+| **Debug Agent**     | `tmux attach -t jiratown-{id}`          | Attach to agent session   |
 | **Update Jira**     | Atlassian MCP `addCommentToJiraIssue`   | Post progress             |
 | **Transition Jira** | Atlassian MCP `transitionJiraIssue`     | Change status             |
-| **Escalate**        | `gt escalate` + Jira comment            | Ask questions             |
-| **Done**            | `gt done`                               | Agent signals completion  |
+| **Escalate**        | Jira comment                            | Ask questions             |
 | **Fetch PR**        | GitHub MCP `get_pull_request`           | Get PR details            |
 | **Get Reviews**     | GitHub MCP `get_pull_request_reviews`   | Fetch review comments     |
 | **Reply to Review** | GitHub MCP `create_pull_request_review` | Post reply comments       |
@@ -555,14 +555,39 @@ jiratown/
 │   │   ├── use-tickets.ts          # Ticket CRUD operations
 │   │   ├── use-config.ts           # Config load/save
 │   │   ├── use-database.ts         # SQLite wrapper
-│   │   ├── use-gas-town.ts         # gt CLI wrapper
-│   │   ├── use-beads.ts            # bd CLI wrapper
+│   │   ├── use-agent.ts            # Agent spawning/management
 │   │   ├── use-atlassian.ts        # Jira MCP client
 │   │   ├── use-github.ts           # GitHub MCP client
 │   │   ├── use-agent-feed.ts       # Agent event stream
 │   │   ├── use-command-palette.ts  # Command search/execute
 │   │   ├── use-pr-review.ts        # PR review workflow
 │   │   └── use-escalation.ts       # Escalation workflow
+│   │
+│   ├── harness/                    # Agent orchestration infrastructure
+│   │   ├── notifications/          # Notification system
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   ├── notification-store.ts
+│   │   │   └── system-instruction.ts
+│   │   ├── mcp-server/             # Jiratown MCP server for agents
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   ├── server.ts
+│   │   │   └── tools/
+│   │   │       ├── index.ts
+│   │   │       ├── get-notifications.ts
+│   │   │       ├── acknowledge.ts
+│   │   │       ├── update-status.ts
+│   │   │       └── escalate.ts
+│   │   ├── session/                # Process & code isolation
+│   │   │   ├── index.ts
+│   │   │   ├── tmux.ts             # Tmux session management
+│   │   │   └── worktree.ts         # Git worktree management
+│   │   ├── pollers/                # Background monitoring (TODO)
+│   │   │   ├── jira-poller.ts
+│   │   │   └── github-poller.ts
+│   │   └── orchestrator/           # Agent lifecycle (TODO)
+│   │       └── orchestrator.ts
 │   │
 │   ├── lib/
 │   │   ├── theme/                  # Theme system
@@ -571,14 +596,23 @@ jiratown/
 │   │   │   ├── status.ts
 │   │   │   ├── presets.ts
 │   │   │   └── utils.ts
-│   │   ├── db.ts                   # SQLite init + migrations
+│   │   ├── db/                     # Database (refactored into folder)
+│   │   │   ├── index.ts
+│   │   │   ├── connection.ts
+│   │   │   ├── tickets.ts
+│   │   │   ├── ticket-updates.ts
+│   │   │   ├── events.ts
+│   │   │   └── migrations/
+│   │   │       ├── tickets.ts
+│   │   │       └── notifications.ts
+│   │   ├── db.ts                   # Re-exports from db/ for compatibility
 │   │   ├── config.ts               # TOML parsing + config merging
 │   │   └── detect-rig.ts           # Detect rig from git remote URL
 │   │
 │   └── types/
 │       ├── ticket.ts
 │       ├── config.ts
-│       └── gastown.ts              # Gas Town event types
+│       └── agent.ts                # Agent event types
 │
 └── README.md
 ```
@@ -622,8 +656,8 @@ Interface with external services and CLIs:
 
 | Hook | Purpose | Location |
 |------|---------|----------|
-| `useGasTown` | Gas Town CLI wrapper (`gt` commands) | `src/hooks/use-gas-town.ts` |
-| `useBeads` | Beads CLI wrapper (`bd` commands) | `src/hooks/use-beads.ts` |
+| `useTmux` | Tmux session management | `src/hooks/use-tmux.ts` |
+| `useAgent` | Agent spawning and management | `src/hooks/use-agent.ts` |
 | `useAtlassian` | Atlassian MCP client | `src/hooks/use-atlassian.ts` |
 | `useGitHub` | GitHub MCP client | `src/hooks/use-github.ts` |
 | `useAgentFeed` | Stream `gt feed --json` events | `src/hooks/use-agent-feed.ts` |
@@ -674,18 +708,18 @@ function TicketSidebar(props: TicketSidebarProps) {
 function useTicketWorkflow(ticketId: string) {
   const { theme } = useTheme();
   const { ticket, updateTicket } = useTickets();
-  const { sling, escalate } = useGasTown();
-  const { createBead } = useBeads();
+  const { spawn, stop } = useAgent();
+  const { createWorktree } = useWorktree();
   const { fetchIssue, addComment } = useAtlassian();
   
   const startWork = async () => {
     const jiraData = await fetchIssue(ticketId);
-    const bead = await createBead(jiraData);
-    await sling(bead.id);
+    const worktree = await createWorktree(ticketId, jiraData.key);
+    await spawn(ticketId, 'opencode', worktree.path);
     await updateTicket(ticketId, { status: 'implementing' });
   };
   
-  return { ticket, startWork, escalate };
+  return { ticket, startWork };
 }
 ```
 
@@ -770,8 +804,8 @@ src/hooks/
 ├── use-tickets.ts              # Ticket CRUD operations
 ├── use-config.ts               # Config load/save
 ├── use-database.ts             # SQLite wrapper
-├── use-gas-town.ts             # gt CLI wrapper
-├── use-beads.ts                # bd CLI wrapper
+├── use-tmux.ts                 # Tmux session management
+├── use-agent.ts                # Agent spawning/management (uses useTmux)
 ├── use-atlassian.ts            # Jira MCP client
 ├── use-github.ts               # GitHub MCP client
 ├── use-agent-feed.ts           # Agent event stream
@@ -789,7 +823,7 @@ src/hooks/
 - [x] Project scaffolding with OpenTUI + Solid.js
 - [x] CLI entry point with citty
 - [x] `jiratown setup` command (using @clack/prompts)
-  - [x] Check for Gas Town, Beads, Atlassian MCP, GitHub MCP
+  - [x] Check for required dependencies (Bun)
   - [x] Offer to install missing dependencies
   - [x] Collect Jira cloud ID
   - [x] Configure default agent
@@ -809,54 +843,88 @@ src/hooks/
   - [x] Add consistent typography and spacing
 - [x] Clickable sidebar with mouse support
 - [x] Keyboard navigation (j/k, arrows, 1-9, n/+)
-- [ ] Core UI hooks (foundation for all components)
+- [x] Core UI hooks (foundation for all components)
   - [x] `useInteractive` - Hover/press states with interactiveProps spread syntax
-  - [ ] `useModal` - Modal open/close state, escape to close, focus trap
-  - [ ] `useFocusZone` - Focus management within regions (sidebar, main, modals)
-  - [ ] `useSelection` - List selection state (single/multi-select, keyboard nav)
-  - [ ] `useHotkeys` - Register/unregister keyboard shortcuts by context
-- [ ] Core data hooks
-  - [ ] `useTickets` - Ticket CRUD operations wrapping SQLite
-  - [ ] `useConfig` - Reactive config load/save with persistence
-  - [ ] `useDatabase` - SQLite connection management and query helpers
-- [ ] Basic reusable components
-  - [ ] Modal component (for dialogs and overlays)
-  - [ ] TextInput component (for form fields)
-  - [ ] Select/RadioGroup component (for agent selection)
-  - [ ] Card component (for content containers)
-  - [ ] Divider component (for visual separation)
+  - [x] `useModal` - Modal open/close state, escape to close, focus trap
+  - [x] `useFocusZone` - Focus management within regions (sidebar, main, modals)
+  - [x] `useSelection` - List selection state (single/multi-select, keyboard nav)
+  - [x] `useHotkeys` - Register/unregister keyboard shortcuts by context
+- [x] Core data hooks
+  - [x] `useTickets` - Ticket CRUD operations wrapping SQLite
+  - [x] `useConfig` - Reactive config load/save with persistence
+  - [x] `useDatabase` - SQLite connection management and query helpers
+- [x] Basic reusable components
+  - [x] Modal component (for dialogs and overlays)
+  - [x] TextInput component (for form fields)
+  - [x] Select/RadioGroup component (for agent selection)
+  - [x] Card component (for content containers)
+  - [x] Divider component (for visual separation)
   - [x] Button component (for actions and form submissions)
-  - [ ] CommandPalette component (fuzzy search command launcher)
+  - [x] CommandPalette component (fuzzy search command launcher)
 
 ### Phase 2: Ticket Management (4-5 days)
 
-- [ ] `useAtlassian` hook (Atlassian MCP client)
-  - [ ] Connect via `mcp-remote` proxy to `https://mcp.atlassian.com/v1/mcp`
-  - [ ] Handle OAuth 2.1 authentication flow
-  - [ ] `fetchIssue(ticketId)` - Get ticket details
-  - [ ] `addComment(ticketId, comment)` - Post comment
-  - [ ] `transitionIssue(ticketId, status)` - Change status
-- [ ] Ticket input modal (TicketInput component using `useModal`)
-- [ ] TicketPane component (uses `useTickets` hook)
-- [ ] Integrate `useAtlassian` with `useTickets` for Jira sync
+- [x] `useAtlassian` hook (Atlassian MCP client)
+  - [x] Connect via `mcp-remote` proxy to `https://mcp.atlassian.com/v1/mcp`
+  - [x] Handle OAuth 2.1 authentication flow
+  - [x] `fetchIssue(ticketId)` - Get ticket details
+  - [x] `addComment(ticketId, comment)` - Post comment
+  - [x] `transitionIssue(ticketId, status)` - Change status
+- [x] Ticket input modal (TicketInput component using `useModal`)
+- [x] TicketPane component (uses `useTickets` hook)
+- [x] Integrate `useAtlassian` with `useTickets` for Jira sync
 
-### Phase 3: Gas Town Integration (4-5 days)
+### Phase 3: Agent Integration (4-5 days)
 
-- [ ] `useGasTown` hook (Gas Town CLI wrapper)
-  - [ ] `sling(beadId, rig, agent)` - Spawn polecat
-  - [ ] `listAgents()` - Get active agents (`gt agents --json`)
-  - [ ] `escalate(beadId, question)` - Post questions
-  - [ ] `markDone(beadId)` - Signal completion
-- [ ] `useBeads` hook (Beads CLI wrapper)
-  - [ ] `createBead(title, labels)` - Create bead from Jira ticket
-  - [ ] `updateBead(beadId, status)` - Update bead status
-  - [ ] `getBead(beadId)` - Get bead details
-- [ ] `useAgentFeed` hook (real-time event stream)
-  - [ ] Stream `gt feed --json` events
-  - [ ] Parse and dispatch events to appropriate handlers
-  - [ ] Auto-reconnect on disconnect
-- [ ] Agent status polling via `useGasTown.listAgents()`
-- [ ] Real-time UI updates from feed events
+#### Agent Harness (Core Infrastructure)
+- [x] Notification system (`src/harness/notifications/`)
+  - [x] Notification types (blocking, high, normal, low priorities)
+  - [x] Notification store (SQLite CRUD with deduplication by source_id)
+  - [x] System instruction generator (`<system-instruction>` blocks)
+- [x] Jiratown MCP Server (`src/harness/mcp-server/`)
+  - [x] `jiratown_get_notifications` - Get pending notifications + system instruction
+  - [x] `jiratown_acknowledge` - Mark notifications as handled
+  - [x] `jiratown_update_status` - Update ticket progress status
+  - [x] `jiratown_escalate` - Ask questions / request clarification
+  - [x] Tool registration with `@modelcontextprotocol/sdk`
+- [x] Session management (`src/harness/session/`)
+  - [x] Tmux session management (`tmux.ts`)
+    - [x] `createSession(ticketId)` - Create isolated tmux session
+    - [x] `killSession(ticketId)` - Kill tmux session
+    - [x] `listSessions()` - List active Jiratown sessions
+    - [x] `sendKeys(ticketId, keys)` - Send keystrokes to session
+    - [x] `capturePane(ticketId)` - Capture session output
+    - [x] Session naming: `jt-{ticketId}` (e.g., `jt-AM-123`)
+  - [x] Git worktree management (`worktree.ts`)
+    - [x] `createWorktree(ticketId, issueType)` - Create worktree for ticket
+    - [x] `removeWorktree(ticketId)` - Clean up worktree
+    - [x] `getWorktree(ticketId)` - Get worktree details
+    - [x] `listWorktrees()` - List all Jiratown worktrees
+    - [x] Branch naming by issue type (feat/, fix/, chore/)
+    - [x] Worktree path: `{repo}-worktrees/{ticketId}`
+- [x] Database migrations for notifications table
+- [x] Agent orchestrator (`src/harness/orchestrator/`)
+  - [x] Spawn agent with MCP config in worktree
+  - [x] Generate temporary agent config with Jiratown MCP
+  - [x] Coordinate tmux session + worktree lifecycle
+- [x] Background pollers (`src/harness/pollers/`)
+  - [x] Jira comment poller (detect new comments)
+  - [x] GitHub PR poller (detect reviews, comments)
+  - [x] Agent status poller (check tmux session health)
+
+#### UI Hooks (wrapping harness)
+- [x] `useTmux` hook (wraps `src/harness/session/tmux.ts`)
+- [x] `useAgent` hook (agent spawning and management)
+  - [x] `spawn(ticketId, agent, worktree)` - Spawn agent in tmux session
+  - [x] `stop(ticketId)` - Stop running agent and kill session
+  - [x] `listRunning()` - Get list of running agents
+  - [x] `getStatus(ticketId)` - Get agent status
+- [x] `useWorktree` hook (wraps `src/harness/session/worktree.ts`)
+- [x] Agent process management
+  - [x] Track spawned processes via tmux sessions
+  - [x] Handle process exit/errors
+  - [ ] Auto-restart on crash (optional)
+  - [x] Attach to session for debugging: `tmux attach -t jt-AM-123`
 
 ### Phase 4: Progress & Sync (3-4 days)
 
@@ -931,15 +999,6 @@ $ jiratown setup
 │
 ◇  Checking dependencies...
 │  ✓ Bun v1.3.x
-│  ✓ Gas Town (gt) v0.12.1
-│  ✓ Beads (bd) v0.62.0
-│  ✗ Atlassian MCP not found
-│
-◆  Install Atlassian MCP?
-│  ● Yes / ○ No
-│
-◇  Installing atlassian-mcp-server...
-│  ✓ Atlassian MCP installed
 │
 ◆  Jira cloud ID (e.g., yourcompany.atlassian.net):
 │  adeptmind.atlassian.net
@@ -960,9 +1019,7 @@ Note: Rigs are auto-detected from git remote URL - no manual configuration neede
 
 ## Future Enhancements
 
-1. **Gas Town Mayor Integration**: Let the Mayor orchestrate instead of direct polecat spawning
-2. **Convoy Support**: Bundle multiple tickets into a Gas Town convoy
-3. **Cost Tracking**: Show token/API usage per ticket
+1. **Cost Tracking**: Show token/API usage per ticket
 4. **Session Resume**: Resume dashboard state after restart
 5. **Multiple Jira Instances**: Support multiple Jira cloud IDs
 6. **Webhook Support**: Real-time Jira/GitHub updates via webhooks instead of polling
@@ -973,8 +1030,6 @@ Note: Rigs are auto-detected from git remote URL - no manual configuration neede
 
 ## Related Projects
 
-- [Gas Town](https://github.com/steveyegge/gastown) - Multi-agent workspace manager
-- [Beads](https://github.com/steveyegge/beads) - Git-backed issue tracker for agents
 - [OpenTUI](https://github.com/anomalyco/opentui) - Terminal UI library
 - [OpenCode](https://github.com/anomalyco/opencode) - AI coding agent
 - [Atlassian MCP Server](https://github.com/atlassian/atlassian-mcp-server) - Jira/Confluence API via MCP

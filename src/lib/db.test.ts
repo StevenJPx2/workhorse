@@ -173,10 +173,10 @@ describe("db", () => {
 
       updateTicket(id, {
         summary: "Updated summary",
-        bead_id: "bd-123",
         worktree_path: "/path/to/worktree",
+        branch_name: "feat/AM-123",
         agent: "claude",
-        polecat_id: "pc-456",
+        agent_pid: 12345,
         pr_url: "https://github.com/test/repo/pull/1",
         last_jira_sync: "2024-01-01T00:00:00Z",
         status: "done",
@@ -184,10 +184,10 @@ describe("db", () => {
 
       const ticket = getTicketById(id);
       expect(ticket!.summary).toBe("Updated summary");
-      expect(ticket!.bead_id).toBe("bd-123");
       expect(ticket!.worktree_path).toBe("/path/to/worktree");
+      expect(ticket!.branch_name).toBe("feat/AM-123");
       expect(ticket!.agent).toBe("claude");
-      expect(ticket!.polecat_id).toBe("pc-456");
+      expect(ticket!.agent_pid).toBe(12345);
       expect(ticket!.pr_url).toBe("https://github.com/test/repo/pull/1");
       expect(ticket!.last_jira_sync).toBe("2024-01-01T00:00:00Z");
       expect(ticket!.status).toBe("done");

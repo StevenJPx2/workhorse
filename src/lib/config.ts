@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: ResolvedConfig = {
     agent: "opencode",
   },
   ui: {
-    theme: "default",
+    theme: "tokyonight",
   },
 };
 

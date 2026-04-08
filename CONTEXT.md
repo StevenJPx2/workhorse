@@ -4,29 +4,9 @@ This document provides context for AI coding agents working on Jiratown.
 
 ## What is Jiratown?
 
-Jiratown is a terminal UI dashboard that orchestrates multiple AI coding agents (OpenCode, Claude Code) working on Jira tickets simultaneously. It's powered by Gas Town for multi-agent coordination.
+Jiratown is a terminal UI dashboard that orchestrates multiple AI coding agents (OpenCode, Claude Code) working on Jira tickets simultaneously.
 
 ## Key External Dependencies
-
-### Gas Town (https://github.com/steveyegge/gastown)
-- Multi-agent workspace manager
-- CLI: `gt`
-- Key commands used:
-  - `gt sling <bead-id> <rig>` - Spawn a polecat (agent) to work on a bead
-  - `gt agents --json` - List active agents
-  - `gt feed --json` - Stream real-time agent events
-  - `gt escalate` - Post blocking questions
-  - `gt done` - Signal work completion
-- OpenCode is a built-in agent preset (`--agent opencode`)
-- Claude Code is also supported (`--agent claude`)
-
-### Beads (https://github.com/steveyegge/beads)
-- Git-backed issue tracker for agents
-- CLI: `bd`
-- Key commands used:
-  - `bd create "Title" --labels jira:AM-123` - Create a work item
-  - `bd update <id> --claim` - Claim a task
-  - `bd show <id>` - Get task details
 
 ### OpenTUI (https://github.com/anomalyco/opentui)
 - Native terminal UI library (Zig core with TypeScript bindings)
@@ -120,19 +100,6 @@ const App = () => {
 }
 
 render(App)
-```
-
-### Gas Town Event Streaming
-```typescript
-const feed = Bun.spawn(["gt", "feed", "--json", "--rig", rigName])
-const reader = feed.stdout.getReader()
-
-while (true) {
-  const { done, value } = await reader.read()
-  if (done) break
-  const event = JSON.parse(new TextDecoder().decode(value))
-  // Handle event
-}
 ```
 
 ### Rig Detection from Git Remote

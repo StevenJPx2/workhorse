@@ -58,6 +58,7 @@ const gruvboxPalette = {
 export const gruvbox = {
   // Primary brand colors
   primary: gruvboxPalette.bright_aqua,
+  primaryBright: gruvboxPalette.light0,
   primaryDim: gruvboxPalette.neutral_aqua,
   secondary: gruvboxPalette.bright_purple,
 

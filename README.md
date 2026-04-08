@@ -2,7 +2,7 @@
 
 A terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets simultaneously.
 
-Built with [OpenTUI](https://github.com/anomalyco/opentui) + [Solid.js](https://solidjs.com), powered by [Gas Town](https://github.com/steveyegge/gastown) for multi-agent coordination.
+Built with [OpenTUI](https://github.com/anomalyco/opentui) + [Solid.js](https://solidjs.com).
 
 ## Features
 
@@ -16,8 +16,6 @@ Built with [OpenTUI](https://github.com/anomalyco/opentui) + [Solid.js](https://
 ## Prerequisites
 
 - [Bun](https://bun.sh) v1.3+
-- [Gas Town](https://github.com/steveyegge/gastown) (`gt` CLI)
-- [Beads](https://github.com/steveyegge/beads) (`bd` CLI)
 - [OpenCode](https://opencode.ai) and/or [Claude Code](https://claude.ai/code)
 
 ## Installation
@@ -105,14 +103,13 @@ Jiratown automatically detects the current repository from your git remote URL. 
 
 1. **Run in a git repo** → Jiratown auto-detects the repo from git remote
 2. **You enter a Jira ticket** → Jiratown fetches ticket details via Atlassian MCP
-3. **Creates a Bead** → Gas Town's work unit, linked to the Jira ticket
-4. **Spawns an agent** → OpenCode or Claude Code in an isolated git worktree
-5. **Streams progress** → Real-time updates as the agent works
-6. **Syncs to Jira** → Comments, status changes, PR links
-7. **Creates PR** → Agent pushes changes and opens a pull request via GitHub MCP
-8. **Handles reviews** → Agent drafts replies to reviewer comments, you approve/edit
-9. **Iterates on feedback** → Agent addresses change requests in combined commits
-10. **Completes** → PR merged, Jira ticket transitioned to Done
+3. **Spawns an agent** → OpenCode or Claude Code in an isolated git worktree
+4. **Streams progress** → Real-time updates as the agent works
+5. **Syncs to Jira** → Comments, status changes, PR links
+6. **Creates PR** → Agent pushes changes and opens a pull request via GitHub MCP
+7. **Handles reviews** → Agent drafts replies to reviewer comments, you approve/edit
+8. **Iterates on feedback** → Agent addresses change requests in combined commits
+9. **Completes** → PR merged, Jira ticket transitioned to Done
 
 ## PR Review Workflow
 
@@ -164,6 +161,38 @@ bun run build
 ## Architecture
 
 See [PLAN.md](./PLAN.md) for detailed architecture documentation.
+
+## API Integration
+
+### Atlassian MCP (Jira)
+
+Jiratown uses the [Atlassian Model Context Protocol (MCP)](https://mcp.atlassian.com) to interact with Jira. The MCP provides type-safe access to Jira issues without requiring manual API authentication setup.
+
+#### Configuration
+
+Your Jira cloud ID must be configured in `~/.jiratown/config.toml`:
+
+```toml
+[jira]
+cloud_id = "yourcompany.atlassian.net"  # Required
+```
+
+#### Troubleshooting
+
+**"Jira cloud ID is not configured"**
+- Run `jiratown setup` to configure your Jira instance
+- Or manually edit `~/.jiratown/config.toml`
+
+**"Failed to parse Jira response"**
+- Check that the issue key exists (e.g., `AM-123`)
+- Verify your cloud ID is correct
+- Ensure the MCP server is reachable
+
+**Connection issues**
+- The MCP client uses `npx mcp-remote` - ensure you have internet access
+- Check that `npx` is available in your PATH
+
+For detailed API documentation, see [src/hooks/use-atlassian/README.md](./src/hooks/use-atlassian/README.md).
 
 ## License
 

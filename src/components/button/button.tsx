@@ -1,12 +1,15 @@
 /**
  * Button component for Jiratown TUI
  *
- * Supports filled/outline styles, icons, sizes, hover, and click handling.
+ * Supports filled/ghost styles, icons, sizes, hover, and click handling.
  */
 
-import { useTheme } from "../../lib/theme/index.ts";
+import { useKeyboard } from "@opentui/solid";
+import { useContext } from "solid-js";
 import { useInteractive } from "../../hooks/index.ts";
-import { getVariantColor, getVariantBrightColor } from "./button-colors.ts";
+import { useTheme } from "../../lib/theme/index.ts";
+import { CellContext } from "../grid/index.ts";
+import { getVariantBrightColor, getVariantColor } from "./button-colors.ts";
 
 export interface ButtonProps {
   /** Button label text */
@@ -26,7 +29,7 @@ export interface ButtonProps {
   /** Icon position relative to label */
   iconPosition?: "left" | "right";
   /** Button style variant */
-  style?: "filled" | "outline";
+  style?: "filled" | "ghost";
   /** Button size */
   size?: "sm" | "md" | "lg";
   /** Click handler */
@@ -34,10 +37,10 @@ export interface ButtonProps {
 }
 
 /**
- * A button component with filled or outline styles
+ * A button component with filled or ghost styles
  *
  * Filled style: colored background with light text, no border
- * Outline style: transparent background with colored border/text
+ * Ghost style: transparent background with colored border/text
  *
  * @example
  * // Basic button
@@ -52,8 +55,8 @@ export interface ButtonProps {
  * <Button label="New" shortcut="+" variant="success" />
  *
  * @example
- * // Outline style (with border)
- * <Button label="Cancel" style="outline" />
+ * // Ghost style (with border)
+ * <Button label="Cancel" style="ghost" />
  *
  * @example
  * // Different sizes (affects padding)
@@ -63,6 +66,7 @@ export interface ButtonProps {
  */
 export function Button(props: ButtonProps) {
   const { theme } = useTheme();
+  const cell = useContext(CellContext);
   const { isHighlighted: interactiveHighlighted, interactiveProps } =
     useInteractive({
       disabled: props.disabled,
@@ -84,8 +88,29 @@ export function Button(props: ButtonProps) {
   const buttonStyle = () => props.style ?? "filled";
   const isFilled = () => buttonStyle() === "filled";
 
-  // Whether button is in highlighted state (focused, hovered, or prop)
-  const isHighlighted = () => props.focused || interactiveHighlighted();
+  // Whether button is in highlighted state (focused via prop, grid context, or hovered)
+  const isHighlighted = () => {
+    // Explicit prop takes precedence
+    if (props.focused) return true;
+    // Check grid cell context
+    if (cell?.isFocused()) return true;
+    // Fall back to interactive hover state
+    return interactiveHighlighted();
+  };
+
+  // Handle Enter key when button is focused in a grid cell
+  useKeyboard((key) => {
+    if (props.disabled) return;
+
+    // Only handle if we're focused in a grid cell (or via explicit prop)
+    const isFocused = props.focused || cell?.isFocused();
+    if (!isFocused) return;
+
+    // Activate on Enter
+    if (key.name === "return" || key.name === "enter") {
+      props.onPress?.();
+    }
+  });
 
   // Get horizontal padding based on size
   const paddingX = () => {
@@ -131,7 +156,7 @@ export function Button(props: ButtonProps) {
   // Background color based on style and state
   const bgColor = () => {
     if (isFilled()) {
-      // Filled: use brighter variant color on hover
+      // Filled: always show the variant color, brighter when highlighted
       if (isHighlighted()) return buttonBrightColor();
       return buttonColor();
     }
@@ -140,22 +165,14 @@ export function Button(props: ButtonProps) {
     return undefined;
   };
 
-  // Border color (outline style only)
-  const borderColor = () => {
-    if (isHighlighted()) return theme().border.focus;
-    return buttonColor();
-  };
-
-  // Filled buttons have no border, outline buttons do
-  const hasBorder = () => !isFilled();
-
+  // Filled buttons: no border, just background
+  // Outline buttons: border, no background (except on hover)
   return (
     <box
-      border={hasBorder()}
-      borderStyle="single"
-      borderColor={hasBorder() ? borderColor() : undefined}
       backgroundColor={bgColor()}
       paddingX={paddingX()}
+      alignItems="center"
+      justifyContent="center"
       {...interactiveProps}
     >
       <text fg={textColor()}>{content()}</text>

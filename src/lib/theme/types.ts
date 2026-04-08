@@ -9,6 +9,7 @@ type Color = string;
 export interface Theme {
   // Primary brand colors
   primary: Color;
+  primaryBright: Color;
   primaryDim: Color;
   secondary: Color;
 
@@ -66,4 +67,4 @@ export interface Theme {
 }
 
 // Available theme names
-export type ThemeName = "default" | "gruvbox";
+export type ThemeName = "tokyonight" | "gruvbox" | "default";

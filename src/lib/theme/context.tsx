@@ -32,7 +32,7 @@ export interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue>();
 
 // Available theme names in order for cycling
-const THEME_NAMES: ThemeName[] = ["default", "gruvbox"];
+const THEME_NAMES: ThemeName[] = ["tokyonight", "gruvbox", "default"];
 
 export interface ThemeProviderProps {
   /** Initial theme name (default: "default") */
@@ -55,7 +55,7 @@ export interface ThemeProviderProps {
  */
 export const ThemeProvider: ParentComponent<ThemeProviderProps> = (props) => {
   const [themeName, setThemeName] = createSignal<ThemeName>(
-    props.initialTheme ?? "default"
+    props.initialTheme ?? "tokyonight"
   );
 
   const theme = () => themes[themeName()];

@@ -4,6 +4,9 @@
 preload = ["@opentui/solid/preload"]
 
 [test]
+# Preload OpenTUI Solid plugin for JSX in tests
+preload = ["@opentui/solid/preload"]
+
 # Enable coverage by default
 coverage = true
 

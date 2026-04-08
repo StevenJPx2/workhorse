@@ -94,7 +94,7 @@ mock.module("../../lib/config.ts", () => ({
 }));
 
 // Mock db
-const mockInsertTicket = mock((ticket: { id: string; jira_key: string; rig: string; jira_url?: string; agent?: string }) => ({
+const mockInsertTicket = mock((ticket: { id: string; jira_key: string; rig: string; jira_url?: string; agent?: string; summary?: string }) => ({
   id: ticket.id,
   jira_key: ticket.jira_key,
   rig: ticket.rig,
@@ -105,10 +105,44 @@ const mockInsertTicket = mock((ticket: { id: string; jira_key: string; rig: stri
   updated_at: new Date().toISOString(),
 }));
 const mockGetTicketById = mock((_id: string): Ticket => null);
+const mockUpdateTicket = mock((_id: string, _updates: unknown) => {});
+const mockInitDatabase = mock(() => {});
 
 mock.module("../../lib/db.ts", () => ({
   insertTicket: mockInsertTicket,
   getTicketById: mockGetTicketById,
+  updateTicket: mockUpdateTicket,
+  initDatabase: mockInitDatabase,
+}));
+
+// Mock Atlassian client
+const mockJiraIssue = {
+  key: "TEST-123",
+  summary: "Test issue from Jira",
+  description: "Test description",
+  status: "Open",
+  priority: "High",
+  assignee: "John Doe",
+  reporter: "Jane Doe",
+  issueType: "Bug",
+  url: "https://test.atlassian.net/browse/TEST-123",
+  projectKey: "TEST",
+  created: "2024-01-01T00:00:00Z",
+  updated: "2024-01-02T00:00:00Z",
+};
+
+const mockConnect = mock(() => Promise.resolve());
+const mockDisconnect = mock(() => Promise.resolve());
+const mockFetchIssue = mock((_key: string) => Promise.resolve(mockJiraIssue));
+
+const mockCreateAtlassianClient = mock((_options: { cloudId: string }) => ({
+  connect: mockConnect,
+  disconnect: mockDisconnect,
+  fetchIssue: mockFetchIssue,
+}));
+
+mock.module("../../hooks/use-atlassian/index.ts", () => ({
+  createAtlassianClient: mockCreateAtlassianClient,
 }));
 
 // Now import the module under test
@@ -133,6 +167,12 @@ describe("add/run", () => {
     mockLoadConfig.mockClear();
     mockInsertTicket.mockClear();
     mockGetTicketById.mockClear();
+    mockUpdateTicket.mockClear();
+    mockInitDatabase.mockClear();
+    mockCreateAtlassianClient.mockClear();
+    mockConnect.mockClear();
+    mockDisconnect.mockClear();
+    mockFetchIssue.mockClear();
     
     // Reset insertTicket to default implementation
     mockInsertTicket.mockImplementation((ticket) => ({
@@ -144,6 +184,16 @@ describe("add/run", () => {
       status: "pending",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+    }));
+
+    // Reset Atlassian client mocks to default
+    mockConnect.mockImplementation(() => Promise.resolve());
+    mockDisconnect.mockImplementation(() => Promise.resolve());
+    mockFetchIssue.mockImplementation(() => Promise.resolve(mockJiraIssue));
+    mockCreateAtlassianClient.mockImplementation(() => ({
+      connect: mockConnect,
+      disconnect: mockDisconnect,
+      fetchIssue: mockFetchIssue,
     }));
 
     // Default mock implementations
@@ -204,31 +254,53 @@ describe("add/run", () => {
       );
     });
 
-    it("should add a new ticket successfully", async () => {
+    it("should add a new ticket successfully with Jira data", async () => {
       await runAdd("TEST-123", {});
 
+      expect(mockConnect).toHaveBeenCalled();
+      expect(mockFetchIssue).toHaveBeenCalledWith("TEST-123");
+      expect(mockDisconnect).toHaveBeenCalled();
+      expect(mockInsertTicket).toHaveBeenCalledWith({
+        id: "TEST-123",
+        jira_key: "TEST-123",
+        rig: "github.com/test/repo",
+        jira_url: "https://test.atlassian.net/browse/TEST-123",
+        summary: "Test issue from Jira",
+        agent: "opencode",
+      });
+
+      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith("Fetched: Test issue from Jira");
+      expect(mockLog.success).toHaveBeenCalledWith("Ticket: TEST-123");
+      expect(mockLog.message).toHaveBeenCalledWith("  Summary: Test issue from Jira");
+      expect(mockOutro).toHaveBeenCalledWith("Run 'jiratown' to view and manage tickets.");
+    });
+
+    it("should add ticket in offline mode without fetching from Jira", async () => {
+      await runAdd("TEST-123", { offline: true });
+
+      expect(mockConnect).not.toHaveBeenCalled();
+      expect(mockFetchIssue).not.toHaveBeenCalled();
       expect(mockInsertTicket).toHaveBeenCalledWith({
         id: "TEST-123",
         jira_key: "TEST-123",
         rig: "github.com/test/repo",
         jira_url: undefined,
+        summary: undefined,
         agent: "opencode",
       });
 
-      expect(mockSpinnerInstance.start).toHaveBeenCalledWith("Adding ticket TEST-123...");
-      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith("Added ticket TEST-123");
-      expect(mockLog.success).toHaveBeenCalledWith("Ticket: TEST-123");
       expect(mockOutro).toHaveBeenCalledWith("Run 'jiratown' to view and manage tickets.");
     });
 
-    it("should add ticket from URL with jira_url", async () => {
+    it("should add ticket from URL with Jira data", async () => {
       await runAdd("https://company.atlassian.net/browse/PROJ-456", {});
 
       expect(mockInsertTicket).toHaveBeenCalledWith({
         id: "PROJ-456",
         jira_key: "PROJ-456",
         rig: "github.com/test/repo",
-        jira_url: "https://company.atlassian.net/browse/PROJ-456",
+        jira_url: "https://test.atlassian.net/browse/TEST-123", // From mock Jira issue
+        summary: "Test issue from Jira",
         agent: "opencode",
       });
     });
@@ -286,7 +358,7 @@ describe("add/run", () => {
       expect(mockOutro).toHaveBeenCalledWith("Cancelled.");
     });
 
-    it("should handle existing ticket and user confirming update", async () => {
+    it("should update existing ticket with fresh Jira data when confirmed", async () => {
       mockGetTicketById.mockImplementation((): Ticket => ({
         id: "TEST-123",
         jira_key: "TEST-123",
@@ -298,8 +370,11 @@ describe("add/run", () => {
 
       await runAdd("TEST-123", {});
 
-      // For now, existing ticket just shows message (TODO in code)
-      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith("Ticket TEST-123 already exists");
+      expect(mockUpdateTicket).toHaveBeenCalledWith("TEST-123", expect.objectContaining({
+        summary: "Test issue from Jira",
+        agent: "opencode",
+      }));
+      expect(mockSpinnerInstance.stop).toHaveBeenCalledWith("Updated ticket TEST-123");
     });
 
     it("should display ticket URL when present", async () => {
@@ -314,11 +389,22 @@ describe("add/run", () => {
         updated_at: new Date().toISOString(),
       }));
 
-      await runAdd("https://test.atlassian.net/browse/URL-123", {});
+      await runAdd("URL-123", {});
 
       expect(mockLog.message).toHaveBeenCalledWith(
-        "  URL: https://test.atlassian.net/browse/URL-123"
+        "  URL: https://test.atlassian.net/browse/TEST-123"
       );
+    });
+
+    it("should handle Jira fetch failure gracefully and continue", async () => {
+      mockFetchIssue.mockImplementation(() => Promise.reject(new Error("Network error")));
+
+      await runAdd("FAIL-123", {});
+
+      expect(mockLog.warn).toHaveBeenCalledWith(expect.stringContaining("Could not fetch ticket from Jira"));
+      expect(mockLog.message).toHaveBeenCalledWith("Continuing with basic ticket info...");
+      // Still inserts ticket
+      expect(mockInsertTicket).toHaveBeenCalled();
     });
 
     it("should handle insertTicket error", async () => {
@@ -336,9 +422,11 @@ describe("add/run", () => {
       await runAdd("INFO-123", {});
 
       expect(mockLog.success).toHaveBeenCalledWith("Ticket: INFO-123");
+      expect(mockLog.message).toHaveBeenCalledWith("  Summary: Test issue from Jira");
+      expect(mockLog.message).toHaveBeenCalledWith("  Status: Open");
+      expect(mockLog.message).toHaveBeenCalledWith("  Type: Bug");
       expect(mockLog.message).toHaveBeenCalledWith("  Rig: github.com/test/repo");
       expect(mockLog.message).toHaveBeenCalledWith("  Agent: opencode");
-      expect(mockLog.message).toHaveBeenCalledWith("  Status: pending");
     });
 
     it("should use default agent from config", async () => {

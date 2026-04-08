@@ -4,223 +4,208 @@
  * Manages global state and renders the main layout
  */
 
-import { createSignal, createEffect } from "solid-js";
+import { createSignal, createEffect, Show } from "solid-js";
 import { useRenderer } from "@opentui/solid";
 import { Layout } from "./Layout.tsx";
+import { EmptyState } from "./empty-state.tsx";
+import { TicketSidebar, SIDEBAR_WIDTH } from "../components/ticket-sidebar/index.ts";
+import { TicketPane } from "../components/ticket-pane/index.ts";
+import { TicketInput } from "../components/ticket-input/index.ts";
+import { initDatabase } from "../lib/db.ts";
+import { detectRig, type RigInfo } from "../lib/detect-rig.ts";
+import { spacing, ThemeProvider, useTheme } from "../lib/theme/index.ts";
+import { NavigationProvider } from "../lib/navigation-provider.tsx";
+import { KeyboardProvider } from "../lib/keyboard-provider.tsx";
 import {
-  TicketSidebar,
-  SIDEBAR_WIDTH,
-} from "../components/ticket-sidebar/index.ts";
-import { getTicketsByRig, getAllTickets, initDatabase } from "../lib/db.ts";
-import { detectRig } from "../lib/detect-rig.ts";
-import { loadConfig, saveTheme } from "../lib/config.ts";
-import {
-  spacing,
-  getStatusConfig,
-  getAgentColor,
-  ThemeProvider,
-  useTheme,
-} from "../lib/theme/index.ts";
-import { ActionBar } from "../components/button/index.ts";
+  useTickets,
+  useSelection,
+  useConfig,
+  useAtlassian,
+  useTicketWorkflow,
+  useNotifications,
+} from "../hooks/index.ts";
+import type { ThemeName, AgentType } from "../types/config.ts";
 import type { Ticket } from "../types/ticket.ts";
-import type { ThemeName } from "../types/config.ts";
+import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
 
 export interface AppProps {
-  /** Show all tickets across all repositories */
   showAll?: boolean;
-  /** Initial theme from config */
   initialTheme?: ThemeName;
 }
 
 /**
- * Root App component wrapped with ThemeProvider
+ * Root App component wrapped with providers
  */
 export function App(props: AppProps) {
-  const [initialTheme, setInitialTheme] = createSignal<ThemeName>(
-    props.initialTheme ?? "default"
-  );
+  const [theme, setTheme] = createSignal<ThemeName>(props.initialTheme ?? "default");
+  const config = useConfig({ autoLoad: true });
 
-  // Load theme from config on mount
-  createEffect(async () => {
-    const config = await loadConfig();
-    setInitialTheme(config.ui.theme);
+  createEffect(() => {
+    const loaded = config.config();
+    if (loaded) setTheme(loaded.ui.theme);
   });
 
-  const handleThemeChange = (themeName: ThemeName) => {
-    // Persist theme to config (fire and forget)
-    saveTheme(themeName).catch(console.error);
-  };
-
   return (
-    <ThemeProvider
-      initialTheme={initialTheme()}
-      onThemeChange={handleThemeChange}
-    >
-      <AppContent showAll={props.showAll} />
+    <ThemeProvider initialTheme={theme()} onThemeChange={(t) => config.setTheme(t)}>
+      <NavigationProvider>
+        <KeyboardProvider>
+          <AppContent showAll={props.showAll} />
+        </KeyboardProvider>
+      </NavigationProvider>
     </ThemeProvider>
   );
 }
 
-interface AppContentProps {
-  showAll?: boolean;
-}
-
-/**
- * Main app content (inside ThemeProvider)
- */
-function AppContent(props: AppContentProps) {
+function AppContent(props: { showAll?: boolean }) {
   const renderer = useRenderer();
   const { theme } = useTheme();
-  const [rig, setRig] = createSignal<string | null>(null);
-  const [tickets, setTickets] = createSignal<Ticket[]>([]);
-  const [selectedIndex, setSelectedIndex] = createSignal(0);
+  const [rigInfo, setRigInfo] = createSignal<RigInfo | null>(null);
   const [loading, setLoading] = createSignal(true);
+  const [showTicketInput, setShowTicketInput] = createSignal(false);
 
-  // Initialize on mount
+  const config = useConfig({ autoLoad: true });
+  const cloudId = () => config.config()?.jira.cloud_id;
+  const rig = () => rigInfo()?.rig ?? undefined;
+  const gitRoot = () => rigInfo()?.gitRoot;
+
+  // Pass cloudId as a getter so it resolves lazily after config loads
+  const atlassian = useAtlassian({ cloudId, autoConnect: false });
+  const tickets = useTickets({ rig, autoLoad: false });
+  const selection = useSelection({ items: tickets.tickets, wrap: true, initialIndex: 0 });
+
+  const workflow = useTicketWorkflow({
+    repoPath: gitRoot,
+    jiraCloudId: cloudId,
+    onError: (err) => console.error("Workflow error:", err),
+  });
+
+  // Notifications for the current ticket
+  const notifications = useNotifications({
+    ticketId: () => currentTicket()?.id,
+    autoLoad: true,
+    pollInterval: 5000, // Poll every 5 seconds
+  });
+
   createEffect(async () => {
     try {
-      // Initialize database
       initDatabase();
-
-      // Detect current rig
-      const rigInfo = await detectRig();
-      if (rigInfo) {
-        setRig(rigInfo.rig);
-      }
-
-      // Load tickets
-      if (props.showAll) {
-        setTickets(getAllTickets());
-      } else if (rigInfo) {
-        setTickets(getTicketsByRig(rigInfo.rig));
-      }
+      const info = await detectRig();
+      if (info) setRigInfo(info);
+      tickets.reload();
     } finally {
       setLoading(false);
     }
   });
 
-  const handleQuit = () => {
-    renderer.destroy();
+  // Global shortcuts are handled in Layout.tsx
+
+  const currentTicket = () => selection.selectedItem();
+
+  const handleTicketSubmit = async (key: string, agent: AgentType, issue: JiraIssue) => {
+    const rigValue = rig();
+    if (!rigValue) {
+      console.error("Cannot add ticket: no rig detected");
+      return;
+    }
+
+    // Create ticket first (this updates the sidebar immediately)
+    const ticket = tickets.create({
+      jiraKey: key,
+      rig: rigValue,
+      jiraUrl: issue.url,
+      summary: issue.summary,
+      agent,
+    });
+
+    // Then start the workflow (spawns agent, creates worktree)
+    await workflow.startWork({ ticketId: ticket.id, agent, jiraIssue: issue });
+
+    // Reload to get updated ticket state from workflow
+    tickets.reload();
   };
 
-  const handleSelect = (index: number) => {
-    setSelectedIndex(index);
-  };
-
-  const handleNewTicket = () => {
-    // TODO: Show new ticket modal
-    console.log("New ticket requested");
-  };
-
-  const currentTicket = () => {
-    const t = tickets();
-    const idx = selectedIndex();
-    return t[idx] ?? null;
+  const handleSendMessage = async (message: string) => {
+    const ticket = currentTicket();
+    if (ticket) await workflow.sendToAgent(ticket.id, message);
   };
 
   return (
     <Layout
-      rig={rig()}
+      rig={rig() ?? null}
       showAll={props.showAll ?? false}
-      onQuit={handleQuit}
+      notifications={notifications.notifications()}
+      unreadCount={notifications.unreadCount()}
+      hasBlocking={notifications.hasBlocking()}
+      onQuit={() => renderer.destroy()}
+      onAddTicket={() => setShowTicketInput(true)}
+      onCloseTicket={() => {
+        const ticket = currentTicket();
+        if (!ticket) return;
+        const idx = selection.selectedIndex();
+        tickets.remove(ticket.id);
+        // Adjust selection after removal
+        const remaining = tickets.tickets().length;
+        if (remaining === 0) {
+          selection.clear();
+        } else if (idx >= remaining) {
+          selection.select(remaining - 1);
+        }
+      }}
+      onOpenInJira={() => {
+        const url = currentTicket()?.jira_url;
+        if (url) console.log("Opening Jira:", url);
+      }}
+      onEscalate={() => console.log("Escalate", currentTicket()?.id)}
+      onSwitchAgent={() => {
+        const t = currentTicket();
+        if (t) {
+          const newAgent = t.agent === "opencode" ? "claude" : "opencode";
+          tickets.update(t.id, { agent: newAgent });
+        }
+      }}
       sidebar={
         <TicketSidebar
-          tickets={tickets()}
-          selectedIndex={selectedIndex()}
+          tickets={tickets.tickets}
+          selectedIndex={selection.selectedIndex()}
           width={SIDEBAR_WIDTH}
-          onSelect={handleSelect}
-          onNew={handleNewTicket}
+          onSelect={(i) => selection.select(i)}
+          onNew={() => setShowTicketInput(true)}
+        />
+      }
+      overlays={
+        <TicketInput
+          isOpen={showTicketInput()}
+          onClose={() => setShowTicketInput(false)}
+          onSubmit={handleTicketSubmit}
+          fetchIssue={atlassian.fetchIssue}
+          defaultAgent={config.config()?.defaults.agent}
         />
       }
     >
-      {/* Main content area */}
       <box flexGrow={1} padding={spacing.sm}>
-        {loading() ? (
+        <Show when={loading()}>
           <text fg={theme().text.dim}>Loading...</text>
-        ) : currentTicket() ? (
-          <TicketView ticket={currentTicket()!} />
-        ) : (
-          <EmptyState showAll={props.showAll ?? false} rig={rig()} />
-        )}
+        </Show>
+        <Show when={!loading() && currentTicket()} keyed>
+          {(ticket: Ticket) => (
+            <TicketPane
+              ticket={ticket}
+              agentState={workflow.getAgentState(ticket.id)}
+              events={[]}
+              onEscalate={() => console.log("Escalate", ticket.id)}
+              onSwitchAgent={(agent) => tickets.update(ticket.id, { agent })}
+              onOpenJira={() => {
+                if (ticket.jira_url) console.log("Opening", ticket.jira_url);
+              }}
+              onClose={() => tickets.remove(ticket.id)}
+              onSendMessage={handleSendMessage}
+            />
+          )}
+        </Show>
+        <Show when={!loading() && !currentTicket()}>
+          <EmptyState showAll={props.showAll ?? false} rig={rig() ?? null} />
+        </Show>
       </box>
     </Layout>
-  );
-}
-
-interface TicketViewProps {
-  ticket: Ticket;
-}
-
-function TicketView(props: TicketViewProps) {
-  const { theme } = useTheme();
-  const statusConfig = () => getStatusConfig(props.ticket.status, theme());
-  const agentColor = () => getAgentColor(props.ticket.agent, theme());
-
-  return (
-    <box flexDirection="column" gap={spacing.sm} flexGrow={1}>
-      {/* Ticket header */}
-      <text fg={theme().text.primary}>
-        <strong>
-          {props.ticket.id}: {props.ticket.summary ?? "No summary"}
-        </strong>
-      </text>
-
-      {/* Status and agent info */}
-      <box flexDirection="row" gap={spacing.lg}>
-        <box flexDirection="row">
-          <text fg={theme().text.secondary}>Status: </text>
-          <text fg={statusConfig().color}>
-            {statusConfig().indicator} {statusConfig().label}
-          </text>
-        </box>
-        <box flexDirection="row">
-          <text fg={theme().text.secondary}>Agent: </text>
-          <text fg={agentColor()}>{props.ticket.agent}</text>
-        </box>
-      </box>
-
-      {/* Spacer */}
-      <box flexGrow={1} />
-
-      {/* Actions hint */}
-      <ActionBar
-        actions={[
-          { key: "e", action: "escalate" },
-          { key: "a", action: "switch agent" },
-          { key: "j", action: "open jira" },
-          { key: "x", action: "close" },
-        ]}
-      />
-    </box>
-  );
-}
-
-interface EmptyStateProps {
-  showAll: boolean;
-  rig: string | null;
-}
-
-function EmptyState(props: EmptyStateProps) {
-  const { theme } = useTheme();
-
-  return (
-    <box
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      flexGrow={1}
-    >
-      <text fg={theme().text.secondary}>No tickets</text>
-      <box height={1} />
-      <text fg={theme().text.dim}>Press [+] or [n] to add a ticket</text>
-      {!props.showAll && props.rig && (
-        <>
-          <box height={1} />
-          <text fg={theme().text.dim}>
-            <em>Showing tickets for: {props.rig}</em>
-          </text>
-        </>
-      )}
-    </box>
   );
 }

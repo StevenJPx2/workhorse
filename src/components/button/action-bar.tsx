@@ -52,7 +52,7 @@ export function ActionBar(props: ActionBarProps) {
   return (
     <ButtonGroup
       buttons={buttons()}
-      style="outline"
+      style="ghost"
       size={props.size ?? "sm"}
       gap={1}
       align={props.align ?? "right"}

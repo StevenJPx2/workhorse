@@ -3,7 +3,7 @@
  */
 
 export type AgentType = "opencode" | "claude";
-export type ThemeName = "default" | "gruvbox";
+export type ThemeName = "tokyonight" | "gruvbox" | "default";
 
 export interface JiraConfig {
   cloud_id: string;

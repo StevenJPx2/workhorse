@@ -1,16 +1,29 @@
 /**
  * Add command runner
+ *
+ * Fetches ticket details from Jira via Atlassian MCP and adds to local DB.
  */
 
 import * as p from "@clack/prompts";
 import { detectRig } from "../../lib/detect-rig.ts";
 import { loadConfig, configExists } from "../../lib/config.ts";
-import { insertTicket, getTicketById } from "../../lib/db.ts";
+import {
+  insertTicket,
+  getTicketById,
+  updateTicket,
+  initDatabase,
+} from "../../lib/db.ts";
 import type { AgentType } from "../../types/config.ts";
 import { parseTicketKey, isValidTicketKey } from "./parse-ticket.ts";
+import {
+  createAtlassianClient,
+  type JiraIssue,
+} from "../../hooks/use-atlassian/index.ts";
 
 export interface AddOptions {
   agent?: string;
+  /** Skip fetching from Jira (offline mode) */
+  offline?: boolean;
 }
 
 /**
@@ -68,29 +81,63 @@ export async function runAdd(ticket: string, options: AddOptions): Promise<void>
     process.exit(1);
   }
 
-  // Insert or update ticket
+  // Initialize database
+  initDatabase();
+
+  // Fetch ticket details from Jira
+  let jiraIssue: JiraIssue | null = null;
   const spinner = p.spinner();
-  spinner.start(`Adding ticket ${ticketKey}...`);
+
+  if (!options.offline) {
+    spinner.start(`Fetching ${ticketKey} from Jira...`);
+
+    try {
+      const client = createAtlassianClient({ cloudId: config.jira.cloud_id });
+      await client.connect();
+      jiraIssue = await client.fetchIssue(ticketKey);
+      await client.disconnect();
+      spinner.stop(`Fetched: ${jiraIssue.summary}`);
+    } catch (error) {
+      spinner.stop("Failed to fetch from Jira");
+      const message = error instanceof Error ? error.message : String(error);
+      p.log.warn(`Could not fetch ticket from Jira: ${message}`);
+      p.log.message("Continuing with basic ticket info...");
+    }
+  }
+
+  // Insert or update ticket
+  spinner.start(existing ? `Updating ticket ${ticketKey}...` : `Adding ticket ${ticketKey}...`);
 
   try {
     if (existing) {
-      // TODO: Update existing ticket
-      spinner.stop(`Ticket ${ticketKey} already exists`);
+      // Update existing ticket with fresh Jira data
+      updateTicket(ticketKey, {
+        summary: jiraIssue?.summary ?? existing.summary,
+        jira_url: jiraIssue?.url ?? ticketUrl ?? existing.jira_url,
+        agent,
+        last_jira_sync: jiraIssue ? new Date().toISOString() : existing.last_jira_sync,
+      });
+      spinner.stop(`Updated ticket ${ticketKey}`);
     } else {
       const newTicket = insertTicket({
         id: ticketKey,
         jira_key: ticketKey,
         rig: rigInfo.rig,
-        jira_url: ticketUrl,
+        jira_url: jiraIssue?.url ?? ticketUrl,
+        summary: jiraIssue?.summary,
         agent,
       });
 
       spinner.stop(`Added ticket ${ticketKey}`);
 
       p.log.success(`Ticket: ${newTicket.id}`);
+      if (jiraIssue) {
+        p.log.message(`  Summary: ${jiraIssue.summary}`);
+        p.log.message(`  Status: ${jiraIssue.status}`);
+        p.log.message(`  Type: ${jiraIssue.issueType}`);
+      }
       p.log.message(`  Rig: ${newTicket.rig}`);
       p.log.message(`  Agent: ${newTicket.agent}`);
-      p.log.message(`  Status: ${newTicket.status}`);
       if (newTicket.jira_url) {
         p.log.message(`  URL: ${newTicket.jira_url}`);
       }

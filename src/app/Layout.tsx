@@ -5,8 +5,15 @@
  */
 
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
-import { createSignal, type JSX, Show } from "solid-js";
+import { createMemo, type JSX, Show } from "solid-js";
+import { CommandPalette } from "../components/command-palette/index.ts";
+import { Dialog } from "../components/dialog/index.ts";
+import { NotificationBar } from "../components/notification-bar/index.ts";
+import { useCommandPalette, useModal } from "../hooks/index.ts";
+import type { Notification } from "../hooks/index.ts";
+import { useKeyboardContext } from "../lib/keyboard-context.ts";
 import { spacing, useTheme } from "../lib/theme/index.ts";
+import { createCommands } from "./commands.ts";
 
 export interface LayoutProps {
   /** Current rig name (for display) */
@@ -17,29 +24,121 @@ export interface LayoutProps {
   sidebar?: JSX.Element;
   /** Main content area */
   children?: JSX.Element;
+  /** Modal/dialog overlays */
+  overlays?: JSX.Element;
+  /** Notifications to display in footer */
+  notifications?: Notification[];
+  /** Number of unread notifications */
+  unreadCount?: number;
+  /** Whether there are blocking notifications */
+  hasBlocking?: boolean;
   /** Callback when quit is requested */
   onQuit?: () => void;
+  /** Callback to show add ticket modal */
+  onAddTicket?: () => void;
+  /** Callback to close current ticket */
+  onCloseTicket?: () => void;
+  /** Callback to open in Jira */
+  onOpenInJira?: () => void;
+  /** Callback to escalate */
+  onEscalate?: () => void;
+  /** Callback to switch agent */
+  onSwitchAgent?: () => void;
 }
 
 export function Layout(props: LayoutProps) {
   const dimensions = useTerminalDimensions();
-  const { theme, themeName, toggleTheme } = useTheme();
-  const [showHelp, setShowHelp] = createSignal(false);
+  const { theme, themeName, setTheme } = useTheme();
+  const keyboard = useKeyboardContext();
+
+  // Use useModal hook for help dialog state
+  const helpModal = useModal();
+
+  // Command actions
+  const commandActions = {
+    addTicket: () => {
+      props.onAddTicket?.();
+    },
+    closeTicket: () => {
+      props.onCloseTicket?.();
+    },
+    openInJira: () => {
+      props.onOpenInJira?.();
+    },
+    escalate: () => {
+      props.onEscalate?.();
+    },
+    switchAgent: () => {
+      props.onSwitchAgent?.();
+    },
+    toggleHelp: () => helpModal.toggle(),
+    quit: () => props.onQuit?.(),
+    setTheme: setTheme,
+    currentTheme: themeName,
+  };
+
+  // Create commands list
+  const commands = createMemo(() => createCommands(commandActions));
+
+  // Command palette state
+  const palette = useCommandPalette({
+    commands: commands(),
+  });
 
   // Global keyboard shortcuts
   useKeyboard((key) => {
+    // Don't process shortcuts when in input mode
+    if (keyboard.isInputMode()) return;
+
+    // Don't process shortcuts when palette is open
+    if (palette.isOpen()) return;
+
+    // Don't process shortcuts when help modal is open
+    if (helpModal.isOpen()) return;
+
+    // Ticket actions
+    if (key.name === "n" || key.name === "+") {
+      props.onAddTicket?.();
+    }
+    if (key.name === "x") {
+      props.onCloseTicket?.();
+    }
+    if (key.name === "o") {
+      props.onOpenInJira?.();
+    }
+    if (key.name === "e") {
+      props.onEscalate?.();
+    }
+    if (key.name === "a") {
+      props.onSwitchAgent?.();
+    }
+
+    // Theme toggle (cycle through themes)
+    if (key.name === "t") {
+      const themeOrder: Array<"tokyonight" | "gruvbox" | "default"> = [
+        "tokyonight",
+        "gruvbox",
+        "default",
+      ];
+      const current = themeName();
+      const currentIndex = themeOrder.indexOf(current);
+      const nextIndex = (currentIndex + 1) % themeOrder.length;
+      setTheme(themeOrder[nextIndex]);
+    }
+
+    // App actions
     if (key.name === "q" && !key.ctrl && !key.meta) {
       props.onQuit?.();
     }
     if (key.name === "?" || (key.name === "/" && key.shift)) {
-      setShowHelp((prev) => !prev);
+      helpModal.toggle();
     }
     if (key.name === "escape") {
-      setShowHelp(false);
+      helpModal.close();
     }
-    // Theme toggle with 't'
-    if (key.name === "t" && !key.ctrl && !key.meta) {
-      toggleTheme();
+    // Vim-style command palette trigger
+    if (key.name === ":" || key.name === ";") {
+      palette.open();
     }
   });
 
@@ -68,7 +167,11 @@ export function Layout(props: LayoutProps) {
         {props.sidebar}
 
         {/* Main content - takes remaining space */}
-        <box flexGrow={1} flexDirection="column" backgroundColor={theme().bg.base}>
+        <box
+          flexGrow={1}
+          flexDirection="column"
+          backgroundColor={theme().bg.base}
+        >
           {props.children}
         </box>
       </box>
@@ -82,71 +185,77 @@ export function Layout(props: LayoutProps) {
         paddingLeft={spacing.sm}
         paddingRight={spacing.sm}
       >
-        <text fg={theme().text.dim}>
-          Theme: {themeName()}
-        </text>
+        <NotificationBar
+          notifications={props.notifications ?? []}
+          unreadCount={props.unreadCount ?? 0}
+          hasBlocking={props.hasBlocking ?? false}
+        />
         <text fg={theme().text.secondary}>
-          {rigDisplay()} | [t] theme | [?] help | [q] quit
+          {rigDisplay()} | [:] commands | [?] help | [q] quit
         </text>
       </box>
 
       {/* Help Modal */}
-      <Show when={showHelp()}>
-        <HelpModal onClose={() => setShowHelp(false)} />
+      <Show when={helpModal.isOpen()}>
+        <HelpDialog onClose={helpModal.close} />
       </Show>
+
+      {/* Command Palette */}
+      <CommandPalette palette={palette} />
+
+      {/* Additional overlays (modals, dialogs) */}
+      {props.overlays}
     </box>
   );
 }
 
-interface HelpModalProps {
+interface HelpDialogProps {
   onClose: () => void;
 }
 
-function HelpModal(props: HelpModalProps) {
-  const dimensions = useTerminalDimensions();
+function HelpDialog(props: HelpDialogProps) {
   const { theme } = useTheme();
 
-  const modalWidth = 50;
-  const modalHeight = 16;
-  const left = () => Math.floor((dimensions().width - modalWidth) / 2);
-  const top = () => Math.floor((dimensions().height - modalHeight) / 2);
-
-  useKeyboard((key) => {
-    if (key.name === "escape" || key.name === "q" || key.name === "?") {
-      props.onClose();
-    }
+  // Close on any key press
+  useKeyboard(() => {
+    props.onClose();
   });
 
+  const shortcuts = [
+    { key: ":", desc: "Command palette" },
+    { key: "+/n", desc: "Add new ticket" },
+    { key: "j/k", desc: "Navigate tickets" },
+    { key: "1-9", desc: "Jump to ticket" },
+    { key: "x", desc: "Close current ticket" },
+    { key: "o", desc: "Open in Jira" },
+    { key: "e", desc: "Escalate / ask question" },
+    { key: "a", desc: "Switch agent" },
+    { key: "t", desc: "Toggle theme" },
+    { key: "?", desc: "Toggle help" },
+    { key: "q", desc: "Quit" },
+  ];
+
   return (
-    <box
-      position="absolute"
-      left={left()}
-      top={top()}
-      width={modalWidth}
-      height={modalHeight}
-      border={true}
-      borderStyle="rounded"
-      borderColor={theme().primary}
-      backgroundColor={theme().bg.elevated}
-      flexDirection="column"
-      padding={spacing.sm}
+    <Dialog
+      isOpen={true}
+      onClose={props.onClose}
+      lockId="help-dialog"
+      title="Keyboard Shortcuts"
+      hint="Press any key to close"
+      width={40}
+      height={18}
+      closeOnEscape={false}
     >
-      <text fg={theme().primary}>
-        <strong>Keyboard Shortcuts</strong>
-      </text>
-      <box height={1} />
-      <text fg={theme().text.primary}>  [+] or [n]  Add new ticket</text>
-      <text fg={theme().text.primary}>  [j] / [k]   Navigate tickets</text>
-      <text fg={theme().text.primary}>  [1-9]       Jump to ticket</text>
-      <text fg={theme().text.primary}>  [x]         Close current ticket</text>
-      <text fg={theme().text.primary}>  [o]         Open in Jira</text>
-      <text fg={theme().text.primary}>  [e]         Escalate / ask question</text>
-      <text fg={theme().text.primary}>  [a]         Switch agent</text>
-      <text fg={theme().text.primary}>  [t]         Toggle theme</text>
-      <text fg={theme().text.primary}>  [?]         Toggle help</text>
-      <text fg={theme().text.primary}>  [q]         Quit</text>
-      <box flexGrow={1} />
-      <text fg={theme().text.dim}>Press any key to close</text>
-    </box>
+      <box flexDirection="column">
+        {shortcuts.map((s) => (
+          <box flexDirection="row" height={1}>
+            <box width={8}>
+              <text fg={theme().primary}>[{s.key}]</text>
+            </box>
+            <text fg={theme().text.primary}>{s.desc}</text>
+          </box>
+        ))}
+      </box>
+    </Dialog>
   );
 }

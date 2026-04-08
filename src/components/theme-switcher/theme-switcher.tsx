@@ -44,7 +44,7 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
               <Button
                 label={name}
                 variant={themeName() === name ? "primary" : "default"}
-                style="outline"
+                style="ghost"
                 size="sm"
                 onPress={() => setTheme(name)}
               />
@@ -63,7 +63,7 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
         label={themeName()}
         shortcut="t"
         variant="default"
-        style="outline"
+        style="ghost"
         size="sm"
         onPress={toggleTheme}
       />

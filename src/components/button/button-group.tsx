@@ -26,7 +26,7 @@ export interface ButtonGroupProps {
   /** Array of button definitions */
   buttons: ButtonGroupItem[];
   /** Button style for all buttons in the group */
-  style?: "filled" | "outline";
+  style?: "filled" | "ghost";
   /** Button size for all buttons in the group */
   size?: "sm" | "md" | "lg";
   /** Gap between buttons (default: 1) */
@@ -44,7 +44,7 @@ export interface ButtonGroupProps {
  *     { label: "Save", shortcut: "s", variant: "primary" },
  *     { label: "Cancel", shortcut: "c" },
  *   ]}
- *   style="outline"
+ *   style="ghost"
  *   size="sm"
  * />
  */
