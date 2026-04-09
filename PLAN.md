@@ -974,28 +974,28 @@ Following CODE_QUALITY.md principles - eliminate prop drilling, define where use
 - App.tsx 283 lines → extract to composables, target <200 lines
 
 **Implementation Order:**
-1. [ ] Create `TicketsContext` (`src/lib/tickets-context.tsx`) - provides tickets/selection/actions
-   - [ ] Wraps `useTickets` and `useSelection`
-   - [ ] Add tests
-2. [ ] Create `useModalSystem` (`src/hooks/use-modal-system/`) - global modal state
-   - [ ] Components call `openModal('ticket-input')`
-   - [ ] Layout renders via `<ModalRenderer />`
-   - [ ] Add tests
-3. [ ] Create `useLayoutActions` (`src/hooks/use-layout-actions/`) - action handlers
-   - [ ] Uses TicketsContext + ModalSystem internally
-   - [ ] Returns: quit, addTicket, closeTicket, openInJira, escalate, switchAgent, toggleAgent
-   - [ ] Add tests
-4. [ ] Refactor `Layout.tsx` - simplified props, uses composables directly
-   - [ ] Remove all `onX` handler props
-   - [ ] Import TicketSidebar directly
-   - [ ] Use `useLayoutActions` for keyboard shortcuts
-   - [ ] Use `useNotifications` internally with `currentTicketId`
-   - [ ] Update tests
-5. [ ] Refactor `App.tsx` - extract to composables, stay under 200 LOC
-   - [ ] Extract `AppContent` to separate file
-   - [ ] Wrap with TicketsContext provider
-   - [ ] Simplify Layout props
-   - [ ] Update tests
+1. [x] Create `TicketsContext` (`src/lib/tickets-context.tsx`) - provides tickets/selection/actions
+   - [x] Wraps `useTickets` and `useSelection`
+   - [x] Add tests
+2. [x] Create `useModalSystem` (`src/hooks/use-modal-system/`) - global modal state
+   - [x] Components call `openModal('ticket-input')`
+   - [x] Layout renders via `<ModalRenderer />`
+   - [x] Add tests
+3. [x] Create `useLayoutActions` (`src/hooks/use-layout-actions/`) - action handlers
+   - [x] Uses TicketsContext + ModalSystem internally
+   - [x] Returns: quit, addTicket, closeTicket, openInJira, escalate, switchAgent, toggleAgent
+   - [x] Add tests
+4. [x] Refactor `Layout.tsx` - simplified props, uses composables directly
+   - [x] Remove all `onX` handler props
+   - [x] Import TicketSidebar directly
+   - [x] Use `useLayoutActions` for keyboard shortcuts
+   - [x] Use `useNotifications` internally with `currentTicketId`
+   - [x] Update tests
+5. [x] Refactor `App.tsx` - extract to composables, stay under 200 LOC
+   - [x] Extract `AppContent` to separate file
+   - [x] Wrap with TicketsContext provider
+   - [x] Simplify Layout props
+   - [x] Update tests
 
 ### Phase 4: Progress & Sync (3-4 days)
 
