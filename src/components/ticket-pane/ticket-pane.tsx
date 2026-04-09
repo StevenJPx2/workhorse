@@ -114,9 +114,9 @@ export function TicketPane(props: TicketPaneProps) {
       <ChatBox
         inputId={chatInputId()}
         value={chat.value()}
-        onChange={chat.setValue}
-        onSubmit={() => chat.submit()}
-        onExit={() => {
+        setValue={chat.setValue}
+        submit={chat.submit}
+        exit={() => {
           chatLock?.release();
           chatLock = undefined;
         }}

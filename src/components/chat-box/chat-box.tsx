@@ -30,11 +30,11 @@ export interface ChatBoxProps {
   /** Current input value */
   value: string;
   /** Called when input changes */
-  onChange: (value: string) => void;
+  setValue: (value: string) => void;
   /** Called when user submits (Enter) */
-  onSubmit: (value: string) => void;
+  submit: () => void;
   /** Called when user exits input mode (Escape) */
-  onExit?: () => void;
+  exit?: () => void;
   /** Placeholder text when empty */
   placeholder?: string;
   /** Whether the input is disabled */
@@ -59,22 +59,22 @@ export function ChatBox(props: ChatBoxProps) {
     // Submit on Enter
     if (key.name === "return" || key.name === "enter") {
       if (props.value.trim()) {
-        props.onSubmit(props.value.trim());
+        props.submit();
       }
       return;
     }
 
     // Clear on Escape and exit input mode
     if (key.name === "escape") {
-      props.onChange("");
+      props.setValue("");
       keyboard.exitInputMode();
-      props.onExit?.();
+      props.exit?.();
       return;
     }
 
     // Backspace
     if (key.name === "backspace") {
-      props.onChange(props.value.slice(0, -1));
+      props.setValue(props.value.slice(0, -1));
       return;
     }
 
@@ -82,20 +82,20 @@ export function ChatBox(props: ChatBoxProps) {
     if (key.name === "v" && (key.ctrl || key.meta)) {
       const clipboardText = readClipboardSync();
       if (clipboardText) {
-        props.onChange(props.value + clipboardText);
+        props.setValue(props.value + clipboardText);
       }
       return;
     }
 
     // Space key (key.name is "space", not " ")
     if (key.name === "space") {
-      props.onChange(props.value + " ");
+      props.setValue(props.value + " ");
       return;
     }
 
     // Type printable characters (single character names, excluding modifiers)
     if (key.name && key.name.length === 1 && !key.ctrl && !key.meta) {
-      props.onChange(props.value + key.name);
+      props.setValue(props.value + key.name);
     }
   });
 

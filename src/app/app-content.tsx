@@ -21,6 +21,7 @@ import { useConfig, useAtlassian } from "../hooks/index.ts";
 import type { AgentType } from "../types/config.ts";
 import type { Ticket } from "../types/ticket.ts";
 import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
+import { useTicketActions } from "./use-ticket-actions.ts";
 
 export interface AppContentProps {
   showAll?: boolean;
@@ -118,9 +119,10 @@ function AppContentInner(props: AppContentInnerProps) {
     actions.reload();
   };
 
-  const handleSendMessage = async (message: string) => {
-    const ticket = currentTicket();
-    if (ticket) await workflow.sendToAgent(ticket.id, message);
+  // Context for ticket actions hook
+  const ticketActionsContext = {
+    actions: { update: actions.update, remove: actions.remove },
+    workflow: { sendToAgent: workflow.sendToAgent },
   };
 
   return (
@@ -131,20 +133,17 @@ function AppContentInner(props: AppContentInnerProps) {
             <text fg={theme().text.dim}>Loading...</text>
           </Show>
           <Show when={!props.loading && currentTicket()} keyed>
-            {(ticket: Ticket) => (
-              <TicketPane
-                ticket={ticket}
-                agentState={() => workflow.getAgentState(ticket.id)}
-                events={[]}
-                onEscalate={() => console.log("Escalate", ticket.id)}
-                onSwitchAgent={(agent) => actions.update(ticket.id, { agent })}
-                onOpenJira={() => {
-                  if (ticket.jira_url) console.log("Opening", ticket.jira_url);
-                }}
-                onClose={() => actions.remove(ticket.id)}
-                onSendMessage={handleSendMessage}
-              />
-            )}
+            {(ticket: Ticket) => {
+              const ticketActions = useTicketActions(ticket, ticketActionsContext);
+              return (
+                <TicketPane
+                  ticket={ticket}
+                  agentState={() => workflow.getAgentState(ticket.id)}
+                  events={[]}
+                  {...ticketActions}
+                />
+              );
+            }}
           </Show>
           <Show when={!props.loading && !currentTicket()}>
             <EmptyState showAll={props.showAll ?? false} rig={props.rig ?? null} />
