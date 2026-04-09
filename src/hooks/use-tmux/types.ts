@@ -3,7 +3,7 @@
  */
 
 import type { Accessor } from "solid-js";
-import type { TmuxSession } from "../../harness/session/tmux.ts";
+import type { TmuxSession } from "../../harness/session/tmux/index.ts";
 
 /**
  * Options for useTmux hook

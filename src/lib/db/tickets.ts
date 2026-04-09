@@ -2,9 +2,8 @@
  * Ticket CRUD operations
  */
 
-import type { Database } from "bun:sqlite";
 import { getDatabase } from "./connection.ts";
-import type { Ticket, TicketEvent, TicketStatus } from "../../types/ticket.ts";
+import type { Ticket, TicketStatus } from "../../types/ticket.ts";
 import type { AgentType } from "../../types/config.ts";
 
 /**

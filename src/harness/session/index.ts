@@ -1,10 +1,7 @@
-/**
- * Session management exports
- */
-
-// Tmux session management
 export {
   type TmuxSession,
+  type TmuxCommandOptions,
+  SESSION_PREFIX,
   createTmuxSessionName,
   buildTmuxCommand,
   parseTmuxList,
@@ -15,11 +12,12 @@ export {
   killSession,
   sendKeys,
   capturePane,
-} from "./tmux.ts";
+} from "./tmux/index.ts";
 
-// Git worktree management
 export {
   type Worktree,
+  type GitCommandOptions,
+  BRANCH_PREFIXES,
   createWorktreePath,
   createBranchName,
   parseWorktreeList,
@@ -29,4 +27,18 @@ export {
   worktreeExists,
   getWorktree,
   removeWorktree,
-} from "./worktree.ts";
+} from "./worktree/index.ts";
+
+export {
+  type SessionEvent,
+  type SessionMemory,
+  getContextPath,
+  readSessionMemory,
+  writeSessionMemory,
+  formatSessionMemory,
+  createSessionMemory,
+  addSessionEvent,
+  addKeyDecision,
+  updateSessionStatus,
+  hasSessionMemory,
+} from "./session-memory.ts";

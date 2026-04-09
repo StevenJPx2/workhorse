@@ -13,6 +13,10 @@ export {
 } from "./grid.tsx";
 
 export {
+  type CellData,
+} from "./grid-types.ts";
+
+export {
   GridCell,
   type GridCellProps,
 } from "./grid-cell.tsx";

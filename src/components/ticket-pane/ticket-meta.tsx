@@ -20,8 +20,17 @@ export function TicketMeta(props: TicketMetaProps) {
 
   const statusConfig = () => getStatusConfig(props.status, theme());
   const agentColor = () => getAgentColor(props.agent, theme());
-  const agentState = () =>
-    props.agentState ? getAgentStateConfig(props.agentState, theme()) : null;
+  
+  // Resolve agentState - supports both value and accessor for reactivity
+  const resolvedAgentState = () => {
+    const state = props.agentState;
+    return typeof state === "function" ? state() : state;
+  };
+  
+  const agentState = () => {
+    const state = resolvedAgentState();
+    return state ? getAgentStateConfig(state, theme()) : null;
+  };
 
   return (
     <box flexDirection="column" gap={spacing.xs}>

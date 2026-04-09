@@ -16,6 +16,8 @@ export interface UseTicketWorkflowOptions {
   repoPath?: string | (() => string | undefined);
   /** Jira cloud ID (can be a getter for lazy resolution) */
   jiraCloudId?: string | (() => string | undefined);
+  /** Health check poll interval in ms (default: 5000, 0 to disable) */
+  healthCheckInterval?: number;
   /** Callback when agent state changes */
   onAgentStateChange?: (ticketId: string, state: AgentState) => void;
   /** Callback on error */
@@ -46,10 +48,18 @@ export interface UseTicketWorkflowReturn {
   startWork: (options: StartWorkOptions) => Promise<Ticket | null>;
   /** Stop work on a ticket (stops agent, optionally removes worktree) */
   stopWork: (ticketId: string, removeWorktree?: boolean) => Promise<boolean>;
+  /** Restart agent for an existing ticket (re-spawns agent if not running) */
+  restartAgent: (ticketId: string) => Promise<boolean>;
+  /** Resume all agents for tickets in active states (planning, working) */
+  resumeAllAgents: () => Promise<number>;
   /** Get agent state for a ticket */
   getAgentState: (ticketId: string) => AgentState | undefined;
   /** Check if agent is running for a ticket */
   isAgentRunning: (ticketId: string) => boolean;
   /** Send message to agent */
   sendToAgent: (ticketId: string, message: string) => Promise<boolean>;
+  /** Get all running agents */
+  getRunningAgents: () => { ticketId: string; state: string }[];
+  /** Reload agent state from orchestrator */
+  reloadAgents: () => void;
 }

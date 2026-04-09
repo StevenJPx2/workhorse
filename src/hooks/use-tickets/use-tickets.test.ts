@@ -287,7 +287,7 @@ describe("useTickets", () => {
         create2({ jiraKey: "TEST-014", rig: otherRig });
 
         // Query only for testRig
-        const { tickets, reload } = useTickets({
+        const { tickets, reload: _reload } = useTickets({
           rig: testRig,
           autoLoad: true,
         });

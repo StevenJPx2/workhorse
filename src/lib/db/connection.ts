@@ -3,7 +3,7 @@
  */
 
 import { Database } from "bun:sqlite";
-import { getConfigPaths, ensureConfigDir } from "../config.ts";
+import { getConfigPaths, ensureConfigDir } from "../config/index.ts";
 import { migrateTickets } from "./migrations/tickets.ts";
 import { migrateNotifications } from "./migrations/notifications.ts";
 

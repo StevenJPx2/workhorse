@@ -4,10 +4,7 @@
  * These tests use a temporary HOME directory to isolate the database.
  */
 
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { existsSync, rmSync, mkdirSync, realpathSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { describe, expect, it } from "bun:test";
 
 // Generate unique ticket IDs for each test run to avoid conflicts
 let testCounter = 0;
@@ -17,7 +14,7 @@ describe("db", () => {
 
   describe("initDatabase", () => {
     it("should create database and tables", () => {
-      const { initDatabase, getDatabase } = require("./db.ts");
+      const { initDatabase } = require("./db.ts");
 
       const db = initDatabase();
       expect(db).toBeDefined();

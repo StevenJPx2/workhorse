@@ -19,6 +19,8 @@ export interface CommandActions {
   escalate: () => void;
   /** Switch agent */
   switchAgent: () => void;
+  /** Toggle agent (start/stop) for current ticket */
+  toggleAgent: () => void;
   /** Toggle help modal */
   toggleHelp: () => void;
   /** Quit application */
@@ -74,6 +76,14 @@ export function createCommands(actions: CommandActions): Command[] {
       category: "Tickets",
       type: "action",
       action: actions.switchAgent,
+    },
+    {
+      id: "toggle-agent",
+      label: "Toggle Agent (Start/Stop)",
+      shortcut: "s",
+      category: "Tickets",
+      type: "action",
+      action: actions.toggleAgent,
     },
 
     // Theme submenu - generated from themes registry

@@ -87,17 +87,17 @@ export function ChatBox(props: ChatBoxProps) {
       return;
     }
 
-    // Type printable characters
+    // Space key (key.name is "space", not " ")
+    if (key.name === "space") {
+      props.onChange(props.value + " ");
+      return;
+    }
+
+    // Type printable characters (single character names, excluding modifiers)
     if (key.name && key.name.length === 1 && !key.ctrl && !key.meta) {
       props.onChange(props.value + key.name);
     }
   });
-
-  const borderColor = () => {
-    if (isDisabled()) return theme().border.dim;
-    if (isFocused()) return theme().border.focus;
-    return theme().border.default;
-  };
 
   return (
     <box

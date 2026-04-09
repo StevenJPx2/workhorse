@@ -1,7 +1,3 @@
-/**
- * useSelection hook exports
- */
-
 export {
   useSelection,
   type UseSelectionOptions,

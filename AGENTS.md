@@ -27,7 +27,30 @@ bun run build
 
 # Run tests
 bun test
+
+# Lint code (oxlint + custom Jiratown rules)
+bun run lint
+
+# Lint and auto-fix
+bun run lint:fix
+
+# Format code (oxfmt)
+bun run format
+
+# Format and auto-fix
+bun run format:fix
+
+# Full check (lint + test)
+bun run check
 ```
+
+## Pre-Commit Hooks
+
+Pre-commit hooks run automatically via `simple-git-hooks` + `lint-staged`:
+- **oxfmt** — auto-format staged `.ts`/`.tsx` files
+- **oxlint** — lint staged `.ts`/`.tsx` files with project rules
+
+To set up hooks after cloning: `bun run prepare`
 
 ## Code Style
 
@@ -36,6 +59,10 @@ bun test
 - Use Solid.js patterns (createSignal, createEffect, etc.)
 - OpenTUI components use snake_case (`<tab_select>`, `<scroll_box>`)
 - File names use kebab-case (`ticket-pane.tsx`)
+
+## Code Quality
+
+See [CODE_QUALITY.md](./CODE_QUALITY.md) for architectural principles and patterns.
 
 ## Code Enforcement Rules
 
@@ -60,6 +87,11 @@ bun test
   ```
 - The `index.ts` should export all public components and hooks
 - Keep implementation details private (don't export everything)
+
+### Test Colocation Boundaries
+- Test files use `.test.ts` suffix, colocated with source files
+- When a folder has >2 source files and test ratio exceeds 40%, move tests to `__tests__/`
+- This keeps folders clean while maintaining discoverability
 
 ### Test-Driven Development (TDD)
 - **97% code coverage required** across all files

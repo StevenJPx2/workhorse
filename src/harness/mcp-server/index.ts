@@ -2,12 +2,11 @@
  * MCP Server exports
  */
 
-export {
-  createJiratownServer,
-  getToolDefinitions,
-  TOOL_NAMES,
-  type ToolDefinition,
-} from "./server.ts";
+export { createJiratownServer } from "./server.ts";
+
+export { TOOL_NAMES } from "./tool-names.ts";
+
+export { getToolDefinitions, type ToolDefinition } from "./tool-definitions.ts";
 
 export type {
   GetNotificationsResponse,

@@ -1,0 +1,225 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Agent restart snapshots TicketPane shows agent not running state 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode                                
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+"
+`;
+
+exports[`Agent restart snapshots TicketPane shows agent running state 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode (● Running)                    
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+"
+`;
+
+exports[`Agent restart snapshots Layout shows restart agent in help dialog 1`] = `
+"                                                                                
+                                                                                
+                                                                                
+                    ╭──────────────────────────────────────╮                    
+                    │                                      │                    
+                    │ Keyboard Shortcuts                   │                    
+                    │                                      │                    
+                    │ [:]     Command palette              │                    
+                    │ [+/n]   Add new ticket               │                    
+                    │ [j/k]   Navigate tickets             │                    
+                    │ [1-9]   Jump to ticket               │                    
+                    │ [x]     Close current ticket         │                    
+                    │ [o]     Open in Jira                 │                    
+                    │ [e]     Escalate / ask question      │                    
+                    │ [a]     Switch agent                 │                    
+                    │ [r]     Restart agent                │                    
+                    │ [t]     Toggle theme                 │                    
+                    │ [?]     Toggle help                  │                    
+                    │ Press anyukey to close               │                    
+                    │                                      │                    
+                    ╰──────────────────────────────────────╯                    
+                                                                                
+                                                                                
+ No notifications                test-repo | [:] commands | [?] help | [q] quit 
+"
+`;
+
+exports[`Agent restart integration restart flow completes successfully: before-restart 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode                                
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+"
+`;
+
+exports[`Agent restart integration restart flow completes successfully: after-restart 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode (● Running)                    
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+"
+`;
+
+exports[`Agent restart snapshots Layout shows toggle agent in help dialog 1`] = `
+"                                                                                
+                                                                                
+                                                                                
+                    ╭──────────────────────────────────────╮                    
+                    │                                      │                    
+                    │ Keyboard Shortcuts                   │                    
+                    │                                      │                    
+                    │ [:]     Command palette              │                    
+                    │ [+/n]   Add new ticket               │                    
+                    │ [j/k]   Navigate tickets             │                    
+                    │ [1-9]   Jump to ticket               │                    
+                    │ [x]     Close current ticket         │                    
+                    │ [o]     Open in Jira                 │                    
+                    │ [e]     Escalate / ask question      │                    
+                    │ [a]     Switch agent                 │                    
+                    │ [s]     Start/stop agent             │                    
+                    │ [t]     Toggle theme                 │                    
+                    │ [?]     Toggle help                  │                    
+                    │ Press anyukey to close               │                    
+                    │                                      │                    
+                    ╰──────────────────────────────────────╯                    
+                                                                                
+                                                                                
+ No notifications                test-repo | [:] commands | [?] help | [q] quit 
+"
+`;
+
+exports[`Agent toggle integration restart flow completes successfully: before-restart 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode                                
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+"
+`;
+
+exports[`Agent toggle integration restart flow completes successfully: after-restart 1`] = `
+"                                                                                
+ TEST-123: Test ticket for agent restart                                        
+ =======================================                                        
+                                                                                
+ Status ◐ PLANNING                Agent opencode (● Running)                    
+ Worktree /tmp/test-worktree                                                    
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+"
+`;

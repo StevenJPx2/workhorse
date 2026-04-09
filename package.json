@@ -10,14 +10,23 @@
     "dev": "bun run src/index.ts",
     "build": "bun run build.ts",
     "test": "bun test",
+    "test:cleanup": "bun test && bun run src/index.ts cleanup --all",
     "seed": "bun run scripts/seed.ts",
     "sandbox": "bun run src/sandbox/index.tsx",
-    "frames": "bun run src/sandbox/dump-frames.tsx",
-    "test:visual": "bun test src/sandbox/snapshot.test.tsx"
+    "frames": "bun run src/sandbox/dump-frames/run.tsx",
+    "test:visual": "bun test src/sandbox/snapshot.test.tsx",
+    "cleanup": "bun run src/index.ts cleanup",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "format": "oxfmt .",
+    "format:fix": "oxfmt . --write",
+    "check": "bun run lint && bun test",
+    "prepare": "simple-git-hooks"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@opencode-ai/sdk": "^1.4.0",
     "@opentui/core": "^0.1.90",
     "@opentui/solid": "^0.1.90",
     "citty": "^0.1.6",
@@ -25,7 +34,11 @@
     "toml": "^3.0.0"
   },
   "devDependencies": {
+    "@oxlint/plugins": "^1.59.0",
     "@types/bun": "^1.2.4",
+    "lint-staged": "^16.4.0",
+    "oxlint": "^1.59.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^5.7.3"
   },
   "keywords": [
@@ -37,5 +50,14 @@
     "dashboard"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "oxfmt --write",
+      "oxlint"
+    ]
+  },
+  "simple-git-hooks": {
+    "pre-commit": "bunx lint-staged"
+  }
 }

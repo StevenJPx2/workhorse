@@ -1,7 +1,3 @@
-/**
- * useConfig hook exports
- */
-
 export {
   useConfig,
   type ConfigStatus,

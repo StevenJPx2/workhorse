@@ -118,25 +118,41 @@ export function removeMcpConfig(worktreePath: string, ticketId: string): void {
 }
 
 /**
+ * Escape a string for safe use in a shell command
+ * Uses single quotes and escapes any embedded single quotes
+ */
+function escapeForShell(str: string): string {
+  // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+  // Then wrap in single quotes
+  return "'" + str.replace(/'/g, "'\\''") + "'";
+}
+
+/**
  * Build the agent command
  * 
- * For OpenCode: Just run `opencode` - it will find .opencode/opencode.json automatically
+ * For OpenCode: Run `opencode --port <port> --prompt <prompt>` so we can communicate via SDK
  * For Claude: Run `claude` - it uses its own config discovery
  * 
  * @param agentType - Type of agent to run
- * @param _configPath - Unused, kept for API compatibility
+ * @param ticketId - Ticket ID used for port allocation
+ * @param prompt - Optional initial prompt to pass to the agent
  */
 export function buildAgentCommand(
   agentType: "opencode" | "claude",
-  _configPath: string
+  ticketId: string,
+  prompt?: string
 ): { command: string; args: string[] } {
   if (agentType === "opencode") {
-    // OpenCode automatically finds .opencode/opencode.json in the project directory
-    // No special flags needed - just run opencode
-    return {
-      command: "opencode",
-      args: [],
-    };
+    // Import dynamically to avoid circular dependency
+    const { buildOpenCodeCommandWithPort } = require("./opencode-client/index.ts");
+    const result = buildOpenCodeCommandWithPort(ticketId);
+    
+    // Add prompt if provided, properly escaped for shell
+    if (prompt) {
+      result.args.push("--prompt", escapeForShell(prompt));
+    }
+    
+    return result;
   }
 
   // Claude Code uses its own config discovery

@@ -8,7 +8,7 @@ import type { TicketActionsProps } from "./types.ts";
 /**
  * Action bar with ticket operations
  */
-export function TicketActions(props: TicketActionsProps) {
+export function TicketActions(_props: TicketActionsProps) {
   const actions = [
     { key: "e", action: "escalate" },
     { key: "a", action: "switch agent" },

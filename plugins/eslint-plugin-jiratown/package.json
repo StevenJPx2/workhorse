@@ -1,0 +1,17 @@
+{
+  "name": "eslint-plugin-jiratown",
+  "version": "1.0.0",
+  "description": "Custom lint rules for Jiratown project conventions",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "bun build index.ts --outdir . --target bun",
+    "test": "bun test rules/*.test.ts"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "^1.57.0"
+  },
+  "peerDependencies": {
+    "oxlint": ">=1.0.0"
+  }
+}

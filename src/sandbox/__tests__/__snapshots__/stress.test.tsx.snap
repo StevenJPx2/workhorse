@@ -1,0 +1,321 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Tiny viewport button in 5x1 1`] = `
+"  S  
+"
+`;
+
+exports[`Tiny viewport card in 8x3 1`] = `
+"╭──────╮
+│      │
+│ This │
+"
+`;
+
+exports[`Tiny viewport text input in 10x3 1`] = `
+"A very    
+long label
+          
+"
+`;
+
+exports[`Tiny viewport sidebar in 10x5 1`] = `
+"╭─Ti─────╮
+│ ck     │
+│ et  +  │
+│ s      │
+│────────│
+"
+`;
+
+exports[`Tiny viewport layout in 20x5 1`] = `
+"╭───────────────────
+│                   
+│ Tickets           
+╰───────────────────
+ No       repo | [: 
+"
+`;
+
+exports[`Tiny viewport dialog larger than viewport 1`] = `
+"╭──────────────────╮
+│                  │
+│ Big Dialog       │
+│                  │
+│ This dialog is   │
+│ bigger than the  │
+│ terminal         │
+╰──────────────────╯
+"
+`;
+
+exports[`Overflow text button with very long label 1`] = `
+"  This is an extremely long   
+  button label that should    
+  overflow the container      
+"
+`;
+
+exports[`Overflow text card with long title and content 1`] = `
+"╭───────────────────────╮     
+│                       │     
+│ A Very Long Card      │     
+│ Title That Exceeds    │     
+│ The Width             │     
+│                       │     
+│ This content is also  │     
+│ very long and should  │     
+│ wrap or truncate      │     
+│ somehow in the        │     
+"
+`;
+
+exports[`Overflow text ticket pane with very long summary 1`] = `
+"                                                            
+ LONGTICKET-99999: This is a very long ticket summary that  
+ describes a complex issue involving authentication         
+ timeouts when connecting to multiple microservices in      
+ parallel across different availability zones with varying  
+ network latencies                                          
+ ========================================================== 
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+ Branch   feat/LONGTICKET-99999-this-is-also-a-very-long-   
+          branch-name-that-exceeds-expectations             
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            
+"
+`;
+
+exports[`Overflow text sidebar with long ticket IDs 1`] = `
+"╭──────────────────╮    
+│                  │    
+│ Tickets  + New   │    
+│                  │    
+│──────────────────│    
+│  ▶ VERYLONGPRO…  │    
+│──────────────────│    
+│  ▶ ANOTHERLONG…  │    
+│──────────────────│    
+│ Jiratown         │    
+╰──────────────────╯    
+                        
+"
+`;
+
+exports[`Overflow text select with long option labels 1`] = `
+"┌───An─extremely────────┐
+│Choosebwiselytion      │
+│   Anotherhat goes     │
+│[ ]ridiculously long   │
+│   option that         │
+│   nobody would use    │
+│                       │
+└───────────────────────┘
+"
+`;
+
+exports[`Missing data ticket pane with null summary 1`] = `
+"                                                            
+ AM-000: No summary                                         
+ ==================                                         
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            
+"
+`;
+
+exports[`Missing data ticket with empty string summary 1`] = `
+"                                                            
+ AM-001:                                                    
+ ========                                                   
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+ Branch   feat/am-001                                       
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            
+"
+`;
+
+exports[`Missing data select with zero options 1`] = `
+"┌────────────────────────────┐
+│Nothing here                │
+│                            │
+└────────────────────────────┘
+                              
+                              
+"
+`;
+
+exports[`Missing data button group with zero buttons 1`] = `
+"                              
+                              
+                              
+"
+`;
+
+exports[`Missing data action bar with zero actions 1`] = `
+"                              
+                              
+                              
+"
+`;
+
+exports[`Missing data divider with zero length 1`] = `
+"                              
+                              
+                              
+                              
+                              
+"
+`;
+
+exports[`Missing data card with no children 1`] = `
+"╭────────────────────────────╮
+│                            │
+│ Empty Card                 │
+│                            │
+│                            │
+│                            │
+╰────────────────────────────╯
+                              
+"
+`;
+
+exports[`Extreme quantities sidebar with 20 tickets 1`] = `
+"╭──────────────────────────╮    
+│                          │    
+│ Tickets          + New   │    
+│                          │    
+│──────────────────────────│    
+│  ○ TK-1                  │    
+│──────────────────────────│    
+│  ◎ TK-2                  │    
+│──────────────────────────│    
+│  ▶ TK-3                  │    
+│──────────────────────────│    
+│  ✓ TK-4                  │    
+│──────────────────────────│    
+│  ! TK-5                  │    
+│──────────────────────────│    
+"
+`;
+
+exports[`Extreme quantities many buttons in a group 1`] = `
+" 0:    1:    2:    3:    4:     5:    6:    7:    8:    9:  
+ B0    B1    B2    B3    B4     B5    B6    B7    B8    B9  
+                                                            
+"
+`;
+
+exports[`Extreme quantities select with 15 options 1`] = `
+"┌───────────────────────┐
+│Many                   │
+│[ ] Option 1           │
+│[ ] Option 2           │
+│[ ] Option 3           │
+│[ ] Option 4           │
+│[ ] Option 5           │
+│[ ] Option 6           │
+│[ ] Option 7           │
+└[*]─Option─8───────────┘
+"
+`;
+
+exports[`Extreme quantities grid 5x5 in tight space 1`] = `
+" 00  01  02  03  04           
+ 10  11  12  13  14           
+ 20  21  22  23  24           
+ 30  31  32  33  34           
+ 40  41  42  43  44           
+                              
+                              
+                              
+"
+`;
+
+exports[`Special characters button with unicode label 1`] = `
+"         日本語テスト         
+                              
+         émojis 🎉🔥          
+                              
+          → arrows ←          
+                              
+"
+`;
+
+exports[`Special characters card with unicode content 1`] = `
+"╭────────────────────────────╮     
+│                            │     
+│ Ünïcödé                    │     
+│                            │     
+│ Ñoño café résumé naïve     │     
+│ 中文内容测试               │     
+│                            │     
+╰────────────────────────────╯     
+                                   
+                                   
+"
+`;
+
+exports[`Special characters ticket with unicode summary 1`] = `
+"                                                            
+ UNI-1: 修复登录超时问题 — résumé endpoint 🐛               
+ ====================================                       
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+ Branch   feat/uni-1                                        
+                                                            
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            
+"
+`;
+
+exports[`Special characters divider with unicode label 1`] = `
+"                                        
+───── ★ SECTION ★ ──────────────────────
+                                        
+                                        
+                                        
+"
+`;

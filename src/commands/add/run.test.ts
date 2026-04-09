@@ -4,11 +4,7 @@
  * These tests mock @clack/prompts and process.exit to test the command flow.
  */
 
-import { describe, expect, it, beforeEach, afterEach, mock, spyOn } from "bun:test";
-import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { $ } from "bun";
+import { describe, expect, it, beforeEach, afterEach, mock } from "bun:test";
 
 // Mock @clack/prompts
 const mockOutro = mock(() => {});

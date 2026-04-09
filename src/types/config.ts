@@ -17,10 +17,16 @@ export interface UiConfig {
   theme: ThemeName;
 }
 
+export interface BehaviorConfig {
+  /** Auto-resume agents on startup for tickets in active states */
+  auto_resume: boolean;
+}
+
 export interface JiratownConfig {
   jira?: JiraConfig;
   defaults?: DefaultsConfig;
   ui?: UiConfig;
+  behavior?: BehaviorConfig;
 }
 
 /**
@@ -36,6 +42,9 @@ export interface ResolvedConfig {
   };
   ui: {
     theme: ThemeName;
+  };
+  behavior: {
+    auto_resume: boolean;
   };
 }
 

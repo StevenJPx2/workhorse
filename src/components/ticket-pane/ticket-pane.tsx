@@ -27,13 +27,14 @@ import { TicketHeader } from "./ticket-header.tsx";
 import { TicketMeta } from "./ticket-meta.tsx";
 import { ProgressLog } from "./progress-log.tsx";
 import { TicketActions } from "./ticket-actions.tsx";
+import { AgentOutput } from "./agent-output.tsx";
 import type { TicketPaneProps } from "./types.ts";
 
 /**
  * Main ticket detail pane
  */
 export function TicketPane(props: TicketPaneProps) {
-  const { theme } = useTheme();
+  useTheme(); // Ensure theme is loaded
   const navigation = useNavigation();
   const keyboard = useKeyboardContext();
 
@@ -78,7 +79,7 @@ export function TicketPane(props: TicketPaneProps) {
       <TicketMeta
         status={props.ticket.status}
         agent={props.ticket.agent}
-        agentState={props.agentState}
+        agentState={props.agentState}  // Pass through as-is, TicketMeta handles both value and accessor
         worktreePath={props.ticket.worktree_path}
         branchName={props.ticket.branch_name}
       />
@@ -86,6 +87,16 @@ export function TicketPane(props: TicketPaneProps) {
       {/* Progress log */}
       <Show when={events().length > 0}>
         <ProgressLog events={events()} maxEvents={8} />
+      </Show>
+
+      {/* Agent output - shows when running or has output */}
+      <Show when={props.agentOutput && (props.agentRunning?.() || props.agentOutput().length > 0)}>
+        <AgentOutput
+          lines={props.agentOutput!}
+          isRunning={props.agentRunning ?? (() => false)}
+          lastUpdated={props.agentOutputUpdated ?? (() => null)}
+          collapsedLines={6}
+        />
       </Show>
 
       {/* Spacer */}

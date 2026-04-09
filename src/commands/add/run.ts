@@ -6,7 +6,7 @@
 
 import * as p from "@clack/prompts";
 import { detectRig } from "../../lib/detect-rig.ts";
-import { loadConfig, configExists } from "../../lib/config.ts";
+import { loadConfig, configExists } from "../../lib/config/index.ts";
 import {
   insertTicket,
   getTicketById,

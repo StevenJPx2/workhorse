@@ -38,6 +38,8 @@ export interface SpawnOptions {
   baseBranch?: string;
   summary?: string;
   description?: string;
+  /** Full Jira URL for the ticket (e.g., "https://company.atlassian.net/browse/AM-123") */
+  jiraUrl?: string;
 }
 
 /**

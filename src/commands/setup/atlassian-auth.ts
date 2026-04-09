@@ -64,7 +64,7 @@ export async function authenticateAtlassian(): Promise<AuthResult> {
     }, AUTH_TIMEOUT_MS);
 
     // Wait for the process to exit or be killed
-    proc.exited.then((exitCode) => {
+    proc.exited.then((_exitCode) => {
       clearTimeout(timeout);
       if (!settled) {
         settled = true;

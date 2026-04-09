@@ -6,6 +6,6 @@
  */
 
 import { render } from "@opentui/solid";
-import { SandboxApp } from "./sandbox-app.tsx";
+import { SandboxApp } from "./sandbox-app/index.ts";
 
 render(() => <SandboxApp />);

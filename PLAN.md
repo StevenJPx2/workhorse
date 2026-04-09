@@ -101,9 +101,9 @@ This means:
 │      git worktree add ../worktrees/AM-123 -b feat/AM-123                │
 │                              │                                           │
 │                              ▼                                           │
-│   7. Dashboard creates tmux session and spawns agent                    │
-│      tmux new-session -d -s jiratown-AM-123 -c ../worktrees/AM-123      │
-│      tmux send-keys -t jiratown-AM-123 'opencode' Enter                 │
+│   7. Dashboard creates tmux session and spawns agent with prompt          │
+│      tmux new-session -d -s jt-AM-123 -c ../worktrees/AM-123            │
+│      opencode --port <random> --prompt '<initial instructions>'         │
 │                              │                                           │
 │                              ▼                                           │
 │   8. Agent works on ticket in isolated worktree                         │
@@ -293,18 +293,23 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 ││ ▶ AM-123          │ AM-123: Fix authentication timeout bug                 │
 ││ ⬆ AM-456          │ ═══════════════════════════════════════════════════    │
 ││ ○ AM-789          │                                                        │
-││                   │ Status    IMPLEMENTING          Agent     opencode     │
+││                   │ Status    IMPLEMENTING          Agent     opencode ⬤  │
 ││                   │ Phase     GREEN (5/5 passing)   Rig       myproject    │
 ││                   │ Worktree  ../myproject-worktrees/AM-123                 │
 ││                   │                                                        │
-││                   │ ┌─ Progress ──────────────────────────────────────────┐│
-││                   │ │ ✓ Fetched Jira ticket                               ││
-││                   │ │ ✓ Created worktree                                  ││
-││                   │ │ ✓ Planning complete                                 ││
-││                   │ │ ▶ Creating PR...                                    ││
+││                   │ ┌─ Agent Progress ────────────────────────────────────┐│
+││                   │ │ ● Running since 12:34 PM                              ││
+││                   │ │                                                       ││
+││                   │ │ Recent Activity:                                      ││
+││                   │ │ ✓ Created feature branch                              ││
+││                   │ │ ✓ Modified auth.ts (retry logic)                    ││
+││                   │ │ ✓ Modified auth.test.ts (3 new tests)               ││
+││                   │ │ ▶ Running tests...                                    ││
+││                   │ │                                                       ││
+││                   │ │ Files: 2 modified  |  Tests: 3/5 passing            ││
 ││                   │ └─────────────────────────────────────────────────────┘│
 ││                   │                                                        │
-││                   │ [e] escalate  [a] switch agent  [o] open jira  [x] close│
+││                   │ [v] view output  [a] attach  [r] restart  [s] stop       │
 │╰───────────────────╯                                                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ No notifications                                                            │
@@ -441,7 +446,7 @@ The sidebar is clickable and supports keyboard navigation:
 | **Fetch Jira**      | Atlassian MCP `getJiraIssue`            | Get ticket details        |
 | **Create Worktree** | `git worktree add`                      | Create isolated workspace |
 | **Create Session**  | `tmux new-session -d -s jiratown-{id}`  | Create isolated tmux session |
-| **Spawn Agent**     | `tmux send-keys`                        | Start agent in tmux session |
+| **Spawn Agent**     | `opencode --prompt <prompt>`            | Start agent with injected prompt |
 | **Monitor Agent**   | `tmux capture-pane` / process management| Track agent status        |
 | **Debug Agent**     | `tmux attach -t jiratown-{id}`          | Attach to agent session   |
 | **Update Jira**     | Atlassian MCP `addCommentToJiraIssue`   | Post progress             |
@@ -925,6 +930,72 @@ src/hooks/
   - [x] Handle process exit/errors
   - [ ] Auto-restart on crash (optional)
   - [x] Attach to session for debugging: `tmux attach -t jt-AM-123`
+
+#### Phase 3 Polish
+- [x] Session Memory System (`src/harness/session/session-memory.ts`)
+  - [x] Store context in `.jiratown/context.md` in worktree
+  - [x] Track recent activity (last 20 events)
+  - [x] Record key decisions made during session
+  - [x] Read/write session memory on spawn/stop
+- [x] Initial Agent Instructions
+  - [x] Generate fresh start prompt for new tickets
+  - [x] Generate resume prompt with session context
+  - [x] Include recent activity and key decisions in resume
+- [x] Prompt Injection System
+  - [x] Pass initial prompt via `opencode --prompt <prompt>` flag
+  - [x] Shell escaping for multiline prompts with special characters
+  - [x] Remove race condition from sendKeys timing issues
+- [x] Tmux sendKeys Reliability
+  - [x] Add `-l` (literal) flag support for special characters
+  - [x] Send text and Enter as separate commands
+- [x] Chat Input Bug Fix
+  - [x] Fix space character detection in ChatBox
+- [x] Agent Output Display (`AgentOutput` component)
+  - [x] `useAgentOutput` hook for polling tmux capture
+  - [x] Display live output lines in TicketPane
+  - [x] Show last N lines with expand/collapse option
+  - [x] Timestamp of last capture
+- [ ] Agent Progress Display in TicketPane
+  - [ ] Show agent state indicator (starting/running/stopped/crashed)
+  - [ ] Display session activity summary (tasks completed, files modified)
+  - [ ] Show recent agent actions from session memory
+  - [ ] Visual progress bar or status icon per ticket
+  - [ ] Quick actions: [View Output] [Attach] [Restart] [Stop]
+
+#### Code Quality Refactor: App.tsx + Layout.tsx
+
+Following CODE_QUALITY.md principles - eliminate prop drilling, define where used.
+
+**Violations to fix:**
+- Notifications defined in App, passed to Layout → move to Layout, pass only `currentTicketId`
+- 7 handler props drilled for keyboard shortcuts → create `useLayoutActions` composable
+- Sidebar passed as prop but always TicketSidebar → Layout imports directly
+- Overlays passed as prop → use global modal system
+- App.tsx 283 lines → extract to composables, target <200 lines
+
+**Implementation Order:**
+1. [ ] Create `TicketsContext` (`src/lib/tickets-context.tsx`) - provides tickets/selection/actions
+   - [ ] Wraps `useTickets` and `useSelection`
+   - [ ] Add tests
+2. [ ] Create `useModalSystem` (`src/hooks/use-modal-system/`) - global modal state
+   - [ ] Components call `openModal('ticket-input')`
+   - [ ] Layout renders via `<ModalRenderer />`
+   - [ ] Add tests
+3. [ ] Create `useLayoutActions` (`src/hooks/use-layout-actions/`) - action handlers
+   - [ ] Uses TicketsContext + ModalSystem internally
+   - [ ] Returns: quit, addTicket, closeTicket, openInJira, escalate, switchAgent, toggleAgent
+   - [ ] Add tests
+4. [ ] Refactor `Layout.tsx` - simplified props, uses composables directly
+   - [ ] Remove all `onX` handler props
+   - [ ] Import TicketSidebar directly
+   - [ ] Use `useLayoutActions` for keyboard shortcuts
+   - [ ] Use `useNotifications` internally with `currentTicketId`
+   - [ ] Update tests
+5. [ ] Refactor `App.tsx` - extract to composables, stay under 200 LOC
+   - [ ] Extract `AppContent` to separate file
+   - [ ] Wrap with TicketsContext provider
+   - [ ] Simplify Layout props
+   - [ ] Update tests
 
 ### Phase 4: Progress & Sync (3-4 days)
 

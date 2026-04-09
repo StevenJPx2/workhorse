@@ -4,7 +4,7 @@
  * These tests mock @clack/prompts and other dependencies to test the interactive flow.
  */
 
-import { describe, expect, it, beforeEach, afterEach, mock } from "bun:test";
+import { describe, expect, it, beforeEach, mock } from "bun:test";
 
 // Mock @clack/prompts before importing runSetup
 const mockIntro = mock(() => {});

@@ -28,7 +28,7 @@ export {
 export {
   generateSystemPrompt,
   generateInitialPrompt,
-} from "./system-prompt.ts";
+} from "./system-prompt/index.ts";
 
 // Orchestrator
 export {

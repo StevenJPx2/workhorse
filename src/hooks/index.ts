@@ -17,6 +17,15 @@ export {
 } from "./use-modal/index.ts";
 
 export {
+  useModalSystem,
+  ModalSystemProvider,
+  type ModalName,
+  type ModalDataMap,
+  type UseModalSystemReturn,
+  type ModalSystemProviderProps,
+} from "./use-modal-system/index.ts";
+
+export {
   useFocusZone,
   createFocusZoneManager,
   type FocusZoneId,
@@ -129,6 +138,12 @@ export {
   type CreateNotificationInput,
   type NotificationPriority,
 } from "./use-notifications/index.ts";
+
+export {
+  useLayoutActions,
+  type UseLayoutActionsOptions,
+  type UseLayoutActionsReturn,
+} from "./use-layout-actions/index.ts";
 
 // Re-export type for convenience
 export type { Accessor } from "solid-js";

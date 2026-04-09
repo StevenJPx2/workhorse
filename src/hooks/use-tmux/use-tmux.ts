@@ -5,7 +5,7 @@
  */
 
 import { createSignal, onMount } from "solid-js";
-import type { TmuxSession } from "../../harness/session/tmux.ts";
+import type { TmuxSession } from "../../harness/session/tmux/index.ts";
 import {
   createSession as tmuxCreate,
   killSession as tmuxKill,
@@ -14,7 +14,7 @@ import {
   sendKeys as tmuxSendKeys,
   capturePane as tmuxCapture,
   isTmuxAvailable,
-} from "../../harness/session/tmux.ts";
+} from "../../harness/session/tmux/index.ts";
 import type { UseTmuxOptions, UseTmuxReturn } from "./types.ts";
 
 /**

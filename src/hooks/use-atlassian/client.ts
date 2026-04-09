@@ -102,7 +102,7 @@ export class AtlassianClient {
     let data: GetJiraIssueResponse;
     try {
       data = JSON.parse(textContent.text) as GetJiraIssueResponse;
-    } catch (parseError) {
+    } catch {
       // Truncate the response for error message (may be very long)
       const preview = textContent.text.slice(0, 200);
       throw new Error(

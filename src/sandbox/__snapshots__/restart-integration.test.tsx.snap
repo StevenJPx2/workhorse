@@ -1,0 +1,69 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Agent restart keyboard integration should show restart shortcut in help dialog 1`] = `
+"                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                    ╭──────────────────────────────────────╮                    
+                    │                                      │                    
+                    │ Keyboard Shortcuts                   │                    
+                    │                                      │                    
+                    │ [:]     Command palette              │                    
+                    │ [+/n]   Add new ticket               │                    
+                    │ [j/k]   Navigate tickets             │                    
+                    │ [1-9]   Jump to ticket               │                    
+                    │ [x]     Close current ticket         │                    
+                    │ [o]     Open in Jira                 │                    
+                    │ [e]     Escalate / ask question      │                    
+                    │ [a]     Switch agent                 │                    
+                    │ [r]     Restart agent                │                    
+                    │ [t]     Toggle theme                 │                    
+                    │ [?]     Toggle help                  │                    
+                    │ Press anyukey to close               │                    
+                    │                                      │                    
+                    ╰──────────────────────────────────────╯                    
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+ No notifications                test-repo | [:] commands | [?] help | [q] quit 
+"
+`;
+
+exports[`Agent toggle keyboard integration should show toggle shortcut in help dialog 1`] = `
+"                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                    ╭──────────────────────────────────────╮                    
+                    │                                      │                    
+                    │ Keyboard Shortcuts                   │                    
+                    │                                      │                    
+                    │ [:]     Command palette              │                    
+                    │ [+/n]   Add new ticket               │                    
+                    │ [j/k]   Navigate tickets             │                    
+                    │ [1-9]   Jump to ticket               │                    
+                    │ [x]     Close current ticket         │                    
+                    │ [o]     Open in Jira                 │                    
+                    │ [e]     Escalate / ask question      │                    
+                    │ [a]     Switch agent                 │                    
+                    │ [s]     Start/stop agent             │                    
+                    │ [t]     Toggle theme                 │                    
+                    │ [?]     Toggle help                  │                    
+                    │ Press anyukey to close               │                    
+                    │                                      │                    
+                    ╰──────────────────────────────────────╯                    
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+ No notifications                test-repo | [:] commands | [?] help | [q] quit 
+"
+`;

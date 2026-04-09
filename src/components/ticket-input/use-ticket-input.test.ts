@@ -53,7 +53,7 @@ describe("useTicketInput (logic tests)", () => {
 
   describe("submit logic", () => {
     it("should call fetchIssue with ticket key", async () => {
-      const fetchIssue = mock((key: string) => Promise.resolve(mockJiraIssue));
+      const fetchIssue = mock((_key: string) => Promise.resolve(mockJiraIssue));
       const ticketKey = "AM-123";
 
       if (isValidTicketKey(ticketKey)) {
@@ -63,7 +63,7 @@ describe("useTicketInput (logic tests)", () => {
     });
 
     it("should not call fetchIssue with invalid key", async () => {
-      const fetchIssue = mock((key: string) => Promise.resolve(mockJiraIssue));
+      const fetchIssue = mock((_key: string) => Promise.resolve(mockJiraIssue));
       const ticketKey = extractTicketKey("invalid");
 
       if (isValidTicketKey(ticketKey)) {
@@ -73,9 +73,9 @@ describe("useTicketInput (logic tests)", () => {
     });
 
     it("should call onSubmit with correct args on success", async () => {
-      const fetchIssue = mock((key: string) => Promise.resolve(mockJiraIssue));
+      const fetchIssue = mock((_key: string) => Promise.resolve(mockJiraIssue));
       const onSubmit = mock(
-        (key: string, agent: string, issue: JiraIssue) => {}
+        (_key: string, _agent: string, _issue: JiraIssue) => {}
       );
       const ticketKey = "AM-123";
       const agent = "opencode";
@@ -89,7 +89,7 @@ describe("useTicketInput (logic tests)", () => {
     });
 
     it("should handle fetch error", async () => {
-      const fetchIssue = mock((key: string) =>
+      const fetchIssue = mock((_key: string) =>
         Promise.reject(new Error("Ticket not found"))
       );
       let error: string | null = null;

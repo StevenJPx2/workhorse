@@ -3,9 +3,9 @@
  */
 
 import type { AgentType } from "../../types/config.ts";
-import type { TicketStatus } from "../../types/ticket.ts";
-import type { TmuxSession } from "../session/tmux.ts";
-import type { Worktree } from "../session/worktree.ts";
+
+import type { TmuxSession } from "../session/tmux/index.ts";
+import type { Worktree } from "../session/worktree/index.ts";
 
 /**
  * Agent state tracked by orchestrator
@@ -45,6 +45,8 @@ export interface SpawnAgentOptions {
   jiraCloudId?: string;
   jiraSummary?: string;
   jiraDescription?: string;
+  /** Full Jira URL for the ticket (e.g., "https://company.atlassian.net/browse/AM-123") */
+  jiraUrl?: string;
 }
 
 /**
@@ -65,12 +67,23 @@ export interface StopResult {
 }
 
 /**
+ * OpenCode session status
+ */
+export type OpenCodeStatus =
+  | { type: "idle" }
+  | { type: "busy" }
+  | { type: "retry"; attempt: number; message: string; next: number }
+  | { type: "offline"; error: string };
+
+/**
  * Agent health check result
  */
 export interface HealthCheckResult {
   ticketId: string;
   healthy: boolean;
   sessionExists: boolean;
+  openCodeHealthy?: boolean;
+  openCodeStatus?: OpenCodeStatus;
   lastOutput?: string;
   checkedAt: string;
 }
@@ -102,4 +115,8 @@ export interface AgentSystemInstruction {
   description: string | null;
   worktreePath: string;
   branchName: string;
+  /** Full Jira URL for the ticket */
+  jiraUrl?: string;
+  /** Jira cloud ID for Atlassian MCP calls */
+  jiraCloudId?: string;
 }

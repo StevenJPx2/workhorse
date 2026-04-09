@@ -18,7 +18,7 @@ import {
   saveGlobalConfig,
   loadConfig,
   saveProjectConfig,
-} from "./config.ts";
+} from "./config/index.ts";
 
 describe("config", () => {
   // Save/restore actual config to avoid polluting user's real config

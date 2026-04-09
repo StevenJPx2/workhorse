@@ -4,8 +4,8 @@
 
 import { render } from "@opentui/solid";
 import * as p from "@clack/prompts";
-import { configExists } from "../../lib/config.ts";
-import { App } from "../../app/App.tsx";
+import { configExists } from "../../lib/config/index.ts";
+import { App } from "../../app/app.tsx";
 
 export interface DashboardOptions {
   /** Show all tickets across all repositories */

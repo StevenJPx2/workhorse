@@ -2,15 +2,12 @@
  * Tests for MCP Server tool registration
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { z } from "zod";
-import {
-  createJiratownServer,
-  getToolDefinitions,
-  TOOL_NAMES,
-  type ToolDefinition,
-} from "./server.ts";
+
+import { createJiratownServer } from "./server.ts";
+import { getToolDefinitions, type ToolDefinition } from "./tool-definitions.ts";
+import { TOOL_NAMES } from "./tool-names.ts";
 import { initNotificationsTable } from "../notifications/notification-store.ts";
 
 // Test helpers

@@ -1,16 +1,18 @@
 /**
  * Main Layout component for Jiratown TUI
  *
- * Provides the shell with header, tab bar, main content area, and footer
+ * Provides the shell with header, main content area, and footer.
+ * Uses composables directly instead of receiving handler props.
  */
 
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createMemo, type JSX, Show } from "solid-js";
 import { CommandPalette } from "../components/command-palette/index.ts";
-import { Dialog } from "../components/dialog/index.ts";
 import { NotificationBar } from "../components/notification-bar/index.ts";
-import { useCommandPalette, useModal } from "../hooks/index.ts";
-import type { Notification } from "../hooks/index.ts";
+import { TicketSidebar, SIDEBAR_WIDTH } from "../components/ticket-sidebar/index.ts";
+import { HelpDialog } from "./help-dialog.tsx";
+import { useCommandPalette, useModal, useNotifications, useLayoutActions } from "../hooks/index.ts";
+import { useTicketsContext } from "../lib/tickets-context.tsx";
 import { useKeyboardContext } from "../lib/keyboard-context.ts";
 import { spacing, useTheme } from "../lib/theme/index.ts";
 import { createCommands } from "./commands.ts";
@@ -20,30 +22,10 @@ export interface LayoutProps {
   rig: string | null;
   /** Whether showing all tickets (global view) */
   showAll: boolean;
-  /** Sidebar content (TicketSidebar) */
-  sidebar?: JSX.Element;
   /** Main content area */
   children?: JSX.Element;
-  /** Modal/dialog overlays */
-  overlays?: JSX.Element;
-  /** Notifications to display in footer */
-  notifications?: Notification[];
-  /** Number of unread notifications */
-  unreadCount?: number;
-  /** Whether there are blocking notifications */
-  hasBlocking?: boolean;
-  /** Callback when quit is requested */
-  onQuit?: () => void;
-  /** Callback to show add ticket modal */
-  onAddTicket?: () => void;
-  /** Callback to close current ticket */
-  onCloseTicket?: () => void;
-  /** Callback to open in Jira */
-  onOpenInJira?: () => void;
-  /** Callback to escalate */
-  onEscalate?: () => void;
-  /** Callback to switch agent */
-  onSwitchAgent?: () => void;
+  /** Quit callback from renderer */
+  onQuit: () => void | Promise<void>;
 }
 
 export function Layout(props: LayoutProps) {
@@ -51,29 +33,37 @@ export function Layout(props: LayoutProps) {
   const { theme, themeName, setTheme } = useTheme();
   const keyboard = useKeyboardContext();
 
-  // Use useModal hook for help dialog state
+  // Get tickets and selection from context
+  const { tickets, selection, currentTicket, actions: ticketActions } = useTicketsContext();
+
+  // Notifications for the current ticket (defined where used)
+  const notifications = useNotifications({
+    ticketId: () => currentTicket()?.id,
+    autoLoad: true,
+    pollInterval: 5000,
+  });
+
+  // Help dialog (local modal, not in global system)
   const helpModal = useModal();
 
-  // Command actions
+  // Layout actions (uses contexts internally: TicketsContext, WorkflowContext, ModalSystem)
+  const layoutActions = useLayoutActions({
+    currentTicketId: () => currentTicket()?.id,
+    reloadTickets: ticketActions.reload,
+    onQuit: props.onQuit,
+  });
+
+  // Command actions for command palette
   const commandActions = {
-    addTicket: () => {
-      props.onAddTicket?.();
-    },
-    closeTicket: () => {
-      props.onCloseTicket?.();
-    },
-    openInJira: () => {
-      props.onOpenInJira?.();
-    },
-    escalate: () => {
-      props.onEscalate?.();
-    },
-    switchAgent: () => {
-      props.onSwitchAgent?.();
-    },
+    addTicket: layoutActions.addTicket,
+    closeTicket: layoutActions.closeTicket,
+    openInJira: layoutActions.openInJira,
+    escalate: layoutActions.escalate,
+    switchAgent: layoutActions.switchAgent,
+    toggleAgent: layoutActions.toggleAgent,
     toggleHelp: () => helpModal.toggle(),
-    quit: () => props.onQuit?.(),
-    setTheme: setTheme,
+    quit: layoutActions.quit,
+    setTheme,
     currentTheme: themeName,
   };
 
@@ -81,37 +71,22 @@ export function Layout(props: LayoutProps) {
   const commands = createMemo(() => createCommands(commandActions));
 
   // Command palette state
-  const palette = useCommandPalette({
-    commands: commands(),
-  });
+  const palette = useCommandPalette({ commands: commands() });
 
   // Global keyboard shortcuts
   useKeyboard((key) => {
-    // Don't process shortcuts when in input mode
+    // Don't process shortcuts when in input mode or modals open
     if (keyboard.isInputMode()) return;
-
-    // Don't process shortcuts when palette is open
     if (palette.isOpen()) return;
-
-    // Don't process shortcuts when help modal is open
     if (helpModal.isOpen()) return;
 
     // Ticket actions
-    if (key.name === "n" || key.name === "+") {
-      props.onAddTicket?.();
-    }
-    if (key.name === "x") {
-      props.onCloseTicket?.();
-    }
-    if (key.name === "o") {
-      props.onOpenInJira?.();
-    }
-    if (key.name === "e") {
-      props.onEscalate?.();
-    }
-    if (key.name === "a") {
-      props.onSwitchAgent?.();
-    }
+    if (key.name === "n" || key.name === "+") layoutActions.addTicket();
+    if (key.name === "x") layoutActions.closeTicket();
+    if (key.name === "o") layoutActions.openInJira();
+    if (key.name === "e") layoutActions.escalate();
+    if (key.name === "a") layoutActions.switchAgent();
+    if (key.name === "s") layoutActions.toggleAgent();
 
     // Theme toggle (cycle through themes)
     if (key.name === "t") {
@@ -127,27 +102,15 @@ export function Layout(props: LayoutProps) {
     }
 
     // App actions
-    if (key.name === "q" && !key.ctrl && !key.meta) {
-      props.onQuit?.();
-    }
-    if (key.name === "?" || (key.name === "/" && key.shift)) {
-      helpModal.toggle();
-    }
-    if (key.name === "escape") {
-      helpModal.close();
-    }
-    // Vim-style command palette trigger
-    if (key.name === ":" || key.name === ";") {
-      palette.open();
-    }
+    if (key.name === "q" && !key.ctrl && !key.meta) layoutActions.quit();
+    if (key.name === "?" || (key.name === "/" && key.shift)) helpModal.toggle();
+    if (key.name === "escape") helpModal.close();
+    if (key.name === ":" || key.name === ";") palette.open();
   });
 
   const rigDisplay = () => {
-    if (props.showAll) {
-      return "all repos";
-    }
+    if (props.showAll) return "all repos";
     if (props.rig) {
-      // Extract just the repo name from the full path
       const parts = props.rig.split("/");
       return parts[parts.length - 1] || props.rig;
     }
@@ -164,14 +127,16 @@ export function Layout(props: LayoutProps) {
       {/* Main Content Area - Horizontal layout with sidebar */}
       <box flexGrow={1} flexDirection="row">
         {/* Sidebar - full height, elevated background */}
-        {props.sidebar}
+        <TicketSidebar
+          tickets={tickets}
+          selectedIndex={selection.selectedIndex()}
+          width={SIDEBAR_WIDTH}
+          onSelect={(i) => selection.select(i)}
+          onNew={layoutActions.addTicket}
+        />
 
         {/* Main content - takes remaining space */}
-        <box
-          flexGrow={1}
-          flexDirection="column"
-          backgroundColor={theme().bg.base}
-        >
+        <box flexGrow={1} flexDirection="column" backgroundColor={theme().bg.base}>
           {props.children}
         </box>
       </box>
@@ -186,9 +151,9 @@ export function Layout(props: LayoutProps) {
         paddingRight={spacing.sm}
       >
         <NotificationBar
-          notifications={props.notifications ?? []}
-          unreadCount={props.unreadCount ?? 0}
-          hasBlocking={props.hasBlocking ?? false}
+          notifications={notifications.notifications()}
+          unreadCount={notifications.unreadCount()}
+          hasBlocking={notifications.hasBlocking()}
         />
         <text fg={theme().text.secondary}>
           {rigDisplay()} | [:] commands | [?] help | [q] quit
@@ -202,60 +167,6 @@ export function Layout(props: LayoutProps) {
 
       {/* Command Palette */}
       <CommandPalette palette={palette} />
-
-      {/* Additional overlays (modals, dialogs) */}
-      {props.overlays}
     </box>
-  );
-}
-
-interface HelpDialogProps {
-  onClose: () => void;
-}
-
-function HelpDialog(props: HelpDialogProps) {
-  const { theme } = useTheme();
-
-  // Close on any key press
-  useKeyboard(() => {
-    props.onClose();
-  });
-
-  const shortcuts = [
-    { key: ":", desc: "Command palette" },
-    { key: "+/n", desc: "Add new ticket" },
-    { key: "j/k", desc: "Navigate tickets" },
-    { key: "1-9", desc: "Jump to ticket" },
-    { key: "x", desc: "Close current ticket" },
-    { key: "o", desc: "Open in Jira" },
-    { key: "e", desc: "Escalate / ask question" },
-    { key: "a", desc: "Switch agent" },
-    { key: "t", desc: "Toggle theme" },
-    { key: "?", desc: "Toggle help" },
-    { key: "q", desc: "Quit" },
-  ];
-
-  return (
-    <Dialog
-      isOpen={true}
-      onClose={props.onClose}
-      lockId="help-dialog"
-      title="Keyboard Shortcuts"
-      hint="Press any key to close"
-      width={40}
-      height={18}
-      closeOnEscape={false}
-    >
-      <box flexDirection="column">
-        {shortcuts.map((s) => (
-          <box flexDirection="row" height={1}>
-            <box width={8}>
-              <text fg={theme().primary}>[{s.key}]</text>
-            </box>
-            <text fg={theme().text.primary}>{s.desc}</text>
-          </box>
-        ))}
-      </box>
-    </Dialog>
   );
 }

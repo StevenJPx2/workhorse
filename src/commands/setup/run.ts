@@ -8,7 +8,7 @@ import {
   saveGlobalConfig,
   getConfigPaths,
   ensureConfigDir,
-} from "../../lib/config.ts";
+} from "../../lib/config/index.ts";
 import { initDatabase } from "../../lib/db.ts";
 import type { AgentType, JiratownConfig } from "../../types/config.ts";
 import { checkAllDependencies } from "./dependencies.ts";

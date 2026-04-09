@@ -2,7 +2,7 @@
  * Tests for clipboard utility
  */
 
-import { describe, expect, it, mock, spyOn, beforeEach, afterEach } from "bun:test";
+import { describe, expect, it, spyOn, beforeEach, afterEach } from "bun:test";
 import { readClipboard, readClipboardSync } from "./clipboard.ts";
 
 describe("clipboard", () => {

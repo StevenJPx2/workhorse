@@ -5,14 +5,14 @@
  */
 
 import { createSignal, onMount } from "solid-js";
-import type { Worktree } from "../../harness/session/worktree.ts";
+import type { Worktree } from "../../harness/session/worktree/index.ts";
 import {
   createWorktree as gitCreate,
   removeWorktree as gitRemove,
   listWorktrees as gitList,
   worktreeExists as gitExists,
   getWorktree as gitGet,
-} from "../../harness/session/worktree.ts";
+} from "../../harness/session/worktree/index.ts";
 import type { UseWorktreeOptions, UseWorktreeReturn } from "./types.ts";
 
 /**

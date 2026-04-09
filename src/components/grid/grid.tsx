@@ -17,34 +17,14 @@
  * </Grid>
  */
 
-import { createSignal, type JSX } from "solid-js";
+import { createSignal } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { useKeyboardContext } from "../../lib/keyboard-context.ts";
-import {
-  GridContext,
-  type Direction,
-  type GridCellConfig,
-  type GridContextValue,
-} from "./grid-context.ts";
+import { GridContext, type Direction, type GridCellConfig, type GridContextValue } from "./grid-context.ts";
+import { type GridProps, type CellData } from "./grid-types.ts";
+import { getNeighbor } from "./grid-navigation.ts";
 
-export interface GridProps {
-  /** Number of rows in the grid */
-  rows: number;
-  /** Number of columns in the grid */
-  cols: number;
-  /** Whether to wrap navigation at edges */
-  wrap?: boolean;
-  /** Grid content (GridCells wrapped in layout elements) */
-  children: JSX.Element;
-}
-
-interface CellData {
-  id: string;
-  row: number;
-  col: number;
-  rowSpan: number;
-  colSpan: number;
-}
+export type { GridProps } from "./grid-types.ts";
 
 /**
  * Grid container with spatial navigation
@@ -52,10 +32,7 @@ interface CellData {
 export function Grid(props: GridProps) {
   const keyboard = useKeyboardContext();
 
-  // Cell registry (just position data, no content)
   const [cells, setCells] = createSignal<Map<string, CellData>>(new Map());
-
-  // Focus state signals
   const [focusedId, setFocusedId] = createSignal<string | null>(null);
   const [editModeId, setEditModeId] = createSignal<string | null>(null);
 
@@ -75,7 +52,6 @@ export function Grid(props: GridProps) {
       return next;
     });
 
-    // Auto-focus first cell if none focused
     if (focusedId() === null) {
       setFocusedId(id);
     }
@@ -110,8 +86,6 @@ export function Grid(props: GridProps) {
   };
 
   // Enter edit mode for the focused cell
-  // Also signals the keyboard context so other handlers (Modal, Layout)
-  // know to suppress their keyboard shortcuts
   const enterEditMode = (id: string): void => {
     if (cells().has(id) && focusedId() === id) {
       setEditModeId(id);
@@ -125,73 +99,22 @@ export function Grid(props: GridProps) {
     keyboard.exitInputMode();
   };
 
-  // Get cell at position
-  const getCellAt = (row: number, col: number): CellData | undefined => {
-    for (const cell of cells().values()) {
-      if (
-        row >= cell.row &&
-        row < cell.row + cell.rowSpan &&
-        col >= cell.col &&
-        col < cell.col + cell.colSpan
-      ) {
-        return cell;
-      }
-    }
-    return undefined;
-  };
-
-  // Get neighbor in a direction
-  const getNeighbor = (fromId: string, direction: Direction): string | null => {
-    const from = cells().get(fromId);
-    if (!from) return null;
-
-    let targetRow = from.row;
-    let targetCol = from.col;
-
-    switch (direction) {
-      case "up":
-        targetRow = from.row - 1;
-        if (targetRow < 0) {
-          if (!wrap()) return null;
-          targetRow = props.rows - 1;
-        }
-        break;
-      case "down":
-        targetRow = from.row + from.rowSpan;
-        if (targetRow >= props.rows) {
-          if (!wrap()) return null;
-          targetRow = 0;
-        }
-        break;
-      case "left":
-        targetCol = from.col - 1;
-        if (targetCol < 0) {
-          if (!wrap()) return null;
-          targetCol = props.cols - 1;
-        }
-        break;
-      case "right":
-        targetCol = from.col + from.colSpan;
-        if (targetCol >= props.cols) {
-          if (!wrap()) return null;
-          targetCol = 0;
-        }
-        break;
-    }
-
-    const neighbor = getCellAt(targetRow, targetCol);
-    return neighbor?.id ?? null;
-  };
-
-  // Movement functions
+  // Move focus in a direction
   const move = (direction: Direction): void => {
     const current = focusedId();
     if (!current) return;
 
-    const neighbor = getNeighbor(current, direction);
+    const neighbor = getNeighbor({
+      cells: cells(),
+      fromId: current,
+      direction,
+      rows: props.rows,
+      cols: props.cols,
+      wrap: wrap(),
+    });
+
     if (neighbor && neighbor !== current) {
       setFocusedId(neighbor);
-      // Exit edit mode if active (shouldn't happen during navigation, but be safe)
       if (editModeId()) {
         setEditModeId(null);
         keyboard.exitInputMode();
@@ -206,7 +129,6 @@ export function Grid(props: GridProps) {
 
   // Keyboard handler
   useKeyboard((key) => {
-    // In edit mode - only handle Enter/Escape to exit
     if (editModeId()) {
       if (key.name === "return" || key.name === "escape") {
         exitEditMode();
@@ -214,7 +136,6 @@ export function Grid(props: GridProps) {
       return;
     }
 
-    // Grid navigation mode
     switch (key.name) {
       case "up":
         moveUp();
@@ -236,11 +157,10 @@ export function Grid(props: GridProps) {
     }
   });
 
-  // Create context value
   const contextValue: GridContextValue = {
     rows: props.rows,
     cols: props.cols,
-    cells: cells(), // Provide current cells map
+    cells: cells(),
     focusedId,
     editModeId,
     registerCell,
@@ -254,7 +174,6 @@ export function Grid(props: GridProps) {
     moveRight,
   };
 
-  // Grid just provides context - children handle their own layout
   return (
     <GridContext.Provider value={contextValue}>
       {props.children}

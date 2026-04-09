@@ -15,7 +15,7 @@ import { detectRig } from "../src/lib/detect-rig";
 import { loadConfig, configExists } from "../src/lib/config";
 import { initDatabase, insertTicket, deleteTicket, getTicketsByRig } from "../src/lib/db";
 import { spawnAgent, stopAgent, getAgent } from "../src/harness/orchestrator/orchestrator";
-import { listSessions } from "../src/harness/session/tmux";
+import { listSessions } from "../src/harness/session/tmux/index";
 import { randomUUID } from "crypto";
 
 const TEST_TICKET_KEY = "TEST-999";

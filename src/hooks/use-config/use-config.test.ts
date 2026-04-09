@@ -6,7 +6,7 @@ import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 import { createRoot } from "solid-js";
 import { rmSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { useConfig } from "./use-config.ts";
 
 describe("useConfig", () => {

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
+  "jsPlugins": ["./plugins/eslint-plugin-jiratown"],
+  "rules": {
+    "jiratown/max-lines-per-file": ["error", 200],
+    "jiratown/enforce-kebab-case-filenames": "warn",
+    "jiratown/enforce-colocated-exports": "warn",
+    "jiratown/prefer-composables-over-props": "warn",
+    "jiratown/enforce-test-colocation": "warn"
+  }
+}

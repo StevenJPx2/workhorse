@@ -1,0 +1,266 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Button snapshots variants 1`] = `
+"           Default            
+                              
+           Primary            
+                              
+           Success            
+                              
+           Warning            
+                              
+            Danger            
+                              
+           Disabled           
+                              
+"
+`;
+
+exports[`Button snapshots ghost style 1`] = `
+"        Ghost Default         
+                              
+        Ghost Primary         
+                              
+         Ghost Danger         
+                              
+                              
+                              
+"
+`;
+
+exports[`Button snapshots sizes 1`] = `
+" Sm     Md       Lg                     
+                                        
+                                        
+"
+`;
+
+exports[`Button snapshots shortcuts and icons 1`] = `
+"            + New             
+                              
+         Ctrl+S:save          
+                              
+           Delete ×           
+                              
+"
+`;
+
+exports[`ButtonGroup snapshot default 1`] = `
+" s:Save   c:Cancel   d:Delete                     
+                                                  
+                                                  
+"
+`;
+
+exports[`ActionBar snapshot default 1`] = `
+"                  e:escalate   a:switch agent   j:open jira 
+                                                            
+                                                            
+"
+`;
+
+exports[`Card snapshots with title 1`] = `
+"╭──────────────────────────────────────╮     
+│                                      │     
+│ Ticket Details                       │     
+│                                      │     
+│ AM-123: Fix authentication bug       │     
+│ Status: In Progress                  │     
+│                                      │     
+╰──────────────────────────────────────╯     
+                                             
+                                             
+"
+`;
+
+exports[`Card snapshots border styles 1`] = `
+"┌──────────────┐ ╔══════════════╗ ╭──────────────╮     
+│              │ ║              ║ │              │     
+│ Single       │ ║ Double       ║ │ Rounded      │     
+│              │ ║              ║ │              │     
+│ A            │ ║ B            ║ │ C            │     
+│              │ ║              ║ │              │     
+└──────────────┘ ╚══════════════╝ ╰──────────────╯     
+                                                       
+"
+`;
+
+exports[`TextInput snapshots empty with placeholder 1`] = `
+"Name                                         
+                                             
+╭──────────────────────────────────────╮     
+│ Type here...                         │     
+╰──────────────────────────────────────╯     
+                                             
+                                             
+                                             
+"
+`;
+
+exports[`TextInput snapshots with value 1`] = `
+"Ticket                                       
+                                             
+╭──────────────────────────────────────╮     
+│ AM-123                               │     
+╰──────────────────────────────────────╯     
+                                             
+                                             
+                                             
+"
+`;
+
+exports[`TextInput snapshots in grid edit mode shows cursor 1`] = `
+"╭──────────────────────────────────────╮     
+│ hello_                               │     
+╰──────────────────────────────────────╯     
+                                             
+                                             
+                                             
+                                             
+                                             
+"
+`;
+
+exports[`Select snapshots vertical 1`] = `
+"┌────────────────────────────┐
+│Agent                       │
+│                            │
+│[ ] OpenCode                │
+│                            │
+│[*] Claude Code             │
+│                            │
+│[ ] Cursor                  │
+│                            │
+└────────────────────────────┘
+"
+`;
+
+exports[`Select snapshots inline 1`] = `
+"┌────────────────────────────────────────────────┐
+│Agent                                           │
+│                                                │
+│[*] OpenCode  [ ] Claude Code  [ ] Cursor       │
+│                                                │
+└────────────────────────────────────────────────┘
+"
+`;
+
+exports[`Dialog snapshots open with title and hint 1`] = `
+"                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+       ╭───────────────────────────────────────────╮        
+       │                                           │        
+       │ Confirm Action                            │        
+       │                                           │        
+       │ Are you sure you want to proceed?         │        
+       │                                           │        
+       │                                           │        
+       │ Press Escape to close                     │        
+       │                                           │        
+       ╰───────────────────────────────────────────╯        
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+"
+`;
+
+exports[`Dialog snapshots with footer buttons 1`] = `
+"                                                            
+                                                            
+                                                            
+                                                            
+       ╭───────────────────────────────────────────╮        
+       │                                           │        
+       │ Delete Ticket                             │        
+       │                                           │        
+       │ This cannot be undone.                    │        
+       │                                           │        
+       │                                           │        
+       │                                           │        
+       │                                           │        
+       │                         Cancel    Delete  │        
+       │                                           │        
+       ╰───────────────────────────────────────────╯        
+                                                            
+                                                            
+                                                            
+                                                            
+"
+`;
+
+exports[`Dialog snapshots closed renders nothing 1`] = `
+"                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+"
+`;
+
+exports[`Grid snapshot 3x3 with buttons 1`] = `
+"  A     B     C                         
+                                        
+  D     E     F                         
+                                        
+                                        
+                                        
+"
+`;
+
+exports[`Grid snapshot after navigating down 1`] = `
+"        Top         
+       Bottom       
+                    
+                    
+"
+`;
+
+exports[`StatusBadge snapshots all statuses 1`] = `
+"╭───────────╮  ╭───╮  ╭─────────╮                           
+│ ○ PENDING │  │ ○ │  │○ PENDING│                           
+╰───────────╯  ╰───╯  ╰─────────╯                           
+╭──────────╮  ╭───╮  ╭────────╮                             
+╰─◎─QUEUED─╯  ╰─◎─╯  ╰◎─QUEUED╯                             
+╭────────────╮  ╭───╮  ╭──────────╮                         
+│ ◐ PLANNING │  │ ◐ │  │◐ PLANNING│                         
+╰────────────╯  ╰───╯  ╰──────────╯                         
+╭────────────────╮  ╭───╮  ╭──────────────╮                 
+╰─▶─IMPLEMENTING─╯  ╰─▶─╯  ╰▶─IMPLEMENTING╯                 
+╭───────────╮  ╭───╮  ╭─────────╮                           
+│ ! BLOCKED │  │ ! │  │! BLOCKED│                           
+╰───────────╯  ╰───╯  ╰─────────╯                           
+╭──────────────╮  ╭───╮  ╭────────────╮                     
+╰─⬆─PR─CREATED─╯  ╰─⬆─╯  ╰⬆─PR─CREATED╯                     
+╭─────────────╮  ╭───╮  ╭───────────╮                       
+│ ◉ IN REVIEW │  │ ◉ │  │◉ IN REVIEW│                       
+╰─────────────╯  ╰───╯  ╰───────────╯                       
+╭────────╮  ╭───╮  ╭──────╮                                 
+╰─✓─DONE─╯  ╰─✓─╯  ╰✓─DONE╯                                 
+"
+`;
+
+exports[`Divider snapshots variants 1`] = `
+"                                                  
+────────────────────────────────────────          
+                                                  
+                                                  
+───── OR ───────────────────────────────          
+                                                  
+                                                  
+════════════════════════════════════════          
+                                                  
+                                                  
+────────────────────                              
+                                                  
+"
+`;

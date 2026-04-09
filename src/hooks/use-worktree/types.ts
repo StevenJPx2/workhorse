@@ -3,7 +3,7 @@
  */
 
 import type { Accessor } from "solid-js";
-import type { Worktree } from "../../harness/session/worktree.ts";
+import type { Worktree } from "../../harness/session/worktree/index.ts";
 
 /**
  * Options for useWorktree hook

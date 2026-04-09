@@ -8,16 +8,15 @@
 import { createSignal, onMount, onCleanup } from "solid-js";
 import type { AgentInstance, HealthCheckResult } from "../../harness/orchestrator/types.ts";
 import {
-  spawnAgent as orchestratorSpawn,
-  stopAgent as orchestratorStop,
   checkAgentHealth,
-  getAgent,
   getAllAgents,
   getAgentsByState,
   sendMessageToAgent,
   captureAgentOutput,
 } from "../../harness/orchestrator/orchestrator.ts";
-import type { UseAgentOptions, UseAgentReturn, SpawnOptions } from "./types.ts";
+import type { UseAgentOptions, UseAgentReturn } from "./types.ts";
+import { createResolvers } from "./use-agent-helpers.ts";
+import { createAgentActions } from "./use-agent-actions.ts";
 
 /**
  * Hook for managing AI agents with reactive state
@@ -54,33 +53,9 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);
 
+  const resolvers = createResolvers(options, setError);
+
   let healthCheckTimer: ReturnType<typeof setInterval> | null = null;
-
-  // Resolve option values (support both static values and getter functions)
-  const resolveRepoPath = (): string | undefined => {
-    const rp = options.repoPath;
-    return typeof rp === "function" ? rp() : rp;
-  };
-
-  const resolveJiraCloudId = (): string | undefined => {
-    const cid = options.jiraCloudId;
-    return typeof cid === "function" ? cid() : cid;
-  };
-
-  const getRepoPath = (): string => {
-    const repoPath = resolveRepoPath();
-    if (!repoPath) {
-      throw new Error("repoPath is required for agent operations");
-    }
-    return repoPath;
-  };
-
-  const handleError = (err: unknown): Error => {
-    const e = err instanceof Error ? err : new Error(String(err));
-    setError(e);
-    options.onError?.(e);
-    return e;
-  };
 
   const reload = (): void => {
     const allAgents = getAllAgents();
@@ -91,67 +66,13 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     setAgents(agentMap);
   };
 
-  const spawn = async (spawnOptions: SpawnOptions): Promise<AgentInstance | null> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const repoPath = getRepoPath();
-
-      const result = await orchestratorSpawn({
-        ticketId: spawnOptions.ticketId,
-        agentType: spawnOptions.agentType,
-        repoPath,
-        issueType: spawnOptions.issueType,
-        baseBranch: spawnOptions.baseBranch,
-        jiraCloudId: resolveJiraCloudId(),
-        jiraSummary: spawnOptions.summary,
-        jiraDescription: spawnOptions.description,
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to spawn agent");
-      }
-
-      reload();
-      options.onStateChange?.(spawnOptions.ticketId, "running");
-
-      return result.instance ?? null;
-    } catch (err) {
-      handleError(err);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const stop = async (
-    ticketId: string,
-    removeWorktree: boolean = false
-  ): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const repoPath = getRepoPath();
-
-      const result = await orchestratorStop(ticketId, repoPath, removeWorktree);
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to stop agent");
-      }
-
-      reload();
-      options.onStateChange?.(ticketId, "stopped");
-
-      return true;
-    } catch (err) {
-      handleError(err);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { spawn, stop } = createAgentActions({
+    setError,
+    setIsLoading,
+    resolvers,
+    onStateChange: options.onStateChange,
+    reload,
+  });
 
   const get = (ticketId: string): AgentInstance | undefined => {
     return agents().get(ticketId);
@@ -171,7 +92,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       setError(null);
       return await sendMessageToAgent(ticketId, message);
     } catch (err) {
-      handleError(err);
+      resolvers.handleError(err);
       return false;
     }
   };
@@ -181,7 +102,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       setError(null);
       return await captureAgentOutput(ticketId);
     } catch (err) {
-      handleError(err);
+      resolvers.handleError(err);
       return null;
     }
   };
@@ -191,15 +112,18 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       setError(null);
       const result = await checkAgentHealth(ticketId);
 
-      // Update state if health check detected a crash
-      if (!result.healthy && get(ticketId)?.state === "running") {
-        reload();
-        options.onStateChange?.(ticketId, "crashed");
+      const prevState = get(ticketId)?.state;
+
+      reload();
+
+      const newState = get(ticketId)?.state;
+      if (prevState !== newState && newState) {
+        options.onStateChange?.(ticketId, newState);
       }
 
       return result;
     } catch (err) {
-      handleError(err);
+      resolvers.handleError(err);
       return null;
     }
   };
@@ -208,7 +132,6 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     return getAgentsByState("running");
   };
 
-  // Start health check polling if enabled
   const startHealthChecks = () => {
     if (options.healthCheckInterval && options.healthCheckInterval > 0) {
       healthCheckTimer = setInterval(async () => {
@@ -220,7 +143,6 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     }
   };
 
-  // Cleanup on unmount
   onCleanup(() => {
     if (healthCheckTimer) {
       clearInterval(healthCheckTimer);
@@ -228,7 +150,6 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     }
   });
 
-  // Auto-load if requested
   if (options.autoLoad) {
     onMount(() => {
       reload();

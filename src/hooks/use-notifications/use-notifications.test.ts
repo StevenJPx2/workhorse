@@ -3,8 +3,15 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { createRoot } from "solid-js";
 import { Database } from "bun:sqlite";
 import { initNotificationsTable } from "../../harness/notifications/notification-store.ts";
+import { useNotifications } from "./use-notifications.ts";
+import {
+  initDatabase,
+  closeDatabase,
+  resetDatabaseRef,
+} from "../../lib/db/index.ts";
 
 // Test the underlying store functions (hook tests require Solid.js runtime)
 import {
@@ -16,6 +23,102 @@ import {
   acknowledgeNotifications,
   deleteNotification,
 } from "../../harness/notifications/notification-store.ts";
+
+describe("useNotifications hook", () => {
+  beforeEach(() => {
+    closeDatabase();
+    resetDatabaseRef();
+    initDatabase();
+  });
+
+  afterEach(() => {
+    closeDatabase();
+    resetDatabaseRef();
+  });
+
+  test("should initialize with empty notifications", () => {
+    createRoot((dispose) => {
+      const hook = useNotifications();
+      expect(hook.notifications()).toEqual([]);
+      expect(hook.unreadCount()).toBe(0);
+      expect(hook.hasBlocking()).toBe(false);
+      expect(hook.isLoading()).toBe(false);
+      expect(hook.error()).toBeNull();
+      dispose();
+    });
+  });
+
+  test("should skip acknowledgeMany with empty array", () => {
+    createRoot((dispose) => {
+      const hook = useNotifications({ ticketId: "TEST-006" });
+
+      // Should not throw
+      hook.acknowledgeMany([]);
+
+      expect(hook.error()).toBeNull();
+      dispose();
+    });
+  });
+
+  test("should not start polling with zero or negative interval", () => {
+    createRoot((dispose) => {
+      const hook = useNotifications({
+        ticketId: "TEST-POLL-002",
+        pollInterval: 0,
+      });
+
+      // Should not throw
+      hook.startPolling();
+      hook.stopPolling();
+
+      dispose();
+    });
+  });
+
+  test("should stop existing polling before starting new one", () => {
+    createRoot((dispose) => {
+      const hook = useNotifications({
+        ticketId: "TEST-POLL-003",
+        pollInterval: 100,
+      });
+
+      // Start polling twice - should not throw
+      hook.startPolling();
+      hook.startPolling();
+
+      hook.stopPolling();
+
+      dispose();
+    });
+  });
+
+  test("should return null when create fails", () => {
+    createRoot((dispose) => {
+      closeDatabase();
+      resetDatabaseRef();
+
+      const hook = useNotifications({ ticketId: "TEST-FAIL-001" });
+
+      const result = hook.create({
+        ticket_id: "TEST-FAIL-001",
+        source_type: "system",
+        source_id: "fail-1",
+        priority: "normal",
+        summary: "Will fail",
+        content: "",
+      });
+
+      expect(result).toBeNull();
+
+      initDatabase();
+      dispose();
+    });
+  });
+
+  // Note: Tests that rely on reactive state updates (like create() updating notifications())
+  // don't work reliably in Solid.js server-side test environment. The underlying store
+  // functions are tested separately in the "notification store" describe block below.
+});
 
 describe("notification store (used by useNotifications)", () => {
   let db: Database;
