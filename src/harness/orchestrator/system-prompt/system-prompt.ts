@@ -32,12 +32,15 @@ export function generateSystemPrompt(info: AgentSystemInstruction): string {
   lines.push(`- Branch: ${info.branchName}`);
   lines.push("");
 
-  lines.push("**Important:**");
+  lines.push("**Important - Use Jiratown MCP Tools:**");
   lines.push(
     "- Use `jiratown_get_notifications` to check for updates from Jira or PR reviews"
   );
   lines.push(
-    "- Use `jiratown_update_status` to report progress (planning, implementing, etc.)"
+    "- Use `jiratown_update_status` to report progress: planning → implementing → testing → pr_created → in_review → done"
+  );
+  lines.push(
+    "- **IMPORTANT: Call `jiratown_update_status` with status='done' when the ticket is complete** (PR merged, QA verified, etc.)"
   );
   lines.push(
     "- Use `jiratown_escalate` if you need clarification or are blocked"

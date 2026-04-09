@@ -120,11 +120,15 @@ export async function sendKeys(
   return true;
 }
 
-export async function capturePane(ticketId: string): Promise<string | null> {
+export async function capturePane(
+  ticketId: string,
+  startLine: number = -100
+): Promise<string | null> {
   const sessionName = createTmuxSessionName(ticketId);
   const cmd = buildTmuxCommand("capture-pane", {
     targetSession: sessionName,
     print: true,
+    startLine,
   });
   const result = await execTmux(cmd);
 

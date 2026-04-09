@@ -16,7 +16,7 @@ import {
 
 describe("OpenCode Client", () => {
   describe("Port Allocation", () => {
-    test("allocates port starting from BASE_PORT (14096)", () => {
+    test("allocates port starting from BASE_PORT (14100)", () => {
       const ticketId = `PORT-TEST-${Date.now()}-1`;
       const port = getPortForTicket(ticketId);
 

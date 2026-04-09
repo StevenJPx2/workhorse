@@ -9,6 +9,7 @@ import { createSignal } from "solid-js";
 import { useTicketsContext } from "../../lib/tickets-context.tsx";
 import { useWorkflowContext } from "../../lib/workflow-context.tsx";
 import { useModalSystem } from "../use-modal-system/index.ts";
+import { clearSessionCache } from "../use-agent-summary/index.ts";
 import type { UseLayoutActionsOptions, UseLayoutActionsReturn } from "./types.ts";
 
 /**
@@ -110,6 +111,9 @@ export function useLayoutActions(
       console.log("[DEBUG] Agent already starting, ignoring");
       return;
     }
+
+    // Clear cached session data so agent summary re-fetches fresh data
+    clearSessionCache(ticketId);
 
     if (isRunning) {
       console.log("[DEBUG] Stopping agent for", ticketId);

@@ -19,7 +19,7 @@ import { WorkflowProvider, useWorkflowContext } from "../lib/workflow-context.ts
 import { useModalSystem } from "../hooks/use-modal-system/index.ts";
 import { useConfig, useAtlassian } from "../hooks/index.ts";
 import type { AgentType } from "../types/config.ts";
-import type { Ticket } from "../types/ticket.ts";
+
 import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
 import { useTicketActions } from "./use-ticket-actions.ts";
 
@@ -122,7 +122,17 @@ function AppContentInner(props: AppContentInnerProps) {
   // Context for ticket actions hook
   const ticketActionsContext = {
     actions: { update: actions.update, remove: actions.remove },
-    workflow: { sendToAgent: workflow.sendToAgent },
+    workflow: {
+      sendToAgent: workflow.sendToAgent,
+      stopWork: workflow.stopWork,
+    },
+  };
+
+  // Create ticket actions reactively - rebinds when ticket changes
+  const ticketActions = () => {
+    const ticket = currentTicket();
+    if (!ticket) return null;
+    return useTicketActions(ticket, ticketActionsContext);
   };
 
   return (
@@ -132,18 +142,18 @@ function AppContentInner(props: AppContentInnerProps) {
           <Show when={props.loading}>
             <text fg={theme().text.dim}>Loading...</text>
           </Show>
-          <Show when={!props.loading && currentTicket()} keyed>
-            {(ticket: Ticket) => {
-              const ticketActions = useTicketActions(ticket, ticketActionsContext);
-              return (
-                <TicketPane
-                  ticket={ticket}
-                  agentState={() => workflow.getAgentState(ticket.id)}
-                  events={[]}
-                  {...ticketActions}
-                />
-              );
-            }}
+          <Show when={!props.loading && currentTicket()}>
+            <TicketPane
+              ticket={currentTicket()!}
+              agentState={() => workflow.getAgentState(currentTicket()!.id)}
+              events={[]}
+              onStop={() => ticketActions()?.onStop()}
+              onEscalate={() => ticketActions()?.onEscalate()}
+              onSwitchAgent={(agent) => ticketActions()?.onSwitchAgent(agent)}
+              onOpenJira={() => ticketActions()?.onOpenJira()}
+              onClose={() => ticketActions()?.onClose()}
+              onSendMessage={(msg) => ticketActions()?.onSendMessage(msg)}
+            />
           </Show>
           <Show when={!props.loading && !currentTicket()}>
             <EmptyState showAll={props.showAll ?? false} rig={props.rig ?? null} />

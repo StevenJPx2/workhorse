@@ -73,11 +73,15 @@ const TicketsContext = createContext<TicketsContextValue>();
 /**
  * Provider component that sets up tickets and selection state
  */
+/** Default poll interval to refresh tickets (5 seconds) */
+const DEFAULT_POLL_INTERVAL = 5000;
+
 export function TicketsProvider(props: TicketsProviderProps) {
-  // Initialize tickets hook with rig filter
+  // Initialize tickets hook with rig filter and polling
   const ticketsHook = useTickets({
     rig: props.rig,
     autoLoad: props.autoLoad ?? false,
+    pollInterval: DEFAULT_POLL_INTERVAL,
   });
 
   // Initialize selection hook tied to tickets list

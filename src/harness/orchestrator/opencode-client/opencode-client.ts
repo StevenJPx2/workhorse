@@ -101,6 +101,7 @@ export async function getOpenCodeStatus(
  * Subscribe to events from an OpenCode instance
  *
  * This enables real-time updates of agent state.
+ * Events come wrapped in GlobalEvent: { directory, payload: Event }
  */
 export async function subscribeToEvents(
   ticketId: string,
@@ -115,12 +116,18 @@ export async function subscribeToEvents(
       const result = await client.global.event();
 
       if (result && Symbol.asyncIterator in result) {
-        for await (const event of result as AsyncIterable<OpenCodeEvent>) {
+        for await (const rawEvent of result as AsyncIterable<unknown>) {
           if (aborted) break;
-          const eventData = event as unknown as {
+          
+          // SDK wraps events in GlobalEvent: { directory, payload }
+          const globalEvent = rawEvent as { directory?: string; payload?: unknown };
+          const payload = globalEvent.payload ?? rawEvent;
+          
+          const eventData = payload as {
             type?: string;
             properties?: Record<string, unknown>;
           };
+          
           onEvent({
             type: (eventData.type as OpenCodeEventType) ?? "unknown",
             properties: eventData.properties ?? {},

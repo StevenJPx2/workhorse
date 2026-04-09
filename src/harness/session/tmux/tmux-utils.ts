@@ -40,6 +40,7 @@ export function buildTmuxCommand(
     case "capture-pane":
       if (options.targetSession) args.push("-t", options.targetSession);
       if (options.print) args.push("-p");
+      if (options.startLine !== undefined) args.push("-S", String(options.startLine));
       break;
 
     case "list-sessions":

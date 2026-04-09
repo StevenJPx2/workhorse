@@ -2,7 +2,6 @@
  * Type definitions for TicketPane component
  */
 
-import type { Accessor } from "solid-js";
 import type { Ticket, TicketEvent, TicketStatus } from "../../types/ticket.ts";
 import type { AgentType } from "../../types/config.ts";
 import type { AgentState } from "../../harness/orchestrator/types.ts";
@@ -17,12 +16,6 @@ export interface TicketPaneProps {
   agentState?: AgentState | (() => AgentState | undefined);
   /** Events/progress log for this ticket */
   events?: TicketEvent[];
-  /** Agent output lines (reactive accessor) */
-  agentOutput?: Accessor<string[]>;
-  /** Whether agent is running (reactive accessor) */
-  agentRunning?: Accessor<boolean>;
-  /** Last agent output update time (reactive accessor) */
-  agentOutputUpdated?: Accessor<string | null>;
   /** Called when user requests escalation */
   onEscalate?: () => void;
   /** Called when user requests to switch agent */
@@ -33,6 +26,8 @@ export interface TicketPaneProps {
   onClose?: () => void;
   /** Called when user sends a message to the agent */
   onSendMessage?: (message: string) => void;
+  /** Called when user clicks Stop agent */
+  onStop?: () => void;
 }
 
 /**

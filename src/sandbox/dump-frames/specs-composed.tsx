@@ -51,6 +51,29 @@ export const composedSpecs: FrameSpec[] = [
     ),
   },
   {
+    name: "ticket-pane-with-agent",
+    options: { width: 80, height: 28 },
+    component: () => (
+      <TicketPane
+        ticket={makeTicket("AM-789", {
+          summary: "Refactor authentication to use OAuth2",
+          status: "implementing",
+          agent: "opencode",
+          branch_name: "feat/am-789-oauth2",
+          worktree_path: "/home/user/worktrees/am-789",
+        })}
+        agentState="running"
+        events={[]}
+        onEscalate={() => {}}
+        onSwitchAgent={() => {}}
+        onOpenJira={() => {}}
+        onClose={() => {}}
+        onSendMessage={() => {}}
+        onStop={() => {}}
+      />
+    ),
+  },
+  {
     name: "layout",
     options: { width: 80, height: 24 },
     component: () => (

@@ -45,16 +45,24 @@ export interface EscalateResponse {
 }
 
 /**
+ * Valid ticket workflow statuses
+ */
+export type TicketStatus =
+  | "pending"
+  | "queued"
+  | "planning"
+  | "implementing"
+  | "blocked"
+  | "testing"
+  | "pr_created"
+  | "in_review"
+  | "done";
+
+/**
  * Input for jiratown_update_status tool
  */
 export interface UpdateStatusInput {
-  status:
-    | "planning"
-    | "implementing"
-    | "testing"
-    | "pr_created"
-    | "in_review"
-    | "done";
+  status: TicketStatus;
   message?: string;
 }
 

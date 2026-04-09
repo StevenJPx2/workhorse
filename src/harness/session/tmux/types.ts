@@ -14,6 +14,8 @@ interface TmuxCommandOptions {
   enter?: boolean;
   print?: boolean;
   literal?: boolean;
+  /** Start line for capture-pane (negative = from end, e.g. -100) */
+  startLine?: number;
 }
 
 const SESSION_PREFIX = "jt-";

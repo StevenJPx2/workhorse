@@ -17,6 +17,8 @@ export interface UseTicketsOptions {
   rig?: RigOption;
   /** Whether to auto-load tickets on mount */
   autoLoad?: boolean;
+  /** Poll interval in ms to refresh tickets (0 = no polling) */
+  pollInterval?: number;
   /** Callback when tickets change */
   onChange?: (tickets: Ticket[]) => void;
 }

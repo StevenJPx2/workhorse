@@ -8,8 +8,9 @@ import { fieldSpecs } from "./specs-fields.tsx";
 import { overlaySpecs } from "./specs-overlays.tsx";
 import { composedSpecs } from "./specs-composed.tsx";
 import { stressSpecs } from "./specs-stress.tsx";
+import { agentDisplaySpecs } from "./specs-agent-display.tsx";
 
-const specs = [...buttonSpecs, ...fieldSpecs, ...overlaySpecs, ...composedSpecs, ...stressSpecs];
+const specs = [...buttonSpecs, ...fieldSpecs, ...overlaySpecs, ...composedSpecs, ...stressSpecs, ...agentDisplaySpecs];
 
 async function main() {
   mkdirSync(OUT, { recursive: true });

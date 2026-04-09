@@ -16,6 +16,7 @@
     "frames": "bun run src/sandbox/dump-frames/run.tsx",
     "test:visual": "bun test src/sandbox/snapshot.test.tsx",
     "cleanup": "bun run src/index.ts cleanup",
+    "jiratown-mcp": "bun run src/mcp-cli.ts",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",

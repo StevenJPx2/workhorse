@@ -64,7 +64,7 @@ describe("MCP Config", () => {
       expect(result.command).toBe("opencode");
       expect(result.args.length).toBe(2);
       expect(result.args[0]).toBe("--port");
-      expect(parseInt(result.args[1])).toBeGreaterThanOrEqual(14096);
+      expect(parseInt(result.args[1])).toBeGreaterThanOrEqual(14100);
     });
 
     test("builds claude command without extra args", () => {

@@ -12,14 +12,23 @@ const AcknowledgeSchema = z.object({
 const UpdateStatusSchema = z.object({
   status: z
     .enum([
+      "pending",
+      "queued",
       "planning",
       "implementing",
+      "blocked",
       "testing",
       "pr_created",
       "in_review",
       "done",
     ])
-    .describe("New status for the ticket"),
+    .describe(
+      "New status for the ticket workflow. Use: " +
+      "'pending' (not started), 'planning' (analyzing requirements), " +
+      "'implementing' (writing code), 'blocked' (needs input), " +
+      "'pr_created' (PR opened), 'in_review' (awaiting review), " +
+      "'done' (complete)"
+    ),
   message: z.string().optional().describe("Optional status update message"),
 });
 
@@ -60,8 +69,10 @@ export function getToolDefinitions(): ToolDefinition[] {
     {
       name: TOOL_NAMES.UPDATE_STATUS,
       description:
-        "Update the ticket's progress status. Use this to report progress " +
-        "as you move through planning, implementing, testing, etc.",
+        "Update the ticket's workflow status in Jiratown. IMPORTANT: Call this tool " +
+        "whenever you transition between work phases (e.g., starting implementation, " +
+        "creating a PR, completing work). If the ticket is already complete or no work " +
+        "is needed, set status to 'done'. This updates the TUI display.",
       inputSchema: UpdateStatusSchema,
     },
     {

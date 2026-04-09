@@ -62,4 +62,6 @@ export interface UseTicketWorkflowReturn {
   getRunningAgents: () => { ticketId: string; state: string }[];
   /** Reload agent state from orchestrator */
   reloadAgents: () => void;
+  /** Capture agent output from tmux */
+  captureOutput: (ticketId: string) => Promise<string | null>;
 }

@@ -2,7 +2,7 @@
  * useTicketActions - Composable hook for ticket action handlers
  *
  * Encapsulates the handlers for ticket operations (escalate, switch agent,
- * open Jira, close, send message) to reduce prop drilling in AppContentInner.
+ * open Jira, close, send message, agent control) to reduce prop drilling.
  */
 
 import type { Ticket } from "../types/ticket.ts";
@@ -14,7 +14,8 @@ export interface TicketActionsContext {
     remove: (id: string) => void;
   };
   workflow: {
-    sendToAgent: (ticketId: string, message: string) => Promise<void>;
+    sendToAgent: (ticketId: string, message: string) => Promise<boolean>;
+    stopWork: (ticketId: string, removeWorktree?: boolean) => Promise<boolean>;
   };
 }
 
@@ -24,6 +25,8 @@ export interface UseTicketActionsReturn {
   onOpenJira: () => void;
   onClose: () => void;
   onSendMessage: (message: string) => Promise<void>;
+  /** Stop the agent */
+  onStop: () => Promise<void>;
 }
 
 /**
@@ -50,6 +53,9 @@ export function useTicketActions(
     },
     onSendMessage: async (message: string) => {
       await context.workflow.sendToAgent(ticket.id, message);
+    },
+    onStop: async () => {
+      await context.workflow.stopWork(ticket.id);
     },
   };
 }

@@ -25,14 +25,23 @@ const AcknowledgeSchema = z.object({
 const UpdateStatusSchema = z.object({
   status: z
     .enum([
+      "pending",
+      "queued",
       "planning",
       "implementing",
+      "blocked",
       "testing",
       "pr_created",
       "in_review",
       "done",
     ])
-    .describe("New status for the ticket"),
+    .describe(
+      "New status for the ticket workflow. Use: " +
+      "'pending' (not started), 'planning' (analyzing requirements), " +
+      "'implementing' (writing code), 'blocked' (needs input), " +
+      "'pr_created' (PR opened), 'in_review' (awaiting review), " +
+      "'done' (complete)"
+    ),
   message: z.string().optional().describe("Optional status update message"),
 });
 

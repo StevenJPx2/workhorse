@@ -24,6 +24,10 @@ export {
   getAllAgents,
   getAgentsByState,
 } from "./agent-store.ts";
+export {
+  discoverAgents,
+  discoverAgentByTicketId,
+} from "./discover-agents.ts";
 
 /**
  * Stop an agent working on a ticket

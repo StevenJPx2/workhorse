@@ -48,6 +48,8 @@ export function useTicketWorkflow(
 
   const reloadAgents = () => agent.reload();
 
+  const captureOutput = async (ticketId: string) => agent.captureOutput(ticketId);
+
   return {
     isLoading,
     error,
@@ -60,5 +62,6 @@ export function useTicketWorkflow(
     sendToAgent,
     getRunningAgents,
     reloadAgents,
+    captureOutput,
   };
 }

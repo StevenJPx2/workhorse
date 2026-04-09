@@ -62,6 +62,7 @@ export function createRestartAgent(deps: WorkflowDeps) {
         updateTicket(ticket.id, {
           worktree_path: instance.worktree.path,
           branch_name: instance.worktree.branch,
+          status: "planning",
         });
       }
 

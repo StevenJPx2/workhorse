@@ -955,12 +955,12 @@ src/hooks/
   - [x] Display live output lines in TicketPane
   - [x] Show last N lines with expand/collapse option
   - [x] Timestamp of last capture
-- [ ] Agent Progress Display in TicketPane
-  - [ ] Show agent state indicator (starting/running/stopped/crashed)
-  - [ ] Display session activity summary (tasks completed, files modified)
-  - [ ] Show recent agent actions from session memory
-  - [ ] Visual progress bar or status icon per ticket
-  - [ ] Quick actions: [View Output] [Attach] [Restart] [Stop]
+- [x] Agent Progress Display in TicketPane
+  - [x] Show agent state indicator (starting/running/stopped/crashed)
+  - [x] Display session activity summary (tasks completed, files modified)
+  - [x] Show recent agent actions from session memory
+  - [x] Visual progress bar or status icon per ticket
+  - [x] Quick actions: [View Output] [Attach] [Restart] [Stop]
 
 #### Code Quality Refactor: App.tsx + Layout.tsx
 

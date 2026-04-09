@@ -145,5 +145,41 @@ export {
   type UseLayoutActionsReturn,
 } from "./use-layout-actions/index.ts";
 
+export {
+  useAgentProgress,
+  type UseAgentProgressOptions,
+  type UseAgentProgressReturn,
+  type AgentProgressInfo,
+} from "./use-agent-progress/index.ts";
+
+export {
+  useAgentOutput,
+  type UseAgentOutputOptions,
+  type UseAgentOutputReturn,
+} from "./use-agent-output/index.ts";
+
+export {
+  useAgentStream,
+  type UseAgentStreamOptions,
+  type UseAgentStreamReturn,
+  type StreamMessage,
+} from "./use-agent-stream/index.ts";
+
+export {
+  useTmuxOutput,
+  type UseTmuxOutputOptions,
+  type UseTmuxOutputReturn,
+} from "./use-tmux-output/index.ts";
+
+export {
+  useAgentSummary,
+  getAgentStatus,
+  clearSessionCache,
+  clearAllSessionCache,
+  type UseAgentSummaryOptions,
+  type UseAgentSummaryReturn,
+  type AgentStep,
+} from "./use-agent-summary/index.ts";
+
 // Re-export type for convenience
 export type { Accessor } from "solid-js";

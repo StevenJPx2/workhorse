@@ -57,14 +57,20 @@ export function generateMcpConfig(
   ticketId: string,
   jiraCloudId?: string
 ): OpenCodeConfig {
+  // Get the path to jiratown's mcp-server.sh wrapper script
+  // The wrapper ensures bun runs from jiratown's directory so it finds dependencies
+  const jiratownRoot = process.env.JIRATOWN_ROOT || process.cwd();
+  const mcpServerScript = `${jiratownRoot}/src/mcp-server.sh`;
+
   const config: OpenCodeConfig = {
     $schema: "https://opencode.ai/config.json",
     mcp: {
       jiratown: {
         type: "local",
-        command: ["bun", "run", "jiratown-mcp", "--ticket", ticketId],
+        command: [mcpServerScript, "--ticket", ticketId],
         environment: {
           JIRATOWN_TICKET_ID: ticketId,
+          JIRATOWN_ROOT: jiratownRoot,
         },
         enabled: true,
       },

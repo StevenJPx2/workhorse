@@ -4,7 +4,7 @@
  * Provides reactive ticket management with database persistence.
  */
 
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 import type { Ticket, TicketStatus } from "../../types/ticket.ts";
 import {
   insertTicket,
@@ -151,6 +151,12 @@ export function useTickets(options: UseTicketsOptions = {}): UseTicketsReturn {
   // Auto-load if requested
   if (options.autoLoad) {
     reload();
+  }
+
+  // Set up polling if interval specified
+  if (options.pollInterval && options.pollInterval > 0) {
+    const timer = setInterval(reload, options.pollInterval);
+    onCleanup(() => clearInterval(timer));
   }
 
   return {

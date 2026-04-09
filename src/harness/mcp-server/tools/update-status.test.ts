@@ -53,8 +53,11 @@ describe("handleUpdateStatus", () => {
 
     it("should handle all valid status values", () => {
       const statuses = [
+        "pending",
+        "queued",
         "planning",
         "implementing",
+        "blocked",
         "testing",
         "pr_created",
         "in_review",

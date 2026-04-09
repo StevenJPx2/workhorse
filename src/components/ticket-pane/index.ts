@@ -8,7 +8,11 @@ export { TicketMeta } from "./ticket-meta.tsx";
 export { ProgressLog } from "./progress-log.tsx";
 export { TicketActions } from "./ticket-actions.tsx";
 export { AgentOutput } from "./agent-output.tsx";
+export { AgentProgress } from "./agent-progress.tsx";
+export { AgentDisplay } from "./agent-display.tsx";
 export type { AgentOutputProps } from "./agent-output.tsx";
+export type { AgentProgressProps } from "./agent-progress.tsx";
+export type { AgentDisplayProps } from "./agent-display.tsx";
 export type {
   TicketPaneProps,
   TicketHeaderProps,

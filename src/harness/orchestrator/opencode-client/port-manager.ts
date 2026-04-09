@@ -1,9 +1,11 @@
 /**
  * Port allocation for OpenCode instances
- * Each ticket gets a unique port starting from BASE_PORT
+ * 
+ * IMPORTANT: Start from 14100 to avoid conflicts with existing OpenCode
+ * instances (the user's main Claude Code runs on 14096 by default).
  */
 
-const BASE_PORT = 14096;
+const BASE_PORT = 14100;
 const portMap = new Map<string, number>();
 let nextPort = BASE_PORT;
 
@@ -17,6 +19,17 @@ export function getPortForTicket(ticketId: string): number {
     portMap.set(ticketId, port);
   }
   return port;
+}
+
+/**
+ * Set a specific port for a ticket (used during discovery)
+ */
+export function setPortForTicket(ticketId: string, port: number): void {
+  portMap.set(ticketId, port);
+  // Update nextPort to avoid conflicts
+  if (port >= nextPort) {
+    nextPort = port + 1;
+  }
 }
 
 /**

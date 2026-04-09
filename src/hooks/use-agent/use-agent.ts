@@ -13,6 +13,7 @@ import {
   getAgentsByState,
   sendMessageToAgent,
   captureAgentOutput,
+  discoverAgents,
 } from "../../harness/orchestrator/orchestrator.ts";
 import type { UseAgentOptions, UseAgentReturn } from "./types.ts";
 import { createResolvers } from "./use-agent-helpers.ts";
@@ -151,7 +152,9 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
   });
 
   if (options.autoLoad) {
-    onMount(() => {
+    onMount(async () => {
+      // Discover existing tmux sessions first
+      await discoverAgents();
       reload();
       startHealthChecks();
     });
