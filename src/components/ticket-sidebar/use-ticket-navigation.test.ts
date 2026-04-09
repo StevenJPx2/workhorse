@@ -7,7 +7,6 @@ import {
   handleNavigationKey,
   type UseTicketNavigationOptions,
   type NavigationContext,
-  type KeyInfo,
 } from "./use-ticket-navigation.ts";
 
 describe("handleNavigationKey", () => {

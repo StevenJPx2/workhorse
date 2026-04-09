@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, mock, beforeEach } from "bun:test";
-import { AtlassianClient, createAtlassianClient } from "../client.ts";
+import { createAtlassianClient } from "../client.ts";
 
 // Mock MCP SDK with configurable responses
 const mockConnect = mock(() => Promise.resolve());

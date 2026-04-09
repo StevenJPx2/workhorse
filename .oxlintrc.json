@@ -1,6 +1,7 @@
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
   "jsPlugins": ["./plugins/eslint-plugin-jiratown"],
+  "ignorePatterns": ["plugins/**", "dist/**", "node_modules/**"],
   "rules": {
     "jiratown/max-lines-per-file": ["error", 200],
     "jiratown/enforce-kebab-case-filenames": "warn",

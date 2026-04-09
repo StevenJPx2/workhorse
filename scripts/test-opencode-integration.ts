@@ -23,27 +23,11 @@ import {
 
 import { buildAgentCommand } from "../src/harness/orchestrator/mcp-config.ts";
 
-const GREEN = "\x1b[32m";
-const RED = "\x1b[31m";
-const YELLOW = "\x1b[33m";
-const BLUE = "\x1b[34m";
-const RESET = "\x1b[0m";
-
-function log(msg: string) {
-  console.log(`${BLUE}[TEST]${RESET} ${msg}`);
-}
-
-function pass(msg: string) {
-  console.log(`${GREEN}  ✓${RESET} ${msg}`);
-}
-
-function fail(msg: string) {
-  console.log(`${RED}  ✗${RESET} ${msg}`);
-}
-
-function section(name: string) {
-  console.log(`\n${YELLOW}━━━ ${name} ━━━${RESET}`);
-}
+const C = { green: "\x1b[32m", red: "\x1b[31m", yellow: "\x1b[33m", blue: "\x1b[34m", reset: "\x1b[0m" };
+const log = (msg: string) => console.log(`${C.blue}[TEST]${C.reset} ${msg}`);
+const pass = (msg: string) => console.log(`${C.green}  ✓${C.reset} ${msg}`);
+const fail = (msg: string) => console.log(`${C.red}  ✗${C.reset} ${msg}`);
+const section = (name: string) => console.log(`\n${C.yellow}━━━ ${name} ━━━${C.reset}`);
 
 async function runTests() {
   let passed = 0;
@@ -183,19 +167,19 @@ async function runTests() {
 
   // Summary
   section("Summary");
-  console.log(`\n${GREEN}Passed: ${passed}${RESET}`);
-  console.log(`${RED}Failed: ${failed}${RESET}`);
+  console.log(`\n${C.green}Passed: ${passed}${C.reset}`);
+  console.log(`${C.red}Failed: ${failed}${C.reset}`);
 
   if (failed > 0) {
-    console.log(`\n${RED}Some tests failed!${RESET}`);
+    console.log(`\n${C.red}Some tests failed!${C.reset}`);
     process.exit(1);
   } else {
-    console.log(`\n${GREEN}All tests passed!${RESET}`);
+    console.log(`\n${C.green}All tests passed!${C.reset}`);
   }
 }
 
 // Run tests
 runTests().catch((err) => {
-  console.error(`${RED}Test runner error:${RESET}`, err);
+  console.error(`${C.red}Test runner error:${C.reset}`, err);
   process.exit(1);
 });

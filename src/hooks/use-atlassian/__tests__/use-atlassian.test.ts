@@ -50,7 +50,8 @@ describe("useAtlassian", () => {
 
     it("should auto-connect when autoConnect is true", async () => {
       await createRoot(async (dispose) => {
-        const atlassian = useAtlassian({
+        // Hook called for side-effect of auto-connect
+        useAtlassian({
           cloudId: "test.atlassian.net",
           autoConnect: true,
         });
