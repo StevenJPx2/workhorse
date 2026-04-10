@@ -6,10 +6,10 @@
  * - Activity area: summarized steps from local LLM
  */
 
-import { For, Show, type Accessor } from "solid-js";
-import { useTheme } from "../../lib/theme/index.ts";
+import { type Accessor, For, Show } from "solid-js";
 import type { AgentProgressInfo } from "../../hooks/use-agent-progress/index.ts";
 import type { AgentStep } from "../../hooks/use-agent-summary/index.ts";
+import { useTheme } from "../../lib/theme/index.ts";
 
 /**
  * Props for AgentDisplay
@@ -36,11 +36,16 @@ export interface AgentDisplayProps {
  */
 function getStepIcon(type: AgentStep["type"]): string {
   switch (type) {
-    case "thinking": return "◌";
-    case "action": return "▸";
-    case "result": return "✓";
-    case "error": return "✗";
-    default: return "•";
+    case "thinking":
+      return "◌";
+    case "action":
+      return "▸";
+    case "result":
+      return "✓";
+    case "error":
+      return "✗";
+    default:
+      return "•";
   }
 }
 
@@ -72,11 +77,16 @@ export function AgentDisplay(props: AgentDisplayProps) {
   // Get color for step type
   const getStepColor = (type: AgentStep["type"]) => {
     switch (type) {
-      case "thinking": return theme().text.dim;
-      case "action": return theme().info;
-      case "result": return theme().success;
-      case "error": return theme().error;
-      default: return theme().text.secondary;
+      case "thinking":
+        return theme().text.dim;
+      case "action":
+        return theme().info;
+      case "result":
+        return theme().success;
+      case "error":
+        return theme().error;
+      default:
+        return theme().text.secondary;
     }
   };
 
@@ -86,12 +96,8 @@ export function AgentDisplay(props: AgentDisplayProps) {
       <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
         {/* Left: state indicator */}
         <box flexDirection="row" gap={1}>
-          <text fg={p().stateColor}>
-            {p().stateIndicator}
-          </text>
-          <text fg={theme().text.secondary}>
-            {p().stateLabel}
-          </text>
+          <text fg={p().stateColor}>{p().stateIndicator}</text>
+          <text fg={theme().text.secondary}>{p().stateLabel}</text>
           <Show when={p().runningDuration}>
             <text fg={theme().text.dim}>({p().runningDuration})</text>
           </Show>
@@ -113,7 +119,9 @@ export function AgentDisplay(props: AgentDisplayProps) {
         flexDirection="column"
         flexGrow={1}
         borderStyle="single"
-        borderColor={isActive() ? theme().status.implementing : theme().border.default}
+        borderColor={
+          isActive() ? theme().status.implementing : theme().border.default
+        }
         paddingX={1}
       >
         {/* Error state */}
@@ -134,39 +142,15 @@ export function AgentDisplay(props: AgentDisplayProps) {
         >
           <For each={visibleSteps()}>
             {(step, index) => {
-              const prefix = () => index() === visibleSteps().length - 1 ? "› " : "  ";
+              const prefix = () =>
+                index() === visibleSteps().length - 1 ? "› " : "  ";
               const icon = getStepIcon(step.type);
-              // Split long descriptions into lines for wrapping
-              const lines = () => {
-                const maxWidth = 120; // Approximate width
-                const text = step.description;
-                if (text.length <= maxWidth) return [text];
-                
-                const result: string[] = [];
-                let remaining = text;
-                while (remaining.length > 0) {
-                  if (remaining.length <= maxWidth) {
-                    result.push(remaining);
-                    break;
-                  }
-                  // Find last space before maxWidth
-                  let splitAt = remaining.lastIndexOf(" ", maxWidth);
-                  if (splitAt === -1) splitAt = maxWidth;
-                  result.push(remaining.substring(0, splitAt));
-                  remaining = remaining.substring(splitAt).trim();
-                }
-                return result;
-              };
-              
+
               return (
                 <box flexDirection="column" width="100%">
-                  <For each={lines()}>
-                    {(line, lineIdx) => (
-                      <text fg={getStepColor(step.type)}>
-                        {lineIdx() === 0 ? `${prefix()}${icon} ${line}` : `     ${line}`}
-                      </text>
-                    )}
-                  </For>
+                  <text fg={getStepColor(step.type)}>
+                    {`${prefix()}${icon} ${step.description}`}
+                  </text>
                 </box>
               );
             }}
