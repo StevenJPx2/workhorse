@@ -16,6 +16,7 @@ import { detectRig, type RigInfo } from "../lib/detect-rig.ts";
 import { spacing, useTheme } from "../lib/theme/index.ts";
 import { TicketsProvider, useTicketsContext } from "../lib/tickets-context.tsx";
 import { WorkflowProvider, useWorkflowContext } from "../lib/workflow-context.tsx";
+import { EventLogProvider, useEventLogContext } from "../lib/event-log-context.tsx";
 import { useModalSystem } from "../hooks/use-modal-system/index.ts";
 import { useConfig, useAtlassian } from "../hooks/index.ts";
 import type { AgentType } from "../types/config.ts";
@@ -62,14 +63,16 @@ export function AppContent(props: AppContentProps) {
       onError={(err) => console.error("Workflow error:", err)}
     >
       <TicketsProvider rig={rig} autoLoad={!loading()}>
-        <AppContentInner
-          showAll={props.showAll}
-          rig={rig()}
-          loading={loading()}
-          atlassian={atlassian}
-          config={config}
-          onQuit={() => renderer.destroy()}
-        />
+        <EventLogProvider>
+          <InnerWithEventLog
+            showAll={props.showAll}
+            rig={rig()}
+            loading={loading()}
+            atlassian={atlassian}
+            config={config}
+            onQuit={() => renderer.destroy()}
+          />
+        </EventLogProvider>
       </TicketsProvider>
     </WorkflowProvider>
   );
@@ -87,11 +90,12 @@ interface AppContentInnerProps {
 /**
  * Inner content that has access to all contexts
  */
-function AppContentInner(props: AppContentInnerProps) {
+function InnerWithEventLog(props: AppContentInnerProps) {
   const { theme } = useTheme();
   const modals = useModalSystem();
   const workflow = useWorkflowContext();
   const { currentTicket, actions } = useTicketsContext();
+  const { eventLog } = useEventLogContext();
 
   // Reload tickets when loading completes
   createEffect(() => {
@@ -126,6 +130,7 @@ function AppContentInner(props: AppContentInnerProps) {
       sendToAgent: workflow.sendToAgent,
       stopWork: workflow.stopWork,
     },
+    eventLog,
   };
 
   // Create ticket actions reactively - rebinds when ticket changes
@@ -146,7 +151,7 @@ function AppContentInner(props: AppContentInnerProps) {
             <TicketPane
               ticket={currentTicket()!}
               agentState={() => workflow.getAgentState(currentTicket()!.id)}
-              events={[]}
+              logEntries={eventLog.events()}
               onStop={() => ticketActions()?.onStop()}
               onEscalate={() => ticketActions()?.onEscalate()}
               onSwitchAgent={(agent) => ticketActions()?.onSwitchAgent(agent)}

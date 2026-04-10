@@ -5,6 +5,7 @@
 import type { Ticket, TicketEvent, TicketStatus } from "../../types/ticket.ts";
 import type { AgentType } from "../../types/config.ts";
 import type { AgentState } from "../../harness/orchestrator/types.ts";
+import type { EventLogEntry } from "../../hooks/use-event-log/types.ts";
 
 /**
  * Props for the TicketPane component
@@ -16,6 +17,8 @@ export interface TicketPaneProps {
   agentState?: AgentState | (() => AgentState | undefined);
   /** Events/progress log for this ticket */
   events?: TicketEvent[];
+  /** Event log entries from useEventLog (takes precedence over events) */
+  logEntries?: EventLogEntry[];
   /** Called when user requests escalation */
   onEscalate?: () => void;
   /** Called when user requests to switch agent */
@@ -60,10 +63,14 @@ export interface TicketMetaProps {
  * Props for the ProgressLog sub-component
  */
 export interface ProgressLogProps {
-  /** Events to display */
-  events: TicketEvent[];
+  /** Events to display (raw DB format) */
+  events?: TicketEvent[];
+  /** Event log entries from useEventLog (takes precedence if provided) */
+  logEntries?: EventLogEntry[];
   /** Max events to show (default: 10) */
   maxEvents?: number;
+  /** Whether to show timestamps */
+  showTimestamps?: boolean;
 }
 
 /**

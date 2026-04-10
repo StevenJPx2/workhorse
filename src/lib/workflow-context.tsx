@@ -31,6 +31,7 @@ export function WorkflowProvider(props: WorkflowProviderProps) {
     healthCheckInterval: props.healthCheckInterval,
     onAgentStateChange: props.onAgentStateChange,
     onError: props.onError,
+    eventLog: props.eventLog,
   });
 
   return (
@@ -52,3 +53,8 @@ export function useWorkflowContext(): UseTicketWorkflowReturn {
   }
   return context;
 }
+
+/**
+ * Re-export event log types for convenience
+ */
+export type { UseEventLogReturn } from "../hooks/use-event-log/types.ts";

@@ -20,6 +20,7 @@ export function createStartWork(deps: WorkflowDeps) {
       }
 
       updateTicketStatus(ticket.id, "queued");
+      deps.eventLog?.logStatusChange({ from: ticket.status, to: "queued" });
 
       const instance = await deps.agent.spawn({
         ticketId: ticket.id,
@@ -32,6 +33,7 @@ export function createStartWork(deps: WorkflowDeps) {
 
       if (!instance) {
         updateTicketStatus(ticket.id, "pending");
+        deps.eventLog?.logStatusChange({ from: "queued", to: "pending" });
         deps.handleError(new Error("Failed to spawn agent"));
         return getTicketById(ticket.id);
       }
@@ -41,6 +43,11 @@ export function createStartWork(deps: WorkflowDeps) {
           worktree_path: instance.worktree.path,
           branch_name: instance.worktree.branch,
           status: "planning",
+        });
+        deps.eventLog?.logStatusChange({ from: "queued", to: "planning" });
+        deps.eventLog?.logAgentStarted({
+          agent: opts.agent,
+          worktreePath: instance.worktree.path,
         });
       }
 
@@ -60,11 +67,16 @@ export function createStopWork(deps: WorkflowDeps) {
       deps.setIsLoading(true);
       deps.setError(null);
 
+      const ticket = getTicketById(ticketId);
+      const previousStatus = ticket?.status ?? "implementing";
+
       const stopped = await deps.agent.stop(ticketId, removeWorktree);
 
       if (stopped) {
         updateTicketStatus(ticketId, "pending");
         updateTicket(ticketId, { agent_pid: null });
+        deps.eventLog?.logStatusChange({ from: previousStatus, to: "pending" });
+        deps.eventLog?.logAgentStopped({ reason: removeWorktree ? "removed" : "stopped" });
       }
 
       return stopped;

@@ -31,7 +31,7 @@ export function useTicketWorkflow(
     return e;
   };
 
-  const deps = { setIsLoading, setError, handleError, agent };
+  const deps = { setIsLoading, setError, handleError, agent, eventLog: options.eventLog };
 
   const startWork = createStartWork(deps);
   const stopWork = createStopWork(deps);

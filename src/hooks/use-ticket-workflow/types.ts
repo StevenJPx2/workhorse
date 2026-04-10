@@ -7,6 +7,7 @@ import type { Ticket } from "../../types/ticket.ts";
 import type { AgentType } from "../../types/config.ts";
 import type { JiraIssue } from "../use-atlassian/types.ts";
 import type { AgentState } from "../../harness/orchestrator/types.ts";
+import type { UseEventLogReturn } from "../use-event-log/types.ts";
 
 /**
  * Options for useTicketWorkflow hook
@@ -22,6 +23,8 @@ export interface UseTicketWorkflowOptions {
   onAgentStateChange?: (ticketId: string, state: AgentState) => void;
   /** Callback on error */
   onError?: (error: Error) => void;
+  /** Event log instance for recording workflow events */
+  eventLog?: UseEventLogReturn;
 }
 
 /**

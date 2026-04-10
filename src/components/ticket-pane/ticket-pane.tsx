@@ -21,6 +21,7 @@ import { ChatBox, useChatBox } from "../chat-box/index.ts";
 import { TicketHeader } from "./ticket-header.tsx";
 import { TicketMeta } from "./ticket-meta.tsx";
 import { ProgressLog } from "./progress-log.tsx";
+import { FileChanges } from "./file-changes.tsx";
 import { TicketActions } from "./ticket-actions.tsx";
 import { AgentDisplay } from "./agent-display.tsx";
 import type { TicketPaneProps } from "./types.ts";
@@ -93,6 +94,9 @@ export function TicketPane(props: TicketPaneProps) {
   });
 
   const events = () => props.events ?? [];
+  const hasEvents = () =>
+    (props.events && props.events.length > 0) ||
+    (props.logEntries && props.logEntries.length > 0);
   const showAgent = () => props.ticket.worktree_path || resolvedAgentState();
 
   return (
@@ -110,8 +114,18 @@ export function TicketPane(props: TicketPaneProps) {
       />
 
       {/* Progress log (only if has events and agent not active) */}
-      <Show when={events().length > 0 && !isAgentActive()}>
-        <ProgressLog events={events()} maxEvents={5} />
+      <Show when={hasEvents() && !isAgentActive()}>
+        <ProgressLog
+          events={events()}
+          logEntries={props.logEntries}
+          maxEvents={5}
+          showTimestamps
+        />
+      </Show>
+
+      {/* File changes (when there are modified files) */}
+      <Show when={hasEvents()}>
+        <FileChanges events={events()} logEntries={props.logEntries} maxFiles={8} />
       </Show>
 
       {/* Agent display - state header + LLM-summarized activity */}
