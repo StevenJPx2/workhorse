@@ -70,9 +70,7 @@ export interface UseInteractiveReturn {
  * }
  * ```
  */
-export function useInteractive(
-  options: UseInteractiveOptions = {}
-): UseInteractiveReturn {
+export function useInteractive(options: UseInteractiveOptions = {}): UseInteractiveReturn {
   const [isHovered, setIsHovered] = createSignal(false);
   const [isPressed, setIsPressed] = createSignal(false);
 

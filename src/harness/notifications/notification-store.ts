@@ -4,11 +4,7 @@
 
 import { Database } from "bun:sqlite";
 import { migrateNotifications } from "../../lib/db/migrations/notifications.ts";
-import type {
-  Notification,
-  CreateNotificationInput,
-  NotificationSourceType,
-} from "./types.ts";
+import type { Notification, CreateNotificationInput, NotificationSourceType } from "./types.ts";
 
 /**
  * Generate a unique ID for a notification
@@ -31,7 +27,7 @@ export function initNotificationsTable(db: Database): void {
  */
 export function createNotification(
   db: Database,
-  input: CreateNotificationInput
+  input: CreateNotificationInput,
 ): Notification | null {
   const id = generateId();
   const metadata = input.metadata ? JSON.stringify(input.metadata) : null;
@@ -53,16 +49,13 @@ export function createNotification(
       input.content,
       input.author ?? null,
       metadata,
-      input.source_timestamp ?? null
+      input.source_timestamp ?? null,
     );
 
     return getNotificationById(db, id);
   } catch (error) {
     // Check if it's a unique constraint violation (duplicate)
-    if (
-      error instanceof Error &&
-      error.message.includes("UNIQUE constraint failed")
-    ) {
+    if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
       return null;
     }
     throw error;
@@ -72,13 +65,8 @@ export function createNotification(
 /**
  * Get a notification by ID
  */
-export function getNotificationById(
-  db: Database,
-  id: string
-): Notification | null {
-  return db
-    .prepare("SELECT * FROM notifications WHERE id = ?")
-    .get(id) as Notification | null;
+export function getNotificationById(db: Database, id: string): Notification | null {
+  return db.prepare("SELECT * FROM notifications WHERE id = ?").get(id) as Notification | null;
 }
 
 /**
@@ -87,22 +75,17 @@ export function getNotificationById(
 export function getNotificationBySource(
   db: Database,
   sourceType: NotificationSourceType,
-  sourceId: string
+  sourceId: string,
 ): Notification | null {
   return db
-    .prepare(
-      "SELECT * FROM notifications WHERE source_type = ? AND source_id = ?"
-    )
+    .prepare("SELECT * FROM notifications WHERE source_type = ? AND source_id = ?")
     .get(sourceType, sourceId) as Notification | null;
 }
 
 /**
  * Get all notifications for a ticket, ordered by priority then created_at
  */
-export function getNotificationsByTicket(
-  db: Database,
-  ticketId: string
-): Notification[] {
+export function getNotificationsByTicket(db: Database, ticketId: string): Notification[] {
   return db
     .prepare(`
       SELECT * FROM notifications 
@@ -122,10 +105,7 @@ export function getNotificationsByTicket(
 /**
  * Get unread notifications for a ticket, ordered by priority
  */
-export function getUnreadNotifications(
-  db: Database,
-  ticketId: string
-): Notification[] {
+export function getUnreadNotifications(db: Database, ticketId: string): Notification[] {
   return db
     .prepare(`
       SELECT * FROM notifications 

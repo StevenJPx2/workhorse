@@ -75,7 +75,7 @@ describe("TicketMeta agentState prop", () => {
   describe("Resolver pattern", () => {
     test("resolves value type correctly", () => {
       const resolveAgentState = (
-        agentState: AgentState | (() => AgentState | undefined) | undefined
+        agentState: AgentState | (() => AgentState | undefined) | undefined,
       ): AgentState | undefined => {
         return typeof agentState === "function" ? agentState() : agentState;
       };
@@ -89,7 +89,7 @@ describe("TicketMeta agentState prop", () => {
 
     test("resolves accessor type correctly", () => {
       const resolveAgentState = (
-        agentState: AgentState | (() => AgentState | undefined) | undefined
+        agentState: AgentState | (() => AgentState | undefined) | undefined,
       ): AgentState | undefined => {
         return typeof agentState === "function" ? agentState() : agentState;
       };
@@ -109,7 +109,7 @@ describe("TicketMeta agentState prop", () => {
 
     test("handles mixed usage in props", () => {
       const resolveAgentState = (
-        agentState: AgentState | (() => AgentState | undefined) | undefined
+        agentState: AgentState | (() => AgentState | undefined) | undefined,
       ): AgentState | undefined => {
         return typeof agentState === "function" ? agentState() : agentState;
       };

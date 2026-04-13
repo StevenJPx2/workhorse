@@ -15,19 +15,11 @@ import { removeWorktree } from "../session/worktree/index.ts";
 import { hasSessionMemory, addSessionEvent } from "../session/session-memory.ts";
 import { activeAgents, updateAgentState } from "./agent-store.ts";
 
-
 // Re-export all public API from sub-modules
 export { spawnAgent } from "./spawn-agent.ts";
 export { checkAgentHealth } from "./health-check.ts";
-export {
-  getAgent,
-  getAllAgents,
-  getAgentsByState,
-} from "./agent-store.ts";
-export {
-  discoverAgents,
-  discoverAgentByTicketId,
-} from "./discover-agents.ts";
+export { getAgent, getAllAgents, getAgentsByState } from "./agent-store.ts";
+export { discoverAgents, discoverAgentByTicketId } from "./discover-agents.ts";
 
 /**
  * Stop an agent working on a ticket
@@ -40,7 +32,7 @@ export {
 export async function stopAgent(
   ticketId: string,
   repoPath: string,
-  removeWorktreeOnStop: boolean = false
+  removeWorktreeOnStop: boolean = false,
 ): Promise<StopResult> {
   const instance = activeAgents.get(ticketId);
 
@@ -90,10 +82,7 @@ export async function stopAgent(
 /**
  * Send a message to an agent
  */
-export async function sendMessageToAgent(
-  ticketId: string,
-  message: string
-): Promise<boolean> {
+export async function sendMessageToAgent(ticketId: string, message: string): Promise<boolean> {
   const instance = activeAgents.get(ticketId);
 
   if (!instance || instance.state !== "running") {
@@ -106,9 +95,7 @@ export async function sendMessageToAgent(
 /**
  * Capture current agent output
  */
-export async function captureAgentOutput(
-  ticketId: string
-): Promise<string | null> {
+export async function captureAgentOutput(ticketId: string): Promise<string | null> {
   const instance = activeAgents.get(ticketId);
 
   if (!instance || instance.state !== "running") {

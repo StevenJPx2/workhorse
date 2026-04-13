@@ -1,17 +1,12 @@
 import { createSignal } from "solid-js";
 import { useAgent } from "../use-agent/index.ts";
-import type {
-  UseTicketWorkflowOptions,
-  UseTicketWorkflowReturn,
-} from "./types.ts";
+import type { UseTicketWorkflowOptions, UseTicketWorkflowReturn } from "./types.ts";
 import { createStartWork, createStopWork } from "./start-stop-work.ts";
 import { createRestartAgent, createResumeAllAgents } from "./restart-agent.ts";
 
 const DEFAULT_HEALTH_CHECK_INTERVAL = 5000;
 
-export function useTicketWorkflow(
-  options: UseTicketWorkflowOptions = {}
-): UseTicketWorkflowReturn {
+export function useTicketWorkflow(options: UseTicketWorkflowOptions = {}): UseTicketWorkflowReturn {
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);
 

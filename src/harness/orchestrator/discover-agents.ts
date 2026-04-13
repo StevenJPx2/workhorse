@@ -71,9 +71,7 @@ export async function discoverAgents(): Promise<AgentInstance[]> {
  * Useful when the TUI needs to check if an agent
  * exists without rescanning all sessions.
  */
-export async function discoverAgentByTicketId(
-  ticketId: string
-): Promise<AgentInstance | null> {
+export async function discoverAgentByTicketId(ticketId: string): Promise<AgentInstance | null> {
   // Already registered?
   const existing = activeAgents.get(ticketId);
   if (existing) return existing;

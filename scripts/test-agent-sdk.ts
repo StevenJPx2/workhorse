@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
  * Test script for agent SDK connection
- * 
+ *
  * Usage: bun run scripts/test-agent-sdk.ts [ticketId]
- * 
+ *
  * Tests:
  * 1. Port allocation for tickets
  * 2. SDK client creation
@@ -12,11 +12,18 @@
  */
 
 import { createOpencodeClient } from "@opencode-ai/sdk";
-import { getPortForTicket, getAllocatedPorts } from "../src/harness/orchestrator/opencode-client/port-manager.ts";
-import { getAgentStatus, clearAllSessionCache } from "../src/hooks/use-agent-summary/get-agent-status.ts";
+import {
+  getPortForTicket,
+  getAllocatedPorts,
+} from "../src/harness/orchestrator/opencode-client/port-manager.ts";
+import {
+  getAgentStatus,
+  clearAllSessionCache,
+} from "../src/hooks/use-agent-summary/get-agent-status.ts";
 
 const ticketId = process.argv[2] || "ADEPT-37632";
-const worktreePath = process.argv[3] || `/Users/stevenjohn/Documents/Projects/jiratown-worktrees/${ticketId}`;
+const worktreePath =
+  process.argv[3] || `/Users/stevenjohn/Documents/Projects/jiratown-worktrees/${ticketId}`;
 
 console.log("=== Agent SDK Connection Test ===\n");
 
@@ -34,11 +41,11 @@ const baseUrl = `http://localhost:${port}`;
 console.log(`   URL: ${baseUrl}`);
 
 try {
-  const response = await fetch(`${baseUrl}/session`, { 
+  const response = await fetch(`${baseUrl}/session`, {
     method: "GET",
-    signal: AbortSignal.timeout(2000)
+    signal: AbortSignal.timeout(2000),
   });
-  
+
   if (response.ok) {
     const sessions = await response.json();
     console.log(`   ✓ Agent responding: PASS`);
@@ -57,22 +64,24 @@ console.log("\n3. SDK Client Test");
 try {
   const client = createOpencodeClient({ baseUrl });
   console.log(`   ✓ Client created for ${baseUrl}`);
-  
+
   const sessions = await client.session.list({
-    query: { directory: worktreePath }
+    query: { directory: worktreePath },
   });
-  
+
   if (sessions.data?.length) {
     console.log(`   ✓ Found ${sessions.data.length} session(s) for worktree`);
-    
+
     // Get the most recent session
-    const latestSession = sessions.data.sort((a, b) => 
-      (b.time?.updated ?? 0) - (a.time?.updated ?? 0)
+    const latestSession = sessions.data.sort(
+      (a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0),
     )[0];
-    
+
     console.log(`   Latest session: ${latestSession.id}`);
     console.log(`   Title: ${latestSession.title || "(no title)"}`);
-    console.log(`   Updated: ${new Date((latestSession.time?.updated ?? 0) * 1000).toLocaleTimeString()}`);
+    console.log(
+      `   Updated: ${new Date((latestSession.time?.updated ?? 0) * 1000).toLocaleTimeString()}`,
+    );
   } else {
     console.log(`   No sessions found for directory: ${worktreePath}`);
   }
@@ -86,7 +95,7 @@ clearAllSessionCache(); // Clear cache for fresh test
 
 try {
   const steps = await getAgentStatus(ticketId, worktreePath);
-  
+
   if (steps.length > 0) {
     console.log(`   ✓ Got ${steps.length} step(s) from agent`);
     console.log(`   Latest: "${steps[0].description.substring(0, 60)}..."`);

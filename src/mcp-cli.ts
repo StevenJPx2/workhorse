@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 /**
  * Jiratown MCP Server CLI
- * 
+ *
  * This is the entry point for the MCP server that agents connect to.
  * It provides tools for agents to interact with Jiratown (update status, escalate, etc.)
- * 
+ *
  * Usage: bun run jiratown-mcp --ticket <ticketId>
  */
 
@@ -43,8 +43,7 @@ if (!ticketId) {
 }
 
 // Get database path from environment or use default (~/.jiratown/jiratown.db)
-const dbPath = process.env.JIRATOWN_DB_PATH || 
-  `${process.env.HOME}/.jiratown/jiratown.db`;
+const dbPath = process.env.JIRATOWN_DB_PATH || `${process.env.HOME}/.jiratown/jiratown.db`;
 
 // Open database
 let db: Database;

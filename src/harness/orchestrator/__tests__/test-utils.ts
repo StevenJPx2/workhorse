@@ -8,13 +8,13 @@ export function createMockSubprocess(exitCode: number, stdout: string = "", stde
       start(controller) {
         controller.enqueue(new TextEncoder().encode(stdout));
         controller.close();
-      }
+      },
     }),
     stderr: new ReadableStream({
       start(controller) {
         controller.enqueue(new TextEncoder().encode(stderr));
         controller.close();
-      }
+      },
     }),
     exited: Promise.resolve(exitCode),
     kill: () => {},
@@ -36,7 +36,9 @@ export function createMockSubprocess(exitCode: number, stdout: string = "", stde
   } as unknown as ReturnType<typeof Bun.spawn>;
 }
 
-export function successMockSpawn(overrides?: Record<string, ReturnType<typeof createMockSubprocess>>) {
+export function successMockSpawn(
+  overrides?: Record<string, ReturnType<typeof createMockSubprocess>>,
+) {
   return ((cmd: string[]) => {
     const command = cmd.join(" ");
     if (overrides?.[command]) return overrides[command];

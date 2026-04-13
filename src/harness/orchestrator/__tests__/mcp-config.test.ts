@@ -1,9 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import {
-  generateMcpConfig,
-  getConfigPath,
-  buildAgentCommand,
-} from "../mcp-config.ts";
+import { generateMcpConfig, getConfigPath, buildAgentCommand } from "../mcp-config.ts";
 
 describe("MCP Config", () => {
   describe("generateMcpConfig", () => {

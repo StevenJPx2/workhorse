@@ -414,9 +414,7 @@ describe("createHotkeyManager", () => {
 
         manager.handleKey({ name: "j" });
         // Only first should be called (order depends on Map iteration)
-        expect(
-          handler1.mock.calls.length + handler2.mock.calls.length
-        ).toBe(1);
+        expect(handler1.mock.calls.length + handler2.mock.calls.length).toBe(1);
         dispose();
       });
     });

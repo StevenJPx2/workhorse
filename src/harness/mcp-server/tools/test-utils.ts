@@ -54,17 +54,14 @@ export function insertTicket(db: Database, ticket: TestTicket): void {
     ticket.status ?? "pending",
     ticket.jira_url ?? null,
     ticket.summary ?? null,
-    ticket.agent ?? "opencode"
+    ticket.agent ?? "opencode",
   );
 }
 
 /**
  * Get a ticket by ID
  */
-export function getTicketById(
-  db: Database,
-  id: string
-): TestTicket & { status: string } | null {
+export function getTicketById(db: Database, id: string): (TestTicket & { status: string }) | null {
   return db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as
     | (TestTicket & { status: string })
     | null;

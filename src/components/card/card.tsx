@@ -56,10 +56,7 @@ export function Card(props: CardProps) {
     >
       {/* Title */}
       <Show when={props.title}>
-        <text
-          fg={theme().text.primary}
-          marginBottom={1}
-        >
+        <text fg={theme().text.primary} marginBottom={1}>
           {props.title}
         </text>
       </Show>

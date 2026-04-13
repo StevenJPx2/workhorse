@@ -39,11 +39,7 @@ export const stressSpecs: FrameSpec[] = [
     name: "stress-layout-20x5",
     options: { width: 20, height: 5 },
     component: () => (
-      <MockLayout
-        rig="github.com/org/repo"
-        showAll={false}
-        sidebar={<text>Side</text>}
-      >
+      <MockLayout rig="github.com/org/repo" showAll={false} sidebar={<text>Side</text>}>
         <text>Main</text>
       </MockLayout>
     ),
@@ -52,7 +48,14 @@ export const stressSpecs: FrameSpec[] = [
     name: "stress-dialog-bigger-than-viewport",
     options: { width: 20, height: 8 },
     component: () => (
-      <Dialog isOpen={true} onClose={() => {}} lockId="stress-d" title="Big Dialog" width={50} height={20}>
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        lockId="stress-d"
+        title="Big Dialog"
+        width={50}
+        height={20}
+      >
         <text>This dialog is bigger than the terminal</text>
       </Dialog>
     ),
@@ -60,7 +63,12 @@ export const stressSpecs: FrameSpec[] = [
   {
     name: "stress-button-long-label",
     options: { width: 30, height: 3 },
-    component: () => <Button label="This is an extremely long button label that should overflow" variant="primary" />,
+    component: () => (
+      <Button
+        label="This is an extremely long button label that should overflow"
+        variant="primary"
+      />
+    ),
   },
   {
     name: "stress-pane-long-summary",
@@ -68,8 +76,10 @@ export const stressSpecs: FrameSpec[] = [
     component: () => (
       <TicketPane
         ticket={makeTicket("LONGTICKET-99999", {
-          summary: "This is a very long ticket summary that describes a complex issue involving authentication timeouts when connecting to multiple microservices in parallel across different availability zones",
-          branch_name: "feat/LONGTICKET-99999-this-is-also-a-very-long-branch-name-that-exceeds-expectations",
+          summary:
+            "This is a very long ticket summary that describes a complex issue involving authentication timeouts when connecting to multiple microservices in parallel across different availability zones",
+          branch_name:
+            "feat/LONGTICKET-99999-this-is-also-a-very-long-branch-name-that-exceeds-expectations",
           worktree_path: null,
         })}
         events={[]}
@@ -131,7 +141,13 @@ export const stressSpecs: FrameSpec[] = [
         }),
       );
       return (
-        <TicketSidebar tickets={tickets(ticketList)} selectedIndex={10} width={28} onSelect={() => {}} onNew={() => {}} />
+        <TicketSidebar
+          tickets={tickets(ticketList)}
+          selectedIndex={10}
+          width={28}
+          onSelect={() => {}}
+          onNew={() => {}}
+        />
       );
     },
   },

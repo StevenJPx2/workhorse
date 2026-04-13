@@ -30,7 +30,7 @@ export function useTmuxOutput(options: UseTmuxOutputOptions): UseTmuxOutputRetur
       setError(null);
       // capturePane expects ticketId, but we use sessionName which is the ticketId
       const output = await capturePane(options.sessionName);
-      
+
       if (output) {
         // Split into lines, filter empty, keep last N
         const newLines = output

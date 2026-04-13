@@ -28,7 +28,10 @@ const rule = {
     try {
       const entries = fs.readdirSync(dirname);
       const sourceFiles = entries.filter(
-        (e) => SOURCE_EXTENSIONS.has(path.extname(e)) && !e.endsWith(".test.ts") && !e.endsWith(".test.tsx"),
+        (e) =>
+          SOURCE_EXTENSIONS.has(path.extname(e)) &&
+          !e.endsWith(".test.ts") &&
+          !e.endsWith(".test.tsx"),
       );
 
       const hasIndex = entries.includes("index.ts") || entries.includes("index.tsx");

@@ -7,20 +7,12 @@
 
 import type { Database, SQLQueryBindings } from "bun:sqlite";
 import { type Accessor, createSignal, onCleanup } from "solid-js";
-import {
-  closeDatabase,
-  getDatabase,
-  initDatabase,
-} from "../../lib/db/index.ts";
+import { closeDatabase, getDatabase, initDatabase } from "../../lib/db/index.ts";
 
 /**
  * Database connection status
  */
-export type DatabaseStatus =
-  | "disconnected"
-  | "connecting"
-  | "connected"
-  | "error";
+export type DatabaseStatus = "disconnected" | "connecting" | "connected" | "error";
 
 /**
  * Options for the database hook
@@ -85,9 +77,7 @@ export interface UseDatabaseReturn {
  * }
  * ```
  */
-export function useDatabase(
-  options: UseDatabaseOptions = {},
-): UseDatabaseReturn {
+export function useDatabase(options: UseDatabaseOptions = {}): UseDatabaseReturn {
   const [status, setStatus] = createSignal<DatabaseStatus>("disconnected");
   const [error, setError] = createSignal<Error | null>(null);
 

@@ -14,7 +14,7 @@ function extractTicketId(sessionName: string): string | null {
 
 export function buildTmuxCommand(
   command: string,
-  options: import("./types.ts").TmuxCommandOptions
+  options: import("./types.ts").TmuxCommandOptions,
 ): string[] {
   const args: string[] = ["tmux", command];
 

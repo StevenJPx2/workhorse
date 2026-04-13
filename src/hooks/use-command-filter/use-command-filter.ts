@@ -45,7 +45,7 @@ export interface UseCommandFilterReturn<T> {
  * ```
  */
 export function useCommandFilter<T>(
-  options: UseCommandFilterOptions<T>
+  options: UseCommandFilterOptions<T>,
 ): UseCommandFilterReturn<T> {
   const [query, setQuery] = createSignal(options.initialQuery ?? "");
 

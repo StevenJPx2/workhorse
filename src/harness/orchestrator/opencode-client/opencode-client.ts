@@ -38,9 +38,7 @@ export function createClientForTicket(ticketId: string): OpencodeClient {
  * This is the primary way to check if the AI agent is actually running,
  * not just that the tmux session exists.
  */
-export async function checkOpenCodeHealth(
-  ticketId: string
-): Promise<OpenCodeHealth> {
+export async function checkOpenCodeHealth(ticketId: string): Promise<OpenCodeHealth> {
   try {
     const client = createClientForTicket(ticketId);
     const response = await client.session.list();
@@ -63,9 +61,7 @@ export async function checkOpenCodeHealth(
  *
  * Returns whether sessions are idle, busy, or retrying
  */
-export async function getOpenCodeStatus(
-  ticketId: string
-): Promise<OpenCodeSessionStatus> {
+export async function getOpenCodeStatus(ticketId: string): Promise<OpenCodeSessionStatus> {
   try {
     const client = createClientForTicket(ticketId);
     const response = await client.session.status();
@@ -106,7 +102,7 @@ export async function getOpenCodeStatus(
 export async function subscribeToEvents(
   ticketId: string,
   onEvent: (event: OpenCodeEvent) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ): Promise<EventSubscription> {
   const client = createClientForTicket(ticketId);
   let aborted = false;
@@ -118,16 +114,16 @@ export async function subscribeToEvents(
       if (result && Symbol.asyncIterator in result) {
         for await (const rawEvent of result as AsyncIterable<unknown>) {
           if (aborted) break;
-          
+
           // SDK wraps events in GlobalEvent: { directory, payload }
           const globalEvent = rawEvent as { directory?: string; payload?: unknown };
           const payload = globalEvent.payload ?? rawEvent;
-          
+
           const eventData = payload as {
             type?: string;
             properties?: Record<string, unknown>;
           };
-          
+
           onEvent({
             type: (eventData.type as OpenCodeEventType) ?? "unknown",
             properties: eventData.properties ?? {},
@@ -153,9 +149,10 @@ export async function subscribeToEvents(
  *
  * OpenCode needs to be started with a specific port so we can connect to it.
  */
-export function buildOpenCodeCommandWithPort(
-  ticketId: string
-): { command: string; args: string[] } {
+export function buildOpenCodeCommandWithPort(ticketId: string): {
+  command: string;
+  args: string[];
+} {
   const port = getPortForTicket(ticketId);
   return {
     command: "opencode",

@@ -172,13 +172,7 @@ describe("TextInput snapshots", () => {
   it("with value", async () => {
     const ctx = await renderWithProviders(
       () => (
-        <TextInput
-          inputId="snap-2"
-          value="AM-123"
-          onChange={() => {}}
-          label="Ticket"
-          width={40}
-        />
+        <TextInput inputId="snap-2" value="AM-123" onChange={() => {}} label="Ticket" width={40} />
       ),
       { width: 45, height: 8 },
     );
@@ -190,12 +184,7 @@ describe("TextInput snapshots", () => {
       () => (
         <Grid rows={1} cols={1}>
           <GridCell id="ti" row={0} col={0}>
-            <TextInput
-              inputId="snap-grid"
-              value="hello"
-              onChange={() => {}}
-              width={40}
-            />
+            <TextInput inputId="snap-grid" value="hello" onChange={() => {}} width={40} />
           </GridCell>
         </Grid>
       ),
@@ -280,12 +269,7 @@ describe("Dialog snapshots", () => {
   it("closed renders nothing", async () => {
     const ctx = await renderWithProviders(
       () => (
-        <Dialog
-          isOpen={false}
-          onClose={() => {}}
-          lockId="snap-closed"
-          title="Hidden"
-        >
+        <Dialog isOpen={false} onClose={() => {}} lockId="snap-closed" title="Hidden">
           <text>invisible</text>
         </Dialog>
       ),
@@ -302,14 +286,26 @@ describe("Grid snapshot", () => {
         <Grid rows={2} cols={3} wrap>
           <box flexDirection="column" gap={1}>
             <box flexDirection="row" gap={1}>
-              <GridCell id="a" row={0} col={0}><Button label="A" variant="primary" /></GridCell>
-              <GridCell id="b" row={0} col={1}><Button label="B" variant="success" /></GridCell>
-              <GridCell id="c" row={0} col={2}><Button label="C" variant="warning" /></GridCell>
+              <GridCell id="a" row={0} col={0}>
+                <Button label="A" variant="primary" />
+              </GridCell>
+              <GridCell id="b" row={0} col={1}>
+                <Button label="B" variant="success" />
+              </GridCell>
+              <GridCell id="c" row={0} col={2}>
+                <Button label="C" variant="warning" />
+              </GridCell>
             </box>
             <box flexDirection="row" gap={1}>
-              <GridCell id="d" row={1} col={0}><Button label="D" style="ghost" /></GridCell>
-              <GridCell id="e" row={1} col={1}><Button label="E" style="ghost" /></GridCell>
-              <GridCell id="f" row={1} col={2}><Button label="F" style="ghost" /></GridCell>
+              <GridCell id="d" row={1} col={0}>
+                <Button label="D" style="ghost" />
+              </GridCell>
+              <GridCell id="e" row={1} col={1}>
+                <Button label="E" style="ghost" />
+              </GridCell>
+              <GridCell id="f" row={1} col={2}>
+                <Button label="F" style="ghost" />
+              </GridCell>
             </box>
           </box>
         </Grid>
@@ -324,8 +320,12 @@ describe("Grid snapshot", () => {
       () => (
         <Grid rows={2} cols={1}>
           <box flexDirection="column">
-            <GridCell id="top" row={0} col={0}><Button label="Top" variant="primary" /></GridCell>
-            <GridCell id="bot" row={1} col={0}><Button label="Bottom" variant="success" /></GridCell>
+            <GridCell id="top" row={0} col={0}>
+              <Button label="Top" variant="primary" />
+            </GridCell>
+            <GridCell id="bot" row={1} col={0}>
+              <Button label="Bottom" variant="success" />
+            </GridCell>
           </box>
         </Grid>
       ),

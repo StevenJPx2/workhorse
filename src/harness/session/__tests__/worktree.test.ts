@@ -221,9 +221,13 @@ describe("Async worktree operations", () => {
         start(controller) {
           controller.enqueue(new TextEncoder().encode(stdout));
           controller.close();
-        }
+        },
       }),
-      stderr: new ReadableStream({ start(c) { c.close(); } }),
+      stderr: new ReadableStream({
+        start(c) {
+          c.close();
+        },
+      }),
       exited: Promise.resolve(exitCode),
       kill: () => {},
       stdin: new WritableStream(),
@@ -320,9 +324,12 @@ branch refs/heads/feat/TEST-123`;
         callCount++;
         if (callCount === 1) {
           // listWorktrees call
-          return createMockGitSubprocess(0, `worktree /path/to/repo-worktrees/TEST-123
+          return createMockGitSubprocess(
+            0,
+            `worktree /path/to/repo-worktrees/TEST-123
 HEAD abc123
-branch refs/heads/feat/TEST-123`);
+branch refs/heads/feat/TEST-123`,
+          );
         }
         return createMockGitSubprocess(0);
       }) as unknown as typeof Bun.spawn;
@@ -349,7 +356,10 @@ branch refs/heads/feat/TEST-123`);
       Bun.spawn = (() => {
         callCount++;
         if (callCount === 1) {
-          return createMockGitSubprocess(0, "/fake/repo-worktrees/TEST-123 abc1234 [feat/TEST-123]");
+          return createMockGitSubprocess(
+            0,
+            "/fake/repo-worktrees/TEST-123 abc1234 [feat/TEST-123]",
+          );
         }
         // Simulate remove failing then succeeding
         return createMockGitSubprocess(0, "");
@@ -363,7 +373,8 @@ branch refs/heads/feat/TEST-123`);
 
   describe("createWorktree error paths", () => {
     test("should handle git fetch failure gracefully", async () => {
-      Bun.spawn = (() => createMockGitSubprocess(1, "fatal: could not fetch")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockGitSubprocess(1, "fatal: could not fetch")) as unknown as typeof Bun.spawn;
 
       const result = await createWorktree("/fake/repo", "TEST-123", "Story", "main");
       expect(result).toBeNull();
@@ -374,16 +385,22 @@ branch refs/heads/feat/TEST-123`);
       Bun.spawn = ((cmd: string[], _options?: object) => {
         callCount++;
         const command = cmd.join(" ");
-        
+
         if (command.includes("worktree list")) {
-          return createMockGitSubprocess(0, callCount > 2 ? "/fake/repo-worktrees/TEST-123 abc1234 [feat/TEST-123]" : "");
+          return createMockGitSubprocess(
+            0,
+            callCount > 2 ? "/fake/repo-worktrees/TEST-123 abc1234 [feat/TEST-123]" : "",
+          );
         }
         if (command.includes("fetch")) {
           return createMockGitSubprocess(0, "");
         }
         if (command.includes("worktree add") && command.includes("-b")) {
           // Simulate branch exists error
-          return createMockGitSubprocess(128, "fatal: A branch named 'feat/TEST-123' already exists.");
+          return createMockGitSubprocess(
+            128,
+            "fatal: A branch named 'feat/TEST-123' already exists.",
+          );
         }
         if (command.includes("worktree add")) {
           // Second attempt without -b flag
@@ -402,7 +419,7 @@ branch refs/heads/feat/TEST-123`);
       Bun.spawn = ((cmd: string[], _options?: object) => {
         _callCount++;
         const command = cmd.join(" ");
-        
+
         if (command.includes("worktree list")) {
           return createMockGitSubprocess(0, "");
         }

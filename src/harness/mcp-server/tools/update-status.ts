@@ -21,7 +21,7 @@ interface TicketRow {
 export function handleUpdateStatus(
   db: Database,
   ticketId: string,
-  input: UpdateStatusInput
+  input: UpdateStatusInput,
 ): UpdateStatusResponse {
   // Get current ticket status
   const ticket = db
@@ -39,9 +39,10 @@ export function handleUpdateStatus(
   const previousStatus = ticket.status;
 
   // Update status
-  db.prepare(
-    "UPDATE tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-  ).run(input.status, ticketId);
+  db.prepare("UPDATE tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+    input.status,
+    ticketId,
+  );
 
   // Log message if provided (for debugging/audit)
   if (input.message) {

@@ -71,9 +71,7 @@ describe("ticket-pane", () => {
         payload: JSON.stringify({ from: "pending", to: "implementing" }),
         timestamp: "2024-01-01T00:00:00Z",
       };
-      expect(formatEventDescription(event)).toBe(
-        "Status: pending -> implementing"
-      );
+      expect(formatEventDescription(event)).toBe("Status: pending -> implementing");
     });
 
     it("should format file_modified event", () => {

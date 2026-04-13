@@ -35,7 +35,7 @@ const mockTicket: Ticket = {
 describe("Agent restart snapshots", () => {
   it("TicketPane shows agent not running state", async () => {
     const [agentState] = createSignal<AgentState | undefined>(undefined);
-    
+
     const ctx = await renderWithProviders(
       () => (
         <TicketPane
@@ -49,15 +49,15 @@ describe("Agent restart snapshots", () => {
           onSendMessage={() => {}}
         />
       ),
-      { width: 80, height: 24 }
+      { width: 80, height: 24 },
     );
-    
+
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
   it("TicketPane shows agent running state", async () => {
     const [agentState] = createSignal<AgentState | undefined>("running");
-    
+
     const ctx = await renderWithProviders(
       () => (
         <TicketPane
@@ -71,22 +71,19 @@ describe("Agent restart snapshots", () => {
           onSendMessage={() => {}}
         />
       ),
-      { width: 80, height: 24 }
+      { width: 80, height: 24 },
     );
-    
+
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
   it("Layout shows toggle agent in help dialog", async () => {
-    const ctx = await renderLayoutWithProviders(
-      () => null,
-      { width: 80, height: 24 }
-    );
+    const ctx = await renderLayoutWithProviders(() => null, { width: 80, height: 24 });
 
     // Open help dialog with '?' key
     ctx.mockInput.pressKey("?");
     await ctx.renderOnce();
-    
+
     const frame = ctx.captureCharFrame();
     // Verify help dialog shows toggle shortcut
     expect(frame).toContain("s");
@@ -98,15 +95,12 @@ describe("Agent restart snapshots", () => {
     // Note: Since Layout now uses context and hooks internally,
     // we can't easily track if toggle was called without more complex mocking.
     // This test verifies the key doesn't cause errors.
-    const ctx = await renderLayoutWithProviders(
-      () => null,
-      { width: 80, height: 24 }
-    );
+    const ctx = await renderLayoutWithProviders(() => null, { width: 80, height: 24 });
 
     // Press 's' key - should not throw
     ctx.mockInput.pressKey("s");
     await ctx.renderOnce();
-    
+
     // Layout should still render without errors
     const frame = ctx.captureCharFrame();
     expect(frame).toBeDefined();
@@ -117,15 +111,15 @@ describe("Agent toggle integration", () => {
   it("restart flow completes successfully", async () => {
     const [agentState, setAgentState] = createSignal<AgentState | undefined>(undefined);
     const [isLoading, setIsLoading] = createSignal(false);
-    
+
     const mockRestart = async () => {
       setIsLoading(true);
       // Simulate async restart
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       setAgentState("running");
       setIsLoading(false);
     };
-    
+
     const ctx = await renderWithProviders(
       () => (
         <box flexDirection="column">
@@ -142,16 +136,16 @@ describe("Agent toggle integration", () => {
           {isLoading() && <text fg="yellow">Restarting agent...</text>}
         </box>
       ),
-      { width: 80, height: 24 }
+      { width: 80, height: 24 },
     );
 
     // Initial state - agent not running
     expect(ctx.captureCharFrame()).toMatchSnapshot("before-restart");
-    
+
     // Trigger restart
     await mockRestart();
     await ctx.renderOnce();
-    
+
     // After restart - agent running
     expect(ctx.captureCharFrame()).toMatchSnapshot("after-restart");
     expect(agentState()).toBe("running");

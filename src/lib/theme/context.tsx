@@ -54,9 +54,7 @@ export interface ThemeProviderProps {
  * ```
  */
 export const ThemeProvider: ParentComponent<ThemeProviderProps> = (props) => {
-  const [themeName, setThemeName] = createSignal<ThemeName>(
-    props.initialTheme ?? "tokyonight"
-  );
+  const [themeName, setThemeName] = createSignal<ThemeName>(props.initialTheme ?? "tokyonight");
 
   const theme = () => themes[themeName()];
 
@@ -81,11 +79,7 @@ export const ThemeProvider: ParentComponent<ThemeProviderProps> = (props) => {
     availableThemes: THEME_NAMES,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {props.children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{props.children}</ThemeContext.Provider>;
 };
 
 /**

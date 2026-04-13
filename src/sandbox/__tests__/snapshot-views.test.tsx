@@ -74,18 +74,20 @@ describe("TicketPane snapshots", () => {
 
 describe("Layout snapshots", () => {
   it("with sidebar and content", async () => {
-    const ctx = await renderLayoutWithProviders(
-      () => <text>Main Content Here</text>,
-      { width: 80, height: 24, rig: "github.com/acme/webapp" },
-    );
+    const ctx = await renderLayoutWithProviders(() => <text>Main Content Here</text>, {
+      width: 80,
+      height: 24,
+      rig: "github.com/acme/webapp",
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
   it("all-repos mode", async () => {
-    const ctx = await renderLayoutWithProviders(
-      () => <text>main</text>,
-      { width: 80, height: 24, rig: "" },
-    );
+    const ctx = await renderLayoutWithProviders(() => <text>main</text>, {
+      width: 80,
+      height: 24,
+      rig: "",
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 });

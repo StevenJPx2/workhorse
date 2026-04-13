@@ -1,21 +1,21 @@
 /**
  * Test utility for cleaning up worktrees created during tests
- * 
+ *
  * Usage in test files:
  * ```ts
  * import { cleanupTestWorktreesAfterAll } from "../../test/cleanup-worktrees.ts";
- * 
+ *
  * // At the top of your test file or describe block
  * cleanupTestWorktreesAfterAll();
  * ```
- * 
+ *
  * Or for manual cleanup:
  * ```ts
  * import { cleanupTestWorktrees, trackTestWorktree } from "../../test/cleanup-worktrees.ts";
- * 
+ *
  * // Track worktrees created in your test
  * trackTestWorktree("TEST-123");
- * 
+ *
  * // In afterAll or afterEach
  * await cleanupTestWorktrees();
  * ```
@@ -39,13 +39,13 @@ export function trackTestWorktree(ticketId: string): void {
  * Test ticket ID patterns that should be cleaned up
  */
 const TEST_PATTERNS = [
-  /^TEST-/i,           // TEST-123
-  /-TEST/i,            // PROJ-TEST, PROJ-TEST-123
-  /-FAIL/i,            // WORKTREE-FAIL-123, PROJ-FAIL
-  /^WORKTREE-FAIL/i,   // WORKTREE-FAIL-*
-  /^MOCK-/i,           // MOCK-123
-  /^FAKE-/i,           // FAKE-123
-  /^SPAWN-/i,          // SPAWN-FAIL-* from orchestrator tests
+  /^TEST-/i, // TEST-123
+  /-TEST/i, // PROJ-TEST, PROJ-TEST-123
+  /-FAIL/i, // WORKTREE-FAIL-123, PROJ-FAIL
+  /^WORKTREE-FAIL/i, // WORKTREE-FAIL-*
+  /^MOCK-/i, // MOCK-123
+  /^FAKE-/i, // FAKE-123
+  /^SPAWN-/i, // SPAWN-FAIL-* from orchestrator tests
 ];
 
 /**
@@ -56,9 +56,9 @@ export function isTestWorktree(ticketId: string): boolean {
   if (trackedWorktrees.has(ticketId)) {
     return true;
   }
-  
+
   // Check patterns
-  return TEST_PATTERNS.some(pattern => pattern.test(ticketId));
+  return TEST_PATTERNS.some((pattern) => pattern.test(ticketId));
 }
 
 /**
@@ -68,15 +68,15 @@ export function isTestWorktree(ticketId: string): boolean {
 export async function cleanupTestWorktrees(): Promise<{ removed: string[]; failed: string[] }> {
   const removed: string[] = [];
   const failed: string[] = [];
-  
+
   try {
     const repoPath = await getGitRoot();
     if (!repoPath) {
       return { removed, failed };
     }
-    
+
     const worktrees = await listWorktrees(repoPath);
-    
+
     for (const wt of worktrees) {
       if (isTestWorktree(wt.ticketId)) {
         const success = await removeWorktree(repoPath, wt.ticketId, true);
@@ -92,7 +92,7 @@ export async function cleanupTestWorktrees(): Promise<{ removed: string[]; faile
     // Silently fail - cleanup is best-effort
     console.error("Test worktree cleanup error:", error);
   }
-  
+
   return { removed, failed };
 }
 

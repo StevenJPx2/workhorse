@@ -66,7 +66,11 @@ describe("spawnAgent - worktree branch exists", () => {
       if (command.includes("fetch")) return createMockSubprocess(0, "");
       if (command.includes("worktree add -b")) {
         _branchChecked = true;
-        return createMockSubprocess(128, "", "fatal: A branch named 'chore/BRANCH-TEST' already exists");
+        return createMockSubprocess(
+          128,
+          "",
+          "fatal: A branch named 'chore/BRANCH-TEST' already exists",
+        );
       }
       if (command.includes("worktree add")) {
         _usedExistingBranch = true;
@@ -114,7 +118,10 @@ describe("spawnAgent - worktree already exists", () => {
       if (command.includes("worktree list")) {
         if (!worktreeListed) {
           worktreeListed = true;
-          return createMockSubprocess(0, "/tmp/repo-worktrees/EXISTING-WT bare\n/tmp/repo-worktrees/EXISTING-WT/EXISTING-WT 12345678 [chore/EXISTING-WT]");
+          return createMockSubprocess(
+            0,
+            "/tmp/repo-worktrees/EXISTING-WT bare\n/tmp/repo-worktrees/EXISTING-WT/EXISTING-WT 12345678 [chore/EXISTING-WT]",
+          );
         }
         return createMockSubprocess(0, "");
       }

@@ -36,13 +36,9 @@ export interface UseTicketInputOptions {
  * <button onClick={form.submit} disabled={!form.isValid()}>Add</button>
  * ```
  */
-export function useTicketInput(
-  options: UseTicketInputOptions
-): UseTicketInputReturn {
+export function useTicketInput(options: UseTicketInputOptions): UseTicketInputReturn {
   const [input, setInput] = createSignal("");
-  const [agent, setAgent] = createSignal<AgentType>(
-    options.defaultAgent ?? "opencode"
-  );
+  const [agent, setAgent] = createSignal<AgentType>(options.defaultAgent ?? "opencode");
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   const [jiraIssue, setJiraIssue] = createSignal<JiraIssue | null>(null);
@@ -77,8 +73,7 @@ export function useTicketInput(
       setJiraIssue(issue);
       options.onSubmit(key, agent(), issue);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to fetch ticket";
+      const message = err instanceof Error ? err.message : "Failed to fetch ticket";
       setError(message);
     } finally {
       setIsLoading(false);

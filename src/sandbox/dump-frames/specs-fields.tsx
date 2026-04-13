@@ -8,7 +8,14 @@ export const fieldSpecs: FrameSpec[] = [
     name: "text-input-empty",
     options: { width: 45, height: 8 },
     component: () => (
-      <TextInput inputId="d1" value="" onChange={() => {}} placeholder="Type here..." label="Name" width={40} />
+      <TextInput
+        inputId="d1"
+        value=""
+        onChange={() => {}}
+        placeholder="Type here..."
+        label="Name"
+        width={40}
+      />
     ),
   },
   {

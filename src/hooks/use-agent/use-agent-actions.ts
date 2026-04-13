@@ -14,7 +14,9 @@ export interface AgentActionsDeps {
   setError: (err: Error | null) => void;
   setIsLoading: (loading: boolean) => void;
   resolvers: ResolvedOptions;
-  onStateChange: ((ticketId: string, state: import("../../harness/orchestrator/types.ts").AgentState) => void) | undefined;
+  onStateChange:
+    | ((ticketId: string, state: import("../../harness/orchestrator/types.ts").AgentState) => void)
+    | undefined;
   reload: () => void;
 }
 
@@ -54,10 +56,7 @@ export function createAgentActions(deps: AgentActionsDeps) {
     }
   };
 
-  const stop = async (
-    ticketId: string,
-    removeWorktree: boolean = false,
-  ): Promise<boolean> => {
+  const stop = async (ticketId: string, removeWorktree: boolean = false): Promise<boolean> => {
     try {
       deps.setIsLoading(true);
       deps.setError(null);

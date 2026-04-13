@@ -9,7 +9,13 @@ export const composedSpecs: FrameSpec[] = [
     name: "sidebar-empty",
     options: { width: 32, height: 18 },
     component: () => (
-      <TicketSidebar tickets={tickets([])} selectedIndex={0} width={28} onSelect={() => {}} onNew={() => {}} />
+      <TicketSidebar
+        tickets={tickets([])}
+        selectedIndex={0}
+        width={28}
+        onSelect={() => {}}
+        onNew={() => {}}
+      />
     ),
   },
   {
@@ -77,11 +83,7 @@ export const composedSpecs: FrameSpec[] = [
     name: "layout",
     options: { width: 80, height: 24 },
     component: () => (
-      <MockLayout
-        rig="github.com/acme/webapp"
-        showAll={false}
-        sidebar={<text>Sidebar Here</text>}
-      >
+      <MockLayout rig="github.com/acme/webapp" showAll={false} sidebar={<text>Sidebar Here</text>}>
         <text>Main Content Here</text>
       </MockLayout>
     ),
@@ -94,7 +96,9 @@ export const composedSpecs: FrameSpec[] = [
         isOpen={true}
         onClose={() => {}}
         onSubmit={() => {}}
-        fetchIssue={async () => { throw new Error("not connected"); }}
+        fetchIssue={async () => {
+          throw new Error("not connected");
+        }}
       />
     ),
   },
@@ -106,7 +110,9 @@ export const composedSpecs: FrameSpec[] = [
         isOpen={true}
         onClose={() => {}}
         onSubmit={() => {}}
-        fetchIssue={async () => { throw new Error("not connected"); }}
+        fetchIssue={async () => {
+          throw new Error("not connected");
+        }}
       />
     ),
     interactions: async (ctx) => {
@@ -122,7 +128,9 @@ export const composedSpecs: FrameSpec[] = [
         isOpen={true}
         onClose={() => {}}
         onSubmit={() => {}}
-        fetchIssue={async () => { throw new Error("not connected"); }}
+        fetchIssue={async () => {
+          throw new Error("not connected");
+        }}
       />
     ),
     interactions: async (ctx) => {

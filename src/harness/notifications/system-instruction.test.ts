@@ -7,9 +7,7 @@ import { generateSystemInstruction } from "./system-instruction.ts";
 import type { Notification } from "./types.ts";
 
 describe("generateSystemInstruction", () => {
-  const createNotification = (
-    overrides: Partial<Notification> = {}
-  ): Notification => ({
+  const createNotification = (overrides: Partial<Notification> = {}): Notification => ({
     id: "notif_123",
     ticket_id: "AM-123",
     source_type: "github_pr_review",

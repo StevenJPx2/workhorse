@@ -35,16 +35,12 @@ export function normalizeRemoteUrl(url: string): string {
 
   // Handle SSH format: git@github.com:user/repo
   if (normalized.startsWith("git@")) {
-    normalized = normalized
-      .replace(/^git@/, "")
-      .replace(":", "/");
+    normalized = normalized.replace(/^git@/, "").replace(":", "/");
   }
 
   // Handle ssh:// format: ssh://git@github.com/user/repo
   if (normalized.startsWith("ssh://")) {
-    normalized = normalized
-      .replace(/^ssh:\/\//, "")
-      .replace(/^git@/, "");
+    normalized = normalized.replace(/^ssh:\/\//, "").replace(/^git@/, "");
   }
 
   // Handle https:// format
@@ -77,7 +73,7 @@ export async function getGitRoot(cwd?: string): Promise<string | null> {
  */
 export async function getRemoteUrl(
   cwd?: string,
-  remoteName: string = "origin"
+  remoteName: string = "origin",
 ): Promise<string | null> {
   try {
     const result = await $`git remote get-url ${remoteName}`.cwd(cwd ?? process.cwd()).quiet();

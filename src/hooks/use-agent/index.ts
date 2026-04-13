@@ -3,8 +3,4 @@
  */
 
 export { useAgent } from "./use-agent.ts";
-export type {
-  UseAgentOptions,
-  UseAgentReturn,
-  SpawnOptions,
-} from "./types.ts";
+export type { UseAgentOptions, UseAgentReturn, SpawnOptions } from "./types.ts";

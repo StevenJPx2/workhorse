@@ -5,10 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { handleGetNotifications } from "./get-notifications.ts";
-import {
-  initNotificationsTable,
-  createNotification,
-} from "../../notifications/index.ts";
+import { initNotificationsTable, createNotification } from "../../notifications/index.ts";
 import type { CreateNotificationInput } from "../../notifications/types.ts";
 
 describe("handleGetNotifications", () => {
@@ -23,9 +20,7 @@ describe("handleGetNotifications", () => {
     db.close();
   });
 
-  const createSampleNotification = (
-    overrides: Partial<CreateNotificationInput> = {}
-  ) => {
+  const createSampleNotification = (overrides: Partial<CreateNotificationInput> = {}) => {
     return createNotification(db, {
       ticket_id: "AM-123",
       source_type: "github_pr_review",
@@ -64,9 +59,7 @@ describe("handleGetNotifications", () => {
 
     it("should not return acknowledged notifications", () => {
       const notif = createSampleNotification();
-      db.prepare(
-        "UPDATE notifications SET status = 'acknowledged' WHERE id = ?"
-      ).run(notif!.id);
+      db.prepare("UPDATE notifications SET status = 'acknowledged' WHERE id = ?").run(notif!.id);
 
       const result = handleGetNotifications(db, "AM-123");
 

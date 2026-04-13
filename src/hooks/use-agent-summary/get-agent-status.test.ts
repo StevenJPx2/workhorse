@@ -4,7 +4,10 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { getAgentStatus, clearSessionCache, clearAllSessionCache } from "./get-agent-status.ts";
-import { getPortForTicket, releasePort } from "../../harness/orchestrator/opencode-client/port-manager.ts";
+import {
+  getPortForTicket,
+  releasePort,
+} from "../../harness/orchestrator/opencode-client/port-manager.ts";
 
 // Test ticket IDs
 const TEST_TICKET_1 = "TEST-SDK-001";
@@ -105,23 +108,24 @@ describe("integration: live agent connection", () => {
     "connects to running agent and fetches status",
     async () => {
       const ticketId = process.env.TEST_TICKET_ID || "ADEPT-37632";
-      const worktreePath = process.env.TEST_WORKTREE_PATH || 
+      const worktreePath =
+        process.env.TEST_WORKTREE_PATH ||
         `/Users/stevenjohn/Documents/Projects/jiratown-worktrees/${ticketId}`;
 
       const port = getPortForTicket(ticketId);
       console.log(`Testing connection to agent on port ${port}`);
 
       const result = await getAgentStatus(ticketId, worktreePath);
-      
+
       // Should return steps (may be empty if agent just started)
       expect(Array.isArray(result)).toBe(true);
-      
+
       if (result.length > 0) {
         console.log(`Got ${result.length} steps from agent`);
         expect(result[0]).toHaveProperty("description");
         expect(result[0]).toHaveProperty("type");
         expect(result[0]).toHaveProperty("timestamp");
       }
-    }
+    },
   );
 });

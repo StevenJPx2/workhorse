@@ -306,9 +306,7 @@ describe("useTickets", () => {
       createRoot((dispose) => {
         const timestamp = Date.now();
         const otherRig = "github.com/other/repo-reactive-" + timestamp;
-        const [currentRig, setCurrentRig] = createSignal<string | undefined>(
-          undefined
-        );
+        const [currentRig, setCurrentRig] = createSignal<string | undefined>(undefined);
 
         // Create tickets in different rigs with unique IDs
         const { create: create1 } = useTickets({ rig: testRig });

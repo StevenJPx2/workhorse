@@ -2,13 +2,7 @@
  * Hotkey manager for coordinating multiple contexts
  */
 
-import type {
-  HotkeyContext,
-  HotkeyManager,
-  Hotkey,
-  KeyInfo,
-  UseHotkeysReturn,
-} from "./types.ts";
+import type { HotkeyContext, HotkeyManager, Hotkey, KeyInfo, UseHotkeysReturn } from "./types.ts";
 import { useHotkeys } from "./use-hotkeys.ts";
 
 /**

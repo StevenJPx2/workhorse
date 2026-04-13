@@ -159,8 +159,7 @@ describe("useInteractive", () => {
   describe("full interaction flow", () => {
     it("should handle complete interaction cycle", () => {
       createRoot((dispose) => {
-        const { isHovered, isPressed, isHighlighted, interactiveProps } =
-          useInteractive();
+        const { isHovered, isPressed, isHighlighted, interactiveProps } = useInteractive();
 
         // Initial state
         expect(isHovered()).toBe(false);

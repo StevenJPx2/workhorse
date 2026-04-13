@@ -126,15 +126,11 @@ describe("useDatabase", () => {
         const { init, exec, queryAll } = useDatabase();
         init();
 
-        exec(
-          "CREATE TABLE IF NOT EXISTS test_query (id INTEGER, name TEXT)"
-        );
+        exec("CREATE TABLE IF NOT EXISTS test_query (id INTEGER, name TEXT)");
         exec("INSERT INTO test_query VALUES (1, 'Alice')");
         exec("INSERT INTO test_query VALUES (2, 'Bob')");
 
-        const rows = queryAll<{ id: number; name: string }>(
-          "SELECT * FROM test_query ORDER BY id"
-        );
+        const rows = queryAll<{ id: number; name: string }>("SELECT * FROM test_query ORDER BY id");
         expect(rows.length).toBe(2);
         expect(rows[0].name).toBe("Alice");
         expect(rows[1].name).toBe("Bob");
@@ -150,15 +146,13 @@ describe("useDatabase", () => {
         const { init, exec, queryAll } = useDatabase();
         init();
 
-        exec(
-          "CREATE TABLE IF NOT EXISTS test_params (id INTEGER, name TEXT)"
-        );
+        exec("CREATE TABLE IF NOT EXISTS test_params (id INTEGER, name TEXT)");
         exec("INSERT INTO test_params VALUES (1, 'Alice')");
         exec("INSERT INTO test_params VALUES (2, 'Bob')");
 
         const rows = queryAll<{ id: number; name: string }>(
           "SELECT * FROM test_params WHERE name = ?",
-          ["Alice"]
+          ["Alice"],
         );
         expect(rows.length).toBe(1);
         expect(rows[0].name).toBe("Alice");
@@ -198,7 +192,7 @@ describe("useDatabase", () => {
 
         const row = queryOne<{ id: number; name: string }>(
           "SELECT * FROM test_one WHERE id = ?",
-          [1]
+          [1],
         );
         expect(row).not.toBeNull();
         expect(row?.name).toBe("Alice");
@@ -216,10 +210,7 @@ describe("useDatabase", () => {
 
         exec("CREATE TABLE IF NOT EXISTS test_null (id INTEGER)");
 
-        const row = queryOne<{ id: number }>(
-          "SELECT * FROM test_null WHERE id = ?",
-          [999]
-        );
+        const row = queryOne<{ id: number }>("SELECT * FROM test_null WHERE id = ?", [999]);
         expect(row).toBeNull();
 
         // Cleanup
@@ -240,10 +231,7 @@ describe("useDatabase", () => {
         exec("INSERT INTO test_run VALUES (2, 'a')");
         exec("INSERT INTO test_run VALUES (3, 'b')");
 
-        const changes = run("UPDATE test_run SET val = ? WHERE val = ?", [
-          "updated",
-          "a",
-        ]);
+        const changes = run("UPDATE test_run SET val = ? WHERE val = ?", ["updated", "a"]);
         expect(changes).toBe(2);
 
         // Cleanup

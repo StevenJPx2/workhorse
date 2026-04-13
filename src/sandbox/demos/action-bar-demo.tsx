@@ -21,7 +21,12 @@ export function ActionBarDemo() {
           actions={[
             { key: "e", action: "escalate", onPress: () => setLastAction("escalate") },
             { key: "a", action: "switch agent", onPress: () => setLastAction("switch agent") },
-            { key: "j", action: "open jira", variant: "primary", onPress: () => setLastAction("open jira") },
+            {
+              key: "j",
+              action: "open jira",
+              variant: "primary",
+              onPress: () => setLastAction("open jira"),
+            },
           ]}
         />
       </box>
@@ -32,7 +37,12 @@ export function ActionBarDemo() {
         <ActionBar
           align="left"
           actions={[
-            { key: "n", action: "new ticket", variant: "success", onPress: () => setLastAction("new ticket") },
+            {
+              key: "n",
+              action: "new ticket",
+              variant: "success",
+              onPress: () => setLastAction("new ticket"),
+            },
             { key: "x", action: "close", variant: "danger", onPress: () => setLastAction("close") },
           ]}
         />

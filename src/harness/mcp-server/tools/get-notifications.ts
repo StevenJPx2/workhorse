@@ -20,10 +20,7 @@ import type { GetNotificationsResponse } from "../types.ts";
  * - Marks them as read (agent has seen them)
  * - Generates a system instruction if there are high-priority items
  */
-export function handleGetNotifications(
-  db: Database,
-  ticketId: string
-): GetNotificationsResponse {
+export function handleGetNotifications(db: Database, ticketId: string): GetNotificationsResponse {
   // Get unread notifications ordered by priority
   const notifications = getUnreadNotifications(db, ticketId);
 

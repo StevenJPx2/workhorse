@@ -20,13 +20,13 @@ export function TicketMeta(props: TicketMetaProps) {
 
   const statusConfig = () => getStatusConfig(props.status, theme());
   const agentColor = () => getAgentColor(props.agent, theme());
-  
+
   // Resolve agentState - supports both value and accessor for reactivity
   const resolvedAgentState = () => {
     const state = props.agentState;
     return typeof state === "function" ? state() : state;
   };
-  
+
   const agentState = () => {
     const state = resolvedAgentState();
     return state ? getAgentStateConfig(state, theme()) : null;
@@ -57,7 +57,9 @@ export function TicketMeta(props: TicketMetaProps) {
       {/* Worktree info (if present) */}
       <Show when={props.worktreePath}>
         <box flexDirection="row">
-          <text fg={theme().text.secondary} width={9}>Worktree </text>
+          <text fg={theme().text.secondary} width={9}>
+            Worktree{" "}
+          </text>
           <text fg={theme().text.dim}>{props.worktreePath}</text>
         </box>
       </Show>
@@ -65,7 +67,9 @@ export function TicketMeta(props: TicketMetaProps) {
       {/* Branch info (if present) */}
       <Show when={props.branchName && !props.worktreePath}>
         <box flexDirection="row">
-          <text fg={theme().text.secondary} width={9}>Branch   </text>
+          <text fg={theme().text.secondary} width={9}>
+            Branch{" "}
+          </text>
           <text fg={theme().text.dim}>{props.branchName}</text>
         </box>
       </Show>

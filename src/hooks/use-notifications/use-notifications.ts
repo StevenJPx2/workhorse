@@ -28,9 +28,7 @@ import {
   findNewNotifications,
 } from "./notification-helpers.ts";
 
-export function useNotifications(
-  options: UseNotificationsOptions = {}
-): UseNotificationsReturn {
+export function useNotifications(options: UseNotificationsOptions = {}): UseNotificationsReturn {
   const [notifications, setNotifications] = createSignal<Notification[]>([]);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);
@@ -39,9 +37,7 @@ export function useNotifications(
   const getTicketId = (): string | undefined => resolveTicketId(options);
 
   const unreadCount = createMemo(() => countUnread(notifications()));
-  const blockingNotifications = createMemo(() =>
-    filterBlocking(notifications())
-  );
+  const blockingNotifications = createMemo(() => filterBlocking(notifications()));
   const hasBlocking = createMemo(() => blockingNotifications().length > 0);
 
   const reload = async (): Promise<void> => {

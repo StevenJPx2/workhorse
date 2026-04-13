@@ -29,7 +29,7 @@ function readNewContent() {
 
     stream.on("end", () => {
       if (newData) {
-        const lines = newData.split("\n").filter(line => line.trim());
+        const lines = newData.split("\n").filter((line) => line.trim());
         for (const line of lines) {
           console.log(line);
         }

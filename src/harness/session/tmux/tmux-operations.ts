@@ -2,7 +2,7 @@ import { type TmuxSession } from "./types.ts";
 import { createTmuxSessionName, buildTmuxCommand, parseTmuxList } from "./tmux-utils.ts";
 
 async function execTmux(
-  args: string[]
+  args: string[],
 ): Promise<{ success: boolean; output: string; error: string }> {
   try {
     const proc = Bun.spawn(args, {
@@ -35,7 +35,7 @@ export async function isTmuxAvailable(): Promise<boolean> {
 
 export async function createSession(
   ticketId: string,
-  workdir: string
+  workdir: string,
 ): Promise<TmuxSession | null> {
   const sessionName = createTmuxSessionName(ticketId);
 
@@ -91,7 +91,7 @@ export async function killSession(ticketId: string): Promise<boolean> {
 export async function sendKeys(
   ticketId: string,
   keys: string,
-  pressEnter: boolean = true
+  pressEnter: boolean = true,
 ): Promise<boolean> {
   const sessionName = createTmuxSessionName(ticketId);
 
@@ -122,7 +122,7 @@ export async function sendKeys(
 
 export async function capturePane(
   ticketId: string,
-  startLine: number = -100
+  startLine: number = -100,
 ): Promise<string | null> {
   const sessionName = createTmuxSessionName(ticketId);
   const cmd = buildTmuxCommand("capture-pane", {

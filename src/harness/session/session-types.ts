@@ -4,7 +4,13 @@
 
 export interface SessionEvent {
   timestamp: string;
-  type: "status_change" | "file_modified" | "test_result" | "escalation" | "agent_message" | "user_message";
+  type:
+    | "status_change"
+    | "file_modified"
+    | "test_result"
+    | "escalation"
+    | "agent_message"
+    | "user_message";
   description: string;
   metadata?: Record<string, unknown>;
 }

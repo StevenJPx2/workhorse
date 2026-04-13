@@ -1,20 +1,12 @@
 import { createSignal } from "solid-js";
-import type {
-  ResolvedConfig,
-  JiratownConfig,
-  ThemeName,
-} from "../../types/config.ts";
+import type { ResolvedConfig, JiratownConfig, ThemeName } from "../../types/config.ts";
 import {
   loadConfig,
   saveGlobalConfig,
   saveProjectConfig,
   saveTheme,
 } from "../../lib/config/index.ts";
-import {
-  type ConfigStatus,
-  type UseConfigOptions,
-  DEFAULT_CONFIG,
-} from "./types.ts";
+import { type ConfigStatus, type UseConfigOptions, DEFAULT_CONFIG } from "./types.ts";
 export type { ConfigStatus, UseConfigOptions, UseConfigReturn } from "./types.ts";
 
 export function useConfig(options: UseConfigOptions = {}) {
@@ -93,14 +85,11 @@ export function useConfig(options: UseConfigOptions = {}) {
     }
   };
 
-  const theme = () =>
-    config()?.ui.theme ?? DEFAULT_CONFIG.ui.theme;
+  const theme = () => config()?.ui.theme ?? DEFAULT_CONFIG.ui.theme;
 
-  const agent = () =>
-    config()?.defaults.agent ?? DEFAULT_CONFIG.defaults.agent;
+  const agent = () => config()?.defaults.agent ?? DEFAULT_CONFIG.defaults.agent;
 
-  const cloudId = () =>
-    config()?.jira.cloud_id ?? DEFAULT_CONFIG.jira.cloud_id;
+  const cloudId = () => config()?.jira.cloud_id ?? DEFAULT_CONFIG.jira.cloud_id;
 
   if (options.autoLoad) {
     load();

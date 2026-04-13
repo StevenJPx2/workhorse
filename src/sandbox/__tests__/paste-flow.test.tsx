@@ -29,7 +29,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t1"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -50,7 +52,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t2"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -71,7 +75,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t3"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -94,7 +100,9 @@ describe("Paste: TextInput", () => {
             <TextInput
               inputId="t4"
               value={value}
-              onChange={(v) => { value = v; }}
+              onChange={(v) => {
+                value = v;
+              }}
             />
           </GridCell>
         </Grid>
@@ -118,7 +126,9 @@ describe("Paste: TextInput", () => {
             <TextInput
               inputId="t5"
               value={value}
-              onChange={(v) => { value = v; }}
+              onChange={(v) => {
+                value = v;
+              }}
             />
           </GridCell>
         </Grid>
@@ -143,7 +153,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t6"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -164,7 +176,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t7"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -184,7 +198,9 @@ describe("Paste: TextInput", () => {
         <TextInput
           inputId="t8"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
           disabled
         />
@@ -217,7 +233,9 @@ describe("Paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -240,7 +258,9 @@ describe("Paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -261,7 +281,9 @@ describe("Paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,

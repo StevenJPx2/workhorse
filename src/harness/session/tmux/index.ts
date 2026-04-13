@@ -1,9 +1,5 @@
 export { type TmuxSession, type TmuxCommandOptions, SESSION_PREFIX } from "./types.ts";
-export {
-  createTmuxSessionName,
-  buildTmuxCommand,
-  parseTmuxList,
-} from "./tmux-utils.ts";
+export { createTmuxSessionName, buildTmuxCommand, parseTmuxList } from "./tmux-utils.ts";
 export {
   isTmuxAvailable,
   createSession,

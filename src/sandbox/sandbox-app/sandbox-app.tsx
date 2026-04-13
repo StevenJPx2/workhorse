@@ -92,10 +92,7 @@ function SandboxContent(props: { onCycleTheme: () => void }) {
       </box>
 
       <box flexGrow={1} flexDirection="column">
-        <Show
-          when={activeDemo()}
-          fallback={<Menu selectedIndex={selectedIndex()} />}
-        >
+        <Show when={activeDemo()} fallback={<Menu selectedIndex={selectedIndex()} />}>
           <box flexGrow={1} padding={spacing.md}>
             {currentDemo()?.component()}
           </box>

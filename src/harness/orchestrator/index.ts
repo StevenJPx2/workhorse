@@ -25,10 +25,7 @@ export {
 } from "./mcp-config.ts";
 
 // System Prompt
-export {
-  generateSystemPrompt,
-  generateInitialPrompt,
-} from "./system-prompt/index.ts";
+export { generateSystemPrompt, generateInitialPrompt } from "./system-prompt/index.ts";
 
 // Orchestrator
 export {

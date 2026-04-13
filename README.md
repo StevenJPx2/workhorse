@@ -180,15 +180,18 @@ cloud_id = "yourcompany.atlassian.net"  # Required
 #### Troubleshooting
 
 **"Jira cloud ID is not configured"**
+
 - Run `jiratown setup` to configure your Jira instance
 - Or manually edit `~/.jiratown/config.toml`
 
 **"Failed to parse Jira response"**
+
 - Check that the issue key exists (e.g., `AM-123`)
 - Verify your cloud ID is correct
 - Ensure the MCP server is reachable
 
 **Connection issues**
+
 - The MCP client uses `npx mcp-remote` - ensure you have internet access
 - Check that `npx` is available in your PATH
 

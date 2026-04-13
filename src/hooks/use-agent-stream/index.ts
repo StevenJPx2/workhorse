@@ -3,8 +3,4 @@
  */
 
 export { useAgentStream } from "./use-agent-stream.ts";
-export type {
-  UseAgentStreamOptions,
-  UseAgentStreamReturn,
-  StreamMessage,
-} from "./types.ts";
+export type { UseAgentStreamOptions, UseAgentStreamReturn, StreamMessage } from "./types.ts";

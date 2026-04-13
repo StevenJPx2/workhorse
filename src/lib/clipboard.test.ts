@@ -51,12 +51,7 @@ describe("clipboard", () => {
       const result = readClipboardSync();
 
       expect(result).toBe("linux clipboard");
-      expect(spawnSyncSpy).toHaveBeenCalledWith([
-        "xclip",
-        "-selection",
-        "clipboard",
-        "-o",
-      ], {
+      expect(spawnSyncSpy).toHaveBeenCalledWith(["xclip", "-selection", "clipboard", "-o"], {
         stdout: "pipe",
         stderr: "pipe",
         stdin: "pipe",
@@ -74,11 +69,7 @@ describe("clipboard", () => {
       const result = readClipboardSync();
 
       expect(result).toBe("windows clipboard");
-      expect(spawnSyncSpy).toHaveBeenCalledWith([
-        "powershell",
-        "-command",
-        "Get-Clipboard",
-      ], {
+      expect(spawnSyncSpy).toHaveBeenCalledWith(["powershell", "-command", "Get-Clipboard"], {
         stdout: "pipe",
         stderr: "pipe",
         stdin: "pipe",

@@ -19,10 +19,7 @@ export function saveGlobalConfig(config: JiratownConfig): void {
   writeFileSync(paths.globalConfig, toml, "utf-8");
 }
 
-export async function saveProjectConfig(
-  config: JiratownConfig,
-  cwd?: string
-): Promise<void> {
+export async function saveProjectConfig(config: JiratownConfig, cwd?: string): Promise<void> {
   const gitRoot = await getGitRoot(cwd);
   if (!gitRoot) {
     throw new Error("Not in a git repository");

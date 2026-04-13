@@ -10,7 +10,7 @@ export { activeAgents };
 
 export function createAgentInstance(
   ticketId: string,
-  agentType: "opencode" | "claude"
+  agentType: "opencode" | "claude",
 ): AgentInstance {
   return {
     ticketId,

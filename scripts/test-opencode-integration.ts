@@ -23,7 +23,13 @@ import {
 
 import { buildAgentCommand } from "../src/harness/orchestrator/mcp-config.ts";
 
-const C = { green: "\x1b[32m", red: "\x1b[31m", yellow: "\x1b[33m", blue: "\x1b[34m", reset: "\x1b[0m" };
+const C = {
+  green: "\x1b[32m",
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  reset: "\x1b[0m",
+};
 const log = (msg: string) => console.log(`${C.blue}[TEST]${C.reset} ${msg}`);
 const pass = (msg: string) => console.log(`${C.green}  ✓${C.reset} ${msg}`);
 const fail = (msg: string) => console.log(`${C.red}  ✗${C.reset} ${msg}`);
@@ -69,11 +75,7 @@ async function runTests() {
   // Test 3: buildOpenCodeCommandWithPort
   log("Testing buildOpenCodeCommandWithPort...");
   const cmd1 = buildOpenCodeCommandWithPort("CMD-001");
-  if (
-    cmd1.command === "opencode" &&
-    cmd1.args.length === 2 &&
-    cmd1.args[0] === "--port"
-  ) {
+  if (cmd1.command === "opencode" && cmd1.args.length === 2 && cmd1.args[0] === "--port") {
     pass(`Command built correctly: ${cmd1.command} ${cmd1.args.join(" ")}`);
     passed++;
   } else {
@@ -84,10 +86,7 @@ async function runTests() {
   // Test 4: buildAgentCommand with opencode
   log("Testing buildAgentCommand for opencode...");
   const cmd2 = buildAgentCommand("opencode", "CMD-002");
-  if (
-    cmd2.command === "opencode" &&
-    cmd2.args.includes("--port")
-  ) {
+  if (cmd2.command === "opencode" && cmd2.args.includes("--port")) {
     pass(`buildAgentCommand works: ${cmd2.command} ${cmd2.args.join(" ")}`);
     passed++;
   } else {

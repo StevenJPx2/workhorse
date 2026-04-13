@@ -15,6 +15,7 @@ import { useKeyboard } from "@opentui/solid";
 import { useTheme, spacing } from "../../lib/theme/index.ts";
 import { useNavigation } from "../../lib/navigation-context.ts";
 import { useKeyboardContext } from "../../lib/keyboard-context.ts";
+import { useTicketActionsContext } from "../../lib/ticket-actions-context.tsx";
 import { useAgentProgress } from "../../hooks/use-agent-progress/index.ts";
 import { useAgentSummary } from "../../hooks/use-agent-summary/index.ts";
 import { ChatBox, useChatBox } from "../chat-box/index.ts";
@@ -33,6 +34,7 @@ export function TicketPane(props: TicketPaneProps) {
   useTheme(); // Ensure theme is loaded
   const navigation = useNavigation();
   const keyboard = useKeyboardContext();
+  const actions = useTicketActionsContext();
 
   const chatInputId = () => `chat-${props.ticket.id}`;
 
@@ -65,7 +67,7 @@ export function TicketPane(props: TicketPaneProps) {
   // Chat box state for agent feedback
   const chat = useChatBox({
     onSubmit: (message) => {
-      props.onSendMessage?.(message);
+      actions.onSendMessage?.(message);
       chat.addMessage(`Sent to agent: ${message}`, "system");
     },
   });
@@ -86,17 +88,12 @@ export function TicketPane(props: TicketPaneProps) {
         keyboard.enterInputMode(chatInputId());
         chatLock = navigation.acquireLock(chatInputId());
         break;
-      case "s":
-        // Clear agent summary cache to force fresh data after toggle
-        agentSummary.invalidate();
-        break;
     }
   });
 
   const events = () => props.events ?? [];
   const hasEvents = () =>
-    (props.events && props.events.length > 0) ||
-    (props.logEntries && props.logEntries.length > 0);
+    (props.events && props.events.length > 0) || (props.logEntries && props.logEntries.length > 0);
   const showAgent = () => props.ticket.worktree_path || resolvedAgentState();
 
   return (
@@ -115,12 +112,7 @@ export function TicketPane(props: TicketPaneProps) {
 
       {/* Progress log (only if has events and agent not active) */}
       <Show when={hasEvents() && !isAgentActive()}>
-        <ProgressLog
-          events={events()}
-          logEntries={props.logEntries}
-          maxEvents={5}
-          showTimestamps
-        />
+        <ProgressLog events={events()} logEntries={props.logEntries} maxEvents={5} showTimestamps />
       </Show>
 
       {/* File changes (when there are modified files) */}
@@ -137,7 +129,7 @@ export function TicketPane(props: TicketPaneProps) {
           isPolling={agentSummary.isPolling}
           error={agentSummary.error}
           maxSteps={8}
-          onStop={props.onStop}
+          onStop={actions.onStop}
         />
       </Show>
 
@@ -146,10 +138,10 @@ export function TicketPane(props: TicketPaneProps) {
 
       {/* Actions bar */}
       <TicketActions
-        onEscalate={props.onEscalate}
-        onSwitchAgent={() => props.onSwitchAgent?.(props.ticket.agent === "opencode" ? "claude" : "opencode")}
-        onOpenJira={props.onOpenJira}
-        onClose={props.onClose}
+        onSwitchAgent={() =>
+          actions.onSwitchAgent?.(props.ticket.agent === "opencode" ? "claude" : "opencode")
+        }
+        agentState={props.agentState}
       />
 
       {/* Chat input */}

@@ -11,9 +11,5 @@ import { NavigationContext, createNavigationValue } from "./navigation-context.t
 export const NavigationProvider: ParentComponent = (props) => {
   const value = createNavigationValue();
 
-  return (
-    <NavigationContext.Provider value={value}>
-      {props.children}
-    </NavigationContext.Provider>
-  );
+  return <NavigationContext.Provider value={value}>{props.children}</NavigationContext.Provider>;
 };

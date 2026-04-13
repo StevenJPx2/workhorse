@@ -46,9 +46,7 @@ describe("notification-store", () => {
   describe("initNotificationsTable", () => {
     it("should create notifications table", () => {
       const tables = db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'"
-        )
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'")
         .get();
       expect(tables).toBeTruthy();
     });
@@ -56,7 +54,7 @@ describe("notification-store", () => {
     it("should create unique index on source_type and source_id", () => {
       const index = db
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_notifications_source'"
+          "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_notifications_source'",
         )
         .get();
       expect(index).toBeTruthy();
@@ -79,9 +77,7 @@ describe("notification-store", () => {
       expect(notification!.source_id).toBe("github-comment-456");
       expect(notification!.priority).toBe("high");
       expect(notification!.summary).toBe("PR Review from @reviewer");
-      expect(notification!.content).toBe(
-        "Consider using exponential backoff here."
-      );
+      expect(notification!.content).toBe("Consider using exponential backoff here.");
       expect(notification!.author).toBe("@reviewer");
       expect(notification!.status).toBe("unread");
       expect(notification!.created_at).toBeTruthy();
@@ -90,9 +86,7 @@ describe("notification-store", () => {
     it("should store metadata as JSON string", () => {
       const notification = createNotification(db, sampleNotification);
 
-      expect(notification!.metadata).toBe(
-        JSON.stringify({ file: "src/auth.ts", line: 42 })
-      );
+      expect(notification!.metadata).toBe(JSON.stringify({ file: "src/auth.ts", line: 42 }));
     });
 
     it("should deduplicate by source_type and source_id", () => {
@@ -156,21 +150,13 @@ describe("notification-store", () => {
   describe("getNotificationBySource", () => {
     it("should return notification by source_type and source_id", () => {
       const created = createNotification(db, sampleNotification);
-      const retrieved = getNotificationBySource(
-        db,
-        "github_pr_review",
-        "github-comment-456"
-      );
+      const retrieved = getNotificationBySource(db, "github_pr_review", "github-comment-456");
 
       expect(retrieved).toEqual(created);
     });
 
     it("should return null for non-existent source", () => {
-      const retrieved = getNotificationBySource(
-        db,
-        "github_pr_review",
-        "non-existent"
-      );
+      const retrieved = getNotificationBySource(db, "github_pr_review", "non-existent");
 
       expect(retrieved).toBeNull();
     });

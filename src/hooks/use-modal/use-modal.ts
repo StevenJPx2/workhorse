@@ -65,9 +65,7 @@ export interface UseModalReturn<T = undefined> {
  * </Modal>
  * ```
  */
-export function useModal<T = undefined>(
-  options: UseModalOptions<T> = {}
-): UseModalReturn<T> {
+export function useModal<T = undefined>(options: UseModalOptions<T> = {}): UseModalReturn<T> {
   const [isOpen, setIsOpen] = createSignal(options.initialOpen ?? false);
   const [data, setData] = createSignal<T | undefined>(options.initialData);
 

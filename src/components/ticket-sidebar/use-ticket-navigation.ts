@@ -33,7 +33,7 @@ export interface NavigationContext {
 export function handleNavigationKey(
   key: KeyInfo,
   options: UseTicketNavigationOptions,
-  context: NavigationContext
+  context: NavigationContext,
 ): void {
   // Skip if in input mode (e.g., chat box focused)
   if (context.isInputMode()) return;

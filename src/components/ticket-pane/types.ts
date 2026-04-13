@@ -19,18 +19,6 @@ export interface TicketPaneProps {
   events?: TicketEvent[];
   /** Event log entries from useEventLog (takes precedence over events) */
   logEntries?: EventLogEntry[];
-  /** Called when user requests escalation */
-  onEscalate?: () => void;
-  /** Called when user requests to switch agent */
-  onSwitchAgent?: (agent: AgentType) => void;
-  /** Called when user wants to open Jira */
-  onOpenJira?: () => void;
-  /** Called when user closes the ticket tab */
-  onClose?: () => void;
-  /** Called when user sends a message to the agent */
-  onSendMessage?: (message: string) => void;
-  /** Called when user clicks Stop agent */
-  onStop?: () => void;
 }
 
 /**
@@ -77,14 +65,10 @@ export interface ProgressLogProps {
  * Props for the TicketActions sub-component
  */
 export interface TicketActionsProps {
-  /** Called when user requests escalation */
-  onEscalate?: () => void;
   /** Called when user requests to switch agent */
   onSwitchAgent?: () => void;
-  /** Called when user wants to open Jira */
-  onOpenJira?: () => void;
-  /** Called when user closes the ticket */
-  onClose?: () => void;
+  /** Current agent state to determine which actions to show */
+  agentState?: AgentState | (() => AgentState | undefined);
 }
 
 /**

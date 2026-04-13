@@ -2,12 +2,8 @@ import { createSignal, type Accessor } from "solid-js";
 import { type UseSelectionOptions, type UseSelectionReturn } from "./types.ts";
 export type { UseSelectionOptions, UseSelectionReturn } from "./types.ts";
 
-export function useSelection<T>(
-  options: UseSelectionOptions<T>
-): UseSelectionReturn<T> {
-  const [selectedIndex, setSelectedIndex] = createSignal(
-    options.initialIndex ?? -1
-  );
+export function useSelection<T>(options: UseSelectionOptions<T>): UseSelectionReturn<T> {
+  const [selectedIndex, setSelectedIndex] = createSignal(options.initialIndex ?? -1);
 
   const wrap = () => options.wrap ?? false;
   const getKey = options.getKey ?? ((_item: T, index: number) => index);

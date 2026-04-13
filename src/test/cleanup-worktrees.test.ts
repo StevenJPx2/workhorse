@@ -3,11 +3,7 @@
  */
 
 import { describe, test, expect, beforeEach } from "bun:test";
-import {
-  isTestWorktree,
-  trackTestWorktree,
-  clearTrackedWorktrees,
-} from "./cleanup-worktrees.ts";
+import { isTestWorktree, trackTestWorktree, clearTrackedWorktrees } from "./cleanup-worktrees.ts";
 
 describe("cleanup-worktrees utility", () => {
   beforeEach(() => {
@@ -62,9 +58,9 @@ describe("cleanup-worktrees utility", () => {
 
     test("matches tracked worktrees", () => {
       expect(isTestWorktree("CUSTOM-TRACKED-123")).toBe(false);
-      
+
       trackTestWorktree("CUSTOM-TRACKED-123");
-      
+
       expect(isTestWorktree("CUSTOM-TRACKED-123")).toBe(true);
     });
   });
@@ -72,11 +68,11 @@ describe("cleanup-worktrees utility", () => {
   describe("trackTestWorktree", () => {
     test("adds worktree to tracked set", () => {
       const ticketId = "MY-CUSTOM-TICKET";
-      
+
       expect(isTestWorktree(ticketId)).toBe(false);
-      
+
       trackTestWorktree(ticketId);
-      
+
       expect(isTestWorktree(ticketId)).toBe(true);
     });
 
@@ -84,7 +80,7 @@ describe("cleanup-worktrees utility", () => {
       trackTestWorktree("TICKET-1");
       trackTestWorktree("TICKET-2");
       trackTestWorktree("TICKET-3");
-      
+
       expect(isTestWorktree("TICKET-1")).toBe(true);
       expect(isTestWorktree("TICKET-2")).toBe(true);
       expect(isTestWorktree("TICKET-3")).toBe(true);
@@ -95,12 +91,12 @@ describe("cleanup-worktrees utility", () => {
     test("clears all tracked worktrees", () => {
       trackTestWorktree("TICKET-1");
       trackTestWorktree("TICKET-2");
-      
+
       expect(isTestWorktree("TICKET-1")).toBe(true);
       expect(isTestWorktree("TICKET-2")).toBe(true);
-      
+
       clearTrackedWorktrees();
-      
+
       expect(isTestWorktree("TICKET-1")).toBe(false);
       expect(isTestWorktree("TICKET-2")).toBe(false);
     });

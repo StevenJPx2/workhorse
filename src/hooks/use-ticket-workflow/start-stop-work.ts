@@ -1,9 +1,5 @@
 import type { Ticket } from "../../types/ticket.ts";
-import {
-  getTicketById,
-  updateTicketStatus,
-  updateTicket,
-} from "../../lib/db/index.ts";
+import { getTicketById, updateTicketStatus, updateTicket } from "../../lib/db/index.ts";
 import type { StartWorkOptions } from "./types.ts";
 import type { WorkflowDeps } from "./workflow-deps.ts";
 

@@ -45,8 +45,9 @@ type DependencyCheckResult = {
 };
 
 // Mock checkAllDependencies
-const mockCheckAllDependencies = mock((): Promise<DependencyCheckResult> =>
-  Promise.resolve({ available: [{ name: "Bun" }], missing: [] })
+const mockCheckAllDependencies = mock(
+  (): Promise<DependencyCheckResult> =>
+    Promise.resolve({ available: [{ name: "Bun" }], missing: [] }),
 );
 
 mock.module("./dependencies.ts", () => ({
@@ -79,9 +80,7 @@ mock.module("../../lib/db.ts", () => ({
 }));
 
 // Mock atlassian auth
-const mockAuthenticateAtlassian = mock(() =>
-  Promise.resolve({ success: true })
-);
+const mockAuthenticateAtlassian = mock(() => Promise.resolve({ success: true }));
 
 mock.module("./atlassian-auth.ts", () => ({
   authenticateAtlassian: mockAuthenticateAtlassian,
@@ -117,19 +116,20 @@ describe("setup/run", () => {
 
     // Default mock implementations
     mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
-    mockText.mockImplementation(() => Promise.resolve("test.atlassian.net") as Promise<string | symbol>);
+    mockText.mockImplementation(
+      () => Promise.resolve("test.atlassian.net") as Promise<string | symbol>,
+    );
     mockSelect.mockImplementation(() => Promise.resolve("opencode") as Promise<string | symbol>);
     mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
-    mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
-      Promise.resolve({ available: [{ name: "Bun" }], missing: [] })
+    mockCheckAllDependencies.mockImplementation(
+      (): Promise<DependencyCheckResult> =>
+        Promise.resolve({ available: [{ name: "Bun" }], missing: [] }),
     );
     mockConfigExists.mockImplementation(() => false);
     mockEnsureConfigDir.mockImplementation(() => "/home/test/.jiratown");
     mockSaveGlobalConfig.mockImplementation(() => {});
     mockInitDatabase.mockImplementation(() => ({}));
-    mockAuthenticateAtlassian.mockImplementation(() =>
-      Promise.resolve({ success: true })
-    );
+    mockAuthenticateAtlassian.mockImplementation(() => Promise.resolve({ success: true }));
   });
 
   describe("runSetup", () => {
@@ -150,7 +150,9 @@ describe("setup/run", () => {
 
     it("should handle user cancelling reconfigure prompt", async () => {
       mockConfigExists.mockImplementation(() => true);
-      mockConfirm.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>);
+      mockConfirm.mockImplementation(
+        () => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>,
+      );
       mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
 
       await runSetup();
@@ -164,12 +166,14 @@ describe("setup/run", () => {
       expect(mockText).toHaveBeenCalled();
       expect(mockSelect).toHaveBeenCalled();
       expect(mockOutro).toHaveBeenCalledWith(
-        "Setup complete! Run 'jiratown' in any git repo to start."
+        "Setup complete! Run 'jiratown' in any git repo to start.",
       );
     });
 
     it("should save configuration after successful setup", async () => {
-      mockText.mockImplementation(() => Promise.resolve("mycompany.atlassian.net") as Promise<string | symbol>);
+      mockText.mockImplementation(
+        () => Promise.resolve("mycompany.atlassian.net") as Promise<string | symbol>,
+      );
       mockSelect.mockImplementation(() => Promise.resolve("claude") as Promise<string | symbol>);
 
       await runSetup();
@@ -181,7 +185,9 @@ describe("setup/run", () => {
     });
 
     it("should handle user cancelling Jira cloud ID prompt", async () => {
-      mockText.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<string | symbol>);
+      mockText.mockImplementation(
+        () => Promise.resolve(Symbol.for("cancel")) as Promise<string | symbol>,
+      );
       mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
 
       await runSetup();
@@ -190,8 +196,12 @@ describe("setup/run", () => {
     });
 
     it("should handle user cancelling agent selection", async () => {
-      mockText.mockImplementation(() => Promise.resolve("test.atlassian.net") as Promise<string | symbol>);
-      mockSelect.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<string | symbol>);
+      mockText.mockImplementation(
+        () => Promise.resolve("test.atlassian.net") as Promise<string | symbol>,
+      );
+      mockSelect.mockImplementation(
+        () => Promise.resolve(Symbol.for("cancel")) as Promise<string | symbol>,
+      );
       mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
 
       await runSetup();
@@ -215,7 +225,9 @@ describe("setup/run", () => {
     it("should allow reconfiguration when user confirms", async () => {
       mockConfigExists.mockImplementation(() => true);
       mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
-      mockText.mockImplementation(() => Promise.resolve("new.atlassian.net") as Promise<string | symbol>);
+      mockText.mockImplementation(
+        () => Promise.resolve("new.atlassian.net") as Promise<string | symbol>,
+      );
       mockSelect.mockImplementation(() => Promise.resolve("opencode") as Promise<string | symbol>);
 
       await runSetup();
@@ -227,11 +239,12 @@ describe("setup/run", () => {
     });
 
     it("should handle missing dependencies and user declining to continue", async () => {
-      mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
-        Promise.resolve({
-          available: [],
-          missing: [{ name: "Bun", installHint: "https://bun.sh" }],
-        })
+      mockCheckAllDependencies.mockImplementation(
+        (): Promise<DependencyCheckResult> =>
+          Promise.resolve({
+            available: [],
+            missing: [{ name: "Bun", installHint: "https://bun.sh" }],
+          }),
       );
       mockConfirm.mockImplementation(() => Promise.resolve(false) as Promise<boolean | symbol>);
 
@@ -240,16 +253,17 @@ describe("setup/run", () => {
       expect(mockLog.warn).toHaveBeenCalledWith("\nMissing dependencies:");
       expect(mockLog.message).toHaveBeenCalledWith("  - Bun: https://bun.sh");
       expect(mockOutro).toHaveBeenCalledWith(
-        "Setup cancelled. Please install missing dependencies and try again."
+        "Setup cancelled. Please install missing dependencies and try again.",
       );
     });
 
     it("should handle missing dependencies without installHint", async () => {
-      mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
-        Promise.resolve({
-          available: [],
-          missing: [{ name: "Bun" }],
-        })
+      mockCheckAllDependencies.mockImplementation(
+        (): Promise<DependencyCheckResult> =>
+          Promise.resolve({
+            available: [],
+            missing: [{ name: "Bun" }],
+          }),
       );
       mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
 
@@ -257,36 +271,37 @@ describe("setup/run", () => {
 
       expect(mockLog.message).toHaveBeenCalledWith("  - Bun");
       expect(mockOutro).toHaveBeenCalledWith(
-        "Setup complete! Run 'jiratown' in any git repo to start."
+        "Setup complete! Run 'jiratown' in any git repo to start.",
       );
     });
 
     it("should handle user cancelling missing dependencies prompt", async () => {
-      mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
-        Promise.resolve({
-          available: [],
-          missing: [{ name: "Bun" }],
-        })
+      mockCheckAllDependencies.mockImplementation(
+        (): Promise<DependencyCheckResult> =>
+          Promise.resolve({
+            available: [],
+            missing: [{ name: "Bun" }],
+          }),
       );
-      mockConfirm.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>);
+      mockConfirm.mockImplementation(
+        () => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>,
+      );
       mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
 
       await runSetup();
 
       expect(mockOutro).toHaveBeenCalledWith(
-        "Setup cancelled. Please install missing dependencies and try again."
+        "Setup cancelled. Please install missing dependencies and try again.",
       );
     });
 
     it("should log error for each missing dependency", async () => {
-      mockCheckAllDependencies.mockImplementation((): Promise<DependencyCheckResult> =>
-        Promise.resolve({
-          available: [],
-          missing: [
-            { name: "Bun" },
-            { name: "SomeDep" },
-          ],
-        })
+      mockCheckAllDependencies.mockImplementation(
+        (): Promise<DependencyCheckResult> =>
+          Promise.resolve({
+            available: [],
+            missing: [{ name: "Bun" }, { name: "SomeDep" }],
+          }),
       );
       mockConfirm.mockImplementation(() => Promise.resolve(false) as Promise<boolean | symbol>);
 
@@ -313,7 +328,9 @@ describe("setup/run", () => {
 
     it("should test text validation function", async () => {
       let validateFn: ((value: string) => string | undefined) | undefined;
-      mockText.mockImplementation(((options: { validate?: (value: string) => string | undefined }) => {
+      mockText.mockImplementation(((options: {
+        validate?: (value: string) => string | undefined;
+      }) => {
         validateFn = options.validate;
         return Promise.resolve("test.atlassian.net") as Promise<string | symbol>;
       }) as () => Promise<string | symbol>);
@@ -323,7 +340,7 @@ describe("setup/run", () => {
       expect(validateFn).toBeDefined();
       expect(validateFn!("")).toBe("Jira cloud ID is required");
       expect(validateFn!("invalid.com")).toBe(
-        "Should be a valid Atlassian domain (e.g., yourcompany.atlassian.net)"
+        "Should be a valid Atlassian domain (e.g., yourcompany.atlassian.net)",
       );
       expect(validateFn!("mycompany.atlassian.net")).toBeUndefined();
       expect(validateFn!("mycompany.jira.com")).toBeUndefined();

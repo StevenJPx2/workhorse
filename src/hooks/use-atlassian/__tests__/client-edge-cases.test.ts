@@ -11,7 +11,7 @@ import { createAtlassianClient } from "../client.ts";
 const mockConnect = mock(() => Promise.resolve());
 const mockClose = mock(() => Promise.resolve());
 const mockCallTool = mock(() =>
-  Promise.resolve({ content: [] as Array<{ type: string; text: string }> })
+  Promise.resolve({ content: [] as Array<{ type: string; text: string }> }),
 );
 
 mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
@@ -55,9 +55,7 @@ describe("AtlassianClient Edge Cases", () => {
 
     it("should handle connect errors without corrupting state", async () => {
       // First call succeeds, second fails
-      mockConnect
-        .mockResolvedValueOnce()
-        .mockRejectedValueOnce(new Error("Connection refused"));
+      mockConnect.mockResolvedValueOnce().mockRejectedValueOnce(new Error("Connection refused"));
 
       const client = createAtlassianClient({ cloudId: "test.atlassian.net" });
 
@@ -82,7 +80,7 @@ describe("AtlassianClient Edge Cases", () => {
       await client.connect();
 
       await expect(client.fetchIssue("TEST-123")).rejects.toThrow(
-        "No data returned for issue TEST-123"
+        "No data returned for issue TEST-123",
       );
     });
 
@@ -95,7 +93,7 @@ describe("AtlassianClient Edge Cases", () => {
       await client.connect();
 
       await expect(client.fetchIssue("TEST-123")).rejects.toThrow(
-        "Unexpected response format for issue TEST-123"
+        "Unexpected response format for issue TEST-123",
       );
     });
 
@@ -108,7 +106,7 @@ describe("AtlassianClient Edge Cases", () => {
       await client.connect();
 
       await expect(client.fetchIssue("TEST-123")).rejects.toThrow(
-        "Failed to parse Jira response for TEST-123: "
+        "Failed to parse Jira response for TEST-123: ",
       );
     });
 
@@ -203,9 +201,7 @@ describe("AtlassianClient Edge Cases", () => {
       const client = createAtlassianClient({ cloudId: "test.atlassian.net" });
       await client.connect();
 
-      await expect(client.fetchIssue("TEST-123")).rejects.toThrow(
-        "MCP server unavailable"
-      );
+      await expect(client.fetchIssue("TEST-123")).rejects.toThrow("MCP server unavailable");
     });
 
     it("should handle network timeouts", async () => {
@@ -214,21 +210,17 @@ describe("AtlassianClient Edge Cases", () => {
       const client = createAtlassianClient({ cloudId: "test.atlassian.net" });
       await client.connect();
 
-      await expect(client.addComment("TEST-123", "comment")).rejects.toThrow(
-        "Request timeout"
-      );
+      await expect(client.addComment("TEST-123", "comment")).rejects.toThrow("Request timeout");
     });
 
     it("should handle authentication errors", async () => {
-      mockCallTool.mockRejectedValueOnce(
-        new Error("Authentication failed: Invalid credentials")
-      );
+      mockCallTool.mockRejectedValueOnce(new Error("Authentication failed: Invalid credentials"));
 
       const client = createAtlassianClient({ cloudId: "test.atlassian.net" });
       await client.connect();
 
       await expect(client.transitionIssue("TEST-123", "21")).rejects.toThrow(
-        "Authentication failed"
+        "Authentication failed",
       );
     });
   });

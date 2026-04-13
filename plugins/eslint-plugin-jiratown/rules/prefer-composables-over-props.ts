@@ -33,11 +33,7 @@ const rule = {
     const componentHandlers = new Map();
 
     function isHandlerPropName(name) {
-      return (
-        name.startsWith("on") &&
-        name.length > 2 &&
-        name[2] === name[2].toUpperCase()
-      );
+      return name.startsWith("on") && name.length > 2 && name[2] === name[2].toUpperCase();
     }
 
     function getParentComponentName(node) {
@@ -59,19 +55,16 @@ const rule = {
 
     return {
       JSXAttribute(node) {
-        if (
-          node.name?.type === "JSXIdentifier" &&
-          isHandlerPropName(node.name.name)
-        ) {
+        if (node.name?.type === "JSXIdentifier" && isHandlerPropName(node.name.name)) {
           const componentName = getParentComponentName(node);
-          
+
           // Don't count handlers passed to primitive UI components
           if (componentName && PRIMITIVE_COMPONENTS.has(componentName)) {
             return;
           }
-          
+
           handlerPropCount++;
-          
+
           // Track handlers passed to custom components (prop drilling indicators)
           if (isCustomComponent(componentName)) {
             const count = componentHandlers.get(componentName) || 0;
@@ -85,9 +78,9 @@ const rule = {
           const drilledComponents = Array.from(componentHandlers.entries())
             .filter(([_, count]) => count >= 2)
             .map(([name]) => name);
-          
+
           let message = `Component has ${handlerPropCount} handler props (max: ${MAX_HANDLER_PROPS}). `;
-          
+
           if (handlerPropCount >= CONTEXT_SUGGESTION_THRESHOLD || drilledComponents.length > 0) {
             message += "Consider using a Context to share handlers across descendant components, ";
             message += "or extract related handlers into a composable hook.";
@@ -97,7 +90,7 @@ const rule = {
           } else {
             message += "Extract related handlers into a composable hook to reduce prop count.";
           }
-          
+
           context.report({
             loc: { line: 1, column: 0 },
             message,

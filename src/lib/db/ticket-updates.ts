@@ -23,7 +23,7 @@ export function updateTicket(
       | "last_jira_sync"
       | "status"
     >
-  >
+  >,
 ): void {
   const db = getDatabase();
 

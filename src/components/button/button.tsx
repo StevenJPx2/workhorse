@@ -67,11 +67,10 @@ export interface ButtonProps {
 export function Button(props: ButtonProps) {
   const { theme } = useTheme();
   const cell = useContext(CellContext);
-  const { isHighlighted: interactiveHighlighted, interactiveProps } =
-    useInteractive({
-      disabled: props.disabled,
-      onPress: props.onPress,
-    });
+  const { isHighlighted: interactiveHighlighted, interactiveProps } = useInteractive({
+    disabled: props.disabled,
+    onPress: props.onPress,
+  });
 
   const buttonColor = () => {
     if (props.disabled) return theme().text.dim;

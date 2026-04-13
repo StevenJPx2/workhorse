@@ -3,11 +3,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import {
-  initDatabase,
-  closeDatabase,
-  resetDatabaseRef,
-} from "./index.ts";
+import { initDatabase, closeDatabase, resetDatabaseRef } from "./index.ts";
 import { insertTicket } from "./tickets.ts";
 import { updateTicket } from "./ticket-updates.ts";
 import { getDatabase } from "./connection.ts";

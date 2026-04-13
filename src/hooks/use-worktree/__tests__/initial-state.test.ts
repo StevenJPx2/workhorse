@@ -111,7 +111,7 @@ describe("useWorktree", () => {
       createRoot((dispose) => {
         const wt = useWorktree({
           repoPath: "/test/repo",
-          autoLoad: true
+          autoLoad: true,
         });
         expect(wt).toBeDefined();
         expect(wt.worktrees()).toEqual([]);
@@ -126,7 +126,7 @@ describe("useWorktree", () => {
       createRoot((dispose) => {
         const wt = useWorktree({
           repoPath: "/test/repo",
-          onChange
+          onChange,
         });
         expect(wt).toBeDefined();
 
@@ -140,7 +140,7 @@ describe("useWorktree", () => {
       createRoot((dispose) => {
         const wt = useWorktree({
           repoPath: "/test/repo",
-          onError
+          onError,
         });
         expect(wt).toBeDefined();
 

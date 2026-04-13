@@ -2,8 +2,8 @@
   "name": "eslint-plugin-jiratown",
   "version": "1.0.0",
   "description": "Custom lint rules for Jiratown project conventions",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "build": "bun build index.ts --outdir . --target bun",
     "test": "bun test rules/*.test.ts"

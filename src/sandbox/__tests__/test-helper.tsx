@@ -68,7 +68,7 @@ export interface LayoutRenderOptions extends RenderOptions {
  * Create a mock workflow for testing Layout
  */
 export function createMockWorkflow(
-  overrides: Partial<UseTicketWorkflowReturn> = {}
+  overrides: Partial<UseTicketWorkflowReturn> = {},
 ): UseTicketWorkflowReturn {
   const [isLoading] = createSignal(false);
   const [error] = createSignal<Error | null>(null);
@@ -108,7 +108,10 @@ export async function renderLayoutWithProviders(
         <NavigationProvider>
           <KeyboardProvider>
             <ModalSystemProvider>
-              <WorkflowProvider repoPath={() => "/tmp/mock"} jiraCloudId={() => "mock.atlassian.net"}>
+              <WorkflowProvider
+                repoPath={() => "/tmp/mock"}
+                jiraCloudId={() => "mock.atlassian.net"}
+              >
                 <TicketsProvider rig={mockRig} autoLoad={false}>
                   <Layout rig={rig} showAll={false} onQuit={() => {}}>
                     {children()}

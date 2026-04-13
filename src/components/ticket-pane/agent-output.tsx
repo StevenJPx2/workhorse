@@ -96,7 +96,11 @@ export function AgentOutput(props: AgentOutputProps) {
           {(line, index) => (
             <box height={1} width="100%">
               <text
-                fg={index() === visibleLines().length - 1 ? theme().text.primary : theme().text.secondary}
+                fg={
+                  index() === visibleLines().length - 1
+                    ? theme().text.primary
+                    : theme().text.secondary
+                }
               >
                 {line.length > 80 ? line.slice(0, 77) + "..." : line}
               </text>

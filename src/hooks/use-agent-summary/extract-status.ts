@@ -1,6 +1,6 @@
 /**
  * Extract status info from agent message text
- * 
+ *
  * Returns meaningful summaries from agent output, showing actual reasons
  * for blocked/error states rather than generic messages.
  */
@@ -51,7 +51,7 @@ function extractReason(text: string): string | null {
  */
 function detectType(text: string): AgentStep["type"] {
   const lower = text.toLowerCase();
-  
+
   if (lower.includes("blocked") || lower.includes("error") || lower.includes("failed")) {
     return "error";
   }
@@ -81,15 +81,15 @@ function getFirstMeaningfulContent(text: string): string {
 
 /**
  * Extract key status info from agent message
- * 
+ *
  * For blocked/error states, extracts the actual reason.
  * For other states, shows the first meaningful content.
- * 
+ *
  * No truncation is done here - the UI handles display limits.
  */
 export function extractStatusFromMessage(text: string): AgentStep[] {
   const timestamp = new Date().toISOString();
-  
+
   if (!text || text.trim().length === 0) {
     return [];
   }

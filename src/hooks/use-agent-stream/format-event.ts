@@ -40,7 +40,7 @@ type Part = TextPart | ToolPart | StepPart | { type: string };
  */
 function formatPartUpdated(
   props: { part?: Part; delta?: string },
-  timestamp: string
+  timestamp: string,
 ): StreamMessage | null {
   const { part, delta } = props;
 

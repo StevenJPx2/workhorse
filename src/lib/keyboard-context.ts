@@ -19,12 +19,7 @@
  * });
  */
 
-import {
-  createContext,
-  useContext,
-  createSignal,
-  type Accessor,
-} from "solid-js";
+import { createContext, useContext, createSignal, type Accessor } from "solid-js";
 
 /**
  * Keyboard context value

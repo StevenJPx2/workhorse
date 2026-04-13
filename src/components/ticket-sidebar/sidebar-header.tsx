@@ -31,12 +31,7 @@ export function SidebarHeader(props: SidebarHeaderProps) {
       <text fg={theme().text.secondary}>Tickets</text>
 
       {/* New button */}
-      <Button
-        label="New"
-        icon={icons.add}
-        variant="success"
-        onPress={props.onNew}
-      />
+      <Button label="New" icon={icons.add} variant="success" onPress={props.onNew} />
     </box>
   );
 }

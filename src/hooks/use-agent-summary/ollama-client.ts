@@ -15,10 +15,10 @@ export interface OllamaResponse {
 export async function generateCompletion(
   model: string,
   prompt: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<string> {
   const timeout = options?.timeout ?? 10000;
-  
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 

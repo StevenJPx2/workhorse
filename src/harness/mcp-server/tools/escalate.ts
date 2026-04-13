@@ -17,10 +17,7 @@ interface TicketRow {
 /**
  * Format questions and context into notification content
  */
-function formatEscalationContent(
-  questions: string[],
-  context: string
-): string {
+function formatEscalationContent(questions: string[], context: string): string {
   const parts: string[] = [];
 
   parts.push("## Agent Escalation");
@@ -46,7 +43,7 @@ function formatEscalationContent(
 export function handleEscalate(
   db: Database,
   ticketId: string,
-  input: EscalateInput
+  input: EscalateInput,
 ): EscalateResponse {
   // Check ticket exists
   const ticket = db
@@ -84,7 +81,7 @@ export function handleEscalate(
   // Update ticket status if blocking
   if (input.blocking) {
     db.prepare(
-      "UPDATE tickets SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+      "UPDATE tickets SET status = 'blocked', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     ).run(ticketId);
   }
 

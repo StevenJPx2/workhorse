@@ -7,16 +7,8 @@
  * for the TicketPane.
  */
 
-import {
-  createContext,
-  useContext,
-  type JSX,
-  type Accessor,
-} from "solid-js";
-import {
-  useEventLog,
-  type UseEventLogReturn,
-} from "../hooks/use-event-log/index.ts";
+import { createContext, useContext, type JSX, type Accessor } from "solid-js";
+import { useEventLog, type UseEventLogReturn } from "../hooks/use-event-log/index.ts";
 import { useTicketsContext } from "./tickets-context.tsx";
 
 export interface EventLogContextValue {
@@ -50,11 +42,7 @@ export function EventLogProvider(props: EventLogProviderProps) {
     currentTicketId: () => currentTicket()?.id,
   };
 
-  return (
-    <EventLogContext.Provider value={contextValue}>
-      {props.children}
-    </EventLogContext.Provider>
-  );
+  return <EventLogContext.Provider value={contextValue}>{props.children}</EventLogContext.Provider>;
 }
 
 /**
@@ -65,9 +53,7 @@ export function EventLogProvider(props: EventLogProviderProps) {
 export function useEventLogContext(): EventLogContextValue {
   const context = useContext(EventLogContext);
   if (!context) {
-    throw new Error(
-      "useEventLogContext must be used within an EventLogProvider"
-    );
+    throw new Error("useEventLogContext must be used within an EventLogProvider");
   }
   return context;
 }

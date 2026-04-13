@@ -3,19 +3,32 @@
  */
 
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { authenticateAtlassian, testAtlassianConnection, type AuthResult } from "./atlassian-auth.ts";
+import {
+  authenticateAtlassian,
+  testAtlassianConnection,
+  type AuthResult,
+} from "./atlassian-auth.ts";
 
 // Create a minimal mock subprocess
 function createMockSubprocess(exitCode: number, exitDelay = 0) {
-  const exitedPromise = exitDelay > 0
-    ? new Promise<number>((resolve) => {
-        setTimeout(() => resolve(exitCode), exitDelay);
-      })
-    : Promise.resolve(exitCode);
+  const exitedPromise =
+    exitDelay > 0
+      ? new Promise<number>((resolve) => {
+          setTimeout(() => resolve(exitCode), exitDelay);
+        })
+      : Promise.resolve(exitCode);
 
   return {
-    stdout: new ReadableStream({ start(c) { c.close(); } }),
-    stderr: new ReadableStream({ start(c) { c.close(); } }),
+    stdout: new ReadableStream({
+      start(c) {
+        c.close();
+      },
+    }),
+    stderr: new ReadableStream({
+      start(c) {
+        c.close();
+      },
+    }),
     exited: exitedPromise,
     kill: () => {},
     stdin: new WritableStream(),

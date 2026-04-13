@@ -77,9 +77,7 @@ export function ButtonDemo() {
 
       {/* Press counter */}
       <box marginTop={1}>
-        <text fg={theme().text.dim}>
-          Press count (hover Default button): {pressCount()}
-        </text>
+        <text fg={theme().text.dim}>Press count (hover Default button): {pressCount()}</text>
       </box>
     </box>
   );

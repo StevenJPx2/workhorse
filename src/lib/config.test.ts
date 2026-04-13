@@ -1,6 +1,6 @@
 /**
  * Tests for configuration management
- * 
+ *
  * Note: Some tests use the real home directory since homedir() caching
  * makes it difficult to mock reliably. These tests are careful not to
  * modify the real user's config.
@@ -175,10 +175,7 @@ describe("config", () => {
       await $`git init`.cwd(testDir).quiet();
 
       // Create project config that overrides agent
-      writeFileSync(
-        join(testDir, ".jiratown.toml"),
-        '[defaults]\nagent = "claude"\n'
-      );
+      writeFileSync(join(testDir, ".jiratown.toml"), '[defaults]\nagent = "claude"\n');
 
       const config = await loadConfig(testDir);
 
@@ -219,7 +216,7 @@ describe("config", () => {
         {
           defaults: { agent: "claude" },
         },
-        testDir
+        testDir,
       );
 
       const configPath = join(testDir, ".jiratown.toml");
@@ -232,9 +229,9 @@ describe("config", () => {
 
     it("should throw error when not in git repo", async () => {
       // testDir is not a git repo
-      await expect(
-        saveProjectConfig({ defaults: { agent: "opencode" } }, testDir)
-      ).rejects.toThrow("Not in a git repository");
+      await expect(saveProjectConfig({ defaults: { agent: "opencode" } }, testDir)).rejects.toThrow(
+        "Not in a git repository",
+      );
     });
 
     it("should save config with jira section", async () => {
@@ -245,7 +242,7 @@ describe("config", () => {
           jira: { cloud_id: "custom.atlassian.net" },
           defaults: { agent: "opencode" },
         },
-        testDir
+        testDir,
       );
 
       const configPath = join(testDir, ".jiratown.toml");
@@ -274,10 +271,7 @@ describe("config", () => {
 
     it("should handle malformed project TOML gracefully", async () => {
       // Write invalid TOML
-      writeFileSync(
-        join(testDir, ".jiratown.toml"),
-        "this is not valid toml {{{{"
-      );
+      writeFileSync(join(testDir, ".jiratown.toml"), "this is not valid toml {{{{");
 
       // Should not throw, should use defaults
       const config = await loadConfig(testDir);
@@ -293,10 +287,7 @@ describe("config", () => {
 
     it("should handle partial project config", async () => {
       // Only override agent, not jira
-      writeFileSync(
-        join(testDir, ".jiratown.toml"),
-        '[defaults]\nagent = "claude"\n'
-      );
+      writeFileSync(join(testDir, ".jiratown.toml"), '[defaults]\nagent = "claude"\n');
 
       const config = await loadConfig(testDir);
       expect(config.defaults.agent).toBe("claude");

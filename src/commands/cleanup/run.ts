@@ -113,7 +113,7 @@ export async function runCleanup(options: CleanupOptions): Promise<void> {
  */
 export async function cleanupWorktrees(
   repoPath: string,
-  options: { ticketIds?: string[] } = {}
+  options: { ticketIds?: string[] } = {},
 ): Promise<number> {
   const { ticketIds } = options;
 
@@ -145,7 +145,7 @@ export async function cleanupWorktrees(
  */
 export async function cleanupTestWorktrees(repoPath: string): Promise<number> {
   const worktrees = await listWorktrees(repoPath);
-  
+
   const testWorktrees = worktrees.filter((wt) => {
     const id = wt.ticketId.toUpperCase();
     return (

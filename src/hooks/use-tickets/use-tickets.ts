@@ -104,8 +104,7 @@ export function useTickets(options: UseTicketsOptions = {}): UseTicketsReturn {
 
       if (input.summary !== undefined) updates.summary = input.summary;
       if (input.status !== undefined) updates.status = input.status;
-      if (input.worktreePath !== undefined)
-        updates.worktree_path = input.worktreePath;
+      if (input.worktreePath !== undefined) updates.worktree_path = input.worktreePath;
       if (input.branchName !== undefined) updates.branch_name = input.branchName;
       if (input.agent !== undefined) updates.agent = input.agent;
       if (input.agentPid !== undefined) updates.agent_pid = input.agentPid;

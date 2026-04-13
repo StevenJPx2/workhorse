@@ -16,7 +16,7 @@ const mockClose = mock(() => Promise.resolve());
 const mockCallTool = mock(() =>
   Promise.resolve({
     content: [{ type: "text", text: "{}" }],
-  })
+  }),
 );
 
 mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({

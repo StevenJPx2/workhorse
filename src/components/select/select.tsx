@@ -123,23 +123,19 @@ export function Select<T = string>(props: SelectProps<T>) {
   // Navigate to next/previous option
   const navigate = (direction: "next" | "prev") => {
     if (props.disabled) return;
-    
-    const enabledOptions = props.options.filter(opt => !opt.disabled);
-    
+
+    const enabledOptions = props.options.filter((opt) => !opt.disabled);
+
     if (enabledOptions.length === 0) return;
 
     // Find current position in enabled options
-    const currentEnabledIndex = enabledOptions.findIndex(
-      opt => opt.value === props.value
-    );
+    const currentEnabledIndex = enabledOptions.findIndex((opt) => opt.value === props.value);
 
     let nextIndex: number;
     if (direction === "next") {
       nextIndex = (currentEnabledIndex + 1) % enabledOptions.length;
     } else {
-      nextIndex = currentEnabledIndex <= 0 
-        ? enabledOptions.length - 1 
-        : currentEnabledIndex - 1;
+      nextIndex = currentEnabledIndex <= 0 ? enabledOptions.length - 1 : currentEnabledIndex - 1;
     }
 
     props.onChange(enabledOptions[nextIndex].value);
@@ -167,16 +163,17 @@ export function Select<T = string>(props: SelectProps<T>) {
   });
 
   return (
-    <box 
-      flexDirection="column" 
-      border={isFocused() || isEditMode()} 
+    <box
+      flexDirection="column"
+      border={isFocused() || isEditMode()}
       borderColor={borderColor()}
       borderStyle={isEditMode() ? "double" : "single"}
     >
       {/* Label */}
       {props.label && (
         <text fg={theme().text.secondary} marginBottom={1}>
-          {props.label}{isEditMode() ? " (editing)" : ""}
+          {props.label}
+          {isEditMode() ? " (editing)" : ""}
         </text>
       )}
 

@@ -4,15 +4,10 @@
 
 import type { HealthCheckResult } from "./types.ts";
 import { sessionExists, capturePane } from "../session/tmux/index.ts";
-import {
-  checkOpenCodeHealth,
-  getOpenCodeStatus,
-} from "./opencode-client/index.ts";
+import { checkOpenCodeHealth, getOpenCodeStatus } from "./opencode-client/index.ts";
 import { getAgent, updateAgentState } from "./agent-store.ts";
 
-export async function checkAgentHealth(
-  ticketId: string
-): Promise<HealthCheckResult> {
+export async function checkAgentHealth(ticketId: string): Promise<HealthCheckResult> {
   const instance = getAgent(ticketId);
   const now = new Date().toISOString();
 
@@ -26,7 +21,7 @@ export async function checkAgentHealth(
   }
 
   const exists = await sessionExists(ticketId);
-  const output = exists ? (await capturePane(ticketId)) ?? undefined : undefined;
+  const output = exists ? ((await capturePane(ticketId)) ?? undefined) : undefined;
 
   let openCodeHealthy = false;
   let openCodeStatus: HealthCheckResult["openCodeStatus"];
@@ -42,9 +37,8 @@ export async function checkAgentHealth(
   instance.lastHealthCheck = now;
 
   const tmuxHealthy = exists && instance.state === "running";
-  const agentHealthy = instance.agentType === "opencode"
-    ? tmuxHealthy && openCodeHealthy
-    : tmuxHealthy;
+  const agentHealthy =
+    instance.agentType === "opencode" ? tmuxHealthy && openCodeHealthy : tmuxHealthy;
 
   if (!exists && instance.state === "running") {
     updateAgentState(ticketId, "crashed");

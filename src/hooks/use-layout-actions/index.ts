@@ -6,10 +6,7 @@
  */
 
 // Types
-export type {
-  UseLayoutActionsOptions,
-  UseLayoutActionsReturn,
-} from "./types.ts";
+export type { UseLayoutActionsOptions, UseLayoutActionsReturn } from "./types.ts";
 
 // Main hook
 export { useLayoutActions } from "./use-layout-actions.ts";

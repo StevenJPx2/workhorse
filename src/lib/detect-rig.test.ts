@@ -7,61 +7,36 @@ import { existsSync, rmSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { $ } from "bun";
-import {
-  normalizeRemoteUrl,
-  getGitRoot,
-  getRemoteUrl,
-  detectRig,
-} from "./detect-rig.ts";
+import { normalizeRemoteUrl, getGitRoot, getRemoteUrl, detectRig } from "./detect-rig.ts";
 
 describe("detect-rig", () => {
   describe("normalizeRemoteUrl", () => {
     it("should normalize SSH git@ URLs", () => {
-      expect(normalizeRemoteUrl("git@github.com:user/repo.git")).toBe(
-        "github.com/user/repo"
-      );
-      expect(normalizeRemoteUrl("git@github.com:user/repo")).toBe(
-        "github.com/user/repo"
-      );
-      expect(normalizeRemoteUrl("git@gitlab.com:org/project.git")).toBe(
-        "gitlab.com/org/project"
-      );
+      expect(normalizeRemoteUrl("git@github.com:user/repo.git")).toBe("github.com/user/repo");
+      expect(normalizeRemoteUrl("git@github.com:user/repo")).toBe("github.com/user/repo");
+      expect(normalizeRemoteUrl("git@gitlab.com:org/project.git")).toBe("gitlab.com/org/project");
     });
 
     it("should normalize HTTPS URLs", () => {
-      expect(normalizeRemoteUrl("https://github.com/user/repo.git")).toBe(
-        "github.com/user/repo"
-      );
-      expect(normalizeRemoteUrl("https://github.com/user/repo")).toBe(
-        "github.com/user/repo"
-      );
+      expect(normalizeRemoteUrl("https://github.com/user/repo.git")).toBe("github.com/user/repo");
+      expect(normalizeRemoteUrl("https://github.com/user/repo")).toBe("github.com/user/repo");
       expect(normalizeRemoteUrl("https://gitlab.com/org/project.git")).toBe(
-        "gitlab.com/org/project"
+        "gitlab.com/org/project",
       );
     });
 
     it("should normalize HTTP URLs", () => {
-      expect(normalizeRemoteUrl("http://github.com/user/repo.git")).toBe(
-        "github.com/user/repo"
-      );
-      expect(normalizeRemoteUrl("http://github.com/user/repo")).toBe(
-        "github.com/user/repo"
-      );
+      expect(normalizeRemoteUrl("http://github.com/user/repo.git")).toBe("github.com/user/repo");
+      expect(normalizeRemoteUrl("http://github.com/user/repo")).toBe("github.com/user/repo");
     });
 
     it("should normalize ssh:// URLs", () => {
-      expect(normalizeRemoteUrl("ssh://git@github.com/user/repo.git")).toBe(
-        "github.com/user/repo"
-      );
-      expect(normalizeRemoteUrl("ssh://git@github.com/user/repo")).toBe(
-        "github.com/user/repo"
-      );
+      expect(normalizeRemoteUrl("ssh://git@github.com/user/repo.git")).toBe("github.com/user/repo");
+      expect(normalizeRemoteUrl("ssh://git@github.com/user/repo")).toBe("github.com/user/repo");
     });
 
     it("should trim whitespace", () => {
-      expect(normalizeRemoteUrl("  git@github.com:user/repo.git  ")).toBe(
-        "github.com/user/repo"
-      );
+      expect(normalizeRemoteUrl("  git@github.com:user/repo.git  ")).toBe("github.com/user/repo");
     });
   });
 
@@ -131,9 +106,7 @@ describe("detect-rig", () => {
 
     it("should return remote URL when origin exists", async () => {
       // Add a remote
-      await $`git remote add origin https://github.com/test/repo.git`
-        .cwd(testDir)
-        .quiet();
+      await $`git remote add origin https://github.com/test/repo.git`.cwd(testDir).quiet();
 
       const result = await getRemoteUrl(testDir);
       expect(result).toBe("https://github.com/test/repo.git");
@@ -141,9 +114,7 @@ describe("detect-rig", () => {
 
     it("should support custom remote names", async () => {
       // Add a custom remote
-      await $`git remote add upstream https://github.com/upstream/repo.git`
-        .cwd(testDir)
-        .quiet();
+      await $`git remote add upstream https://github.com/upstream/repo.git`.cwd(testDir).quiet();
 
       const result = await getRemoteUrl(testDir, "upstream");
       expect(result).toBe("https://github.com/upstream/repo.git");
@@ -180,9 +151,7 @@ describe("detect-rig", () => {
 
     it("should return rig info for git repo with remote", async () => {
       await $`git init`.cwd(testDir).quiet();
-      await $`git remote add origin git@github.com:testorg/testrepo.git`
-        .cwd(testDir)
-        .quiet();
+      await $`git remote add origin git@github.com:testorg/testrepo.git`.cwd(testDir).quiet();
 
       const result = await detectRig(testDir);
 

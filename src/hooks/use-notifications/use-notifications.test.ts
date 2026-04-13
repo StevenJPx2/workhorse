@@ -7,11 +7,7 @@ import { createRoot } from "solid-js";
 import { Database } from "bun:sqlite";
 import { initNotificationsTable } from "../../harness/notifications/notification-store.ts";
 import { useNotifications } from "./use-notifications.ts";
-import {
-  initDatabase,
-  closeDatabase,
-  resetDatabaseRef,
-} from "../../lib/db/index.ts";
+import { initDatabase, closeDatabase, resetDatabaseRef } from "../../lib/db/index.ts";
 
 // Test the underlying store functions (hook tests require Solid.js runtime)
 import {
@@ -329,11 +325,6 @@ describe("notification store (used by useNotifications)", () => {
     });
 
     const all = getNotificationsByTicket(db, "AM-123");
-    expect(all.map((n) => n.priority)).toEqual([
-      "blocking",
-      "high",
-      "normal",
-      "low",
-    ]);
+    expect(all.map((n) => n.priority)).toEqual(["blocking", "high", "normal", "low"]);
   });
 });

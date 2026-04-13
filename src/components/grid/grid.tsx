@@ -20,7 +20,12 @@
 import { createSignal } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { useKeyboardContext } from "../../lib/keyboard-context.ts";
-import { GridContext, type Direction, type GridCellConfig, type GridContextValue } from "./grid-context.ts";
+import {
+  GridContext,
+  type Direction,
+  type GridCellConfig,
+  type GridContextValue,
+} from "./grid-context.ts";
 import { type GridProps, type CellData } from "./grid-types.ts";
 import { getNeighbor } from "./grid-navigation.ts";
 
@@ -40,7 +45,7 @@ export function Grid(props: GridProps) {
 
   // Register a cell in the grid
   const registerCell = (id: string, config: GridCellConfig): void => {
-    setCells(prev => {
+    setCells((prev) => {
       const next = new Map(prev);
       next.set(id, {
         id,
@@ -59,7 +64,7 @@ export function Grid(props: GridProps) {
 
   // Unregister a cell
   const unregisterCell = (id: string): void => {
-    setCells(prev => {
+    setCells((prev) => {
       const next = new Map(prev);
       next.delete(id);
       return next;
@@ -174,9 +179,5 @@ export function Grid(props: GridProps) {
     moveRight,
   };
 
-  return (
-    <GridContext.Provider value={contextValue}>
-      {props.children}
-    </GridContext.Provider>
-  );
+  return <GridContext.Provider value={contextValue}>{props.children}</GridContext.Provider>;
 }

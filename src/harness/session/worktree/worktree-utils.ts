@@ -20,10 +20,7 @@ function extractTicketIdFromPath(path: string, worktreeMarker: string): string {
   return path.slice(idx + worktreeMarker.length);
 }
 
-export function parseWorktreeList(
-  output: string,
-  worktreeMarker: string
-): Worktree[] {
+export function parseWorktreeList(output: string, worktreeMarker: string): Worktree[] {
   if (!output.trim()) {
     return [];
   }
@@ -61,7 +58,7 @@ export function parseWorktreeList(
 export function buildGitCommand(
   command: string,
   subcommand: string,
-  options: import("./types.ts").GitCommandOptions
+  options: import("./types.ts").GitCommandOptions,
 ): string[] {
   const args: string[] = ["git", command, subcommand];
 

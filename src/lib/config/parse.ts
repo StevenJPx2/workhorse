@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import * as TOML from "toml";
 import type { JiratownConfig, ResolvedConfig } from "../../types/config.ts";
 
-
 export function parseTomlFile(filePath: string): JiratownConfig | null {
   if (!existsSync(filePath)) {
     return null;
@@ -18,7 +17,7 @@ export function parseTomlFile(filePath: string): JiratownConfig | null {
 
 export function mergeConfigs(
   base: ResolvedConfig,
-  overrides: JiratownConfig | null
+  overrides: JiratownConfig | null,
 ): ResolvedConfig {
   if (!overrides) {
     return base;

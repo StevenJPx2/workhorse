@@ -8,20 +8,14 @@ import { createSignal, createEffect, onCleanup } from "solid-js";
 import { subscribeToEvents } from "../../harness/orchestrator/opencode-client/index.ts";
 import type { OpenCodeEvent } from "../../harness/orchestrator/opencode-client/types.ts";
 import { formatEvent } from "./format-event.ts";
-import type {
-  UseAgentStreamOptions,
-  UseAgentStreamReturn,
-  StreamMessage,
-} from "./types.ts";
+import type { UseAgentStreamOptions, UseAgentStreamReturn, StreamMessage } from "./types.ts";
 
 const DEFAULT_MAX_MESSAGES = 100;
 
 /**
  * Hook for real-time agent output via OpenCode SDK events
  */
-export function useAgentStream(
-  options: UseAgentStreamOptions
-): UseAgentStreamReturn {
+export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamReturn {
   const maxMessages = options.maxMessages ?? DEFAULT_MAX_MESSAGES;
 
   const [messages, setMessages] = createSignal<StreamMessage[]>([]);
@@ -70,13 +64,15 @@ export function useAgentStream(
       (err) => {
         setError(err.message);
         setIsConnected(false);
-      }
-    ).then((sub) => {
-      unsubscribe = sub.unsubscribe;
-      setIsConnected(true);
-    }).catch((err) => {
-      setError(err instanceof Error ? err.message : String(err));
-    });
+      },
+    )
+      .then((sub) => {
+        unsubscribe = sub.unsubscribe;
+        setIsConnected(true);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
   });
 
   // Cleanup on unmount

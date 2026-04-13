@@ -126,11 +126,7 @@ export function TicketsProvider(props: TicketsProviderProps) {
     actions,
   };
 
-  return (
-    <TicketsContext.Provider value={contextValue}>
-      {props.children}
-    </TicketsContext.Provider>
-  );
+  return <TicketsContext.Provider value={contextValue}>{props.children}</TicketsContext.Provider>;
 }
 
 /**

@@ -186,13 +186,13 @@ describe("Async tmux operations", () => {
         start(controller) {
           controller.enqueue(new TextEncoder().encode(stdout));
           controller.close();
-        }
+        },
       }),
       stderr: new ReadableStream({
         start(controller) {
           controller.enqueue(new TextEncoder().encode(stderr));
           controller.close();
-        }
+        },
       }),
       exited: Promise.resolve(exitCode),
       kill: () => {},
@@ -223,14 +223,17 @@ describe("Async tmux operations", () => {
     });
 
     test("returns false when tmux is not available", async () => {
-      Bun.spawn = (() => createMockSubprocess(127, "", "command not found")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(127, "", "command not found")) as unknown as typeof Bun.spawn;
 
       const result = await isTmuxAvailable();
       expect(result).toBe(false);
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await isTmuxAvailable();
       expect(result).toBe(false);
@@ -250,14 +253,17 @@ describe("Async tmux operations", () => {
     });
 
     test("returns null when tmux command fails", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "session already exists")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(1, "", "session already exists")) as unknown as typeof Bun.spawn;
 
       const result = await createSession("TEST-123", "/path/to/worktree");
       expect(result).toBeNull();
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await createSession("TEST-123", "/path/to/worktree");
       expect(result).toBeNull();
@@ -277,21 +283,29 @@ jt-TEST-2: 1 windows (created Mon Jan  1 11:00:00 2024)`;
     });
 
     test("returns empty array when no server running", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "no server running on /tmp/tmux-1000/default")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(
+          1,
+          "",
+          "no server running on /tmp/tmux-1000/default",
+        )) as unknown as typeof Bun.spawn;
 
       const result = await listSessions();
       expect(result).toEqual([]);
     });
 
     test("returns empty array on other errors", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "some other error")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(1, "", "some other error")) as unknown as typeof Bun.spawn;
 
       const result = await listSessions();
       expect(result).toEqual([]);
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await listSessions();
       expect(result).toEqual([]);
@@ -314,7 +328,9 @@ jt-TEST-2: 1 windows (created Mon Jan  1 11:00:00 2024)`;
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await sessionExists("TEST-123");
       expect(result).toBe(false);
@@ -330,14 +346,17 @@ jt-TEST-2: 1 windows (created Mon Jan  1 11:00:00 2024)`;
     });
 
     test("returns false when kill fails", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
 
       const result = await killSession("NONEXISTENT");
       expect(result).toBe(false);
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await killSession("TEST-123");
       expect(result).toBe(false);
@@ -360,14 +379,17 @@ jt-TEST-2: 1 windows (created Mon Jan  1 11:00:00 2024)`;
     });
 
     test("returns false when send fails", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
 
       const result = await sendKeys("NONEXISTENT", "echo hello");
       expect(result).toBe(false);
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await sendKeys("TEST-123", "echo hello");
       expect(result).toBe(false);
@@ -384,14 +406,17 @@ jt-TEST-2: 1 windows (created Mon Jan  1 11:00:00 2024)`;
     });
 
     test("returns null when capture fails", async () => {
-      Bun.spawn = (() => createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() =>
+        createMockSubprocess(1, "", "session not found")) as unknown as typeof Bun.spawn;
 
       const result = await capturePane("NONEXISTENT");
       expect(result).toBeNull();
     });
 
     test("handles spawn errors", async () => {
-      Bun.spawn = (() => { throw new Error("Spawn failed"); }) as unknown as typeof Bun.spawn;
+      Bun.spawn = (() => {
+        throw new Error("Spawn failed");
+      }) as unknown as typeof Bun.spawn;
 
       const result = await capturePane("TEST-123");
       expect(result).toBeNull();

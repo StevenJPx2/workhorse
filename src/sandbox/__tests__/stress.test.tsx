@@ -113,10 +113,11 @@ describe("Tiny viewport", () => {
   });
 
   it("layout in 20x5", async () => {
-    const ctx = await renderLayoutWithProviders(
-      () => <text>Main</text>,
-      { width: 20, height: 5, rig: "github.com/org/repo" },
-    );
+    const ctx = await renderLayoutWithProviders(() => <text>Main</text>, {
+      width: 20,
+      height: 5,
+      rig: "github.com/org/repo",
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
@@ -145,7 +146,12 @@ describe("Tiny viewport", () => {
 describe("Overflow text", () => {
   it("button with very long label", async () => {
     const ctx = await renderWithProviders(
-      () => <Button label="This is an extremely long button label that should overflow the container" variant="primary" />,
+      () => (
+        <Button
+          label="This is an extremely long button label that should overflow the container"
+          variant="primary"
+        />
+      ),
       { width: 30, height: 3 },
     );
     expect(ctx.captureCharFrame()).toMatchSnapshot();
@@ -155,7 +161,9 @@ describe("Overflow text", () => {
     const ctx = await renderWithProviders(
       () => (
         <Card title="A Very Long Card Title That Exceeds The Width" width={25}>
-          <text>This content is also very long and should wrap or truncate somehow in the limited space</text>
+          <text>
+            This content is also very long and should wrap or truncate somehow in the limited space
+          </text>
         </Card>
       ),
       { width: 30, height: 10 },
@@ -168,8 +176,10 @@ describe("Overflow text", () => {
       () => (
         <TicketPane
           ticket={makeTicket("LONGTICKET-99999", {
-            summary: "This is a very long ticket summary that describes a complex issue involving authentication timeouts when connecting to multiple microservices in parallel across different availability zones with varying network latencies",
-            branch_name: "feat/LONGTICKET-99999-this-is-also-a-very-long-branch-name-that-exceeds-expectations",
+            summary:
+              "This is a very long ticket summary that describes a complex issue involving authentication timeouts when connecting to multiple microservices in parallel across different availability zones with varying network latencies",
+            branch_name:
+              "feat/LONGTICKET-99999-this-is-also-a-very-long-branch-name-that-exceeds-expectations",
             worktree_path: null,
           })}
           events={[]}
@@ -278,26 +288,23 @@ describe("Missing data", () => {
   });
 
   it("button group with zero buttons", async () => {
-    const ctx = await renderWithProviders(
-      () => <ButtonGroup buttons={[]} />,
-      { width: 30, height: 3 },
-    );
+    const ctx = await renderWithProviders(() => <ButtonGroup buttons={[]} />, {
+      width: 30,
+      height: 3,
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
   it("action bar with zero actions", async () => {
-    const ctx = await renderWithProviders(
-      () => <ActionBar actions={[]} />,
-      { width: 30, height: 3 },
-    );
+    const ctx = await renderWithProviders(() => <ActionBar actions={[]} />, {
+      width: 30,
+      height: 3,
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
   it("divider with zero length", async () => {
-    const ctx = await renderWithProviders(
-      () => <Divider length={0} />,
-      { width: 30, height: 5 },
-    );
+    const ctx = await renderWithProviders(() => <Divider length={0} />, { width: 30, height: 5 });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
@@ -343,10 +350,10 @@ describe("Extreme quantities", () => {
       label: `B${i}`,
       shortcut: `${i}`,
     }));
-    const ctx = await renderWithProviders(
-      () => <ButtonGroup buttons={buttons} size="sm" />,
-      { width: 60, height: 3 },
-    );
+    const ctx = await renderWithProviders(() => <ButtonGroup buttons={buttons} size="sm" />, {
+      width: 60,
+      height: 3,
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 
@@ -440,10 +447,10 @@ describe("Special characters", () => {
   });
 
   it("divider with unicode label", async () => {
-    const ctx = await renderWithProviders(
-      () => <Divider label="★ SECTION ★" />,
-      { width: 40, height: 5 },
-    );
+    const ctx = await renderWithProviders(() => <Divider label="★ SECTION ★" />, {
+      width: 40,
+      height: 5,
+    });
     expect(ctx.captureCharFrame()).toMatchSnapshot();
   });
 });

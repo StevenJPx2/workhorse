@@ -5,12 +5,7 @@
  */
 
 // Connection management
-export {
-  initDatabase,
-  getDatabase,
-  closeDatabase,
-  resetDatabaseRef,
-} from "./connection.ts";
+export { initDatabase, getDatabase, closeDatabase, resetDatabaseRef } from "./connection.ts";
 
 // Ticket operations
 export {

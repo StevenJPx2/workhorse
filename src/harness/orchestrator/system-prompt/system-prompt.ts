@@ -11,10 +11,7 @@ import type { AgentSystemInstruction } from "../types.ts";
  * Generate a system prompt for an agent starting work on a ticket
  */
 export function generateSystemPrompt(info: AgentSystemInstruction): string {
-  const lines: string[] = [
-    `You are working on Jira ticket ${info.jiraKey}.`,
-    "",
-  ];
+  const lines: string[] = [`You are working on Jira ticket ${info.jiraKey}.`, ""];
 
   if (info.summary) {
     lines.push(`**Summary:** ${info.summary}`);
@@ -33,21 +30,15 @@ export function generateSystemPrompt(info: AgentSystemInstruction): string {
   lines.push("");
 
   lines.push("**Important - Use Jiratown MCP Tools:**");
+  lines.push("- Use `jiratown_get_notifications` to check for updates from Jira or PR reviews");
   lines.push(
-    "- Use `jiratown_get_notifications` to check for updates from Jira or PR reviews"
+    "- Use `jiratown_update_status` to report progress: planning → implementing → testing → pr_created → in_review → done",
   );
   lines.push(
-    "- Use `jiratown_update_status` to report progress: planning → implementing → testing → pr_created → in_review → done"
+    "- **IMPORTANT: Call `jiratown_update_status` with status='done' when the ticket is complete** (PR merged, QA verified, etc.)",
   );
-  lines.push(
-    "- **IMPORTANT: Call `jiratown_update_status` with status='done' when the ticket is complete** (PR merged, QA verified, etc.)"
-  );
-  lines.push(
-    "- Use `jiratown_escalate` if you need clarification or are blocked"
-  );
-  lines.push(
-    "- Acknowledge notifications with `jiratown_acknowledge` after handling them"
-  );
+  lines.push("- Use `jiratown_escalate` if you need clarification or are blocked");
+  lines.push("- Acknowledge notifications with `jiratown_acknowledge` after handling them");
 
   return lines.join("\n");
 }
@@ -84,7 +75,7 @@ export function generateInitialPrompt(info: AgentSystemInstruction): string {
 
     lines.push("");
     lines.push(
-      "Please start by calling jiratown_get_notifications to check for any updates, then begin planning the implementation."
+      "Please start by calling jiratown_get_notifications to check for any updates, then begin planning the implementation.",
     );
   } else {
     // No context - guide the agent to fetch it from Jira
@@ -101,23 +92,23 @@ export function generateInitialPrompt(info: AgentSystemInstruction): string {
 
     if (info.jiraCloudId) {
       lines.push(
-        `   - Call \`mcp_atlassian_getJiraIssue\` with cloudId: "${info.jiraCloudId}" and issueIdOrKey: "${info.jiraKey}"`
+        `   - Call \`mcp_atlassian_getJiraIssue\` with cloudId: "${info.jiraCloudId}" and issueIdOrKey: "${info.jiraKey}"`,
       );
     } else if (info.jiraUrl) {
       // Extract cloudId from URL (e.g., "https://company.atlassian.net/browse/AM-123")
       const urlMatch = info.jiraUrl.match(/https?:\/\/([^/]+)/);
       if (urlMatch) {
         lines.push(
-          `   - Call \`mcp_atlassian_getJiraIssue\` with cloudId: "${urlMatch[1]}" and issueIdOrKey: "${info.jiraKey}"`
+          `   - Call \`mcp_atlassian_getJiraIssue\` with cloudId: "${urlMatch[1]}" and issueIdOrKey: "${info.jiraKey}"`,
         );
       } else {
         lines.push(
-          `   - Call \`mcp_atlassian_getJiraIssue\` with the appropriate cloudId and issueIdOrKey: "${info.jiraKey}"`
+          `   - Call \`mcp_atlassian_getJiraIssue\` with the appropriate cloudId and issueIdOrKey: "${info.jiraKey}"`,
         );
       }
     } else {
       lines.push(
-        `   - Call \`mcp_atlassian_getJiraIssue\` with the appropriate cloudId and issueIdOrKey: "${info.jiraKey}"`
+        `   - Call \`mcp_atlassian_getJiraIssue\` with the appropriate cloudId and issueIdOrKey: "${info.jiraKey}"`,
       );
     }
 

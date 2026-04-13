@@ -7,7 +7,7 @@ import { createSignal, createRoot } from "solid-js";
 import { useAtlassian } from "../use-atlassian.ts";
 
 const DEFAULT_CONFIG = {
-  jira: { cloud_id: "" },  // Empty string by default!
+  jira: { cloud_id: "" }, // Empty string by default!
 };
 
 // Mock MCP SDK
@@ -36,7 +36,7 @@ const mockCallTool = mock(() =>
         }),
       },
     ],
-  })
+  }),
 );
 
 mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
@@ -64,32 +64,32 @@ describe("useAtlassian async cloudId", () => {
     await createRoot(async (dispose) => {
       // Simulate config loading - starts as undefined
       const [config, setConfig] = createSignal<{ jira: { cloud_id: string } } | null>(null);
-      
+
       // This is exactly how App.tsx creates the cloudId getter
       const cloudId = () => config()?.jira.cloud_id;
-      
+
       // Log initial state
       console.log("Initial cloudId():", cloudId());
-      
+
       // Create atlassian hook with getter - this is the pattern from App.tsx
       const atlassian = useAtlassian({ cloudId, autoConnect: false });
-      
+
       // At this point, cloudId() returns undefined
       expect(cloudId()).toBe(undefined);
-      
+
       // Simulate config loading after a delay (like autoLoad does)
       setConfig({ jira: { cloud_id: "test.atlassian.net" } });
-      
+
       // Now cloudId() should return the value
       console.log("After config load cloudId():", cloudId());
       expect(cloudId()).toBe("test.atlassian.net");
-      
+
       // Now try to fetch - this should work because getClient() resolves cloudId lazily
       const issue = await atlassian.fetchIssue("AM-123");
-      
+
       expect(issue.key).toBe("AM-123");
       expect(issue.summary).toBe("Test issue");
-      
+
       dispose();
     });
   });
@@ -98,28 +98,28 @@ describe("useAtlassian async cloudId", () => {
     await createRoot(async (dispose) => {
       // Getter that always returns undefined (no config)
       const cloudId = () => undefined;
-      
+
       const atlassian = useAtlassian({ cloudId, autoConnect: false });
-      
+
       // Try to fetch - should fail with helpful error
       await expect(atlassian.fetchIssue("AM-123")).rejects.toThrow(
-        "Jira cloud ID is not configured"
+        "Jira cloud ID is not configured",
       );
-      
+
       dispose();
     });
   });
 
   it("should work with static string cloudId", async () => {
     await createRoot(async (dispose) => {
-      const atlassian = useAtlassian({ 
-        cloudId: "static.atlassian.net", 
-        autoConnect: false 
+      const atlassian = useAtlassian({
+        cloudId: "static.atlassian.net",
+        autoConnect: false,
       });
-      
+
       const issue = await atlassian.fetchIssue("AM-123");
       expect(issue.key).toBe("AM-123");
-      
+
       dispose();
     });
   });
@@ -135,15 +135,14 @@ describe("useAtlassian async cloudId", () => {
       } | null>(null);
 
       // This is how useConfig creates its cloudId accessor (with fallback to empty string)
-      const cloudIdFromConfig = () => 
-        configState()?.jira.cloud_id ?? DEFAULT_CONFIG.jira.cloud_id;
+      const cloudIdFromConfig = () => configState()?.jira.cloud_id ?? DEFAULT_CONFIG.jira.cloud_id;
 
       // Log what cloudId returns before config loads
       console.log("BEFORE config load - cloudId:", JSON.stringify(cloudIdFromConfig()));
-      
+
       // This matches App.tsx line 65
       const cloudId = () => configState()?.jira.cloud_id;
-      
+
       console.log("BEFORE config load - App.tsx pattern cloudId:", JSON.stringify(cloudId()));
 
       // Create atlassian like App.tsx does
@@ -174,14 +173,14 @@ describe("useAtlassian async cloudId", () => {
       } | null>(null);
 
       const cloudId = () => configState()?.jira.cloud_id;
-      
+
       console.log("Config never loaded - cloudId:", JSON.stringify(cloudId()));
 
       const atlassian = useAtlassian({ cloudId, autoConnect: false });
 
       // Should fail with helpful error
       await expect(atlassian.fetchIssue("AM-123")).rejects.toThrow(
-        "Jira cloud ID is not configured"
+        "Jira cloud ID is not configured",
       );
 
       dispose();
@@ -196,17 +195,17 @@ describe("useAtlassian async cloudId", () => {
       } | null>(null);
 
       const cloudId = () => configState()?.jira.cloud_id;
-      
+
       // Config loads with empty cloud_id
       setConfigState({ jira: { cloud_id: "" } });
-      
+
       console.log("Config loaded with empty cloud_id:", JSON.stringify(cloudId()));
 
       const atlassian = useAtlassian({ cloudId, autoConnect: false });
 
       // Should fail with helpful error (empty string is not valid)
       await expect(atlassian.fetchIssue("AM-123")).rejects.toThrow(
-        "Jira cloud ID is not configured"
+        "Jira cloud ID is not configured",
       );
 
       dispose();

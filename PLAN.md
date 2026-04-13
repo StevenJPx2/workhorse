@@ -43,15 +43,15 @@ Uses native Jira MCP integration for seamless ticket management.
 
 ### Core Components
 
-| Component         | Technology             | Purpose                                    |
-| ----------------- | ---------------------- | ------------------------------------------ |
-| **UI**            | OpenTUI + Solid.js     | Terminal user interface                    |
-| **Storage**       | SQLite                 | Ticket state and events                    |
-| **Config**        | TOML                   | User preferences, Jira cloud ID            |
-| **CLI**           | citty + @clack/prompts | CLI framework and interactive prompts      |
-| **Jira API**      | Atlassian MCP          | Fetch tickets, post comments, transitions  |
-| **Orchestration** | tmux + git worktrees   | Isolated sessions and workspaces per ticket|
-| **Agents**        | OpenCode, Claude Code  | AI coding agents                           |
+| Component         | Technology             | Purpose                                     |
+| ----------------- | ---------------------- | ------------------------------------------- |
+| **UI**            | OpenTUI + Solid.js     | Terminal user interface                     |
+| **Storage**       | SQLite                 | Ticket state and events                     |
+| **Config**        | TOML                   | User preferences, Jira cloud ID             |
+| **CLI**           | citty + @clack/prompts | CLI framework and interactive prompts       |
+| **Jira API**      | Atlassian MCP          | Fetch tickets, post comments, transitions   |
+| **Orchestration** | tmux + git worktrees   | Isolated sessions and workspaces per ticket |
+| **Agents**        | OpenCode, Claude Code  | AI coding agents                            |
 
 ### Rig Detection
 
@@ -317,6 +317,7 @@ CREATE INDEX idx_events_ticket ON ticket_events(ticket_id);
 ```
 
 The sidebar is clickable and supports keyboard navigation:
+
 - `j`/`k` or `↑`/`↓` to navigate tickets
 - `1-9` for quick jump
 - `n` or `+` for new ticket
@@ -441,20 +442,20 @@ The sidebar is clickable and supports keyboard navigation:
 
 ## Key Integration Points
 
-| Action              | Command/API                             | Description               |
-| ------------------- | --------------------------------------- | ------------------------- |
-| **Fetch Jira**      | Atlassian MCP `getJiraIssue`            | Get ticket details        |
-| **Create Worktree** | `git worktree add`                      | Create isolated workspace |
-| **Create Session**  | `tmux new-session -d -s jiratown-{id}`  | Create isolated tmux session |
-| **Spawn Agent**     | `opencode --prompt <prompt>`            | Start agent with injected prompt |
-| **Monitor Agent**   | `tmux capture-pane` / process management| Track agent status        |
-| **Debug Agent**     | `tmux attach -t jiratown-{id}`          | Attach to agent session   |
-| **Update Jira**     | Atlassian MCP `addCommentToJiraIssue`   | Post progress             |
-| **Transition Jira** | Atlassian MCP `transitionJiraIssue`     | Change status             |
-| **Escalate**        | Jira comment                            | Ask questions             |
-| **Fetch PR**        | GitHub MCP `get_pull_request`           | Get PR details            |
-| **Get Reviews**     | GitHub MCP `get_pull_request_reviews`   | Fetch review comments     |
-| **Reply to Review** | GitHub MCP `create_pull_request_review` | Post reply comments       |
+| Action              | Command/API                              | Description                      |
+| ------------------- | ---------------------------------------- | -------------------------------- |
+| **Fetch Jira**      | Atlassian MCP `getJiraIssue`             | Get ticket details               |
+| **Create Worktree** | `git worktree add`                       | Create isolated workspace        |
+| **Create Session**  | `tmux new-session -d -s jiratown-{id}`   | Create isolated tmux session     |
+| **Spawn Agent**     | `opencode --prompt <prompt>`             | Start agent with injected prompt |
+| **Monitor Agent**   | `tmux capture-pane` / process management | Track agent status               |
+| **Debug Agent**     | `tmux attach -t jiratown-{id}`           | Attach to agent session          |
+| **Update Jira**     | Atlassian MCP `addCommentToJiraIssue`    | Post progress                    |
+| **Transition Jira** | Atlassian MCP `transitionJiraIssue`      | Change status                    |
+| **Escalate**        | Jira comment                             | Ask questions                    |
+| **Fetch PR**        | GitHub MCP `get_pull_request`            | Get PR details                   |
+| **Get Reviews**     | GitHub MCP `get_pull_request_reviews`    | Fetch review comments            |
+| **Reply to Review** | GitHub MCP `create_pull_request_review`  | Post reply comments              |
 
 ---
 
@@ -495,6 +496,7 @@ The sidebar is clickable and supports keyboard navigation:
 ## Project Structure
 
 **Code Standards:**
+
 - All files must be **max 200 lines of code**
 - All file names use **kebab-case**
 - Related files are **colocated in folders** with `index.ts` exports
@@ -636,46 +638,50 @@ jiratown/
 ### Hook Categories
 
 #### UI State Hooks
+
 Manage local UI state and user interactions:
 
-| Hook | Purpose | Location |
-|------|---------|----------|
-| `useTheme` | Theme switching and persistence | `src/lib/theme/context.tsx` |
-| `useKeyboard` | Global keyboard shortcut handling | `@opentui/solid` |
+| Hook             | Purpose                                         | Location                       |
+| ---------------- | ----------------------------------------------- | ------------------------------ |
+| `useTheme`       | Theme switching and persistence                 | `src/lib/theme/context.tsx`    |
+| `useKeyboard`    | Global keyboard shortcut handling               | `@opentui/solid`               |
 | `useInteractive` | Hover/press/focus states for clickable elements | `src/hooks/use-interactive.ts` |
-| `useModal` | Modal open/close state management | `src/hooks/use-modal.ts` |
-| `useFocusZone` | Focus management within regions | `src/hooks/use-focus-zone.ts` |
-| `useSelection` | List selection state (single/multi) | `src/hooks/use-selection.ts` |
+| `useModal`       | Modal open/close state management               | `src/hooks/use-modal.ts`       |
+| `useFocusZone`   | Focus management within regions                 | `src/hooks/use-focus-zone.ts`  |
+| `useSelection`   | List selection state (single/multi)             | `src/hooks/use-selection.ts`   |
 
 #### Data Hooks
+
 Manage data fetching, caching, and mutations:
 
-| Hook | Purpose | Location |
-|------|---------|----------|
-| `useTickets` | CRUD operations for tickets | `src/hooks/use-tickets.ts` |
-| `useConfig` | Load/save configuration | `src/hooks/use-config.ts` |
+| Hook          | Purpose                       | Location                    |
+| ------------- | ----------------------------- | --------------------------- |
+| `useTickets`  | CRUD operations for tickets   | `src/hooks/use-tickets.ts`  |
+| `useConfig`   | Load/save configuration       | `src/hooks/use-config.ts`   |
 | `useDatabase` | SQLite connection and queries | `src/hooks/use-database.ts` |
 
 #### Integration Hooks
+
 Interface with external services and CLIs:
 
-| Hook | Purpose | Location |
-|------|---------|----------|
-| `useTmux` | Tmux session management | `src/hooks/use-tmux.ts` |
-| `useAgent` | Agent spawning and management | `src/hooks/use-agent.ts` |
-| `useAtlassian` | Atlassian MCP client | `src/hooks/use-atlassian.ts` |
-| `useGitHub` | GitHub MCP client | `src/hooks/use-github.ts` |
+| Hook           | Purpose                        | Location                      |
+| -------------- | ------------------------------ | ----------------------------- |
+| `useTmux`      | Tmux session management        | `src/hooks/use-tmux.ts`       |
+| `useAgent`     | Agent spawning and management  | `src/hooks/use-agent.ts`      |
+| `useAtlassian` | Atlassian MCP client           | `src/hooks/use-atlassian.ts`  |
+| `useGitHub`    | GitHub MCP client              | `src/hooks/use-github.ts`     |
 | `useAgentFeed` | Stream `gt feed --json` events | `src/hooks/use-agent-feed.ts` |
 
 #### Feature Hooks
+
 Compose lower-level hooks for specific features:
 
-| Hook | Purpose | Location |
-|------|---------|----------|
-| `useTicketNavigation` | Keyboard nav for ticket list | `src/components/ticket-sidebar/` |
-| `useCommandPalette` | Command search and execution | `src/hooks/use-command-palette.ts` |
-| `usePRReview` | PR review workflow state | `src/hooks/use-pr-review.ts` |
-| `useEscalation` | Ticket escalation workflow | `src/hooks/use-escalation.ts` |
+| Hook                  | Purpose                      | Location                           |
+| --------------------- | ---------------------------- | ---------------------------------- |
+| `useTicketNavigation` | Keyboard nav for ticket list | `src/components/ticket-sidebar/`   |
+| `useCommandPalette`   | Command search and execution | `src/hooks/use-command-palette.ts` |
+| `usePRReview`         | PR review workflow state     | `src/hooks/use-pr-review.ts`       |
+| `useEscalation`       | Ticket escalation workflow   | `src/hooks/use-escalation.ts`      |
 
 ### Component Structure
 
@@ -687,7 +693,7 @@ function TicketSidebar(props: TicketSidebarProps) {
   const { theme } = useTheme();
   const { tickets, select, selectedIndex } = useTickets();
   const { navigateUp, navigateDown } = useTicketNavigation();
-  
+
   // Pure rendering based on hook state
   return <box>...</box>;
 }
@@ -695,13 +701,13 @@ function TicketSidebar(props: TicketSidebarProps) {
 // Bad: Component contains business logic
 function TicketSidebar(props: TicketSidebarProps) {
   const [tickets, setTickets] = createSignal([]);
-  
+
   // Don't fetch data directly in component
   createEffect(async () => {
-    const data = await db.query('SELECT * FROM tickets');
+    const data = await db.query("SELECT * FROM tickets");
     setTickets(data);
   });
-  
+
   return <box>...</box>;
 }
 ```
@@ -716,14 +722,14 @@ function useTicketWorkflow(ticketId: string) {
   const { spawn, stop } = useAgent();
   const { createWorktree } = useWorktree();
   const { fetchIssue, addComment } = useAtlassian();
-  
+
   const startWork = async () => {
     const jiraData = await fetchIssue(ticketId);
     const worktree = await createWorktree(ticketId, jiraData.key);
-    await spawn(ticketId, 'opencode', worktree.path);
-    await updateTicket(ticketId, { status: 'implementing' });
+    await spawn(ticketId, "opencode", worktree.path);
+    await updateTicket(ticketId, { status: "implementing" });
   };
-  
+
   return { ticket, startWork };
 }
 ```
@@ -735,11 +741,12 @@ The `useInteractive` hook provides a standardized way to handle hover and press 
 > **Note:** OpenTUI does not support `onFocus`/`onBlur` on box elements, so focus handling is not included.
 
 **API:**
+
 ```tsx
 interface UseInteractiveOptions {
-  disabled?: boolean;           // Disable all interactions
-  onPress?: () => void;         // Click/press handler
-  onHover?: (hovered: boolean) => void;  // Hover state change
+  disabled?: boolean; // Disable all interactions
+  onPress?: () => void; // Click/press handler
+  onHover?: (hovered: boolean) => void; // Hover state change
 }
 
 interface InteractiveProps {
@@ -750,14 +757,15 @@ interface InteractiveProps {
 }
 
 interface UseInteractiveReturn {
-  isHovered: Accessor<boolean>;     // Currently hovered
-  isPressed: Accessor<boolean>;     // Currently being pressed
+  isHovered: Accessor<boolean>; // Currently hovered
+  isPressed: Accessor<boolean>; // Currently being pressed
   isHighlighted: Accessor<boolean>; // Alias for isHovered (convenience)
   interactiveProps: InteractiveProps; // Spread onto element
 }
 ```
 
 **Usage:**
+
 ```tsx
 function Button(props: ButtonProps) {
   const { theme } = useTheme();
@@ -766,7 +774,7 @@ function Button(props: ButtonProps) {
     onPress: props.onPress,
   });
 
-  const bgColor = () => isHighlighted() ? theme().bg.highlight : theme().bg.base;
+  const bgColor = () => (isHighlighted() ? theme().bg.highlight : theme().bg.base);
 
   return (
     <box backgroundColor={bgColor()} {...interactiveProps}>
@@ -882,6 +890,7 @@ src/hooks/
 ### Phase 3: Agent Integration (4-5 days)
 
 #### Agent Harness (Core Infrastructure)
+
 - [x] Notification system (`src/harness/notifications/`)
   - [x] Notification types (blocking, high, normal, low priorities)
   - [x] Notification store (SQLite CRUD with deduplication by source_id)
@@ -918,6 +927,7 @@ src/hooks/
   - [x] Agent status poller (check tmux session health)
 
 #### UI Hooks (wrapping harness)
+
 - [x] `useTmux` hook (wraps `src/harness/session/tmux.ts`)
 - [x] `useAgent` hook (agent spawning and management)
   - [x] `spawn(ticketId, agent, worktree)` - Spawn agent in tmux session
@@ -932,6 +942,7 @@ src/hooks/
   - [x] Attach to session for debugging: `tmux attach -t jt-AM-123`
 
 #### Phase 3 Polish
+
 - [x] Session Memory System (`src/harness/session/session-memory.ts`)
   - [x] Store context in `.jiratown/context.md` in worktree
   - [x] Track recent activity (last 20 events)
@@ -967,6 +978,7 @@ src/hooks/
 Following CODE_QUALITY.md principles - eliminate prop drilling, define where used.
 
 **Violations to fix:**
+
 - Notifications defined in App, passed to Layout → move to Layout, pass only `currentTicketId`
 - 7 handler props drilled for keyboard shortcuts → create `useLayoutActions` composable
 - Sidebar passed as prop but always TicketSidebar → Layout imports directly
@@ -974,6 +986,7 @@ Following CODE_QUALITY.md principles - eliminate prop drilling, define where use
 - App.tsx 283 lines → extract to composables, target <200 lines
 
 **Implementation Order:**
+
 1. [x] Create `TicketsContext` (`src/lib/tickets-context.tsx`) - provides tickets/selection/actions
    - [x] Wraps `useTickets` and `useSelection`
    - [x] Add tests
@@ -1091,11 +1104,11 @@ Note: Rigs are auto-detected from git remote URL - no manual configuration neede
 ## Future Enhancements
 
 1. **Cost Tracking**: Show token/API usage per ticket
-4. **Session Resume**: Resume dashboard state after restart
-5. **Multiple Jira Instances**: Support multiple Jira cloud IDs
-6. **Webhook Support**: Real-time Jira/GitHub updates via webhooks instead of polling
-7. **Auto-merge**: Option to auto-merge PRs when all approvals received
-8. **Metrics Dashboard**: Success rate, average completion time, etc.
+2. **Session Resume**: Resume dashboard state after restart
+3. **Multiple Jira Instances**: Support multiple Jira cloud IDs
+4. **Webhook Support**: Real-time Jira/GitHub updates via webhooks instead of polling
+5. **Auto-merge**: Option to auto-merge PRs when all approvals received
+6. **Metrics Dashboard**: Success rate, average completion time, etc.
 
 ---
 

@@ -7,8 +7,18 @@
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { type SessionEvent, type SessionMemory, CONTEXT_FILE, MAX_EVENTS } from "./session-types.ts";
-import { ensureJiratownDir, parseFrontmatter, parseRecentActivity, parseKeyDecisions } from "./session-parser.ts";
+import {
+  type SessionEvent,
+  type SessionMemory,
+  CONTEXT_FILE,
+  MAX_EVENTS,
+} from "./session-types.ts";
+import {
+  ensureJiratownDir,
+  parseFrontmatter,
+  parseRecentActivity,
+  parseKeyDecisions,
+} from "./session-parser.ts";
 
 export type { SessionEvent, SessionMemory } from "./session-types.ts";
 
@@ -105,7 +115,7 @@ export function createSessionMemory(
   status: string,
   agent: string,
   branch: string,
-  summary?: string
+  summary?: string,
 ): SessionMemory {
   const now = new Date().toISOString();
   return {
@@ -121,78 +131,9 @@ export function createSessionMemory(
   };
 }
 
-export function addSessionEvent(
-  worktreePath: string,
-  event: SessionEvent
-): boolean {
-  const memory = readSessionMemory(worktreePath);
-
-  if (!memory) {
-    console.error("Cannot add event: no session memory found");
-    return false;
-  }
-
-  memory.recentActivity.unshift(event);
-
-  if (memory.recentActivity.length > MAX_EVENTS) {
-    memory.recentActivity = memory.recentActivity.slice(0, MAX_EVENTS);
-  }
-
-  memory.lastUpdatedAt = new Date().toISOString();
-
-  return writeSessionMemory(worktreePath, memory);
-}
-
-export function addKeyDecision(
-  worktreePath: string,
-  decision: string
-): boolean {
-  const memory = readSessionMemory(worktreePath);
-
-  if (!memory) {
-    console.error("Cannot add decision: no session memory found");
-    return false;
-  }
-
-  memory.keyDecisions.push(decision);
-  memory.lastUpdatedAt = new Date().toISOString();
-
-  return writeSessionMemory(worktreePath, memory);
-}
-
-export function updateSessionStatus(
-  worktreePath: string,
-  status: string,
-  summary?: string
-): boolean {
-  const memory = readSessionMemory(worktreePath);
-
-  if (!memory) {
-    console.error("Cannot update status: no session memory found");
-    return false;
-  }
-
-  const oldStatus = memory.status;
-  memory.status = status;
-  memory.lastUpdatedAt = new Date().toISOString();
-
-  if (summary) {
-    memory.summary = summary;
-  }
-
-  memory.recentActivity.unshift({
-    timestamp: memory.lastUpdatedAt,
-    type: "status_change",
-    description: `Status: ${oldStatus} → ${status}`,
-  });
-
-  if (memory.recentActivity.length > MAX_EVENTS) {
-    memory.recentActivity = memory.recentActivity.slice(0, MAX_EVENTS);
-  }
-
-  return writeSessionMemory(worktreePath, memory);
-}
-
-export function hasSessionMemory(worktreePath: string): boolean {
-  return existsSync(getContextPath(worktreePath));
-}
+export {
+  addSessionEvent,
+  addKeyDecision,
+  updateSessionStatus,
+  hasSessionMemory,
+} from "./session-actions.ts";

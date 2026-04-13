@@ -1,10 +1,5 @@
 import type { Accessor } from "solid-js";
-import type {
-  ResolvedConfig,
-  JiratownConfig,
-  ThemeName,
-  AgentType,
-} from "../../types/config.ts";
+import type { ResolvedConfig, JiratownConfig, ThemeName, AgentType } from "../../types/config.ts";
 
 export type ConfigStatus = "idle" | "loading" | "loaded" | "error";
 

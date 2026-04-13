@@ -28,8 +28,7 @@ export interface ThemeSwitcherProps {
  * ```
  */
 export function ThemeSwitcher(props: ThemeSwitcherProps) {
-  const { theme, themeName, setTheme, toggleTheme, availableThemes } =
-    useTheme();
+  const { theme, themeName, setTheme, toggleTheme, availableThemes } = useTheme();
 
   if (props.showList) {
     return (
@@ -38,9 +37,7 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
         <For each={availableThemes}>
           {(name) => (
             <box flexDirection="row" gap={spacing.sm}>
-              <text fg={theme().text.dim}>
-                {themeName() === name ? "[x]" : "[ ]"}
-              </text>
+              <text fg={theme().text.dim}>{themeName() === name ? "[x]" : "[ ]"}</text>
               <Button
                 label={name}
                 variant={themeName() === name ? "primary" : "default"}

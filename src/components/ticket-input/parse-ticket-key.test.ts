@@ -3,11 +3,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import {
-  parseTicketKey,
-  isValidTicketKey,
-  extractTicketKey,
-} from "./parse-ticket-key.ts";
+import { parseTicketKey, isValidTicketKey, extractTicketKey } from "./parse-ticket-key.ts";
 
 describe("parse-ticket-key", () => {
   describe("parseTicketKey", () => {
@@ -28,25 +24,19 @@ describe("parse-ticket-key", () => {
     });
 
     it("should parse full Jira URL", () => {
-      const result = parseTicketKey(
-        "https://adeptmind.atlassian.net/browse/AM-123"
-      );
+      const result = parseTicketKey("https://adeptmind.atlassian.net/browse/AM-123");
       expect(result.key).toBe("AM-123");
       expect(result.url).toBe("https://adeptmind.atlassian.net/browse/AM-123");
     });
 
     it("should parse Jira URL with query params", () => {
-      const result = parseTicketKey(
-        "https://adeptmind.atlassian.net/browse/AM-123?atlOrigin=abc"
-      );
+      const result = parseTicketKey("https://adeptmind.atlassian.net/browse/AM-123?atlOrigin=abc");
       expect(result.key).toBe("AM-123");
       expect(result.url).toBe("https://adeptmind.atlassian.net/browse/AM-123");
     });
 
     it("should parse lowercase URL ticket key", () => {
-      const result = parseTicketKey(
-        "https://company.atlassian.net/browse/proj-999"
-      );
+      const result = parseTicketKey("https://company.atlassian.net/browse/proj-999");
       expect(result.key).toBe("PROJ-999");
     });
 
@@ -94,9 +84,7 @@ describe("parse-ticket-key", () => {
   describe("extractTicketKey", () => {
     it("should extract key from valid input", () => {
       expect(extractTicketKey("AM-123")).toBe("AM-123");
-      expect(
-        extractTicketKey("https://co.atlassian.net/browse/PROJ-456")
-      ).toBe("PROJ-456");
+      expect(extractTicketKey("https://co.atlassian.net/browse/PROJ-456")).toBe("PROJ-456");
     });
 
     it("should return empty string for invalid input", () => {

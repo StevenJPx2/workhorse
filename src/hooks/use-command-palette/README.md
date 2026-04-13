@@ -33,37 +33,38 @@ function App() {
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `commands` | `Command[]` | Available commands |
+| Option      | Type            | Description                     |
+| ----------- | --------------- | ------------------------------- |
+| `commands`  | `Command[]`     | Available commands              |
 | `onExecute` | `(cmd) => void` | Called when command is executed |
-| `onClose` | `() => void` | Called when palette closes |
+| `onClose`   | `() => void`    | Called when palette closes      |
 
 ### Return Value
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `isOpen` | `Accessor<boolean>` | Whether palette is visible |
-| `open` | `() => void` | Open the palette |
-| `close` | `() => void` | Close the palette |
-| `toggle` | `() => void` | Toggle open/close |
-| `query` | `Accessor<string>` | Current search query |
-| `setQuery` | `(q: string) => void` | Set search query |
-| `appendToQuery` | `(char: string) => void` | Append character |
-| `backspace` | `() => void` | Delete last character |
-| `selectedIndex` | `Accessor<number>` | Currently selected item |
-| `selectPrevious` | `() => void` | Move selection up |
-| `selectNext` | `() => void` | Move selection down |
-| `resetSelection` | `() => void` | Reset to first item |
-| `displayItems` | `Accessor<Item[]>` | Items to display |
-| `isInSubmenu` | `Accessor<boolean>` | In submenu view |
-| `currentSubmenu` | `Accessor<SubmenuCommand \| null>` | Active submenu |
-| `executeSelected` | `() => void` | Execute or enter submenu |
-| `goBack` | `() => void` | Back from submenu or close |
+| Property          | Type                               | Description                |
+| ----------------- | ---------------------------------- | -------------------------- |
+| `isOpen`          | `Accessor<boolean>`                | Whether palette is visible |
+| `open`            | `() => void`                       | Open the palette           |
+| `close`           | `() => void`                       | Close the palette          |
+| `toggle`          | `() => void`                       | Toggle open/close          |
+| `query`           | `Accessor<string>`                 | Current search query       |
+| `setQuery`        | `(q: string) => void`              | Set search query           |
+| `appendToQuery`   | `(char: string) => void`           | Append character           |
+| `backspace`       | `() => void`                       | Delete last character      |
+| `selectedIndex`   | `Accessor<number>`                 | Currently selected item    |
+| `selectPrevious`  | `() => void`                       | Move selection up          |
+| `selectNext`      | `() => void`                       | Move selection down        |
+| `resetSelection`  | `() => void`                       | Reset to first item        |
+| `displayItems`    | `Accessor<Item[]>`                 | Items to display           |
+| `isInSubmenu`     | `Accessor<boolean>`                | In submenu view            |
+| `currentSubmenu`  | `Accessor<SubmenuCommand \| null>` | Active submenu             |
+| `executeSelected` | `() => void`                       | Execute or enter submenu   |
+| `goBack`          | `() => void`                       | Back from submenu or close |
 
 ## Submenu Support
 
 When a SubmenuCommand is selected and executed:
+
 1. Palette switches to submenu view
 2. `displayItems` returns the submenu items
 3. `isInSubmenu` becomes true

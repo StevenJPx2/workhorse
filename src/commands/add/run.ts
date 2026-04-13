@@ -7,18 +7,10 @@
 import * as p from "@clack/prompts";
 import { detectRig } from "../../lib/detect-rig.ts";
 import { loadConfig, configExists } from "../../lib/config/index.ts";
-import {
-  insertTicket,
-  getTicketById,
-  updateTicket,
-  initDatabase,
-} from "../../lib/db.ts";
+import { insertTicket, getTicketById, updateTicket, initDatabase } from "../../lib/db.ts";
 import type { AgentType } from "../../types/config.ts";
 import { parseTicketKey, isValidTicketKey } from "./parse-ticket.ts";
-import {
-  createAtlassianClient,
-  type JiraIssue,
-} from "../../hooks/use-atlassian/index.ts";
+import { createAtlassianClient, type JiraIssue } from "../../hooks/use-atlassian/index.ts";
 
 export interface AddOptions {
   agent?: string;
@@ -39,9 +31,7 @@ export async function runAdd(ticket: string, options: AddOptions): Promise<void>
   // Detect rig from current directory
   const rigInfo = await detectRig();
   if (!rigInfo) {
-    p.log.error(
-      "Not in a git repository with a remote. Please run from a git repo."
-    );
+    p.log.error("Not in a git repository with a remote. Please run from a git repo.");
     process.exit(1);
   }
 
@@ -73,8 +63,7 @@ export async function runAdd(ticket: string, options: AddOptions): Promise<void>
   const config = await loadConfig();
 
   // Determine agent
-  const agent: AgentType =
-    (options.agent as AgentType) || config.defaults.agent;
+  const agent: AgentType = (options.agent as AgentType) || config.defaults.agent;
 
   if (agent !== "opencode" && agent !== "claude") {
     p.log.error(`Invalid agent: "${agent}". Must be "opencode" or "claude".`);

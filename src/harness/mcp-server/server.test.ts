@@ -27,11 +27,13 @@ function insertTicket(
   db: Database,
   id: string,
   jiraKey: string,
-  status: string = "planning"
+  status: string = "planning",
 ): void {
-  db.prepare(
-    "INSERT INTO tickets (id, jira_key, status) VALUES (?, ?, ?)"
-  ).run(id, jiraKey, status);
+  db.prepare("INSERT INTO tickets (id, jira_key, status) VALUES (?, ?, ?)").run(
+    id,
+    jiraKey,
+    status,
+  );
 }
 
 describe("TOOL_NAMES", () => {
@@ -190,9 +192,9 @@ describe("createJiratownServer", () => {
     expect(result).toHaveProperty("content");
 
     // Verify status was updated
-    const ticket = db
-      .prepare("SELECT status FROM tickets WHERE id = ?")
-      .get("TICKET-123") as { status: string };
+    const ticket = db.prepare("SELECT status FROM tickets WHERE id = ?").get("TICKET-123") as {
+      status: string;
+    };
     expect(ticket.status).toBe("implementing");
   });
 
@@ -209,9 +211,7 @@ describe("createJiratownServer", () => {
     expect(result).toHaveProperty("content");
 
     // Verify notification was created
-    const notif = db
-      .prepare("SELECT * FROM notifications WHERE ticket_id = ?")
-      .get("TICKET-123");
+    const notif = db.prepare("SELECT * FROM notifications WHERE ticket_id = ?").get("TICKET-123");
     expect(notif).toBeDefined();
   });
 
@@ -226,9 +226,9 @@ describe("createJiratownServer", () => {
     });
 
     // Verify ticket status is blocked
-    const ticket = db
-      .prepare("SELECT status FROM tickets WHERE id = ?")
-      .get("TICKET-123") as { status: string };
+    const ticket = db.prepare("SELECT status FROM tickets WHERE id = ?").get("TICKET-123") as {
+      status: string;
+    };
     expect(ticket.status).toBe("blocked");
   });
 });

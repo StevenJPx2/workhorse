@@ -108,9 +108,7 @@ export function AgentDisplay(props: AgentDisplayProps) {
 
         {/* Right: current status */}
         <Show when={props.currentStatus()}>
-          <text fg={theme().text.primary}>
-            {truncate(props.currentStatus()!, 40)}
-          </text>
+          <text fg={theme().text.primary}>{truncate(props.currentStatus()!, 40)}</text>
         </Show>
       </box>
 
@@ -119,9 +117,7 @@ export function AgentDisplay(props: AgentDisplayProps) {
         flexDirection="column"
         flexGrow={1}
         borderStyle="single"
-        borderColor={
-          isActive() ? theme().status.implementing : theme().border.default
-        }
+        borderColor={isActive() ? theme().status.implementing : theme().border.default}
         paddingX={1}
       >
         {/* Error state */}
@@ -142,8 +138,7 @@ export function AgentDisplay(props: AgentDisplayProps) {
         >
           <For each={visibleSteps()}>
             {(step, index) => {
-              const prefix = () =>
-                index() === visibleSteps().length - 1 ? "› " : "  ";
+              const prefix = () => (index() === visibleSteps().length - 1 ? "› " : "  ");
               const icon = getStepIcon(step.type);
 
               return (

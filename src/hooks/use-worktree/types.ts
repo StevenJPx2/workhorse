@@ -32,11 +32,7 @@ export interface UseWorktreeReturn {
   /** Reload worktrees from git */
   reload: () => Promise<void>;
   /** Create a new worktree */
-  create: (
-    ticketId: string,
-    issueType?: string,
-    baseBranch?: string
-  ) => Promise<Worktree | null>;
+  create: (ticketId: string, issueType?: string, baseBranch?: string) => Promise<Worktree | null>;
   /** Remove a worktree */
   remove: (ticketId: string, deleteBranch?: boolean) => Promise<boolean>;
   /** Check if worktree exists */

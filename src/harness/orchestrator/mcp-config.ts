@@ -53,10 +53,7 @@ export interface OpenCodeConfig {
  * @param ticketId - Ticket ID the agent is working on
  * @param jiraCloudId - Optional Jira cloud ID for Atlassian MCP
  */
-export function generateMcpConfig(
-  ticketId: string,
-  jiraCloudId?: string
-): OpenCodeConfig {
+export function generateMcpConfig(ticketId: string, jiraCloudId?: string): OpenCodeConfig {
   // Get the path to jiratown's mcp-server.sh wrapper script
   // The wrapper ensures bun runs from jiratown's directory so it finds dependencies
   const jiratownRoot = process.env.JIRATOWN_ROOT || process.cwd();
@@ -97,7 +94,7 @@ export function generateMcpConfig(
 export function writeMcpConfig(
   worktreePath: string,
   ticketId: string,
-  config: OpenCodeConfig
+  config: OpenCodeConfig,
 ): string {
   const configDir = getConfigDir(worktreePath);
   const configPath = getConfigPath(worktreePath, ticketId);
@@ -135,10 +132,10 @@ function escapeForShell(str: string): string {
 
 /**
  * Build the agent command
- * 
+ *
  * For OpenCode: Run `opencode --port <port> --prompt <prompt>` so we can communicate via SDK
  * For Claude: Run `claude` - it uses its own config discovery
- * 
+ *
  * @param agentType - Type of agent to run
  * @param ticketId - Ticket ID used for port allocation
  * @param prompt - Optional initial prompt to pass to the agent
@@ -146,18 +143,18 @@ function escapeForShell(str: string): string {
 export function buildAgentCommand(
   agentType: "opencode" | "claude",
   ticketId: string,
-  prompt?: string
+  prompt?: string,
 ): { command: string; args: string[] } {
   if (agentType === "opencode") {
     // Import dynamically to avoid circular dependency
     const { buildOpenCodeCommandWithPort } = require("./opencode-client/index.ts");
     const result = buildOpenCodeCommandWithPort(ticketId);
-    
+
     // Add prompt if provided, properly escaped for shell
     if (prompt) {
       result.args.push("--prompt", escapeForShell(prompt));
     }
-    
+
     return result;
   }
 

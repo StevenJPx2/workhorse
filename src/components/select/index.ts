@@ -2,8 +2,4 @@
  * Select component exports
  */
 
-export {
-  Select,
-  type SelectProps,
-  type SelectOption,
-} from "./select.tsx";
+export { Select, type SelectProps, type SelectOption } from "./select.tsx";

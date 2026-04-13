@@ -48,9 +48,7 @@ function formatDuration(startedAt: string): string {
 
   if (hours > 0) {
     const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0
-      ? `${hours}h ${remainingMinutes}m`
-      : `${hours}h`;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   }
   if (minutes > 0) {
     return `${minutes}m`;
@@ -58,12 +56,10 @@ function formatDuration(startedAt: string): string {
   return `${seconds}s`;
 }
 
-export function useAgentProgress(
-  options: UseAgentProgressOptions
-): UseAgentProgressReturn {
+export function useAgentProgress(options: UseAgentProgressOptions): UseAgentProgressReturn {
   const initialAgentState = resolveOption(options.agentState) ?? "idle";
   const [progress, setProgress] = createSignal<AgentProgressInfo>(
-    createDefaultProgress(initialAgentState)
+    createDefaultProgress(initialAgentState),
   );
   const [isLoading] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);

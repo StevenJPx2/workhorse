@@ -9,13 +9,13 @@ function createMockSubprocess(exitCode: number, stdout: string = "", stderr: str
       start(controller) {
         controller.enqueue(new TextEncoder().encode(stdout));
         controller.close();
-      }
+      },
     }),
     stderr: new ReadableStream({
       start(controller) {
         controller.enqueue(new TextEncoder().encode(stderr));
         controller.close();
-      }
+      },
     }),
     exited: Promise.resolve(exitCode),
     kill: () => {},
@@ -112,7 +112,8 @@ describe("Orchestrator: spawn agent", () => {
       if (command.includes("fetch")) return createMockSubprocess(0, "");
       if (command.includes("worktree add")) return createMockSubprocess(0, "Preparing worktree");
       if (command.includes("tmux has-session")) return createMockSubprocess(1);
-      if (command.includes("tmux new-session")) return createMockSubprocess(1, "", "failed to create session");
+      if (command.includes("tmux new-session"))
+        return createMockSubprocess(1, "", "failed to create session");
       return createMockSubprocess(0);
     }) as unknown as typeof Bun.spawn;
 
@@ -139,7 +140,8 @@ describe("Orchestrator: spawn agent", () => {
       if (command.includes("worktree add")) return createMockSubprocess(0, "Preparing worktree");
       if (command.includes("tmux has-session")) return createMockSubprocess(1);
       if (command.includes("tmux new-session")) return createMockSubprocess(0, "");
-      if (command.includes("tmux send-keys")) return createMockSubprocess(1, "", "failed to send keys");
+      if (command.includes("tmux send-keys"))
+        return createMockSubprocess(1, "", "failed to send keys");
       return createMockSubprocess(0);
     }) as unknown as typeof Bun.spawn;
 

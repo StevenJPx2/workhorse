@@ -20,7 +20,9 @@ describe("Bracketed paste: TextInput", () => {
         <TextInput
           inputId="bp1"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -42,7 +44,9 @@ describe("Bracketed paste: TextInput", () => {
             <TextInput
               inputId="bp2-input"
               value={value}
-              onChange={(v) => { value = v; }}
+              onChange={(v) => {
+                value = v;
+              }}
             />
           </GridCell>
         </Grid>
@@ -63,7 +67,9 @@ describe("Bracketed paste: TextInput", () => {
         <TextInput
           inputId="bp3"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
         />
       ),
@@ -83,7 +89,9 @@ describe("Bracketed paste: TextInput", () => {
         <TextInput
           inputId="bp4"
           value={value}
-          onChange={(v) => { value = v; }}
+          onChange={(v) => {
+            value = v;
+          }}
           focused={true}
           disabled
         />
@@ -106,7 +114,9 @@ describe("Bracketed paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -127,7 +137,9 @@ describe("Bracketed paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -148,7 +160,9 @@ describe("Bracketed paste: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,

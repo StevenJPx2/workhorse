@@ -10,11 +10,10 @@ import { AtlassianClient, createAtlassianClient } from "../client.ts";
 // Mock MCP SDK
 const mockConnect = mock(() => Promise.resolve());
 const mockClose = mock(() => Promise.resolve());
-const mockCallTool = mock(
-  (_args: { name: string; arguments: Record<string, unknown> }) =>
-    Promise.resolve({
-      content: [] as Array<{ type: string; text: string }>,
-    })
+const mockCallTool = mock((_args: { name: string; arguments: Record<string, unknown> }) =>
+  Promise.resolve({
+    content: [] as Array<{ type: string; text: string }>,
+  }),
 );
 
 mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
@@ -129,9 +128,7 @@ describe("AtlassianClient", () => {
       expect(issue.reporter).toBe("Jane Doe");
       expect(issue.issueType).toBe("Bug");
       expect(issue.projectKey).toBe("ADEPT");
-      expect(issue.url).toBe(
-        "https://adeptmind.atlassian.net/browse/ADEPT-123"
-      );
+      expect(issue.url).toBe("https://adeptmind.atlassian.net/browse/ADEPT-123");
     });
 
     it("should handle null optional fields", async () => {
@@ -177,7 +174,7 @@ describe("AtlassianClient", () => {
       await client.connect();
 
       await expect(client.fetchIssue("ADEPT-999")).rejects.toThrow(
-        "No data returned for issue ADEPT-999"
+        "No data returned for issue ADEPT-999",
       );
     });
 
@@ -192,7 +189,7 @@ describe("AtlassianClient", () => {
       await client.connect();
 
       await expect(client.fetchIssue("ADEPT-123")).rejects.toThrow(
-        "Failed to parse Jira response for ADEPT-123: MCP Error: Something went wrong"
+        "Failed to parse Jira response for ADEPT-123: MCP Error: Something went wrong",
       );
     });
 
@@ -202,7 +199,7 @@ describe("AtlassianClient", () => {
       });
 
       await expect(client.fetchIssue("ADEPT-123")).rejects.toThrow(
-        "Not connected to Atlassian MCP"
+        "Not connected to Atlassian MCP",
       );
     });
   });

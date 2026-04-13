@@ -1,4 +1,3 @@
-
 import type { ThemeName } from "../../types/config.ts";
 import type { Ticket, TicketStatus } from "../../types/ticket.ts";
 import type { Accessor } from "solid-js";
@@ -30,6 +29,12 @@ export function ticketsAccessor(arr: Ticket[]): Accessor<Ticket[]> {
 }
 
 export const ALL_STATUSES: TicketStatus[] = [
-  "pending", "queued", "planning", "implementing",
-  "blocked", "pr_created", "in_review", "done",
+  "pending",
+  "queued",
+  "planning",
+  "implementing",
+  "blocked",
+  "pr_created",
+  "in_review",
+  "done",
 ];

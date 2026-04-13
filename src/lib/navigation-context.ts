@@ -17,12 +17,7 @@
  * onCleanup(() => lock.release());
  */
 
-import {
-  createContext,
-  useContext,
-  createSignal,
-  type Accessor,
-} from "solid-js";
+import { createContext, useContext, createSignal, type Accessor } from "solid-js";
 
 /**
  * A navigation lock that controls keyboard focus

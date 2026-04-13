@@ -4,9 +4,7 @@ import { TOOL_NAMES } from "./tool-names.ts";
 const GetNotificationsSchema = z.object({});
 
 const AcknowledgeSchema = z.object({
-  notification_ids: z
-    .array(z.string())
-    .describe("IDs of notifications to acknowledge"),
+  notification_ids: z.array(z.string()).describe("IDs of notifications to acknowledge"),
 });
 
 const UpdateStatusSchema = z.object({
@@ -24,23 +22,18 @@ const UpdateStatusSchema = z.object({
     ])
     .describe(
       "New status for the ticket workflow. Use: " +
-      "'pending' (not started), 'planning' (analyzing requirements), " +
-      "'implementing' (writing code), 'blocked' (needs input), " +
-      "'pr_created' (PR opened), 'in_review' (awaiting review), " +
-      "'done' (complete)"
+        "'pending' (not started), 'planning' (analyzing requirements), " +
+        "'implementing' (writing code), 'blocked' (needs input), " +
+        "'pr_created' (PR opened), 'in_review' (awaiting review), " +
+        "'done' (complete)",
     ),
   message: z.string().optional().describe("Optional status update message"),
 });
 
 const EscalateSchema = z.object({
-  questions: z
-    .array(z.string())
-    .min(1)
-    .describe("Questions to ask the user"),
+  questions: z.array(z.string()).min(1).describe("Questions to ask the user"),
   context: z.string().describe("Context about what you were working on"),
-  blocking: z
-    .boolean()
-    .describe("Whether this blocks further work on the ticket"),
+  blocking: z.boolean().describe("Whether this blocks further work on the ticket"),
 });
 
 export interface ToolDefinition {

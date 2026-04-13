@@ -219,7 +219,7 @@ describe("OpenCode Client", () => {
       const subscription = await subscribeToEvents(
         ticketId,
         () => {},
-        () => {}
+        () => {},
       );
 
       expect(subscription).toHaveProperty("unsubscribe");
@@ -235,7 +235,7 @@ describe("OpenCode Client", () => {
       const subscription = await subscribeToEvents(
         ticketId,
         () => {},
-        () => {}
+        () => {},
       );
 
       expect(() => subscription.unsubscribe()).not.toThrow();

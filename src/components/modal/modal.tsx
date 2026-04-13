@@ -17,10 +17,7 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createEffect, type JSX, onCleanup, Show } from "solid-js";
 import { useKeyboardContext } from "../../lib/keyboard-context.ts";
-import {
-  type NavigationLock,
-  useNavigation,
-} from "../../lib/navigation-context.ts";
+import { type NavigationLock, useNavigation } from "../../lib/navigation-context.ts";
 import { useTheme } from "../../lib/theme/index.ts";
 import { spacing } from "../../lib/theme/presets.ts";
 

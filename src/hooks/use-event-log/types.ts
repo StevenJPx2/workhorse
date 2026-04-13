@@ -65,10 +65,7 @@ export interface UseEventLogReturn {
   logAgentCrashed: (params: Record<string, unknown>) => EventLogEntry;
   logComment: (params: LogCommentParams) => EventLogEntry;
   logEscalation: (questions: string[]) => EventLogEntry;
-  logCustom: (
-    type: EventLogAction,
-    payload: Record<string, unknown>
-  ) => EventLogEntry;
+  logCustom: (type: EventLogAction, payload: Record<string, unknown>) => EventLogEntry;
 
   reload: () => void;
   getEventsByType: (type: EventLogAction) => EventLogEntry[];

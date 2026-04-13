@@ -29,10 +29,7 @@ function getEventIcon(eventType: string, isLatest: boolean): string {
   return EVENT_ICONS[eventType] ?? "-";
 }
 
-function formatPayload(
-  eventType: string,
-  payload: Record<string, unknown>
-): string {
+function formatPayload(eventType: string, payload: Record<string, unknown>): string {
   switch (eventType) {
     case "status_change":
       return `Status: ${payload.from} -> ${payload.to}`;
@@ -82,7 +79,7 @@ function formatRawEvent(event: TicketEvent, isLatest: boolean): FormattedEvent {
 
 function formatLogEntry(
   entry: { eventType: EventLogAction; payload: Record<string, unknown>; timestamp: string },
-  isLatest: boolean
+  isLatest: boolean,
 ): FormattedEvent {
   return {
     icon: getEventIcon(entry.eventType, isLatest),
@@ -117,9 +114,7 @@ export function ProgressLog(props: ProgressLogProps) {
     }
 
     const events = props.events ?? [];
-    return events
-      .slice(0, maxEvents())
-      .map((event, i) => formatRawEvent(event, i === 0));
+    return events.slice(0, maxEvents()).map((event, i) => formatRawEvent(event, i === 0));
   });
 
   return (
@@ -140,21 +135,12 @@ export function ProgressLog(props: ProgressLogProps) {
         <For each={formattedEvents()}>
           {(event) => (
             <box flexDirection="row" height={1}>
-              <text
-                fg={event.isCurrent ? theme().primary : theme().text.dim}
-              >
-                {event.icon}{" "}
-              </text>
-              <text
-                fg={event.isCurrent ? theme().text.primary : theme().text.secondary}
-              >
+              <text fg={event.isCurrent ? theme().primary : theme().text.dim}>{event.icon} </text>
+              <text fg={event.isCurrent ? theme().text.primary : theme().text.secondary}>
                 {event.description}
               </text>
               <Show when={props.showTimestamps && event.timestamp}>
-                <text fg={theme().text.dim}>
-                  {" "}
-                  {formatTime(event.timestamp)}
-                </text>
+                <text fg={theme().text.dim}> {formatTime(event.timestamp)}</text>
               </Show>
             </box>
           )}

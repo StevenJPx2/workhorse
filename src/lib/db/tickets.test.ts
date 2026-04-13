@@ -3,12 +3,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import {
-  initDatabase,
-  closeDatabase,
-  resetDatabaseRef,
-  getDatabase,
-} from "./index.ts";
+import { initDatabase, closeDatabase, resetDatabaseRef, getDatabase } from "./index.ts";
 import {
   insertTicket,
   getTicketById,
@@ -298,9 +293,11 @@ describe("tickets CRUD", () => {
 
       // Add an event
       const db = getDatabase();
-      db.prepare(
-        "INSERT INTO ticket_events (ticket_id, event_type, payload) VALUES (?, ?, ?)"
-      ).run("TEST-DEL-002", "status_change", "pending -> implementing");
+      db.prepare("INSERT INTO ticket_events (ticket_id, event_type, payload) VALUES (?, ?, ?)").run(
+        "TEST-DEL-002",
+        "status_change",
+        "pending -> implementing",
+      );
 
       // Verify event exists
       const eventsBefore = db

@@ -31,23 +31,11 @@ export interface UseJiraSyncReturn {
   syncStatus: Accessor<Record<string, JiraSyncStatus>>;
   isSyncing: Accessor<boolean>;
 
-  postProgress: (
-    ticketKey: string,
-    ticketId: string,
-    message: string
-  ) => Promise<void>;
+  postProgress: (ticketKey: string, ticketId: string, message: string) => Promise<void>;
 
-  transitionStatus: (
-    ticketKey: string,
-    ticketId: string,
-    status: TicketStatus
-  ) => Promise<void>;
+  transitionStatus: (ticketKey: string, ticketId: string, status: TicketStatus) => Promise<void>;
 
-  linkPR: (
-    ticketKey: string,
-    ticketId: string,
-    prUrl: string
-  ) => Promise<void>;
+  linkPR: (ticketKey: string, ticketId: string, prUrl: string) => Promise<void>;
 
   syncAll: (ticketId: string) => Promise<void>;
 }

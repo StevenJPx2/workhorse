@@ -5,10 +5,7 @@
  */
 
 import type { Database } from "bun:sqlite";
-import {
-  acknowledgeNotifications,
-  getNotificationById,
-} from "../../notifications/index.ts";
+import { acknowledgeNotifications, getNotificationById } from "../../notifications/index.ts";
 import type { AcknowledgeInput, AcknowledgeResponse } from "../types.ts";
 
 /**
@@ -17,10 +14,7 @@ import type { AcknowledgeInput, AcknowledgeResponse } from "../types.ts";
  * Marks the specified notifications as acknowledged.
  * Returns the count of successfully acknowledged notifications.
  */
-export function handleAcknowledge(
-  db: Database,
-  input: AcknowledgeInput
-): AcknowledgeResponse {
+export function handleAcknowledge(db: Database, input: AcknowledgeInput): AcknowledgeResponse {
   const { notification_ids } = input;
 
   if (notification_ids.length === 0) {

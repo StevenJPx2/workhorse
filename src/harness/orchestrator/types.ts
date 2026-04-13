@@ -10,13 +10,7 @@ import type { Worktree } from "../session/worktree/index.ts";
 /**
  * Agent state tracked by orchestrator
  */
-export type AgentState =
-  | "idle"
-  | "starting"
-  | "running"
-  | "stopping"
-  | "stopped"
-  | "crashed";
+export type AgentState = "idle" | "starting" | "running" | "stopping" | "stopped" | "crashed";
 
 /**
  * Agent instance managed by orchestrator

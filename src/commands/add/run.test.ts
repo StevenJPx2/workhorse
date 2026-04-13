@@ -63,12 +63,13 @@ type Ticket = {
 } | null;
 
 // Mock detectRig
-const mockDetectRig = mock((): Promise<RigInfo> =>
-  Promise.resolve({
-    rig: "github.com/test/repo",
-    gitRoot: "/path/to/repo",
-    remoteUrl: "git@github.com:test/repo.git",
-  })
+const mockDetectRig = mock(
+  (): Promise<RigInfo> =>
+    Promise.resolve({
+      rig: "github.com/test/repo",
+      gitRoot: "/path/to/repo",
+      remoteUrl: "git@github.com:test/repo.git",
+    }),
 );
 
 mock.module("../../lib/detect-rig.ts", () => ({
@@ -77,11 +78,12 @@ mock.module("../../lib/detect-rig.ts", () => ({
 
 // Mock config
 const mockConfigExists = mock(() => true);
-const mockLoadConfig = mock((): Promise<ResolvedConfig> =>
-  Promise.resolve({
-    jira: { cloud_id: "test.atlassian.net" },
-    defaults: { agent: "opencode" },
-  })
+const mockLoadConfig = mock(
+  (): Promise<ResolvedConfig> =>
+    Promise.resolve({
+      jira: { cloud_id: "test.atlassian.net" },
+      defaults: { agent: "opencode" },
+    }),
 );
 
 mock.module("../../lib/config.ts", () => ({
@@ -90,16 +92,25 @@ mock.module("../../lib/config.ts", () => ({
 }));
 
 // Mock db
-const mockInsertTicket = mock((ticket: { id: string; jira_key: string; rig: string; jira_url?: string; agent?: string; summary?: string }) => ({
-  id: ticket.id,
-  jira_key: ticket.jira_key,
-  rig: ticket.rig,
-  jira_url: ticket.jira_url || null,
-  agent: ticket.agent || "opencode",
-  status: "pending",
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-}));
+const mockInsertTicket = mock(
+  (ticket: {
+    id: string;
+    jira_key: string;
+    rig: string;
+    jira_url?: string;
+    agent?: string;
+    summary?: string;
+  }) => ({
+    id: ticket.id,
+    jira_key: ticket.jira_key,
+    rig: ticket.rig,
+    jira_url: ticket.jira_url || null,
+    agent: ticket.agent || "opencode",
+    status: "pending",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }),
+);
 const mockGetTicketById = mock((_id: string): Ticket => null);
 const mockUpdateTicket = mock((_id: string, _updates: unknown) => {});
 const mockInitDatabase = mock(() => {});
@@ -169,7 +180,7 @@ describe("add/run", () => {
     mockConnect.mockClear();
     mockDisconnect.mockClear();
     mockFetchIssue.mockClear();
-    
+
     // Reset insertTicket to default implementation
     mockInsertTicket.mockImplementation((ticket) => ({
       id: ticket.id,
@@ -194,18 +205,20 @@ describe("add/run", () => {
 
     // Default mock implementations
     mockConfigExists.mockImplementation(() => true);
-    mockDetectRig.mockImplementation((): Promise<RigInfo> =>
-      Promise.resolve({
-        rig: "github.com/test/repo",
-        gitRoot: "/path/to/repo",
-        remoteUrl: "git@github.com:test/repo.git",
-      })
+    mockDetectRig.mockImplementation(
+      (): Promise<RigInfo> =>
+        Promise.resolve({
+          rig: "github.com/test/repo",
+          gitRoot: "/path/to/repo",
+          remoteUrl: "git@github.com:test/repo.git",
+        }),
     );
-    mockLoadConfig.mockImplementation((): Promise<ResolvedConfig> =>
-      Promise.resolve({
-        jira: { cloud_id: "test.atlassian.net" },
-        defaults: { agent: "opencode" },
-      })
+    mockLoadConfig.mockImplementation(
+      (): Promise<ResolvedConfig> =>
+        Promise.resolve({
+          jira: { cloud_id: "test.atlassian.net" },
+          defaults: { agent: "opencode" },
+        }),
     );
     mockGetTicketById.mockImplementation((): Ticket => null);
     mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
@@ -227,7 +240,7 @@ describe("add/run", () => {
       await expect(runAdd("TEST-123", {})).rejects.toThrow("process.exit(1)");
 
       expect(mockLog.error).toHaveBeenCalledWith(
-        "Jiratown is not configured. Run 'jiratown setup' first."
+        "Jiratown is not configured. Run 'jiratown setup' first.",
       );
     });
 
@@ -237,7 +250,7 @@ describe("add/run", () => {
       await expect(runAdd("TEST-123", {})).rejects.toThrow("process.exit(1)");
 
       expect(mockLog.error).toHaveBeenCalledWith(
-        "Not in a git repository with a remote. Please run from a git repo."
+        "Not in a git repository with a remote. Please run from a git repo.",
       );
     });
 
@@ -246,7 +259,7 @@ describe("add/run", () => {
 
       expect(mockLog.error).toHaveBeenCalledWith('Invalid ticket key format: "invalid"');
       expect(mockLog.message).toHaveBeenCalledWith(
-        "Expected format: PROJECT-123 (e.g., AM-123, JIRA-456)"
+        "Expected format: PROJECT-123 (e.g., AM-123, JIRA-456)",
       );
     });
 
@@ -304,49 +317,51 @@ describe("add/run", () => {
     it("should use agent from options if provided", async () => {
       await runAdd("TEST-123", { agent: "claude" });
 
-      expect(mockInsertTicket).toHaveBeenCalledWith(
-        expect.objectContaining({ agent: "claude" })
-      );
+      expect(mockInsertTicket).toHaveBeenCalledWith(expect.objectContaining({ agent: "claude" }));
     });
 
     it("should exit with error for invalid agent", async () => {
-      await expect(runAdd("TEST-123", { agent: "invalid" })).rejects.toThrow(
-        "process.exit(1)"
-      );
+      await expect(runAdd("TEST-123", { agent: "invalid" })).rejects.toThrow("process.exit(1)");
 
       expect(mockLog.error).toHaveBeenCalledWith(
-        'Invalid agent: "invalid". Must be "opencode" or "claude".'
+        'Invalid agent: "invalid". Must be "opencode" or "claude".',
       );
     });
 
     it("should handle existing ticket and user declining update", async () => {
-      mockGetTicketById.mockImplementation((): Ticket => ({
-        id: "TEST-123",
-        jira_key: "TEST-123",
-        status: "pending",
-        rig: "github.com/test/repo",
-      }));
+      mockGetTicketById.mockImplementation(
+        (): Ticket => ({
+          id: "TEST-123",
+          jira_key: "TEST-123",
+          status: "pending",
+          rig: "github.com/test/repo",
+        }),
+      );
 
       mockConfirm.mockImplementation(() => Promise.resolve(false) as Promise<boolean | symbol>);
 
       await runAdd("TEST-123", {});
 
       expect(mockLog.warn).toHaveBeenCalledWith(
-        "Ticket TEST-123 already exists with status: pending"
+        "Ticket TEST-123 already exists with status: pending",
       );
       expect(mockOutro).toHaveBeenCalledWith("Cancelled.");
       expect(mockInsertTicket).not.toHaveBeenCalled();
     });
 
     it("should handle existing ticket and user cancelling", async () => {
-      mockGetTicketById.mockImplementation((): Ticket => ({
-        id: "TEST-123",
-        jira_key: "TEST-123",
-        status: "implementing",
-        rig: "github.com/test/repo",
-      }));
+      mockGetTicketById.mockImplementation(
+        (): Ticket => ({
+          id: "TEST-123",
+          jira_key: "TEST-123",
+          status: "implementing",
+          rig: "github.com/test/repo",
+        }),
+      );
 
-      mockConfirm.mockImplementation(() => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>);
+      mockConfirm.mockImplementation(
+        () => Promise.resolve(Symbol.for("cancel")) as Promise<boolean | symbol>,
+      );
       mockIsCancel.mockImplementation((value: unknown) => value === Symbol.for("cancel"));
 
       await runAdd("TEST-123", {});
@@ -355,21 +370,26 @@ describe("add/run", () => {
     });
 
     it("should update existing ticket with fresh Jira data when confirmed", async () => {
-      mockGetTicketById.mockImplementation((): Ticket => ({
-        id: "TEST-123",
-        jira_key: "TEST-123",
-        status: "pending",
-        rig: "github.com/test/repo",
-      }));
+      mockGetTicketById.mockImplementation(
+        (): Ticket => ({
+          id: "TEST-123",
+          jira_key: "TEST-123",
+          status: "pending",
+          rig: "github.com/test/repo",
+        }),
+      );
 
       mockConfirm.mockImplementation(() => Promise.resolve(true) as Promise<boolean | symbol>);
 
       await runAdd("TEST-123", {});
 
-      expect(mockUpdateTicket).toHaveBeenCalledWith("TEST-123", expect.objectContaining({
-        summary: "Test issue from Jira",
-        agent: "opencode",
-      }));
+      expect(mockUpdateTicket).toHaveBeenCalledWith(
+        "TEST-123",
+        expect.objectContaining({
+          summary: "Test issue from Jira",
+          agent: "opencode",
+        }),
+      );
       expect(mockSpinnerInstance.stop).toHaveBeenCalledWith("Updated ticket TEST-123");
     });
 
@@ -388,7 +408,7 @@ describe("add/run", () => {
       await runAdd("URL-123", {});
 
       expect(mockLog.message).toHaveBeenCalledWith(
-        "  URL: https://test.atlassian.net/browse/TEST-123"
+        "  URL: https://test.atlassian.net/browse/TEST-123",
       );
     });
 
@@ -397,7 +417,9 @@ describe("add/run", () => {
 
       await runAdd("FAIL-123", {});
 
-      expect(mockLog.warn).toHaveBeenCalledWith(expect.stringContaining("Could not fetch ticket from Jira"));
+      expect(mockLog.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Could not fetch ticket from Jira"),
+      );
       expect(mockLog.message).toHaveBeenCalledWith("Continuing with basic ticket info...");
       // Still inserts ticket
       expect(mockInsertTicket).toHaveBeenCalled();
@@ -426,18 +448,17 @@ describe("add/run", () => {
     });
 
     it("should use default agent from config", async () => {
-      mockLoadConfig.mockImplementation((): Promise<ResolvedConfig> =>
-        Promise.resolve({
-          jira: { cloud_id: "test.atlassian.net" },
-          defaults: { agent: "claude" },
-        })
+      mockLoadConfig.mockImplementation(
+        (): Promise<ResolvedConfig> =>
+          Promise.resolve({
+            jira: { cloud_id: "test.atlassian.net" },
+            defaults: { agent: "claude" },
+          }),
       );
 
       await runAdd("DEFAULT-123", {});
 
-      expect(mockInsertTicket).toHaveBeenCalledWith(
-        expect.objectContaining({ agent: "claude" })
-      );
+      expect(mockInsertTicket).toHaveBeenCalledWith(expect.objectContaining({ agent: "claude" }));
     });
   });
 });

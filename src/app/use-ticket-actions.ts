@@ -18,6 +18,8 @@ export interface TicketActionsContext {
   workflow: {
     sendToAgent: (ticketId: string, message: string) => Promise<boolean>;
     stopWork: (ticketId: string, removeWorktree?: boolean) => Promise<boolean>;
+    /** Restart agent for an existing ticket */
+    restartAgent: (ticketId: string) => Promise<boolean>;
   };
   eventLog?: UseEventLogReturn;
 }
@@ -28,6 +30,8 @@ export interface UseTicketActionsReturn {
   onOpenJira: () => void;
   onClose: () => void;
   onSendMessage: (message: string) => Promise<void>;
+  /** Start the agent (restart/spawn) */
+  onStart: () => Promise<void>;
   /** Stop the agent */
   onStop: () => Promise<void>;
   /** Sync progress to Jira */
@@ -39,7 +43,7 @@ export interface UseTicketActionsReturn {
  */
 export function useTicketActions(
   ticket: Ticket,
-  context: TicketActionsContext
+  context: TicketActionsContext,
 ): UseTicketActionsReturn {
   return {
     onEscalate: () => {
@@ -68,6 +72,13 @@ export function useTicketActions(
     },
     onStop: async () => {
       await context.workflow.stopWork(ticket.id);
+    },
+    onStart: async () => {
+      context.eventLog?.logCustom("agent_started", {
+        action: "manual_start",
+        ticketId: ticket.id,
+      });
+      await context.workflow.restartAgent(ticket.id);
     },
     onSyncToJira: () => {
       context.eventLog?.logCustom("jira_sync", {

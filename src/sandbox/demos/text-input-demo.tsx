@@ -64,9 +64,7 @@ export function TextInputDemo() {
         <text fg={theme().text.dim}>
           Values: [{value1()}] [{value2()}] [{value3()}]
         </text>
-        {submitted() !== null && (
-          <text fg={theme().success}>Submitted: {submitted()}</text>
-        )}
+        {submitted() !== null && <text fg={theme().success}>Submitted: {submitted()}</text>}
       </box>
     </box>
   );

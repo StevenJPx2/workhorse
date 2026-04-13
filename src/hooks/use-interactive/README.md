@@ -14,7 +14,7 @@ function Button(props: ButtonProps) {
     onPress: props.onPress,
   });
 
-  const bgColor = () => isHighlighted() ? theme().bg.highlight : theme().bg.base;
+  const bgColor = () => (isHighlighted() ? theme().bg.highlight : theme().bg.base);
 
   return (
     <box backgroundColor={bgColor()} {...interactiveProps}>
@@ -28,20 +28,20 @@ function Button(props: ButtonProps) {
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `disabled` | `boolean` | Disable all interactions |
-| `onPress` | `() => void` | Called on mouseDown |
-| `onHover` | `(hovered: boolean) => void` | Called on hover state change |
+| Option     | Type                         | Description                  |
+| ---------- | ---------------------------- | ---------------------------- |
+| `disabled` | `boolean`                    | Disable all interactions     |
+| `onPress`  | `() => void`                 | Called on mouseDown          |
+| `onHover`  | `(hovered: boolean) => void` | Called on hover state change |
 
 ### Return Value
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `isHovered` | `Accessor<boolean>` | Currently hovered |
-| `isPressed` | `Accessor<boolean>` | Currently being pressed |
-| `isHighlighted` | `Accessor<boolean>` | Alias for isHovered |
-| `interactiveProps` | `InteractiveProps` | Props to spread onto element |
+| Property           | Type                | Description                  |
+| ------------------ | ------------------- | ---------------------------- |
+| `isHovered`        | `Accessor<boolean>` | Currently hovered            |
+| `isPressed`        | `Accessor<boolean>` | Currently being pressed      |
+| `isHighlighted`    | `Accessor<boolean>` | Alias for isHovered          |
+| `interactiveProps` | `InteractiveProps`  | Props to spread onto element |
 
 ### InteractiveProps
 
@@ -52,6 +52,7 @@ The `interactiveProps` object contains all mouse event handlers and should be sp
 ```
 
 This attaches:
+
 - `onMouseOver` - Sets hovered state
 - `onMouseOut` - Clears hovered/pressed state
 - `onMouseDown` - Sets pressed state, calls onPress

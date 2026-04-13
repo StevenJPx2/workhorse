@@ -18,8 +18,7 @@ const main = defineCommand({
   meta: {
     name: "jiratown",
     version: "0.1.0",
-    description:
-      "Terminal UI dashboard for orchestrating AI coding agents on Jira tickets",
+    description: "Terminal UI dashboard for orchestrating AI coding agents on Jira tickets",
   },
   args: {
     all: {

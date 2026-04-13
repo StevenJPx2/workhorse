@@ -101,9 +101,7 @@ export function AgentProgress(props: AgentProgressProps) {
               <text fg={theme().text.dim} width={6}>
                 {formatTime(event.timestamp)}
               </text>
-              <text fg={theme().text.primary}>
-                {truncate(event.description, 60)}
-              </text>
+              <text fg={theme().text.primary}>{truncate(event.description, 60)}</text>
             </box>
           )}
         </For>
@@ -112,9 +110,7 @@ export function AgentProgress(props: AgentProgressProps) {
       {/* Key decisions (collapsed) */}
       <Show when={p().keyDecisions.length > 0}>
         <box height={1} />
-        <text fg={theme().text.secondary}>
-          Key Decisions: {p().keyDecisions.length}
-        </text>
+        <text fg={theme().text.secondary}>Key Decisions: {p().keyDecisions.length}</text>
       </Show>
 
       {/* Quick actions */}

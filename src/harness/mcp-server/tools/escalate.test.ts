@@ -6,10 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { handleEscalate } from "./escalate.ts";
 import { initTicketsTable, insertTicket, getTicketById } from "./test-utils.ts";
-import {
-  initNotificationsTable,
-  getNotificationsByTicket,
-} from "../../notifications/index.ts";
+import { initNotificationsTable, getNotificationsByTicket } from "../../notifications/index.ts";
 
 describe("handleEscalate", () => {
   let db: Database;
@@ -136,9 +133,7 @@ describe("handleEscalate", () => {
       });
 
       const notifications = getNotificationsByTicket(db, "AM-123");
-      expect(notifications[0].content).toContain(
-        "Working on retry logic in auth module"
-      );
+      expect(notifications[0].content).toContain("Working on retry logic in auth module");
     });
 
     it("should return failure for non-existent ticket", () => {

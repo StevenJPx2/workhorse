@@ -81,11 +81,7 @@ export function fuzzyMatch(query: string, text: string): FuzzyMatch {
  * @param getText - Function to get searchable text from item
  * @returns Filtered items sorted by match score (best first)
  */
-export function fuzzyFilter<T>(
-  query: string,
-  items: T[],
-  getText: (item: T) => string
-): T[] {
+export function fuzzyFilter<T>(query: string, items: T[], getText: (item: T) => string): T[] {
   if (!query.trim()) {
     return items;
   }

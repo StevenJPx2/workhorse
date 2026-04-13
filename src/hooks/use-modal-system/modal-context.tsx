@@ -5,18 +5,8 @@
  * Components can open/close modals by name from anywhere in the tree.
  */
 
-import {
-  createContext,
-  useContext,
-  createSignal,
-  type JSX,
-} from "solid-js";
-import type {
-  ModalName,
-  ModalDataMap,
-  ModalSystemState,
-  UseModalSystemReturn,
-} from "./types.ts";
+import { createContext, useContext, createSignal, type JSX } from "solid-js";
+import type { ModalName, ModalDataMap, ModalSystemState, UseModalSystemReturn } from "./types.ts";
 
 /**
  * Initial state with all modals closed
@@ -99,9 +89,7 @@ export function ModalSystemProvider(props: ModalSystemProviderProps) {
   };
 
   return (
-    <ModalSystemContext.Provider value={contextValue}>
-      {props.children}
-    </ModalSystemContext.Provider>
+    <ModalSystemContext.Provider value={contextValue}>{props.children}</ModalSystemContext.Provider>
   );
 }
 

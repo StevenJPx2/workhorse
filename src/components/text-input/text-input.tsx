@@ -147,11 +147,7 @@ export function TextInput(props: TextInputProps) {
   };
 
   return (
-    <box
-      flexDirection="column"
-      width={props.width}
-      onMouseDown={handleClick}
-    >
+    <box flexDirection="column" width={props.width} onMouseDown={handleClick}>
       {/* Label */}
       <Show when={props.label}>
         <text fg={theme().text.secondary} marginBottom={1}>
@@ -173,12 +169,7 @@ export function TextInput(props: TextInputProps) {
       >
         {/* Input content */}
         <box flexGrow={1} flexDirection="row">
-          <Show
-            when={props.value}
-            fallback={
-              <text fg={theme().text.dim}>{placeholder()}</text>
-            }
-          >
+          <Show when={props.value} fallback={<text fg={theme().text.dim}>{placeholder()}</text>}>
             <text fg={theme().text.primary}>{props.value}</text>
           </Show>
 

@@ -6,12 +6,7 @@
 
 import { createSignal, onCleanup } from "solid-js";
 import { AtlassianClient, createAtlassianClient } from "./client.ts";
-import type {
-  UseAtlassianOptions,
-  UseAtlassianReturn,
-  JiraIssue,
-  CloudIdOption,
-} from "./types.ts";
+import type { UseAtlassianOptions, UseAtlassianReturn, JiraIssue, CloudIdOption } from "./types.ts";
 
 /**
  * Resolve cloudId from either a static string or a getter function.
@@ -54,12 +49,11 @@ function resolveCloudId(cloudId: CloudIdOption | undefined): string | undefined 
  * }
  * ```
  */
-export function useAtlassian(
-  options: UseAtlassianOptions = {}
-): UseAtlassianReturn {
+export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianReturn {
   const [isConnected, setIsConnected] = createSignal(false);
   const [isConnecting, setIsConnecting] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);
+  let connectionPromise: Promise<void> | null = null;
 
   let client: AtlassianClient | null = null;
 
@@ -68,7 +62,7 @@ export function useAtlassian(
       const cloudId = resolveCloudId(options.cloudId);
       if (!cloudId) {
         throw new Error(
-          "Jira cloud ID is not configured. Run 'jiratown setup' to configure your Jira instance."
+          "Jira cloud ID is not configured. Run 'jiratown setup' to configure your Jira instance.",
         );
       }
       client = createAtlassianClient({ cloudId });
@@ -77,25 +71,33 @@ export function useAtlassian(
   };
 
   const connect = async (): Promise<void> => {
-    if (isConnected() || isConnecting()) return;
+    // Return existing promise if connection is in progress
+    if (connectionPromise) return connectionPromise;
 
-    try {
-      setIsConnecting(true);
-      setError(null);
+    if (isConnected()) return;
 
-      const c = getClient();
-      await c.connect();
+    connectionPromise = (async () => {
+      try {
+        setIsConnecting(true);
+        setError(null);
 
-      setIsConnected(true);
-      options.onConnectionChange?.(true);
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err));
-      setError(e);
-      options.onError?.(e);
-      throw e;
-    } finally {
-      setIsConnecting(false);
-    }
+        const c = getClient();
+        await c.connect();
+
+        setIsConnected(true);
+        options.onConnectionChange?.(true);
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error(String(err));
+        setError(e);
+        options.onError?.(e);
+        throw e;
+      } finally {
+        setIsConnecting(false);
+        connectionPromise = null;
+      }
+    })();
+
+    return connectionPromise;
   };
 
   const disconnect = async (): Promise<void> => {
@@ -145,10 +147,7 @@ export function useAtlassian(
     }
   };
 
-  const transitionIssue = async (
-    ticketKey: string,
-    transitionId: string
-  ): Promise<void> => {
+  const transitionIssue = async (ticketKey: string, transitionId: string): Promise<void> => {
     await ensureConnected();
     try {
       setError(null);

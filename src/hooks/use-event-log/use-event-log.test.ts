@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import {
-  initDatabase,
-  closeDatabase,
-  resetDatabaseRef,
-  insertTicket,
-} from "../../lib/db/index.ts";
+import { initDatabase, closeDatabase, resetDatabaseRef, insertTicket } from "../../lib/db/index.ts";
 import { useEventLog } from "./use-event-log.ts";
 
 describe("useEventLog", () => {
@@ -118,9 +113,9 @@ describe("useEventLog", () => {
 
   it("throws when no ticket ID set", () => {
     const log = useEventLog();
-    expect(() =>
-      log.logStatusChange({ from: "pending", to: "implementing" })
-    ).toThrow("No ticket ID set for event log");
+    expect(() => log.logStatusChange({ from: "pending", to: "implementing" })).toThrow(
+      "No ticket ID set for event log",
+    );
   });
 
   it("counts events correctly", () => {

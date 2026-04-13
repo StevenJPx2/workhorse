@@ -80,7 +80,8 @@ describe("checkAgentHealth - crashed agent detection", () => {
       return createMockSubprocess(0);
     }) as unknown as typeof Bun.spawn;
 
-    const { spawnAgent, checkAgentHealth, getAgent, stopAgent } = await import("../orchestrator.ts");
+    const { spawnAgent, checkAgentHealth, getAgent, stopAgent } =
+      await import("../orchestrator.ts");
 
     const ticketId = `HEALTH-CRASH-${Date.now()}`;
 

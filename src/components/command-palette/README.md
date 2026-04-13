@@ -73,15 +73,15 @@ Command that opens a submenu of options:
 
 ## Keyboard Navigation
 
-| Key | Action |
-|-----|--------|
-| `:` | Open palette |
-| `Escape` | Close palette / Go back from submenu |
-| `j` / `Down` | Move selection down |
-| `k` / `Up` | Move selection up |
-| `Enter` | Execute selected / Enter submenu |
-| `Backspace` | Delete character from search |
-| Any character | Append to search query |
+| Key           | Action                               |
+| ------------- | ------------------------------------ |
+| `:`           | Open palette                         |
+| `Escape`      | Close palette / Go back from submenu |
+| `j` / `Down`  | Move selection down                  |
+| `k` / `Up`    | Move selection up                    |
+| `Enter`       | Execute selected / Enter submenu     |
+| `Backspace`   | Delete character from search         |
+| Any character | Append to search query               |
 
 ## Components
 

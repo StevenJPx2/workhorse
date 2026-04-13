@@ -65,10 +65,7 @@ export function useTmux(options: UseTmuxOptions = {}): UseTmuxReturn {
     }
   };
 
-  const create = async (
-    ticketId: string,
-    workdir: string
-  ): Promise<TmuxSession | null> => {
+  const create = async (ticketId: string, workdir: string): Promise<TmuxSession | null> => {
     try {
       setError(null);
       const session = await tmuxCreate(ticketId, workdir);
@@ -109,7 +106,7 @@ export function useTmux(options: UseTmuxOptions = {}): UseTmuxReturn {
   const sendKeys = async (
     ticketId: string,
     keys: string,
-    enter: boolean = true
+    enter: boolean = true,
   ): Promise<boolean> => {
     try {
       setError(null);

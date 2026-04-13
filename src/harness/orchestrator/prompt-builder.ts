@@ -2,10 +2,7 @@
  * Agent prompt generation - builds initial or resume prompts based on session state
  */
 
-import {
-  generateInitialPrompt,
-  generateResumePrompt,
-} from "./system-prompt/index.ts";
+import { generateInitialPrompt, generateResumePrompt } from "./system-prompt/index.ts";
 import {
   hasSessionMemory,
   readSessionMemory,
@@ -38,9 +35,7 @@ export function prepareAgentPrompt(ctx: PromptContext): string {
     jiraCloudId,
   } = ctx;
 
-  const existingMemory = hasSessionMemory(worktreePath)
-    ? readSessionMemory(worktreePath)
-    : null;
+  const existingMemory = hasSessionMemory(worktreePath) ? readSessionMemory(worktreePath) : null;
 
   if (existingMemory) {
     orchestratorTrace(ticketId, "RESUMING_SESSION", {
@@ -78,7 +73,7 @@ export function prepareAgentPrompt(ctx: PromptContext): string {
     "pending",
     agentType,
     worktreeBranch,
-    jiraSummary ?? undefined
+    jiraSummary ?? undefined,
   );
   writeSessionMemory(worktreePath, memory);
 

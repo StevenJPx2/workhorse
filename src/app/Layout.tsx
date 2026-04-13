@@ -155,9 +155,7 @@ export function Layout(props: LayoutProps) {
           unreadCount={notifications.unreadCount()}
           hasBlocking={notifications.hasBlocking()}
         />
-        <text fg={theme().text.secondary}>
-          {rigDisplay()} | [:] commands | [?] help | [q] quit
-        </text>
+        <text fg={theme().text.secondary}>{rigDisplay()} | [:] commands | [?] help | [q] quit</text>
       </box>
 
       {/* Help Modal */}

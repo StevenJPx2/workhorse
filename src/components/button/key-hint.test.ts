@@ -33,9 +33,7 @@ describe("key-hint", () => {
     });
 
     test("should handle long key names", () => {
-      expect(formatKeyHint("Ctrl+Shift+Enter", "submit", false)).toBe(
-        "[Ctrl+Shift+Enter] submit"
-      );
+      expect(formatKeyHint("Ctrl+Shift+Enter", "submit", false)).toBe("[Ctrl+Shift+Enter] submit");
     });
 
     test("should handle long action descriptions", () => {

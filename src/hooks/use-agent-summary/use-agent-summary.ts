@@ -7,11 +7,7 @@
 
 import { createSignal, createEffect, onCleanup } from "solid-js";
 import { getAgentStatus } from "./get-agent-status.ts";
-import type {
-  UseAgentSummaryOptions,
-  UseAgentSummaryReturn,
-  AgentStep,
-} from "./types.ts";
+import type { UseAgentSummaryOptions, UseAgentSummaryReturn, AgentStep } from "./types.ts";
 
 const DEFAULT_POLL_INTERVAL = 3000;
 const DEFAULT_MAX_STEPS = 10;
@@ -44,7 +40,7 @@ export function useAgentSummary(options: UseAgentSummaryOptions): UseAgentSummar
 
       const newSteps = await getAgentStatus(ticketId, worktreePath);
 
-      const stepsKey = newSteps.map(s => s.description).join("|");
+      const stepsKey = newSteps.map((s) => s.description).join("|");
       if (stepsKey === lastStepsKey) {
         return;
       }

@@ -17,6 +17,7 @@ import { spacing, useTheme } from "../lib/theme/index.ts";
 import { TicketsProvider, useTicketsContext } from "../lib/tickets-context.tsx";
 import { WorkflowProvider, useWorkflowContext } from "../lib/workflow-context.tsx";
 import { EventLogProvider, useEventLogContext } from "../lib/event-log-context.tsx";
+import { TicketActionsProvider } from "../lib/ticket-actions-context.tsx";
 import { useModalSystem } from "../hooks/use-modal-system/index.ts";
 import { useConfig, useAtlassian } from "../hooks/index.ts";
 import type { AgentType } from "../types/config.ts";
@@ -129,6 +130,7 @@ function InnerWithEventLog(props: AppContentInnerProps) {
     workflow: {
       sendToAgent: workflow.sendToAgent,
       stopWork: workflow.stopWork,
+      restartAgent: workflow.restartAgent,
     },
     eventLog,
   };
@@ -140,6 +142,19 @@ function InnerWithEventLog(props: AppContentInnerProps) {
     return useTicketActions(ticket, ticketActionsContext);
   };
 
+  const actionsValue = () => {
+    const ta = ticketActions();
+    if (!ta) return {};
+    return {
+      onStop: ta.onStop,
+      onStart: ta.onStart,
+      onEscalate: ta.onEscalate,
+      onOpenJira: ta.onOpenJira,
+      onClose: ta.onClose,
+      onSendMessage: ta.onSendMessage,
+    };
+  };
+
   return (
     <>
       <Layout rig={props.rig ?? null} showAll={props.showAll ?? false} onQuit={props.onQuit}>
@@ -148,17 +163,13 @@ function InnerWithEventLog(props: AppContentInnerProps) {
             <text fg={theme().text.dim}>Loading...</text>
           </Show>
           <Show when={!props.loading && currentTicket()}>
-            <TicketPane
-              ticket={currentTicket()!}
-              agentState={() => workflow.getAgentState(currentTicket()!.id)}
-              logEntries={eventLog.events()}
-              onStop={() => ticketActions()?.onStop()}
-              onEscalate={() => ticketActions()?.onEscalate()}
-              onSwitchAgent={(agent) => ticketActions()?.onSwitchAgent(agent)}
-              onOpenJira={() => ticketActions()?.onOpenJira()}
-              onClose={() => ticketActions()?.onClose()}
-              onSendMessage={(msg) => ticketActions()?.onSendMessage(msg)}
-            />
+            <TicketActionsProvider actions={actionsValue()}>
+              <TicketPane
+                ticket={currentTicket()!}
+                agentState={() => workflow.getAgentState(currentTicket()!.id)}
+                logEntries={eventLog.events()}
+              />
+            </TicketActionsProvider>
           </Show>
           <Show when={!props.loading && !currentTicket()}>
             <EmptyState showAll={props.showAll ?? false} rig={props.rig ?? null} />

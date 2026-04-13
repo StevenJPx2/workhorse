@@ -1,17 +1,18 @@
 /**
- * Atlassian MCP Client
- *
- * Manages the connection to Atlassian MCP server via mcp-remote proxy.
- * Handles lifecycle, reconnection, and tool calls.
+ * Atlassian MCP Client - Manages the connection to Atlassian MCP server
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import type {
-  JiraIssue,
-  GetJiraIssueResponse,
-  McpToolResultContent,
-} from "./types.ts";
+import type { JiraIssue, McpToolResultContent } from "./types.ts";
+import { mapIssueResponse } from "./map-issue.ts";
+
+// Type for parsed Jira response
+interface JiraResponse {
+  fields?: Record<string, unknown>;
+  key?: string;
+  self?: string;
+}
 
 const ATLASSIAN_MCP_URL = "https://mcp.atlassian.com/v1/mcp";
 
@@ -99,18 +100,54 @@ export class AtlassianClient {
     }
 
     // Parse the response, with better error handling
-    let data: GetJiraIssueResponse;
+    let data: JiraResponse;
     try {
-      data = JSON.parse(textContent.text) as GetJiraIssueResponse;
+      data = JSON.parse(textContent.text) as JiraResponse;
     } catch {
       // Truncate the response for error message (may be very long)
       const preview = textContent.text.slice(0, 200);
       throw new Error(
-        `Failed to parse Jira response for ${ticketKey}: ${preview}${textContent.text.length > 200 ? "..." : ""}`
+        `Failed to parse Jira response for ${ticketKey}: ${preview}${textContent.text.length > 200 ? "..." : ""}`,
       );
     }
-    
-    return this.mapIssueResponse(data);
+
+    // Validate the response has expected fields structure
+    if (!data.fields || typeof data.fields !== "object") {
+      // Check if it's a Jira error response - extract any error details
+      const typedData = data as {
+        errorMessages?: string[];
+        errors?: Record<string, string>;
+        error?: boolean;
+        message?: string;
+      };
+
+      const errorMessage = typedData.errorMessages?.[0] || typedData.message || "Unknown error";
+
+      // Full response for debugging (not truncated)
+      const fullResponse =
+        textContent.text.length > 1000
+          ? textContent.text.slice(0, 1000) +
+            "\n... [truncated at 1000 chars, total: " +
+            textContent.text.length +
+            "]"
+          : textContent.text;
+
+      // Provide helpful guidance for common errors
+      let userMessage = `Jira API error: ${errorMessage}`;
+
+      if (errorMessage.includes("isn't explicitly granted by the user")) {
+        userMessage = `Authentication required: ${errorMessage}\n\nRun: npx -y mcp-remote https://mcp.atlassian.com/v1/mcp\nThen authorize access in your browser, then try again.`;
+      } else if (errorMessage.includes("Issue does not exist")) {
+        userMessage = `Ticket not found: ${errorMessage}`;
+      }
+
+      throw new Error(`${userMessage}\n\nResponse:\n${fullResponse}`);
+    }
+
+    return mapIssueResponse(
+      data as unknown as import("./types.ts").GetJiraIssueResponse,
+      this.cloudId,
+    );
   }
 
   /**
@@ -132,10 +169,7 @@ export class AtlassianClient {
   /**
    * Transition a Jira issue to a new status
    */
-  async transitionIssue(
-    ticketKey: string,
-    transitionId: string
-  ): Promise<void> {
+  async transitionIssue(ticketKey: string, transitionId: string): Promise<void> {
     this.ensureConnected();
 
     await this.client!.callTool({
@@ -153,31 +187,11 @@ export class AtlassianClient {
       throw new Error("Not connected to Atlassian MCP. Call connect() first.");
     }
   }
-
-  private mapIssueResponse(data: GetJiraIssueResponse): JiraIssue {
-    const baseUrl = `https://${this.cloudId}`;
-    return {
-      key: data.key,
-      summary: data.fields.summary,
-      description: data.fields.description ?? null,
-      status: data.fields.status.name,
-      priority: data.fields.priority?.name ?? null,
-      assignee: data.fields.assignee?.displayName ?? null,
-      reporter: data.fields.reporter?.displayName ?? null,
-      issueType: data.fields.issuetype.name,
-      url: `${baseUrl}/browse/${data.key}`,
-      projectKey: data.fields.project.key,
-      created: data.fields.created,
-      updated: data.fields.updated,
-    };
-  }
 }
 
 /**
  * Create an Atlassian client instance
  */
-export function createAtlassianClient(
-  options: AtlassianClientOptions
-): AtlassianClient {
+export function createAtlassianClient(options: AtlassianClientOptions): AtlassianClient {
   return new AtlassianClient(options);
 }

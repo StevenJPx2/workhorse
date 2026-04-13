@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
  * Test script to verify ticket spawning creates a tmux session
- * 
+ *
  * This simulates what happens in App.tsx when a ticket is added:
  * 1. Detects rig (git repo info)
  * 2. Loads config
  * 3. Creates a ticket in the database
  * 4. Calls spawnAgent() which creates worktree + tmux session
- * 
+ *
  * Run with: bun run scripts/test-spawn.ts
  */
 
@@ -25,12 +25,12 @@ async function main() {
 
   // Step 1: Check prerequisites
   console.log("1️⃣  Checking prerequisites...");
-  
+
   if (!configExists()) {
     console.error("❌ Config not found. Run 'jiratown setup' first.");
     process.exit(1);
   }
-  
+
   const config = await loadConfig();
   if (!config) {
     console.error("❌ Failed to load config");
@@ -53,7 +53,7 @@ async function main() {
 
   // Clean up any existing test ticket
   const existingTickets = getTicketsByRig(rigInfo.rig);
-  const existing = existingTickets.find(t => t.jira_key === TEST_TICKET_KEY);
+  const existing = existingTickets.find((t) => t.jira_key === TEST_TICKET_KEY);
   if (existing) {
     console.log(`   ⚠ Cleaning up existing test ticket: ${existing.id}`);
     deleteTicket(existing.id);
@@ -75,13 +75,13 @@ async function main() {
   console.log("\n4️⃣  Checking tmux sessions before spawn...");
   const sessionsBefore = await listSessions();
   console.log(`   Sessions before: ${sessionsBefore.length}`);
-  sessionsBefore.forEach(s => console.log(`     - ${s.name}`));
+  sessionsBefore.forEach((s) => console.log(`     - ${s.name}`));
 
   // Step 5: Spawn agent (this is what workflow.startWork() does internally)
   console.log("\n5️⃣  Spawning agent...");
   console.log(`   repoPath: ${rigInfo.gitRoot}`);
   console.log(`   jiraCloudId: ${config.jira.cloud_id}`);
-  
+
   const result = await spawnAgent({
     ticketId: ticket.id,
     agentType: "opencode",
@@ -105,7 +105,7 @@ async function main() {
   console.log("\n6️⃣  Checking tmux sessions after spawn...");
   const sessionsAfter = await listSessions();
   console.log(`   Sessions after: ${sessionsAfter.length}`);
-  sessionsAfter.forEach(s => console.log(`     - ${s.name} (ticket: ${s.ticketId})`));
+  sessionsAfter.forEach((s) => console.log(`     - ${s.name} (ticket: ${s.ticketId})`));
 
   // Step 7: Verify the agent is tracked
   console.log("\n7️⃣  Verifying agent tracking...");

@@ -40,7 +40,11 @@ export function createRestartAgent(deps: WorkflowDeps) {
         trace(ticketId, "STOPPED", { stopped });
       }
 
-      trace(ticketId, "SPAWNING", { agentType: ticket.agent, summary: ticket.summary, jiraUrl: ticket.jira_url });
+      trace(ticketId, "SPAWNING", {
+        agentType: ticket.agent,
+        summary: ticket.summary,
+        jiraUrl: ticket.jira_url,
+      });
       const instance = await deps.agent.spawn({
         ticketId: ticket.id,
         agentType: ticket.agent,
@@ -58,7 +62,10 @@ export function createRestartAgent(deps: WorkflowDeps) {
       }
 
       if (instance.worktree) {
-        trace(ticketId, "UPDATING_TICKET", { path: instance.worktree.path, branch: instance.worktree.branch });
+        trace(ticketId, "UPDATING_TICKET", {
+          path: instance.worktree.path,
+          branch: instance.worktree.branch,
+        });
         updateTicket(ticket.id, {
           worktree_path: instance.worktree.path,
           branch_name: instance.worktree.branch,
@@ -83,13 +90,11 @@ const ACTIVE_STATUSES: TicketStatus[] = ["planning", "implementing", "queued"];
 
 export function createResumeAllAgents(
   deps: WorkflowDeps,
-  restartAgent: (ticketId: string) => Promise<boolean>
+  restartAgent: (ticketId: string) => Promise<boolean>,
 ) {
   return async (): Promise<number> => {
     const allTickets = getAllTickets();
-    const activeTickets = allTickets.filter((t) =>
-      ACTIVE_STATUSES.includes(t.status)
-    );
+    const activeTickets = allTickets.filter((t) => ACTIVE_STATUSES.includes(t.status));
 
     let resumed = 0;
     for (const ticket of activeTickets) {

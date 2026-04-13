@@ -11,7 +11,6 @@ let testCounter = 0;
 const uniqueId = (prefix: string) => `${prefix}-${Date.now()}-${++testCounter}`;
 
 describe("db", () => {
-
   describe("initDatabase", () => {
     it("should create database and tables", () => {
       const { initDatabase } = require("./db.ts");
@@ -219,7 +218,14 @@ describe("db", () => {
 
   describe("deleteTicket", () => {
     it("should delete ticket and its events", () => {
-      const { initDatabase, insertTicket, insertTicketEvent, deleteTicket, getTicketById, getTicketEvents } = require("./db.ts");
+      const {
+        initDatabase,
+        insertTicket,
+        insertTicketEvent,
+        deleteTicket,
+        getTicketById,
+        getTicketEvents,
+      } = require("./db.ts");
 
       initDatabase();
       const id = uniqueId("DELETE");

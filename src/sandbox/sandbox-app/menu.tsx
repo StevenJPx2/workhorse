@@ -18,15 +18,60 @@ export interface DemoEntry {
 }
 
 export const DEMOS: DemoEntry[] = [
-  { id: "button", label: "Button", description: "Filled/ghost styles, variants, sizes, icons", component: () => <ButtonDemo /> },
-  { id: "card", label: "Card", description: "Content container with border and title", component: () => <CardDemo /> },
-  { id: "text-input", label: "TextInput", description: "Text input with keyboard handling", component: () => <TextInputDemo /> },
-  { id: "select", label: "Select", description: "Radio group selection with keyboard nav", component: () => <SelectDemo /> },
-  { id: "dialog", label: "Dialog", description: "Modal dialog with title and footer", component: () => <DialogDemo /> },
-  { id: "grid", label: "Grid", description: "Spatial navigation container", component: () => <GridDemo /> },
-  { id: "status-badge", label: "StatusBadge", description: "Ticket status indicators", component: () => <StatusBadgeDemo /> },
-  { id: "divider", label: "Divider", description: "Visual separator lines", component: () => <DividerDemo /> },
-  { id: "action-bar", label: "ActionBar", description: "Keyboard action button row", component: () => <ActionBarDemo /> },
+  {
+    id: "button",
+    label: "Button",
+    description: "Filled/ghost styles, variants, sizes, icons",
+    component: () => <ButtonDemo />,
+  },
+  {
+    id: "card",
+    label: "Card",
+    description: "Content container with border and title",
+    component: () => <CardDemo />,
+  },
+  {
+    id: "text-input",
+    label: "TextInput",
+    description: "Text input with keyboard handling",
+    component: () => <TextInputDemo />,
+  },
+  {
+    id: "select",
+    label: "Select",
+    description: "Radio group selection with keyboard nav",
+    component: () => <SelectDemo />,
+  },
+  {
+    id: "dialog",
+    label: "Dialog",
+    description: "Modal dialog with title and footer",
+    component: () => <DialogDemo />,
+  },
+  {
+    id: "grid",
+    label: "Grid",
+    description: "Spatial navigation container",
+    component: () => <GridDemo />,
+  },
+  {
+    id: "status-badge",
+    label: "StatusBadge",
+    description: "Ticket status indicators",
+    component: () => <StatusBadgeDemo />,
+  },
+  {
+    id: "divider",
+    label: "Divider",
+    description: "Visual separator lines",
+    component: () => <DividerDemo />,
+  },
+  {
+    id: "action-bar",
+    label: "ActionBar",
+    description: "Keyboard action button row",
+    component: () => <ActionBarDemo />,
+  },
 ];
 
 export function Menu(props: { selectedIndex: number }) {
@@ -46,9 +91,7 @@ export function Menu(props: { selectedIndex: number }) {
               <text fg={isSelected() ? theme().primary : theme().text.dim}>
                 {isSelected() ? "▸ " : "  "}
               </text>
-              <text
-                fg={isSelected() ? theme().text.primary : theme().text.secondary}
-              >
+              <text fg={isSelected() ? theme().text.primary : theme().text.secondary}>
                 {demo.label}
               </text>
               <text fg={theme().text.dim}> — {demo.description}</text>

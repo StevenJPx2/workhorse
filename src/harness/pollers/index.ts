@@ -17,19 +17,10 @@ export type {
 } from "./types.ts";
 
 // Jira poller
-export {
-  createJiraPoller,
-  type JiraPollerOptions,
-} from "./jira-poller.ts";
+export { createJiraPoller, type JiraPollerOptions } from "./jira-poller.ts";
 
 // GitHub poller
-export {
-  createGitHubPoller,
-  type GitHubPollerOptions,
-} from "./github-poller.ts";
+export { createGitHubPoller, type GitHubPollerOptions } from "./github-poller.ts";
 
 // Agent poller
-export {
-  createAgentPoller,
-  type AgentPollerOptions,
-} from "./agent-poller.ts";
+export { createAgentPoller, type AgentPollerOptions } from "./agent-poller.ts";

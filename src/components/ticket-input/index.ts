@@ -10,8 +10,4 @@ export {
   extractTicketKey,
   type ParsedTicket,
 } from "./parse-ticket-key.ts";
-export type {
-  TicketInputProps,
-  TicketInputState,
-  UseTicketInputReturn,
-} from "./types.ts";
+export type { TicketInputProps, TicketInputState, UseTicketInputReturn } from "./types.ts";

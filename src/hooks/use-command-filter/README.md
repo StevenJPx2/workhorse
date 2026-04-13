@@ -22,9 +22,7 @@ function CommandList() {
   return (
     <>
       <input value={query()} onInput={(e) => setQuery(e.target.value)} />
-      <For each={filteredItems()}>
-        {(cmd) => <div>{cmd.label}</div>}
-      </For>
+      <For each={filteredItems()}>{(cmd) => <div>{cmd.label}</div>}</For>
     </>
   );
 }
@@ -34,24 +32,25 @@ function CommandList() {
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `items` | `T[] \| Accessor<T[]>` | Items to filter |
-| `getText` | `(item: T) => string` | Extract searchable text from item |
-| `initialQuery` | `string` | Initial query value (default: "") |
+| Option         | Type                   | Description                       |
+| -------------- | ---------------------- | --------------------------------- |
+| `items`        | `T[] \| Accessor<T[]>` | Items to filter                   |
+| `getText`      | `(item: T) => string`  | Extract searchable text from item |
+| `initialQuery` | `string`               | Initial query value (default: "") |
 
 ### Return Value
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `query` | `Accessor<string>` | Current search query |
-| `setQuery` | `(q: string) => void` | Set the search query |
-| `clearQuery` | `() => void` | Clear the search query |
-| `filteredItems` | `Accessor<T[]>` | Filtered items sorted by relevance |
+| Property        | Type                  | Description                        |
+| --------------- | --------------------- | ---------------------------------- |
+| `query`         | `Accessor<string>`    | Current search query               |
+| `setQuery`      | `(q: string) => void` | Set the search query               |
+| `clearQuery`    | `() => void`          | Clear the search query             |
+| `filteredItems` | `Accessor<T[]>`       | Filtered items sorted by relevance |
 
 ## Fuzzy Matching
 
 The fuzzy matcher:
+
 - Matches characters in order (not necessarily consecutive)
 - Case-insensitive
 - Scores based on:
@@ -61,12 +60,12 @@ The fuzzy matcher:
 
 ### Examples
 
-| Query | Text | Match |
-|-------|------|-------|
-| `att` | `Add Ticket` | Yes (A-T-T) |
-| `ant` | `Add New Ticket` | Yes (A-N-T) |
-| `xyz` | `Add Ticket` | No |
-| `tad` | `Add Ticket` | No (wrong order) |
+| Query | Text             | Match            |
+| ----- | ---------------- | ---------------- |
+| `att` | `Add Ticket`     | Yes (A-T-T)      |
+| `ant` | `Add New Ticket` | Yes (A-N-T)      |
+| `xyz` | `Add Ticket`     | No               |
+| `tad` | `Add Ticket`     | No (wrong order) |
 
 ## Low-Level Functions
 

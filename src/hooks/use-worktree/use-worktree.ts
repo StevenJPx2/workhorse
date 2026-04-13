@@ -77,7 +77,7 @@ export function useWorktree(options: UseWorktreeOptions = {}): UseWorktreeReturn
   const create = async (
     ticketId: string,
     issueType?: string,
-    baseBranch?: string
+    baseBranch?: string,
   ): Promise<Worktree | null> => {
     try {
       setError(null);
@@ -93,10 +93,7 @@ export function useWorktree(options: UseWorktreeOptions = {}): UseWorktreeReturn
     }
   };
 
-  const remove = async (
-    ticketId: string,
-    deleteBranch: boolean = false
-  ): Promise<boolean> => {
+  const remove = async (ticketId: string, deleteBranch: boolean = false): Promise<boolean> => {
     try {
       setError(null);
       const repoPath = getRepoPath();

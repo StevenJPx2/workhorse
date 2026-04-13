@@ -142,7 +142,7 @@ describe("useAtlassian error handling", () => {
         await atlassian.connect();
 
         await expect(atlassian.addComment("TEST-123", "comment")).rejects.toThrow(
-          "Add comment failed"
+          "Add comment failed",
         );
         expect(atlassian.error()?.message).toBe("Add comment failed");
 
@@ -207,7 +207,7 @@ describe("useAtlassian error handling", () => {
         await atlassian.connect();
 
         await expect(atlassian.transitionIssue("TEST-123", "21")).rejects.toThrow(
-          "Transition failed"
+          "Transition failed",
         );
         expect(atlassian.error()?.message).toBe("Transition failed");
 
@@ -249,9 +249,7 @@ describe("useAtlassian error handling", () => {
         });
 
         await atlassian.connect();
-        await expect(atlassian.transitionIssue("TEST-123", "21")).rejects.toThrow(
-          "String error"
-        );
+        await expect(atlassian.transitionIssue("TEST-123", "21")).rejects.toThrow("String error");
 
         // onError should still be called with an Error object
         expect(onError).toHaveBeenCalledWith(expect.any(Error));

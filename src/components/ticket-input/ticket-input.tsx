@@ -70,7 +70,7 @@ export function TicketInput(props: TicketInputProps) {
       lockId="ticket-input-dialog"
       title="Add Ticket"
       width={50}
-      height={18}
+      height={form.error() ? 22 : 18}
     >
       <Grid rows={4} cols={2} wrap>
         <box flexDirection="column" width="100%">
@@ -80,16 +80,22 @@ export function TicketInput(props: TicketInputProps) {
               inputId={INPUT_ID}
               value={form.input()}
               onChange={form.setInput}
-              onSubmit={() => { if (form.isValid()) handleSubmit(); }}
+              onSubmit={() => {
+                if (form.isValid()) handleSubmit();
+              }}
               placeholder="AM-123 or paste Jira URL"
               label="Ticket"
             />
           </GridCell>
 
-          {/* Row 1: Parsed key feedback - spans both columns */}
+          {/* Row 1: Parsed key feedback or error - spans both columns */}
           <GridCell id="feedback" row={1} col={0} colSpan={2}>
-            <box height={1} width="100%">
-              {/* Use a single text element that changes content to avoid TUI rendering artifacts */}
+            <box
+              height={form.error() ? 8 : 1}
+              width="100%"
+              flexDirection="column"
+              overflow="hidden"
+            >
               <text fg={form.error() ? theme().error : theme().text.dim}>
                 {form.error() || (form.ticketKey() ? `Key: ${form.ticketKey()}` : " ")}
               </text>

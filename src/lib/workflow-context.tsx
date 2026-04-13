@@ -34,11 +34,7 @@ export function WorkflowProvider(props: WorkflowProviderProps) {
     eventLog: props.eventLog,
   });
 
-  return (
-    <WorkflowContext.Provider value={workflow}>
-      {props.children}
-    </WorkflowContext.Provider>
-  );
+  return <WorkflowContext.Provider value={workflow}>{props.children}</WorkflowContext.Provider>;
 }
 
 /**

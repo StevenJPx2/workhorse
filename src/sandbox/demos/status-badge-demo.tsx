@@ -29,9 +29,7 @@ export function StatusBadgeDemo() {
       <box flexDirection="column" gap={1}>
         <text fg={theme().text.secondary}>Full badges (indicator + label):</text>
         <box flexDirection="row" gap={2} flexWrap="wrap">
-          <For each={STATUSES}>
-            {(status) => <StatusBadge status={status} />}
-          </For>
+          <For each={STATUSES}>{(status) => <StatusBadge status={status} />}</For>
         </box>
       </box>
 
@@ -39,9 +37,7 @@ export function StatusBadgeDemo() {
       <box flexDirection="column" gap={1}>
         <text fg={theme().text.secondary}>Indicator only:</text>
         <box flexDirection="row" gap={2}>
-          <For each={STATUSES}>
-            {(status) => <StatusBadge status={status} showLabel={false} />}
-          </For>
+          <For each={STATUSES}>{(status) => <StatusBadge status={status} showLabel={false} />}</For>
         </box>
       </box>
 
@@ -49,9 +45,7 @@ export function StatusBadgeDemo() {
       <box flexDirection="column" gap={1}>
         <text fg={theme().text.secondary}>Compact (no padding/border):</text>
         <box flexDirection="row" gap={3}>
-          <For each={STATUSES}>
-            {(status) => <StatusBadge status={status} compact />}
-          </For>
+          <For each={STATUSES}>{(status) => <StatusBadge status={status} compact />}</For>
         </box>
       </box>
 
@@ -60,9 +54,7 @@ export function StatusBadgeDemo() {
         <text fg={theme().text.secondary}>Label only:</text>
         <box flexDirection="row" gap={2}>
           <For each={STATUSES}>
-            {(status) => (
-              <StatusBadge status={status} showIndicator={false} />
-            )}
+            {(status) => <StatusBadge status={status} showIndicator={false} />}
           </For>
         </box>
       </box>

@@ -1,8 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import {
-  insertTicketEvent,
-  getTicketEvents,
-} from "../../lib/db/events.ts";
+import { insertTicketEvent, getTicketEvents } from "../../lib/db/events.ts";
 import type { TicketEvent } from "../../types/ticket.ts";
 import type {
   UseEventLogOptions,
@@ -33,16 +30,12 @@ function parseEvent(event: TicketEvent): EventLogEntry {
   };
 }
 
-function resolveTicketId(
-  ticketId?: string | (() => string | undefined)
-): string | undefined {
+function resolveTicketId(ticketId?: string | (() => string | undefined)): string | undefined {
   if (typeof ticketId === "function") return ticketId();
   return ticketId;
 }
 
-export function useEventLog(
-  options: UseEventLogOptions = {}
-): UseEventLogReturn {
+export function useEventLog(options: UseEventLogOptions = {}): UseEventLogReturn {
   const [events, setEvents] = createSignal<EventLogEntry[]>([]);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<Error | null>(null);
@@ -68,10 +61,7 @@ export function useEventLog(
     }
   }
 
-  function logEvent(
-    type: EventLogAction,
-    payload: Record<string, unknown>
-  ): EventLogEntry {
+  function logEvent(type: EventLogAction, payload: Record<string, unknown>): EventLogEntry {
     const tid = currentTicketId();
     if (!tid) {
       throw new Error("No ticket ID set for event log");
@@ -125,15 +115,11 @@ export function useEventLog(
     });
   }
 
-  function logAgentStopped(
-    params: Record<string, unknown>
-  ): EventLogEntry {
+  function logAgentStopped(params: Record<string, unknown>): EventLogEntry {
     return logEvent("agent_stopped", params);
   }
 
-  function logAgentCrashed(
-    params: Record<string, unknown>
-  ): EventLogEntry {
+  function logAgentCrashed(params: Record<string, unknown>): EventLogEntry {
     return logEvent("agent_crashed", params);
   }
 

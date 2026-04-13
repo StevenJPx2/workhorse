@@ -103,10 +103,8 @@ export function FileChanges(props: FileChangesProps) {
     return Array.from(seen.values()).slice(0, maxFiles());
   });
 
-  const totalAdditions = () =>
-    fileChanges().reduce((sum, f) => sum + f.additions, 0);
-  const totalDeletions = () =>
-    fileChanges().reduce((sum, f) => sum + f.deletions, 0);
+  const totalAdditions = () => fileChanges().reduce((sum, f) => sum + f.additions, 0);
+  const totalDeletions = () => fileChanges().reduce((sum, f) => sum + f.deletions, 0);
 
   return (
     <Show when={fileChanges().length > 0}>
@@ -117,18 +115,14 @@ export function FileChanges(props: FileChangesProps) {
         borderColor={theme().border.default}
         padding={1}
       >
-        <text fg={theme().text.secondary}>
-          Files ({fileChanges().length})
-        </text>
+        <text fg={theme().text.secondary}>Files ({fileChanges().length})</text>
         <box height={1} />
 
         <For each={fileChanges()}>
           {(change) => (
             <box flexDirection="row" height={1}>
               <text fg={theme().text.dim}>{"  "}</text>
-              <text fg={theme().text.primary}>
-                {shortPath(change.path)}{" "}
-              </text>
+              <text fg={theme().text.primary}>{shortPath(change.path)} </text>
               <text fg={change.additions > 0 ? theme().success : theme().text.dim}>
                 {formatChangeCount(change.additions, change.deletions)}
               </text>

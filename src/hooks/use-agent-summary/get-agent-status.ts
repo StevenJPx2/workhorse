@@ -1,6 +1,6 @@
 /**
  * Get agent status using OpenCode SDK
- * 
+ *
  * Connects to the agent's OpenCode instance using its ticket-specific port.
  * Each agent runs on its own port (14100+), not the user's main OpenCode (4096).
  */
@@ -36,14 +36,14 @@ async function getSessionId(ticketId: string, worktreePath: string): Promise<str
   try {
     const client = getClientForTicket(ticketId);
     const sessions = await client.session.list({
-      query: { directory: worktreePath }
+      query: { directory: worktreePath },
     });
-    
+
     if (!sessions.data?.length) return null;
 
     // Get the most recent session
-    const latestSession = sessions.data.sort((a, b) => 
-      (b.time?.updated ?? 0) - (a.time?.updated ?? 0)
+    const latestSession = sessions.data.sort(
+      (a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0),
     )[0];
 
     sessionCache.set(ticketId, latestSession.id);
@@ -58,12 +58,12 @@ async function getSessionId(ticketId: string, worktreePath: string): Promise<str
  */
 async function getLastMessageFromSession(
   ticketId: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<string | null> {
   try {
     const client = getClientForTicket(ticketId);
     const messages = await client.session.messages({ path: { id: sessionId } });
-    
+
     if (!messages.data?.length) return null;
 
     // Find the last assistant message
@@ -73,7 +73,7 @@ async function getLastMessageFromSession(
         const textParts = msg.parts
           .filter((p) => p.type === "text" && "text" in p)
           .map((p) => (p as { text: string }).text);
-        
+
         if (textParts.length > 0) return textParts.join("\n");
       }
     }
@@ -101,14 +101,11 @@ export function clearAllSessionCache(): void {
 
 /**
  * Get agent status by ticket ID and worktree path
- * 
+ *
  * Connects to the agent's OpenCode instance (on its specific port) and
  * fetches the most recent session messages.
  */
-export async function getAgentStatus(
-  ticketId: string,
-  worktreePath: string
-): Promise<AgentStep[]> {
+export async function getAgentStatus(ticketId: string, worktreePath: string): Promise<AgentStep[]> {
   if (!ticketId || !worktreePath) {
     return [];
   }

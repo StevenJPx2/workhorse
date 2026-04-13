@@ -30,7 +30,7 @@ describe("parse-ticket", () => {
 
     it("should parse Jira URLs with query params", () => {
       const result = parseTicketKey(
-        "https://company.atlassian.net/browse/AM-123?atlOrigin=some-value"
+        "https://company.atlassian.net/browse/AM-123?atlOrigin=some-value",
       );
       expect(result.key).toBe("AM-123");
       expect(result.url).toBe("https://company.atlassian.net/browse/AM-123");

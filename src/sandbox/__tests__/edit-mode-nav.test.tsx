@@ -16,7 +16,9 @@ describe("Edit mode exit: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -56,7 +58,9 @@ describe("Edit mode exit: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -98,7 +102,9 @@ describe("Edit mode exit: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -130,7 +136,9 @@ describe("Edit mode exit: Grid cell navigation", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -182,7 +190,9 @@ describe("Typing: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,
@@ -208,7 +218,9 @@ describe("Typing: TicketInput modal", () => {
           isOpen={true}
           onClose={() => {}}
           onSubmit={() => {}}
-          fetchIssue={async () => { throw new Error("n/a"); }}
+          fetchIssue={async () => {
+            throw new Error("n/a");
+          }}
         />
       ),
       TICKET_INPUT_DIMS,

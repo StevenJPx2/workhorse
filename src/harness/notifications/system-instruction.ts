@@ -18,9 +18,7 @@ import type { Notification } from "./types.ts";
  *
  * Returns null if there are no notifications that warrant an instruction.
  */
-export function generateSystemInstruction(
-  notifications: Notification[]
-): string | null {
+export function generateSystemInstruction(notifications: Notification[]): string | null {
   const blocking = notifications.filter((n) => n.priority === "blocking");
   const high = notifications.filter((n) => n.priority === "high");
   const normal = notifications.filter((n) => n.priority === "normal");
@@ -35,9 +33,7 @@ export function generateSystemInstruction(
 
   // Blocking notifications - highest priority, full details
   if (blocking.length > 0) {
-    parts.push(
-      `BLOCKING: ${blocking.length} item(s) require immediate attention:`
-    );
+    parts.push(`BLOCKING: ${blocking.length} item(s) require immediate attention:`);
     for (const notif of blocking) {
       parts.push(`  - ${notif.summary}`);
     }
@@ -61,7 +57,7 @@ export function generateSystemInstruction(
 
   // Action guidance
   parts.push(
-    "Call jiratown_get_notifications for details, then jiratown_acknowledge when addressed."
+    "Call jiratown_get_notifications for details, then jiratown_acknowledge when addressed.",
   );
   parts.push("</system-instruction>");
 

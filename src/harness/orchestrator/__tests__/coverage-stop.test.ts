@@ -72,7 +72,8 @@ describe("stopAgent - error handling", () => {
       if (command.includes("worktree add")) return createMockSubprocess(0, "Preparing worktree");
       if (command.includes("tmux has-session")) return createMockSubprocess(1);
       if (command.includes("tmux new-session")) return createMockSubprocess(0, "");
-      if (command.includes("tmux kill-session")) return createMockSubprocess(1, "", "session not found");
+      if (command.includes("tmux kill-session"))
+        return createMockSubprocess(1, "", "session not found");
       if (command.includes("tmux send-keys")) return createMockSubprocess(0);
       return createMockSubprocess(0);
     }) as unknown as typeof Bun.spawn;

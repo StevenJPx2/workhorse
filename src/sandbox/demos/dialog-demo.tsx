@@ -32,9 +32,7 @@ export function DialogDemo() {
 
   return (
     <box flexDirection="column" gap={2}>
-      <text fg={theme().text.secondary}>
-        Select a dialog and press Enter to open:
-      </text>
+      <text fg={theme().text.secondary}>Select a dialog and press Enter to open:</text>
 
       <box flexDirection="column" gap={1}>
         <box flexDirection="row">
@@ -67,9 +65,7 @@ export function DialogDemo() {
         height={10}
         hint="Press Escape to close"
       >
-        <text fg={theme().text.primary}>
-          This is a basic dialog with a title and hint text.
-        </text>
+        <text fg={theme().text.primary}>This is a basic dialog with a title and hint text.</text>
       </Dialog>
 
       {/* Confirm Dialog */}
@@ -82,12 +78,7 @@ export function DialogDemo() {
         height={12}
         footer={
           <box flexDirection="row" gap={2} justifyContent="flex-end">
-            <Button
-              label="Cancel"
-              style="ghost"
-              size="sm"
-              onPress={() => setShowConfirm(false)}
-            />
+            <Button label="Cancel" style="ghost" size="sm" onPress={() => setShowConfirm(false)} />
             <Button
               label="Confirm"
               variant="primary"
@@ -97,9 +88,7 @@ export function DialogDemo() {
           </box>
         }
       >
-        <text fg={theme().text.primary}>
-          Are you sure you want to proceed with this action?
-        </text>
+        <text fg={theme().text.primary}>Are you sure you want to proceed with this action?</text>
         <text fg={theme().text.dim}>This cannot be undone.</text>
       </Dialog>
     </box>

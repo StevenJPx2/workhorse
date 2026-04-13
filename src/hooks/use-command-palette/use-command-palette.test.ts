@@ -5,7 +5,11 @@
 import { describe, expect, it, mock } from "bun:test";
 import { createRoot } from "solid-js";
 import { useCommandPalette } from "./use-command-palette.ts";
-import type { ActionCommand, SubmenuCommand, Command } from "../../components/command-palette/types.ts";
+import type {
+  ActionCommand,
+  SubmenuCommand,
+  Command,
+} from "../../components/command-palette/types.ts";
 
 const testCommands: Command[] = [
   { id: "add-ticket", label: "Add New Ticket", type: "action", action: () => {} } as ActionCommand,
@@ -220,9 +224,7 @@ describe("useCommandPalette", () => {
             id: "toggle-theme",
             label: "Toggle Theme",
             type: "submenu",
-            items: [
-              { id: "theme-default", label: "Default", action: () => {} },
-            ],
+            items: [{ id: "theme-default", label: "Default", action: () => {} }],
           } as SubmenuCommand,
         ];
 

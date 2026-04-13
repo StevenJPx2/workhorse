@@ -30,9 +30,7 @@ export function KeyHint(props: KeyHintProps) {
       <text fg={colors.text.secondary}>[</text>
       <text fg={colors.primary}>{props.keyName}</text>
       <text fg={colors.text.secondary}>]</text>
-      {!props.compact && (
-        <text fg={colors.text.dim}> {props.action}</text>
-      )}
+      {!props.compact && <text fg={colors.text.dim}> {props.action}</text>}
     </box>
   );
 }

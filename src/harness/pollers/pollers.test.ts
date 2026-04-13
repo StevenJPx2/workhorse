@@ -26,7 +26,7 @@ describe("Jira Poller", () => {
 
   test("creates poller in idle state", () => {
     const fetchComments = mock(() => Promise.resolve([]));
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -40,7 +40,7 @@ describe("Jira Poller", () => {
 
   test("starts polling when start() called", () => {
     const fetchComments = mock(() => Promise.resolve([]));
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -55,7 +55,7 @@ describe("Jira Poller", () => {
 
   test("stops polling when stop() called", () => {
     const fetchComments = mock(() => Promise.resolve([]));
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -78,9 +78,9 @@ describe("Jira Poller", () => {
         updated: new Date().toISOString(),
       },
     ];
-    
+
     const fetchComments = mock(() => Promise.resolve(comments));
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -106,9 +106,9 @@ describe("Jira Poller", () => {
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
         },
-      ])
+      ]),
     );
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -128,11 +128,9 @@ describe("Jira Poller", () => {
   });
 
   test("handles errors gracefully", async () => {
-    const fetchComments = mock(() =>
-      Promise.reject(new Error("API Error"))
-    );
+    const fetchComments = mock(() => Promise.reject(new Error("API Error")));
     const onError = mock(() => {});
-    
+
     const poller = createJiraPoller({
       db,
       ticketId: "AM-123",
@@ -185,7 +183,7 @@ describe("GitHub Poller", () => {
         submittedAt: new Date().toISOString(),
       },
     ];
-    
+
     const comments: GitHubComment[] = [
       {
         id: 1,

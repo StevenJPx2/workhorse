@@ -3,7 +3,12 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { checkDependency, checkAllDependencies, DEPENDENCIES, type Dependency } from "./dependencies.ts";
+import {
+  checkDependency,
+  checkAllDependencies,
+  DEPENDENCIES,
+  type Dependency,
+} from "./dependencies.ts";
 
 describe("dependencies", () => {
   describe("DEPENDENCIES constant", () => {
@@ -13,7 +18,7 @@ describe("dependencies", () => {
 
     it("should have required dependencies defined", () => {
       expect(DEPENDENCIES.length).toBeGreaterThan(0);
-      
+
       const names = DEPENDENCIES.map((d) => d.name);
       expect(names).toContain("Bun");
     });
@@ -83,7 +88,7 @@ describe("dependencies", () => {
         command: "bun",
         checkArgs: ["--version"],
       };
-      
+
       const result = await checkDependency(bunDep);
       expect(result).toBe(true);
     });
@@ -94,7 +99,7 @@ describe("dependencies", () => {
         command: "this-command-does-not-exist-12345",
         checkArgs: ["--version"],
       };
-      
+
       const result = await checkDependency(fakeDep);
       expect(result).toBe(false);
     });
@@ -105,7 +110,7 @@ describe("dependencies", () => {
         command: "bun",
         checkArgs: ["--version", "--no-install"],
       };
-      
+
       const result = await checkDependency(multiArgDep);
       // Should still work even with extra arg
       expect(typeof result).toBe("boolean");
@@ -117,7 +122,7 @@ describe("dependencies", () => {
         command: "bun",
         checkArgs: [],
       };
-      
+
       const result = await checkDependency(noArgDep);
       // Just running "bun" should succeed
       expect(result).toBe(true);
@@ -129,7 +134,7 @@ describe("dependencies", () => {
         command: "false", // Unix command that always returns exit code 1
         checkArgs: [],
       };
-      
+
       const result = await checkDependency(badDep);
       expect(result).toBe(false);
     });
@@ -156,14 +161,14 @@ describe("dependencies", () => {
 
       // Each dep should be in either available or missing
       const allResultDeps = [...result.available, ...result.missing];
-      
+
       // Should match the number of dependencies defined
       expect(allResultDeps.length).toBe(DEPENDENCIES.length);
     });
 
     it("should have Bun in available (assuming it exists)", async () => {
       const result = await checkAllDependencies();
-      
+
       const availableNames = result.available.map((d) => d.name);
       // Since we're running with bun, it should be available
       expect(availableNames).toContain("Bun");
@@ -171,7 +176,7 @@ describe("dependencies", () => {
 
     it("should return immutable arrays", async () => {
       const result = await checkAllDependencies();
-      
+
       // Verify we get fresh arrays each time
       const result2 = await checkAllDependencies();
       expect(result.available).not.toBe(result2.available);

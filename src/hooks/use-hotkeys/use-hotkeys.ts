@@ -42,9 +42,7 @@ import { matchesCombo } from "./combo-utils.ts";
  * ```
  */
 export function useHotkeys(options: UseHotkeysOptions): UseHotkeysReturn {
-  const [isEnabled, setIsEnabled] = createSignal(
-    options.initialEnabled ?? true
-  );
+  const [isEnabled, setIsEnabled] = createSignal(options.initialEnabled ?? true);
   const hotkeys = new Map<HotkeyCombo, Hotkey>();
 
   const enable = (): void => {
@@ -58,7 +56,7 @@ export function useHotkeys(options: UseHotkeysOptions): UseHotkeysReturn {
   const register = (
     combo: HotkeyCombo,
     handler: HotkeyHandler,
-    description?: string
+    description?: string,
   ): (() => void) => {
     const normalizedCombo = combo.toLowerCase();
     hotkeys.set(normalizedCombo, {

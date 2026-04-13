@@ -1,8 +1,4 @@
-export {
-  type Worktree,
-  type GitCommandOptions,
-  BRANCH_PREFIXES,
-} from "./types.ts";
+export { type Worktree, type GitCommandOptions, BRANCH_PREFIXES } from "./types.ts";
 export {
   createWorktreePath,
   createBranchName,

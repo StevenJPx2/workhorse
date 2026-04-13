@@ -1,13 +1,9 @@
 import path from "node:path";
 
-const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$|^[a-z0-9]+(-[a-z0-9]+)*\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const KEBAB_CASE_PATTERN =
+  /^[a-z0-9]+(-[a-z0-9]+)*\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$|^[a-z0-9]+(-[a-z0-9]+)*\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
-const ALLOWED_SPECIAL_FILES = new Set([
-  "index.ts",
-  "index.tsx",
-  "index.js",
-  "index.jsx",
-]);
+const ALLOWED_SPECIAL_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx"]);
 
 const rule = {
   meta: {

@@ -62,9 +62,7 @@ export function TicketSidebar(props: TicketSidebarProps) {
 
       {/* Divider */}
       <box height={1}>
-        <text fg={theme().border.dim}>
-          {"─".repeat(Math.max(0, props.width - 2))}
-        </text>
+        <text fg={theme().border.dim}>{"─".repeat(Math.max(0, props.width - 2))}</text>
       </box>
 
       {/* Ticket list - using tickets() accessor for reactivity */}

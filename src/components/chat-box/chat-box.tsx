@@ -113,10 +113,7 @@ export function ChatBox(props: ChatBoxProps) {
 
       {/* Input area */}
       <box flexGrow={1} flexDirection="row">
-        <Show
-          when={props.value}
-          fallback={<text fg={theme().text.dim}>{placeholder()}</text>}
-        >
+        <Show when={props.value} fallback={<text fg={theme().text.dim}>{placeholder()}</text>}>
           <text fg={theme().text.primary}>{props.value}</text>
         </Show>
 

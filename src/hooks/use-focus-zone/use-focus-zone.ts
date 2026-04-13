@@ -68,9 +68,7 @@ export interface UseFocusZoneReturn {
  * }
  * ```
  */
-export function useFocusZone(
-  options: UseFocusZoneOptions
-): UseFocusZoneReturn {
+export function useFocusZone(options: UseFocusZoneOptions): UseFocusZoneReturn {
   const [isActive, setIsActive] = createSignal(options.initialActive ?? false);
 
   const activate = (): void => {
@@ -135,12 +133,8 @@ export interface FocusZoneManager {
  * const handleClick = () => manager.activateZone('sidebar');
  * ```
  */
-export function createFocusZoneManager(
-  initialZone?: FocusZoneId
-): FocusZoneManager {
-  const [activeZone, setActiveZone] = createSignal<FocusZoneId | null>(
-    initialZone ?? null
-  );
+export function createFocusZoneManager(initialZone?: FocusZoneId): FocusZoneManager {
+  const [activeZone, setActiveZone] = createSignal<FocusZoneId | null>(initialZone ?? null);
   const callbacks = new Set<(zoneId: FocusZoneId | null) => void>();
 
   const notifyCallbacks = (zoneId: FocusZoneId | null): void => {
@@ -167,9 +161,7 @@ export function createFocusZoneManager(
     }
   };
 
-  const onZoneChange = (
-    callback: (zoneId: FocusZoneId | null) => void
-  ): (() => void) => {
+  const onZoneChange = (callback: (zoneId: FocusZoneId | null) => void): (() => void) => {
     callbacks.add(callback);
     return () => callbacks.delete(callback);
   };

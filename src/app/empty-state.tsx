@@ -14,12 +14,7 @@ export function EmptyState(props: EmptyStateProps) {
   const { theme } = useTheme();
 
   return (
-    <box
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      flexGrow={1}
-    >
+    <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
       <text fg={theme().text.secondary}>No tickets</text>
       <box height={1} />
       <text fg={theme().text.dim}>Press [+] or [n] to add a ticket</text>

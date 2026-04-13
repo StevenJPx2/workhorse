@@ -58,15 +58,19 @@ export function generateResumePrompt(info: ResumeSystemInstruction): string {
 
   lines.push("## Jiratown MCP Tools");
   lines.push("- `jiratown_get_notifications` - Check for updates from Jira or PR reviews");
-  lines.push("- `jiratown_update_status` - Report progress: planning → implementing → testing → pr_created → in_review → done");
+  lines.push(
+    "- `jiratown_update_status` - Report progress: planning → implementing → testing → pr_created → in_review → done",
+  );
   lines.push("- `jiratown_escalate` - Request clarification if blocked");
   lines.push("- `jiratown_acknowledge` - Acknowledge handled notifications");
   lines.push("");
-  lines.push("**IMPORTANT: If this ticket is already complete (PR merged, QA verified), call `jiratown_update_status` with status='done' to mark it complete.**");
+  lines.push(
+    "**IMPORTANT: If this ticket is already complete (PR merged, QA verified), call `jiratown_update_status` with status='done' to mark it complete.**",
+  );
   lines.push("");
 
   lines.push(
-    "Continue from where you left off. Check jiratown_get_notifications for any new updates, then proceed with the implementation."
+    "Continue from where you left off. Check jiratown_get_notifications for any new updates, then proceed with the implementation.",
   );
 
   return lines.join("\n");

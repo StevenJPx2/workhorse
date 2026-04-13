@@ -1,4 +1,9 @@
-export { getPortForTicket, setPortForTicket, releasePort, getAllocatedPorts } from "./port-manager.ts";
+export {
+  getPortForTicket,
+  setPortForTicket,
+  releasePort,
+  getAllocatedPorts,
+} from "./port-manager.ts";
 export type {
   OpenCodeHealth,
   OpenCodeSessionStatus,

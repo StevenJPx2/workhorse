@@ -10,10 +10,7 @@ import type { ButtonProps } from "./button.tsx";
 /**
  * Get the color for a button variant
  */
-export function getVariantColor(
-  variant: ButtonProps["variant"],
-  theme: Theme
-): string {
+export function getVariantColor(variant: ButtonProps["variant"], theme: Theme): string {
   switch (variant) {
     case "primary":
       return theme.primary;
@@ -31,10 +28,7 @@ export function getVariantColor(
 /**
  * Get the bright hover color for a button variant
  */
-export function getVariantBrightColor(
-  variant: ButtonProps["variant"],
-  theme: Theme
-): string {
+export function getVariantBrightColor(variant: ButtonProps["variant"], theme: Theme): string {
   switch (variant) {
     case "primary":
       return theme.primaryBright;
@@ -52,10 +46,7 @@ export function getVariantBrightColor(
 /**
  * Get the dim/muted color for a button variant (unfocused state)
  */
-export function getVariantDimColor(
-  variant: ButtonProps["variant"],
-  theme: Theme
-): string {
+export function getVariantDimColor(variant: ButtonProps["variant"], theme: Theme): string {
   switch (variant) {
     case "primary":
       return theme.primaryDim;

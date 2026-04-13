@@ -41,9 +41,7 @@ describe("useTicketInput (logic tests)", () => {
     });
 
     it("should extract key from URL", () => {
-      expect(
-        extractTicketKey("https://company.atlassian.net/browse/PROJ-789")
-      ).toBe("PROJ-789");
+      expect(extractTicketKey("https://company.atlassian.net/browse/PROJ-789")).toBe("PROJ-789");
     });
 
     it("should return empty for invalid input", () => {
@@ -74,9 +72,7 @@ describe("useTicketInput (logic tests)", () => {
 
     it("should call onSubmit with correct args on success", async () => {
       const fetchIssue = mock((_key: string) => Promise.resolve(mockJiraIssue));
-      const onSubmit = mock(
-        (_key: string, _agent: string, _issue: JiraIssue) => {}
-      );
+      const onSubmit = mock((_key: string, _agent: string, _issue: JiraIssue) => {});
       const ticketKey = "AM-123";
       const agent = "opencode";
 
@@ -89,9 +85,7 @@ describe("useTicketInput (logic tests)", () => {
     });
 
     it("should handle fetch error", async () => {
-      const fetchIssue = mock((_key: string) =>
-        Promise.reject(new Error("Ticket not found"))
-      );
+      const fetchIssue = mock((_key: string) => Promise.reject(new Error("Ticket not found")));
       let error: string | null = null;
 
       try {

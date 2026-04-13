@@ -14,9 +14,7 @@ const result = await Bun.build({
   minify: process.env.NODE_ENV === "production",
   sourcemap: "external",
   plugins: [createSolidTransformPlugin()],
-  external: [
-    "better-sqlite3",
-  ],
+  external: ["better-sqlite3"],
 });
 
 if (!result.success) {

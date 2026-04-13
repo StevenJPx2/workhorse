@@ -34,18 +34,14 @@ import type { UseLayoutActionsOptions, UseLayoutActionsReturn } from "./types.ts
  * }
  * ```
  */
-export function useLayoutActions(
-  options: UseLayoutActionsOptions
-): UseLayoutActionsReturn {
+export function useLayoutActions(options: UseLayoutActionsOptions): UseLayoutActionsReturn {
   const { currentTicketId, reloadTickets, onQuit } = options;
   const tickets = useTicketsContext();
   const workflow = useWorkflowContext();
   const modals = useModalSystem();
 
   // Track agent starting state
-  const [agentStartingFor, setAgentStartingFor] = createSignal<string | null>(
-    null
-  );
+  const [agentStartingFor, setAgentStartingFor] = createSignal<string | null>(null);
 
   const quit = async (): Promise<void> => {
     console.log("[DEBUG] Quit requested - stopping all running agents");

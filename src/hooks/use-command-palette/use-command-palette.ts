@@ -66,9 +66,7 @@ export interface UseCommandPaletteReturn {
 /**
  * Hook for managing command palette state
  */
-export function useCommandPalette(
-  options: UseCommandPaletteOptions
-): UseCommandPaletteReturn {
+export function useCommandPalette(options: UseCommandPaletteOptions): UseCommandPaletteReturn {
   const [isOpen, setIsOpen] = createSignal(false);
   const [selectedIndex, setSelectedIndex] = createSignal(0);
   const [currentSubmenu, setCurrentSubmenu] = createSignal<SubmenuCommand | null>(null);

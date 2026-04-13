@@ -69,11 +69,7 @@ export interface UseHotkeysReturn {
   /** Disable all hotkeys in this context */
   disable: () => void;
   /** Register a hotkey */
-  register: (
-    combo: HotkeyCombo,
-    handler: HotkeyHandler,
-    description?: string
-  ) => () => void;
+  register: (combo: HotkeyCombo, handler: HotkeyHandler, description?: string) => () => void;
   /** Get all registered hotkeys in this context */
   getHotkeys: () => Hotkey[];
   /** Handle a key event, returns true if handled */

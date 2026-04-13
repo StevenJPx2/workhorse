@@ -15,9 +15,7 @@ export function GridDemo() {
 
   return (
     <box flexDirection="column" gap={2}>
-      <text fg={theme().text.secondary}>
-        Arrow keys to move between cells, Enter to activate:
-      </text>
+      <text fg={theme().text.secondary}>Arrow keys to move between cells, Enter to activate:</text>
 
       <Grid rows={3} cols={3} wrap>
         <box flexDirection="column" gap={1}>

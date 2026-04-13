@@ -16,7 +16,6 @@ import {
   addKeyDecision,
   updateSessionStatus,
   hasSessionMemory,
-
   type SessionEvent,
 } from "../session-memory.ts";
 
@@ -43,7 +42,7 @@ describe("session-memory", () => {
   describe("createSessionMemory", () => {
     test("creates memory with required fields", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
-      
+
       expect(memory.ticketId).toBe("AM-123");
       expect(memory.status).toBe("pending");
       expect(memory.agent).toBe("opencode");
@@ -60,7 +59,13 @@ describe("session-memory", () => {
     });
 
     test("uses custom summary if provided", () => {
-      const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123", "Custom summary");
+      const memory = createSessionMemory(
+        "AM-123",
+        "pending",
+        "opencode",
+        "feat/AM-123",
+        "Custom summary",
+      );
       expect(memory.summary).toBe("Custom summary");
     });
   });
@@ -69,7 +74,7 @@ describe("session-memory", () => {
     test("formats memory as markdown with frontmatter", () => {
       const memory = createSessionMemory("AM-123", "implementing", "opencode", "feat/AM-123");
       const formatted = formatSessionMemory(memory);
-      
+
       expect(formatted).toContain("---");
       expect(formatted).toContain("ticket_id: AM-123");
       expect(formatted).toContain("status: implementing");
@@ -81,7 +86,7 @@ describe("session-memory", () => {
       const memory = createSessionMemory("AM-123", "implementing", "opencode", "feat/AM-123");
       memory.summary = "Working on auth fix";
       const formatted = formatSessionMemory(memory);
-      
+
       expect(formatted).toContain("## Session Summary");
       expect(formatted).toContain("Working on auth fix");
     });
@@ -92,7 +97,7 @@ describe("session-memory", () => {
         { timestamp: "2025-01-01T10:00:00Z", type: "status_change", description: "Started work" },
       ];
       const formatted = formatSessionMemory(memory);
-      
+
       expect(formatted).toContain("## Recent Activity");
       expect(formatted).toContain("[2025-01-01T10:00:00Z] Started work");
     });
@@ -101,7 +106,7 @@ describe("session-memory", () => {
       const memory = createSessionMemory("AM-123", "implementing", "opencode", "feat/AM-123");
       memory.keyDecisions = ["Use exponential backoff", "Config via env var"];
       const formatted = formatSessionMemory(memory);
-      
+
       expect(formatted).toContain("## Key Decisions");
       expect(formatted).toContain("- Use exponential backoff");
       expect(formatted).toContain("- Config via env var");
@@ -116,10 +121,10 @@ describe("session-memory", () => {
         { timestamp: "2025-01-01T10:00:00Z", type: "status_change", description: "Event 1" },
       ];
       memory.keyDecisions = ["Decision 1"];
-      
+
       const written = writeSessionMemory(tempDir, memory);
       expect(written).toBe(true);
-      
+
       const read = readSessionMemory(tempDir);
       expect(read).not.toBeNull();
       expect(read?.ticketId).toBe("AM-123");
@@ -133,7 +138,7 @@ describe("session-memory", () => {
     test("creates .jiratown directory if missing", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
       writeSessionMemory(tempDir, memory);
-      
+
       expect(existsSync(join(tempDir, ".jiratown"))).toBe(true);
       expect(existsSync(join(tempDir, ".jiratown", "context.md"))).toBe(true);
     });
@@ -160,16 +165,16 @@ describe("session-memory", () => {
     test("adds event to existing memory", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
       writeSessionMemory(tempDir, memory);
-      
+
       const event: SessionEvent = {
         timestamp: new Date().toISOString(),
         type: "file_modified",
         description: "Modified auth.ts",
       };
-      
+
       const added = addSessionEvent(tempDir, event);
       expect(added).toBe(true);
-      
+
       const read = readSessionMemory(tempDir);
       expect(read?.recentActivity.length).toBe(1);
       expect(read?.recentActivity[0].description).toBe("Modified auth.ts");
@@ -181,7 +186,7 @@ describe("session-memory", () => {
         type: "file_modified",
         description: "Modified auth.ts",
       };
-      
+
       const added = addSessionEvent(tempDir, event);
       expect(added).toBe(false);
     });
@@ -197,14 +202,14 @@ describe("session-memory", () => {
         });
       }
       writeSessionMemory(tempDir, memory);
-      
+
       // Add another event
       addSessionEvent(tempDir, {
         timestamp: new Date().toISOString(),
         type: "file_modified",
         description: "New event",
       });
-      
+
       const read = readSessionMemory(tempDir);
       expect(read?.recentActivity.length).toBe(20);
       expect(read?.recentActivity[0].description).toBe("New event");
@@ -215,10 +220,10 @@ describe("session-memory", () => {
     test("adds decision to existing memory", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
       writeSessionMemory(tempDir, memory);
-      
+
       const added = addKeyDecision(tempDir, "Use retry logic");
       expect(added).toBe(true);
-      
+
       const read = readSessionMemory(tempDir);
       expect(read?.keyDecisions).toContain("Use retry logic");
     });
@@ -233,10 +238,10 @@ describe("session-memory", () => {
     test("updates status and adds event", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
       writeSessionMemory(tempDir, memory);
-      
+
       const updated = updateSessionStatus(tempDir, "implementing");
       expect(updated).toBe(true);
-      
+
       const read = readSessionMemory(tempDir);
       expect(read?.status).toBe("implementing");
       expect(read?.recentActivity[0].description).toContain("pending → implementing");
@@ -245,9 +250,9 @@ describe("session-memory", () => {
     test("updates summary if provided", () => {
       const memory = createSessionMemory("AM-123", "pending", "opencode", "feat/AM-123");
       writeSessionMemory(tempDir, memory);
-      
+
       updateSessionStatus(tempDir, "implementing", "Now implementing auth fix");
-      
+
       const read = readSessionMemory(tempDir);
       expect(read?.summary).toBe("Now implementing auth fix");
     });

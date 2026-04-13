@@ -49,9 +49,7 @@ export function getTicketById(id: string): Ticket | null {
  */
 export function getTicketsByRig(rig: string): Ticket[] {
   const db = getDatabase();
-  const stmt = db.prepare(
-    "SELECT * FROM tickets WHERE rig = ? ORDER BY created_at DESC"
-  );
+  const stmt = db.prepare("SELECT * FROM tickets WHERE rig = ? ORDER BY created_at DESC");
   return stmt.all(rig) as Ticket[];
 }
 

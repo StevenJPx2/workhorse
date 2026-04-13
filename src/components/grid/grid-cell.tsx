@@ -68,9 +68,5 @@ export function GridCell(props: GridCellProps) {
   };
 
   // Render children wrapped in CellContext
-  return (
-    <CellContext.Provider value={cellContext}>
-      {props.children}
-    </CellContext.Provider>
-  );
+  return <CellContext.Provider value={cellContext}>{props.children}</CellContext.Provider>;
 }

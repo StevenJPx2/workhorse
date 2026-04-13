@@ -16,9 +16,5 @@ import { KeyboardContext, createKeyboardValue } from "./keyboard-context.ts";
 export const KeyboardProvider: ParentComponent = (props) => {
   const value = createKeyboardValue();
 
-  return (
-    <KeyboardContext.Provider value={value}>
-      {props.children}
-    </KeyboardContext.Provider>
-  );
+  return <KeyboardContext.Provider value={value}>{props.children}</KeyboardContext.Provider>;
 };

@@ -4,24 +4,13 @@
 
 import type { SpawnAgentOptions, SpawnResult } from "./types.ts";
 import { createWorktree, removeWorktree } from "../session/worktree/index.ts";
-import {
-  createSession,
-  killSession,
-  sendKeys,
-  sessionExists,
-} from "../session/tmux/index.ts";
-import {
-  generateMcpConfig,
-  writeMcpConfig,
-  buildAgentCommand,
-} from "./mcp-config.ts";
+import { createSession, killSession, sendKeys, sessionExists } from "../session/tmux/index.ts";
+import { generateMcpConfig, writeMcpConfig, buildAgentCommand } from "./mcp-config.ts";
 import { activeAgents, createAgentInstance, updateAgentState } from "./agent-store.ts";
 import { orchestratorTrace } from "./trace.ts";
 import { prepareAgentPrompt } from "./prompt-builder.ts";
 
-export async function spawnAgent(
-  options: SpawnAgentOptions
-): Promise<SpawnResult> {
+export async function spawnAgent(options: SpawnAgentOptions): Promise<SpawnResult> {
   const {
     ticketId,
     agentType,
@@ -51,12 +40,7 @@ export async function spawnAgent(
 
   try {
     orchestratorTrace(ticketId, "CREATING_WORKTREE", { repoPath: !!repoPath, issueType });
-    const worktree = await createWorktree(
-      repoPath,
-      ticketId,
-      issueType,
-      baseBranch
-    );
+    const worktree = await createWorktree(repoPath, ticketId, issueType, baseBranch);
 
     if (!worktree) {
       orchestratorTrace(ticketId, "WORKTREE_FAILED");
@@ -68,7 +52,10 @@ export async function spawnAgent(
     }
 
     instance.worktree = worktree;
-    orchestratorTrace(ticketId, "WORKTREE_CREATED", { path: worktree.path, branch: worktree.branch });
+    orchestratorTrace(ticketId, "WORKTREE_CREATED", {
+      path: worktree.path,
+      branch: worktree.branch,
+    });
 
     const mcpConfig = generateMcpConfig(ticketId, jiraCloudId);
     const configPath = writeMcpConfig(worktree.path, ticketId, mcpConfig);
@@ -109,8 +96,7 @@ export async function spawnAgent(
     });
 
     const { command, args } = buildAgentCommand(agentType, ticketId, prompt);
-    const agentCmd =
-      args.length > 0 ? `${command} ${args.join(" ")}` : command;
+    const agentCmd = args.length > 0 ? `${command} ${args.join(" ")}` : command;
 
     orchestratorTrace(ticketId, "STARTING_AGENT", {
       command,

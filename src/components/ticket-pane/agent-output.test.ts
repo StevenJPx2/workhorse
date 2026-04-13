@@ -18,11 +18,7 @@ function formatTime(timestamp: string | null): string {
 }
 
 // Test visible lines logic
-function getVisibleLines(
-  lines: string[],
-  expanded: boolean,
-  collapsedLines: number
-): string[] {
+function getVisibleLines(lines: string[], expanded: boolean, collapsedLines: number): string[] {
   if (expanded || lines.length <= collapsedLines) {
     return lines;
   }
@@ -138,14 +134,14 @@ describe("agent-output", () => {
     test("should show waiting message when running with no output", () => {
       const isRunning = true;
       const hasLines = false;
-      const message = hasLines ? "output" : (isRunning ? "Waiting for output..." : "No output yet");
+      const message = hasLines ? "output" : isRunning ? "Waiting for output..." : "No output yet";
       expect(message).toBe("Waiting for output...");
     });
 
     test("should show no output message when not running with no output", () => {
       const isRunning = false;
       const hasLines = false;
-      const message = hasLines ? "output" : (isRunning ? "Waiting for output..." : "No output yet");
+      const message = hasLines ? "output" : isRunning ? "Waiting for output..." : "No output yet";
       expect(message).toBe("No output yet");
     });
   });

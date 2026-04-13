@@ -44,12 +44,7 @@ export function Divider(props: DividerProps) {
 
   if (orientation() === "vertical") {
     return (
-      <box
-        flexDirection="column"
-        marginLeft={margin()}
-        marginRight={margin()}
-        alignItems="center"
-      >
+      <box flexDirection="column" marginLeft={margin()} marginRight={margin()} alignItems="center">
         <text fg={color()}>{char()}</text>
       </box>
     );
@@ -66,12 +61,7 @@ export function Divider(props: DividerProps) {
       alignItems="center"
       height={1}
     >
-      <Show
-        when={props.label}
-        fallback={
-          <text fg={color()}>{createLine(lineLength())}</text>
-        }
-      >
+      <Show when={props.label} fallback={<text fg={color()}>{createLine(lineLength())}</text>}>
         {/* Left line */}
         <text fg={color()}>{createLine(5)}</text>
         {/* Label */}

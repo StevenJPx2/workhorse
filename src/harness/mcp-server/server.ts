@@ -7,19 +7,13 @@ import {
   handleUpdateStatus,
   handleEscalate,
 } from "./tools/index.ts";
-import type {
-  AcknowledgeInput,
-  UpdateStatusInput,
-  EscalateInput,
-} from "./types.ts";
+import type { AcknowledgeInput, UpdateStatusInput, EscalateInput } from "./types.ts";
 import { TOOL_NAMES } from "./tool-names.ts";
 
 const GetNotificationsSchema = z.object({});
 
 const AcknowledgeSchema = z.object({
-  notification_ids: z
-    .array(z.string())
-    .describe("IDs of notifications to acknowledge"),
+  notification_ids: z.array(z.string()).describe("IDs of notifications to acknowledge"),
 });
 
 const UpdateStatusSchema = z.object({
@@ -37,23 +31,18 @@ const UpdateStatusSchema = z.object({
     ])
     .describe(
       "New status for the ticket workflow. Use: " +
-      "'pending' (not started), 'planning' (analyzing requirements), " +
-      "'implementing' (writing code), 'blocked' (needs input), " +
-      "'pr_created' (PR opened), 'in_review' (awaiting review), " +
-      "'done' (complete)"
+        "'pending' (not started), 'planning' (analyzing requirements), " +
+        "'implementing' (writing code), 'blocked' (needs input), " +
+        "'pr_created' (PR opened), 'in_review' (awaiting review), " +
+        "'done' (complete)",
     ),
   message: z.string().optional().describe("Optional status update message"),
 });
 
 const EscalateSchema = z.object({
-  questions: z
-    .array(z.string())
-    .min(1)
-    .describe("Questions to ask the user"),
+  questions: z.array(z.string()).min(1).describe("Questions to ask the user"),
   context: z.string().describe("Context about what you were working on"),
-  blocking: z
-    .boolean()
-    .describe("Whether this blocks further work on the ticket"),
+  blocking: z.boolean().describe("Whether this blocks further work on the ticket"),
 });
 
 interface McpResult {
@@ -70,7 +59,7 @@ interface JiratownHandlers {
 
 export function createJiratownServer(
   db: Database,
-  ticketId: string
+  ticketId: string,
 ): { server: McpServer; handlers: JiratownHandlers } {
   const server = new McpServer({
     name: "jiratown",
@@ -111,28 +100,28 @@ export function createJiratownServer(
     TOOL_NAMES.GET_NOTIFICATIONS,
     "Get pending notifications for this ticket",
     GetNotificationsSchema.shape,
-    () => handlers.getNotifications()
+    () => handlers.getNotifications(),
   );
 
   server.tool(
     TOOL_NAMES.ACKNOWLEDGE,
     "Acknowledge notifications after addressing them",
     AcknowledgeSchema.shape,
-    (input) => handlers.acknowledge(input as AcknowledgeInput)
+    (input) => handlers.acknowledge(input as AcknowledgeInput),
   );
 
   server.tool(
     TOOL_NAMES.UPDATE_STATUS,
     "Update the ticket's progress status",
     UpdateStatusSchema.shape,
-    (input) => handlers.updateStatus(input as UpdateStatusInput)
+    (input) => handlers.updateStatus(input as UpdateStatusInput),
   );
 
   server.tool(
     TOOL_NAMES.ESCALATE,
     "Escalate questions or issues to the user",
     EscalateSchema.shape,
-    (input) => handlers.escalate(input as EscalateInput)
+    (input) => handlers.escalate(input as EscalateInput),
   );
 
   return { server, handlers };

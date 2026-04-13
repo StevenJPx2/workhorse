@@ -2,10 +2,20 @@
   "name": "jiratown",
   "version": "0.1.0",
   "description": "Terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets",
-  "type": "module",
+  "keywords": [
+    "agents",
+    "ai",
+    "dashboard",
+    "jira",
+    "terminal",
+    "tui"
+  ],
+  "license": "MIT",
+  "author": "",
   "bin": {
     "jiratown": "./dist/index.js"
   },
+  "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun run build.ts",
@@ -38,27 +48,18 @@
     "@oxlint/plugins": "^1.59.0",
     "@types/bun": "^1.2.4",
     "lint-staged": "^16.4.0",
+    "oxfmt": "^0.44.0",
     "oxlint": "^1.59.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.7.3"
   },
-  "keywords": [
-    "jira",
-    "tui",
-    "terminal",
-    "ai",
-    "agents",
-    "dashboard"
-  ],
-  "author": "",
-  "license": "MIT",
+  "simple-git-hooks": {
+    "pre-commit": "bunx lint-staged"
+  },
   "lint-staged": {
     "*.{ts,tsx}": [
       "oxfmt --write",
       "oxlint"
     ]
-  },
-  "simple-git-hooks": {
-    "pre-commit": "bunx lint-staged"
   }
 }

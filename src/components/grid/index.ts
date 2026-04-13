@@ -7,19 +7,11 @@
  * - GridContext/CellContext: Contexts for accessing grid state
  */
 
-export {
-  Grid,
-  type GridProps,
-} from "./grid.tsx";
+export { Grid, type GridProps } from "./grid.tsx";
 
-export {
-  type CellData,
-} from "./grid-types.ts";
+export { type CellData } from "./grid-types.ts";
 
-export {
-  GridCell,
-  type GridCellProps,
-} from "./grid-cell.tsx";
+export { GridCell, type GridCellProps } from "./grid-cell.tsx";
 
 export {
   GridContext,

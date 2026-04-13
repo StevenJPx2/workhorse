@@ -110,9 +110,7 @@ export function CommandPalette(props: CommandPaletteProps) {
       start = Math.min(selected - MAX_VISIBLE + 2, total - MAX_VISIBLE);
     }
 
-    return items
-      .slice(start, start + MAX_VISIBLE)
-      .map((item, i) => ({ item, index: start + i }));
+    return items.slice(start, start + MAX_VISIBLE).map((item, i) => ({ item, index: start + i }));
   });
 
   // Calculate modal height based on content
@@ -174,9 +172,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             )}
           </For>
           <Show when={p().displayItems().length > MAX_VISIBLE}>
-            <text fg={theme().text.dim}>
-              ... {p().displayItems().length - MAX_VISIBLE} more
-            </text>
+            <text fg={theme().text.dim}>... {p().displayItems().length - MAX_VISIBLE} more</text>
           </Show>
         </Show>
       </box>

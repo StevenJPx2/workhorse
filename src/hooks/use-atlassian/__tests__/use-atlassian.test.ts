@@ -9,11 +9,10 @@ import { useAtlassian } from "../use-atlassian.ts";
 // Mock MCP SDK
 const mockConnect = mock(() => Promise.resolve());
 const mockClose = mock(() => Promise.resolve());
-const mockCallTool = mock(
-  () =>
-    Promise.resolve({
-      content: [] as Array<{ type: string; text: string }>,
-    })
+const mockCallTool = mock(() =>
+  Promise.resolve({
+    content: [] as Array<{ type: string; text: string }>,
+  }),
 );
 
 mock.module("@modelcontextprotocol/sdk/client/index.js", () => ({
@@ -104,9 +103,7 @@ describe("useAtlassian", () => {
       await createRoot(async (dispose) => {
         const atlassian = useAtlassian();
 
-        await expect(atlassian.connect()).rejects.toThrow(
-          "Jira cloud ID is not configured"
-        );
+        await expect(atlassian.connect()).rejects.toThrow("Jira cloud ID is not configured");
         dispose();
       });
     });
@@ -242,7 +239,7 @@ describe("useAtlassian", () => {
         const atlassian = useAtlassian({ cloudId: "test.atlassian.net" });
 
         await expect(atlassian.fetchIssue("AM-999")).rejects.toThrow(
-          "No data returned for issue AM-999"
+          "No data returned for issue AM-999",
         );
 
         dispose();

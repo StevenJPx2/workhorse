@@ -1,6 +1,6 @@
 /**
  * Port allocation for OpenCode instances
- * 
+ *
  * IMPORTANT: Start from 14100 to avoid conflicts with existing OpenCode
  * instances (the user's main Claude Code runs on 14096 by default).
  */
