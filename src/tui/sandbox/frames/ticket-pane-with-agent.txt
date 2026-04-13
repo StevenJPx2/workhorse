@@ -1,0 +1,28 @@
+                                                                                
+ AM-789: Refactor authentication to use OAuth2                                  
+ =============================================                                  
+                                                                                
+ Status ▶ IMPLEMENTING            Agent opencode (● Running)                    
+ Worktree /home/user/worktrees/am-789                                           
+                                                                                
+ ● Running [s:stop]                                                             
+                                                                                
+ ┌────────────────────────────────────────────────────────────────────────────┐ 
+ │ Waiting for output...                                                      │ 
+ │                                                                            │ 
+ │                                                                            │ 
+ │                                                                            │ 
+ │                                                                            │ 
+ └────────────────────────────────────────────────────────────────────────────┘ 
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                           e:escalate   a:switch agent   o:open jira   x:close  
+                                                                                
+                                                                                
+  > Press 'i' to send feedback to agent...                                      
+                                                                                
+                                                                                

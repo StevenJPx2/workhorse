@@ -196,7 +196,7 @@ function isImplementationFile(filename) {
 var rule5 = {
   meta: {
     docs: {
-      description: "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory."
+      description: "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it."
     }
   },
   create(context) {
@@ -207,6 +207,16 @@ var rule5 = {
     try {
       const dirname = path3.dirname(filename);
       const entries = fs2.readdirSync(dirname);
+      if (isTestFile(path3.basename(filename))) {
+        const hasTestsDir = entries.some((entry) => entry === "__tests__" && fs2.statSync(path3.join(dirname, entry)).isDirectory());
+        if (hasTestsDir) {
+          context.report({
+            loc: { line: 1, column: 0 },
+            message: `A __tests__/ directory already exists in "${path3.basename(dirname)}". Move this test file inside __tests__/ instead.`
+          });
+          return {};
+        }
+      }
       const implFiles = entries.filter(isImplementationFile);
       const testFiles = entries.filter(isTestFile);
       const totalSourceFiles = implFiles.length + testFiles.length;

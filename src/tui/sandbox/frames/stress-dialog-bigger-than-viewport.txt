@@ -1,0 +1,8 @@
+╭──────────────────╮
+│                  │
+│ Big Dialog       │
+│                  │
+│ This dialog is   │
+│ bigger than the  │
+│ terminal         │
+╰──────────────────╯

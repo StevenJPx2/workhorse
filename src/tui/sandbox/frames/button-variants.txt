@@ -1,0 +1,14 @@
+           Default            
+           Primary            
+                              
+           Success            
+           Warning            
+                              
+            Danger            
+           Disabled           
+                              
+                              
+                              
+            Ghost             
+       Ctrl+S:Shortcut        
+                              

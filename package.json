@@ -13,19 +13,27 @@
   "license": "MIT",
   "author": "",
   "bin": {
-    "jiratown": "./dist/index.js"
+    "jiratown": "./dist/cli/index.js"
   },
   "type": "module",
+  "imports": {
+    "#core": "./src/core/index.ts",
+    "#core/*": "./src/core/*",
+    "#tui/*": "./src/tui/*",
+    "#cli/*": "./src/cli/*",
+    "#types": "./src/types/index.ts",
+    "#types/*": "./src/types/*"
+  },
   "scripts": {
-    "dev": "bun run src/index.ts",
+    "dev": "bun run src/cli/index.ts",
     "build": "bun run build.ts",
     "test": "bun test",
     "test:cleanup": "bun test && bun run src/index.ts cleanup --all",
     "seed": "bun run scripts/seed.ts",
-    "sandbox": "bun run src/sandbox/index.tsx",
-    "frames": "bun run src/sandbox/dump-frames/run.tsx",
-    "test:visual": "bun test src/sandbox/snapshot.test.tsx",
-    "cleanup": "bun run src/index.ts cleanup",
+    "sandbox": "bun run src/tui/sandbox/index.tsx",
+    "frames": "bun run src/tui/sandbox/dump-frames/run.tsx",
+    "test:visual": "bun test src/tui/sandbox/snapshot.test.tsx",
+    "cleanup": "bun run src/cli/index.ts cleanup",
     "jiratown-mcp": "bun run src/mcp-cli.ts",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",

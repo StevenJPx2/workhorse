@@ -11,7 +11,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { parseArgs } from "util";
 import { Database } from "bun:sqlite";
-import { createJiratownServer } from "./harness/mcp-server/server.ts";
+import { createJiratownServer } from "./core/mcp-server/server.ts";
 
 // Parse command line arguments
 const { values } = parseArgs({

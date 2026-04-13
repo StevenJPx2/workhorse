@@ -1,0 +1,24 @@
+                                                                      
+ AM-456: Fix login timeout on slow networks                           
+ ==========================================                           
+                                                                      
+ Status ▶ IMPLEMENTING            Agent opencode                      
+ Branch   feat/am-456-fix-login                                       
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                                                                      
+                 e:escalate   a:switch agent   o:open jira   x:close  
+                                                                      
+                                                                      
+  > Press 'i' to send feedback to agent...                            
+                                                                      
+                                                                      

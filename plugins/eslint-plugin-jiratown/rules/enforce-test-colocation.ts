@@ -20,7 +20,7 @@ const rule = {
   meta: {
     docs: {
       description:
-        "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory.",
+        "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it.",
     },
   },
 
@@ -38,6 +38,22 @@ const rule = {
     try {
       const dirname = path.dirname(filename);
       const entries = fs.readdirSync(dirname);
+
+      // If this is a test file and a __tests__/ directory already exists as a
+      // sibling, the test must live inside __tests__/ instead.
+      if (isTestFile(path.basename(filename))) {
+        const hasTestsDir = entries.some(
+          (entry) => entry === "__tests__" && fs.statSync(path.join(dirname, entry)).isDirectory(),
+        );
+
+        if (hasTestsDir) {
+          context.report({
+            loc: { line: 1, column: 0 },
+            message: `A __tests__/ directory already exists in "${path.basename(dirname)}". Move this test file inside __tests__/ instead.`,
+          });
+          return {};
+        }
+      }
 
       const implFiles = entries.filter(isImplementationFile);
       const testFiles = entries.filter(isTestFile);

@@ -1,0 +1,20 @@
+                                                            
+ LONGTICKET-99999: This is a very long ticket summary that  
+ describes a complex issue involving authentication         
+ timeouts when connecting to multiple microservices in      
+ parallel across different availability zones               
+ ========================================================== 
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+ Branch   feat/LONGTICKET-99999-this-is-also-a-very-long-   
+          branch-name-that-exceeds-expectations             
+                                                            
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            

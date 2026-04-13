@@ -1,0 +1,18 @@
+● Running (1m 45s) [s:stop]                                                     
+                                                                                
+┌──────────────────────────────────────────────────────────────────────────────┐
+│   This is a very long message that should be truncated because it exceeds t. │
+│   Short message here                                                         │
+│ › Another extremely verbose message explaining what the agent is doing in g. │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘

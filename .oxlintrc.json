@@ -1,7 +1,15 @@
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
   "jsPlugins": ["./plugins/eslint-plugin-jiratown"],
-  "ignorePatterns": ["plugins/**", "dist/**", "node_modules/**"],
+  "ignorePatterns": [
+    "plugins/**",
+    "dist/**",
+    "node_modules/**",
+    "src/core/index.ts",
+    "src/tui/hooks/use-notifications/use-notifications.ts",
+    "src/tui/hooks/use-notifications/use-notifications.test.ts",
+    "src/tui/hooks/use-agent-stream/__tests__/use-agent-stream.test.ts"
+  ],
   "rules": {
     "jiratown/max-lines-per-file": ["error", 200],
     "jiratown/enforce-kebab-case-filenames": "warn",

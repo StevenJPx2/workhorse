@@ -1,0 +1,20 @@
+                                                            
+ AM-000: No summary                                         
+ ==================                                         
+                                                            
+ Status ▶ IMPLEMENTING            Agent opencode            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+                                                            
+       e:escalate   a:switch agent   o:open jira   x:close  
+                                                            
+                                                            
+  > Press 'i' to send feedback to agent...                  
+                                                            
+                                                            

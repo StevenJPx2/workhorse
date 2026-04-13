@@ -1,0 +1,18 @@
+● Running (1m 45s) [s:stop]                                                     
+                                                                                
+┌──────────────────────────────────────────────────────────────────────────────┐
+│   This is a very long line that should be truncated because it exceeds th... │
+│   Short line here                                                            │
+│ › Another extremely verbose line explaining what the agent is doing in gr... │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘

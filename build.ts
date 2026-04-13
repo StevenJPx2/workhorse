@@ -7,7 +7,7 @@ import { $ } from "bun";
 import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin";
 
 const result = await Bun.build({
-  entrypoints: ["./src/index.ts"],
+  entrypoints: ["./src/cli/index.ts"],
   outdir: "./dist",
   target: "bun",
   format: "esm",
@@ -25,6 +25,6 @@ if (!result.success) {
   process.exit(1);
 }
 
-await $`chmod +x ./dist/index.js`;
+await $`chmod +x ./dist/cli/index.js`;
 
-console.log("Build complete! Output: ./dist/index.js");
+console.log("Build complete! Output: ./dist/cli/index.js");

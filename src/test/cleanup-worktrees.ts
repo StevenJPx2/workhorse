@@ -22,8 +22,8 @@
  */
 
 import { afterAll } from "bun:test";
-import { listWorktrees, removeWorktree } from "../harness/session/worktree/index.ts";
-import { getGitRoot } from "../lib/detect-rig.ts";
+import { listWorktrees, removeWorktree } from "#core/session/worktree/index.ts";
+import { getGitRoot } from "#core/git/detect-rig.ts";
 
 // Track worktrees created during tests for cleanup
 const trackedWorktrees = new Set<string>();

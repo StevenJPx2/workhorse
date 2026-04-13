@@ -7,6 +7,9 @@ preload = ["@opentui/solid/preload"]
 # Preload OpenTUI Solid plugin for JSX in tests
 preload = ["@opentui/solid/preload"]
 
+# Run tests sequentially to avoid database and mocking conflicts
+parallel = false
+
 # Enable coverage by default
 coverage = true
 

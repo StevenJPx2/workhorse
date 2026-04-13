@@ -18,7 +18,15 @@
     "types": ["bun"],
     "lib": ["ESNext"],
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "#core": ["./src/core/index.ts"],
+      "#core/*": ["./src/core/*"],
+      "#tui/*": ["./src/tui/*"],
+      "#cli/*": ["./src/cli/*"],
+      "#types": ["./src/types/index.ts"],
+      "#types/*": ["./src/types/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
