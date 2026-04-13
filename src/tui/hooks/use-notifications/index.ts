@@ -10,9 +10,8 @@ export type {
   CreateNotificationInput,
   NotificationPriority,
 } from "./types.ts";
+export { resolveTicketId, handleNotificationError } from "./notification-helpers.ts";
 export {
-  resolveTicketId,
-  handleNotificationError,
   countUnread,
   filterBlocking,
   markReadInList,
@@ -21,4 +20,4 @@ export {
   removeFromList,
   filterByPriority,
   findNewNotifications,
-} from "./notification-helpers.ts";
+} from "#core/notifications/notification-helpers.ts";

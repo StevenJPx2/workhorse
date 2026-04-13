@@ -146,6 +146,15 @@ export {
   acknowledgeNotifications,
   deleteNotification,
   generateSystemInstruction,
+  // List helpers
+  countUnread,
+  filterBlocking,
+  markReadInList,
+  acknowledgeInList,
+  acknowledgeManyInList,
+  removeFromList,
+  filterByPriority,
+  findNewNotifications,
 } from "./notifications/index.ts";
 
 export type {
@@ -233,15 +242,3 @@ export type {
   HaltResult,
   DatabaseOperations,
 } from "./workflow/index.ts";
-
-// ========== Notification Helpers ==========
-export {
-  countUnread,
-  filterBlocking,
-  markReadInList,
-  acknowledgeInList,
-  acknowledgeManyInList,
-  removeFromList,
-  filterByPriority,
-  findNewNotifications,
-} from "./notifications/index.ts";
