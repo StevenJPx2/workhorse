@@ -50,6 +50,7 @@
     "@opentui/core": "^0.1.90",
     "@opentui/solid": "^0.1.90",
     "citty": "^0.1.6",
+    "keytar": "^7.9.0",
     "solid-js": "^1.9.5",
     "toml": "^3.0.0"
   },

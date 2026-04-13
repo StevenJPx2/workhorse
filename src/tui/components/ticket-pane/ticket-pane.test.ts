@@ -3,7 +3,9 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type { TicketEvent, TicketEventType } from "#types/ticket.ts";
+import type { TicketEvent, TicketEventType, TicketStatus } from "#types/ticket.ts";
+import type { UsePRReviewReturn } from "../../hooks/use-pr-review/types.ts";
+import type { TicketPaneProps } from "./types.ts";
 
 // Test the event formatting logic (extracted for testability)
 function getEventIcon(eventType: TicketEventType, isLatest: boolean): string {
@@ -127,6 +129,122 @@ describe("ticket-pane", () => {
         timestamp: "2024-01-01T00:00:00Z",
       };
       expect(formatEventDescription(event)).toBe("status_change");
+    });
+  });
+
+  describe("PR review display logic", () => {
+    function shouldShowPRReview(
+      status: TicketStatus,
+      prUrl: string | null,
+      prReview: UsePRReviewReturn | undefined,
+    ): boolean {
+      return status === "in_review" && prUrl !== null && Boolean(prReview);
+    }
+
+    it("shows PR review when in_review with pr_url and prReview", () => {
+      expect(
+        shouldShowPRReview(
+          "in_review",
+          "https://github.com/org/repo/pull/1",
+          {} as UsePRReviewReturn,
+        ),
+      ).toBe(true);
+    });
+
+    it("hides PR review when not in_review", () => {
+      const statuses: TicketStatus[] = [
+        "pending",
+        "queued",
+        "planning",
+        "implementing",
+        "blocked",
+        "pr_created",
+        "done",
+      ];
+      for (const status of statuses) {
+        expect(
+          shouldShowPRReview(status, "https://github.com/org/repo/pull/1", {} as UsePRReviewReturn),
+        ).toBe(false);
+      }
+    });
+
+    it("hides PR review when pr_url is null", () => {
+      expect(shouldShowPRReview("in_review", null, {} as UsePRReviewReturn)).toBe(false);
+    });
+
+    it("hides PR review when prReview is undefined", () => {
+      expect(shouldShowPRReview("in_review", "https://github.com/org/repo/pull/1", undefined)).toBe(
+        false,
+      );
+    });
+
+    it("hides PR review when both pr_url and prReview are missing", () => {
+      expect(shouldShowPRReview("in_review", null, undefined)).toBe(false);
+    });
+
+    it("TicketPaneProps accepts prReview field", () => {
+      const props: TicketPaneProps = {
+        ticket: {
+          id: "AM-123",
+          jira_key: "AM-123",
+          jira_url: null,
+          summary: "Test ticket",
+          status: "in_review",
+          rig: "github.com/org/repo",
+          worktree_path: "/path/to/worktree",
+          branch_name: "feat/test",
+          agent: "opencode",
+          agent_pid: null,
+          pr_url: "https://github.com/org/repo/pull/1",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+          last_jira_sync: null,
+        },
+      };
+      expect(props.ticket.status).toBe("in_review");
+      expect(props.ticket.pr_url).toBe("https://github.com/org/repo/pull/1");
+      expect(props.prReview).toBeUndefined();
+    });
+
+    it("TicketPaneProps accepts prReview with hook return", () => {
+      const mockPRReview = {
+        reviews: () => [],
+        commentsWithDrafts: () => [],
+        reviewState: () => "pending" as const,
+        isPolling: () => false,
+        error: () => null,
+        isSubmitting: () => false,
+        setDraftReply: () => {},
+        generateSmartReply: () => "",
+        replyOnly: async () => {},
+        replyAndAddressChanges: async () => {},
+        addressAllComments: async () => {},
+        refresh: async () => {},
+        startPolling: () => {},
+        stopPolling: () => {},
+      } as UsePRReviewReturn;
+
+      const props: TicketPaneProps = {
+        ticket: {
+          id: "AM-123",
+          jira_key: "AM-123",
+          jira_url: null,
+          summary: "Test ticket",
+          status: "in_review",
+          rig: "github.com/org/repo",
+          worktree_path: null,
+          branch_name: null,
+          agent: "opencode",
+          agent_pid: null,
+          pr_url: "https://github.com/org/repo/pull/1",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+          last_jira_sync: null,
+        },
+        prReview: mockPRReview,
+      };
+      expect(props.prReview).toBeDefined();
+      expect(props.prReview?.reviewState()).toBe("pending");
     });
   });
 });

@@ -54,6 +54,17 @@ export {
 
 export type { JiratownConfig, ResolvedConfig, AgentType, ThemeName } from "#types/config.ts";
 
+// ========== Keychain / Credentials ==========
+export {
+  storeGitHubToken,
+  getGitHubToken,
+  deleteGitHubToken,
+  hasGitHubToken,
+  storeGitHubSession,
+  getGitHubSession,
+  deleteGitHubSession,
+} from "./config/keychain.ts";
+
 // ========== Git / Rig Detection ==========
 export { detectRig, getGitRoot, getRemoteUrl, normalizeRemoteUrl } from "./git/detect-rig.ts";
 
@@ -225,6 +236,29 @@ export type { FuzzyMatch, ParsedTicket } from "./utils/index.ts";
 export { AtlassianClient, createAtlassianClient, mapIssueResponse } from "./jira/index.ts";
 
 export type { JiraIssue, JiraClient, AtlassianClientOptions } from "./jira/index.ts";
+
+// ========== GitHub Client ==========
+export {
+  GitHubClient,
+  createGitHubClient,
+  mapPullRequest,
+  mapReviewComment,
+  mapPRReview,
+  parseMcpResponse,
+  extractTextContent,
+} from "./github/index.ts";
+
+export type {
+  GitHubPullRequest,
+  GitHubReviewComment,
+  GitHubPRReview,
+  CreateReviewParams,
+  ReviewCommentParams,
+  ReviewState,
+  McpToolResultContent,
+  GitHubClientOptions,
+  GitHubClientInterface,
+} from "./github/index.ts";
 
 // ========== Workflow ==========
 export {

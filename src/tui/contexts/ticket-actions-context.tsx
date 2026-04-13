@@ -16,6 +16,10 @@ export interface TicketActions {
   onSendMessage?: (message: string) => void;
   onStop?: () => void;
   onStart?: () => void;
+  onReplyOnly?: (commentId: number) => Promise<void>;
+  onReplyAndAddress?: (commentId: number) => Promise<void>;
+  onAddressAll?: () => Promise<void>;
+  onRefreshPR?: () => void;
 }
 
 const TicketActionsContext = createContext<TicketActions>({});

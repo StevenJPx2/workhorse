@@ -36,3 +36,7 @@ export * from "./use-agent-summary/index.ts";
 // Progress & Sync Hooks
 export * from "./use-jira-sync/index.ts";
 export * from "./use-event-log/index.ts";
+
+// GitHub & PR Review Hooks
+export * from "./use-github/index.ts";
+export * from "./use-pr-review/index.ts";

@@ -5,6 +5,7 @@
  * - Header with ID and summary
  * - Status, agent, and worktree metadata
  * - Agent display with LLM-summarized activity
+ * - PR review view (when ticket is in_review with pr_url)
  * - Progress log of events
  * - Action bar
  * - Optional chat input for agent feedback
@@ -19,6 +20,7 @@ import { useTicketActionsContext } from "../../contexts/ticket-actions-context.t
 import { useAgentProgress } from "../../hooks/use-agent-progress/index.ts";
 import { useAgentSummary } from "../../hooks/use-agent-summary/index.ts";
 import { ChatBox, useChatBox } from "../chat-box/index.ts";
+import { PRReviewView } from "../pr-review-view/index.ts";
 import { TicketHeader } from "./ticket-header.tsx";
 import { TicketMeta } from "./ticket-meta.tsx";
 import { ProgressLog } from "./progress-log.tsx";
@@ -95,6 +97,8 @@ export function TicketPane(props: TicketPaneProps) {
   const hasEvents = () =>
     (props.events && props.events.length > 0) || (props.logEntries && props.logEntries.length > 0);
   const showAgent = () => props.ticket.worktree_path || resolvedAgentState();
+  const showPRReview = () =>
+    props.ticket.status === "in_review" && props.ticket.pr_url !== null && props.prReview;
 
   return (
     <box flexDirection="column" gap={spacing.sm} flexGrow={1} padding={spacing.sm}>
@@ -109,6 +113,11 @@ export function TicketPane(props: TicketPaneProps) {
         worktreePath={props.ticket.worktree_path}
         branchName={props.ticket.branch_name}
       />
+
+      {/* PR review view (when ticket is in_review with pr_url) */}
+      <Show when={showPRReview()}>
+        {(_: boolean) => <PRReviewView prUrl={props.ticket.pr_url!} prReview={props.prReview!} />}
+      </Show>
 
       {/* Progress log (only if has events and agent not active) */}
       <Show when={hasEvents() && !isAgentActive()}>

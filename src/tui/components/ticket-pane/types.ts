@@ -5,7 +5,8 @@
 import type { Ticket, TicketEvent, TicketStatus } from "#types/ticket.ts";
 import type { AgentType } from "#types/config.ts";
 import type { AgentState } from "#core/agent/orchestrator/types.ts";
-import type { EventLogEntry } from "../hooks/use-event-log/types.ts";
+import type { EventLogEntry } from "../../hooks/use-event-log/types.ts";
+import type { UsePRReviewReturn } from "../../hooks/use-pr-review/types.ts";
 
 /**
  * Props for the TicketPane component
@@ -19,6 +20,8 @@ export interface TicketPaneProps {
   events?: TicketEvent[];
   /** Event log entries from useEventLog (takes precedence over events) */
   logEntries?: EventLogEntry[];
+  /** PR review hook return (shown when ticket is in_review with pr_url) */
+  prReview?: UsePRReviewReturn;
 }
 
 /**
