@@ -40,7 +40,10 @@ bun run format
 # Format and auto-fix
 bun run format:fix
 
-# Full check (lint + test)
+# Check test coverage (must be >= 97%)
+bun run coverage
+
+# Full check (lint + coverage)
 bun run check
 ```
 
@@ -103,7 +106,8 @@ See [CODE_QUALITY.md](./CODE_QUALITY.md) for architectural principles and patter
 - **97% code coverage required** across all files
 - Write tests before or alongside implementation
 - Test files are colocated with source files using `.test.ts` suffix
-- Run `bun test` to verify coverage - build will fail if coverage drops below threshold
+- Run `bun run coverage` to verify coverage meets the 97% threshold
+- The coverage check is included in `bun run check` and will fail if below threshold
 - Every new function, component, and hook must have corresponding tests
 
 ## Important Files
