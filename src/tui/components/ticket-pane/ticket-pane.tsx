@@ -21,6 +21,7 @@ import { useAgentProgress } from "../../hooks/use-agent-progress/index.ts";
 import { useAgentSummary } from "../../hooks/use-agent-summary/index.ts";
 import { ChatBox, useChatBox } from "../chat-box/index.ts";
 import { PRReviewView } from "../pr-review-view/index.ts";
+import { BlockedView } from "../blocked-view/index.ts";
 import { TicketHeader } from "./ticket-header.tsx";
 import { TicketMeta } from "./ticket-meta.tsx";
 import { ProgressLog } from "./progress-log.tsx";
@@ -99,6 +100,8 @@ export function TicketPane(props: TicketPaneProps) {
   const showAgent = () => props.ticket.worktree_path || resolvedAgentState();
   const showPRReview = () =>
     props.ticket.status === "in_review" && props.ticket.pr_url !== null && props.prReview;
+  const showBlocked = () =>
+    props.ticket.status === "blocked" && props.blockingNotifications?.length;
 
   return (
     <box flexDirection="column" gap={spacing.sm} flexGrow={1} padding={spacing.sm}>
@@ -117,6 +120,19 @@ export function TicketPane(props: TicketPaneProps) {
       {/* PR review view (when ticket is in_review with pr_url) */}
       <Show when={showPRReview()}>
         {(_: boolean) => <PRReviewView prUrl={props.ticket.pr_url!} prReview={props.prReview!} />}
+      </Show>
+
+      {/* Blocked view (when ticket is blocked with escalation) */}
+      <Show when={showBlocked()}>
+        <BlockedView
+          ticketId={props.ticket.id}
+          jiraUrl={props.ticket.jira_url}
+          notifications={props.blockingNotifications ?? []}
+          onResume={props.onResume}
+          onViewJira={props.onViewJira}
+          onCancel={props.onCancel}
+          onHandoff={props.onHandoff}
+        />
       </Show>
 
       {/* Progress log (only if has events and agent not active) */}

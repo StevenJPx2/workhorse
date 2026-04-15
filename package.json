@@ -15,6 +15,9 @@
   "bin": {
     "jiratown": "./dist/cli/index.js"
   },
+  "files": [
+    "dist/"
+  ],
   "type": "module",
   "imports": {
     "#core": "./src/core/index.ts",

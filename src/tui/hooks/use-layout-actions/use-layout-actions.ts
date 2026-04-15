@@ -10,6 +10,7 @@ import { useTicketsContext } from "../../contexts/tickets-context.tsx";
 import { useWorkflowContext } from "../../contexts/workflow-context.tsx";
 import { useModalSystem } from "../use-modal-system/index.ts";
 import { clearSessionCache } from "../use-agent-summary/index.ts";
+import { openUrl } from "#core/utils/index.ts";
 import type { UseLayoutActionsOptions, UseLayoutActionsReturn } from "./types.ts";
 
 /**
@@ -67,8 +68,7 @@ export function useLayoutActions(options: UseLayoutActionsOptions): UseLayoutAct
   const openInJira = (): void => {
     const ticket = tickets.currentTicket();
     if (ticket?.jira_url) {
-      console.log("Opening Jira:", ticket.jira_url);
-      // TODO: Actually open browser with Bun.spawn
+      void openUrl(ticket.jira_url);
     }
   };
 

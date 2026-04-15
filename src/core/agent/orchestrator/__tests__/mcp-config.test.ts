@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { generateMcpConfig, getConfigPath, buildAgentCommand } from "../mcp-config.ts";
+import { generateMcpConfig, buildAgentCommand } from "../mcp-config.ts";
 
 describe("MCP Config", () => {
   describe("generateMcpConfig", () => {
@@ -29,27 +29,11 @@ describe("MCP Config", () => {
       expect(config.mcp?.atlassian).toBeUndefined();
     });
 
-    test("sets ticket ID in environment", () => {
+    test("ticket ID is passed as --ticket CLI arg, not duplicated in environment", () => {
       const config = generateMcpConfig("AM-456");
 
-      expect(config.mcp?.jiratown.environment?.JIRATOWN_TICKET_ID).toBe("AM-456");
-    });
-  });
-
-  describe("getConfigPath", () => {
-    test("creates path in .opencode directory", () => {
-      const path = getConfigPath("/path/to/worktree", "AM-123");
-
-      expect(path).toContain("/path/to/worktree/");
-      expect(path).toContain(".opencode");
-      expect(path).toEndWith("opencode.json");
-    });
-
-    test("uses same path regardless of ticket ID (per-project config)", () => {
-      const path1 = getConfigPath("/path/to/worktree", "AM-123");
-      const path2 = getConfigPath("/path/to/worktree", "AM-456");
-
-      expect(path1).toBe(path2);
+      expect(config.mcp?.jiratown.command).toContain("AM-456");
+      expect(config.mcp?.jiratown.environment?.JIRATOWN_TICKET_ID).toBeUndefined();
     });
   });
 

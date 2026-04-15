@@ -10,3 +10,5 @@ export {
   extractTicketKey,
   type ParsedTicket,
 } from "./parse-ticket-key.ts";
+
+export { openUrl } from "./open-url.ts";

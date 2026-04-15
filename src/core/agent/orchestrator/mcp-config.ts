@@ -5,8 +5,8 @@
  * to the Jiratown MCP server and other services.
  */
 
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 
 /**
  * OpenCode looks for MCP config in .opencode/opencode.json in the project directory
@@ -20,14 +20,6 @@ const OPENCODE_CONFIG_FILE = "opencode.json";
  */
 export function getConfigDir(worktreePath: string): string {
   return join(worktreePath, OPENCODE_CONFIG_DIR);
-}
-
-/**
- * Get the path for a specific agent's MCP config
- * For OpenCode, this is .opencode/opencode.json
- */
-export function getConfigPath(worktreePath: string, _ticketId: string): string {
-  return join(getConfigDir(worktreePath), OPENCODE_CONFIG_FILE);
 }
 
 /**
@@ -54,10 +46,11 @@ export interface OpenCodeConfig {
  * @param jiraCloudId - Optional Jira cloud ID for Atlassian MCP
  */
 export function generateMcpConfig(ticketId: string, jiraCloudId?: string): OpenCodeConfig {
-  // Get the path to jiratown's mcp-server.sh wrapper script
-  // The wrapper ensures bun runs from jiratown's directory so it finds dependencies
-  const jiratownRoot = process.env.JIRATOWN_ROOT || process.cwd();
-  const mcpServerScript = `${jiratownRoot}/src/mcp-server.sh`;
+  // Get the path to jiratown's mcp-server.sh wrapper script.
+  // When bundled (dist/cli/index.js), import.meta.dir = dist/cli/ and
+  // mcp-server.sh is copied to dist/ at build time, so go up one level.
+  const jiratownRoot = process.env.JIRATOWN_ROOT || join(import.meta.dir, "..");
+  const mcpServerScript = join(jiratownRoot, "mcp-server.sh");
 
   const config: OpenCodeConfig = {
     $schema: "https://opencode.ai/config.json",
@@ -66,7 +59,6 @@ export function generateMcpConfig(ticketId: string, jiraCloudId?: string): OpenC
         type: "local",
         command: [mcpServerScript, "--ticket", ticketId],
         environment: {
-          JIRATOWN_TICKET_ID: ticketId,
           JIRATOWN_ROOT: jiratownRoot,
         },
         enabled: true,
@@ -87,17 +79,14 @@ export function generateMcpConfig(ticketId: string, jiraCloudId?: string): OpenC
 }
 
 /**
- * Write MCP config to disk for an agent
+ * Write MCP config to disk for an agent.
+ * Called once when the worktree is created — lives there until the worktree is removed.
  *
  * @returns Path to the written config file
  */
-export function writeMcpConfig(
-  worktreePath: string,
-  ticketId: string,
-  config: OpenCodeConfig,
-): string {
+export function writeMcpConfig(worktreePath: string, config: OpenCodeConfig): string {
   const configDir = getConfigDir(worktreePath);
-  const configPath = getConfigPath(worktreePath, ticketId);
+  const configPath = join(configDir, OPENCODE_CONFIG_FILE);
 
   // Ensure config directory exists
   mkdirSync(configDir, { recursive: true });
@@ -106,18 +95,6 @@ export function writeMcpConfig(
   writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 
   return configPath;
-}
-
-/**
- * Remove MCP config for an agent
- */
-export function removeMcpConfig(worktreePath: string, ticketId: string): void {
-  const configPath = getConfigPath(worktreePath, ticketId);
-  try {
-    rmSync(configPath, { force: true });
-  } catch {
-    // Ignore errors if file doesn't exist
-  }
 }
 
 /**

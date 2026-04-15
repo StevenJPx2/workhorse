@@ -8,7 +8,7 @@ import type { Accessor } from "solid-js";
  * Known modal names in the application
  * Add new modals here for type safety
  */
-export type ModalName = "ticket-input" | "help" | "confirm";
+export type ModalName = "ticket-input" | "help" | "confirm" | "notification-list";
 
 /**
  * Data payloads for each modal type
@@ -17,6 +17,7 @@ export interface ModalDataMap {
   "ticket-input": undefined;
   help: undefined;
   confirm: { message: string; onConfirm: () => void };
+  "notification-list": undefined;
 }
 
 /**

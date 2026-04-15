@@ -31,7 +31,6 @@ describe("agent-store", () => {
       expect(agent.startedAt).toBeNull();
       expect(agent.stoppedAt).toBeNull();
       expect(agent.lastHealthCheck).toBeNull();
-      expect(agent.mcpConfigPath).toBeNull();
     });
 
     it("should create claude agent instance", () => {

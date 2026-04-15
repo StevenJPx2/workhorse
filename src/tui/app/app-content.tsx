@@ -1,10 +1,4 @@
-/**
- * AppContent component - Main dashboard content
- *
- * Contains the core app logic including rig detection, workflow,
- * and rendering of the Layout with TicketPane.
- */
-
+/** AppContent component - Main dashboard content with rig detection, workflow, and Layout rendering */
 import { createSignal, createEffect, Show } from "solid-js";
 import { useRenderer } from "@opentui/solid";
 import { Layout } from "./layout.tsx";
@@ -19,7 +13,7 @@ import { WorkflowProvider, useWorkflowContext } from "../contexts/workflow-conte
 import { EventLogProvider, useEventLogContext } from "../contexts/event-log-context.tsx";
 import { TicketActionsProvider } from "../contexts/ticket-actions-context.tsx";
 import { useModalSystem } from "../hooks/use-modal-system/index.ts";
-import { useConfig, useAtlassian } from "../hooks/index.ts";
+import { useConfig, useAtlassian, useNotifications } from "../hooks/index.ts";
 import type { AgentType } from "#types/config.ts";
 
 import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
@@ -98,6 +92,13 @@ function InnerWithEventLog(props: AppContentInnerProps) {
   const { currentTicket, actions } = useTicketsContext();
   const { eventLog } = useEventLogContext();
 
+  // Get notifications for the current ticket
+  const notifications = useNotifications({
+    ticketId: () => currentTicket()?.id,
+    autoLoad: true,
+    pollInterval: 5000,
+  });
+
   // Reload tickets when loading completes
   createEffect(() => {
     if (!props.loading) {
@@ -168,6 +169,11 @@ function InnerWithEventLog(props: AppContentInnerProps) {
                 ticket={currentTicket()!}
                 agentState={() => workflow.getAgentState(currentTicket()!.id)}
                 logEntries={eventLog.events()}
+                blockingNotifications={notifications.blockingNotifications()}
+                onResume={ticketActions()?.onResume}
+                onViewJira={ticketActions()?.onViewJira}
+                onCancel={ticketActions()?.onCancel}
+                onHandoff={ticketActions()?.onHandoff}
               />
             </TicketActionsProvider>
           </Show>

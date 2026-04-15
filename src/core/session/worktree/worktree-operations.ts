@@ -5,6 +5,7 @@ import {
   buildGitCommand,
   parseWorktreeList,
 } from "./worktree-utils.ts";
+import { generateMcpConfig, writeMcpConfig } from "../../agent/orchestrator/mcp-config.ts";
 
 async function execGit(
   args: string[],
@@ -55,6 +56,7 @@ export async function createWorktree(
   ticketId: string,
   issueType?: string,
   baseBranch: string = "main",
+  jiraCloudId?: string,
 ): Promise<Worktree | null> {
   worktreeTrace(ticketId, "CREATE_ENTER", { repoPath: !!repoPath, issueType, baseBranch });
 
@@ -62,14 +64,13 @@ export async function createWorktree(
   const branchName = createBranchName(ticketId, issueType);
 
   worktreeTrace(ticketId, "PATHS", { worktreePath, branchName });
-
-  worktreeTrace(ticketId, "CHECKING_EXISTING");
   const existingWorktree = await getWorktree(repoPath, ticketId);
   if (existingWorktree) {
     worktreeTrace(ticketId, "REUSING_EXISTING", {
       path: existingWorktree.path,
       branch: existingWorktree.branch,
     });
+    writeMcpConfig(existingWorktree.path, generateMcpConfig(ticketId, jiraCloudId));
     return existingWorktree;
   }
 
@@ -97,6 +98,21 @@ export async function createWorktree(
 
   if (!result.success) {
     worktreeTrace(ticketId, "TRYING_EXISTING_BRANCH");
+
+    // If the worktree directory already exists on disk but isn't registered with git,
+    // remove it so git can recreate it cleanly.
+    const { existsSync, rmSync } = require("fs");
+    if (existsSync(worktreePath)) {
+      worktreeTrace(ticketId, "REMOVING_STALE_WORKTREE_DIR", { worktreePath });
+      try {
+        rmSync(worktreePath, { recursive: true, force: true });
+      } catch (e) {
+        worktreeTrace(ticketId, "REMOVE_STALE_DIR_FAILED", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
     const existingCmd = buildGitCommand("worktree", "add", {
       path: worktreePath,
       branch: branchName,
@@ -116,13 +132,13 @@ export async function createWorktree(
     }
   }
 
-  worktreeTrace(ticketId, "GETTING_HEAD");
   const headResult = await execGit(["git", "rev-parse", "HEAD"], worktreePath);
   worktreeTrace(ticketId, "HEAD_RESULT", {
     success: headResult.success,
     output: headResult.output,
   });
 
+  writeMcpConfig(worktreePath, generateMcpConfig(ticketId, jiraCloudId));
   worktreeTrace(ticketId, "SUCCESS", { path: worktreePath, branch: branchName });
   return {
     path: worktreePath,
@@ -133,14 +149,8 @@ export async function createWorktree(
 }
 
 export async function listWorktrees(repoPath: string): Promise<Worktree[]> {
-  const cmd = buildGitCommand("worktree", "list", { porcelain: true });
-  const result = await execGit(cmd, repoPath);
-
-  if (!result.success) {
-    return [];
-  }
-
-  return parseWorktreeList(result.output, "-worktrees/");
+  const result = await execGit(buildGitCommand("worktree", "list", { porcelain: true }), repoPath);
+  return result.success ? parseWorktreeList(result.output, "-worktrees/") : [];
 }
 
 export async function worktreeExists(repoPath: string, ticketId: string): Promise<boolean> {

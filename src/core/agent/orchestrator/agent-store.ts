@@ -21,7 +21,6 @@ export function createAgentInstance(
     startedAt: null,
     stoppedAt: null,
     lastHealthCheck: null,
-    mcpConfigPath: null,
   };
 }
 

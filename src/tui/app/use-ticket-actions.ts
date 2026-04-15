@@ -9,6 +9,7 @@
 import type { Ticket } from "#types/ticket.ts";
 import type { AgentType } from "#types/config.ts";
 import type { UseEventLogReturn } from "../hooks/use-event-log/types.ts";
+import { openUrl } from "#core/utils/index.ts";
 
 export interface TicketActionsContext {
   actions: {
@@ -36,6 +37,14 @@ export interface UseTicketActionsReturn {
   onStop: () => Promise<void>;
   /** Sync progress to Jira */
   onSyncToJira: () => void;
+  /** Resume work after being blocked (check for responses) */
+  onResume: () => Promise<void>;
+  /** View ticket in Jira browser */
+  onViewJira: () => Promise<void>;
+  /** Cancel the ticket (stop agent, remove) */
+  onCancel: () => Promise<void>;
+  /** Hand off to different agent */
+  onHandoff: () => void;
 }
 
 /**
@@ -85,6 +94,41 @@ export function useTicketActions(
         action: "manual_sync",
         ticketId: ticket.id,
       });
+    },
+    onResume: async () => {
+      // Resume work - restart agent to check for Jira responses
+      context.eventLog?.logCustom("resume", {
+        action: "check_responses",
+        ticketId: ticket.id,
+      });
+      await context.workflow.restartAgent(ticket.id);
+    },
+    onViewJira: async () => {
+      if (ticket.jira_url) {
+        context.eventLog?.logCustom("notification", {
+          action: "open_jira",
+          url: ticket.jira_url,
+        });
+        await openUrl(ticket.jira_url);
+      }
+    },
+    onCancel: async () => {
+      context.eventLog?.logCustom("cancel", {
+        action: "cancel_ticket",
+        ticketId: ticket.id,
+      });
+      await context.workflow.stopWork(ticket.id, true);
+      context.actions.remove(ticket.id);
+    },
+    onHandoff: () => {
+      // Toggle agent type for handoff
+      const newAgent = ticket.agent === "opencode" ? "claude" : "opencode";
+      context.eventLog?.logCustom("handoff", {
+        action: "switch_agent",
+        from: ticket.agent,
+        to: newAgent,
+      });
+      context.actions.update(ticket.id, { agent: newAgent });
     },
   };
 }

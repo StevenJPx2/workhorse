@@ -8,7 +8,7 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createMemo, type JSX, Show } from "solid-js";
 import { CommandPalette } from "../components/command-palette/index.ts";
-import { NotificationBar } from "../components/notification-bar/index.ts";
+import { NotificationBar, NotificationList } from "../components/notification-bar/index.ts";
 import { TicketSidebar, SIDEBAR_WIDTH } from "../components/ticket-sidebar/index.ts";
 import { HelpDialog } from "./help-dialog.tsx";
 import { useCommandPalette, useModal, useNotifications, useLayoutActions } from "../hooks/index.ts";
@@ -45,6 +45,9 @@ export function Layout(props: LayoutProps) {
 
   // Help dialog (local modal, not in global system)
   const helpModal = useModal();
+
+  // Notification list dialog
+  const notificationListModal = useModal();
 
   // Layout actions (uses contexts internally: TicketsContext, WorkflowContext, ModalSystem)
   const layoutActions = useLayoutActions({
@@ -154,6 +157,7 @@ export function Layout(props: LayoutProps) {
           notifications={notifications.notifications()}
           unreadCount={notifications.unreadCount()}
           hasBlocking={notifications.hasBlocking()}
+          onViewAll={notificationListModal.open}
         />
         <text fg={theme().text.secondary}>{rigDisplay()} | [:] commands | [?] help | [q] quit</text>
       </box>
@@ -162,6 +166,18 @@ export function Layout(props: LayoutProps) {
       <Show when={helpModal.isOpen()}>
         <HelpDialog onClose={helpModal.close} />
       </Show>
+
+      {/* Notification List Modal */}
+      <NotificationList
+        isOpen={notificationListModal.isOpen()}
+        notifications={notifications.notifications()}
+        onClose={notificationListModal.close}
+        onAcknowledge={(id) => notifications.acknowledge(id)}
+        onAcknowledgeAll={() => {
+          const ids = notifications.notifications().map((n) => n.id);
+          notifications.acknowledgeMany(ids);
+        }}
+      />
 
       {/* Command Palette */}
       <CommandPalette palette={palette} />

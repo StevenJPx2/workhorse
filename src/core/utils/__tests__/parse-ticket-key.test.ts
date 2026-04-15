@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { parseTicketKey, isValidTicketKey, extractTicketKey } from "./parse-ticket-key.ts";
+import { parseTicketKey, isValidTicketKey, extractTicketKey } from "../parse-ticket-key.ts";
 
 describe("parseTicketKey", () => {
   test("parses bare ticket key", () => {

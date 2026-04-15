@@ -24,7 +24,6 @@ export interface AgentInstance {
   startedAt: string | null;
   stoppedAt: string | null;
   lastHealthCheck: string | null;
-  mcpConfigPath: string | null;
 }
 
 /**

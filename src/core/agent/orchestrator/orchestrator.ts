@@ -10,7 +10,6 @@
 
 import type { StopResult } from "./types.ts";
 import { killSession, sendKeys, capturePane } from "../../session/tmux/index.ts";
-import { removeMcpConfig } from "./mcp-config.ts";
 import { removeWorktree } from "../../session/worktree/index.ts";
 import { hasSessionMemory, addSessionEvent } from "../../session/session-memory.ts";
 import { activeAgents, updateAgentState } from "./agent-store.ts";
@@ -26,8 +25,7 @@ export { discoverAgents, discoverAgentByTicketId } from "./discover-agents.ts";
  *
  * This function:
  * 1. Kills the tmux session
- * 2. Optionally removes the worktree
- * 3. Cleans up MCP config
+ * 2. Optionally removes the worktree (MCP config lives inside it, so no separate cleanup needed)
  */
 export async function stopAgent(
   ticketId: string,
@@ -56,10 +54,6 @@ export async function stopAgent(
 
     if (instance.session) {
       await killSession(ticketId);
-    }
-
-    if (instance.worktree) {
-      removeMcpConfig(instance.worktree.path, ticketId);
     }
 
     if (removeWorktreeOnStop && instance.worktree) {

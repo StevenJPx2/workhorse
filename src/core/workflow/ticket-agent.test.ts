@@ -17,7 +17,7 @@ mock.module("../agent/orchestrator/index.ts", () => ({
 
 // Import after mocking
 const { launchTicketAgent, haltTicketAgent, restartTicketAgent, resumeAllTicketAgents } =
-  await import("./ticket-agent.ts");
+  await import("./ticket-agent/index.ts");
 
 // Mock ticket data
 const mockTicket: Ticket = {
@@ -86,7 +86,6 @@ beforeEach(() => {
         startedAt: new Date().toISOString(),
         stoppedAt: null,
         lastHealthCheck: null,
-        mcpConfigPath: null,
       },
     }),
   );

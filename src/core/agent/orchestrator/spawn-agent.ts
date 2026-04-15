@@ -5,7 +5,7 @@
 import type { SpawnAgentOptions, SpawnResult } from "./types.ts";
 import { createWorktree, removeWorktree } from "../../session/worktree/index.ts";
 import { createSession, killSession, sendKeys, sessionExists } from "../../session/tmux/index.ts";
-import { generateMcpConfig, writeMcpConfig, buildAgentCommand } from "./mcp-config.ts";
+import { buildAgentCommand } from "./mcp-config.ts";
 import { activeAgents, createAgentInstance, updateAgentState } from "./agent-store.ts";
 import { orchestratorTrace } from "./trace.ts";
 import { prepareAgentPrompt } from "./prompt-builder.ts";
@@ -40,7 +40,7 @@ export async function spawnAgent(options: SpawnAgentOptions): Promise<SpawnResul
 
   try {
     orchestratorTrace(ticketId, "CREATING_WORKTREE", { repoPath: !!repoPath, issueType });
-    const worktree = await createWorktree(repoPath, ticketId, issueType, baseBranch);
+    const worktree = await createWorktree(repoPath, ticketId, issueType, baseBranch, jiraCloudId);
 
     if (!worktree) {
       orchestratorTrace(ticketId, "WORKTREE_FAILED");
@@ -56,10 +56,6 @@ export async function spawnAgent(options: SpawnAgentOptions): Promise<SpawnResul
       path: worktree.path,
       branch: worktree.branch,
     });
-
-    const mcpConfig = generateMcpConfig(ticketId, jiraCloudId);
-    const configPath = writeMcpConfig(worktree.path, ticketId, mcpConfig);
-    instance.mcpConfigPath = configPath;
 
     const existingSession = await sessionExists(ticketId);
     if (existingSession) {

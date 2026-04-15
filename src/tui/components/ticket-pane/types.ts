@@ -5,6 +5,7 @@
 import type { Ticket, TicketEvent, TicketStatus } from "#types/ticket.ts";
 import type { AgentType } from "#types/config.ts";
 import type { AgentState } from "#core/agent/orchestrator/types.ts";
+import type { Notification } from "#core/notifications/types.ts";
 import type { EventLogEntry } from "../../hooks/use-event-log/types.ts";
 import type { UsePRReviewReturn } from "../../hooks/use-pr-review/types.ts";
 
@@ -22,6 +23,16 @@ export interface TicketPaneProps {
   logEntries?: EventLogEntry[];
   /** PR review hook return (shown when ticket is in_review with pr_url) */
   prReview?: UsePRReviewReturn;
+  /** Blocking notifications (shown when ticket is blocked) */
+  blockingNotifications?: Notification[];
+  /** Called when user wants to resume work (check for responses) */
+  onResume?: () => void;
+  /** Called when user wants to view ticket in Jira */
+  onViewJira?: () => void;
+  /** Called when user wants to cancel the ticket */
+  onCancel?: () => void;
+  /** Called when user wants to hand off to different agent */
+  onHandoff?: () => void;
 }
 
 /**

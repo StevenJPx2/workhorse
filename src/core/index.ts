@@ -111,10 +111,8 @@ export type { TmuxSession, Worktree, SessionMemory, SessionEvent } from "./sessi
 export {
   // MCP Config
   getConfigDir,
-  getConfigPath,
   generateMcpConfig,
   writeMcpConfig,
-  removeMcpConfig,
   buildAgentCommand,
   // System Prompt
   generateSystemPrompt,

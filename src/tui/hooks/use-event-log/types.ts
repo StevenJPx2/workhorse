@@ -7,7 +7,10 @@ export type EventLogAction =
   | "agent_stopped"
   | "agent_crashed"
   | "jira_sync"
-  | "notification";
+  | "notification"
+  | "resume"
+  | "cancel"
+  | "handoff";
 
 export interface EventLogEntry {
   id: number;

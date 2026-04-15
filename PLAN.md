@@ -1016,66 +1016,66 @@ Restructured codebase into three-layer architecture:
 - [x] Updated all import paths
 - [x] Verified tests pass (999 passing)
 
-### Phase 5: Progress & Sync (3-4 days)
+### Phase 5: Progress & Sync ⬅️ COMPLETED
 
 - [x] `useJiraSync` hook (Jira synchronization)
   - [x] `postProgress(ticketId, message)` - Post progress comment
   - [x] `transitionStatus(ticketId, status)` - Update Jira status
   - [x] `linkPR(ticketId, prUrl)` - Add PR link to ticket
 - [x] `useEventLog` hook (event persistence)
-  - [ ] Log agent events to SQLite
-  - [ ] Query event history by ticket/agent
-  - [ ] Support event replay for debugging
-- [ ] ProgressLog component (uses `useEventLog`)
-- [ ] FileChanges component (uses `useAgentFeed` events)
+  - [x] Log agent events to SQLite
+  - [x] Query event history by ticket/agent
+  - [x] Support event replay for debugging
+- [x] ProgressLog component (uses `useEventLog`)
+- [x] FileChanges component (uses `useAgentFeed` events)
 
-### Phase 6: PR Review & Iteration (3-4 days)
+### Phase 6: PR Review & Iteration ⬅️ COMPLETED
 
-- [ ] `useGitHub` hook (GitHub MCP client)
-  - [ ] Connect via `mcp-remote` proxy to `https://api.githubcopilot.com/mcp/`
-  - [ ] Handle OAuth authentication flow
-  - [ ] `getPullRequest(owner, repo, number)` - Get PR details
-  - [ ] `listPullRequests(owner, repo, state)` - List PRs
-  - [ ] `createReview(owner, repo, number, body, event)` - Submit review
-  - [ ] `listReviewComments(owner, repo, number)` - Get review comments
-- [ ] `usePRReview` hook (PR review workflow)
-  - [ ] Poll for new comments/change requests
-  - [ ] Track review state (pending, approved, changes_requested)
-  - [ ] Compose review responses
-- [ ] `PRReviewView` component (`src/tui/components/PRReviewView.tsx`)
-  - [ ] Display pending review comments
-  - [ ] Show agent's draft response for each comment
-  - [ ] User input field to modify/augment response
-  - [ ] Action buttons: Reply Only / Reply + Address Changes / Address All
-- [ ] `ReviewCommentCard` component (`src/tui/components/ReviewCommentCard.tsx`)
-- [ ] Review response workflow:
-  - [ ] Agent analyzes comment and drafts reply
-  - [ ] User reviews draft, can edit or add guidance
-  - [ ] User chooses: **Reply only** or **Reply + Make Changes**
-  - [ ] If changes: cycle back to PLANNING with all PR feedback as context
-  - [ ] Make **one combined commit** addressing all requested changes
-  - [ ] Post reply comments referencing the commit
-- [ ] Re-request review after changes pushed
-- [ ] Sync PR review status to Jira (optional comment)
+- [x] `useGitHub` hook (GitHub MCP client)
+  - [x] Connect via `mcp-remote` proxy to `https://api.githubcopilot.com/mcp/`
+  - [x] Handle OAuth authentication flow
+  - [x] `getPullRequest(owner, repo, number)` - Get PR details
+  - [x] `listPullRequests(owner, repo, state)` - List PRs
+  - [x] `createReview(owner, repo, number, body, event)` - Submit review
+  - [x] `listReviewComments(owner, repo, number)` - Get review comments
+- [x] `usePRReview` hook (PR review workflow)
+  - [x] Poll for new comments/change requests
+  - [x] Track review state (pending, approved, changes_requested)
+  - [x] Compose review responses
+- [x] `PRReviewView` component (`src/tui/components/pr-review-view/`)
+  - [x] Display pending review comments
+  - [x] Show agent's draft response for each comment
+  - [x] User input field to modify/augment response
+  - [x] Action buttons: Reply Only / Reply + Address Changes / Address All
+- [x] `ReviewCommentCard` component (integrated in PRReviewView)
+- [x] Review response workflow:
+  - [x] Agent analyzes comment and drafts reply (smart-reply.ts)
+  - [x] User reviews draft, can edit or add guidance
+  - [x] User chooses: **Reply only** or **Reply + Make Changes**
+  - [x] If changes: cycle back to PLANNING with all PR feedback as context
+  - [x] Make **one combined commit** addressing all requested changes
+  - [x] Post reply comments referencing the commit
+- [x] Re-request review after changes pushed
+- [x] Sync PR review status to Jira (optional comment)
 
-### Phase 7: Notifications & Blocked State (2-3 days)
+### Phase 7: Notifications & Blocked State (2-3 days) ✅ DONE
 
-- [ ] Notifications bar component
-- [ ] BlockedView component
-- [ ] Escalation detection from agent events
-- [ ] Resume action (nudge agent to check responses)
-- [ ] Handoff action (switch to different agent)
-- [ ] View in Jira action (open browser)
-- [ ] Cancel ticket action
+- [x] Notifications bar component
+- [x] BlockedView component
+- [x] Escalation detection from agent events
+- [x] Resume action (nudge agent to check responses)
+- [x] Handoff action (switch to different agent)
+- [x] View in Jira action (open browser)
+- [x] Cancel ticket action
 
-### Phase 8: Polish (2-3 days)
+### Phase 8: Polish (2-3 days) ⬅️ NEXT
 
 - [ ] Keyboard shortcuts (full mapping)
 - [ ] Error handling & recovery
 - [ ] Agent switching per ticket
 - [ ] Global view (`--all` flag)
 - [ ] Help screen (`?` key)
-- [ ] Context-aware behavior (detect rig from git remote)
+- [x] Context-aware behavior (detect rig from git remote)
 - [ ] Graceful shutdown (cleanup MCP, save state)
 
 ---
@@ -1121,7 +1121,7 @@ Note: Rigs are auto-detected from git remote URL - no manual configuration neede
 ## Test Coverage Status
 
 **Target**: 97% line coverage  
-**Current**: 91.05% line coverage (as of April 2025)  
+**Current**: 91.05% line coverage (as of April 2025) — 1718 pass, 125 fail, 7 errors  
 **Previous**: 90.07% line coverage
 
 ### Discoveries

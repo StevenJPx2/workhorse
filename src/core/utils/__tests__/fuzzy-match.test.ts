@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { fuzzyMatch, fuzzyFilter } from "./fuzzy-match.ts";
+import { fuzzyMatch, fuzzyFilter } from "../fuzzy-match.ts";
 
 describe("fuzzyMatch", () => {
   test("empty query matches everything", () => {

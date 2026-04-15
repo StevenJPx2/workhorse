@@ -5,10 +5,13 @@
  * - "No notifications" when empty
  * - "⚠️ 2 blocking" when blocking notifications exist
  * - "3 unread" for normal unread count
+ *
+ * Clickable to open notification list modal.
  */
 
 import { Show } from "solid-js";
 import { useTheme } from "../../theme/index.ts";
+import { useInteractive } from "../../hooks/index.ts";
 import type { NotificationBarProps } from "./types.ts";
 
 /**
@@ -17,14 +20,25 @@ import type { NotificationBarProps } from "./types.ts";
 export function NotificationBar(props: NotificationBarProps) {
   const { theme } = useTheme();
 
+  const { isHighlighted, interactiveProps } = useInteractive({
+    onPress: props.onViewAll,
+  });
+
   const blockingCount = () =>
     props.notifications.filter((n) => n.priority === "blocking" && n.status !== "acknowledged")
       .length;
 
+  const hasNotifications = () => props.notifications.length > 0;
+
   return (
-    <box flexDirection="row" gap={1}>
+    <box
+      flexDirection="row"
+      gap={1}
+      {...interactiveProps}
+      backgroundColor={isHighlighted() && hasNotifications() ? theme().bg.highlight : undefined}
+    >
       <Show
-        when={props.notifications.length > 0}
+        when={hasNotifications()}
         fallback={<text fg={theme().text.dim}>No notifications</text>}
       >
         {/* Blocking notifications indicator */}
@@ -41,6 +55,11 @@ export function NotificationBar(props: NotificationBarProps) {
         <Show when={blockingCount() > 0 && props.unreadCount > blockingCount()}>
           <text fg={theme().text.dim}> | </text>
           <text fg={theme().text.secondary}>+{props.unreadCount - blockingCount()} more</text>
+        </Show>
+
+        {/* Click hint */}
+        <Show when={isHighlighted()}>
+          <text fg={theme().text.dim}> [click to view]</text>
         </Show>
       </Show>
     </box>

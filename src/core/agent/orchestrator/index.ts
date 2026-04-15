@@ -17,10 +17,8 @@ export type {
 // MCP Config
 export {
   getConfigDir,
-  getConfigPath,
   generateMcpConfig,
   writeMcpConfig,
-  removeMcpConfig,
   buildAgentCommand,
 } from "./mcp-config.ts";
 
