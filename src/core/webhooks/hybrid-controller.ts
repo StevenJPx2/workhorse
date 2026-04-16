@@ -1,7 +1,8 @@
 /**
  * Hybrid webhook/polling controller
  *
- * Uses webhooks as the primary source of events, with polling as a fallback.
+ * Always runs in hybrid mode: uses webhooks when available, falls back to polling.
+ * Webhook handlers look up tickets directly from the database.
  */
 
 import type { WebhookServer } from "./types.ts";
@@ -12,8 +13,6 @@ import type {
   HybridController,
 } from "./hybrid-types.ts";
 import { createWebhookServer } from "./server.ts";
-import { registerPrTicketMapping, unregisterPrTicketMapping } from "./github-handler.ts";
-import { registerTrackedTicket, unregisterTrackedTicket } from "./jira-handler.ts";
 import { createGitHubPoller } from "../pollers/github-poller.ts";
 import { createJiraPoller } from "../pollers/jira-poller.ts";
 import type { Poller, GitHubPollResult, JiraPollResult } from "../pollers/types.ts";
@@ -22,6 +21,8 @@ const DEFAULT_POLLING_INTERVAL = 30_000;
 
 /**
  * Create a hybrid webhook/polling controller
+ *
+ * Webhooks are enabled when webhookPort is provided. Polling always runs as fallback.
  */
 export function createHybridController(config: HybridControllerConfig): HybridController {
   let webhookServer: WebhookServer | null = null;
@@ -29,22 +30,17 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
 
   const githubPollers = new Map<string, Poller<GitHubPollResult>>();
   const jiraPollers = new Map<string, Poller<JiraPollResult>>();
-  const trackedPrs = new Map<string, TrackedPr>();
-  const trackedTickets = new Map<string, TrackedTicket>();
 
   const pollingInterval = config.pollingInterval ?? DEFAULT_POLLING_INTERVAL;
-  const useWebhooks = config.mode === "webhooks" || config.mode === "hybrid";
-  const usePolling = config.mode === "polling" || config.mode === "hybrid";
 
   const start = async (): Promise<void> => {
-    if (useWebhooks && config.webhookPort) {
+    // Start webhook server if port is configured
+    if (config.webhookPort) {
       try {
         webhookServer = createWebhookServer({
           db: config.db,
           port: config.webhookPort,
           host: config.webhookHost,
-          githubSecret: config.githubSecret,
-          jiraSecret: config.jiraSecret,
           onWebhookReceived: config.onWebhookReceived,
           onError: config.onError,
         });
@@ -53,9 +49,7 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         config.onError?.(err);
-        if (config.mode === "hybrid") {
-          console.warn("[HybridController] Webhooks failed, falling back to polling");
-        }
+        console.warn("[HybridController] Webhooks failed, using polling only");
       }
     }
   };
@@ -70,17 +64,13 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
     for (const poller of jiraPollers.values()) poller.stop();
     githubPollers.clear();
     jiraPollers.clear();
-    trackedPrs.clear();
-    trackedTickets.clear();
   };
 
   const trackPr = (pr: TrackedPr): void => {
     const key = `${pr.repo}#${pr.prNumber}`;
-    registerPrTicketMapping(pr.repo, pr.prNumber, pr.ticketId);
-    trackedPrs.set(key, pr);
 
-    const shouldPoll = usePolling || (config.mode === "hybrid" && !webhooksActive);
-    if (shouldPoll && !githubPollers.has(key)) {
+    // Start polling (it's the fallback, and deduplication handles duplicates)
+    if (!githubPollers.has(key)) {
       const poller = createGitHubPoller({
         db: config.db,
         ticketId: pr.ticketId,
@@ -97,8 +87,6 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
 
   const untrackPr = (repo: string, prNumber: number): void => {
     const key = `${repo}#${prNumber}`;
-    unregisterPrTicketMapping(repo, prNumber);
-    trackedPrs.delete(key);
     const poller = githubPollers.get(key);
     if (poller) {
       poller.stop();
@@ -107,11 +95,8 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
   };
 
   const trackTicket = (ticket: TrackedTicket): void => {
-    registerTrackedTicket(ticket.ticketId);
-    trackedTickets.set(ticket.ticketId, ticket);
-
-    const shouldPoll = usePolling || (config.mode === "hybrid" && !webhooksActive);
-    if (shouldPoll && !jiraPollers.has(ticket.ticketId)) {
+    // Start polling
+    if (!jiraPollers.has(ticket.ticketId)) {
       const poller = createJiraPoller({
         db: config.db,
         ticketId: ticket.ticketId,
@@ -125,8 +110,6 @@ export function createHybridController(config: HybridControllerConfig): HybridCo
   };
 
   const untrackTicket = (ticketId: string): void => {
-    unregisterTrackedTicket(ticketId);
-    trackedTickets.delete(ticketId);
     const poller = jiraPollers.get(ticketId);
     if (poller) {
       poller.stop();

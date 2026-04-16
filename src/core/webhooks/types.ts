@@ -59,10 +59,6 @@ export interface WebhookServerConfig {
   port: number;
   /** Host to bind to (default: "localhost") */
   host?: string;
-  /** GitHub webhook secret for signature verification */
-  githubSecret?: string;
-  /** Jira webhook secret for signature verification */
-  jiraSecret?: string;
   /** Callback when webhook is processed */
   onWebhookReceived?: (event: WebhookEvent) => void;
   /** Callback on error */

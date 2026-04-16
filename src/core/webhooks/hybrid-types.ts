@@ -7,21 +7,13 @@ import type { WebhookEvent } from "./types.ts";
 import type { GitHubPollerOptions } from "../pollers/github-poller.ts";
 import type { JiraPollerOptions } from "../pollers/jira-poller.ts";
 
-export type HybridMode = "webhooks" | "polling" | "hybrid";
-
 export interface HybridControllerConfig {
   /** Database for storing notifications */
   db: Database;
-  /** Mode of operation */
-  mode: HybridMode;
-  /** Webhook server port (required for webhooks/hybrid mode) */
+  /** Webhook server port (enables webhooks when set) */
   webhookPort?: number;
   /** Webhook server host */
   webhookHost?: string;
-  /** GitHub webhook secret */
-  githubSecret?: string;
-  /** Jira webhook secret */
-  jiraSecret?: string;
   /** Polling interval in ms (default: 30000) */
   pollingInterval?: number;
   /** Callback when webhook is received */

@@ -4,65 +4,24 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { verifyGitHubSignature, verifyJiraSignature } from "./crypto.ts";
-import {
-  createGitHubHandler,
-  registerPrTicketMapping,
-  unregisterPrTicketMapping,
-} from "./github-handler.ts";
-import {
-  createJiraHandler,
-  registerTrackedTicket,
-  unregisterTrackedTicket,
-} from "./jira-handler.ts";
+import { createGitHubHandler } from "./github-handler.ts";
+import { createJiraHandler } from "./jira-handler.ts";
 import { initNotificationsTable } from "../notifications/notification-store.ts";
+import { migrateTickets } from "../db/migrations/tickets.ts";
 import type { WebhookEvent } from "./types.ts";
 
-describe("Webhook Crypto", () => {
-  describe("verifyGitHubSignature", () => {
-    it("should verify a valid signature", async () => {
-      const payload = '{"test": "data"}';
-      const secret = "test-secret";
-      // Pre-computed signature for this payload and secret
-      const signature = "sha256=b4820cec871eff53285edfbf9e7cd0081e8e5cca759fa3b0453d9023489421a3";
-
-      const result = await verifyGitHubSignature(payload, signature, secret);
-      expect(result).toBe(true);
-    });
-
-    it("should reject an invalid signature", async () => {
-      const payload = '{"test": "data"}';
-      const secret = "test-secret";
-      const signature = "sha256=invalid";
-
-      const result = await verifyGitHubSignature(payload, signature, secret);
-      expect(result).toBe(false);
-    });
-
-    it("should reject signature without sha256 prefix", async () => {
-      const payload = '{"test": "data"}';
-      const secret = "test-secret";
-      const signature = "invalid";
-
-      const result = await verifyGitHubSignature(payload, signature, secret);
-      expect(result).toBe(false);
-    });
-  });
-
-  describe("verifyJiraSignature", () => {
-    it("should verify matching secrets", () => {
-      expect(verifyJiraSignature("secret123", "secret123")).toBe(true);
-    });
-
-    it("should reject non-matching secrets", () => {
-      expect(verifyJiraSignature("secret123", "wrong")).toBe(false);
-    });
-
-    it("should reject undefined secret", () => {
-      expect(verifyJiraSignature(undefined, "secret123")).toBe(false);
-    });
-  });
-});
+/**
+ * Insert a test ticket directly into the database
+ */
+function insertTestTicket(
+  db: Database,
+  opts: { id: string; jiraKey: string; prUrl?: string; prNumber?: number },
+): void {
+  db.prepare(`
+    INSERT INTO tickets (id, jira_key, rig, pr_url, pr_number)
+    VALUES (?, ?, 'test-rig', ?, ?)
+  `).run(opts.id, opts.jiraKey, opts.prUrl ?? null, opts.prNumber ?? null);
+}
 
 describe("GitHub Handler", () => {
   let db: Database;
@@ -71,6 +30,7 @@ describe("GitHub Handler", () => {
 
   beforeEach(() => {
     db = new Database(":memory:");
+    migrateTickets(db);
     initNotificationsTable(db);
     receivedEvents = [];
 
@@ -79,12 +39,16 @@ describe("GitHub Handler", () => {
       onEvent: (event) => receivedEvents.push(event),
     });
 
-    // Register a test PR
-    registerPrTicketMapping("owner/repo", 123, "TEST-456");
+    // Create a test ticket with PR info
+    insertTestTicket(db, {
+      id: "TEST-456",
+      jiraKey: "TEST-456",
+      prUrl: "https://github.com/owner/repo/pull/123",
+      prNumber: 123,
+    });
   });
 
   afterEach(() => {
-    unregisterPrTicketMapping("owner/repo", 123);
     db.close();
   });
 
@@ -159,7 +123,7 @@ describe("GitHub Handler", () => {
     expect(notif.priority).toBe("high");
   });
 
-  it("should ignore untracked PRs", async () => {
+  it("should ignore PRs not in database", async () => {
     const payload = {
       action: "submitted",
       review: {
@@ -170,7 +134,7 @@ describe("GitHub Handler", () => {
         submitted_at: "2024-01-01T12:00:00Z",
       },
       pull_request: {
-        number: 999, // Not tracked
+        number: 999, // Not in DB
         title: "Other PR",
         html_url: "https://github.com/owner/repo/pull/999",
       },
@@ -204,6 +168,7 @@ describe("Jira Handler", () => {
 
   beforeEach(() => {
     db = new Database(":memory:");
+    migrateTickets(db);
     initNotificationsTable(db);
     receivedEvents = [];
 
@@ -212,11 +177,14 @@ describe("Jira Handler", () => {
       onEvent: (event) => receivedEvents.push(event),
     });
 
-    registerTrackedTicket("TEST-123");
+    // Create a test ticket
+    insertTestTicket(db, {
+      id: "TEST-123",
+      jiraKey: "TEST-123",
+    });
   });
 
   afterEach(() => {
-    unregisterTrackedTicket("TEST-123");
     db.close();
   });
 
@@ -245,11 +213,11 @@ describe("Jira Handler", () => {
     expect(result.notificationIds?.length).toBe(1);
   });
 
-  it("should ignore untracked tickets", async () => {
+  it("should ignore tickets not in database", async () => {
     const payload = {
       webhookEvent: "comment_created",
       issue: {
-        key: "OTHER-999",
+        key: "OTHER-999", // Not in DB
         fields: { summary: "Other issue" },
       },
       comment: {

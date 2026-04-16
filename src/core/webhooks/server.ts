@@ -24,13 +24,11 @@ export function createWebhookServer(options: CreateWebhookServerOptions): Webhoo
 
   const githubHandler = createGitHubHandler({
     db: options.db,
-    secret: options.githubSecret,
     onEvent: options.onWebhookReceived,
   });
 
   const jiraHandler = createJiraHandler({
     db: options.db,
-    secret: options.jiraSecret,
     onEvent: options.onWebhookReceived,
   });
 

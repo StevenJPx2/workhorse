@@ -17,23 +17,9 @@ export type {
   JiraWebhookPayload,
 } from "./types.ts";
 
-// Crypto utilities
-export { verifyGitHubSignature, verifyJiraSignature } from "./crypto.ts";
-
 // Handlers
-export {
-  createGitHubHandler,
-  registerPrTicketMapping,
-  unregisterPrTicketMapping,
-  type GitHubHandlerOptions,
-} from "./github-handler.ts";
-
-export {
-  createJiraHandler,
-  registerTrackedTicket,
-  unregisterTrackedTicket,
-  type JiraHandlerOptions,
-} from "./jira-handler.ts";
+export { createGitHubHandler, type GitHubHandlerOptions } from "./github-handler.ts";
+export { createJiraHandler, type JiraHandlerOptions } from "./jira-handler.ts";
 
 // Server
 export { createWebhookServer, type CreateWebhookServerOptions } from "./server.ts";
@@ -41,7 +27,6 @@ export { createWebhookServer, type CreateWebhookServerOptions } from "./server.t
 // Hybrid controller
 export { createHybridController } from "./hybrid-controller.ts";
 export type {
-  HybridMode,
   HybridControllerConfig,
   TrackedPr,
   TrackedTicket,

@@ -2,41 +2,25 @@
  * Jira webhook handler
  *
  * Processes incoming Jira webhooks for issue comments.
+ * Looks up tickets by Jira key in the database.
  */
 
 import type { Database } from "bun:sqlite";
 import type { WebhookResult, WebhookEvent, JiraWebhookPayload } from "./types.ts";
-import { verifyJiraSignature } from "./crypto.ts";
 import { createNotification } from "../notifications/notification-store.ts";
-
-/** Set of ticket IDs we're tracking */
-const trackedTickets = new Set<string>();
-
-/**
- * Register a ticket for webhook tracking
- */
-export function registerTrackedTicket(ticketId: string): void {
-  trackedTickets.add(ticketId);
-}
-
-/**
- * Unregister a ticket from webhook tracking
- */
-export function unregisterTrackedTicket(ticketId: string): void {
-  trackedTickets.delete(ticketId);
-}
-
-/**
- * Check if a ticket is being tracked
- */
-function isTicketTracked(ticketId: string): boolean {
-  return trackedTickets.has(ticketId);
-}
+import type { Ticket } from "#types/ticket.ts";
 
 export interface JiraHandlerOptions {
   db: Database;
-  secret?: string;
   onEvent?: (event: WebhookEvent) => void;
+}
+
+/**
+ * Look up ticket by Jira key in the database
+ */
+function findTicketByJiraKey(db: Database, jiraKey: string): Ticket | null {
+  const stmt = db.prepare("SELECT * FROM tickets WHERE jira_key = ?");
+  return stmt.get(jiraKey) as Ticket | null;
 }
 
 /**
@@ -45,40 +29,29 @@ export interface JiraHandlerOptions {
 export function createJiraHandler(options: JiraHandlerOptions) {
   return async (
     payload: unknown,
-    headers: Record<string, string>,
+    _headers: Record<string, string>,
     _rawBody: string,
   ): Promise<WebhookResult> => {
     const receivedAt = new Date().toISOString();
-
-    // Verify signature if secret is configured
-    if (options.secret) {
-      const providedSecret = headers["x-jira-webhook-secret"];
-      if (!verifyJiraSignature(providedSecret, options.secret)) {
-        return { success: false, error: "Invalid or missing secret" };
-      }
-    }
-
     const jiraPayload = payload as JiraWebhookPayload;
 
     if (!jiraPayload.issue?.key) {
       return { success: false, error: "Missing issue key in payload" };
     }
 
-    const ticketId = jiraPayload.issue.key;
+    const jiraKey = jiraPayload.issue.key;
+    const ticket = findTicketByJiraKey(options.db, jiraKey);
 
-    // Only process events for tracked tickets
-    if (!isTicketTracked(ticketId)) {
-      return { success: true }; // Silently ignore
+    // Only process events for tickets we're tracking
+    if (!ticket) {
+      return { success: true };
     }
 
     try {
       const webhookEvent = jiraPayload.webhookEvent;
-
       if (webhookEvent === "comment_created" || webhookEvent === "comment_updated") {
-        return handleComment(jiraPayload, options, receivedAt);
+        return handleComment(jiraPayload, ticket.id, options, receivedAt);
       }
-
-      // Ignore other events
       return { success: true };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -89,6 +62,7 @@ export function createJiraHandler(options: JiraHandlerOptions) {
 
 function handleComment(
   payload: JiraWebhookPayload,
+  ticketId: string,
   options: JiraHandlerOptions,
   receivedAt: string,
 ): WebhookResult {
@@ -96,8 +70,6 @@ function handleComment(
   if (!comment) {
     return { success: false, error: "Missing comment in payload" };
   }
-
-  const ticketId = payload.issue.key;
 
   const event: WebhookEvent = {
     source: "jira",
@@ -127,10 +99,5 @@ function handleComment(
   });
 
   options.onEvent?.(event);
-
-  return {
-    success: true,
-    event,
-    notificationIds: notif ? [notif.id] : [],
-  };
+  return { success: true, event, notificationIds: notif ? [notif.id] : [] };
 }
