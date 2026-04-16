@@ -16,4 +16,12 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   prompt: {
     custom: null,
   },
+  webhooks: {
+    mode: "polling",
+    port: 3456,
+    host: "localhost",
+    github_secret: null,
+    jira_secret: null,
+    polling_interval: 30,
+  },
 };
