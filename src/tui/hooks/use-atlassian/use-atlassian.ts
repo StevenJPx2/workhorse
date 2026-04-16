@@ -9,10 +9,7 @@ import { AtlassianClient, createAtlassianClient } from "#core/jira/index.ts";
 import type { JiraIssue, AtlassianUserInfo } from "#core/jira/index.ts";
 import type { UseAtlassianOptions, UseAtlassianReturn, CloudIdOption } from "./types.ts";
 
-/**
- * Resolve cloudId from either a static string or a getter function.
- * This allows the cloudId to be provided lazily after config loads.
- */
+/** Resolve cloudId from either a static string or a getter function */
 function resolveCloudId(cloudId: CloudIdOption | undefined): string | undefined {
   if (typeof cloudId === "function") {
     return cloudId();
@@ -20,35 +17,14 @@ function resolveCloudId(cloudId: CloudIdOption | undefined): string | undefined 
   return cloudId;
 }
 
+/** Check if a cloudId value is valid (non-empty string) */
+function isValidCloudId(value: string | undefined): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
 /**
- * Hook for interacting with Jira via Atlassian MCP
- *
- * @example
- * ```tsx
- * function TicketFetcher() {
- *   const atlassian = useAtlassian({
- *     cloudId: 'yourcompany.atlassian.net',
- *     autoConnect: true,
- *   });
- *
- *   // Or with a reactive getter (useful when config loads async):
- *   const atlassian = useAtlassian({
- *     cloudId: () => config.config()?.jira.cloud_id,
- *   });
- *
- *   const handleFetch = async () => {
- *     const issue = await atlassian.fetchIssue('AM-123');
- *     console.log(issue.summary);
- *   };
- *
- *   return (
- *     <box>
- *       <text>Connected: {atlassian.isConnected() ? 'Yes' : 'No'}</text>
- *       <button onPress={handleFetch}>Fetch AM-123</button>
- *     </box>
- *   );
- * }
- * ```
+ * Hook for interacting with Jira via Atlassian MCP.
+ * Supports static cloudId or a getter function for async config loading.
  */
 export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianReturn {
   const [isConnected, setIsConnected] = createSignal(false);
@@ -58,16 +34,32 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
 
   let client: AtlassianClient | null = null;
 
-  const getClient = (): AtlassianClient => {
-    if (!client) {
-      const cloudId = resolveCloudId(options.cloudId);
-      if (!cloudId) {
-        throw new Error(
-          "Jira cloud ID is not configured. Run 'jiratown setup' to configure your Jira instance.",
-        );
+  /**
+   * Get or create the Atlassian client.
+   * Waits briefly for config to load if cloudId is not immediately available.
+   */
+  const getClient = async (): Promise<AtlassianClient> => {
+    if (client) return client;
+
+    // Try to resolve cloudId, with retry for async config loading
+    let cloudId = resolveCloudId(options.cloudId);
+
+    // If cloudId is not available (undefined or empty string), wait briefly for config to load (up to 2 seconds)
+    if (!isValidCloudId(cloudId)) {
+      for (let i = 0; i < 20; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        cloudId = resolveCloudId(options.cloudId);
+        if (isValidCloudId(cloudId)) break;
       }
-      client = createAtlassianClient({ cloudId });
     }
+
+    if (!isValidCloudId(cloudId)) {
+      throw new Error(
+        "Jira cloud ID is not configured. Run 'jiratown setup' to configure your Jira instance.",
+      );
+    }
+
+    client = createAtlassianClient({ cloudId });
     return client;
   };
 
@@ -82,7 +74,7 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
         setIsConnecting(true);
         setError(null);
 
-        const c = getClient();
+        const c = await getClient();
         await c.connect();
 
         setIsConnected(true);
@@ -126,7 +118,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      return await getClient().fetchIssue(ticketKey);
+      const c = await getClient();
+      return await c.fetchIssue(ticketKey);
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
@@ -139,7 +132,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      await getClient().addComment(ticketKey, body);
+      const c = await getClient();
+      await c.addComment(ticketKey, body);
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
@@ -152,7 +146,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      await getClient().transitionIssue(ticketKey, transitionId);
+      const c = await getClient();
+      await c.transitionIssue(ticketKey, transitionId);
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
@@ -165,7 +160,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      return await getClient().getCurrentUser();
+      const c = await getClient();
+      return await c.getCurrentUser();
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
@@ -178,7 +174,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      await getClient().editIssue(ticketKey, fields);
+      const c = await getClient();
+      await c.editIssue(ticketKey, fields);
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
@@ -191,7 +188,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     await ensureConnected();
     try {
       setError(null);
-      await getClient().assignIssue(ticketKey, accountId);
+      const c = await getClient();
+      await c.assignIssue(ticketKey, accountId);
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err));
       setError(e);
