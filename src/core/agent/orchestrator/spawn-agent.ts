@@ -23,6 +23,9 @@ export async function spawnAgent(options: SpawnAgentOptions): Promise<SpawnResul
     jiraUrl,
     status,
     prUrl,
+    prNumber,
+    prContextSummary,
+    jiraContextSummary,
   } = options;
 
   orchestratorTrace(ticketId, "SPAWN_ENTER", { agentType, repoPath: !!repoPath });
@@ -93,6 +96,9 @@ export async function spawnAgent(options: SpawnAgentOptions): Promise<SpawnResul
       jiraCloudId,
       status,
       prUrl,
+      prNumber,
+      prContextSummary,
+      jiraContextSummary,
     });
 
     const { command, args } = buildAgentCommand(agentType, ticketId, prompt);

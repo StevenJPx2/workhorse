@@ -18,7 +18,6 @@ import { useNavigation } from "../../contexts/navigation-context.ts";
 import { useKeyboardContext } from "../../contexts/keyboard-context.ts";
 import { useTicketActionsContext } from "../../contexts/ticket-actions-context.tsx";
 import { useAgentProgress } from "../../hooks/use-agent-progress/index.ts";
-import { useAgentSummary } from "../../hooks/use-agent-summary/index.ts";
 import { ChatBox, useChatBox } from "../chat-box/index.ts";
 import { PRReviewView } from "../pr-review-view/index.ts";
 import { BlockedView } from "../blocked-view/index.ts";
@@ -28,6 +27,7 @@ import { ProgressLog } from "./progress-log.tsx";
 import { FileChanges } from "./file-changes.tsx";
 import { TicketActions } from "./ticket-actions.tsx";
 import { AgentDisplay } from "./agent-display.tsx";
+import { useAgentActivity } from "./use-agent-activity.ts";
 import type { TicketPaneProps } from "./types.ts";
 
 /**
@@ -59,19 +59,18 @@ export function TicketPane(props: TicketPaneProps) {
     agentState: resolvedAgentState,
   });
 
-  // Get agent status via SDK (connects to agent's OpenCode port)
-  const agentSummary = useAgentSummary({
-    ticketId: () => props.ticket.id,
-    worktreePath: () => props.ticket.worktree_path ?? undefined,
-    enabled: () => Boolean(props.ticket.worktree_path),
-    pollInterval: 3000,
+  // Real-time streaming + polling fallback for agent activity
+  const agentActivity = useAgentActivity({
+    ticketId: props.ticket.id,
+    worktreePath: () => props.ticket.worktree_path,
+    isAgentActive,
   });
 
   // Chat box state for agent feedback
   const chat = useChatBox({
     onSubmit: (message) => {
       actions.onSendMessage?.(message);
-      agentSummary.addUserMessage(message);
+      agentActivity.addUserMessage(message);
       chat.addMessage(`Sent to agent: ${message}`, "system");
     },
   });
@@ -153,14 +152,14 @@ export function TicketPane(props: TicketPaneProps) {
         <FileChanges events={events()} logEntries={props.logEntries} maxFiles={8} />
       </Show>
 
-      {/* Agent display - state header + LLM-summarized activity */}
+      {/* Agent display - state header + real-time/summarized activity */}
       <Show when={showAgent()}>
         <AgentDisplay
           progress={agentProgress.progress}
-          steps={agentSummary.steps}
-          currentStatus={agentSummary.currentStatus}
-          isPolling={agentSummary.isPolling}
-          error={agentSummary.error}
+          steps={agentActivity.steps}
+          currentStatus={agentActivity.currentStatus}
+          isPolling={agentActivity.isMonitoring}
+          error={agentActivity.error}
           maxSteps={8}
           onStop={actions.onStop}
         />

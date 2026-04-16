@@ -28,6 +28,7 @@ export function migrateTickets(database: Database): void {
       
       -- PR tracking
       pr_url TEXT,
+      pr_number INTEGER,
       
       -- Timestamps
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,

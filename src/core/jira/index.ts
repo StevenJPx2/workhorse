@@ -26,3 +26,11 @@ export {
   formatSyncFailureMessage,
   type JiraSyncAction,
 } from "./sync.ts";
+
+// Ticket context fetching
+export {
+  fetchJiraTicketContext,
+  formatJiraContextSummary,
+  type JiraTicketContext,
+  type JiraComment,
+} from "./fetch-ticket-context.ts";

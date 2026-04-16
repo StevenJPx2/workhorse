@@ -44,6 +44,12 @@ export interface SpawnAgentOptions {
   status?: string;
   /** PR URL if PR has been created */
   prUrl?: string;
+  /** PR number if PR has been created */
+  prNumber?: number;
+  /** Fresh GitHub PR context summary (pre-formatted) */
+  prContextSummary?: string;
+  /** Fresh Jira ticket context summary (pre-formatted) */
+  jiraContextSummary?: string;
 }
 
 /**

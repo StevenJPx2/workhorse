@@ -32,6 +32,7 @@ export interface Ticket {
 
   // PR tracking
   pr_url: string | null;
+  pr_number: number | null;
 
   // Timestamps
   created_at: string;

@@ -82,10 +82,10 @@ export async function handleOpenPR(
     const repo = prMatch ? prMatch[2] : undefined;
     const prNumber = prMatch ? parseInt(prMatch[3], 10) : undefined;
 
-    // Update ticket with PR URL and status
+    // Update ticket with PR URL, PR number, and status
     db.prepare(
-      "UPDATE tickets SET pr_url = ?, status = 'pr_created', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    ).run(prUrl, ticketId);
+      "UPDATE tickets SET pr_url = ?, pr_number = ?, status = 'pr_created', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ).run(prUrl, prNumber ?? null, ticketId);
 
     return {
       success: true,

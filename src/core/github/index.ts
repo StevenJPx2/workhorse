@@ -1,31 +1,12 @@
 /**
- * GitHub module - Core GitHub integration with no UI dependencies
+ * GitHub integration module
  */
 
-// Client
-export { GitHubClient, createGitHubClient } from "./client.ts";
-export { GitHubConnection } from "./github-connection.ts";
-
-// Mappers
-export {
-  mapPullRequest,
-  mapReviewComment,
-  mapPRReview,
-  parseMcpResponse,
-  extractTextContent,
-} from "./mappers.ts";
-
 // Types
-export type {
-  GitHubPullRequest,
-  GitHubReviewComment,
-  GitHubPRReview,
-  CreateReviewParams,
-  ReviewCommentParams,
-  ReviewState,
-  McpToolResultContent,
-  GitHubClientOptions,
-} from "./types.ts";
+export type { PRContext, PRReview, PRComment, PRCheck } from "./types.ts";
 
-// Re-export the interface under its original name for convenience
-export type { GitHubClient as GitHubClientInterface } from "./types.ts";
+// Context fetching
+export { fetchPRContext, parsePRUrl } from "./fetch-pr-context.ts";
+
+// Formatting
+export { formatPRContextSummary } from "./format-context.ts";

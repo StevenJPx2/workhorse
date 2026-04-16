@@ -5,6 +5,7 @@
 import type { LaunchTicketAgentOptions, LaunchResult, DatabaseOperations } from "../types.ts";
 import { spawnAgent } from "../../agent/orchestrator/index.ts";
 import { trace } from "./trace.ts";
+import { fetchPRContext, parsePRUrl, formatPRContextSummary } from "../../github/index.ts";
 
 export async function launchTicketAgent(
   options: LaunchTicketAgentOptions,
@@ -47,6 +48,23 @@ export async function launchTicketAgent(
 
     trace(ticketId, "STATUS_QUEUED");
 
+    // Fetch fresh PR context if we have a PR URL (edge case: relaunching after PR created)
+    let prContextSummary: string | undefined;
+    if (ticket.pr_url) {
+      trace(ticketId, "FETCHING_PR_CONTEXT", { prUrl: ticket.pr_url });
+      const parsed = parsePRUrl(ticket.pr_url);
+      if (parsed) {
+        const prContext = await fetchPRContext(parsed.owner, parsed.repo, parsed.prNumber);
+        if (prContext) {
+          prContextSummary = formatPRContextSummary(prContext);
+          trace(ticketId, "PR_CONTEXT_FETCHED", {
+            state: prContext.state,
+            reviewDecision: prContext.reviewDecision,
+          });
+        }
+      }
+    }
+
     // 3. Call orchestrator to spawn agent (handles worktree + tmux + MCP config)
     const result = await spawnAgent({
       ticketId,
@@ -60,6 +78,8 @@ export async function launchTicketAgent(
       jiraUrl,
       status: ticket.status,
       prUrl: ticket.pr_url ?? undefined,
+      prNumber: ticket.pr_number ?? undefined,
+      prContextSummary,
     });
 
     if (!result.success) {

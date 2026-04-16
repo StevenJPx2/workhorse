@@ -1,9 +1,16 @@
 import type { AgentSystemInstruction } from "../types.ts";
 
+/**
+ * Extended instruction for resuming agent with context
+ */
 export interface ResumeSystemInstruction extends AgentSystemInstruction {
   sessionSummary?: string;
   recentActivity?: Array<{ timestamp: string; description: string }>;
   keyDecisions?: string[];
+  /** Fresh GitHub PR context (formatted summary) */
+  prContextSummary?: string;
+  /** Fresh Jira ticket context (formatted summary) */
+  jiraContextSummary?: string;
 }
 
 export function generateResumePrompt(info: ResumeSystemInstruction): string {
@@ -55,12 +62,26 @@ export function generateResumePrompt(info: ResumeSystemInstruction): string {
   lines.push(`- Worktree: ${info.worktreePath}`);
   lines.push(`- Branch: ${info.branchName}`);
   if (info.status) {
-    lines.push(`- Current Status: ${info.status}`);
+    lines.push(`- Status: ${info.status}`);
   }
   if (info.prUrl) {
     lines.push(`- PR URL: ${info.prUrl}`);
   }
   lines.push("");
+
+  // Fresh PR context from GitHub (if available)
+  if (info.prContextSummary) {
+    lines.push("## Current PR State (fetched just now)");
+    lines.push(info.prContextSummary);
+    lines.push("");
+  }
+
+  // Fresh Jira context (if available)
+  if (info.jiraContextSummary) {
+    lines.push("## Current Jira State (fetched just now)");
+    lines.push(info.jiraContextSummary);
+    lines.push("");
+  }
 
   lines.push("## Jiratown MCP Tools");
   lines.push("- `jiratown_get_notifications` - Check for updates from Jira or PR reviews");
