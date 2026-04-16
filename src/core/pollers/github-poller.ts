@@ -15,7 +15,8 @@ import type {
   Poller,
 } from "./types.ts";
 import { createNotification as realCreateNotification } from "../notifications/notification-store.ts";
-import type { CreateNotificationInput } from "../notifications/types.ts";
+import type { CreateNotificationInput, Notification } from "../notifications/types.ts";
+import { createGitHubNotifications } from "./github-notifications.ts";
 
 /**
  * Options for GitHub poller
@@ -35,8 +36,10 @@ export interface GitHubPollerOptions extends BasePollerOptions {
   onNewReviews?: (reviews: GitHubReview[]) => void;
   /** Callback when new comments detected */
   onNewComments?: (comments: GitHubComment[]) => void;
+  /** Callback when new notifications are created - used to push updates to agent */
+  onNotificationsCreated?: (notifications: Notification[]) => void;
   /** Optional override for createNotification (for testing) */
-  createNotificationFn?: (db: Database, input: CreateNotificationInput) => unknown;
+  createNotificationFn?: (db: Database, input: CreateNotificationInput) => Notification | null;
 }
 
 /**
@@ -49,7 +52,6 @@ export function createGitHubPoller(options: GitHubPollerOptions): Poller<GitHubP
   let lastReviewIds = new Set<number>();
   let lastCommentIds = new Set<number>();
 
-  // Use injected function or default to real implementation
   const createNotif = options.createNotificationFn ?? realCreateNotification;
 
   const poll = async (): Promise<PollResult<GitHubPollResult>> => {
@@ -61,57 +63,28 @@ export function createGitHubPoller(options: GitHubPollerOptions): Poller<GitHubP
         options.fetchComments(options.prNumber),
       ]);
 
-      // Find new reviews
+      // Find new items
       const newReviews = reviews.filter((r) => !lastReviewIds.has(r.id));
-      lastReviewIds = new Set(reviews.map((r) => r.id));
-
-      // Find new comments
       const newComments = comments.filter((c) => !lastCommentIds.has(c.id));
+
+      // Update tracking sets
+      lastReviewIds = new Set(reviews.map((r) => r.id));
       lastCommentIds = new Set(comments.map((c) => c.id));
 
-      // Create notifications for new reviews
-      for (const review of newReviews) {
-        const priority = review.state === "CHANGES_REQUESTED" ? "high" : "normal";
-        createNotif(options.db, {
-          ticket_id: options.ticketId,
-          source_type: "github_pr_review",
-          source_id: `review-${review.id}`,
-          priority,
-          summary: `PR review from ${review.user}: ${review.state}`,
-          content: review.body || `Review state: ${review.state}`,
-          author: review.user,
-          source_timestamp: review.submittedAt,
-          metadata: { prNumber: options.prNumber, reviewId: review.id },
-        });
-      }
-
-      // Create notifications for new comments
-      for (const comment of newComments) {
-        createNotif(options.db, {
-          ticket_id: options.ticketId,
-          source_type: "github_pr_comment",
-          source_id: `comment-${comment.id}`,
-          priority: "normal",
-          summary: `PR comment from ${comment.user}`,
-          content: comment.body,
-          author: comment.user,
-          source_timestamp: comment.createdAt,
-          metadata: {
-            prNumber: options.prNumber,
-            commentId: comment.id,
-            path: comment.path,
-            line: comment.line,
-          },
-        });
-      }
+      // Create notifications
+      const createdNotifications = createGitHubNotifications(
+        options.db,
+        options.ticketId,
+        options.prNumber,
+        newReviews,
+        newComments,
+        createNotif,
+      );
 
       // Callbacks
-      if (newReviews.length > 0) {
-        options.onNewReviews?.(newReviews);
-      }
-      if (newComments.length > 0) {
-        options.onNewComments?.(newComments);
-      }
+      if (newReviews.length > 0) options.onNewReviews?.(newReviews);
+      if (newComments.length > 0) options.onNewComments?.(newComments);
+      if (createdNotifications.length > 0) options.onNotificationsCreated?.(createdNotifications);
 
       const result: PollResult<GitHubPollResult> = {
         success: true,
@@ -132,13 +105,11 @@ export function createGitHubPoller(options: GitHubPollerOptions): Poller<GitHubP
       const err = error instanceof Error ? error : new Error(String(error));
       options.onError?.(err);
       state = "error";
-
       const result: PollResult<GitHubPollResult> = {
         success: false,
         error: err.message,
         timestamp,
       };
-
       lastResult = result;
       return result;
     }
@@ -146,20 +117,9 @@ export function createGitHubPoller(options: GitHubPollerOptions): Poller<GitHubP
 
   const start = (): void => {
     if (state === "running") return;
-
     state = "running";
-
-    // Initial poll
-    poll().catch(() => {
-      // Error handled in poll
-    });
-
-    // Set up interval
-    intervalId = setInterval(() => {
-      poll().catch(() => {
-        // Error handled in poll
-      });
-    }, options.interval);
+    poll().catch(() => {});
+    intervalId = setInterval(() => poll().catch(() => {}), options.interval);
   };
 
   const stop = (): void => {
@@ -170,10 +130,7 @@ export function createGitHubPoller(options: GitHubPollerOptions): Poller<GitHubP
     state = "stopped";
   };
 
-  // Auto-start if requested
-  if (options.autoStart) {
-    start();
-  }
+  if (options.autoStart) start();
 
   return {
     get state() {

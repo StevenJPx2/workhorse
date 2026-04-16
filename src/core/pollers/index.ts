@@ -24,3 +24,10 @@ export { createGitHubPoller, type GitHubPollerOptions } from "./github-poller.ts
 
 // Agent poller
 export { createAgentPoller, type AgentPollerOptions } from "./agent-poller.ts";
+
+// Notification watcher
+export {
+  createNotificationWatcher,
+  type NotificationWatcherOptions,
+  type NotificationWatcherResult,
+} from "./notification-watcher.ts";

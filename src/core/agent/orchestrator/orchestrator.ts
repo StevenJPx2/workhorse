@@ -13,6 +13,8 @@ import { killSession, sendKeys, capturePane } from "../../session/tmux/index.ts"
 import { removeWorktree } from "../../session/worktree/index.ts";
 import { hasSessionMemory, addSessionEvent } from "../../session/session-memory.ts";
 import { activeAgents, updateAgentState } from "./agent-store.ts";
+import type { Notification } from "../../notifications/types.ts";
+import { generateSystemInbox } from "../../notifications/system-instruction.ts";
 
 // Re-export all public API from sub-modules
 export { spawnAgent } from "./spawn-agent.ts";
@@ -97,4 +99,31 @@ export async function captureAgentOutput(ticketId: string): Promise<string | nul
   }
 
   return await capturePane(ticketId);
+}
+
+/**
+ * Inject system inbox notifications directly into the agent's conversation
+ *
+ * This pushes new notifications to the agent instead of requiring the agent
+ * to poll for them. The agent should call jiratown_acknowledge after addressing
+ * the notifications.
+ *
+ * @returns true if the inbox was injected, false if agent not running or no notifications
+ */
+export async function injectSystemInbox(
+  ticketId: string,
+  notifications: Notification[],
+): Promise<boolean> {
+  const instance = activeAgents.get(ticketId);
+
+  if (!instance || instance.state !== "running") {
+    return false;
+  }
+
+  const inbox = generateSystemInbox(notifications);
+  if (!inbox) {
+    return false;
+  }
+
+  return await sendKeys(ticketId, inbox, true);
 }

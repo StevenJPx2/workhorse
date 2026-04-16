@@ -35,6 +35,7 @@ export {
   getAgentsByState,
   sendMessageToAgent,
   captureAgentOutput,
+  injectSystemInbox,
 } from "./orchestrator.ts";
 
 // Discovery

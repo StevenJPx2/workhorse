@@ -13,7 +13,8 @@ import type {
   JiraComment,
   Poller,
 } from "./types.ts";
-import { createNotification } from "../notifications/notification-store.ts";
+import { createNotification as realCreateNotification } from "../notifications/notification-store.ts";
+import type { CreateNotificationInput, Notification } from "../notifications/types.ts";
 
 /**
  * Options for Jira poller
@@ -27,6 +28,10 @@ export interface JiraPollerOptions extends BasePollerOptions {
   fetchComments: (ticketId: string) => Promise<JiraComment[]>;
   /** Callback when new comments detected */
   onNewComments?: (comments: JiraComment[]) => void;
+  /** Callback when new notifications are created - used to push updates to agent */
+  onNotificationsCreated?: (notifications: Notification[]) => void;
+  /** Optional override for createNotification (for testing) */
+  createNotificationFn?: (db: Database, input: CreateNotificationInput) => Notification | null;
 }
 
 /**
@@ -37,6 +42,9 @@ export function createJiraPoller(options: JiraPollerOptions): Poller<JiraPollRes
   let intervalId: ReturnType<typeof setInterval> | null = null;
   let lastResult: PollResult<JiraPollResult> | null = null;
   let lastCommentIds = new Set<string>();
+
+  // Use injected function or default to real implementation
+  const createNotif = options.createNotificationFn ?? realCreateNotification;
 
   const poll = async (): Promise<PollResult<JiraPollResult>> => {
     const timestamp = new Date().toISOString();
@@ -50,9 +58,12 @@ export function createJiraPoller(options: JiraPollerOptions): Poller<JiraPollRes
       // Update tracking set
       lastCommentIds = new Set(comments.map((c) => c.id));
 
+      // Collect created notifications to push to agent
+      const createdNotifications: Notification[] = [];
+
       // Create notifications for new comments
       for (const comment of newComments) {
-        createNotification(options.db, {
+        const notif = createNotif(options.db, {
           ticket_id: options.ticketId,
           source_type: "jira_comment",
           source_id: comment.id,
@@ -62,11 +73,19 @@ export function createJiraPoller(options: JiraPollerOptions): Poller<JiraPollRes
           author: comment.author,
           source_timestamp: comment.created,
         });
+        if (notif) {
+          createdNotifications.push(notif);
+        }
       }
 
       // Callback
       if (newComments.length > 0) {
         options.onNewComments?.(newComments);
+      }
+
+      // Push notifications to agent if callback provided
+      if (createdNotifications.length > 0) {
+        options.onNotificationsCreated?.(createdNotifications);
       }
 
       const result: PollResult<JiraPollResult> = {

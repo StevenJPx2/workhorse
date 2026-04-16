@@ -2,7 +2,6 @@
  * useAgent hook - Reactive agent lifecycle management
  *
  * Provides Solid.js reactive state management for AI coding agents.
- * Wraps the orchestrator module for spawning/stopping agents.
  */
 
 import { createSignal, onMount, onCleanup } from "solid-js";
@@ -18,36 +17,13 @@ import {
 import type { UseAgentOptions, UseAgentReturn } from "./types.ts";
 import { createResolvers } from "./use-agent-helpers.ts";
 import { createAgentActions } from "./use-agent-actions.ts";
+import {
+  createNotificationWatcherManager,
+  NOTIFICATION_WATCH_INTERVAL,
+} from "./use-notification-watchers.ts";
 
 /**
  * Hook for managing AI agents with reactive state
- *
- * @example
- * ```tsx
- * function AgentManager() {
- *   const agent = useAgent({
- *     repoPath: '/path/to/repo',
- *     jiraCloudId: 'company.atlassian.net',
- *   });
- *
- *   const handleSpawn = async () => {
- *     const instance = await agent.spawn({
- *       ticketId: 'AM-123',
- *       agentType: 'opencode',
- *       issueType: 'Bug',
- *       summary: 'Fix login bug',
- *     });
- *     console.log('Agent started:', instance?.state);
- *   };
- *
- *   return (
- *     <box>
- *       <text>Running: {agent.getRunning().length}</text>
- *       <button onPress={handleSpawn}>Start Agent</button>
- *     </box>
- *   );
- * }
- * ```
  */
 export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
   const [agents, setAgents] = createSignal<Map<string, AgentInstance>>(new Map());
@@ -55,8 +31,13 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
   const [error, setError] = createSignal<Error | null>(null);
 
   const resolvers = createResolvers(options, setError);
-
   let healthCheckTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Notification watcher manager
+  const watcherManager = createNotificationWatcherManager(
+    options.notificationWatchInterval ?? NOTIFICATION_WATCH_INTERVAL,
+    { onNotificationsInjected: options.onNotificationsInjected },
+  );
 
   const reload = (): void => {
     const allAgents = getAllAgents();
@@ -67,7 +48,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     setAgents(agentMap);
   };
 
-  const { spawn, stop } = createAgentActions({
+  const { spawn: spawnAction, stop: stopAction } = createAgentActions({
     setError,
     setIsLoading,
     resolvers,
@@ -75,18 +56,20 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     reload,
   });
 
-  const get = (ticketId: string): AgentInstance | undefined => {
-    return agents().get(ticketId);
+  const spawn = async (spawnOptions: Parameters<typeof spawnAction>[0]) => {
+    const result = await spawnAction(spawnOptions);
+    if (result?.state === "running") watcherManager.start(spawnOptions.ticketId);
+    return result;
   };
 
-  const isRunning = (ticketId: string): boolean => {
-    const agent = get(ticketId);
-    return agent?.state === "running";
+  const stop = async (ticketId: string, removeWorktree?: boolean) => {
+    watcherManager.stop(ticketId);
+    return stopAction(ticketId, removeWorktree);
   };
 
-  const getState = (ticketId: string) => {
-    return get(ticketId)?.state;
-  };
+  const get = (ticketId: string): AgentInstance | undefined => agents().get(ticketId);
+  const isRunning = (ticketId: string): boolean => get(ticketId)?.state === "running";
+  const getState = (ticketId: string) => get(ticketId)?.state;
 
   const sendMessage = async (ticketId: string, message: string): Promise<boolean> => {
     try {
@@ -112,16 +95,10 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     try {
       setError(null);
       const result = await checkAgentHealth(ticketId);
-
       const prevState = get(ticketId)?.state;
-
       reload();
-
       const newState = get(ticketId)?.state;
-      if (prevState !== newState && newState) {
-        options.onStateChange?.(ticketId, newState);
-      }
-
+      if (prevState !== newState && newState) options.onStateChange?.(ticketId, newState);
       return result;
     } catch (err) {
       resolvers.handleError(err);
@@ -129,17 +106,12 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     }
   };
 
-  const getRunning = (): AgentInstance[] => {
-    return getAgentsByState("running");
-  };
+  const getRunning = (): AgentInstance[] => getAgentsByState("running");
 
   const startHealthChecks = () => {
     if (options.healthCheckInterval && options.healthCheckInterval > 0) {
       healthCheckTimer = setInterval(async () => {
-        const running = getRunning();
-        for (const agent of running) {
-          await checkHealth(agent.ticketId);
-        }
+        for (const agent of getRunning()) await checkHealth(agent.ticketId);
       }, options.healthCheckInterval);
     }
   };
@@ -149,14 +121,15 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       clearInterval(healthCheckTimer);
       healthCheckTimer = null;
     }
+    watcherManager.stopAll();
   });
 
   if (options.autoLoad) {
     onMount(async () => {
-      // Discover existing tmux sessions first
       await discoverAgents();
       reload();
       startHealthChecks();
+      for (const agent of getRunning()) watcherManager.start(agent.ticketId);
     });
   }
 

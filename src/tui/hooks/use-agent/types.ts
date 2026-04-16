@@ -9,6 +9,7 @@ import type {
   AgentState,
   HealthCheckResult,
 } from "#core/agent/orchestrator/types.ts";
+import type { Notification } from "#core/notifications/types.ts";
 
 /**
  * Options for useAgent hook
@@ -22,8 +23,12 @@ export interface UseAgentOptions {
   autoLoad?: boolean;
   /** Poll interval for health checks (ms, 0 to disable) */
   healthCheckInterval?: number;
+  /** Poll interval for notification watching (ms, default: 5000) */
+  notificationWatchInterval?: number;
   /** Callback when agent state changes */
   onStateChange?: (ticketId: string, state: AgentState) => void;
+  /** Callback when notifications are injected into an agent */
+  onNotificationsInjected?: (ticketId: string, notifications: Notification[]) => void;
   /** Callback on error */
   onError?: (error: Error) => void;
 }
