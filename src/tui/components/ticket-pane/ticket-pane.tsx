@@ -106,8 +106,15 @@ export function TicketPane(props: TicketPaneProps) {
 
   return (
     <box flexDirection="column" gap={spacing.sm} flexGrow={1} padding={spacing.sm}>
-      {/* Header - ID and summary */}
-      <TicketHeader id={props.ticket.id} summary={props.ticket.summary} />
+      {/* Header - ID, summary, and sync indicators */}
+      <TicketHeader
+        id={props.ticket.id}
+        summary={props.ticket.summary}
+        showGitHub={Boolean(props.ticket.pr_url)}
+        showJira={Boolean(props.ticket.jira_url)}
+        isGitHubPolling={props.prReview?.isPolling}
+        isJiraPolling={props.isJiraSyncing}
+      />
 
       {/* Metadata - Status, Agent, Worktree */}
       <TicketMeta

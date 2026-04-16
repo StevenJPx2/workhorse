@@ -25,6 +25,8 @@ export interface TicketPaneProps {
   prReview?: UsePRReviewReturn;
   /** Blocking notifications (shown when ticket is blocked) */
   blockingNotifications?: Notification[];
+  /** Accessor for Jira sync in progress state */
+  isJiraSyncing?: () => boolean;
   /** Called when user wants to resume work (check for responses) */
   onResume?: () => void;
   /** Called when user wants to view ticket in Jira */
@@ -43,6 +45,14 @@ export interface TicketHeaderProps {
   id: string;
   /** Ticket summary/title */
   summary: string | null;
+  /** Whether to show GitHub sync indicator */
+  showGitHub?: boolean;
+  /** Whether to show Jira sync indicator */
+  showJira?: boolean;
+  /** Accessor for GitHub polling state */
+  isGitHubPolling?: () => boolean;
+  /** Accessor for Jira polling state */
+  isJiraPolling?: () => boolean;
 }
 
 /**
