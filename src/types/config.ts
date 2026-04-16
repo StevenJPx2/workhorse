@@ -42,27 +42,12 @@ export interface PromptConfig {
   custom?: string;
 }
 
-export interface WebhooksConfig {
-  /**
-   * Port for webhook server. When set, enables webhook listening.
-   * Webhooks provide real-time updates; polling always runs as fallback.
-   */
-  port?: number;
-
-  /** Host to bind webhook server to (default: "localhost") */
-  host?: string;
-
-  /** Polling interval in seconds (default: 30) */
-  polling_interval?: number;
-}
-
 export interface JiratownConfig {
   jira?: JiraConfig;
   defaults?: DefaultsConfig;
   ui?: UiConfig;
   behavior?: BehaviorConfig;
   prompt?: PromptConfig;
-  webhooks?: WebhooksConfig;
 }
 
 /**
@@ -84,11 +69,6 @@ export interface ResolvedConfig {
   };
   prompt: {
     custom: string | null;
-  };
-  webhooks: {
-    port: number | null;
-    host: string;
-    polling_interval: number;
   };
 }
 

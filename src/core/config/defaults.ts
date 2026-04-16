@@ -16,9 +16,4 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   prompt: {
     custom: null,
   },
-  webhooks: {
-    port: null,
-    host: "localhost",
-    polling_interval: 30,
-  },
 };

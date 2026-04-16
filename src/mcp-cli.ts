@@ -13,8 +13,8 @@ import { parseArgs } from "util";
 import { Database } from "bun:sqlite";
 import { createJiratownServer } from "./core/mcp-server/server.ts";
 import { createGitHubPoller } from "./core/pollers/github-poller.ts";
+import { fetchGitHubReviews, fetchGitHubComments } from "./core/pollers/github-fetcher.ts";
 import type { PRCreatedEvent } from "./core/mcp-server/types.ts";
-import type { GitHubReview, GitHubComment } from "./core/pollers/types.ts";
 
 // Parse command line arguments
 const { values } = parseArgs({
@@ -38,12 +38,14 @@ Options:
   process.exit(0);
 }
 
-const ticketId = values.ticket || process.env.JIRATOWN_TICKET_ID;
+const ticketIdArg = values.ticket || process.env.JIRATOWN_TICKET_ID;
 
-if (!ticketId) {
+if (!ticketIdArg) {
   console.error("Error: --ticket <ticketId> is required");
   process.exit(1);
 }
+
+const ticketId: string = ticketIdArg;
 
 // Get database path from environment or use default (~/.jiratown/jiratown.db)
 const dbPath = process.env.JIRATOWN_DB_PATH || `${process.env.HOME}/.jiratown/jiratown.db`;
@@ -60,53 +62,26 @@ try {
 // GitHub polling interval (30 seconds)
 const GITHUB_POLL_INTERVAL = 30_000;
 
-// Stub implementations for GitHub API calls
-// These will be replaced with actual gh CLI calls or GitHub MCP integration
-async function fetchGitHubReviews(
-  _owner: string,
-  _repo: string,
-  _prNumber: number,
-): Promise<GitHubReview[]> {
-  // TODO: Implement using `gh api` or GitHub MCP
-  // For now, return empty array - notifications will be created when reviews are fetched
-  try {
-    const result =
-      await Bun.$`gh api repos/${_owner}/${_repo}/pulls/${_prNumber}/reviews --jq '[.[] | {id: .id, user: .user.login, state: .state, body: .body, submittedAt: .submitted_at}]'`.text();
-    return JSON.parse(result.trim() || "[]");
-  } catch {
-    return [];
-  }
-}
-
-async function fetchGitHubComments(
-  _owner: string,
-  _repo: string,
-  _prNumber: number,
-): Promise<GitHubComment[]> {
-  // TODO: Implement using `gh api` or GitHub MCP
-  try {
-    const result =
-      await Bun.$`gh api repos/${_owner}/${_repo}/pulls/${_prNumber}/comments --jq '[.[] | {id: .id, user: .user.login, body: .body, path: .path, line: .line, createdAt: .created_at, updatedAt: .updated_at}]'`.text();
-    return JSON.parse(result.trim() || "[]");
-  } catch {
-    return [];
-  }
-}
-
 /**
- * Handle PR creation event - starts GitHub poller for immediate feedback
+ * Start GitHub poller for a PR
  */
-function handlePRCreated(event: PRCreatedEvent): void {
-  console.error(`[jiratown-mcp] PR created: ${event.prUrl} - starting GitHub poller`);
+function startGitHubPoller(
+  ticketId: string,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  prUrl: string,
+): void {
+  console.error(`[jiratown-mcp] Starting GitHub poller for PR: ${prUrl}`);
 
   const poller = createGitHubPoller({
     db,
-    ticketId: event.ticketId,
-    prNumber: event.prNumber,
+    ticketId,
+    prNumber,
     interval: GITHUB_POLL_INTERVAL,
     autoStart: false, // We'll start manually after initial poll
-    fetchReviews: (prNumber) => fetchGitHubReviews(event.owner, event.repo, prNumber),
-    fetchComments: (prNumber) => fetchGitHubComments(event.owner, event.repo, prNumber),
+    fetchReviews: (prNum) => fetchGitHubReviews(owner, repo, prNum),
+    fetchComments: (prNum) => fetchGitHubComments(owner, repo, prNum),
     onNewReviews: (reviews) => {
       console.error(`[jiratown-mcp] New reviews detected: ${reviews.length}`);
     },
@@ -125,6 +100,36 @@ function handlePRCreated(event: PRCreatedEvent): void {
   });
 }
 
+/**
+ * Handle PR creation event - starts GitHub poller for immediate feedback
+ */
+function handlePRCreated(event: PRCreatedEvent): void {
+  startGitHubPoller(event.ticketId, event.owner, event.repo, event.prNumber, event.prUrl);
+}
+
+/**
+ * Check if ticket already has a PR and start polling if so
+ */
+function initializeGitHubPollerForExistingPR(): void {
+  try {
+    const ticket = db
+      .prepare("SELECT pr_url, pr_number FROM tickets WHERE id = ?")
+      .get(ticketId) as { pr_url: string | null; pr_number: number | null } | undefined;
+
+    if (ticket?.pr_url && ticket?.pr_number) {
+      // Parse PR URL: https://github.com/owner/repo/pull/123
+      const match = ticket.pr_url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+      if (match) {
+        const [, owner, repo] = match;
+        console.error(`[jiratown-mcp] Ticket already has PR, starting GitHub poller`);
+        startGitHubPoller(ticketId, owner, repo, ticket.pr_number, ticket.pr_url);
+      }
+    }
+  } catch (error) {
+    console.error(`[jiratown-mcp] Failed to check for existing PR:`, error);
+  }
+}
+
 // Create MCP server with PR creation callback
 const { server } = createJiratownServer(db, ticketId, {
   onPRCreated: handlePRCreated,
@@ -135,6 +140,9 @@ const transport = new StdioServerTransport();
 
 async function main() {
   try {
+    // Start GitHub poller if ticket already has a PR (for resumed tickets)
+    initializeGitHubPollerForExistingPR();
+
     await server.connect(transport);
   } catch (error) {
     console.error("MCP server error:", error);
