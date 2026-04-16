@@ -69,6 +69,16 @@ export interface AtlassianClientOptions {
 }
 
 /**
+ * User info returned from Atlassian
+ */
+export interface AtlassianUserInfo {
+  /** User's Atlassian account ID */
+  accountId: string;
+  /** User's display name */
+  displayName: string;
+}
+
+/**
  * Interface for Jira client operations
  *
  * This allows dependency injection for testing
@@ -91,4 +101,13 @@ export interface JiraClient {
 
   /** Transition a Jira issue to a new status */
   transitionIssue(ticketKey: string, transitionId: string): Promise<void>;
+
+  /** Get the current authenticated user's info */
+  getCurrentUser(): Promise<AtlassianUserInfo>;
+
+  /** Edit a Jira issue (update fields) */
+  editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void>;
+
+  /** Assign a Jira issue to a user */
+  assignIssue(ticketKey: string, accountId: string): Promise<void>;
 }

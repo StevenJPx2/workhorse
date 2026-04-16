@@ -6,7 +6,7 @@
 
 import { createSignal, onCleanup } from "solid-js";
 import { AtlassianClient, createAtlassianClient } from "#core/jira/index.ts";
-import type { JiraIssue } from "#core/jira/index.ts";
+import type { JiraIssue, AtlassianUserInfo } from "#core/jira/index.ts";
 import type { UseAtlassianOptions, UseAtlassianReturn, CloudIdOption } from "./types.ts";
 
 /**
@@ -161,6 +161,45 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     }
   };
 
+  const getCurrentUser = async (): Promise<AtlassianUserInfo> => {
+    await ensureConnected();
+    try {
+      setError(null);
+      return await getClient().getCurrentUser();
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e);
+      options.onError?.(e);
+      throw e;
+    }
+  };
+
+  const editIssue = async (ticketKey: string, fields: Record<string, unknown>): Promise<void> => {
+    await ensureConnected();
+    try {
+      setError(null);
+      await getClient().editIssue(ticketKey, fields);
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e);
+      options.onError?.(e);
+      throw e;
+    }
+  };
+
+  const assignIssue = async (ticketKey: string, accountId: string): Promise<void> => {
+    await ensureConnected();
+    try {
+      setError(null);
+      await getClient().assignIssue(ticketKey, accountId);
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e);
+      options.onError?.(e);
+      throw e;
+    }
+  };
+
   // Auto-connect if requested
   if (options.autoConnect && options.cloudId) {
     connect().catch(() => {
@@ -186,5 +225,8 @@ export function useAtlassian(options: UseAtlassianOptions = {}): UseAtlassianRet
     fetchIssue,
     addComment,
     transitionIssue,
+    getCurrentUser,
+    editIssue,
+    assignIssue,
   };
 }

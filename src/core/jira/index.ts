@@ -14,6 +14,7 @@ export type {
   GetJiraIssueResponse,
   McpToolResultContent,
   AtlassianClientOptions,
+  AtlassianUserInfo,
   JiraClient,
 } from "./types.ts";
 

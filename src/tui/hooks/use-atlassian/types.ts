@@ -3,10 +3,10 @@
  */
 
 import type { Accessor } from "solid-js";
-import type { JiraIssue } from "#core/jira/index.ts";
+import type { JiraIssue, AtlassianUserInfo } from "#core/jira/index.ts";
 
-// Re-export JiraIssue from core for backward compatibility
-export type { JiraIssue };
+// Re-export types from core for backward compatibility
+export type { JiraIssue, AtlassianUserInfo };
 
 /**
  * Cloud ID can be a static string or a reactive getter function.
@@ -51,6 +51,12 @@ export interface UseAtlassianReturn {
   addComment: (ticketKey: string, body: string) => Promise<void>;
   /** Transition a Jira issue to a new status */
   transitionIssue: (ticketKey: string, transitionId: string) => Promise<void>;
+  /** Get the current authenticated user's info */
+  getCurrentUser: () => Promise<AtlassianUserInfo>;
+  /** Edit a Jira issue (update fields) */
+  editIssue: (ticketKey: string, fields: Record<string, unknown>) => Promise<void>;
+  /** Assign a Jira issue to a user */
+  assignIssue: (ticketKey: string, accountId: string) => Promise<void>;
 }
 
 /**

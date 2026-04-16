@@ -184,6 +184,69 @@ export class AtlassianClient implements JiraClient {
     });
   }
 
+  /**
+   * Get the current authenticated user's account ID
+   */
+  async getCurrentUser(): Promise<{ accountId: string; displayName: string }> {
+    this.ensureConnected();
+
+    const result = await this.client!.callTool({
+      name: "atlassianUserInfo",
+      arguments: {},
+    });
+
+    const content = result.content as McpToolResultContent[];
+    if (!content || content.length === 0) {
+      throw new Error("No data returned for current user");
+    }
+
+    const textContent = content.find((c) => c.type === "text");
+    if (!textContent) {
+      throw new Error("Unexpected response format for user info");
+    }
+
+    let data: { accountId?: string; account_id?: string; displayName?: string; name?: string };
+    try {
+      data = JSON.parse(textContent.text);
+    } catch {
+      throw new Error(`Failed to parse user info response: ${textContent.text.slice(0, 200)}`);
+    }
+
+    const accountId = data.accountId || data.account_id;
+    const displayName = data.displayName || data.name || "Unknown";
+
+    if (!accountId) {
+      throw new Error(`User account ID not found in response: ${textContent.text.slice(0, 200)}`);
+    }
+
+    return { accountId, displayName };
+  }
+
+  /**
+   * Edit a Jira issue (update fields like assignee)
+   */
+  async editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void> {
+    this.ensureConnected();
+
+    await this.client!.callTool({
+      name: "editJiraIssue",
+      arguments: {
+        cloudId: this.cloudId,
+        issueIdOrKey: ticketKey,
+        fields,
+      },
+    });
+  }
+
+  /**
+   * Assign a Jira issue to a user
+   */
+  async assignIssue(ticketKey: string, accountId: string): Promise<void> {
+    await this.editIssue(ticketKey, {
+      assignee: { accountId },
+    });
+  }
+
   private ensureConnected(): void {
     if (!this._isConnected || !this.client) {
       throw new Error("Not connected to Atlassian MCP. Call connect() first.");

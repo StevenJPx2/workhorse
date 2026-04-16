@@ -18,6 +18,7 @@ import type { AgentType } from "#types/config.ts";
 
 import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
 import { useTicketActions } from "./use-ticket-actions.ts";
+import { useJiraTicketPickup } from "./use-jira-ticket-pickup.ts";
 
 export interface AppContentProps {
   showAll?: boolean;
@@ -106,6 +107,9 @@ function InnerWithEventLog(props: AppContentInnerProps) {
     }
   });
 
+  // Hook for Jira ticket pickup (assign + transition)
+  const { onTicketPickup } = useJiraTicketPickup({ atlassian: props.atlassian });
+
   const handleTicketSubmit = async (key: string, agent: AgentType, issue: JiraIssue) => {
     const rigValue = props.rig;
     if (!rigValue) {
@@ -121,7 +125,11 @@ function InnerWithEventLog(props: AppContentInnerProps) {
       agent,
     });
 
-    await workflow.startWork({ ticketId: ticket.id, agent, jiraIssue: issue });
+    // Start agent work and update Jira in parallel
+    await Promise.all([
+      workflow.startWork({ ticketId: ticket.id, agent, jiraIssue: issue }),
+      onTicketPickup(key),
+    ]);
     actions.reload();
   };
 
