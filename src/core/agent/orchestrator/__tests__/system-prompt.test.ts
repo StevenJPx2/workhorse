@@ -49,6 +49,15 @@ describe("System Prompt", () => {
       expect(prompt).toContain("jiratown_acknowledge");
     });
 
+    test("includes PR workflow with Jira update instructions", () => {
+      const prompt = generateSystemPrompt(baseInfo);
+      expect(prompt).toContain("jiratown_open_pr");
+      expect(prompt).toContain("IMPORTANT: Update Jira after PR creation");
+      expect(prompt).toContain("mcp_atlassian_addCommentToJiraIssue");
+      expect(prompt).toContain("mcp_atlassian_transitionJiraIssue");
+      expect(prompt).toContain("mcp_atlassian_getTransitionsForJiraIssue");
+    });
+
     test("handles null summary", () => {
       const info = { ...baseInfo, summary: null };
       const prompt = generateSystemPrompt(info);

@@ -35,6 +35,9 @@ export function mergeConfigs(
     behavior: {
       auto_resume: overrides.behavior?.auto_resume ?? base.behavior.auto_resume,
     },
+    prompt: {
+      custom: overrides.prompt?.custom ?? base.prompt.custom,
+    },
   };
 }
 
@@ -62,6 +65,15 @@ export function configToToml(config: JiratownConfig): string {
     if (config.ui.theme) {
       lines.push(`theme = "${config.ui.theme}"`);
     }
+    lines.push("");
+  }
+
+  if (config.prompt?.custom) {
+    lines.push("[prompt]");
+    // Use triple-quoted string for multi-line custom prompts
+    lines.push(`custom = """`);
+    lines.push(config.prompt.custom);
+    lines.push(`"""`);
     lines.push("");
   }
 

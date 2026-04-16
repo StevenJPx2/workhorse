@@ -6,8 +6,9 @@ import {
   handleAcknowledge,
   handleUpdateStatus,
   handleEscalate,
+  handleOpenPR,
 } from "./tools/index.ts";
-import type { AcknowledgeInput, UpdateStatusInput, EscalateInput } from "./types.ts";
+import type { AcknowledgeInput, UpdateStatusInput, EscalateInput, OpenPRInput } from "./types.ts";
 import { TOOL_NAMES } from "./tool-names.ts";
 
 const GetNotificationsSchema = z.object({});
@@ -45,7 +46,20 @@ const EscalateSchema = z.object({
   blocking: z.boolean().describe("Whether this blocks further work on the ticket"),
 });
 
+const OpenPRSchema = z.object({
+  title: z.string().describe("PR title (usually includes the Jira ticket key)"),
+  body: z
+    .string()
+    .describe("PR body/description with summary of changes, what was implemented, and how to test"),
+  base_branch: z.string().optional().describe("Base branch to merge into (defaults to 'main')"),
+});
+
 interface McpResult {
+  [key: string]: unknown;
+  content: Array<{ type: "text"; text: string }>;
+}
+
+interface AsyncMcpResult {
   [key: string]: unknown;
   content: Array<{ type: "text"; text: string }>;
 }
@@ -55,6 +69,7 @@ interface JiratownHandlers {
   acknowledge: (input: AcknowledgeInput) => McpResult;
   updateStatus: (input: UpdateStatusInput) => McpResult;
   escalate: (input: EscalateInput) => McpResult;
+  openPR: (input: OpenPRInput) => Promise<AsyncMcpResult>;
 }
 
 export function createJiratownServer(
@@ -94,6 +109,13 @@ export function createJiratownServer(
         content: [{ type: "text" as const, text: JSON.stringify(result) }],
       };
     },
+
+    openPR: async (input: OpenPRInput) => {
+      const result = await handleOpenPR(db, ticketId, input);
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(result) }],
+      };
+    },
   };
 
   server.tool(
@@ -122,6 +144,13 @@ export function createJiratownServer(
     "Escalate questions or issues to the user",
     EscalateSchema.shape,
     (input) => handlers.escalate(input as EscalateInput),
+  );
+
+  server.tool(
+    TOOL_NAMES.OPEN_PR,
+    "Open a GitHub Pull Request for this ticket. Pushes current branch and creates PR via gh CLI. Automatically updates ticket status to pr_created.",
+    OpenPRSchema.shape,
+    async (input) => handlers.openPR(input as OpenPRInput),
   );
 
   return { server, handlers };

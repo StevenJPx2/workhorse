@@ -52,7 +52,13 @@ export {
   saveTheme,
 } from "./config/index.ts";
 
-export type { JiratownConfig, ResolvedConfig, AgentType, ThemeName } from "#types/config.ts";
+export type {
+  JiratownConfig,
+  ResolvedConfig,
+  AgentType,
+  ThemeName,
+  PromptConfig,
+} from "#types/config.ts";
 
 // ========== Keychain / Credentials ==========
 export {

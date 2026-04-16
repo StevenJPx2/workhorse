@@ -28,4 +28,5 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   defaults: { agent: "opencode" },
   ui: { theme: "tokyonight" },
   behavior: { auto_resume: true },
+  prompt: { custom: null },
 };

@@ -39,6 +39,52 @@ export function generateSystemPrompt(info: AgentSystemInstruction): string {
   );
   lines.push("- Use `jiratown_escalate` if you need clarification or are blocked");
   lines.push("- Acknowledge notifications with `jiratown_acknowledge` after handling them");
+  lines.push("");
+
+  lines.push("**Completing Implementation - PR Workflow:**");
+  lines.push("When you have finished implementing the solution:");
+  lines.push("");
+  lines.push("1. **Commit your changes** - Use clear, descriptive commit messages");
+  lines.push("2. **Push your branch** - Ensure all changes are pushed to the remote");
+  lines.push(
+    "3. **Open a Pull Request** - Use `jiratown_open_pr` with a descriptive title (include the Jira key) and body summarizing:",
+  );
+  lines.push("   - What was implemented");
+  lines.push("   - Key changes made");
+  lines.push("   - How to test the changes");
+  lines.push("   - Any relevant context for reviewers");
+  lines.push("");
+  lines.push(
+    "The `jiratown_open_pr` tool will automatically update the local ticket status to `pr_created` and store the PR URL.",
+  );
+  lines.push("");
+  lines.push(
+    "4. **IMPORTANT: Update Jira after PR creation** - After `jiratown_open_pr` succeeds:",
+  );
+  lines.push(
+    "   - Use `mcp_atlassian_addCommentToJiraIssue` to post a comment with the PR URL and summary of changes",
+  );
+  lines.push(
+    "   - Use `mcp_atlassian_transitionJiraIssue` to move the ticket to the appropriate status (e.g., 'In Review', 'Code Review')",
+  );
+  lines.push(
+    "   - First call `mcp_atlassian_getTransitionsForJiraIssue` to find available transitions if unsure",
+  );
+  lines.push("");
+  lines.push("**Handling PR Reviews:**");
+  lines.push(
+    "- After PR creation, check `jiratown_get_notifications` periodically for review feedback",
+  );
+  lines.push("- Address reviewer comments by making changes and pushing new commits");
+  lines.push("- Reply to review comments explaining your changes");
+  lines.push("- When approved and merged, call `jiratown_update_status` with status='done'");
+
+  // Add custom project-specific prompt if configured
+  if (info.customPrompt) {
+    lines.push("");
+    lines.push("**Project-Specific Instructions:**");
+    lines.push(info.customPrompt);
+  }
 
   return lines.join("\n");
 }

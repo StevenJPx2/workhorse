@@ -22,11 +22,32 @@ export interface BehaviorConfig {
   auto_resume: boolean;
 }
 
+export interface PromptConfig {
+  /**
+   * Custom project-specific instructions appended to the agent's system prompt.
+   * Use this to provide context about the project, coding standards, testing
+   * requirements, or any other project-specific guidance for the AI agent.
+   *
+   * Example:
+   * ```toml
+   * [prompt]
+   * custom = """
+   * This is a TypeScript monorepo using Bun.
+   * - Always run `bun test` before opening a PR
+   * - Follow the existing code style in the codebase
+   * - Add JSDoc comments to all public functions
+   * """
+   * ```
+   */
+  custom?: string;
+}
+
 export interface JiratownConfig {
   jira?: JiraConfig;
   defaults?: DefaultsConfig;
   ui?: UiConfig;
   behavior?: BehaviorConfig;
+  prompt?: PromptConfig;
 }
 
 /**
@@ -45,6 +66,9 @@ export interface ResolvedConfig {
   };
   behavior: {
     auto_resume: boolean;
+  };
+  prompt: {
+    custom: string | null;
   };
 }
 

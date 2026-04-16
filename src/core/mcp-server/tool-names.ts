@@ -3,4 +3,5 @@ export const TOOL_NAMES = {
   ACKNOWLEDGE: "jiratown_acknowledge",
   UPDATE_STATUS: "jiratown_update_status",
   ESCALATE: "jiratown_escalate",
+  OPEN_PR: "jiratown_open_pr",
 } as const;

@@ -4,12 +4,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { handleAcknowledge } from "./acknowledge.ts";
+import { handleAcknowledge } from "../acknowledge.ts";
 import {
   initNotificationsTable,
   createNotification,
   getNotificationById,
-} from "../../notifications/index.ts";
+} from "../../../notifications/index.ts";
 
 describe("handleAcknowledge", () => {
   let db: Database;

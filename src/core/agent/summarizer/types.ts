@@ -9,7 +9,7 @@ export interface AgentStep {
   /** Step description */
   description: string;
   /** Step type for styling */
-  type: "thinking" | "action" | "result" | "error";
+  type: "thinking" | "action" | "result" | "error" | "user";
   /** Timestamp when captured */
   timestamp: string;
 }

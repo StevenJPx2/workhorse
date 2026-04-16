@@ -44,17 +44,11 @@ function getStepIcon(type: AgentStep["type"]): string {
       return "✓";
     case "error":
       return "✗";
+    case "user":
+      return "→";
     default:
       return "•";
   }
-}
-
-/**
- * Truncate text for display
- */
-function truncate(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 3) + "...";
 }
 
 /**
@@ -85,6 +79,8 @@ export function AgentDisplay(props: AgentDisplayProps) {
         return theme().success;
       case "error":
         return theme().error;
+      case "user":
+        return theme().warning ?? theme().text.primary;
       default:
         return theme().text.secondary;
     }
@@ -93,7 +89,7 @@ export function AgentDisplay(props: AgentDisplayProps) {
   return (
     <box flexDirection="column" flexGrow={1}>
       {/* Header row: state | current status */}
-      <box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+      <box flexDirection="row" justifyContent="space-between" flexWrap="wrap" marginBottom={1}>
         {/* Left: state indicator */}
         <box flexDirection="row" gap={1}>
           <text fg={p().stateColor}>{p().stateIndicator}</text>
@@ -108,7 +104,7 @@ export function AgentDisplay(props: AgentDisplayProps) {
 
         {/* Right: current status */}
         <Show when={props.currentStatus()}>
-          <text fg={theme().text.primary}>{truncate(props.currentStatus()!, 40)}</text>
+          <text fg={theme().text.primary}>{props.currentStatus()}</text>
         </Show>
       </box>
 

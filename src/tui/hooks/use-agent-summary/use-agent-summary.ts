@@ -79,6 +79,15 @@ export function useAgentSummary(options: UseAgentSummaryOptions): UseAgentSummar
     setCurrentStatus(null);
   };
 
+  const addUserMessage = (message: string) => {
+    const userStep: AgentStep = {
+      description: `You: ${message}`,
+      type: "user",
+      timestamp: new Date().toISOString(),
+    };
+    setSteps((prev) => [...prev, userStep].slice(-maxSteps));
+  };
+
   createEffect(() => {
     const enabled = resolveOption(options.enabled ?? true);
     const worktreePath = resolveOption(options.worktreePath);
@@ -113,5 +122,6 @@ export function useAgentSummary(options: UseAgentSummaryOptions): UseAgentSummar
     error,
     refresh,
     invalidate,
+    addUserMessage,
   };
 }

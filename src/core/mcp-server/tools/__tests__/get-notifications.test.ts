@@ -4,9 +4,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { handleGetNotifications } from "./get-notifications.ts";
-import { initNotificationsTable, createNotification } from "../../notifications/index.ts";
-import type { CreateNotificationInput } from "../../notifications/types.ts";
+import { handleGetNotifications } from "../get-notifications.ts";
+import { initNotificationsTable, createNotification } from "../../../notifications/index.ts";
+import type { CreateNotificationInput } from "../../../notifications/types.ts";
 
 describe("handleGetNotifications", () => {
   let db: Database;

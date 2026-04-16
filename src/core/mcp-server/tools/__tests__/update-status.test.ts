@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { handleUpdateStatus } from "./update-status.ts";
+import { handleUpdateStatus } from "../update-status.ts";
 import { initTicketsTable, insertTicket, getTicketById } from "./test-utils.ts";
 
 describe("handleUpdateStatus", () => {

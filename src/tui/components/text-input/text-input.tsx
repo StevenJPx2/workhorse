@@ -15,36 +15,14 @@
  */
 
 import { Show, useContext } from "solid-js";
-import { useKeyboard, usePaste } from "@opentui/solid";
 import { useTheme } from "../../theme/index.ts";
 import { useKeyboardContext } from "../../contexts/keyboard-context.ts";
 import { CellContext, GridContext } from "../grid/index.ts";
-import { readClipboardSync } from "#core/clipboard.ts";
+import { useCursorBlink } from "./use-cursor-blink.ts";
+import { useKeyboardInput } from "./use-keyboard-input.ts";
+import type { TextInputProps } from "./types.ts";
 
-export interface TextInputProps {
-  /** Unique ID for this input (used by keyboard context) */
-  inputId: string;
-  /** Current input value */
-  value: string;
-  /** Called when input changes */
-  onChange: (value: string) => void;
-  /** Called when user submits (Enter) */
-  onSubmit?: (value: string) => void;
-  /** Called when user exits input mode (Escape) */
-  onExit?: () => void;
-  /** Placeholder text when empty */
-  placeholder?: string;
-  /** Label text above input */
-  label?: string;
-  /** Whether the input is disabled */
-  disabled?: boolean;
-  /** Input width */
-  width?: number | `${number}%` | "auto";
-  /** Show border */
-  border?: boolean;
-  /** Whether the input is focused (from grid context, overrides internal check) */
-  focused?: boolean;
-}
+export type { TextInputProps } from "./types.ts";
 
 /**
  * Styled text input field with keyboard handling
@@ -58,6 +36,7 @@ export function TextInput(props: TextInputProps) {
   const placeholder = () => props.placeholder ?? "";
   const isDisabled = () => props.disabled ?? false;
   const showBorder = () => props.border ?? true;
+  const isMultiline = () => props.multiline ?? false;
 
   // Determine focus state: explicit prop > grid context > keyboard context
   const isFocused = () => {
@@ -72,67 +51,43 @@ export function TextInput(props: TextInputProps) {
     return keyboard.hasInputFocus(props.inputId);
   };
 
-  // Handle keyboard input when in edit mode
-  useKeyboard((key) => {
-    if (isDisabled()) return;
+  // Cursor blink management
+  const { cursorVisible, resetCursorBlink } = useCursorBlink({ isEditMode, isDisabled });
 
-    // Paste from clipboard (Ctrl+V or Cmd+V) - works when focused OR in edit mode
-    // In standard terminal mode, Ctrl+V sends \x16; in kitty protocol, name="v" + ctrl=true
-    const isPaste = (key.name === "v" && (key.ctrl || key.meta)) || key.sequence === "\x16";
-    if (isPaste && (isFocused() || isEditMode())) {
-      const clipboardText = readClipboardSync();
-      if (clipboardText) {
-        props.onChange(props.value + clipboardText);
-        // Enter edit mode if we weren't already (for Grid context)
-        if (cell && grid && !isEditMode()) {
-          grid.enterEditMode(cell.cellId);
-        }
-      }
-      return;
-    }
-
-    // Rest of keyboard handling requires edit mode
-    if (!isEditMode()) return;
-
-    // Submit on Enter
-    if (key.name === "return" || key.name === "enter") {
-      props.onSubmit?.(props.value);
-      return;
-    }
-
-    // Clear on Escape and exit input mode
-    if (key.name === "escape") {
-      keyboard.exitInputMode();
-      props.onExit?.();
-      return;
-    }
-
-    // Backspace
-    if (key.name === "backspace") {
-      props.onChange(props.value.slice(0, -1));
-      return;
-    }
-
-    // Type printable characters
-    if (key.name && key.name.length === 1 && !key.ctrl && !key.meta) {
-      props.onChange(props.value + key.name);
-    }
+  // Keyboard input handling (extracted to separate hook)
+  useKeyboardInput({
+    getValue: () => props.value,
+    onChange: props.onChange,
+    onSubmit: props.onSubmit,
+    onExit: props.onExit,
+    isDisabled,
+    isFocused,
+    isEditMode,
+    isMultiline,
+    resetCursorBlink,
+    exitInputMode: () => keyboard.exitInputMode(),
+    enterGridEditMode:
+      cell && grid && !isEditMode() ? () => grid.enterEditMode(cell.cellId) : undefined,
   });
 
-  // Handle bracketed paste from terminal (Cmd+V / right-click paste)
-  // Real terminals send pasted text wrapped in escape sequences, not as Ctrl+V key events
-  usePaste((event) => {
-    if (isDisabled()) return;
-    if (!isFocused() && !isEditMode()) return;
+  // Calculate the visible portion of text for overflow handling (single-line only)
+  const getVisibleText = () => {
+    const text = props.value;
+    if (!text || isMultiline()) return text;
 
-    const text = new TextDecoder().decode(event.bytes);
-    if (text) {
-      props.onChange(props.value + text);
-      if (cell && grid && !isEditMode()) {
-        grid.enterEditMode(cell.cellId);
-      }
+    let availableWidth = props.maxVisibleWidth;
+    if (availableWidth === undefined && typeof props.width === "number") {
+      const borderPadding = showBorder() ? 4 : 0;
+      availableWidth = props.width - borderPadding;
     }
-  });
+
+    if (!availableWidth || text.length <= availableWidth) return text;
+
+    const visibleLength = availableWidth - 2; // -1 for cursor, -1 for ellipsis
+    if (visibleLength <= 0) return text.slice(-1);
+
+    return "…" + text.slice(-visibleLength);
+  };
 
   const borderColor = () => {
     if (isDisabled()) return theme().border.dim;
@@ -141,44 +96,75 @@ export function TextInput(props: TextInputProps) {
   };
 
   const handleClick = () => {
-    if (!isDisabled()) {
-      keyboard.enterInputMode(props.inputId);
+    if (!isDisabled()) keyboard.enterInputMode(props.inputId);
+  };
+
+  const getInputHeight = () => {
+    if (isMultiline()) {
+      if (props.height !== undefined) return showBorder() ? props.height + 2 : props.height;
+      return undefined;
     }
+    return showBorder() ? 3 : 1;
   };
 
   return (
     <box flexDirection="column" width={props.width} onMouseDown={handleClick}>
-      {/* Label */}
       <Show when={props.label}>
         <text fg={theme().text.secondary} marginBottom={1}>
           {props.label}
         </text>
       </Show>
 
-      {/* Input box */}
-      <box
-        height={showBorder() ? 3 : 1}
-        border={showBorder()}
-        borderStyle="rounded"
-        borderColor={borderColor()}
-        backgroundColor={theme().bg.input}
-        flexDirection="row"
-        alignItems="center"
-        paddingLeft={showBorder() ? 1 : 0}
-        paddingRight={showBorder() ? 1 : 0}
-      >
-        {/* Input content */}
-        <box flexGrow={1} flexDirection="row">
-          <Show when={props.value} fallback={<text fg={theme().text.dim}>{placeholder()}</text>}>
-            <text fg={theme().text.primary}>{props.value}</text>
-          </Show>
+      {/* Input content - text and cursor */}
+      {(() => {
+        const textBg = showBorder() ? undefined : props.backgroundColor;
+        const content = (
+          <box flexGrow={1} flexDirection="row" flexWrap={isMultiline() ? "wrap" : "no-wrap"}>
+            <Show
+              when={props.value}
+              fallback={
+                <text fg={theme().text.dim} bg={textBg}>
+                  {placeholder()}
+                </text>
+              }
+            >
+              <text fg={theme().text.primary} bg={textBg}>
+                {getVisibleText()}
+              </text>
+            </Show>
+            <Show when={isEditMode() && !isDisabled() && cursorVisible()}>
+              <text fg={theme().primary} bg={textBg}>
+                █
+              </text>
+            </Show>
+          </box>
+        );
 
-          {/* Cursor when in edit mode */}
-          <Show when={isEditMode() && !isDisabled()}>
-            <text fg={theme().primary}>_</text>
-          </Show>
-        </box>
-      </box>
+        // Only set background when bordered - borderless inputs inherit from parent
+        return showBorder() ? (
+          <box
+            height={getInputHeight()}
+            backgroundColor={theme().bg.input}
+            flexDirection={isMultiline() ? "column" : "row"}
+            alignItems={isMultiline() ? "flex-start" : "center"}
+            border
+            borderStyle="rounded"
+            borderColor={borderColor()}
+            paddingLeft={1}
+            paddingRight={1}
+          >
+            {content}
+          </box>
+        ) : (
+          <box
+            height={getInputHeight()}
+            flexDirection={isMultiline() ? "column" : "row"}
+            alignItems={isMultiline() ? "flex-start" : "center"}
+          >
+            {content}
+          </box>
+        );
+      })()}
     </box>
   );
 }

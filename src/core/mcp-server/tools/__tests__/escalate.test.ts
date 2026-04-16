@@ -4,9 +4,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { handleEscalate } from "./escalate.ts";
+import { handleEscalate } from "../escalate.ts";
 import { initTicketsTable, insertTicket, getTicketById } from "./test-utils.ts";
-import { initNotificationsTable, getNotificationsByTicket } from "../../notifications/index.ts";
+import { initNotificationsTable, getNotificationsByTicket } from "../../../notifications/index.ts";
 
 describe("handleEscalate", () => {
   let db: Database;

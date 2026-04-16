@@ -71,6 +71,7 @@ export function TicketPane(props: TicketPaneProps) {
   const chat = useChatBox({
     onSubmit: (message) => {
       actions.onSendMessage?.(message);
+      agentSummary.addUserMessage(message);
       chat.addMessage(`Sent to agent: ${message}`, "system");
     },
   });

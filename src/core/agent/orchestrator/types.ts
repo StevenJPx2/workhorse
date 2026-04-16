@@ -112,4 +112,6 @@ export interface AgentSystemInstruction {
   jiraUrl?: string;
   /** Jira cloud ID for Atlassian MCP calls */
   jiraCloudId?: string;
+  /** Custom project-specific prompt from config */
+  customPrompt?: string | null;
 }

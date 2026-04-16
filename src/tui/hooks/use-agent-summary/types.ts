@@ -38,4 +38,6 @@ export interface UseAgentSummaryReturn {
   refresh: () => Promise<void>;
   /** Clear cached data and force re-fetch on next poll */
   invalidate: () => void;
+  /** Add a user message to the steps */
+  addUserMessage: (message: string) => void;
 }

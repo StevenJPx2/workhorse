@@ -11,7 +11,7 @@ import {
   parseFrontmatter,
   parseRecentActivity,
   parseKeyDecisions,
-} from "./session-parser.ts";
+} from "../session-parser.ts";
 
 describe("session-parser", () => {
   describe("parseFrontmatter", () => {

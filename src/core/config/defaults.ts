@@ -13,4 +13,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   behavior: {
     auto_resume: true,
   },
+  prompt: {
+    custom: null,
+  },
 };

@@ -81,3 +81,22 @@ export interface UpdateStatusResponse {
 export interface JiratownToolContext {
   ticketId: string;
 }
+
+/**
+ * Input for jiratown_open_pr tool
+ */
+export interface OpenPRInput {
+  title: string;
+  body: string;
+  base_branch?: string;
+}
+
+/**
+ * Response from jiratown_open_pr tool
+ */
+export interface OpenPRResponse {
+  success: boolean;
+  pr_url?: string;
+  pr_number?: number;
+  message: string;
+}
