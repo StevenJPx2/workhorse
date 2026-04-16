@@ -40,6 +40,10 @@ export interface SpawnAgentOptions {
   jiraDescription?: string;
   /** Full Jira URL for the ticket (e.g., "https://company.atlassian.net/browse/AM-123") */
   jiraUrl?: string;
+  /** Current ticket status from database (for resume context) */
+  status?: string;
+  /** PR URL if PR has been created */
+  prUrl?: string;
 }
 
 /**
@@ -114,4 +118,8 @@ export interface AgentSystemInstruction {
   jiraCloudId?: string;
   /** Custom project-specific prompt from config */
   customPrompt?: string | null;
+  /** Current ticket status (for resume context) */
+  status?: string;
+  /** PR URL if PR has been created */
+  prUrl?: string;
 }

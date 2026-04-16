@@ -58,6 +58,8 @@ export async function launchTicketAgent(
       jiraSummary: summary,
       jiraDescription: description,
       jiraUrl,
+      status: ticket.status,
+      prUrl: ticket.pr_url ?? undefined,
     });
 
     if (!result.success) {

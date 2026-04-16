@@ -40,6 +40,8 @@ export async function restartTicketAgent(
       jiraCloudId,
       jiraSummary: ticket.summary ?? undefined,
       jiraUrl: ticket.jira_url ?? undefined,
+      status: ticket.status,
+      prUrl: ticket.pr_url ?? undefined,
     });
 
     if (!result.success) {

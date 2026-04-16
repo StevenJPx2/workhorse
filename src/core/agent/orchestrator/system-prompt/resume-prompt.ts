@@ -54,6 +54,12 @@ export function generateResumePrompt(info: ResumeSystemInstruction): string {
   lines.push("## Working Environment");
   lines.push(`- Worktree: ${info.worktreePath}`);
   lines.push(`- Branch: ${info.branchName}`);
+  if (info.status) {
+    lines.push(`- Current Status: ${info.status}`);
+  }
+  if (info.prUrl) {
+    lines.push(`- PR URL: ${info.prUrl}`);
+  }
   lines.push("");
 
   lines.push("## Jiratown MCP Tools");

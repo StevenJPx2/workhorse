@@ -23,6 +23,10 @@ export interface PromptContext {
   jiraDescription: string | null | undefined;
   jiraUrl: string | undefined;
   jiraCloudId: string | undefined;
+  /** Current ticket status from database */
+  status?: string;
+  /** PR URL if PR has been created */
+  prUrl?: string;
 }
 
 export interface PromptBuilderDeps {
@@ -62,6 +66,8 @@ export function prepareAgentPrompt(
     jiraDescription,
     jiraUrl,
     jiraCloudId,
+    status,
+    prUrl,
   } = ctx;
 
   const existingMemory = deps.hasSessionMemory(worktreePath)
@@ -83,6 +89,8 @@ export function prepareAgentPrompt(
       branchName: worktreeBranch,
       jiraUrl,
       jiraCloudId,
+      status,
+      prUrl,
       sessionSummary: existingMemory.summary,
       recentActivity: existingMemory.recentActivity,
       keyDecisions: existingMemory.keyDecisions,

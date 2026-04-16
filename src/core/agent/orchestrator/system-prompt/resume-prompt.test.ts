@@ -195,4 +195,40 @@ describe("generateResumePrompt", () => {
     const result = generateResumePrompt(baseInfo);
     expect(typeof result).toBe("string");
   });
+
+  it("should include status when provided", () => {
+    const info = { ...baseInfo, status: "implementing" };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("Status: implementing");
+  });
+
+  it("should include PR URL when provided", () => {
+    const info = { ...baseInfo, prUrl: "https://github.com/owner/repo/pull/123" };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("PR URL: https://github.com/owner/repo/pull/123");
+  });
+
+  it("should include both status and PR URL in pr_created state", () => {
+    const info = {
+      ...baseInfo,
+      status: "pr_created",
+      prUrl: "https://github.com/owner/repo/pull/456",
+    };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("Status: pr_created");
+    expect(result).toContain("PR URL: https://github.com/owner/repo/pull/456");
+  });
+
+  it("should not include status line when status is not provided", () => {
+    const result = generateResumePrompt(baseInfo);
+    expect(result).not.toContain("Status:");
+  });
+
+  it("should not include PR URL line when prUrl is not provided", () => {
+    const result = generateResumePrompt(baseInfo);
+    expect(result).not.toContain("PR URL:");
+  });
 });
