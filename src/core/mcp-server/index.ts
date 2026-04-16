@@ -17,6 +17,10 @@ export type {
   UpdateStatusInput,
   UpdateStatusResponse,
   JiratownToolContext,
+  OpenPRInput,
+  OpenPRResponse,
+  PRCreatedEvent,
+  JiratownServerOptions,
 } from "./types.ts";
 
 export {

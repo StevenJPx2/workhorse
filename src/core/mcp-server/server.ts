@@ -8,7 +8,13 @@ import {
   handleEscalate,
   handleOpenPR,
 } from "./tools/index.ts";
-import type { AcknowledgeInput, UpdateStatusInput, EscalateInput, OpenPRInput } from "./types.ts";
+import type {
+  AcknowledgeInput,
+  UpdateStatusInput,
+  EscalateInput,
+  OpenPRInput,
+  JiratownServerOptions,
+} from "./types.ts";
 import { TOOL_NAMES } from "./tool-names.ts";
 
 const GetNotificationsSchema = z.object({});
@@ -75,6 +81,7 @@ interface JiratownHandlers {
 export function createJiratownServer(
   db: Database,
   ticketId: string,
+  options: JiratownServerOptions = {},
 ): { server: McpServer; handlers: JiratownHandlers } {
   const server = new McpServer({
     name: "jiratown",
@@ -112,6 +119,18 @@ export function createJiratownServer(
 
     openPR: async (input: OpenPRInput) => {
       const result = await handleOpenPR(db, ticketId, input);
+
+      // Trigger callback when PR is successfully created with all required info
+      if (result.success && result.pr_url && result.pr_number && result.owner && result.repo) {
+        options.onPRCreated?.({
+          ticketId,
+          prUrl: result.pr_url,
+          prNumber: result.pr_number,
+          owner: result.owner,
+          repo: result.repo,
+        });
+      }
+
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result) }],
       };

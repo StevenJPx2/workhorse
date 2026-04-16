@@ -76,9 +76,11 @@ export async function handleOpenPR(
       };
     }
 
-    // Extract PR number from URL (e.g., https://github.com/owner/repo/pull/123)
-    const prNumberMatch = prUrl.match(/\/pull\/(\d+)/);
-    const prNumber = prNumberMatch ? parseInt(prNumberMatch[1], 10) : undefined;
+    // Extract owner, repo, and PR number from URL (e.g., https://github.com/owner/repo/pull/123)
+    const prMatch = prUrl.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+    const owner = prMatch ? prMatch[1] : undefined;
+    const repo = prMatch ? prMatch[2] : undefined;
+    const prNumber = prMatch ? parseInt(prMatch[3], 10) : undefined;
 
     // Update ticket with PR URL and status
     db.prepare(
@@ -89,6 +91,8 @@ export async function handleOpenPR(
       success: true,
       pr_url: prUrl,
       pr_number: prNumber,
+      owner,
+      repo,
       message:
         `PR created successfully: ${prUrl}\n\n` +
         `**IMPORTANT: Now update the Jira ticket (${ticket.jira_key}):**\n` +

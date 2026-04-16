@@ -99,4 +99,27 @@ export interface OpenPRResponse {
   pr_url?: string;
   pr_number?: number;
   message: string;
+  /** Owner of the repo (for GitHub polling) */
+  owner?: string;
+  /** Repo name (for GitHub polling) */
+  repo?: string;
+}
+
+/**
+ * Callback data when a PR is created successfully
+ */
+export interface PRCreatedEvent {
+  ticketId: string;
+  prUrl: string;
+  prNumber: number;
+  owner: string;
+  repo: string;
+}
+
+/**
+ * Options for creating the Jiratown MCP server
+ */
+export interface JiratownServerOptions {
+  /** Called when a PR is successfully created - use to start GitHub polling */
+  onPRCreated?: (event: PRCreatedEvent) => void;
 }
