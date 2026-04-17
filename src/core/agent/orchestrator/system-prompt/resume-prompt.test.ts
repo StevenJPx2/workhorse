@@ -231,4 +231,67 @@ describe("generateResumePrompt", () => {
     const result = generateResumePrompt(baseInfo);
     expect(result).not.toContain("PR URL:");
   });
+
+  it("should include PR context summary when provided", () => {
+    const info = {
+      ...baseInfo,
+      prContextSummary: `## PR #123: Fix authentication bug
+
+**Status:** 🟢 OPEN
+**Review Decision:** 🔄 CHANGES REQUESTED
+**Mergeable:** Yes ✓
+**Changes:** 3 commits, 5 files (+120/-45)
+
+### Reviews
+- 🔄 **reviewer1**: CHANGES REQUESTED
+  > Please add error handling for the edge case`,
+    };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("## Current PR State (fetched just now)");
+    expect(result).toContain("PR #123: Fix authentication bug");
+    expect(result).toContain("CHANGES REQUESTED");
+    expect(result).toContain("Please add error handling");
+  });
+
+  it("should not include PR context section when prContextSummary is not provided", () => {
+    const result = generateResumePrompt(baseInfo);
+    expect(result).not.toContain("## Current PR State");
+  });
+
+  it("should include Jira context summary when provided", () => {
+    const info = {
+      ...baseInfo,
+      jiraContextSummary: `**Status:** In Review
+**Assignee:** John Doe
+**Reporter:** Jane Smith
+
+### Recent Comments
+- **Jane Smith** (2024-01-15): Can you also handle the mobile viewport?`,
+    };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("## Current Jira State (fetched just now)");
+    expect(result).toContain("In Review");
+    expect(result).toContain("Can you also handle the mobile viewport?");
+  });
+
+  it("should not include Jira context section when jiraContextSummary is not provided", () => {
+    const result = generateResumePrompt(baseInfo);
+    expect(result).not.toContain("## Current Jira State");
+  });
+
+  it("should include both PR and Jira context when both are provided", () => {
+    const info = {
+      ...baseInfo,
+      prContextSummary: "PR summary content",
+      jiraContextSummary: "Jira summary content",
+    };
+    const result = generateResumePrompt(info);
+
+    expect(result).toContain("## Current PR State (fetched just now)");
+    expect(result).toContain("PR summary content");
+    expect(result).toContain("## Current Jira State (fetched just now)");
+    expect(result).toContain("Jira summary content");
+  });
 });

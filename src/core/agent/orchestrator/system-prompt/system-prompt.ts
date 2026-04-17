@@ -47,7 +47,7 @@ export function generateSystemPrompt(info: AgentSystemInstruction): string {
   lines.push("1. **Commit your changes** - Use clear, descriptive commit messages");
   lines.push("2. **Push your branch** - Ensure all changes are pushed to the remote");
   lines.push(
-    "3. **Open a Pull Request** - Use `jiratown_open_pr` with a descriptive title (include the Jira key) and body summarizing:",
+    "3. **Open a Pull Request** - **MUST use `jiratown_open_pr`** (do NOT use `gh pr create` directly!) with a descriptive title (include the Jira key) and body summarizing:",
   );
   lines.push("   - What was implemented");
   lines.push("   - Key changes made");
@@ -55,7 +55,7 @@ export function generateSystemPrompt(info: AgentSystemInstruction): string {
   lines.push("   - Any relevant context for reviewers");
   lines.push("");
   lines.push(
-    "The `jiratown_open_pr` tool will automatically update the local ticket status to `pr_created` and store the PR URL.",
+    "**CRITICAL:** Always use `jiratown_open_pr` instead of `gh pr create`. This tool updates the local ticket status to `pr_created` and stores the PR URL so Jiratown can track the PR.",
   );
   lines.push("");
   lines.push(

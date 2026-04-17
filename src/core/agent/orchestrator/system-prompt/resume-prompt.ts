@@ -88,6 +88,9 @@ export function generateResumePrompt(info: ResumeSystemInstruction): string {
   lines.push(
     "- `jiratown_update_status` - Report progress: planning → implementing → testing → pr_created → in_review → done",
   );
+  lines.push(
+    "- `jiratown_open_pr` - **MUST use this** to create PRs (do NOT use `gh pr create` directly). This stores the PR URL so Jiratown can track reviews.",
+  );
   lines.push("- `jiratown_escalate` - Request clarification if blocked");
   lines.push("- `jiratown_acknowledge` - Acknowledge handled notifications");
   lines.push("");

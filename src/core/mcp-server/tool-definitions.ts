@@ -16,7 +16,6 @@ const UpdateStatusSchema = z.object({
       "implementing",
       "blocked",
       "testing",
-      "pr_created",
       "in_review",
       "done",
     ])
@@ -24,8 +23,8 @@ const UpdateStatusSchema = z.object({
       "New status for the ticket workflow. Use: " +
         "'pending' (not started), 'planning' (analyzing requirements), " +
         "'implementing' (writing code), 'blocked' (needs input), " +
-        "'pr_created' (PR opened), 'in_review' (awaiting review), " +
-        "'done' (complete)",
+        "'in_review' (awaiting review), 'done' (complete). " +
+        "NOTE: To set 'pr_created', use jiratown_open_pr instead - it stores the PR URL.",
     ),
   message: z.string().optional().describe("Optional status update message"),
 });

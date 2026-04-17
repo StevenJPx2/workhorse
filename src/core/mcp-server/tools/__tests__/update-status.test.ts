@@ -52,6 +52,7 @@ describe("handleUpdateStatus", () => {
     });
 
     it("should handle all valid status values", () => {
+      // Note: pr_created is not included because it can only be set via jiratown_open_pr
       const statuses = [
         "pending",
         "queued",
@@ -59,7 +60,6 @@ describe("handleUpdateStatus", () => {
         "implementing",
         "blocked",
         "testing",
-        "pr_created",
         "in_review",
         "done",
       ] as const;

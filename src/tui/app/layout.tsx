@@ -14,6 +14,7 @@ import { HelpDialog } from "./help-dialog.tsx";
 import { useCommandPalette, useModal, useNotifications, useLayoutActions } from "../hooks/index.ts";
 import { useTicketsContext } from "../contexts/tickets-context.tsx";
 import { useKeyboardContext } from "../contexts/keyboard-context.ts";
+import { LayoutActionsProvider } from "../contexts/layout-actions-context.tsx";
 import { spacing, useTheme } from "../theme/index.ts";
 import { createCommands } from "./commands.ts";
 
@@ -140,7 +141,14 @@ export function Layout(props: LayoutProps) {
 
         {/* Main content - takes remaining space */}
         <box flexGrow={1} flexDirection="column" backgroundColor={theme().bg.base}>
-          {props.children}
+          <LayoutActionsProvider
+            value={{
+              getAgentState: layoutActions.getAgentState,
+              isAgentStarting: layoutActions.isAgentStarting,
+            }}
+          >
+            {props.children}
+          </LayoutActionsProvider>
         </box>
       </box>
 

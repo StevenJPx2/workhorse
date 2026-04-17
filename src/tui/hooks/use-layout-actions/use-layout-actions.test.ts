@@ -433,7 +433,8 @@ describe("useLayoutActions", () => {
       mockIsAgentRunning.mockReturnValue(false);
 
       mockRestartAgent.mockImplementation(async () => {
-        // This is async
+        // After restart succeeds, the agent state should be "running"
+        mockGetAgentState.mockReturnValue("running");
         return true;
       });
 
@@ -447,6 +448,9 @@ describe("useLayoutActions", () => {
 
         expect(actions.isAgentStarting()).toBe(false);
         await actions.toggleAgent();
+        // isAgentStarting is now async - it clears after polling detects "running" state
+        // Wait a bit for the polling to detect the "running" state
+        await new Promise((resolve) => setTimeout(resolve, 100));
         expect(actions.isAgentStarting()).toBe(false);
 
         dispose();

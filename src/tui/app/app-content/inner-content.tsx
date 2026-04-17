@@ -1,92 +1,30 @@
-/** AppContent component - Main dashboard content with rig detection, workflow, and Layout rendering */
-import { createSignal, createEffect, Show } from "solid-js";
-import { useRenderer } from "@opentui/solid";
-import { Layout } from "./layout.tsx";
-import { EmptyState } from "./empty-state.tsx";
-import { TicketPane } from "../components/ticket-pane/index.ts";
-import { TicketInput } from "../components/ticket-input/index.ts";
-import { initDatabase } from "#core/db/index.ts";
-import { detectRig, type RigInfo } from "#core/git/detect-rig.ts";
-import { spacing, useTheme } from "../theme/index.ts";
-import { TicketsProvider, useTicketsContext } from "../contexts/tickets-context.tsx";
-import { WorkflowProvider, useWorkflowContext } from "../contexts/workflow-context.tsx";
-import { EventLogProvider, useEventLogContext } from "../contexts/event-log-context.tsx";
-import { TicketActionsProvider } from "../contexts/ticket-actions-context.tsx";
-import { useModalSystem } from "../hooks/use-modal-system/index.ts";
-import { useConfig, useAtlassian, useNotifications } from "../hooks/index.ts";
-import type { AgentType } from "#types/config.ts";
-
-import type { JiraIssue } from "../hooks/use-atlassian/index.ts";
-import { useTicketActions } from "./use-ticket-actions.ts";
-import { useJiraTicketPickup } from "./use-jira-ticket-pickup.ts";
-
-export interface AppContentProps {
-  showAll?: boolean;
-}
-
 /**
- * Main app content with data loading and layout
+ * Inner content component that has access to all contexts
  */
-export function AppContent(props: AppContentProps) {
-  const renderer = useRenderer();
-  const [rigInfo, setRigInfo] = createSignal<RigInfo | null>(null);
-  const [loading, setLoading] = createSignal(true);
 
-  const config = useConfig({ autoLoad: true });
-  const cloudId = () => config.config()?.jira.cloud_id;
-  const rig = () => rigInfo()?.rig ?? undefined;
-  const gitRoot = () => rigInfo()?.gitRoot;
-
-  const atlassian = useAtlassian({ cloudId, autoConnect: false });
-
-  // Initial load effect
-  createEffect(() => {
-    (async () => {
-      try {
-        initDatabase();
-        const info = await detectRig();
-        if (info) setRigInfo(info);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  });
-
-  return (
-    <WorkflowProvider
-      repoPath={gitRoot}
-      jiraCloudId={cloudId}
-      onError={(err) => console.error("Workflow error:", err)}
-    >
-      <TicketsProvider rig={rig} autoLoad={!loading()}>
-        <EventLogProvider>
-          <InnerWithEventLog
-            showAll={props.showAll}
-            rig={rig()}
-            loading={loading()}
-            atlassian={atlassian}
-            config={config}
-            onQuit={() => renderer.destroy()}
-          />
-        </EventLogProvider>
-      </TicketsProvider>
-    </WorkflowProvider>
-  );
-}
-
-interface AppContentInnerProps {
-  showAll?: boolean;
-  rig: string | undefined;
-  loading: boolean;
-  atlassian: ReturnType<typeof useAtlassian>;
-  config: ReturnType<typeof useConfig>;
-  onQuit: () => void | Promise<void>;
-}
+import { createEffect, createMemo, Show } from "solid-js";
+import { spacing, useTheme } from "../../theme/index.ts";
+import { useTicketsContext } from "../../contexts/tickets-context.tsx";
+import { useWorkflowContext } from "../../contexts/workflow-context.tsx";
+import { useEventLogContext } from "../../contexts/event-log-context.tsx";
+import { TicketActionsProvider } from "../../contexts/ticket-actions-context.tsx";
+import { useNotifications, useGitHub } from "../../hooks/index.ts";
+import { usePRReview } from "../../hooks/use-pr-review/index.ts";
+import { useModalSystem } from "../../hooks/use-modal-system/index.ts";
+import { TicketInput } from "../../components/ticket-input/index.ts";
+import { Layout } from "../layout.tsx";
+import { EmptyState } from "../empty-state.tsx";
+import { useTicketActions } from "../use-ticket-actions.ts";
+import { useJiraTicketPickup } from "../use-jira-ticket-pickup.ts";
+import { TicketPaneWithLayoutContext } from "./ticket-pane-wrapper.tsx";
+import type { AppContentInnerProps } from "./types.ts";
+import type { AgentType } from "#types/config.ts";
+import type { JiraIssue } from "../../hooks/use-atlassian/index.ts";
 
 /**
  * Inner content that has access to all contexts
  */
-function InnerWithEventLog(props: AppContentInnerProps) {
+export function InnerContent(props: AppContentInnerProps) {
   const { theme } = useTheme();
   const modals = useModalSystem();
   const workflow = useWorkflowContext();
@@ -98,6 +36,56 @@ function InnerWithEventLog(props: AppContentInnerProps) {
     ticketId: () => currentTicket()?.id,
     autoLoad: true,
     pollInterval: 5000,
+  });
+
+  // GitHub connection for PR review
+  const github = useGitHub({ autoConnect: false });
+
+  // Parse PR info from URL when ticket has a PR
+  const prInfo = createMemo(() => {
+    const ticket = currentTicket();
+    if (!ticket?.pr_url) return null;
+    // Parse: https://github.com/owner/repo/pull/123
+    const match = ticket.pr_url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+    if (!match) return null;
+    return { owner: match[1], repo: match[2], prNumber: parseInt(match[3], 10) };
+  });
+
+  // Connect to GitHub when we have a PR to review (including on resume)
+  createEffect(() => {
+    const info = prInfo();
+    if (info && !github.isConnected() && !github.isConnecting()) {
+      github.connect().catch(() => {
+        // Error is captured in github.error()
+      });
+    }
+  });
+
+  // PR review hook - only active when we have PR info and GitHub is connected
+  const prReview = createMemo(() => {
+    const info = prInfo();
+    if (!info || !github.isConnected()) return undefined;
+
+    return usePRReview(
+      {
+        owner: info.owner,
+        repo: info.repo,
+        prNumber: info.prNumber,
+        autoStart: true,
+      },
+      {
+        listReviews: github.listReviews,
+        listReviewComments: github.listReviewComments,
+        createReviewComment: github.createReviewComment,
+        createReview: github.createReview,
+        updateTicketStatus: async () => {
+          // Status updates handled by workflow
+        },
+        logEvent: () => {
+          // Event logging handled elsewhere
+        },
+      },
+    );
   });
 
   // Reload tickets when loading completes
@@ -173,10 +161,11 @@ function InnerWithEventLog(props: AppContentInnerProps) {
           </Show>
           <Show when={!props.loading && currentTicket()}>
             <TicketActionsProvider actions={actionsValue()}>
-              <TicketPane
+              <TicketPaneWithLayoutContext
                 ticket={currentTicket()!}
-                agentState={() => workflow.getAgentState(currentTicket()!.id)}
+                fallbackAgentState={() => workflow.getAgentState(currentTicket()!.id)}
                 logEntries={eventLog.events()}
+                prReview={prReview()}
                 blockingNotifications={notifications.blockingNotifications()}
                 onResume={ticketActions()?.onResume}
                 onViewJira={ticketActions()?.onViewJira}

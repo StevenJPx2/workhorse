@@ -5,7 +5,7 @@
  */
 
 import { createSignal, createEffect } from "solid-js";
-import { AppContent } from "./app-content.tsx";
+import { AppContent } from "./app-content/index.ts";
 import { ThemeProvider } from "../theme/index.ts";
 import { NavigationProvider } from "../contexts/navigation-provider.tsx";
 import { KeyboardProvider } from "../contexts/keyboard-provider.tsx";
