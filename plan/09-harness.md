@@ -1,8 +1,8 @@
-# Step 9: AgentAdapter
+# Step 9: Harness
 
 Agent-agnostic adapter. Takes Jiratown's internal representation, generates native config for the coding harness (Claude Code / Opencode), manages worktrees and processes.
 
-Location: `packages/core/src/agent-adapter/`
+Location: `packages/core/src/workflow/harness/`
 
 ## Domain Types (colocated)
 
@@ -42,10 +42,10 @@ interface HarnessAdapter {
 }
 ```
 
-## AgentAdapter Class
+## Harness Class
 
 ```typescript
-class AgentAdapter {
+class Harness {
   private agents = new Map<string, AgentInstance>()
 
   constructor(db: Database, hooks: Hooks, memory: MemoryService, monitors: MonitorService, config: Readonly<JiratownConfig>)

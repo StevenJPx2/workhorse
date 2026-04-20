@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { DEFAULT_CONFIG } from "./defaults.ts";
 import { mergeConfigs, parseTomlFile, writeTomlFile } from "./parse.ts";
 import { getConfigPaths } from "./paths.ts";
@@ -37,10 +37,10 @@ export class Config {
 
   // ── Write ─────────────────────────────────────────────────────────────────
 
-  saveGlobal(overrides: Partial<JiratownConfig>): void {
-    const { globalConfig, globalDir } = getConfigPaths();
+  saveGlobal(overrides: Partial<JiratownConfig>, globalDir?: string): void {
+    const { globalConfig, globalDir: dir } = getConfigPaths(undefined, globalDir);
 
-    if (!existsSync(globalDir)) mkdirSync(globalDir, { recursive: true });
+    mkdirSync(dir, { recursive: true });
 
     writeTomlFile(globalConfig, overrides);
   }

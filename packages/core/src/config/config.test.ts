@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -206,5 +205,42 @@ auto_poll_reviews = true
     // last arg wins: global first, project last → project wins
     const result = mergeConfigs(DEFAULT_CONFIG, global, project);
     expect(result.ui.theme).toBe("nord");
+  });
+
+  // ── saveGlobal ─────────────────────────────────────────────────────────────
+
+  it("saveGlobal creates dir when missing and writes config", async () => {
+    const { Config } = await import("./config.ts");
+    const { readFileSync, existsSync } = await import("node:fs");
+
+    const parentDir = mkdtempSync(join(tmpdir(), "jiratown-save-global-"));
+    const globalDir = join(parentDir, "subdir", ".jiratown");
+    const cfg = new Config();
+    cfg.saveGlobal({ agent: { harness: "claude-code", model: "opus-4" } }, globalDir);
+
+    expect(existsSync(join(globalDir, "config.toml"))).toBe(true);
+    const content = readFileSync(join(globalDir, "config.toml"), "utf-8");
+    expect(content).toContain("[agent]");
+
+    rmSync(parentDir, { recursive: true, force: true });
+  });
+
+  // ── saveProject edge cases ────────────────────────────────────────────────
+
+  it("saveProject throws when no repoRoot", async () => {
+    const { Config } = await import("./config.ts");
+    const cfg = new Config();
+    expect(() =>
+      cfg.saveProject("", { agent: { harness: "opencode", model: "sonnet-4" } }),
+    ).toThrow();
+  });
+
+  // ── parseTomlFile error handling ────────────────────────────────────────────
+
+  it("parseTomlFile returns empty object on invalid TOML", async () => {
+    const { parseTomlFile } = await import("./parse.ts");
+    const invalidPath = join(tmpDir, "bad.toml");
+    writeFileSync(invalidPath, "this is not valid {{{ toml", "utf-8");
+    expect(parseTomlFile(invalidPath)).toEqual({});
   });
 });

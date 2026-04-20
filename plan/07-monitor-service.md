@@ -2,7 +2,7 @@
 
 Polling framework. Core provides infrastructure, plugins bring the "what" to monitor.
 
-Location: `packages/core/src/services/monitor/`
+Location: `packages/core/src/workflow/services/monitor/`
 
 ## Domain Types (colocated)
 
@@ -67,9 +67,9 @@ class MonitorService {
 
 ## Built-in Monitors
 
-1. **Agent Health** — checks if agent process is alive (port of `agent-poller.ts`, registered by AgentAdapter)
+1. **Agent Health** — checks if agent process is alive (port of `agent-poller.ts`, registered by Harness)
 
-No notification watcher needed — notifications are push-based (step 9 listens to `notification.created` and delivers immediately via `sendKeys`).
+No notification watcher needed — notifications are push-based (Harness listens to `notification.created` and delivers immediately via `sendKeys`).
 
 Plugin-contributed monitors (Jira comments, GitHub reviews/comments) are registered during plugin `setup()`.
 

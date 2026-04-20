@@ -8,36 +8,36 @@ This document maps the existing Jiratown pipeline (on `main`) into the new archi
 
 ## Architecture Summary
 
-- **Entry point**: IssueProvider (via TUI — modal, chatbox, etc.)
-- **Workflow**: AgentAdapter + Services (MemoryService, MonitorService)
-- **AgentAdapter**: Wraps Claude Code or Opencode, generates native plugin config for whichever harness is used
-- **Agent Plugin**: The config surface defined in the AgentAdapter — maps to Claude Code's `plugin.json` / Opencode's JS/TS plugin modules
+- **Entry point**: Tracker (via TUI — modal, chatbox, etc.)
+- **Workflow**: Harness + Services (MemoryService, MonitorService)
+- **Harness**: Wraps Claude Code or Opencode, generates native plugin config for whichever harness is used
+- **Agent Plugin**: The config surface defined in the Harness — maps to Claude Code's `plugin.json` / Opencode's JS/TS plugin modules
 - **Plugins**: Developer-defined extensions (Jira, GitHub, etc.) that hook into every part of Jiratown via dashed-line hook access
 - **TUI**: Just the interface layer to this underlying system — can be a modal, chatbox, whatever
 
 ---
 
-## 1. IssueProvider
+## 1. Tracker (was IssueProvider)
 
 | New Component          | Current Code (main branch)                                                                                                                    | What Changes                                                                                                                                                                                         |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **User-Prompt Parser** | `parseTicketKey()` + CLI/TUI input handling + `AtlassianClient.fetchIssue()`                                                                  | Becomes a generic parser — no longer Jira-specific. The _Jira Plugin_ registers a parser that knows how to handle Jira ticket keys/URLs. A GitHub Plugin could register one that handles issue URLs. |
 | **Prompt Engineer**    | `prepareAgentPrompt()`, `generateInitialPrompt()`, `generateResumePrompt()`, `generateSystemPrompt()` — all in `src/core/agent/orchestrator/` | Stays mostly the same, but receives context from MemoryService (the `←` arrow) instead of directly reading `context.md` and making its own Jira/GitHub API calls.                                    |
 
-**Key shift**: The IssueProvider becomes **source-agnostic**. It doesn't know about Jira or GitHub — it just receives structured issue data from whatever plugin parsed the input, and engineers a prompt from it. GitHub can now also plug into the IssueProvider to parse GitHub issue IDs/URLs (was too complicated to do before with the old architecture — the new plugin-based parser registration makes this trivial).
+**Key shift**: The Tracker becomes **source-agnostic**. It doesn't know about Jira or GitHub — it just receives structured issue data from whatever plugin parsed the input, and engineers a prompt from it. GitHub can now also plug into the Tracker to parse GitHub issue IDs/URLs (was too complicated to do before with the old architecture — the new plugin-based parser registration makes this trivial).
 
 ---
 
-## 2. Workflow → AgentAdapter → Agent Plugin
+## 2. Workflow → Harness → Agent Plugin
 
-The Agent Plugin is what Jiratown defines in the AgentAdapter. Each agent harness has its own native plugin system:
+The Agent Plugin is what Jiratown defines in the Harness. Each agent harness has its own native plugin system:
 
 - **Claude Code**: `plugin.json` + `hooks.json` + `.mcp.json` + `skills/` + `agents/` + `monitors/` etc.
 - **Opencode**: JS/TS plugin modules with event hooks, `tool()` definitions, etc.
 
 | Agent Plugin Slot | Current Code                                                                                                                      | What Changes                                                                                                                                                                                                                                                                                                       |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **MCP**           | `createJiratownServer()` in `src/core/mcp-server/` + `generateMcpConfig()` writing `.opencode/opencode.json`                      | The adapter generates the native MCP config for whichever agent harness. The 5 Jiratown tools (`get_notifications`, `acknowledge`, `update_status`, `escalate`, `open_pr`) become the core MCP server. Jira/GitHub MCP connections move to their respective plugins.                                               |
+| **MCP**           | `createJiratownServer()` in `src/core/mcp-server/` + `generateMcpConfig()` writing `.opencode/opencode.json`                      | The harness generates the native MCP config for whichever agent harness. The 5 Jiratown tools (`get_notifications`, `acknowledge`, `update_status`, `escalate`, `open_pr`) become the core MCP server (now lives inside `harness/mcp/`). Jira/GitHub MCP connections move to their respective plugins.                                               |
 | **Tools**         | The 5 tool handlers in `src/core/mcp-server/tools/`                                                                               | Core tools stay. Plugin-contributed tools get registered via hooks.                                                                                                                                                                                                                                                |
 | **Skills**        | System prompt instructions (hardcoded in `system-prompt/`)                                                                        | Become actual skill files — `SKILL.md` for Claude Code, or JS modules for Opencode.                                                                                                                                                                                                                                |
 | **Commands**      | N/A — no formal command system existed                                                                                            | Formalized as agent commands (slash commands, etc.).                                                                                                                                                                                                                                                               |
@@ -48,7 +48,7 @@ The Agent Plugin is what Jiratown defines in the AgentAdapter. Each agent harnes
 | **Monitors**      | The pollers are outside the agent currently                                                                                       | Move into the agent plugin format (Claude Code `monitors.json`, Opencode events).                                                                                                                                                                                                                                  |
 | **Dependencies**  | Not applicable                                                                                                                    | Plugin dependency resolution.                                                                                                                                                                                                                                                                                      |
 
-**Key shift**: Currently `spawnAgent()` does everything — worktree, tmux, MCP config, prompt, command building. The AgentAdapter splits this into: (1) generate the Agent Plugin config in native format, (2) hand it to the agent harness. The tmux/spawning becomes an implementation detail of the adapter.
+**Key shift**: Currently `spawnAgent()` does everything — worktree, tmux, MCP config, prompt, command building. The Harness splits this into: (1) generate the Agent Plugin config in native format, (2) hand it to the agent harness. The tmux/spawning becomes an implementation detail of the adapter.
 
 ---
 
@@ -68,9 +68,9 @@ The Agent Plugin is what Jiratown defines in the AgentAdapter. Each agent harnes
 ## 4. Workflow → Services → MonitorService
 
 | New Component                    | Current Code                                                                  | What Changes                                                                                                                                                                                                  |
-| -------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Remote Polling**               | `jira-poller.ts`, `github-poller.ts`                                          | Move **out** of core and into their respective plugins. MonitorService provides the polling infrastructure (interval, health, lifecycle). Jira Plugin and GitHub Plugin register their pollers through hooks. |
-| **Local File/Script Monitoring** | `notification-watcher.ts` (watches SQLite), `agent-poller.ts` (health checks) | `notification-watcher` becomes a core monitor (notification delivery, not plugin-specific). `agent-poller` (health checks) is core adapter responsibility.                                                    |
+| **Local File/Script Monitoring** | `notification-watcher.ts` (watches SQLite), `agent-poller.ts` (health checks) | `notification-watcher` becomes a core monitor (notification delivery, not plugin-specific). `agent-poller` (health checks) is core harness responsibility.                                                    |
 
 **Key shift**: MonitorService provides the **framework** for monitoring. Plugins bring the **what** to monitor. Currently pollers are hardcoded — with hooks, any plugin can register a monitor.
 
@@ -82,8 +82,8 @@ Plugins are defined by the developer **beforehand**. They have access to every p
 
 | Plugin            | Current Code                                                                              | What Changes                                                                                                                                                                                                                                             |
 | ----------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Jira Plugin**   | `src/core/jira/` (client, poller, fetch context, sync) — deeply integrated into core      | Extracted from core. Hooks into: IssueProvider (registers Jira ticket key/URL parser), MonitorService (registers Jira comment poller), MemoryService (provides Jira context for prompts), AgentAdapter (contributes Atlassian MCP server config).        |
-| **GitHub Plugin** | `src/core/github/` (client, poller, PR context, formatters) — deeply integrated into core | Same extraction. Hooks into: **IssueProvider** (registers GitHub issue ID/URL parser — new capability!), MonitorService (PR review/comment poller), MemoryService (PR context), AgentAdapter (contributes GitHub MCP config), and MCP tools (`open_pr`). |
+| **Jira Plugin**   | `src/core/jira/` (client, poller, fetch context, sync) — deeply integrated into core      | Extracted from core. Hooks into: Tracker (registers Jira ticket key/URL parser), MonitorService (registers Jira comment poller), MemoryService (provides Jira context for prompts), Harness (contributes Atlassian MCP server config).        |
+| **GitHub Plugin** | `src/core/github/` (client, poller, PR context, formatters) — deeply integrated into core | Same extraction. Hooks into: **Tracker** (registers GitHub issue ID/URL parser — new capability!), MonitorService (PR review/comment poller), MemoryService (PR context), Harness (contributes GitHub MCP config), and MCP tools (`open_pr`). |
 
 **Key shift**: Jira and GitHub are currently **baked into core** — `launchTicketAgent()` directly calls `fetchPRContext()`, the system prompt has hardcoded Jira/GitHub instructions, pollers are created inline. In the new architecture, they become **plugins that register themselves via hooks**. Core Jiratown has no knowledge of Jira or GitHub — it just knows about issues, monitors, memory, and agents.
 
@@ -93,16 +93,16 @@ Plugins are defined by the developer **beforehand**. They have access to every p
 
 | #   | Current Pipeline Stage                                                           | New Architecture Location                                                    |
 | --- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 1   | **Input/Parsing**: Ticket key parsed → Jira API fetch → domain object            | **IssueProvider** → User-Prompt Parser (plugin-contributed parsers)          |
-| 2   | **Provisioning**: Worktree created, tmux session, MCP config written             | **AgentAdapter** (implementation detail of the adapter)                      |
-| 3   | **Prompt Engineering**: Session memory checked → initial/resume prompt generated | **IssueProvider** → Prompt Engineer ← **MemoryService** (context enrichment) |
-| 4   | **Agent Spawning**: Agent command built, sent to tmux                            | **AgentAdapter** (hands off to native agent harness)                         |
-| 5   | **Agent Execution**: Agent works via MCP tools                                   | **AgentAdapter** → Agent Plugin (MCP, Tools, Skills)                         |
+| 1   | **Input/Parsing**: Ticket key parsed → Jira API fetch → domain object            | **Tracker** → User-Prompt Parser (plugin-contributed parsers)          |
+| 2   | **Provisioning**: Worktree created, tmux session, MCP config written             | **Harness** (implementation detail of the adapter)                      |
+| 3   | **Prompt Engineering**: Session memory checked → initial/resume prompt generated | **Tracker** → Prompt Engineer ← **MemoryService** (context enrichment) |
+| 4   | **Agent Spawning**: Agent command built, sent to tmux                            | **Harness** (hands off to native agent harness)                         |
+| 5   | **Agent Execution**: Agent works via MCP tools                                   | **Harness** → Agent Plugin (MCP, Tools, Skills)                         |
 | 6   | **Monitoring**: Background pollers for health, Jira, GitHub                      | **MonitorService** (framework) + **Plugins** (register what to monitor)      |
 | 7   | **Notification Pipeline**: External events → SQLite → `<system_inbox>` injection | **MemoryService** (System Events + System Notifications)                     |
 | 8   | **Status Tracking**: Agent reports via `jiratown_update_status`                  | **MemoryService** (System Events) + core MCP tools                           |
 | 9   | **PR Workflow**: Agent creates PR → GitHub poller starts → reviews → agent       | **GitHub Plugin** hooks into MonitorService + MemoryService                  |
-| 10  | **Completion**: Agent calls done → ticket marked complete                        | **MemoryService** (event) → IssueProvider or Plugins react via hooks         |
+| 10  | **Completion**: Agent calls done → ticket marked complete                        | **MemoryService** (event) → Tracker or Plugins react via hooks         |
 
 ---
 
@@ -117,8 +117,8 @@ BEFORE (current):
   Only OpenCode is really supported (Claude is a stub)
 
 AFTER (new architecture):
-  IssueProvider: generic input → prompt (source-agnostic)
-  AgentAdapter: generic agent config → native plugin format (agent-agnostic)
+  Tracker: generic input → prompt (source-agnostic)
+  Harness: generic agent config → native plugin format (agent-agnostic)
   MemoryService: tiered cache + events + notifications (centralized state)
   MonitorService: polling framework (plugin-contributed monitors)
   Plugins: Jira + GitHub register via hooks into all of the above

@@ -1,4 +1,3 @@
-import { describe, it, expect } from "bun:test";
 import rule from "./max-lines-per-file";
 
 function createContext(code: string, options: number[] = []) {

@@ -2,7 +2,7 @@
 
 SQLite via `bun:sqlite`. Renamed `tickets` → `issues` with `source` column.
 
-Location: `packages/core/src/db/`
+Location: `packages/core/src/lib/db/`
 
 ## Schema
 

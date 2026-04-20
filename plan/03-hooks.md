@@ -2,7 +2,7 @@
 
 [mitt](https://github.com/developit/mitt) (~200 bytes) directly. No wrapper.
 
-Location: `packages/core/src/hooks/`
+Location: `packages/core/src/lib/hooks/`
 
 ## Implementation
 

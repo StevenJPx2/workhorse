@@ -6,7 +6,7 @@
     "strict": true,
     "noImplicitAny": false,
     "skipLibCheck": true,
-    "types": ["bun"],
+    "types": ["bun", "vitest/globals"],
     "lib": ["ESNext"],
     "noEmit": true,
     "allowImportingTsExtensions": true

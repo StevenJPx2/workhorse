@@ -1,4 +1,3 @@
-import { describe, it, expect } from "bun:test";
 import rule from "./enforce-kebab-case-filenames";
 
 function createContext(filename: string) {

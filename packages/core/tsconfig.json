@@ -1,10 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "types": ["bun", "vitest/globals"],
     "paths": {
       "#config": ["./src/config/index.ts"],
       "#types": ["./src/types/index.ts"],
-      "#hooks": ["./src/hooks/index.ts"],
+      "#hooks": ["./src/lib/hooks/index.ts"],
       "#plugins": ["./src/plugins/index.ts"],
       "#db": ["./src/db/index.ts"],
       "#services/memory": ["./src/services/memory/index.ts"],

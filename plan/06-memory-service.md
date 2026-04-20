@@ -4,7 +4,7 @@ Two tiers: L1 (context.md per worktree) + L2 (retriv hybrid search). Plus system
 
 Deps: `retriv`, `sqlite-vec`, `@huggingface/transformers`
 
-Location: `packages/core/src/services/memory/`
+Location: `packages/core/src/workflow/services/memory/`
 
 ## MemoryService Class
 
@@ -133,7 +133,7 @@ Separate SQLite DB (`memory.db`) from operational `jiratown.db`.
 
 - `issue.status_changed` → update session memory
 - `emitEvent()` → insert DB + emit hook
-- `createNotification()` → insert DB + emit `notification.created` (AgentAdapter listens to this and pushes to agent via `sendKeys`)
+- `createNotification()` → insert DB + emit `notification.created` (Harness listens to this and pushes to agent via `sendKeys`)
 
 ## Tests
 

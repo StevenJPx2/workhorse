@@ -6,12 +6,13 @@
   "main": "index.js",
   "scripts": {
     "build": "bun build index.ts --outdir . --target bun",
-    "test": "bun test rules/*.test.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@oxlint/plugins": "^1.59.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vitest": "^4.1.4"
   },
   "peerDependencies": {
     "oxlint": ">=1.0.0"

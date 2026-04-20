@@ -1,8 +1,8 @@
-# Step 8: IssueProvider
+# Step 8: Tracker
 
 Entry point of the system. Takes raw user input → parser → Issue → prompt. Source-agnostic.
 
-Location: `packages/core/src/issue-provider/`
+Location: `packages/core/src/workflow/tracker/`
 
 ## Domain Types (colocated)
 
@@ -43,10 +43,10 @@ interface PromptContext {
 }
 ```
 
-## IssueProvider Class
+## Tracker Class
 
 ```typescript
-class IssueProvider {
+class Tracker {
   private parsers: IssueParser[] = []
 
   constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<JiratownConfig>)

@@ -1,12 +1,12 @@
-# Step 10: MCP Server
+# Step 10: MCP
 
-Agent's interface back to Jiratown via stdio. 3 core tools (source-agnostic). Plugins contribute additional tools via hooks.
+Agent's interface back to Jiratown via stdio. 3 core tools (source-agnostic). Plugins contribute additional tools via hooks. Lives inside `workflow/harness/` because it's a harness-specific concern — each harness type configures and launches the MCP server as part of its provisioning.
 
 Notifications are **push-based** — the agent never polls for them. Pending notifications are bundled into the initial prompt (step 8), and new ones are delivered in real-time via `sendMessage` (step 9). The agent just needs to acknowledge them.
 
 Deps: `@modelcontextprotocol/sdk`
 
-Location: `packages/core/src/mcp-server/`
+Location: `packages/core/src/workflow/harness/mcp/`
 
 ## Server Factory
 
@@ -48,7 +48,7 @@ ctx.hooks.on("mcp.tools.registering", ({ tools }) => {
 ## CLI Entry Point
 
 ```typescript
-// mcp-server/cli.ts — accepts --issue-id, --db-path, creates server with stdio transport
+// workflow/harness/mcp/cli.ts — accepts --issue-id, --db-path, creates server with stdio transport
 ```
 
 ## Tests

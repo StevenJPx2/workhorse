@@ -8,7 +8,7 @@ title: Jiratown Architecture {
   }
 }
 
-issue: IssueProvider {
+tracker: Tracker {
   parser: User-Prompt Parser
   prompt: Prompt Engineer
 
@@ -16,7 +16,7 @@ issue: IssueProvider {
 }
 
 workflow: Workflow {
-  Agent: AgentAdapter {
+  harness: Harness {
     plugin: Agent Plugin {
       mcp: MCP
       hooks: Hooks
@@ -49,8 +49,8 @@ workflow: Workflow {
     }
   }
 
-  services.monitor -> agent
-  services.memory <-> agent
+  services.monitor -> harness
+  services.memory <-> harness
 }
 
 claude: Claude Code
@@ -61,16 +61,16 @@ plugin: Plugins
 github: Github Plugin
 jira: Jira Plugin
 
-issue -> workflow
-issue.prompt <- workflow.services.memory
+tracker -> workflow
+tracker.prompt <- workflow.services.memory
 
-claude -> workflow.agent
-opencode -> workflow.agent
+claude -> workflow.harness
+opencode -> workflow.harness
 
 jira -> plugin
 github -> plugin
 
-plugin -> issue: {
+plugin -> tracker: {
   style.stroke-dash: 3
 }
 

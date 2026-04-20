@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { vi } from "vitest";
 
 // ─── fs mock setup ────────────────────────────────────────────────────────────
 // We mock `node:fs` so tests never touch the real filesystem.
@@ -7,7 +7,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 let fakeEntries: string[] = [];
 const fakeDirs = new Set<string>();
 
-mock.module("node:fs", () => ({
+vi.mock("node:fs", () => ({
   default: {
     readdirSync: (_dir: string) => fakeEntries,
     statSync: (p: string) => ({
