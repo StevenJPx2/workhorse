@@ -1,0 +1,83 @@
+title: Jiratown Architecture {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 29
+    bold: true
+    underline: true
+  }
+}
+
+issue: IssueProvider {
+  parser: User-Prompt Parser
+  prompt: Prompt Engineer
+
+  parser -> prompt
+}
+
+workflow: Workflow {
+  Agent: AgentAdapter {
+    plugin: Agent Plugin {
+      mcp: MCP
+      hooks: Hooks
+      tools: Tools
+      lsp: LSPs
+      models: Models
+      agents: Agents
+      skills: Skills
+      commands: Commands
+      monitors: Monitors
+      dependencies: Dependencies
+    }
+  }
+
+  services: Services {
+    style: {
+      stroke-dash: 3
+    }
+    monitor: MonitorService {
+      remote: Remote Polling
+      local: Local File / Script Monitoring
+    }
+    memory: MemoryService {
+      cache: Cache {
+        l1: L1 - context.md
+        l2: L2 - retriv (hybrid search)
+      }
+      events: System Events
+      notifications: System Notifications
+    }
+  }
+
+  services.monitor -> agent
+  services.memory <-> agent
+}
+
+claude: Claude Code
+opencode: Opencode
+
+plugin: Plugins
+
+github: Github Plugin
+jira: Jira Plugin
+
+issue -> workflow
+issue.prompt <- workflow.services.memory
+
+claude -> workflow.agent
+opencode -> workflow.agent
+
+jira -> plugin
+github -> plugin
+
+plugin -> issue: {
+  style.stroke-dash: 3
+}
+
+plugin -> workflow: {
+  style.stroke-dash: 3
+}
+
+plugin -> workflow.*: {
+  style.stroke-dash: 3
+}

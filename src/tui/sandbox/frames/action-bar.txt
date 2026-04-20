@@ -1,3 +1,0 @@
-                  e:escalate   a:switch agent   j:open jira 
-                                                            
-                                                            

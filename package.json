@@ -1,70 +1,25 @@
 {
   "name": "jiratown",
-  "version": "0.1.0",
-  "description": "Terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets",
-  "keywords": [
-    "agents",
-    "ai",
-    "dashboard",
-    "jira",
-    "terminal",
-    "tui"
-  ],
-  "license": "MIT",
-  "author": "",
-  "bin": {
-    "jiratown": "./dist/cli/index.js"
-  },
-  "files": [
-    "dist/"
-  ],
-  "type": "module",
-  "imports": {
-    "#core": "./src/core/index.ts",
-    "#core/*": "./src/core/*",
-    "#tui/*": "./src/tui/*",
-    "#cli/*": "./src/cli/*",
-    "#types": "./src/types/index.ts",
-    "#types/*": "./src/types/*"
-  },
+  "private": true,
+  "workspaces": ["packages/*", "oxlint/*"],
   "scripts": {
-    "dev": "bun run src/cli/index.ts",
-    "build": "bun run build.ts",
-    "test": "bun test",
-    "test:cleanup": "bun test && bun run src/index.ts cleanup --all",
-    "seed": "bun run scripts/seed.ts",
-    "sandbox": "bun run src/tui/sandbox/index.tsx",
-    "frames": "bun run src/tui/sandbox/dump-frames/run.tsx",
-    "test:visual": "bun test src/tui/sandbox/snapshot.test.tsx",
-    "cleanup": "bun run src/cli/index.ts cleanup",
-    "jiratown-mcp": "bun run src/mcp-cli.ts",
+    "test": "bun test --recursive",
+    "typecheck": "bun run --filter '*' typecheck",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",
     "format:fix": "oxfmt . --write",
-    "coverage": "bun run scripts/check-coverage.ts",
-    "check": "bun run lint && bun run coverage",
+    "check": "bun run lint && bun run test",
     "prepare": "simple-git-hooks"
   },
-  "dependencies": {
-    "@clack/prompts": "^0.9.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@opencode-ai/sdk": "^1.4.0",
-    "@opentui/core": "^0.1.90",
-    "@opentui/solid": "^0.1.90",
-    "citty": "^0.1.6",
-    "keytar": "^7.9.0",
-    "solid-js": "^1.9.5",
-    "toml": "^3.0.0"
-  },
   "devDependencies": {
-    "@oxlint/plugins": "^1.59.0",
-    "@types/bun": "^1.2.4",
-    "lint-staged": "^16.4.0",
-    "oxfmt": "^0.44.0",
+    "@types/bun": "latest",
+    "typescript": "^5",
     "oxlint": "^1.59.0",
+    "@oxlint/plugins": "^1.59.0",
+    "oxfmt": "^0.44.0",
     "simple-git-hooks": "^2.13.1",
-    "typescript": "^5.7.3"
+    "lint-staged": "^16.4.0"
   },
   "simple-git-hooks": {
     "pre-commit": "bunx lint-staged"
