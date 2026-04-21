@@ -1,133 +1,103 @@
+# AGENTS.md
 
-Default to using Bun instead of Node.js.
+Jiratown is an agent orchestrator that manages coding agents working on Jira/GitHub issues. This is an active rewrite.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+## Build Plan
 
-## Code Quality
+This repo is being built incrementally. Before starting work:
 
-**Run `bun run check` after making changes.** This runs the full audit pipeline:
+1. Check `plan/PROGRESS.md` for current status (steps 0–5 done, 6–12 pending)
+2. Read the relevant `plan/XX-module.md` for the module you're working on
+3. See `MIGRATION.md` for old → new architecture mapping
 
-1. `lint` - oxlint static analysis
-2. `typecheck` - TypeScript type checking
-3. `test` - vitest tests with coverage
-4. `fallow` - dead code, duplication, and complexity analysis
-
-All checks must pass before committing.
-
-## APIs
-
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
-
-## Testing
-
-Use `vitest` to run tests. Coverage must stay at 97%+ (enforced by `vitest.config.ts` thresholds).
+## Quick Start
 
 ```bash
-bun run test              # run tests
-bun run test:coverage     # run tests with coverage check (fails < 97%)
-bun run test:watch       # run tests in watch mode
+bun install                    # Install dependencies
+bun run check                  # Verify everything works
 ```
 
-### Failing Test Cases (`.fails`)
+## Key Entry Points
 
-Every test file must include at least one `it.fails()` or `test.fails()` case that documents planned but unimplemented behavior. This serves as living documentation for future work.
+- `packages/core/src/bootstrap.ts` — Main entry, creates `Jiratown` instance
+- `packages/core/src/index.ts` — Public API exports
+- Each module in `packages/core/src/*/` has a `README.md` explaining its purpose
 
-**Rules:**
-- Each test file should have **at least one** `.fails` test case
-- Failing tests must be prefixed with `TODO:` in the description
-- Include a clear comment explaining what behavior is expected when implemented
-- The test should actually fail (assert something that doesn't work yet)
+## Runtime & Commands
 
-**Example:**
-```typescript
-it.fails("TODO: implement feature X", () => {
-  // This test documents planned behavior that is not yet implemented.
-  // When implemented, feature X should do Y.
-  expect(someUnimplementedMethod()).toBe(expectedValue);
-});
+Use **Bun** everywhere. All commands use `bun run <script>`.
+
+```bash
+bun run check      # Full audit: lint → typecheck → test → fallow (run before commits)
+bun run lint       # oxlint
+bun run typecheck  # tsc across workspaces
+bun run test       # vitest across workspaces
+bun run fallow     # Dead code, duplication, complexity analysis
 ```
 
-This pattern ensures we track technical debt and planned features directly in the test suite.
+Single-package commands:
 
-## Frontend
-
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
+```bash
+bun run --filter @jiratown/core test   # Test one package
+bun run --filter '*' typecheck         # All packages
 ```
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+## Project Structure
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
+```
+packages/core/     # Main package (@jiratown/core)
+oxlint/            # Custom oxlint plugin (eslint-plugin-jiratown)
 ```
 
-With the following `frontend.tsx`:
+**Path aliases**: Use `#config`, `#types`, `#db`, `#plugins`, `#context`, `#lib/hooks` instead of relative imports within `packages/core/`. Defined in `packages/core/tsconfig.json` and mirrored in `vitest.config.ts`.
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
+## Code Conventions
 
-// import .css files directly and it works
-import './index.css';
+### File constraints (enforced by oxlint)
 
-const root = createRoot(document.body);
+- **Max 200 lines per file** (`jiratown/max-lines-per-file`)
+- **kebab-case filenames** (`jiratown/enforce-kebab-case-filenames`)
+- **Colocated tests**: Test files must be next to implementation (`foo.ts` + `foo.test.ts`)
+- **Colocated exports**: Prefer exporting from the same file, not barrel re-exports only
 
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
+### Test requirements
 
-root.render(<Frontend />);
+- **97% coverage minimum** (lines, functions, branches) — enforced by `vitest.config.ts`
+- **Every test file must have at least one `it.fails("TODO: ...")`** case documenting planned behavior
+- Use `vitest` globals (`describe`, `it`, `expect`) — no imports needed
+
+### Complexity limits (fallow)
+
+- Max cyclomatic: 15
+- Max cognitive: 12
+
+## Bun-Specific APIs
+
+Prefer Bun builtins:
+
+- `Bun.serve()` over express
+- `bun:sqlite` over better-sqlite3 (note: core currently uses better-sqlite3 + drizzle)
+- `Bun.file()` over `node:fs` read/write
+- `Bun.$\`cmd\`` over execa
+- Bun auto-loads `.env` — no dotenv
+
+## Database
+
+SQLite via drizzle-orm. Schema in `packages/core/src/db/schema/`.
+
+```bash
+cd packages/core && bunx drizzle-kit generate  # Generate migrations
 ```
 
-Then, run index.ts
+## Pre-commit
 
-```sh
-bun --hot ./index.ts
-```
+`simple-git-hooks` + `lint-staged` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files.
 
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+## Architecture Notes
+
+See `MIGRATION.md` for the full architecture reference. Key concepts:
+
+- **bootstrap()** creates the `Jiratown` instance with config, db, hooks, plugins
+- **Context system**: Use `useJiratown()` inside plugin setup to access hooks/config
+- **Plugins**: Define with `definePlugin({ manifest, setup, teardown })`
+- **Hooks**: Event-based pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
