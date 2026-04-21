@@ -1,4 +1,4 @@
-import { hooks } from "./index.ts";
+import { hooks } from "./index";
 import type { AgentInstance } from "#types";
 import type { HookEventMap } from "./types.ts";
 

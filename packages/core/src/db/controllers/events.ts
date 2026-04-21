@@ -1,5 +1,5 @@
 import { eq, asc } from "drizzle-orm";
-import { issueEvents } from "../schema/index.ts";
+import { issueEvents } from "../schema";
 import type { DrizzleDb } from "../types.ts";
 import type { IssueEvent } from "#types";
 

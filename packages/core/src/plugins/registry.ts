@@ -1,13 +1,13 @@
 import { useJiratown } from "#context";
 import { existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Plugin } from "./types.ts";
+import { PluginSymbol, type Plugin } from "./types.ts";
 
 /**
  * Check if a value is a valid Jiratown plugin.
  */
 export function isPlugin(value: unknown): value is Plugin {
-  return typeof value === "object" && value !== null && Symbol.for("jiratown.plugin") in value;
+  return typeof value === "object" && value !== null && PluginSymbol in value;
 }
 
 /**

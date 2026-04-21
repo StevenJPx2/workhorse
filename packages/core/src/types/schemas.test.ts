@@ -10,7 +10,7 @@ import type {
   Notification,
   NotificationPriority,
   NotificationStatus,
-} from "./index.ts";
+} from "./index";
 
 // oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
 function makeIssue(overrides?: Partial<Issue>): Issue {

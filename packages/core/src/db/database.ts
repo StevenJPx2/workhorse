@@ -1,8 +1,8 @@
 import BetterSqlite from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import * as schema from "./schema/index.ts";
-import { IssueController, EventController, NotificationController } from "./controllers/index.ts";
+import * as schema from "./schema";
+import { IssueController, EventController, NotificationController } from "./controllers";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

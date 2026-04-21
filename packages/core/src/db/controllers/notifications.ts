@@ -1,5 +1,5 @@
 import { eq, and, inArray } from "drizzle-orm";
-import { notifications } from "../schema/index.ts";
+import { notifications } from "../schema";
 import type { DrizzleDb } from "../types.ts";
 import type { Notification } from "#types";
 

@@ -26,12 +26,16 @@ export const runWithContext = ctx.call;
 
 /**
  * Set a singleton context (for tests or simple setups).
+ * @internal Primarily used for testing
  */
+// fallow-ignore-next-line unused-exports
 export const setContext = ctx.set;
 
 /**
  * Unset the singleton context.
+ * @internal Primarily used for testing
  */
+// fallow-ignore-next-line unused-exports
 export const unsetContext = ctx.unset;
 
 export type { JiratownContext } from "./types.ts";

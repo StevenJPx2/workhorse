@@ -1,4 +1,4 @@
-import { PluginManifestSchema, type Plugin, type PluginOptions } from "./types.ts";
+import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } from "./types.ts";
 
 /**
  * Define a Jiratown plugin.
@@ -26,6 +26,6 @@ export function definePlugin(options: PluginOptions): Plugin {
   return {
     ...options,
     manifest,
-    [Symbol.for("jiratown.plugin")]: true,
+    [PluginSymbol]: true,
   } as Plugin;
 }

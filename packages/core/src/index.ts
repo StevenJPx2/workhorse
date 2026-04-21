@@ -9,6 +9,8 @@ export {
   definePlugin,
   PluginRegistry,
   PluginManifestSchema,
+  PluginSymbol,
+  isPlugin,
   type Plugin,
   type PluginOptions,
   type PluginManifest,

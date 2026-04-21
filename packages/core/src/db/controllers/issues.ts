@@ -1,5 +1,5 @@
 import { eq, and, inArray } from "drizzle-orm";
-import { issues } from "../schema/index.ts";
+import { issues } from "../schema";
 import type { DrizzleDb } from "../types.ts";
 import type { Issue, IssueStatus } from "#types";
 
