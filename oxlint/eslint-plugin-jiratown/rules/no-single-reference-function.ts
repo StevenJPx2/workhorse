@@ -37,6 +37,31 @@ const rule = {
       );
     }
 
+    function isDeclarationSite(node) {
+      const parentType = node.parent?.type;
+      return (
+        (parentType === "FunctionDeclaration" && node.parent?.id === node) ||
+        (parentType === "VariableDeclarator" && node.parent?.id === node)
+      );
+    }
+
+    function isPropertyAccess(node) {
+      const parentType = node.parent?.type;
+      // obj.foo — foo is not a reference to the function
+      if (
+        parentType === "MemberExpression" &&
+        node.parent?.property === node &&
+        !node.parent?.computed
+      ) {
+        return true;
+      }
+      // { foo: value } — foo as key is not a reference
+      if (parentType === "Property" && node.parent?.key === node && !node.parent?.computed) {
+        return true;
+      }
+      return false;
+    }
+
     return {
       // function foo() {}
       FunctionDeclaration(node) {
@@ -85,22 +110,8 @@ const rule = {
       Identifier(node) {
         const name = node.name;
         if (!functions.has(name)) return;
-
-        const parentType = node.parent?.type;
-
-        // Skip: the declaration site itself
-        if (parentType === "FunctionDeclaration" && node.parent?.id === node) return;
-        if (parentType === "VariableDeclarator" && node.parent?.id === node) return;
-
-        // Skip: property keys (obj.foo — foo is not a reference to the function)
-        if (
-          parentType === "MemberExpression" &&
-          node.parent?.property === node &&
-          !node.parent?.computed
-        )
-          return;
-        if (parentType === "Property" && node.parent?.key === node && !node.parent?.computed)
-          return;
+        if (isDeclarationSite(node)) return;
+        if (isPropertyAccess(node)) return;
 
         const entry = functions.get(name)!;
         entry.count++;

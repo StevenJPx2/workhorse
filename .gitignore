@@ -5,6 +5,7 @@ node_modules
 out
 dist
 *.tgz
+oxlint/eslint-plugin-jiratown/index.js
 
 # code coverage
 coverage

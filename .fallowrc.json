@@ -1,16 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "oxlint/eslint-plugin-jiratown/index.ts"
+  ],
   "ignorePatterns": [
     "**/node_modules/**",
     "**/dist/**",
     "**/coverage/**",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "oxlint/eslint-plugin-jiratown/index.js"
   ],
   "rules": {
     "unused-files": "warn",
     "unused-exports": "warn",
     "unused-dependencies": "error",
+    "unused-class-members": "off",
     "circular-dependencies": "warn",
     "duplicate-exports": "error"
   },

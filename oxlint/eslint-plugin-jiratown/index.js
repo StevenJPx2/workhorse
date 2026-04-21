@@ -35,7 +35,10 @@ var max_lines_per_file_default = rule;
 
 // rules/enforce-kebab-case-filenames.ts
 import path from "path";
-var KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$|^[a-z0-9]+(-[a-z0-9]+)*\.(ts|tsx|js|jsx|mjs|cjs)$/;
+function hasUpperCase(filename) {
+  const name = filename.replace(/\.[^.]+$/, "");
+  return /[A-Z]/.test(name);
+}
 var ALLOWED_SPECIAL_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx"]);
 var rule2 = {
   meta: {
@@ -48,7 +51,7 @@ var rule2 = {
     if (ALLOWED_SPECIAL_FILES.has(filename)) {
       return {};
     }
-    if (!KEBAB_CASE_PATTERN.test(filename)) {
+    if (hasUpperCase(filename)) {
       const suggested = filename.replace(/([A-Z])/g, "-$1").toLowerCase().replace(/^-/, "").replace(/\.+/g, ".");
       context.report({
         loc: { line: 1, column: 0 },
@@ -174,6 +177,20 @@ var rule5 = {
     function isExported(node) {
       return node.parent?.type === "ExportNamedDeclaration" || node.parent?.type === "ExportDefaultDeclaration";
     }
+    function isDeclarationSite(node) {
+      const parentType = node.parent?.type;
+      return parentType === "FunctionDeclaration" && node.parent?.id === node || parentType === "VariableDeclarator" && node.parent?.id === node;
+    }
+    function isPropertyAccess(node) {
+      const parentType = node.parent?.type;
+      if (parentType === "MemberExpression" && node.parent?.property === node && !node.parent?.computed) {
+        return true;
+      }
+      if (parentType === "Property" && node.parent?.key === node && !node.parent?.computed) {
+        return true;
+      }
+      return false;
+    }
     return {
       FunctionDeclaration(node) {
         if (!node.id)
@@ -214,14 +231,9 @@ var rule5 = {
         const name = node.name;
         if (!functions.has(name))
           return;
-        const parentType = node.parent?.type;
-        if (parentType === "FunctionDeclaration" && node.parent?.id === node)
+        if (isDeclarationSite(node))
           return;
-        if (parentType === "VariableDeclarator" && node.parent?.id === node)
-          return;
-        if (parentType === "MemberExpression" && node.parent?.property === node && !node.parent?.computed)
-          return;
-        if (parentType === "Property" && node.parent?.key === node && !node.parent?.computed)
+        if (isPropertyAccess(node))
           return;
         const entry = functions.get(name);
         entry.count++;
@@ -243,6 +255,54 @@ var rule5 = {
 };
 var no_single_reference_function_default = rule5;
 
+// rules/enforce-barrel-exports.ts
+import path4 from "path";
+var rule6 = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Enforce that index files re-exporting other barrels use `export *` instead of selective exports"
+    },
+    messages: {
+      useExportStar: 'Use `export * from "{{source}}"` when re-exporting from another barrel (index file)'
+    }
+  },
+  create(context) {
+    const filename = context.filename;
+    const basename = path4.basename(filename);
+    if (basename !== "index.ts" && basename !== "index.tsx") {
+      return {};
+    }
+    if (filename.includes("node_modules") || filename.includes("dist")) {
+      return {};
+    }
+    return {
+      ExportNamedDeclaration(node) {
+        if (!node.source)
+          return;
+        const source = node.source.value;
+        if (isBarrelImport(source)) {
+          context.report({
+            node,
+            messageId: "useExportStar",
+            data: { source }
+          });
+        }
+      }
+    };
+  }
+};
+function isBarrelImport(source) {
+  if (/\/index(\.tsx?|\.jsx?)?$/.test(source)) {
+    return true;
+  }
+  if (source.endsWith("/")) {
+    return true;
+  }
+  return false;
+}
+var enforce_barrel_exports_default = rule6;
+
 // index.ts
 var plugin = {
   meta: {
@@ -254,7 +314,8 @@ var plugin = {
     "enforce-kebab-case-filenames": enforce_kebab_case_filenames_default,
     "enforce-colocated-exports": enforce_colocated_exports_default,
     "enforce-test-colocation": enforce_test_colocation_default,
-    "no-single-reference-function": no_single_reference_function_default
+    "no-single-reference-function": no_single_reference_function_default,
+    "enforce-barrel-exports": enforce_barrel_exports_default
   }
 };
 var eslint_plugin_jiratown_default = plugin;

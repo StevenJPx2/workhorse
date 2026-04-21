@@ -1,7 +1,11 @@
 import path from "node:path";
 
-const KEBAB_CASE_PATTERN =
-  /^[a-z0-9]+(-[a-z0-9]+)*\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$|^[a-z0-9]+(-[a-z0-9]+)*\.(ts|tsx|js|jsx|mjs|cjs)$/;
+// Check if filename contains uppercase letters (camelCase or PascalCase)
+function hasUpperCase(filename: string): boolean {
+  // Strip extension and check for uppercase
+  const name = filename.replace(/\.[^.]+$/, "");
+  return /[A-Z]/.test(name);
+}
 
 const ALLOWED_SPECIAL_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx"]);
 
@@ -20,7 +24,7 @@ const rule = {
       return {};
     }
 
-    if (!KEBAB_CASE_PATTERN.test(filename)) {
+    if (hasUpperCase(filename)) {
       const suggested = filename
         .replace(/([A-Z])/g, "-$1")
         .toLowerCase()

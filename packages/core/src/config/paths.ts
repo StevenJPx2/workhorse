@@ -11,7 +11,7 @@ import type { ConfigPaths } from "./types.ts";
  *
  * Returns the first existing directory, or ~/.jiratown as default.
  */
-function resolveGlobalDir(): string {
+export function getConfigPaths(repoRoot?: string): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
 
@@ -21,12 +21,8 @@ function resolveGlobalDir(): string {
     join(xdgConfig, "jiratown"),
   ];
 
-  // Return first existing, or default to ~/.jiratown
-  return candidates.find((dir) => existsSync(dir)) ?? candidates[0]!;
-}
+  const globalDir = candidates.find((dir) => existsSync(dir)) ?? candidates[0]!;
 
-export function getConfigPaths(repoRoot?: string): ConfigPaths {
-  const globalDir = resolveGlobalDir();
   return {
     globalDir,
     globalConfig: join(globalDir, "config.toml"),

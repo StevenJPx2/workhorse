@@ -5,7 +5,6 @@
     "": {
       "name": "rewrite",
       "devDependencies": {
-        "@oxlint/plugins": "^1.59.0",
         "@types/bun": "latest",
         "@vitest/coverage-v8": "^4.1.4",
         "fallow": "^2.42.0",
@@ -21,7 +20,6 @@
       "name": "eslint-plugin-jiratown",
       "version": "1.0.0",
       "devDependencies": {
-        "@oxlint/plugins": "^1.59.0",
         "@types/bun": "latest",
         "eslint": "^9",
         "vitest": "^4.1.4",
@@ -195,8 +193,6 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.60.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-33YxL1sqwYNZXtn3MD/4dno6s0xeedXOJlT1WohkVD565WvohClZUr7vwKdAk954n4xiEWJkewiCr+zLeq7AeA=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-JOro4ZcfBLamJCyfURQmOQByoorgOdx3ZjAkSqnb/CyG/i+lN3KoV5LAgk5ZAW6DPq7/Cx7n23f8DuTWXTWgyQ=="],
-
-    "@oxlint/plugins": ["@oxlint/plugins@1.60.0", "", {}, "sha512-wxEoVVAS5FQAXiA8jPY+NWTOTKTzbSViMfW7yU5OQ7+f34W0KYfy2iuSLC9o1fiYn5xt3LQLxZBREFJtDlQLRw=="],
 
     "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.0.0-rc.16", "", { "os": "android", "cpu": "arm64" }, "sha512-rhY3k7Bsae9qQfOtph2Pm2jZEA+s8Gmjoz4hhmx70K9iMQ/ddeae+xhRQcM5IuVx5ry1+bGfkvMn7D6MJggVSA=="],
 

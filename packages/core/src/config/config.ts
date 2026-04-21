@@ -23,16 +23,19 @@ export class Config {
 
   // ── Read ──────────────────────────────────────────────────────────────────
 
+  /** @public */
   get(): JiratownConfig {
     return this.config;
   }
 
+  /** @public */
   paths(repoRoot?: string): ConfigPaths {
     return getConfigPaths(repoRoot);
   }
 
   // ── Write ─────────────────────────────────────────────────────────────────
 
+  /** @public */
   saveGlobal(overrides: Partial<JiratownConfig>): void {
     const { globalConfig, globalDir } = getConfigPaths();
 
@@ -41,6 +44,7 @@ export class Config {
     writeTomlFile(globalConfig, overrides);
   }
 
+  /** @public */
   saveProject(repoRoot: string, overrides: Partial<JiratownConfig>): void {
     const { projectConfig } = getConfigPaths(repoRoot);
 
@@ -51,6 +55,7 @@ export class Config {
 
   // ── Plugin config registry ────────────────────────────────────────────────
 
+  /** @public */
   registerPluginConfig(schema: PluginConfigSchema): void {
     const raw = this.config.plugins[schema.pluginName];
     const result = schema.schema.safeParse(raw);
@@ -60,6 +65,7 @@ export class Config {
     }
   }
 
+  /** @public */
   getPluginConfig<T>(pluginName: string): T | undefined {
     return this.config.plugins[pluginName] as T | undefined;
   }

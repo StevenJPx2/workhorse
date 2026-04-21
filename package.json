@@ -18,7 +18,6 @@
     "fallow:audit": "fallow audit"
   },
   "devDependencies": {
-    "@oxlint/plugins": "^1.59.0",
     "@types/bun": "latest",
     "@vitest/coverage-v8": "^4.1.4",
     "fallow": "^2.42.0",

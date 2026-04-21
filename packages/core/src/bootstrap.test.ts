@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// oxlint-disable-next-line jiratown/no-single-reference-function -- test helper
 function writeTempToml(dir: string, content: string): void {
   writeFileSync(join(dir, ".jiratown.toml"), content, "utf-8");
 }
