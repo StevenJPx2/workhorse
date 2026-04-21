@@ -13,3 +13,4 @@ export {
   type PluginOptions,
   type PluginManifest,
 } from "#plugins";
+export { Database } from "#db";

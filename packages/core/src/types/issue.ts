@@ -1,25 +1,7 @@
-export type IssueStatus =
-  | "pending"
-  | "queued"
-  | "planning"
-  | "implementing"
-  | "blocked"
-  | "pr_created"
-  | "in_review"
-  | "done";
-
-export interface Issue {
-  id: string;
-  externalId: string;
-  source: string;
-  title: string;
-  description: string;
-  status: IssueStatus;
-  issueType: string;
-  url?: string;
-  assignee?: string;
-  labels?: string[];
-  metadata: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}
+/**
+ * Issue types - re-exported from database schema
+ *
+ * The schema is the single source of truth for these types.
+ * They are derived from the Drizzle ORM table definitions.
+ */
+export type { Issue, IssueStatus } from "../db/schema/issues.ts";

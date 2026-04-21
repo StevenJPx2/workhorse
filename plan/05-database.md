@@ -1,8 +1,42 @@
 # Step 5: Database
 
-SQLite via `bun:sqlite`. Renamed `tickets` → `issues` with `source` column.
+SQLite via `better-sqlite3` + Drizzle ORM. Renamed `tickets` → `issues` with `source` column.
 
-Location: `packages/core/src/lib/db/`
+Location: `packages/core/src/db/`
+
+**Status: ✅ Completed**
+
+## Implementation Notes
+
+- **Changed from `bun:sqlite` to `better-sqlite3`** for Node.js/Vitest compatibility
+- **Using Drizzle ORM** with Drizzle Kit migrations (not embedded migrations)
+- **Composable controller pattern**: `db.issues.insert()`, `db.events.insert()`, `db.notifications.create()`
+- Controllers are internal implementation details — only `Database` class is exported from `#db`
+
+## File Structure
+
+```
+packages/core/
+├── drizzle.config.ts                     # Drizzle Kit config
+├── drizzle/
+│   ├── 0000_initial.sql                  # Generated migration
+│   └── meta/                             # Migration metadata
+└── src/db/
+    ├── index.ts                          # Public export (Database class only)
+    ├── schema/                           # Drizzle schema (split per table)
+    │   ├── index.ts                      # Barrel export for tables and types
+    │   ├── custom-types.ts               # dateText, nullableDateText column types
+    │   ├── issues.ts                     # issues table + Issue, IssueStatus types
+    │   ├── events.ts                     # issue_events table + IssueEvent type
+    │   └── notifications.ts              # notifications table + Notification types
+    ├── database.ts                       # Database class (composes controllers)
+    ├── database.test.ts                  # Comprehensive tests (33 tests)
+    └── controllers/
+        ├── index.ts                      # Barrel export for controllers
+        ├── issues.ts                     # IssueController
+        ├── events.ts                     # EventController
+        └── notifications.ts              # NotificationController
+```
 
 ## Schema
 
@@ -52,48 +86,99 @@ CREATE TABLE notifications (
 );
 ```
 
-## Database Class
+## Database Class API
 
 ```typescript
 class Database {
   constructor(path: string)       // ":memory:" for tests
 
-  // Issues
-  insertIssue(issue: Omit<Issue, "id" | "createdAt" | "updatedAt">): Issue
-  getIssueById(id: string): Issue | undefined
-  getIssueByExternalId(externalId: string, source: IssueSource): Issue | undefined
-  getAllIssues(): Issue[]
-  getIssuesByStatus(...statuses: IssueStatus[]): Issue[]
-  updateIssue(id: string, updates: Partial<Issue>): Issue
-  updateIssueStatus(id: string, status: IssueStatus): Issue
-  deleteIssue(id: string): void
-
-  // Events
-  insertEvent(event: Omit<IssueEvent, "id" | "createdAt">): IssueEvent
-  getEventsForIssue(issueId: string): IssueEvent[]
-
-  // Notifications
-  createNotification(input: Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status">): Notification
-  getUnreadNotifications(issueId: string): Notification[]
-  markNotificationRead(id: string): void
-  markNotificationAcknowledged(id: string): void
-  acknowledgeNotifications(ids: string[]): void
+  // Composable controllers
+  issues: IssueController
+  events: EventController
+  notifications: NotificationController
 
   close(): void
 }
+
+// Usage:
+const db = new Database(":memory:");
+
+// Issues
+const issue = db.issues.insert({ externalId, source, title, ... });
+const found = db.issues.getById(id);
+const byExternal = db.issues.getByExternalId(externalId, source);
+const all = db.issues.getAll();
+const byStatus = db.issues.getByStatus("pending", "implementing");
+const updated = db.issues.update(id, { title: "New title" });
+const statusUpdated = db.issues.updateStatus(id, "done");
+db.issues.delete(id);
+
+// Events
+const event = db.events.insert({ issueId, type, message });
+const events = db.events.getForIssue(issueId);
+
+// Notifications
+const notif = db.notifications.create({ issueId, source, title, body, priority });
+const unread = db.notifications.getUnread(issueId);
+db.notifications.markRead(id);
+db.notifications.markAcknowledged(id);
+db.notifications.acknowledgeMany([id1, id2]);
+
+db.close();
 ```
 
-- Constructor opens DB, runs migrations, sets WAL mode
-- Migrations tracked in `_migrations` table, idempotent
+## Implementation Details
+
+- Constructor opens DB, runs Drizzle migrations, sets WAL mode + foreign keys + busy timeout
+- Migrations in `packages/core/drizzle/`, config at `packages/core/drizzle.config.ts`
 - IDs: `crypto.randomUUID()`
-- JSON columns (`labels`, `metadata`) serialized/deserialized in CRUD — callers use native JS types
+- JSON columns (`labels`, `metadata`) use Drizzle's `text({ mode: "json" }).$type<T>()`
+- Drizzle handles JSON serialization/deserialization automatically
+- Date columns use custom Drizzle types (`dateText`, `nullableDateText`) for auto-conversion
+- **Domain types derived from Drizzle schema** using `typeof table.$inferSelect`
+- Types use `| null` for nullable columns (no row transformers needed)
+
+## Dependencies Added
+
+```json
+{
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "better-sqlite3": "^12.9.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "@types/better-sqlite3": "^7.6.13"
+  }
+}
+```
+
+## Type Changes
+
+Types are now **derived from Drizzle schema** and re-exported from `packages/core/src/types/`:
+- `Issue`, `IssueStatus` — from `src/db/schema/issues.ts`
+- `IssueEvent` — from `src/db/schema/events.ts`
+- `Notification`, `NotificationPriority`, `NotificationStatus` — from `src/db/schema/notifications.ts`
+
+All nullable columns use `| null` (not `undefined`) to match SQLite/Drizzle semantics.
 
 ## Tests
 
-All use `:memory:` SQLite.
+All use `:memory:` SQLite. 33 tests total (32 passing + 1 `test.skip` for future feature).
 
 - Insert/retrieve/update/delete issues
 - Unique constraint on `(external_id, source)`
-- Metadata round-trips as JSON
+- Same `external_id` allowed with different `source`
+- Update all fields individually (branch coverage)
+- Metadata and labels round-trip as JSON
+- Optional fields (url, assignee, labels, worktreePath, prUrl, prNumber)
 - Events ordered by `created_at`
-- Notification dedup by `source_id`, mark read/acknowledged, batch acknowledge
+- Notification dedup by `source_id`
+- Mark read/acknowledged, batch acknowledge
+- Empty array handling in `acknowledgeMany([])`
+- Non-existent issue handling (returns undefined / throws on update)
+- Multiple in-memory databases (migration idempotency)
+
+## Future Work
+
+- `test.skip`: Cascade delete for issue events/notifications when issue is deleted

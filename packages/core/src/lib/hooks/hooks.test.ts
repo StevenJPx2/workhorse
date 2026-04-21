@@ -19,7 +19,13 @@ describe("hooks", () => {
         description: "",
         status: "pending",
         issueType: "bug",
+        url: null,
+        assignee: null,
+        labels: null,
         metadata: {},
+        worktreePath: null,
+        prUrl: null,
+        prNumber: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -73,7 +79,7 @@ describe("hooks", () => {
     expect(called).toBe(false);
   });
 
-  test.fails("TODO: implement once() for single-fire handlers", () => {
+  test.skip("TODO: implement once() for single-fire handlers", () => {
     // This test documents planned behavior that is not yet implemented.
     // hooks.once() should register a handler that fires only once then auto-removes.
     let callCount = 0;

@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -13,13 +13,23 @@ function writeTempToml(dir: string, content: string): void {
 
 describe("bootstrap", () => {
   let tmpDir: string;
+  let tmpHome: string;
+  let originalHome: string;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "jiratown-bootstrap-"));
+    // Create a fake home with .jiratown dir so DB goes there instead of real ~/.jiratown
+    tmpHome = mkdtempSync(join(tmpdir(), "jiratown-home-"));
+    mkdirSync(join(tmpHome, ".jiratown"));
+    originalHome = homedir();
+    // Override HOME so getConfigPaths() finds the temp .jiratown
+    process.env["HOME"] = tmpHome;
   });
 
   afterEach(() => {
+    process.env["HOME"] = originalHome;
     rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(tmpHome, { recursive: true, force: true });
   });
 
   it("returns Jiratown instance with config and hooks", async () => {

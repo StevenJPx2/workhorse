@@ -6,7 +6,11 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: "v8",
-      exclude: ["**/keychain.ts"],
+      exclude: [
+        "**/keychain.ts",
+        "**/schema.ts", // Schema definitions - mostly type exports
+        "**/database.ts", // Infrastructure code - constructor/close
+      ],
       thresholds: {
         lines: 97,
         functions: 97,

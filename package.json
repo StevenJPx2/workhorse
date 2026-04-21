@@ -1,7 +1,10 @@
 {
   "name": "jiratown",
   "private": true,
-  "workspaces": ["packages/*", "oxlint/*"],
+  "workspaces": [
+    "packages/*",
+    "oxlint/*"
+  ],
   "scripts": {
     "test": "bun run --filter '*' test",
     "typecheck": "bun run --filter '*' typecheck",
@@ -36,8 +39,5 @@
       "oxfmt --write",
       "oxlint"
     ]
-  },
-  "dependencies": {
-    "unctx": "^2.5.0"
   }
 }

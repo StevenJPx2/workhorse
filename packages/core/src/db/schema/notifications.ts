@@ -1,0 +1,35 @@
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { dateText, nullableDateText } from "./custom-types.ts";
+import { issues } from "./issues.ts";
+
+/** Valid notification priorities */
+export type NotificationPriority = "blocking" | "high" | "normal" | "low";
+
+/** Valid notification statuses */
+export type NotificationStatus = "unread" | "read" | "acknowledged";
+
+/**
+ * Notifications table - tracks notifications for issues
+ */
+export const notifications = sqliteTable("notifications", {
+  id: text("id").primaryKey(),
+  issueId: text("issue_id")
+    .notNull()
+    .references(() => issues.id),
+  source: text("source").notNull(),
+  sourceId: text("source_id").unique(),
+  priority: text("priority").notNull().default("normal").$type<NotificationPriority>(),
+  status: text("status").notNull().default("unread").$type<NotificationStatus>(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+  createdAt: dateText("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  readAt: nullableDateText("read_at"),
+  acknowledgedAt: nullableDateText("acknowledged_at"),
+});
+
+/** Notification type derived from schema */
+export type Notification = typeof notifications.$inferSelect;

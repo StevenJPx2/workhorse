@@ -1,4 +1,5 @@
 import { Config } from "#config";
+import { Database } from "#db";
 import { hooks } from "#lib/hooks";
 import { runWithContext, useJiratown } from "#context";
 import { PluginRegistry, definePlugin } from "#plugins";
@@ -50,6 +51,9 @@ export interface Jiratown {
   /** Loaded configuration (readonly) */
   readonly config: Readonly<JiratownConfig>;
 
+  /** Database instance */
+  readonly db: Database;
+
   /** Event hooks for pub/sub */
   readonly hooks: Emitter<HookEventMap>;
 
@@ -68,6 +72,7 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
 
   // 2. Create core services
   const config = new Config(repoRoot);
+  const db = new Database(config.paths(repoRoot).database);
 
   // 3. Build context object
   const context = {
@@ -89,10 +94,12 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
     // 8. Build Jiratown instance
     return {
       config: Object.freeze(config.get()),
+      db,
       hooks,
       plugins,
       async shutdown() {
         await plugins.teardown();
+        db.close();
         hooks.all.clear();
       },
     };

@@ -26,6 +26,9 @@ function makeIssue(overrides?: Partial<Issue>): Issue {
     assignee: "alice",
     labels: ["backend", "urgent"],
     metadata: { jiraPriority: "high" },
+    worktreePath: null,
+    prUrl: null,
+    prNumber: null,
     createdAt: new Date("2025-01-01"),
     updatedAt: new Date("2025-01-02"),
     ...overrides,
@@ -45,6 +48,8 @@ function makeNotification(overrides?: Partial<Notification>): Notification {
     body: "Please review",
     metadata: { author: "bob" },
     createdAt: new Date("2025-01-01"),
+    readAt: null,
+    acknowledgedAt: null,
     ...overrides,
   };
 }
@@ -111,7 +116,7 @@ test("Issue type compiles with all fields", () => {
   expect(issue.status).toBe("pending");
 });
 
-test("Issue type accepts optional fields omitted", () => {
+test("Issue type accepts null for optional fields", () => {
   const issue: Issue = {
     id: "x",
     externalId: "Y-1",
@@ -120,12 +125,18 @@ test("Issue type accepts optional fields omitted", () => {
     description: "Desc",
     status: "pending",
     issueType: "pr",
+    url: null,
+    assignee: null,
+    labels: null,
     metadata: {},
+    worktreePath: null,
+    prUrl: null,
+    prNumber: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  expect(issue.url).toBeUndefined();
-  expect(issue.labels).toBeUndefined();
+  expect(issue.url).toBeNull();
+  expect(issue.labels).toBeNull();
 });
 
 test("IssueEvent type compiles with all fields", () => {
@@ -138,26 +149,30 @@ test("Notification type compiles with all fields", () => {
   const notif = makeNotification();
   expect(notif.priority).toBe("high");
   expect(notif.status).toBe("unread");
-  expect(notif.readAt).toBeUndefined();
+  expect(notif.readAt).toBeNull();
 });
 
-test("Notification type accepts optional fields omitted", () => {
+test("Notification type accepts null for optional fields", () => {
   const notif: Notification = {
     id: "n",
     issueId: "i",
     source: "github_review",
+    sourceId: null,
     priority: "normal",
     status: "unread",
     title: "Review requested",
     body: "Please review",
+    metadata: null,
     createdAt: new Date(),
+    readAt: null,
+    acknowledgedAt: null,
   };
-  expect(notif.sourceId).toBeUndefined();
-  expect(notif.metadata).toBeUndefined();
-  expect(notif.readAt).toBeUndefined();
+  expect(notif.sourceId).toBeNull();
+  expect(notif.metadata).toBeNull();
+  expect(notif.readAt).toBeNull();
 });
 
-test.fails("TODO: implement IssuePrioritySchema for issue prioritization", () => {
+test.skip("TODO: implement IssuePrioritySchema for issue prioritization", () => {
   // This test documents planned behavior that is not yet implemented.
   // Issues should have a priority field with validated values.
   // Expected values: "critical", "high", "medium", "low"

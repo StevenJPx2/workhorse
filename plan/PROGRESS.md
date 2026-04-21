@@ -7,7 +7,7 @@
 | 2 | Types | ✅ Done | |
 | 3 | Hooks | ✅ Done | `mitt` + `HookEventMap` + tests |
 | 4 | Plugins | ✅ Done | `unctx` + `definePlugin()` + `PluginRegistry` + builtin sample plugin |
-| 5 | Database | ⬜ Pending | Empty stub |
+| 5 | Database | ✅ Done | Drizzle ORM + better-sqlite3, schema-derived types |
 | 6 | MemoryService | ⬜ Pending | Empty stub |
 | 7 | MonitorService | ⬜ Pending | Empty stub |
 | 8 | Tracker | ⬜ Pending | Empty stub |
