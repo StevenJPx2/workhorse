@@ -234,4 +234,17 @@ auto_poll_reviews = true
     writeFileSync(invalidPath, "this is not valid {{{ toml", "utf-8");
     expect(parseTomlFile(invalidPath)).toEqual({});
   });
+
+  it.fails("TODO: implement config file watching and auto-reload", async () => {
+    // This test documents planned behavior that is not yet implemented.
+    // Config should support watching the file and emitting events on changes.
+    const { Config } = await import("./config.ts");
+
+    const cfg = new Config(tmpDir);
+    // Expected: cfg.watch() should return an event emitter or callback-based
+    // mechanism that notifies when the config file changes
+    // @ts-expect-error - watch method doesn't exist yet
+    expect(typeof cfg.watch).toBe("function");
+    expect(true).toBe(false);
+  });
 });

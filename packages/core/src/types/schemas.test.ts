@@ -156,3 +156,13 @@ test("Notification type accepts optional fields omitted", () => {
   expect(notif.metadata).toBeUndefined();
   expect(notif.readAt).toBeUndefined();
 });
+
+test.fails("TODO: implement IssuePrioritySchema for issue prioritization", () => {
+  // This test documents planned behavior that is not yet implemented.
+  // Issues should have a priority field with validated values.
+  // Expected values: "critical", "high", "medium", "low"
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const schemas = require("./schemas.ts") as Record<string, unknown>;
+  const IssuePrioritySchema = schemas["IssuePrioritySchema"] as { parse: (v: string) => string };
+  expect(IssuePrioritySchema.parse("high")).toBe("high");
+});

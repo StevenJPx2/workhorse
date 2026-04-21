@@ -74,4 +74,14 @@ describe("enforce-kebab-case-filenames", () => {
     expect(reports.length).toBe(1);
     expect(reports[0]!.message).toContain("kebab-case");
   });
+
+  it.fails("TODO: implement autofix for kebab-case filename violations", () => {
+    // This test documents planned behavior that is not yet implemented.
+    // The rule should provide an autofix that renames the file.
+    const reports = runRule("/src/TicketSidebar.tsx");
+    expect(reports.length).toBe(1);
+    // Expected: report should include a fix object with the rename suggestion
+    // @ts-expect-error - fix property doesn't exist in current implementation
+    expect(reports[0]!.fix).toBeDefined();
+  });
 });

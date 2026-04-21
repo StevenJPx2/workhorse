@@ -72,4 +72,20 @@ describe("hooks", () => {
 
     expect(called).toBe(false);
   });
+
+  test.fails("TODO: implement once() for single-fire handlers", () => {
+    // This test documents planned behavior that is not yet implemented.
+    // hooks.once() should register a handler that fires only once then auto-removes.
+    let callCount = 0;
+    // @ts-expect-error - once method doesn't exist yet
+    hooks.once("plugin.loaded", () => {
+      callCount++;
+    });
+
+    hooks.emit("plugin.loaded", { name: "first" });
+    hooks.emit("plugin.loaded", { name: "second" });
+
+    // Expected: handler should have been called only once
+    expect(callCount).toBe(1);
+  });
 });

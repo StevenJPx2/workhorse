@@ -99,4 +99,19 @@ describe("enforce-barrel-exports", () => {
     const reports = runRule("/dist/index.ts", `export { a } from "./bar/index.ts";`);
     expect(reports).toHaveLength(0);
   });
+
+  it.fails("TODO: implement depth limit for barrel exports", () => {
+    // This test documents planned behavior that is not yet implemented.
+    // The rule should support a maxDepth option to prevent deeply nested barrel chains.
+    // For example: src/index.ts -> utils/index.ts -> helpers/index.ts -> math/index.ts
+    // With maxDepth: 2, this 4-level chain should be flagged.
+
+    // Expected: rule should track barrel depth and report when exceeded
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export * from "./utils/index.ts";`, // Would need to trace this chain
+    );
+    // Currently, the rule doesn't track barrel export depth
+    expect(reports.some((r) => r.messageId === "maxDepthExceeded")).toBe(true);
+  });
 });

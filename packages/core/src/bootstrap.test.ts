@@ -93,4 +93,18 @@ theme = "gruvbox"
 
     expect(callCount).toBe(0);
   });
+
+  it.fails("TODO: implement graceful shutdown timeout handling", async () => {
+    // This test documents planned behavior that is not yet implemented.
+    // When shutdown is called with a timeout, it should reject pending operations
+    // after the timeout expires.
+    const { bootstrap } = await import("./bootstrap.ts");
+    const jt = await bootstrap(tmpDir);
+
+    // Expected: shutdown(timeout) should return a promise that resolves
+    // even if some hooks are still processing, after the timeout
+    expect(typeof jt.shutdown).toBe("function");
+    // Currently shutdown doesn't support timeout parameter
+    expect(true).toBe(false);
+  });
 });

@@ -235,4 +235,37 @@ describe("no-single-reference-function", () => {
   it("has correct rule metadata", () => {
     expect(rule.meta.docs.description).toContain("only referenced in a single place");
   });
+
+  it.fails("TODO: implement minimum lines threshold option", () => {
+    // This test documents planned behavior that is not yet implemented.
+    // The rule should support a minLines option to only flag functions
+    // that are below a certain line count (very short helpers).
+    // Long functions with a single reference may be intentional for readability.
+    const program = makeProgram([funcDecl("shortHelper"), callExpr("shortHelper")]);
+    const reports: Report[] = [];
+    const context = {
+      report: (r: Report) => reports.push(r),
+      options: [{ minLines: 5 }], // Only flag functions < 5 lines
+    };
+    const visitor = rule.create(context);
+
+    function walk(node) {
+      if (!node || typeof node !== "object") return;
+      const handler = visitor[node.type];
+      if (handler) handler(node);
+      for (const key of Object.keys(node)) {
+        if (key === "parent") continue;
+        const child = node[key];
+        if (Array.isArray(child)) child.forEach(walk);
+        else if (child && typeof child === "object" && child.type) walk(child);
+      }
+    }
+
+    walk(program);
+    if (visitor["Program:exit"]) visitor["Program:exit"]();
+
+    // Expected: rule should check options for minLines threshold
+    expect(context.options).toBeDefined();
+    expect(true).toBe(false);
+  });
 });

@@ -131,4 +131,19 @@ describe("enforce-test-colocation", () => {
     expect(rule.meta.docs.description).toContain("test file colocation");
     expect(rule.meta.docs.description).toContain("__tests__/ directory already exists");
   });
+
+  it.fails("TODO: implement configurable test directory pattern", () => {
+    // This test documents planned behavior that is not yet implemented.
+    // The rule should support a testDirPattern option to customize the test directory name.
+    // For example, some projects use "__spec__" or "tests" instead of "__tests__".
+    fakeEntries = ["index.ts", "index.test.ts", "__spec__"];
+    fakeDirs.add("/project/src/hooks/__spec__");
+
+    // Expected: rule should be configurable to recognize "__spec__" as a valid test dir
+    // and report the same way it does for "__tests__"
+    const reports = runRule("/project/src/hooks/index.test.ts");
+    // Currently, this would not report because rule only checks for __tests__
+    expect(reports.length).toBe(1);
+    expect(reports[0]!.message).toContain("__spec__");
+  });
 });
