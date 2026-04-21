@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "rules": {
+    "unused-files": "warn",
+    "unused-exports": "warn",
+    "unused-dependencies": "error",
+    "circular-dependencies": "warn",
+    "duplicate-exports": "error"
+  },
+  "health": {
+    "maxCyclomatic": 15,
+    "maxCognitive": 12
+  }
+}

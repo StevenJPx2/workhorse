@@ -12,6 +12,7 @@
   "devDependencies": {
     "@oxlint/plugins": "^1.59.0",
     "@types/bun": "latest",
+    "eslint": "^9",
     "vitest": "^4.1.4"
   },
   "peerDependencies": {

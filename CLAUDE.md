@@ -6,6 +6,17 @@ Default to using Bun instead of Node.js.
 - Use `bunx <package> <command>` instead of `npx <package> <command>`
 - Bun automatically loads .env, so don't use dotenv.
 
+## Code Quality
+
+**Run `bun run check` after making changes.** This runs the full audit pipeline:
+
+1. `lint` - oxlint static analysis
+2. `typecheck` - TypeScript type checking
+3. `test` - vitest tests with coverage
+4. `fallow` - dead code, duplication, and complexity analysis
+
+All checks must pass before committing.
+
 ## APIs
 
 - `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.

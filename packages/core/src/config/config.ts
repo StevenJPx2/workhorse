@@ -10,10 +10,8 @@ export class Config {
     plugins: { ...DEFAULT_CONFIG.plugins },
   };
 
-  // ── Load ──────────────────────────────────────────────────────────────────
-
-  load(repoRoot?: string, globalDir?: string): this {
-    const paths = getConfigPaths(repoRoot, globalDir);
+  constructor(repoRoot?: string) {
+    const paths = getConfigPaths(repoRoot);
 
     // last-arg-wins: global first, project last → project wins
     this.config = mergeConfigs(
@@ -21,8 +19,6 @@ export class Config {
       parseTomlFile(paths.globalConfig),
       parseTomlFile(paths.projectConfig),
     );
-
-    return this;
   }
 
   // ── Read ──────────────────────────────────────────────────────────────────
@@ -37,10 +33,10 @@ export class Config {
 
   // ── Write ─────────────────────────────────────────────────────────────────
 
-  saveGlobal(overrides: Partial<JiratownConfig>, globalDir?: string): void {
-    const { globalConfig, globalDir: dir } = getConfigPaths(undefined, globalDir);
+  saveGlobal(overrides: Partial<JiratownConfig>): void {
+    const { globalConfig, globalDir } = getConfigPaths();
 
-    mkdirSync(dir, { recursive: true });
+    mkdirSync(globalDir, { recursive: true });
 
     writeTomlFile(globalConfig, overrides);
   }

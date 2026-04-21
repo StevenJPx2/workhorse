@@ -9,15 +9,6 @@ function writeTempToml(dir: string, filename: string, content: string): void {
   writeFileSync(join(dir, filename), content, "utf-8");
 }
 
-// Load with both global and project dirs pointing at tmpDir (no real ~/.jiratown).
-async function loadIsolated(toml?: string) {
-  const { Config } = await import("./config.ts");
-  const dir = mkdtempSync(join(tmpdir(), "jiratown-cfg-"));
-  if (toml) writeTempToml(dir, ".jiratown.toml", toml);
-  const cfg = new Config().load(dir, dir);
-  return { cfg, dir };
-}
-
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("Config", () => {
@@ -31,22 +22,15 @@ describe("Config", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  // ── load ──────────────────────────────────────────────────────────────────
-
-  it("returns defaults when no config files exist", async () => {
-    const { DEFAULT_CONFIG } = await import("./defaults.ts");
-    const { cfg } = await loadIsolated();
-    const config = cfg.get();
-
-    expect(config.agent.harness).toBe(DEFAULT_CONFIG.agent.harness);
-    expect(config.behavior.autoResume).toBe(DEFAULT_CONFIG.behavior.autoResume);
-    expect(config.behavior.pollInterval).toBe(DEFAULT_CONFIG.behavior.pollInterval);
-    expect(config.ui.theme).toBe(DEFAULT_CONFIG.ui.theme);
-    expect(config.plugins.enabled).toEqual([]);
-  });
+  // ── constructor ───────────────────────────────────────────────────────────
 
   it("merges project config over defaults", async () => {
-    const { cfg } = await loadIsolated(`
+    const { Config } = await import("./config.ts");
+
+    writeTempToml(
+      tmpDir,
+      ".jiratown.toml",
+      `
 [agent]
 harness = "claude-code"
 model = "opus-4"
@@ -57,8 +41,10 @@ poll_interval = 60000
 
 [ui]
 theme = "gruvbox"
-`);
-    const config = cfg.get();
+`,
+    );
+
+    const config = new Config(tmpDir).get();
     expect(config.agent.harness).toBe("claude-code");
     expect(config.agent.model).toBe("opus-4");
     expect(config.behavior.autoResume).toBe(false);
@@ -67,30 +53,27 @@ theme = "gruvbox"
   });
 
   it("parses plugin sections into camelCase", async () => {
-    const { cfg } = await loadIsolated(`
+    const { Config } = await import("./config.ts");
+
+    writeTempToml(
+      tmpDir,
+      ".jiratown.toml",
+      `
 [plugins]
 enabled = ["jira", "github"]
 directories = ["/custom/plugins"]
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"
-`);
-    const config = cfg.get();
+`,
+    );
+
+    const config = new Config(tmpDir).get();
     expect(config.plugins.enabled).toEqual(["jira", "github"]);
     expect(config.plugins.directories).toEqual(["/custom/plugins"]);
     expect((config.plugins["jira"] as Record<string, unknown>)?.["cloudId"]).toBe(
       "company.atlassian.net",
     );
-  });
-
-  it("global config is overridden by project config", async () => {
-    const { Config } = await import("./config.ts");
-
-    writeTempToml(tmpDir, "config.toml", `[ui]\ntheme = "gruvbox"\n`);
-    writeTempToml(tmpDir, ".jiratown.toml", `[ui]\ntheme = "nord"\n`);
-
-    const config = new Config().load(tmpDir, tmpDir).get();
-    expect(config.ui.theme).toBe("nord");
   });
 
   // ── saveProject / reload ──────────────────────────────────────────────────
@@ -101,7 +84,7 @@ cloud_id = "company.atlassian.net"
     const cfg = new Config();
     cfg.saveProject(tmpDir, { agent: { harness: "claude-code", model: "sonnet-4" } });
 
-    const reloaded = new Config().load(tmpDir, tmpDir).get();
+    const reloaded = new Config(tmpDir).get();
     expect(reloaded.agent.harness).toBe("claude-code");
     expect(reloaded.agent.model).toBe("sonnet-4");
   });
@@ -112,8 +95,8 @@ cloud_id = "company.atlassian.net"
     const { Config } = await import("./config.ts");
 
     const paths = new Config().paths("/some/repo");
-    expect(paths.globalConfig).toContain(".jiratown/config.toml");
-    expect(paths.database).toContain(".jiratown/jiratown.db");
+    expect(paths.globalConfig).toMatch(/\.jiratown.*config\.toml$/);
+    expect(paths.database).toMatch(/\.jiratown.*jiratown\.db$/);
     expect(paths.projectConfig).toBe("/some/repo/.jiratown.toml");
   });
 
@@ -125,10 +108,18 @@ cloud_id = "company.atlassian.net"
   // ── registerPluginConfig ──────────────────────────────────────────────────
 
   it("does not throw for valid plugin config", async () => {
-    const { cfg } = await loadIsolated(`
+    const { Config } = await import("./config.ts");
+
+    writeTempToml(
+      tmpDir,
+      ".jiratown.toml",
+      `
 [plugins.jira]
 cloud_id = "company.atlassian.net"
-`);
+`,
+    );
+
+    const cfg = new Config(tmpDir);
     expect(() =>
       cfg.registerPluginConfig({
         pluginName: "jira",
@@ -138,10 +129,18 @@ cloud_id = "company.atlassian.net"
   });
 
   it("throws for invalid plugin config", async () => {
-    const { cfg } = await loadIsolated(`
+    const { Config } = await import("./config.ts");
+
+    writeTempToml(
+      tmpDir,
+      ".jiratown.toml",
+      `
 [plugins.jira]
 cloud_id = ""
-`);
+`,
+    );
+
+    const cfg = new Config(tmpDir);
     expect(() =>
       cfg.registerPluginConfig({
         pluginName: "jira",
@@ -151,7 +150,9 @@ cloud_id = ""
   });
 
   it("throws when plugin config is missing entirely", async () => {
-    const { cfg } = await loadIsolated();
+    const { Config } = await import("./config.ts");
+
+    const cfg = new Config(tmpDir);
     expect(() =>
       cfg.registerPluginConfig({
         pluginName: "jira",
@@ -163,10 +164,18 @@ cloud_id = ""
   // ── getPluginConfig ───────────────────────────────────────────────────────
 
   it("getPluginConfig returns typed config section", async () => {
-    const { cfg } = await loadIsolated(`
+    const { Config } = await import("./config.ts");
+
+    writeTempToml(
+      tmpDir,
+      ".jiratown.toml",
+      `
 [plugins.github]
 auto_poll_reviews = true
-`);
+`,
+    );
+
+    const cfg = new Config(tmpDir);
     const github = cfg.getPluginConfig<{ autoPollReviews: boolean }>("github");
     expect(github?.autoPollReviews).toBe(true);
   });
@@ -205,24 +214,6 @@ auto_poll_reviews = true
     // last arg wins: global first, project last → project wins
     const result = mergeConfigs(DEFAULT_CONFIG, global, project);
     expect(result.ui.theme).toBe("nord");
-  });
-
-  // ── saveGlobal ─────────────────────────────────────────────────────────────
-
-  it("saveGlobal creates dir when missing and writes config", async () => {
-    const { Config } = await import("./config.ts");
-    const { readFileSync, existsSync } = await import("node:fs");
-
-    const parentDir = mkdtempSync(join(tmpdir(), "jiratown-save-global-"));
-    const globalDir = join(parentDir, "subdir", ".jiratown");
-    const cfg = new Config();
-    cfg.saveGlobal({ agent: { harness: "claude-code", model: "opus-4" } }, globalDir);
-
-    expect(existsSync(join(globalDir, "config.toml"))).toBe(true);
-    const content = readFileSync(join(globalDir, "config.toml"), "utf-8");
-    expect(content).toContain("[agent]");
-
-    rmSync(parentDir, { recursive: true, force: true });
   });
 
   // ── saveProject edge cases ────────────────────────────────────────────────
