@@ -19,7 +19,8 @@ export default defineConfig({
     alias: {
       "#config": path.resolve(__dirname, "packages/core/src/config/index.ts"),
       "#types": path.resolve(__dirname, "packages/core/src/types/index.ts"),
-      "#hooks": path.resolve(__dirname, "packages/core/src/lib/hooks/index.ts"),
+      "#lib/hooks": path.resolve(__dirname, "packages/core/src/lib/hooks/index.ts"),
+      "#context": path.resolve(__dirname, "packages/core/src/context/index.ts"),
       "#plugins": path.resolve(__dirname, "packages/core/src/plugins/index.ts"),
       "#db": path.resolve(__dirname, "packages/core/src/db/index.ts"),
       "#services/memory": path.resolve(__dirname, "packages/core/src/services/memory/index.ts"),

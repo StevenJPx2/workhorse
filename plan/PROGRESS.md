@@ -6,7 +6,7 @@
 | 1 | Config | ✅ Done | |
 | 2 | Types | ✅ Done | |
 | 3 | Hooks | ✅ Done | `mitt` + `HookEventMap` + tests |
-| 4 | Plugins | ⬜ Pending | Empty stub |
+| 4 | Plugins | ✅ Done | `unctx` + `definePlugin()` + `PluginRegistry` + builtin sample plugin |
 | 5 | Database | ⬜ Pending | Empty stub |
 | 6 | MemoryService | ⬜ Pending | Empty stub |
 | 7 | MonitorService | ⬜ Pending | Empty stub |

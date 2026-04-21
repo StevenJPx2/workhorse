@@ -36,5 +36,8 @@
       "oxfmt --write",
       "oxlint"
     ]
+  },
+  "dependencies": {
+    "unctx": "^2.5.0"
   }
 }

@@ -1,82 +1,215 @@
 # Step 4: Plugins
 
-Plugin loader and registry. Plugins hook into every part of Jiratown.
+Plugin system with `unctx` for context management. No prop drilling — use `useJiratown()` anywhere.
 
-Location: `packages/core/src/plugins/`
+Location: `packages/core/src/plugins/` and `packages/core/src/context/`
 
-## Domain Types (colocated)
+## New Dependencies
+
+```
+unctx
+```
+
+## File Structure
+
+```
+packages/core/src/
+  context/
+    index.ts       # useJiratown, runWithContext, setContext, unsetContext
+    types.ts       # JiratownContext
+  plugins/
+    index.ts       # public exports
+    types.ts       # PluginManifest, PluginOptions, Plugin, PluginSymbol
+    define.ts      # definePlugin() factory
+    registry.ts    # PluginRegistry class, isPlugin()
+    plugins.test.ts
+```
+
+## Context Layer
+
+Uses `unctx` with native `AsyncLocalStorage` for async-safe context.
 
 ```typescript
+// context/types.ts
+interface JiratownContext {
+  readonly config: Config
+  readonly hooks: typeof hooks
+  // Extended in later steps: db, memory, monitor, tracker
+}
+
+// context/index.ts
+import { createContext } from "unctx"
+import { AsyncLocalStorage } from "node:async_hooks"
+
+const ctx = createContext<JiratownContext>({
+  asyncContext: true,
+  AsyncLocalStorage,
+})
+
+export const useJiratown = ctx.use      // Get context (throws if not set)
+export const tryUseJiratown = ctx.tryUse // Get context (returns undefined)
+export const runWithContext = ctx.call   // Run fn within context
+export const setContext = ctx.set        // Set singleton (for tests)
+export const unsetContext = ctx.unset    // Clear singleton
+```
+
+## Plugin Types
+
+```typescript
+// types.ts
 interface PluginManifest {
   name: string
   version: string
   description?: string
-  parsers?: string[]
-  monitors?: string[]
-  tools?: string[]
+  capabilities?: {
+    parsers?: string[]
+    monitors?: string[]
+    tools?: string[]
+  }
 }
 
-interface Plugin {
+interface PluginOptions {
   manifest: PluginManifest
-  setup: (ctx: PluginContext) => Promise<void> | void
+  setup?: () => void | Promise<void>
+  teardown?: () => void | Promise<void>
 }
 
-interface PluginContext {
-  hooks: Hooks
-  config: Readonly<JiratownConfig>
-  // Extended by later steps as services are built
+const PluginSymbol = Symbol.for("jiratown.plugin")
+
+interface Plugin extends PluginOptions {
+  [PluginSymbol]: true
 }
 ```
+
+## definePlugin Factory
+
+```typescript
+// define.ts
+function definePlugin(options: PluginOptions): Plugin {
+  const manifest = PluginManifestSchema.parse(options.manifest)
+  return {
+    ...options,
+    manifest,
+    [Symbol.for("jiratown.plugin")]: true,
+  } as Plugin
+}
+```
+
+## isPlugin Type Guard
+
+```typescript
+// registry.ts
+function isPlugin(value: unknown): value is Plugin {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Symbol.for("jiratown.plugin") in value
+  )
+}
+```
+
+## PluginRegistry
+
+```typescript
+// registry.ts
+class PluginRegistry {
+  private plugins: Plugin[] = []
+  private initialized = false
+
+  private constructor() {}
+
+  static async create(): Promise<PluginRegistry>  // Load from config + discovery
+  
+  register(plugin: Plugin): void     // Add plugin, emit plugin.loaded
+  async setup(): Promise<void>       // Call setup() on all plugins
+  async teardown(): Promise<void>    // Call teardown() in reverse order
+  
+  get(name: string): Plugin | undefined
+  has(name: string): boolean
+  list(): Plugin[]
+}
+```
+
+### Loading Strategy
+
+1. **Explicitly enabled** — `config.plugins.enabled` array (npm packages or paths)
+2. **Auto-discovery** — Scan `~/.jiratown/plugins/` (global) and `.jiratown/plugins/` (project)
+
+Duplicates are skipped (first wins).
 
 ## Plugin Shape
 
 ```typescript
-export default {
+// Example plugin
+export default definePlugin({
   manifest: {
     name: "jira",
     version: "1.0.0",
-    parsers: ["jira"],
-    monitors: ["jira-comments"],
+    capabilities: {
+      parsers: ["jira"],
+      monitors: ["jira-comments"],
+    },
   },
-  setup(ctx) {
-    ctx.hooks.on("issue.parsing", async ({ input }) => { /* ... */ })
-  }
-} satisfies Plugin
+  setup() {
+    const { hooks } = useJiratown()
+    hooks.on("issue.parsed", ({ issue }) => {
+      console.log("Parsed:", issue.title)
+    })
+  },
+  teardown() {
+    console.log("Cleaning up...")
+  },
+})
 ```
 
-## PluginRegistry (class)
+## Bootstrap Integration
 
 ```typescript
-class PluginRegistry {
-  private plugins = new Map<string, Plugin>()
-
-  async register(plugin: Plugin): Promise<void>
-  get(name: string): Plugin | undefined
-  list(): Plugin[]
-  has(name: string): boolean
-  unregister(name: string): void
+// bootstrap.ts
+async function bootstrap(repoRoot?: string): Promise<Jiratown> {
+  hooks.all.clear()
+  
+  const config = new Config(repoRoot)
+  const context = { config, hooks }
+  
+  return runWithContext(context, async () => {
+    const plugins = await PluginRegistry.create()
+    plugins.register(loggerPlugin)  // Builtin sample plugin
+    await plugins.setup()
+    
+    return {
+      config: Object.freeze(config.get()),
+      hooks,
+      plugins,
+      async shutdown() {
+        await plugins.teardown()
+        hooks.all.clear()
+      },
+    }
+  })
 }
 ```
 
-On `register()`: validate manifest (zod), reject duplicates, call `setup(ctx)`, emit `plugin.loaded` / `plugin.error`.
-
-## Loader
-
-```typescript
-async function loadPlugins(options: PluginLoaderOptions): Promise<Plugin[]>
-```
-
-Loading strategy:
-1. Explicit paths — `import()` directly
-2. Names from config — resolve against `.jiratown/plugins/` (project) and `~/.jiratown/plugins/` (global)
-3. Directory scan — find `.ts`/`.js` files, `import()`, validate shape
-
-## PluginContext
-
-Starts with `{ hooks, config }`. Extended by later steps: `memory`, `monitors`, `issueProvider`, `agentAdapter`.
-
 ## Tests
 
-- Register valid plugin, reject duplicates, reject invalid manifests
-- Setup errors caught and reported via `plugin.error` hook
-- Loader discovers plugins from directories, skips non-plugins
+- `isPlugin()` — returns true for valid plugins, false for everything else
+- `definePlugin()` — creates valid plugin, rejects invalid manifest
+- `PluginRegistry.register()` — adds plugin, rejects duplicates, emits `plugin.loaded`
+- `PluginRegistry.setup()` — calls setup on all plugins, emits `plugin.error` on failure
+- `PluginRegistry.teardown()` — calls teardown in reverse order
+- `PluginRegistry.list()` — returns plugins in registration order
+
+## Key Design Decisions
+
+| Decision | Choice |
+|----------|--------|
+| Context | `unctx` with native `AsyncLocalStorage` |
+| Context init | At bootstrap — `runWithContext()` wraps entire lifecycle |
+| Context growth | Full object upfront — services created before context is set |
+| Context extension | Core services only — plugins use hooks, not context injection |
+| Plugin definition | `definePlugin()` factory → branded object with symbol |
+| Setup signature | No args — use `useJiratown()` inside |
+| Loading strategy | Config `plugins.enabled` + auto-discovery |
+| Discovery dirs | `~/.jiratown/plugins/` (global) + `.jiratown/plugins/` (project) |
+| Capabilities | Informational metadata only — actual registration via hooks |
+| Async support | Native `AsyncLocalStorage` only (Node.js/Bun) |
