@@ -48,21 +48,15 @@ export class Database {
    */
   constructor(path: string) {
     this.sqlite = new BetterSqlite(path);
-
-    // Set pragmas for better performance and reliability
     this.sqlite.exec("PRAGMA journal_mode = WAL;");
     this.sqlite.exec("PRAGMA foreign_keys = ON;");
     this.sqlite.exec("PRAGMA busy_timeout = 5000;");
 
-    // Initialize Drizzle ORM
     this.db = drizzle(this.sqlite, { schema });
 
-    // Run migrations
     const currentDir = dirname(fileURLToPath(import.meta.url));
-    const migrationsFolder = join(currentDir, "../../drizzle");
-    migrate(this.db, { migrationsFolder });
+    migrate(this.db, { migrationsFolder: join(currentDir, "../../drizzle") });
 
-    // Initialize controllers
     this.issues = new IssueController(this.db);
     this.events = new EventController(this.db);
     this.notifications = new NotificationController(this.db);

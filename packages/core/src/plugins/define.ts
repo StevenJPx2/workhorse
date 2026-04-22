@@ -54,7 +54,6 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
           return;
         }
 
-        // Validate config from the plugin's section
         const rawConfig = ctx.config.plugins[manifest.name];
         const result = options.configSchema.safeParse(rawConfig);
 
@@ -66,7 +65,6 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
           throw new Error(`Invalid config for plugin "${manifest.name}":\n${errors}`);
         }
 
-        // Call with context + validated config
         await options.setup(ctx, result.data);
       } catch (error) {
         ctx.hooks.emit("plugin.error", {

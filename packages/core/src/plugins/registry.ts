@@ -32,12 +32,10 @@ export class PluginRegistry {
     const registry = new PluginRegistry();
     const { config, paths } = useJiratown();
 
-    // 1. Explicitly enabled plugins (npm packages or paths)
     for (const name of config.plugins.enabled) {
       await registry.load(name);
     }
 
-    // 2. Discover from plugin directories (in parallel)
     await Promise.all([
       registry.discover(join(dirname(paths.globalConfig), "plugins")),
       registry.discover(join(dirname(paths.projectConfig), "plugins")),

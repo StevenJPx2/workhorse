@@ -1,19 +1,13 @@
-import { resolveConfigPaths, loadConfig } from "#config";
-import { Database } from "#db";
-import { hooks } from "#lib/hooks";
-import { runWithContext } from "#context";
-import { PluginRegistry, definePlugin } from "#plugins";
-import type { ConfigPaths, JiratownConfig } from "#config";
 import type { Emitter } from "mitt";
+import type { ConfigPaths, JiratownConfig } from "#config";
+import { loadConfig, resolveConfigPaths } from "#config";
+import { runWithContext } from "#context";
+import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
+import { hooks } from "#lib/hooks";
+import { definePlugin, PluginRegistry } from "#plugins";
 import type { Issue } from "#types";
 
-// ─── Sample Plugin ───────────────────────────────────────────────────────────
-
-/**
- * A sample builtin plugin that logs lifecycle events.
- * Demonstrates how plugins work with the context system.
- */
 const loggerPlugin = definePlugin({
   manifest: {
     name: "builtin-logger",
@@ -43,8 +37,6 @@ const loggerPlugin = definePlugin({
   },
 });
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 export interface Jiratown {
   /** Loaded configuration (readonly) */
   readonly config: Readonly<JiratownConfig>;
@@ -65,38 +57,31 @@ export interface Jiratown {
   shutdown(): Promise<void>;
 }
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
-
+/**
+ * Initialize a Jiratown instance with config, database, and plugins.
+ *
+ * @param repoRoot - Project root directory (defaults to cwd)
+ * @returns Fully initialized Jiratown instance
+ *
+ * @example
+ * ```typescript
+ * const jt = await bootstrap();
+ * // ... use jt.db, jt.hooks, jt.plugins ...
+ * await jt.shutdown();
+ * ```
+ */
 export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
-  // 1. Clear hooks for clean state (idempotent bootstrap)
   hooks.all.clear();
 
-  // 2. Resolve paths and load config
   const paths = resolveConfigPaths(repoRoot);
   const config = loadConfig(paths);
-
-  // 3. Create database
   const db = new Database(paths.database);
 
-  // 4. Build context object
-  const context = {
-    config,
-    paths,
-    hooks,
-  };
-
-  // 5. Run everything within context
-  return runWithContext(context, async () => {
-    // 6. Load plugins from config
+  return runWithContext({ config, paths, hooks }, async () => {
     const plugins = await PluginRegistry.create();
-
-    // 7. Register builtin sample plugin
     plugins.register(loggerPlugin);
-
-    // 8. Setup all plugins
     await plugins.setup();
 
-    // 9. Build Jiratown instance
     return {
       config: Object.freeze(config),
       paths: Object.freeze(paths),
