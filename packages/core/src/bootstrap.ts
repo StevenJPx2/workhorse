@@ -38,7 +38,7 @@ const loggerPlugin = definePlugin({
 
     console.log("[logger] Plugin initialized");
   },
-  teardown(_ctx) {
+  teardown() {
     console.log("[logger] Plugin shutting down");
   },
 });

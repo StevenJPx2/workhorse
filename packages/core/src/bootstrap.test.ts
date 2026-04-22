@@ -1,6 +1,6 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir, homedir } from "node:os";
+import { tmpdir } from "node:os";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -13,23 +13,27 @@ function writeTempToml(dir: string, content: string): void {
 
 describe("bootstrap", () => {
   let tmpDir: string;
-  let tmpHome: string;
-  let originalHome: string;
+  let tmpDataDir: string;
+  let originalXdgData: string | undefined;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "jiratown-bootstrap-"));
-    // Create a fake home with .jiratown dir so DB goes there instead of real ~/.jiratown
-    tmpHome = mkdtempSync(join(tmpdir(), "jiratown-home-"));
-    mkdirSync(join(tmpHome, ".jiratown"));
-    originalHome = homedir();
-    // Override HOME so getConfigPaths() finds the temp .jiratown
-    process.env["HOME"] = tmpHome;
+    // Create a temp XDG_DATA_HOME with jiratown directory for the database
+    tmpDataDir = mkdtempSync(join(tmpdir(), "jiratown-data-"));
+    mkdirSync(join(tmpDataDir, "jiratown"), { recursive: true });
+    originalXdgData = process.env["XDG_DATA_HOME"];
+    // Override XDG_DATA_HOME so resolveConfigPaths() uses the temp directory
+    process.env["XDG_DATA_HOME"] = tmpDataDir;
   });
 
   afterEach(() => {
-    process.env["HOME"] = originalHome;
+    if (originalXdgData) {
+      process.env["XDG_DATA_HOME"] = originalXdgData;
+    } else {
+      delete process.env["XDG_DATA_HOME"];
+    }
     rmSync(tmpDir, { recursive: true, force: true });
-    rmSync(tmpHome, { recursive: true, force: true });
+    rmSync(tmpDataDir, { recursive: true, force: true });
   });
 
   it("returns Jiratown instance with config and hooks", async () => {

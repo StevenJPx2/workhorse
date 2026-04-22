@@ -33,9 +33,9 @@ export type PluginOptions<TConfig = void> = {
 
   /**
    * Teardown function called when the plugin is shut down.
-   * Receives the Jiratown context.
+   * Plugins should store any needed references during setup.
    */
-  teardown?: (ctx: JiratownContext) => void | Promise<void>;
+  teardown?: () => void | Promise<void>;
 } & (
   | {
       /**

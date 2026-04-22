@@ -120,7 +120,7 @@ describe("Plugin lifecycle", () => {
     expect(order).toEqual(["second", "first"]);
   });
 
-  it("passes context to teardown function", async () => {
+  it("calls teardown function without arguments", async () => {
     const teardownFn = vi.fn();
 
     const plugin = definePlugin({
@@ -137,10 +137,8 @@ describe("Plugin lifecycle", () => {
     await registry.teardown();
 
     expect(teardownFn).toHaveBeenCalledOnce();
-    // Verify the context was passed
-    const passedCtx = teardownFn.mock.calls[0]![0];
-    expect(passedCtx).toHaveProperty("hooks");
-    expect(passedCtx).toHaveProperty("config");
+    // Teardown receives no arguments - plugins should store needed refs during setup
+    expect(teardownFn.mock.calls[0]).toHaveLength(0);
   });
 
   it("emits plugin.error on setup failure", async () => {
@@ -162,22 +160,6 @@ describe("Plugin lifecycle", () => {
 
     await expect(registry.setup()).rejects.toThrow("Setup failed");
     expect(listener).toHaveBeenCalledWith({ name: "failing", error });
-  });
-
-  it("skips setup/teardown if not provided", async () => {
-    // @ts-expect-error - testing minimal plugin without setup (type requires setup)
-    const plugin = definePlugin({
-      manifest: { name: "simple", version: "1.0.0" },
-    });
-
-    const registry = createTestRegistry();
-
-    setContext(createMockContext());
-    registry.register(plugin);
-
-    // Should not throw
-    await registry.setup();
-    await registry.teardown();
   });
 });
 

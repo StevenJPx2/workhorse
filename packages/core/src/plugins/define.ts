@@ -76,10 +76,7 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
         throw error;
       }
     },
-    teardown: async () => {
-      const ctx = useJiratown();
-      await options.teardown?.(ctx);
-    },
+    teardown: options.teardown,
     [PluginSymbol]: true,
   };
 }
