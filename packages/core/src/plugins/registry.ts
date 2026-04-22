@@ -1,12 +1,12 @@
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { useJiratown } from "#context";
-import { type AnyPlugin, PluginSymbol } from "./types.ts";
+import { type Plugin, PluginSymbol } from "./types.ts";
 
 /**
  * Check if a value is a valid Jiratown plugin.
  */
-export function isPlugin(value: unknown): value is AnyPlugin {
+export function isPlugin(value: unknown): value is Plugin {
   return typeof value === "object" && value !== null && PluginSymbol in value;
 }
 
@@ -15,28 +15,43 @@ export function isPlugin(value: unknown): value is AnyPlugin {
  *
  * @example
  * ```typescript
- * const registry = await PluginRegistry.create();
+ * const registry = new PluginRegistry();
+ * await registry.loadPlugins();
+ * registry.register(myPlugin);
  * await registry.setup();
  * // ... use plugins ...
  * await registry.teardown();
  * ```
  */
 export class PluginRegistry {
-  private plugins: AnyPlugin[] = [];
-  private initialized = false;
+  private plugins: Plugin[] = [];
 
-  private constructor() {}
+  constructor() {}
 
   /**
-   * Create and initialize the registry by loading all configured plugins.
+   * Load all configured plugins from enabled list and plugin directories.
    */
-  static async create(): Promise<PluginRegistry> {
-    const registry = new PluginRegistry();
-    await registry.loadAll();
-    return registry;
+  async loadPlugins(): Promise<void> {
+    const { config, paths } = useJiratown();
+
+    // 1. Explicitly enabled plugins (npm packages or paths)
+    for (const name of config.plugins.enabled) {
+      if (!this.has(name)) {
+        await this.loadOne(name);
+      }
+    }
+
+    // 2. Discover from plugin directories (in parallel)
+    const discoveries = [this.discoverFrom(join(dirname(paths.globalConfig), "plugins"))];
+
+    if (paths.projectConfig) {
+      discoveries.push(this.discoverFrom(join(dirname(paths.projectConfig), "plugins")));
+    }
+
+    await Promise.all(discoveries);
   }
 
-  private async load(nameOrPath: string): Promise<void> {
+  private async loadOne(nameOrPath: string): Promise<void> {
     const mod = await import(nameOrPath);
     const plugin = mod.default ?? mod;
 
@@ -47,8 +62,29 @@ export class PluginRegistry {
     this.register(plugin);
   }
 
-  /** Register a plugin instance directly */
-  register(plugin: AnyPlugin): void {
+  private async discoverFrom(directory: string): Promise<void> {
+    if (!existsSync(directory)) return;
+
+    const entries = readdirSync(directory, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = join(directory, entry.name);
+
+      if (entry.isFile() && !/\.(ts|js|mjs|mts)$/.test(entry.name)) continue;
+      if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts"))) continue;
+
+      try {
+        await this.loadOne(fullPath);
+      } catch {
+        // Skip invalid plugins during discovery
+      }
+    }
+  }
+
+  /**
+   * Register a plugin instance directly.
+   */
+  register(plugin: Plugin): void {
     const name = plugin.manifest.name;
 
     if (this.has(name)) {
@@ -61,88 +97,14 @@ export class PluginRegistry {
     hooks.emit("plugin.loaded", { name });
   }
 
-  private async discover(directory: string): Promise<void> {
-    if (!existsSync(directory)) return;
-
-    const entries = readdirSync(directory, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = join(directory, entry.name);
-
-      if (entry.isFile() && !/\.(ts|js|mjs|mts)$/.test(entry.name)) continue;
-      if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts"))) continue;
-
-      try {
-        await this.load(fullPath);
-      } catch {
-        // Skip invalid plugins during discovery
-      }
-    }
-  }
-
-  private async loadAll(): Promise<void> {
-    const { config, paths } = useJiratown();
-
-    // 1. Explicitly enabled plugins (from node_modules)
-    const enabled = config.plugins.enabled;
-    for (const name of enabled) {
-      if (!this.has(name)) {
-        await this.load(name);
-      }
-    }
-
-    // 2. Discover from plugin directories
-    const globalPlugins = join(dirname(paths.globalConfig), "plugins");
-    await this.discover(globalPlugins);
-
-    if (paths.projectConfig) {
-      const projectPlugins = join(dirname(paths.projectConfig), "plugins");
-      await this.discover(projectPlugins);
-    }
-  }
-
   /**
-   * Setup all registered plugins by calling their setup functions.
-   * If a plugin has a configSchema, validates and passes the config to setup().
+   * Setup all registered plugins.
+   * Fails fast on first error (plugin emits plugin.error before throwing).
    */
   async setup(): Promise<void> {
-    if (this.initialized) return;
-
-    const { config, hooks } = useJiratown();
-
     for (const plugin of this.plugins) {
-      const name = plugin.manifest.name;
-
-      try {
-        // Validate plugin config if schema provided
-        let pluginConfig: unknown = undefined;
-
-        if (plugin.configSchema) {
-          const rawConfig = config.plugins[name];
-          const result = plugin.configSchema.safeParse(rawConfig);
-
-          if (!result.success) {
-            const errors = result.error.issues
-              .map((i) => `${i.path.join(".")}: ${i.message}`)
-              .join("\n");
-            throw new Error(`Invalid config for plugin "${name}":\n${errors}`);
-          }
-
-          pluginConfig = result.data;
-        }
-
-        // Call setup with validated config (or undefined if no schema)
-        await plugin.setup?.(pluginConfig as never);
-      } catch (error) {
-        hooks.emit("plugin.error", {
-          name,
-          error: error as Error,
-        });
-        throw error;
-      }
+      await plugin.setup?.();
     }
-
-    this.initialized = true;
   }
 
   /**
@@ -152,15 +114,13 @@ export class PluginRegistry {
     for (const plugin of [...this.plugins].reverse()) {
       await plugin.teardown?.();
     }
-
     this.plugins = [];
-    this.initialized = false;
   }
 
   /**
    * Get a plugin by name.
    */
-  get(name: string): AnyPlugin | undefined {
+  get(name: string): Plugin | undefined {
     return this.plugins.find((p) => p.manifest.name === name);
   }
 
@@ -174,7 +134,7 @@ export class PluginRegistry {
   /**
    * List all registered plugins.
    */
-  list(): AnyPlugin[] {
+  list(): Plugin[] {
     return this.plugins;
   }
 }

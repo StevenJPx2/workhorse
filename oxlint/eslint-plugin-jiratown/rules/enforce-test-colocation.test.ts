@@ -68,14 +68,15 @@ describe("enforce-test-colocation", () => {
     expect(runRule("/project/src/hooks/index.ts").length).toBe(0);
   });
 
-  it("should not report when test ratio is within 40% threshold", () => {
-    fakeEntries = ["a.ts", "b.ts", "c.ts", "a.test.ts"];
+  it("should not report when test ratio is within 30% threshold", () => {
+    // 4 impl + 1 test = 20% ratio → within threshold
+    fakeEntries = ["a.ts", "b.ts", "c.ts", "d.ts", "a.test.ts"];
     expect(runRule("/project/src/hooks/a.ts").length).toBe(0);
   });
 
-  it("should report when test ratio exceeds 40%", () => {
-    // 3 impl + 3 test = 50% ratio → exceeds threshold
-    fakeEntries = ["a.ts", "b.ts", "c.ts", "a.test.ts", "b.test.ts", "c.test.ts"];
+  it("should report when test ratio exceeds 30%", () => {
+    // 3 impl + 2 test = 40% ratio → exceeds threshold
+    fakeEntries = ["a.ts", "b.ts", "c.ts", "a.test.ts", "b.test.ts"];
     const reports = runRule("/project/src/hooks/a.ts");
     expect(reports.length).toBe(1);
     expect(reports[0]!.message).toContain("Move tests to a __tests__/ directory");

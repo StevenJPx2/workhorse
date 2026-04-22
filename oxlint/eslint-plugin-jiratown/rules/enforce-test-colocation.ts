@@ -4,7 +4,7 @@ import path from "node:path";
 const IMPLEMENTATION_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const TEST_SUFFIXES = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"];
 const MIN_FILES_THRESHOLD = 2;
-const MAX_TEST_RATIO = 0.4;
+const MAX_TEST_RATIO = 0.3;
 
 function isTestFile(filename: string): boolean {
   return TEST_SUFFIXES.some((suffix) => filename.endsWith(suffix));
@@ -20,7 +20,7 @@ const rule = {
   meta: {
     docs: {
       description:
-        "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it.",
+        "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 30%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it.",
     },
   },
 

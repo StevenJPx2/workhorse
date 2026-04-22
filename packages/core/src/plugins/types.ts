@@ -1,5 +1,6 @@
-import { z } from "zod/v4";
 import type { ZodType } from "zod/v4";
+import { z } from "zod/v4";
+import type { JiratownContext } from "#context";
 
 /**
  * Plugin manifest schema — validated with Zod.
@@ -27,20 +28,42 @@ export type PluginManifest = z.infer<typeof PluginManifestSchema>;
  *
  * @typeParam TConfig - The type of the plugin's config section, inferred from configSchema.
  */
-export interface PluginOptions<TConfig = void> {
+export type PluginOptions<TConfig = void> = {
   manifest: PluginManifest;
+
   /**
-   * Optional Zod schema to validate the plugin's config section.
-   * If provided, the validated config is passed to setup().
+   * Teardown function called when the plugin is shut down.
+   * Receives the Jiratown context.
    */
-  configSchema?: ZodType<TConfig>;
-  /**
-   * Setup function called when the plugin is initialized.
-   * Receives validated config if configSchema is provided.
-   */
-  setup?: (config: TConfig) => void | Promise<void>;
-  teardown?: () => void | Promise<void>;
-}
+  teardown?: (ctx: JiratownContext) => void | Promise<void>;
+} & (
+  | {
+      /**
+       * Optional Zod schema to validate the plugin's config section.
+       * If provided, the validated config is passed to setup().
+       */
+      configSchema?: undefined;
+
+      /**
+       * No config schema provided.
+       * Setup function receives the Jiratown context.
+       */
+      setup: (ctx: JiratownContext) => void | Promise<void>;
+    }
+  | {
+      /**
+       * Optional Zod schema to validate the plugin's config section.
+       * If provided, the validated config is passed to setup().
+       */
+      configSchema: ZodType<TConfig>;
+
+      /**
+       * Config schema provided.
+       * Setup function receives the Jiratown context and validated config.
+       */
+      setup: (ctx: JiratownContext, config: TConfig) => void | Promise<void>;
+    }
+);
 
 /**
  * Unique symbol to identify Jiratown plugins.
@@ -48,15 +71,17 @@ export interface PluginOptions<TConfig = void> {
 export const PluginSymbol = Symbol.for("jiratown.plugin");
 
 /**
- * Plugin interface — a branded PluginOptions.
+ * Plugin interface — the wrapped plugin object.
+ * Setup and teardown take no parameters (context is injected by the wrapper).
  */
-export interface Plugin<TConfig = void> extends PluginOptions<TConfig> {
+export interface Plugin {
+  manifest: PluginManifest;
+  setup?: () => void | Promise<void>;
+  teardown?: () => void | Promise<void>;
   [PluginSymbol]: true;
 }
 
 /**
- * Type alias for plugins with any config type.
- * Used in contexts where the config type is not known (e.g., registry).
+ * Type alias for plugins in contexts where type doesn't matter (e.g., registry).
  */
-// biome-ignore lint/suspicious/noExplicitAny: Required for type-erased plugin storage
-export type AnyPlugin = Plugin<any>;
+export type AnyPlugin = Plugin;

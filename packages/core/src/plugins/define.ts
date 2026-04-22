@@ -1,7 +1,13 @@
-import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } from "./types.ts";
+import { useJiratown } from "#context";
+import { type Plugin, PluginManifestSchema, type PluginOptions, PluginSymbol } from "./types.ts";
 
 /**
  * Define a Jiratown plugin.
+ *
+ * The returned plugin wraps setup and teardown to:
+ * - Inject the Jiratown context as the first argument
+ * - Validate config against configSchema (if provided) and pass as second argument
+ * - Emit plugin.error hook on setup failure before re-throwing
  *
  * @example
  * ```typescript
@@ -11,9 +17,8 @@ import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } f
  *     name: "my-plugin",
  *     version: "1.0.0",
  *   },
- *   setup() {
- *     const { hooks } = useJiratown();
- *     hooks.on("issue.parsed", ({ issue }) => {
+ *   setup(ctx) {
+ *     ctx.hooks.on("issue.parsed", ({ issue }) => {
  *       console.log("Parsed:", issue.title);
  *     });
  *   },
@@ -28,20 +33,53 @@ import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } f
  *   configSchema: z.object({
  *     cloudId: z.string().min(1),
  *   }),
- *   setup(config) {
+ *   setup(ctx, config) {
  *     // config is typed as { cloudId: string }
  *     console.log("Connecting to:", config.cloudId);
  *   },
  * });
  * ```
  */
-export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): Plugin<TConfig> {
-  // Validate manifest at creation time
+export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): Plugin {
   const manifest = PluginManifestSchema.parse(options.manifest);
 
   return {
-    ...options,
     manifest,
+    setup: async () => {
+      const ctx = useJiratown();
+
+      try {
+        if (!options.configSchema) {
+          await options.setup(ctx);
+          return;
+        }
+
+        // Validate config from the plugin's section
+        const rawConfig = ctx.config.plugins[manifest.name];
+        const result = options.configSchema.safeParse(rawConfig);
+
+        if (!result.success) {
+          const errors = result.error.issues
+            .map((i) => `${i.path.join(".")}: ${i.message}`)
+            .join("\n");
+
+          throw new Error(`Invalid config for plugin "${manifest.name}":\n${errors}`);
+        }
+
+        // Call with context + validated config
+        await options.setup(ctx, result.data);
+      } catch (error) {
+        ctx.hooks.emit("plugin.error", {
+          name: manifest.name,
+          error: error as Error,
+        });
+        throw error;
+      }
+    },
+    teardown: async () => {
+      const ctx = useJiratown();
+      await options.teardown?.(ctx);
+    },
     [PluginSymbol]: true,
-  } as Plugin<TConfig>;
+  };
 }
