@@ -15,8 +15,7 @@ export function isPlugin(value: unknown): value is Plugin {
  *
  * @example
  * ```typescript
- * const registry = new PluginRegistry();
- * await registry.loadPlugins();
+ * const registry = await PluginRegistry.create();
  * registry.register(myPlugin);
  * await registry.setup();
  * // ... use plugins ...
@@ -26,32 +25,31 @@ export function isPlugin(value: unknown): value is Plugin {
 export class PluginRegistry {
   private plugins: Plugin[] = [];
 
-  constructor() {}
-
   /**
    * Load all configured plugins from enabled list and plugin directories.
    */
-  async loadPlugins(): Promise<void> {
+  static async create(): Promise<PluginRegistry> {
+    const registry = new PluginRegistry();
     const { config, paths } = useJiratown();
 
     // 1. Explicitly enabled plugins (npm packages or paths)
     for (const name of config.plugins.enabled) {
-      if (!this.has(name)) {
-        await this.loadOne(name);
-      }
+      await registry.load(name);
     }
 
     // 2. Discover from plugin directories (in parallel)
-    const discoveries = [this.discoverFrom(join(dirname(paths.globalConfig), "plugins"))];
+    const discoveries = [registry.discover(join(dirname(paths.globalConfig), "plugins"))];
 
     if (paths.projectConfig) {
-      discoveries.push(this.discoverFrom(join(dirname(paths.projectConfig), "plugins")));
+      discoveries.push(registry.discover(join(dirname(paths.projectConfig), "plugins")));
     }
 
     await Promise.all(discoveries);
+
+    return registry;
   }
 
-  private async loadOne(nameOrPath: string): Promise<void> {
+  private async load(nameOrPath: string): Promise<void> {
     const mod = await import(nameOrPath);
     const plugin = mod.default ?? mod;
 
@@ -59,10 +57,15 @@ export class PluginRegistry {
       throw new Error(`Module "${nameOrPath}" is not a valid plugin`);
     }
 
+    if (this.has(plugin.manifest.name)) {
+      console.warn(`Plugin "${plugin.manifest.name}" is already registered, skipping`);
+      return;
+    }
+
     this.register(plugin);
   }
 
-  private async discoverFrom(directory: string): Promise<void> {
+  private async discover(directory: string): Promise<void> {
     if (!existsSync(directory)) return;
 
     const entries = readdirSync(directory, { withFileTypes: true });
@@ -73,11 +76,9 @@ export class PluginRegistry {
       if (entry.isFile() && !/\.(ts|js|mjs|mts)$/.test(entry.name)) continue;
       if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts"))) continue;
 
-      try {
-        await this.loadOne(fullPath);
-      } catch {
-        // Skip invalid plugins during discovery
-      }
+      await this.load(fullPath).catch(() => {
+        console.warn(`Skipping invalid plugin "${fullPath}"`);
+      });
     }
   }
 

@@ -87,9 +87,8 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
 
   // 5. Run everything within context
   return runWithContext(context, async () => {
-    // 6. Create plugin registry and load plugins
-    const plugins = new PluginRegistry();
-    await plugins.loadPlugins();
+    // 6. Load plugins from config
+    const plugins = await PluginRegistry.create();
 
     // 7. Register builtin sample plugin
     plugins.register(loggerPlugin);

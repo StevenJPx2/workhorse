@@ -146,20 +146,18 @@ describe("PluginRegistry", () => {
   });
 });
 
-it.fails("TODO: loadPlugins resolves from node_modules", async () => {
+it.fails("TODO: create resolves from node_modules", async () => {
   // Test that loading a plugin by npm package name works
   setContext(createMockContext());
-  const registry = new PluginRegistry();
-  await registry.loadPlugins();
+  const registry = await PluginRegistry.create();
   // This will fail until we have actual published plugins
   expect(registry.has("@jiratown/plugin-jira")).toBe(true);
 });
 
-it.fails("TODO: loadPlugins finds plugins in directory", async () => {
-  // Test that loadPlugins() finds plugins in .jiratown/plugins/
+it.fails("TODO: create finds plugins in directory", async () => {
+  // Test that create() finds plugins in .jiratown/plugins/
   setContext(createMockContext());
-  const registry = new PluginRegistry();
-  await registry.loadPlugins();
+  const registry = await PluginRegistry.create();
   const plugins = registry.list();
   expect(plugins.length).toBeGreaterThan(0);
 });
