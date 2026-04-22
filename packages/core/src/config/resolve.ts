@@ -14,7 +14,7 @@ import type { ConfigPaths } from "./types.ts";
  * Data directory: ~/.local/share/jiratown/
  * Respects XDG_CONFIG_HOME and XDG_DATA_HOME environment variables.
  */
-export function resolveConfigPaths(repoRoot?: string): ConfigPaths {
+export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
   const xdgData = process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share");
@@ -31,7 +31,7 @@ export function resolveConfigPaths(repoRoot?: string): ConfigPaths {
   return {
     globalDir,
     globalConfig,
-    projectConfig: repoRoot ? join(repoRoot, ".jiratown.toml") : null,
+    projectConfig: join(repoRoot, ".jiratown.toml"),
     database: join(globalDir, "jiratown.db"),
     memoryDatabase: join(globalDir, "memory.db"),
   };

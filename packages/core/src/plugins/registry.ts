@@ -38,13 +38,10 @@ export class PluginRegistry {
     }
 
     // 2. Discover from plugin directories (in parallel)
-    const discoveries = [registry.discover(join(dirname(paths.globalConfig), "plugins"))];
-
-    if (paths.projectConfig) {
-      discoveries.push(registry.discover(join(dirname(paths.projectConfig), "plugins")));
-    }
-
-    await Promise.all(discoveries);
+    await Promise.all([
+      registry.discover(join(dirname(paths.globalConfig), "plugins")),
+      registry.discover(join(dirname(paths.projectConfig), "plugins")),
+    ]);
 
     return registry;
   }

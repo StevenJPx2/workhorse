@@ -13,12 +13,12 @@ describe("resolveConfigPaths", () => {
     expect(paths.memoryDatabase).toContain("memory.db");
   });
 
-  it("returns null projectConfig when no repoRoot provided", async () => {
+  it("defaults projectConfig to cwd when no repoRoot provided", async () => {
     const { resolveConfigPaths } = await import("../resolve.ts");
 
     const paths = resolveConfigPaths();
 
-    expect(paths.projectConfig).toBeNull();
+    expect(paths.projectConfig).toBe(join(process.cwd(), ".jiratown.toml"));
   });
 
   it("respects XDG_DATA_HOME", async () => {
