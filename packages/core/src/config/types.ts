@@ -27,8 +27,9 @@ export interface JiratownConfig {
 export interface ConfigPaths {
   globalDir: string;
   globalConfig: string;
-  database: string;
   projectConfig: string | null;
+  database: string;
+  memoryDatabase: string;
 }
 
 export interface PluginConfigSchema {

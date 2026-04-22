@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir, homedir } from "node:os";
 import { z } from "zod/v4";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -11,7 +11,65 @@ function writeTempToml(dir: string, filename: string, content: string): void {
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
-describe("Config", () => {
+describe("resolveConfigPaths", () => {
+  it("resolves paths with repoRoot", async () => {
+    const { resolveConfigPaths } = await import("./resolve.ts");
+
+    const paths = resolveConfigPaths("/some/repo");
+
+    expect(paths.projectConfig).toBe("/some/repo/.jiratown.toml");
+    expect(paths.globalDir).toContain("jiratown");
+    expect(paths.database).toContain("jiratown.db");
+    expect(paths.memoryDatabase).toContain("memory.db");
+  });
+
+  it("returns null projectConfig when no repoRoot provided", async () => {
+    const { resolveConfigPaths } = await import("./resolve.ts");
+
+    const paths = resolveConfigPaths();
+
+    expect(paths.projectConfig).toBeNull();
+  });
+
+  it("respects XDG_DATA_HOME", async () => {
+    const originalXdgData = process.env["XDG_DATA_HOME"];
+    process.env["XDG_DATA_HOME"] = "/custom/data";
+
+    try {
+      // Re-import to pick up env change
+      const { resolveConfigPaths } = await import("./resolve.ts");
+      const paths = resolveConfigPaths();
+
+      expect(paths.globalDir).toBe("/custom/data/jiratown");
+      expect(paths.database).toBe("/custom/data/jiratown/jiratown.db");
+    } finally {
+      if (originalXdgData) {
+        process.env["XDG_DATA_HOME"] = originalXdgData;
+      } else {
+        delete process.env["XDG_DATA_HOME"];
+      }
+    }
+  });
+
+  it("uses default paths when XDG vars not set", async () => {
+    const originalXdgData = process.env["XDG_DATA_HOME"];
+    const originalXdgConfig = process.env["XDG_CONFIG_HOME"];
+    delete process.env["XDG_DATA_HOME"];
+    delete process.env["XDG_CONFIG_HOME"];
+
+    try {
+      const { resolveConfigPaths } = await import("./resolve.ts");
+      const paths = resolveConfigPaths();
+
+      expect(paths.globalDir).toBe(join(homedir(), ".local", "share", "jiratown"));
+    } finally {
+      if (originalXdgData) process.env["XDG_DATA_HOME"] = originalXdgData;
+      if (originalXdgConfig) process.env["XDG_CONFIG_HOME"] = originalXdgConfig;
+    }
+  });
+});
+
+describe("loadConfig", () => {
   let tmpDir: string;
 
   beforeEach(() => {
@@ -22,10 +80,27 @@ describe("Config", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  // ── constructor ───────────────────────────────────────────────────────────
+  it("returns defaults when no config files exist", async () => {
+    const { loadConfig } = await import("./load.ts");
+    const { DEFAULT_CONFIG } = await import("./defaults.ts");
+
+    const paths = {
+      globalDir: tmpDir,
+      globalConfig: join(tmpDir, "global.toml"),
+      projectConfig: join(tmpDir, "project.toml"),
+      database: join(tmpDir, "jiratown.db"),
+      memoryDatabase: join(tmpDir, "memory.db"),
+    };
+
+    const config = loadConfig(paths);
+
+    expect(config.agent.harness).toBe(DEFAULT_CONFIG.agent.harness);
+    expect(config.behavior.autoResume).toBe(DEFAULT_CONFIG.behavior.autoResume);
+    expect(config.ui.theme).toBe(DEFAULT_CONFIG.ui.theme);
+  });
 
   it("merges project config over defaults", async () => {
-    const { Config } = await import("./config.ts");
+    const { loadConfig } = await import("./load.ts");
 
     writeTempToml(
       tmpDir,
@@ -44,7 +119,16 @@ theme = "gruvbox"
 `,
     );
 
-    const config = new Config(tmpDir).get();
+    const paths = {
+      globalDir: tmpDir,
+      globalConfig: join(tmpDir, "nonexistent.toml"),
+      projectConfig: join(tmpDir, ".jiratown.toml"),
+      database: join(tmpDir, "jiratown.db"),
+      memoryDatabase: join(tmpDir, "memory.db"),
+    };
+
+    const config = loadConfig(paths);
+
     expect(config.agent.harness).toBe("claude-code");
     expect(config.agent.model).toBe("opus-4");
     expect(config.behavior.autoResume).toBe(false);
@@ -52,8 +136,25 @@ theme = "gruvbox"
     expect(config.ui.theme).toBe("gruvbox");
   });
 
+  it("handles null projectConfig", async () => {
+    const { loadConfig } = await import("./load.ts");
+    const { DEFAULT_CONFIG } = await import("./defaults.ts");
+
+    const paths = {
+      globalDir: tmpDir,
+      globalConfig: join(tmpDir, "nonexistent.toml"),
+      projectConfig: null,
+      database: join(tmpDir, "jiratown.db"),
+      memoryDatabase: join(tmpDir, "memory.db"),
+    };
+
+    const config = loadConfig(paths);
+
+    expect(config.agent.harness).toBe(DEFAULT_CONFIG.agent.harness);
+  });
+
   it("parses plugin sections into camelCase", async () => {
-    const { Config } = await import("./config.ts");
+    const { loadConfig } = await import("./load.ts");
 
     writeTempToml(
       tmpDir,
@@ -68,142 +169,67 @@ cloud_id = "company.atlassian.net"
 `,
     );
 
-    const config = new Config(tmpDir).get();
+    const paths = {
+      globalDir: tmpDir,
+      globalConfig: join(tmpDir, "nonexistent.toml"),
+      projectConfig: join(tmpDir, ".jiratown.toml"),
+      database: join(tmpDir, "jiratown.db"),
+      memoryDatabase: join(tmpDir, "memory.db"),
+    };
+
+    const config = loadConfig(paths);
+
     expect(config.plugins.enabled).toEqual(["jira", "github"]);
     expect(config.plugins.directories).toEqual(["/custom/plugins"]);
     expect((config.plugins["jira"] as Record<string, unknown>)?.["cloudId"]).toBe(
       "company.atlassian.net",
     );
   });
+});
 
-  // ── saveProject / reload ──────────────────────────────────────────────────
+describe("parseTomlFile", () => {
+  let tmpDir: string;
 
-  it("saves project config and re-loads it", async () => {
-    const { Config } = await import("./config.ts");
-
-    const cfg = new Config();
-    cfg.saveProject(tmpDir, { agent: { harness: "claude-code", model: "sonnet-4" } });
-
-    const reloaded = new Config(tmpDir).get();
-    expect(reloaded.agent.harness).toBe("claude-code");
-    expect(reloaded.agent.model).toBe("sonnet-4");
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-parse-test-"));
   });
 
-  // ── paths ─────────────────────────────────────────────────────────────────
-
-  it("resolves correct config paths", async () => {
-    const { Config } = await import("./config.ts");
-
-    const paths = new Config().paths("/some/repo");
-    expect(paths.globalConfig).toMatch(/\.jiratown.*config\.toml$/);
-    expect(paths.database).toMatch(/\.jiratown.*jiratown\.db$/);
-    expect(paths.projectConfig).toBe("/some/repo/.jiratown.toml");
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("returns null projectConfig when no repoRoot provided", async () => {
-    const { Config } = await import("./config.ts");
-    expect(new Config().paths().projectConfig).toBeNull();
-  });
-
-  // ── registerPluginConfig ──────────────────────────────────────────────────
-
-  it("does not throw for valid plugin config", async () => {
-    const { Config } = await import("./config.ts");
-
-    writeTempToml(
-      tmpDir,
-      ".jiratown.toml",
-      `
-[plugins.jira]
-cloud_id = "company.atlassian.net"
-`,
-    );
-
-    const cfg = new Config(tmpDir);
-    expect(() =>
-      cfg.registerPluginConfig({
-        pluginName: "jira",
-        schema: z.object({ cloudId: z.string().min(1) }),
-      }),
-    ).not.toThrow();
-  });
-
-  it("throws for invalid plugin config", async () => {
-    const { Config } = await import("./config.ts");
-
-    writeTempToml(
-      tmpDir,
-      ".jiratown.toml",
-      `
-[plugins.jira]
-cloud_id = ""
-`,
-    );
-
-    const cfg = new Config(tmpDir);
-    expect(() =>
-      cfg.registerPluginConfig({
-        pluginName: "jira",
-        schema: z.object({ cloudId: z.string().min(1) }),
-      }),
-    ).toThrow('Invalid config for plugin "jira"');
-  });
-
-  it("throws when plugin config is missing entirely", async () => {
-    const { Config } = await import("./config.ts");
-
-    const cfg = new Config(tmpDir);
-    expect(() =>
-      cfg.registerPluginConfig({
-        pluginName: "jira",
-        schema: z.object({ cloudId: z.string().min(1) }),
-      }),
-    ).toThrow('Invalid config for plugin "jira"');
-  });
-
-  // ── getPluginConfig ───────────────────────────────────────────────────────
-
-  it("getPluginConfig returns typed config section", async () => {
-    const { Config } = await import("./config.ts");
-
-    writeTempToml(
-      tmpDir,
-      ".jiratown.toml",
-      `
-[plugins.github]
-auto_poll_reviews = true
-`,
-    );
-
-    const cfg = new Config(tmpDir);
-    const github = cfg.getPluginConfig<{ autoPollReviews: boolean }>("github");
-    expect(github?.autoPollReviews).toBe(true);
-  });
-
-  // ── parse helpers ─────────────────────────────────────────────────────────
-
-  it("parseTomlFile returns empty object for non-existent file", async () => {
+  it("returns empty object for non-existent file", async () => {
     const { parseTomlFile } = await import("./parse.ts");
     expect(parseTomlFile(join(tmpDir, "nonexistent.toml"))).toEqual({});
   });
 
-  it("parseTomlFile returns empty object for null", async () => {
+  it("returns empty object for null", async () => {
     const { parseTomlFile } = await import("./parse.ts");
     expect(parseTomlFile(null)).toEqual({});
   });
 
-  it("configToToml serializes to valid TOML", async () => {
+  it("returns empty object on invalid TOML", async () => {
+    const { parseTomlFile } = await import("./parse.ts");
+    const invalidPath = join(tmpDir, "bad.toml");
+    writeFileSync(invalidPath, "this is not valid {{{ toml", "utf-8");
+    expect(parseTomlFile(invalidPath)).toEqual({});
+  });
+});
+
+describe("configToToml", () => {
+  it("serializes to valid TOML with snake_case keys", async () => {
     const { configToToml } = await import("./parse.ts");
 
     const toml = configToToml({ agent: { harness: "opencode" }, ui: { theme: "tokyonight" } });
+
     expect(toml).toContain("[agent]");
     expect(toml).toContain('harness = "opencode"');
     expect(toml).toContain("[ui]");
     expect(toml).toContain('theme = "tokyonight"');
   });
+});
 
-  // ── mergeConfigs priority ─────────────────────────────────────────────────
-
+describe("mergeConfigs", () => {
   it("project wins over global wins over base", async () => {
     const { mergeConfigs } = await import("./parse.ts");
     const { DEFAULT_CONFIG } = await import("./defaults.ts");
@@ -213,38 +239,94 @@ auto_poll_reviews = true
 
     // last arg wins: global first, project last → project wins
     const result = mergeConfigs(DEFAULT_CONFIG, global, project);
+
     expect(result.ui.theme).toBe("nord");
   });
 
-  // ── saveProject edge cases ────────────────────────────────────────────────
+  it("deep merges nested objects", async () => {
+    const { mergeConfigs } = await import("./parse.ts");
+    const { DEFAULT_CONFIG } = await import("./defaults.ts");
 
-  it("saveProject throws when no repoRoot", async () => {
-    const { Config } = await import("./config.ts");
-    const cfg = new Config();
-    expect(() =>
-      cfg.saveProject("", { agent: { harness: "opencode", model: "sonnet-4" } }),
-    ).toThrow();
+    const override = { agent: { harness: "opencode" as const, model: "opus-4" } };
+    const result = mergeConfigs(DEFAULT_CONFIG, override);
+
+    expect(result.agent.harness).toBe("opencode"); // default preserved
+    expect(result.agent.model).toBe("opus-4"); // override applied
+  });
+});
+
+describe("jiratownConfigSchema", () => {
+  it("validates a complete config", async () => {
+    const { jiratownConfigSchema } = await import("./schema.ts");
+
+    const result = jiratownConfigSchema.safeParse({
+      agent: { harness: "claude-code", model: "opus-4" },
+      behavior: { autoResume: true, pollInterval: 30000 },
+      prompt: { custom: "Be helpful" },
+      ui: { theme: "tokyonight" },
+      plugins: { enabled: ["jira"], directories: [] },
+    });
+
+    expect(result.success).toBe(true);
   });
 
-  // ── parseTomlFile error handling ────────────────────────────────────────────
+  it("rejects invalid harness", async () => {
+    const { jiratownConfigSchema } = await import("./schema.ts");
 
-  it("parseTomlFile returns empty object on invalid TOML", async () => {
-    const { parseTomlFile } = await import("./parse.ts");
-    const invalidPath = join(tmpDir, "bad.toml");
-    writeFileSync(invalidPath, "this is not valid {{{ toml", "utf-8");
-    expect(parseTomlFile(invalidPath)).toEqual({});
+    const result = jiratownConfigSchema.safeParse({
+      agent: { harness: "invalid-harness" },
+      behavior: { autoResume: true, pollInterval: 30000 },
+      prompt: {},
+      ui: { theme: "tokyonight" },
+      plugins: { enabled: [], directories: [] },
+    });
+
+    expect(result.success).toBe(false);
   });
 
-  it.fails("TODO: implement config file watching and auto-reload", async () => {
-    // This test documents planned behavior that is not yet implemented.
-    // Config should support watching the file and emitting events on changes.
-    const { Config } = await import("./config.ts");
+  it("allows passthrough for plugin-specific keys", async () => {
+    const { jiratownConfigSchema } = await import("./schema.ts");
 
-    const cfg = new Config(tmpDir);
-    // Expected: cfg.watch() should return an event emitter or callback-based
-    // mechanism that notifies when the config file changes
-    // @ts-expect-error - watch method doesn't exist yet
-    expect(typeof cfg.watch).toBe("function");
-    expect(true).toBe(false);
+    const result = jiratownConfigSchema.safeParse({
+      agent: { harness: "opencode" },
+      behavior: { autoResume: true, pollInterval: 30000 },
+      prompt: {},
+      ui: { theme: "tokyonight" },
+      plugins: {
+        enabled: ["jira"],
+        directories: [],
+        jira: { cloudId: "company.atlassian.net" },
+      },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data.plugins as Record<string, unknown>)["jira"]).toEqual({
+        cloudId: "company.atlassian.net",
+      });
+    }
+  });
+});
+
+describe("writeTomlFile", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-write-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("writes config to file and can be read back", async () => {
+    const { writeTomlFile, parseTomlFile } = await import("./parse.ts");
+
+    const filePath = join(tmpDir, "config.toml");
+    writeTomlFile(filePath, { agent: { harness: "claude-code", model: "sonnet-4" } });
+
+    const parsed = parseTomlFile(filePath);
+    expect(parsed.agent?.harness).toBe("claude-code");
+    expect(parsed.agent?.model).toBe("sonnet-4");
   });
 });

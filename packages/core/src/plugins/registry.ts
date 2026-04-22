@@ -1,12 +1,12 @@
-import { useJiratown } from "#context";
 import { existsSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { PluginSymbol, type Plugin } from "./types.ts";
+import { dirname, join } from "node:path";
+import { useJiratown } from "#context";
+import { type AnyPlugin, PluginSymbol } from "./types.ts";
 
 /**
  * Check if a value is a valid Jiratown plugin.
  */
-export function isPlugin(value: unknown): value is Plugin {
+export function isPlugin(value: unknown): value is AnyPlugin {
   return typeof value === "object" && value !== null && PluginSymbol in value;
 }
 
@@ -22,7 +22,7 @@ export function isPlugin(value: unknown): value is Plugin {
  * ```
  */
 export class PluginRegistry {
-  private plugins: Plugin[] = [];
+  private plugins: AnyPlugin[] = [];
   private initialized = false;
 
   private constructor() {}
@@ -48,7 +48,7 @@ export class PluginRegistry {
   }
 
   /** Register a plugin instance directly */
-  register(plugin: Plugin): void {
+  register(plugin: AnyPlugin): void {
     const name = plugin.manifest.name;
 
     if (this.has(name)) {
@@ -81,11 +81,10 @@ export class PluginRegistry {
   }
 
   private async loadAll(): Promise<void> {
-    const { config } = useJiratown();
-    const paths = config.paths();
+    const { config, paths } = useJiratown();
 
     // 1. Explicitly enabled plugins (from node_modules)
-    const enabled = config.get().plugins.enabled;
+    const enabled = config.plugins.enabled;
     for (const name of enabled) {
       if (!this.has(name)) {
         await this.load(name);
@@ -104,17 +103,41 @@ export class PluginRegistry {
 
   /**
    * Setup all registered plugins by calling their setup functions.
+   * If a plugin has a configSchema, validates and passes the config to setup().
    */
   async setup(): Promise<void> {
     if (this.initialized) return;
 
-    const { hooks } = useJiratown();
+    const { config, hooks } = useJiratown();
 
     for (const plugin of this.plugins) {
+      const name = plugin.manifest.name;
+
       try {
-        await plugin.setup?.();
+        // Validate plugin config if schema provided
+        let pluginConfig: unknown = undefined;
+
+        if (plugin.configSchema) {
+          const rawConfig = config.plugins[name];
+          const result = plugin.configSchema.safeParse(rawConfig);
+
+          if (!result.success) {
+            const errors = result.error.issues
+              .map((i) => `${i.path.join(".")}: ${i.message}`)
+              .join("\n");
+            throw new Error(`Invalid config for plugin "${name}":\n${errors}`);
+          }
+
+          pluginConfig = result.data;
+        }
+
+        // Call setup with validated config (or undefined if no schema)
+        await plugin.setup?.(pluginConfig as never);
       } catch (error) {
-        hooks.emit("plugin.error", { name: plugin.manifest.name, error: error as Error });
+        hooks.emit("plugin.error", {
+          name,
+          error: error as Error,
+        });
         throw error;
       }
     }
@@ -137,7 +160,7 @@ export class PluginRegistry {
   /**
    * Get a plugin by name.
    */
-  get(name: string): Plugin | undefined {
+  get(name: string): AnyPlugin | undefined {
     return this.plugins.find((p) => p.manifest.name === name);
   }
 
@@ -151,7 +174,7 @@ export class PluginRegistry {
   /**
    * List all registered plugins.
    */
-  list(): Plugin[] {
+  list(): AnyPlugin[] {
     return this.plugins;
   }
 }

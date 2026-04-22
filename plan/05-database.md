@@ -4,6 +4,8 @@ SQLite via `better-sqlite3` + Drizzle ORM. Renamed `tickets` → `issues` with `
 
 Location: `packages/core/src/db/`
 
+Database file: `~/.local/share/jiratown/jiratown.db` (see [Config](./01-config.md) for data directory)
+
 **Status: ✅ Completed**
 
 ## Implementation Notes

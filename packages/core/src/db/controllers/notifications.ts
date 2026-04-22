@@ -80,4 +80,12 @@ export class NotificationController {
       .where(inArray(notifications.id, ids))
       .run();
   }
+
+  /**
+   * Find a notification by its source-specific ID.
+   * Used for deduplication when creating notifications.
+   */
+  findBySourceId(sourceId: string): Notification | undefined {
+    return this.db.select().from(notifications).where(eq(notifications.sourceId, sourceId)).get();
+  }
 }

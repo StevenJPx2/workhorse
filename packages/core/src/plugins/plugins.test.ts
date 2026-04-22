@@ -1,16 +1,41 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { z } from "zod/v4";
 import { definePlugin } from "./define.ts";
 import { PluginRegistry, isPlugin } from "./registry.ts";
 import { setContext, unsetContext } from "#context";
-import { Config } from "#config";
+import { DEFAULT_CONFIG } from "#config";
+import type { ConfigPaths, JiratownConfig } from "#config";
 import { hooks } from "#lib/hooks";
 import type { Plugin } from "./types.ts";
+import type { MemoryService } from "#services/memory";
 
 // Sample plugin factory for tests
 function createSamplePlugin(name: string, version = "1.0.0"): Plugin {
   return definePlugin({
     manifest: { name, version },
   });
+}
+
+// Mock memory service for tests (MemoryService requires async init)
+const mockMemory = {} as MemoryService;
+
+// Mock paths for tests
+const mockPaths: ConfigPaths = {
+  globalDir: "/tmp/jiratown",
+  globalConfig: "/tmp/jiratown/config.toml",
+  projectConfig: "/tmp/project/.jiratown.toml",
+  database: "/tmp/jiratown/jiratown.db",
+  memoryDatabase: "/tmp/jiratown/memory.db",
+};
+
+// Helper to create a mock context with optional config overrides
+function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
+  return {
+    config: { ...DEFAULT_CONFIG, ...configOverrides },
+    paths: mockPaths,
+    hooks,
+    memory: mockMemory,
+  };
 }
 
 describe("isPlugin", () => {
@@ -136,7 +161,7 @@ describe("PluginRegistry", () => {
       const plugin = createSamplePlugin("test");
       const registry = await createTestRegistry();
 
-      setContext({ config: new Config(), hooks });
+      setContext(createMockContext());
       registry.register(plugin);
 
       expect(registry.has("test")).toBe(true);
@@ -148,7 +173,7 @@ describe("PluginRegistry", () => {
       const plugin2 = createSamplePlugin("test");
 
       const registry = await createTestRegistry();
-      setContext({ config: new Config(), hooks });
+      setContext(createMockContext());
 
       registry.register(plugin1);
       expect(() => registry.register(plugin2)).toThrow(/already registered/);
@@ -161,7 +186,7 @@ describe("PluginRegistry", () => {
       const plugin = createSamplePlugin("test");
       const registry = await createTestRegistry();
 
-      setContext({ config: new Config(), hooks });
+      setContext(createMockContext());
       registry.register(plugin);
 
       expect(listener).toHaveBeenCalledWith({ name: "test" });
@@ -174,7 +199,7 @@ describe("PluginRegistry", () => {
       const plugin2 = createSamplePlugin("second");
 
       const registry = await createTestRegistry();
-      setContext({ config: new Config(), hooks });
+      setContext(createMockContext());
 
       registry.register(plugin1);
       registry.register(plugin2);
@@ -219,7 +244,7 @@ describe("Plugin lifecycle", () => {
 
     const registry = await createTestRegistry();
 
-    setContext({ config: new Config(), hooks });
+    setContext(createMockContext());
     registry.register(plugin1);
     registry.register(plugin2);
 
@@ -248,7 +273,7 @@ describe("Plugin lifecycle", () => {
 
     const registry = await createTestRegistry();
 
-    setContext({ config: new Config(), hooks });
+    setContext(createMockContext());
     registry.register(plugin1);
     registry.register(plugin2);
 
@@ -272,7 +297,7 @@ describe("Plugin lifecycle", () => {
 
     const registry = await createTestRegistry();
 
-    setContext({ config: new Config(), hooks });
+    setContext(createMockContext());
     registry.register(plugin);
 
     await expect(registry.setup()).rejects.toThrow("Setup failed");
@@ -286,12 +311,128 @@ describe("Plugin lifecycle", () => {
 
     const registry = await createTestRegistry();
 
-    setContext({ config: new Config(), hooks });
+    setContext(createMockContext());
     registry.register(plugin);
 
     // Should not throw
     await registry.setup();
     await registry.teardown();
+  });
+});
+
+describe("Plugin configSchema", () => {
+  // Helper to create registry bypassing the private constructor
+  async function createTestRegistry(): Promise<PluginRegistry> {
+    // @ts-expect-error - accessing private constructor for tests
+    return new PluginRegistry();
+  }
+
+  beforeEach(() => {
+    hooks.all.clear();
+  });
+
+  afterEach(() => {
+    unsetContext();
+    hooks.all.clear();
+  });
+
+  it("validates and passes config to setup when configSchema is provided", async () => {
+    const setupFn = vi.fn();
+
+    const plugin = definePlugin({
+      manifest: { name: "jira", version: "1.0.0" },
+      configSchema: z.object({
+        cloudId: z.string(),
+        timeout: z.number().default(5000),
+      }),
+      setup: setupFn,
+    });
+
+    const registry = await createTestRegistry();
+
+    // Config has matching plugin section
+    setContext(
+      createMockContext({
+        plugins: {
+          enabled: [],
+          directories: [],
+          jira: { cloudId: "company.atlassian.net" },
+        },
+      }),
+    );
+
+    registry.register(plugin);
+    await registry.setup();
+
+    expect(setupFn).toHaveBeenCalledOnce();
+    expect(setupFn).toHaveBeenCalledWith({
+      cloudId: "company.atlassian.net",
+      timeout: 5000, // default applied
+    });
+  });
+
+  it("throws on invalid plugin config", async () => {
+    const plugin = definePlugin({
+      manifest: { name: "jira", version: "1.0.0" },
+      configSchema: z.object({
+        cloudId: z.string().min(1),
+      }),
+      setup: vi.fn(),
+    });
+
+    const registry = await createTestRegistry();
+
+    // Config has invalid plugin section (empty cloudId)
+    setContext(
+      createMockContext({
+        plugins: {
+          enabled: [],
+          directories: [],
+          jira: { cloudId: "" },
+        },
+      }),
+    );
+
+    registry.register(plugin);
+
+    await expect(registry.setup()).rejects.toThrow('Invalid config for plugin "jira"');
+  });
+
+  it("throws when plugin config is missing entirely", async () => {
+    const plugin = definePlugin({
+      manifest: { name: "jira", version: "1.0.0" },
+      configSchema: z.object({
+        cloudId: z.string(),
+      }),
+      setup: vi.fn(),
+    });
+
+    const registry = await createTestRegistry();
+
+    // Config has no jira section
+    setContext(createMockContext());
+
+    registry.register(plugin);
+
+    await expect(registry.setup()).rejects.toThrow('Invalid config for plugin "jira"');
+  });
+
+  it("calls setup without args when no configSchema", async () => {
+    const setupFn = vi.fn();
+
+    const plugin = definePlugin({
+      manifest: { name: "simple", version: "1.0.0" },
+      setup: setupFn,
+    });
+
+    const registry = await createTestRegistry();
+    setContext(createMockContext());
+
+    registry.register(plugin);
+    await registry.setup();
+
+    expect(setupFn).toHaveBeenCalledOnce();
+    expect(setupFn).toHaveBeenCalledWith(undefined);
   });
 });
 

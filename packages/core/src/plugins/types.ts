@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import type { ZodType } from "zod/v4";
 
 /**
  * Plugin manifest schema — validated with Zod.
@@ -23,10 +24,21 @@ export type PluginManifest = z.infer<typeof PluginManifestSchema>;
 
 /**
  * Options for defining a plugin.
+ *
+ * @typeParam TConfig - The type of the plugin's config section, inferred from configSchema.
  */
-export interface PluginOptions {
+export interface PluginOptions<TConfig = void> {
   manifest: PluginManifest;
-  setup?: () => void | Promise<void>;
+  /**
+   * Optional Zod schema to validate the plugin's config section.
+   * If provided, the validated config is passed to setup().
+   */
+  configSchema?: ZodType<TConfig>;
+  /**
+   * Setup function called when the plugin is initialized.
+   * Receives validated config if configSchema is provided.
+   */
+  setup?: (config: TConfig) => void | Promise<void>;
   teardown?: () => void | Promise<void>;
 }
 
@@ -38,6 +50,13 @@ export const PluginSymbol = Symbol.for("jiratown.plugin");
 /**
  * Plugin interface — a branded PluginOptions.
  */
-export interface Plugin extends PluginOptions {
+export interface Plugin<TConfig = void> extends PluginOptions<TConfig> {
   [PluginSymbol]: true;
 }
+
+/**
+ * Type alias for plugins with any config type.
+ * Used in contexts where the config type is not known (e.g., registry).
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Required for type-erased plugin storage
+export type AnyPlugin = Plugin<any>;

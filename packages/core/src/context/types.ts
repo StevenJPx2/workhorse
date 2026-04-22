@@ -1,4 +1,4 @@
-import type { Config } from "#config";
+import type { ConfigPaths, JiratownConfig } from "#config";
 import type { hooks } from "#lib/hooks";
 
 /**
@@ -8,6 +8,7 @@ import type { hooks } from "#lib/hooks";
  * Extended in later steps as services are added (db, memory, monitor, etc.).
  */
 export interface JiratownContext {
-  readonly config: Config;
+  readonly config: JiratownConfig;
+  readonly paths: ConfigPaths;
   readonly hooks: typeof hooks;
 }

@@ -1,9 +1,9 @@
-import { Config } from "#config";
+import { resolveConfigPaths, loadConfig } from "#config";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
 import { runWithContext, useJiratown } from "#context";
 import { PluginRegistry, definePlugin } from "#plugins";
-import type { JiratownConfig } from "#config";
+import type { ConfigPaths, JiratownConfig } from "#config";
 import type { Emitter } from "mitt";
 import type { HookEventMap } from "#lib/hooks";
 import type { Issue } from "#types";
@@ -51,6 +51,9 @@ export interface Jiratown {
   /** Loaded configuration (readonly) */
   readonly config: Readonly<JiratownConfig>;
 
+  /** Resolved paths for config and data files */
+  readonly paths: Readonly<ConfigPaths>;
+
   /** Database instance */
   readonly db: Database;
 
@@ -70,30 +73,35 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   // 1. Clear hooks for clean state (idempotent bootstrap)
   hooks.all.clear();
 
-  // 2. Create core services
-  const config = new Config(repoRoot);
-  const db = new Database(config.paths(repoRoot).database);
+  // 2. Resolve paths and load config
+  const paths = resolveConfigPaths(repoRoot);
+  const config = loadConfig(paths);
 
-  // 3. Build context object
+  // 3. Create database
+  const db = new Database(paths.database);
+
+  // 5. Build context object
   const context = {
     config,
+    paths,
     hooks,
   };
 
-  // 4. Run everything within context
+  // 6. Run everything within context
   return runWithContext(context, async () => {
-    // 5. Create plugin registry (loads plugins)
+    // 7. Create plugin registry (loads plugins)
     const plugins = await PluginRegistry.create();
 
-    // 6. Register builtin sample plugin
+    // 8. Register builtin sample plugin
     plugins.register(loggerPlugin);
 
-    // 7. Setup all plugins
+    // 9. Setup all plugins
     await plugins.setup();
 
-    // 8. Build Jiratown instance
+    // 10. Build Jiratown instance
     return {
-      config: Object.freeze(config.get()),
+      config: Object.freeze(config),
+      paths: Object.freeze(paths),
       db,
       hooks,
       plugins,

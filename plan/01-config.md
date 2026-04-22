@@ -6,10 +6,21 @@ Location: `packages/core/src/config/`
 
 ## Config Files
 
-1. **Global**: `~/.jiratown/config.toml`
-2. **Project**: `<repo>/.jiratown.toml`
+**Global** (first found wins):
+1. `~/.jiratown.toml`
+2. `~/.config/jiratown.toml`
+3. `~/.config/jiratown/config.toml`
+
+**Project**: `<repo>/.jiratown.toml`
 
 Project overrides global. Missing keys fall back to defaults.
+
+## Data Directory
+
+Application data (database, logs, cache) lives in:
+- `~/.local/share/jiratown/`
+
+Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/jiratown/`
 
 ## Shape
 
@@ -59,24 +70,19 @@ interface JiratownConfig {
 
 TOML `snake_case` ↔ TypeScript `camelCase` — loader converts.
 
-## Class
+## Functions
 
-`Config` consolidates loading, saving, and plugin schema registry.
+Pure functions for config resolution and loading:
 
 ```typescript
-class Config {
-  load(repoRoot?: string, globalDir?: string): this  // defaults ← global ← project
-  get(): JiratownConfig
-  paths(repoRoot?: string): ConfigPaths
-  saveGlobal(overrides: Partial<JiratownConfig>): void
-  saveProject(repoRoot: string, overrides: Partial<JiratownConfig>): void
-  registerPluginConfig(schema: PluginConfigSchema): void
-  getPluginConfig<T>(pluginName: string): T | undefined
-  validatePluginConfigs(): ValidationResult[]
-}
+// Resolve config file paths (uses XDG_DATA_HOME, finds first existing global config)
+function resolveConfigPaths(repoRoot?: string): ConfigPaths
+
+// Load and merge configs: defaults ← global ← project
+function loadConfig(paths: ConfigPaths): JiratownConfig
 ```
 
-Pure helpers remain exported for direct use by plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`, `getConfigPaths`.
+Additional helpers for plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`, `writeTomlFile`.
 
 ## Credential Storage
 

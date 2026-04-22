@@ -5,6 +5,7 @@ import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } f
  *
  * @example
  * ```typescript
+ * // Plugin without config
  * export default definePlugin({
  *   manifest: {
  *     name: "my-plugin",
@@ -17,9 +18,24 @@ import { PluginManifestSchema, PluginSymbol, type Plugin, type PluginOptions } f
  *     });
  *   },
  * });
+ *
+ * // Plugin with typed config
+ * export default definePlugin({
+ *   manifest: {
+ *     name: "jira",
+ *     version: "1.0.0",
+ *   },
+ *   configSchema: z.object({
+ *     cloudId: z.string().min(1),
+ *   }),
+ *   setup(config) {
+ *     // config is typed as { cloudId: string }
+ *     console.log("Connecting to:", config.cloudId);
+ *   },
+ * });
  * ```
  */
-export function definePlugin(options: PluginOptions): Plugin {
+export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): Plugin<TConfig> {
   // Validate manifest at creation time
   const manifest = PluginManifestSchema.parse(options.manifest);
 
@@ -27,5 +43,5 @@ export function definePlugin(options: PluginOptions): Plugin {
     ...options,
     manifest,
     [PluginSymbol]: true,
-  } as Plugin;
+  } as Plugin<TConfig>;
 }

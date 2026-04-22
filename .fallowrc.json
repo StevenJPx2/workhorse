@@ -3,6 +3,17 @@
   "entry": [
     "oxlint/eslint-plugin-jiratown/index.ts"
   ],
+  "ignoreDependencies": [
+    "@huggingface/transformers",
+    "sqlite-vec"
+  ],
+  "ignoreExports": [
+    { "file": "packages/core/src/services/memory/index.ts", "exports": ["*"] },
+    { "file": "packages/core/src/services/memory/l1/index.ts", "exports": ["*"] },
+    { "file": "packages/core/src/services/memory/notifications/index.ts", "exports": ["*"] },
+    { "file": "packages/core/src/services/memory/types.ts", "exports": ["*"] },
+    { "file": "packages/core/src/services/memory/l1/serializer.ts", "exports": ["*"] }
+  ],
   "ignorePatterns": [
     "**/node_modules/**",
     "**/dist/**",
@@ -14,6 +25,7 @@
   "rules": {
     "unused-files": "warn",
     "unused-exports": "warn",
+    "unused-types": "warn",
     "unused-dependencies": "error",
     "unused-class-members": "off",
     "circular-dependencies": "warn",
