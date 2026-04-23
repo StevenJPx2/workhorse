@@ -106,6 +106,63 @@ Status: done
     expect(memory.sessions[0]!.learnings).toEqual([]);
     expect(memory.sessions[0]!.filesChanged).toEqual([]);
   });
+
+  it("skips unrecognized lines in session content", () => {
+    // Lines that don't match any pattern should be skipped
+    const content = `# AM-123: Test
+
+## Patterns
+
+## Sessions
+
+### 2025-07-15T10:00:00Z — Session with weird lines
+Status: done
+This is a random line that doesn't start with -
+Another line without bullet
+- Valid summary item
+> A blockquote that should be skipped
+---
+`;
+    const memory = parseSessionMemory(content);
+    // Only the valid bullet point should be parsed
+    expect(memory.sessions[0]!.summary).toEqual(["Valid summary item"]);
+    expect(memory.sessions[0]!.learnings).toEqual([]);
+    expect(memory.sessions[0]!.filesChanged).toEqual([]);
+  });
+
+  it("defaults to pending status when Status line is missing", () => {
+    // Tests the ?? "pending" fallback in parseSessionStatus
+    const content = `# AM-123: Test
+
+## Patterns
+
+## Sessions
+
+### 2025-07-15T10:00:00Z — No status line
+- Did something
+---
+`;
+    const memory = parseSessionMemory(content);
+    expect(memory.sessions[0]!.status).toBe("pending");
+  });
+
+  it("handles invalid session header format", () => {
+    // Tests the null return from parseSessionHeader
+    const content = `# AM-123: Test
+
+## Patterns
+
+## Sessions
+
+### Invalid header without timestamp
+Status: done
+- Did something
+---
+`;
+    const memory = parseSessionMemory(content);
+    // Should skip sessions with invalid headers
+    expect(memory.sessions).toHaveLength(0);
+  });
 });
 
 describe("serializeSessionMemory", () => {

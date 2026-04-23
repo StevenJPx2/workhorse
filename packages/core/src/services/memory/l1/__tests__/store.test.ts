@@ -86,6 +86,57 @@ describe("L1Store", () => {
     expect(all.has("AM-456")).toBe(true);
   });
 
+  it("skips files (non-directories) in worktrees root", () => {
+    // Create a file directly in worktrees root (not a directory)
+    writeFileSync(join(WORKTREES_ROOT, "random-file.txt"), "not a worktree");
+
+    // Also create a valid worktree
+    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+
+    const store = new L1Store(WORKTREES_ROOT);
+
+    // Should only find the valid worktree, skipping the file
+    expect(store.all().size).toBe(1);
+    expect(store.get("AM-123")).toBeDefined();
+  });
+
+  it("skips directories without context.md", () => {
+    // Create a directory without context.md
+    const emptyWorktree = join(WORKTREES_ROOT, "empty-worktree");
+    mkdirSync(emptyWorktree, { recursive: true });
+
+    // Also create a valid worktree
+    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+
+    const store = new L1Store(WORKTREES_ROOT);
+
+    // Should only find the valid worktree
+    expect(store.all().size).toBe(1);
+    expect(store.get("AM-123")).toBeDefined();
+  });
+
+  it("skips context.md without valid issue ID in title", () => {
+    // Create context.md without issue ID in title
+    const invalidWorktree = join(WORKTREES_ROOT, "invalid-title");
+    mkdirSync(join(invalidWorktree, ".jiratown"), { recursive: true });
+    writeFileSync(
+      join(invalidWorktree, ".jiratown/context.md"),
+      "# No Issue ID Here\n\n## Patterns\n\n## Sessions\n",
+    );
+
+    // Also create a valid worktree
+    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+
+    const store = new L1Store(WORKTREES_ROOT);
+
+    // Should only find the valid worktree with proper issue ID
+    expect(store.all().size).toBe(1);
+    expect(store.get("AM-123")).toBeDefined();
+  });
+
   describe("multiple worktrees via register", () => {
     const worktreeA = join(WORKTREES_ROOT, "AM-100");
     const worktreeB = join(WORKTREES_ROOT, "AM-200");

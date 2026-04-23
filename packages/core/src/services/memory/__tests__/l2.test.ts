@@ -86,7 +86,7 @@ describe("L2: Semantic Search (retriv)", () => {
     beforeEach(async () => {
       store = await L2Store.create(DB_PATH);
 
-      // Index test documents
+      // Index test documents with various metadata types for filter testing
       const docs: MemoryDocument[] = [
         {
           id: "auth-1",
