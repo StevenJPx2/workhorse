@@ -7,6 +7,7 @@ import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
 import { definePlugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
+import { MonitorService } from "#services/monitor";
 import type { Issue } from "#db";
 
 const loggerPlugin = definePlugin({
@@ -51,6 +52,9 @@ export interface Jiratown {
   /** Memory service for session memory (L1) and semantic search (L2) */
   readonly memory: MemoryService;
 
+  /** Monitor service for polling framework */
+  readonly monitors: MonitorService;
+
   /** Event hooks for pub/sub */
   readonly hooks: Emitter<HookEventMap>;
 
@@ -89,7 +93,10 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
     memoryDbPath: paths.memoryDatabase,
   });
 
-  return runWithContext({ config, paths, hooks, memory }, async () => {
+  // Initialize monitor service (polling framework for plugins)
+  const monitors = new MonitorService(hooks);
+
+  return runWithContext({ config, paths, hooks, memory, monitors }, async () => {
     const plugins = await PluginRegistry.create();
     plugins.register(loggerPlugin);
     await plugins.setup();
@@ -99,9 +106,11 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
       paths: Object.freeze(paths),
       db,
       memory,
+      monitors,
       hooks,
       plugins,
       async shutdown() {
+        monitors.shutdown();
         await plugins.teardown();
         await memory.shutdown();
         db.close();

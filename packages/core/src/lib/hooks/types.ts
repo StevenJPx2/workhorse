@@ -35,7 +35,8 @@ type KnownEvents = {
 
   // Monitors
   "monitor.registered": { name: string; type: "remote" | "local" };
-  "monitor.tick": { name: string; result: unknown };
+  "monitor.tick": { name: string; issueId: string; result: unknown };
+  "monitor.error": { name: string; issueId: string; error: Error; errorCount: number };
 
   // Plugins
   "plugin.loaded": { name: string };
