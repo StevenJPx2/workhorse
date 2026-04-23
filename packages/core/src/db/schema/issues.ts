@@ -20,7 +20,9 @@ export type IssueStatus =
 export const issues = sqliteTable(
   "issues",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     externalId: text("external_id").notNull(),
     source: text("source").notNull(),
     title: text("title").notNull(),
@@ -46,6 +48,9 @@ export const issues = sqliteTable(
 
 /** Issue type derived from schema */
 export type Issue = typeof issues.$inferSelect;
+
+/** Insert type - nullable fields are optional, auto-filled with null */
+export type InsertIssue = typeof issues.$inferInsert;
 
 /** Zod schema for validating issue status */
 export const IssueStatusSchema = z.enum([

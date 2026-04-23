@@ -1,7 +1,7 @@
 import { eq, asc } from "drizzle-orm";
 import { issueEvents } from "../schema";
 import type { DrizzleDb } from "../types.ts";
-import type { IssueEvent } from "#db";
+import type { InsertIssueEvent, IssueEvent } from "#db";
 
 /**
  * Controller for IssueEvent operations
@@ -10,24 +10,10 @@ export class EventController {
   constructor(private db: DrizzleDb) {}
 
   /**
-   * Insert a new event
+   * Insert a new event. Fields with defaults (id, createdAt) are optional.
    */
-  insert(input: Omit<IssueEvent, "id" | "createdAt">): IssueEvent {
-    const id = crypto.randomUUID();
-
-    this.db
-      .insert(issueEvents)
-      .values({ ...input, id, createdAt: new Date() })
-      .run();
-
-    return this.getById(id)!;
-  }
-
-  /**
-   * Get an event by ID (internal use)
-   */
-  private getById(id: string): IssueEvent | undefined {
-    return this.db.select().from(issueEvents).where(eq(issueEvents.id, id)).get();
+  insert(input: InsertIssueEvent): IssueEvent {
+    return this.db.insert(issueEvents).values(input).returning().get()!;
   }
 
   /**

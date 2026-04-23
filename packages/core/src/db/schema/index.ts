@@ -15,9 +15,14 @@ export { issueEvents } from "./events.ts";
 export { notifications } from "./notifications.ts";
 
 // Domain types (derived from schema)
-export type { Issue, IssueStatus } from "./issues.ts";
-export type { IssueEvent } from "./events.ts";
-export type { Notification, NotificationPriority, NotificationStatus } from "./notifications.ts";
+export type { InsertIssue, Issue, IssueStatus } from "./issues.ts";
+export type { InsertIssueEvent, IssueEvent } from "./events.ts";
+export type {
+  InsertNotification,
+  Notification,
+  NotificationPriority,
+  NotificationStatus,
+} from "./notifications.ts";
 
 // Zod schemas for runtime validation
 export { IssueStatusSchema } from "./issues.ts";

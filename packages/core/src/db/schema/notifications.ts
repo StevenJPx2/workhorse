@@ -14,7 +14,9 @@ export type NotificationStatus = "unread" | "read" | "acknowledged";
  * Notifications table - tracks notifications for issues
  */
 export const notifications = sqliteTable("notifications", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   issueId: text("issue_id")
     .notNull()
     .references(() => issues.id),
@@ -34,6 +36,9 @@ export const notifications = sqliteTable("notifications", {
 
 /** Notification type derived from schema */
 export type Notification = typeof notifications.$inferSelect;
+
+/** Insert type - fields with defaults are optional */
+export type InsertNotification = typeof notifications.$inferInsert;
 
 /** Zod schema for validating notification priority */
 export const NotificationPrioritySchema = z.enum(["blocking", "high", "normal", "low"]);

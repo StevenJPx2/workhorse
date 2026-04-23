@@ -13,9 +13,12 @@ export {
 
 // Domain types (derived from schema)
 export type {
+  InsertIssue,
+  InsertIssueEvent,
+  InsertNotification,
   Issue,
-  IssueStatus,
   IssueEvent,
+  IssueStatus,
   Notification,
   NotificationPriority,
   NotificationStatus,

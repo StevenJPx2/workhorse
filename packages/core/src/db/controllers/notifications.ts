@@ -1,7 +1,7 @@
 import { eq, and, inArray } from "drizzle-orm";
 import { notifications } from "../schema";
 import type { DrizzleDb } from "../types.ts";
-import type { Notification } from "#db";
+import type { InsertNotification, Notification } from "#db";
 
 /**
  * Controller for Notification operations
@@ -10,26 +10,10 @@ export class NotificationController {
   constructor(private db: DrizzleDb) {}
 
   /**
-   * Create a new notification
+   * Create a new notification. Fields with defaults (id, status, timestamps) are optional.
    */
-  create(
-    input: Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status">,
-  ): Notification {
-    const id = crypto.randomUUID();
-
-    this.db
-      .insert(notifications)
-      .values({ ...input, id, status: "unread", createdAt: new Date() })
-      .run();
-
-    return this.getById(id)!;
-  }
-
-  /**
-   * Get a notification by ID (internal use)
-   */
-  private getById(id: string): Notification | undefined {
-    return this.db.select().from(notifications).where(eq(notifications.id, id)).get();
+  create(input: InsertNotification): Notification {
+    return this.db.insert(notifications).values(input).returning().get()!;
   }
 
   /**

@@ -7,7 +7,9 @@ import { issues } from "./issues.ts";
  * Issue events table - tracks events/activity for issues
  */
 export const issueEvents = sqliteTable("issue_events", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   issueId: text("issue_id")
     .notNull()
     .references(() => issues.id),
@@ -21,3 +23,6 @@ export const issueEvents = sqliteTable("issue_events", {
 
 /** IssueEvent type derived from schema */
 export type IssueEvent = typeof issueEvents.$inferSelect;
+
+/** Insert type - fields with defaults are optional */
+export type InsertIssueEvent = typeof issueEvents.$inferInsert;

@@ -1,7 +1,7 @@
 import { eq, and, inArray } from "drizzle-orm";
 import { issues } from "../schema";
 import type { DrizzleDb } from "../types.ts";
-import type { Issue, IssueStatus } from "#db";
+import type { InsertIssue, Issue, IssueStatus } from "#db";
 
 /**
  * Controller for Issue CRUD operations
@@ -10,18 +10,10 @@ export class IssueController {
   constructor(private db: DrizzleDb) {}
 
   /**
-   * Insert a new issue
+   * Insert a new issue. Fields with defaults (id, status, timestamps) are optional.
    */
-  insert(input: Omit<Issue, "id" | "createdAt" | "updatedAt">): Issue {
-    const id = crypto.randomUUID();
-    const now = new Date();
-
-    this.db
-      .insert(issues)
-      .values({ ...input, id, createdAt: now, updatedAt: now })
-      .run();
-
-    return this.getById(id)!;
+  insert(input: InsertIssue): Issue {
+    return this.db.insert(issues).values(input).returning().get()!;
   }
 
   /**
