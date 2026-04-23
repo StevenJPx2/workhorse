@@ -34,7 +34,7 @@ export interface AgentHealthOptions {
  */
 export function createAgentHealthMonitor(options: AgentHealthOptions): Monitor {
   return new Monitor({
-    name: "agent-health",
+    id: "agent-health",
     type: "local",
     interval: options.interval,
     poll: async (_ctx: MonitorContext) => {

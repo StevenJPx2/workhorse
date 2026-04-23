@@ -29,9 +29,9 @@ describe("createAgentHealthMonitor", () => {
     expect(typeof monitor.poll).toBe("function");
   });
 
-  it("creates monitor with name 'agent-health'", () => {
+  it("creates monitor with id 'agent-health'", () => {
     const monitor = createAgentHealthMonitor({ interval: 5000 });
-    expect(monitor.name).toBe("agent-health");
+    expect(monitor.id).toBe("agent-health");
   });
 
   it("creates monitor with type 'local'", () => {
@@ -52,12 +52,12 @@ describe("createAgentHealthMonitor", () => {
 
   it("accepts port option for Opencode", () => {
     const monitor = createAgentHealthMonitor({ interval: 5000, port: 3000 });
-    expect(monitor.name).toBe("agent-health");
+    expect(monitor.id).toBe("agent-health");
   });
 
   it("accepts pid option for process checking", () => {
     const monitor = createAgentHealthMonitor({ interval: 5000, pid: 12345 });
-    expect(monitor.name).toBe("agent-health");
+    expect(monitor.id).toBe("agent-health");
   });
 
   it.fails("TODO: detect crashed agent and emit agent.crashed", () => {

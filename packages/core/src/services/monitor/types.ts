@@ -31,8 +31,8 @@ export interface MonitorContext {
  * Status of a monitor, exposed via getRunningMonitors().
  */
 export interface MonitorStatus {
-  /** Monitor name */
-  name: string;
+  /** Monitor identifier */
+  id: string;
   /** Monitor type */
   type: "remote" | "local";
   /** Issue ID being monitored */
@@ -48,11 +48,11 @@ export interface MonitorStatus {
 }
 
 /**
- * Options for creating a Monitor instance.
+ * Options for registering a monitor with MonitorService.
  */
 export interface MonitorOptions {
-  /** Unique name identifying this monitor type */
-  name: string;
+  /** Unique identifier for this monitor */
+  id: string;
   /** Whether this monitors remote APIs or local resources */
   type: "remote" | "local";
   /** Polling interval in milliseconds */

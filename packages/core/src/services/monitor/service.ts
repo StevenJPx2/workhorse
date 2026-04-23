@@ -3,13 +3,21 @@ import type { JiratownConfig } from "#config";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { Monitor } from "./monitor.ts";
-import type { MonitorStatus } from "./types.ts";
+import type { MonitorOptions, MonitorStatus } from "./types.ts";
 
 /**
  * Polling framework for Jiratown. Core provides infrastructure, plugins bring the "what" to monitor.
- * Callers construct Monitor instances and start them per-issue via startMonitor(). See README.md for examples.
+ *
+ * Two-phase API:
+ * 1. registerMonitor(options) - Plugin registers a monitor definition (once at startup)
+ * 2. startMonitor(id, issueId) - Start a registered monitor for a specific issue (e.g., from a hook)
+ *
+ * See README.md for examples.
  */
 export class MonitorService {
+  /** Registered monitor definitions (templates) */
+  private registered = new Map<string, MonitorOptions>();
+  /** Running monitor instances, keyed by issueId:monitorId */
   private running = new Map<string, Monitor>();
 
   constructor(
@@ -19,18 +27,38 @@ export class MonitorService {
   ) {}
 
   /**
-   * Start a monitor for an issue.
-   * If a monitor with the same name is already running for this issue, this is a no-op.
+   * Register a monitor definition. Call once at plugin initialization.
+   * Does not start polling - use startMonitor() to begin monitoring an issue.
    *
-   * @param issueId - Issue to monitor
-   * @param monitor - Monitor instance to start
+   * @param options - Monitor configuration including unique id, type, interval, and poll function
+   * @throws If a monitor with the same id is already registered
    */
-  startMonitor(issueId: string, monitor: Monitor): void {
-    const key = this.makeKey(issueId, monitor.name);
+  registerMonitor(options: MonitorOptions): void {
+    if (this.registered.has(options.id)) {
+      throw new Error(`Monitor "${options.id}" is already registered`);
+    }
+    this.registered.set(options.id, options);
+    this.hooks.emit("monitor.registered", { name: options.id, type: options.type });
+  }
+
+  /**
+   * Start a registered monitor for an issue.
+   * If already running for this issue, this is a no-op.
+   *
+   * @param id - Monitor id (from registerMonitor)
+   * @param issueId - Issue to monitor
+   * @throws If monitor id is not registered
+   */
+  startMonitor(id: string, issueId: string): void {
+    const options = this.registered.get(id);
+    if (!options) {
+      throw new Error(`Monitor "${id}" is not registered. Call registerMonitor() first.`);
+    }
+
+    const key = this.makeKey(issueId, id);
     if (this.running.has(key)) return;
 
-    this.hooks.emit("monitor.registered", { name: monitor.name, type: monitor.type });
-
+    const monitor = new Monitor(options);
     monitor.start({
       issueId,
       hooks: this.hooks,
@@ -44,10 +72,10 @@ export class MonitorService {
    * Stop a specific monitor for an issue.
    *
    * @param issueId - Issue ID
-   * @param name - Monitor name
+   * @param id - Monitor id
    */
-  stopMonitor(issueId: string, name: string): void {
-    const key = this.makeKey(issueId, name);
+  stopMonitor(issueId: string, id: string): void {
+    const key = this.makeKey(issueId, id);
     const monitor = this.running.get(key);
     if (monitor) {
       monitor.stop();
@@ -103,7 +131,7 @@ export class MonitorService {
     this.running.clear();
   }
 
-  private makeKey(issueId: string, name: string): string {
-    return `${issueId}:${name}`;
+  private makeKey(issueId: string, id: string): string {
+    return `${issueId}:${id}`;
   }
 }

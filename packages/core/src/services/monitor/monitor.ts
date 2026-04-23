@@ -8,7 +8,7 @@ const ERROR_THRESHOLD = 5;
  * and status. Construct with options and start per-issue via start(ctx).
  */
 export class Monitor {
-  readonly name: string;
+  readonly id: string;
   readonly type: "remote" | "local";
   readonly interval: number;
   readonly poll: (ctx: MonitorContext) => Promise<MonitorResult>;
@@ -17,14 +17,14 @@ export class Monitor {
   private _timeoutId: ReturnType<typeof setTimeout> | null = null;
   private _ctx: MonitorContext | null = null;
 
-  constructor({ name, type, interval, poll }: MonitorOptions) {
-    this.name = name;
+  constructor({ id, type, interval, poll }: MonitorOptions) {
+    this.id = id;
     this.type = type;
     this.interval = interval;
     this.poll = poll;
 
     this.status = {
-      name,
+      id,
       type,
       issueId: "",
       state: "stopped",
@@ -74,7 +74,7 @@ export class Monitor {
 
         if (result.hasChanges) {
           ctx.hooks.emit("monitor.tick", {
-            name: this.name,
+            id: this.id,
             issueId: ctx.issueId,
             result: result.data,
           });
@@ -84,7 +84,7 @@ export class Monitor {
         this.status.lastPoll = new Date();
 
         ctx.hooks.emit("monitor.error", {
-          name: this.name,
+          id: this.id,
           issueId: ctx.issueId,
           error: error as Error,
           errorCount: this.status.errorCount,

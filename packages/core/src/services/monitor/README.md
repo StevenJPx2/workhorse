@@ -4,32 +4,38 @@ Polling framework for Jiratown. Core provides the infrastructure, plugins bring 
 
 ## Overview
 
-MonitorService manages periodic polling for external changes (Jira comments, GitHub reviews, etc.) and local checks (agent health). Callers construct `Monitor` instances and start them per-issue via `startMonitor()`.
+MonitorService manages periodic polling for external changes (Jira comments, GitHub reviews, etc.) and local checks (agent health).
 
-Each `Monitor` owns its own poll loop, scheduling, error counting, and status. `MonitorService` is a thin map that tracks running monitors and stops them on request.
+**Two-phase API:**
+1. `registerMonitor(options)` — Plugin registers a monitor definition once at startup
+2. `startMonitor(id, issueId)` — Start the registered monitor for a specific issue (e.g., from a hook)
+
+Each `Monitor` owns its own poll loop, scheduling, error counting, and status. `MonitorService` tracks registered definitions and running instances.
 
 ## Usage
 
-### Starting a Monitor (in a plugin or Harness)
-
-The `MonitorService` automatically constructs the `MonitorContext` for each monitor, so callers only need to provide the issue ID and monitor instance:
+### Registering a Monitor (in a plugin's setup)
 
 ```typescript
-// In a plugin's setup()
+// Register once at plugin initialization
+ctx.monitors.registerMonitor({
+  id: "jira-comments",
+  type: "remote",
+  interval: 30_000,
+  async poll(ctx) {
+    // ctx contains: issueId, hooks, memory, config
+    const comments = await fetchNewComments(ctx.issueId);
+    return { hasChanges: comments.length > 0, data: comments };
+  },
+});
+```
+
+### Starting a Monitor (from a hook)
+
+```typescript
+// Start for a specific issue when an agent starts
 ctx.hooks.on("agent.started", ({ instance }) => {
-  ctx.monitors.startMonitor(
-    instance.issueId,
-    new Monitor({
-      name: "jira-comments",
-      type: "remote",
-      interval: 30_000,
-      async poll(ctx) {
-        // ctx contains: issueId, hooks, memory, config
-        const comments = await fetchNewComments(ctx.issueId);
-        return { hasChanges: comments.length > 0, data: comments };
-      },
-    }),
-  );
+  ctx.monitors.startMonitor("jira-comments", instance.issueId);
 });
 ```
 
@@ -39,21 +45,21 @@ ctx.hooks.on("agent.started", ({ instance }) => {
 // Stop all monitors for an issue (e.g. when agent stops)
 monitorService.stopMonitors("AM-123");
 
-// Stop a specific monitor by name
+// Stop a specific monitor by id
 monitorService.stopMonitor("AM-123", "jira-comments");
 ```
 
 ### Responding to Monitor Events
 
 ```typescript
-hooks.on("monitor.tick", ({ name, issueId, result }) => {
-  if (name === "jira-comments") {
+hooks.on("monitor.tick", ({ id, issueId, result }) => {
+  if (id === "jira-comments") {
     harness.sendMessage(issueId, formatComments(result));
   }
 });
 
-hooks.on("monitor.error", ({ name, issueId, error, errorCount }) => {
-  console.error(`Monitor ${name} failed for ${issueId}: ${error.message}`);
+hooks.on("monitor.error", ({ id, issueId, error, errorCount }) => {
+  console.error(`Monitor ${id} failed for ${issueId}: ${error.message}`);
 });
 ```
 
@@ -61,9 +67,9 @@ hooks.on("monitor.error", ({ name, issueId, error, errorCount }) => {
 
 | Event | Payload | When |
 |-------|---------|------|
-| `monitor.registered` | `{ name, type }` | `startMonitor()` is called |
-| `monitor.tick` | `{ name, issueId, result }` | Poll returns `hasChanges: true` |
-| `monitor.error` | `{ name, issueId, error, errorCount }` | Poll throws an error |
+| `monitor.registered` | `{ name, type }` | `registerMonitor()` is called |
+| `monitor.tick` | `{ id, issueId, result }` | Poll returns `hasChanges: true` |
+| `monitor.error` | `{ id, issueId, error, errorCount }` | Poll throws an error |
 
 ## Error Handling
 
@@ -78,21 +84,23 @@ Stub implementation for checking if the agent process is alive. Started by Harne
 ```typescript
 import { createAgentHealthMonitor } from "#services/monitor";
 
-ctx.monitors.startMonitor(
-  issueId,
-  createAgentHealthMonitor({
-    interval: config.behavior.pollInterval,
-    port: 3000,
-    pid: 12345,
-  }),
-);
+// Register once
+ctx.monitors.registerMonitor(createAgentHealthMonitor({
+  interval: config.behavior.pollInterval,
+  port: 3000,
+  pid: 12345,
+}));
+
+// Start for an issue
+ctx.monitors.startMonitor("agent-health", issueId);
 ```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `types.ts` | `Monitor` class + domain types (`MonitorOptions`, `MonitorResult`, etc.) |
-| `service.ts` | `MonitorService` — thin map of running monitors |
+| `types.ts` | Domain types (`MonitorOptions`, `MonitorResult`, `MonitorContext`, etc.) |
+| `monitor.ts` | `Monitor` class — self-managing poll loop |
+| `service.ts` | `MonitorService` — registry + running instance map |
 | `health.ts` | Agent health monitor factory (stub) |
 | `index.ts` | Barrel exports |
