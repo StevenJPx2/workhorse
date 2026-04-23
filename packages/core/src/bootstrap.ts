@@ -94,7 +94,7 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   });
 
   // Initialize monitor service (polling framework for plugins)
-  const monitors = new MonitorService(hooks);
+  const monitors = new MonitorService(hooks, memory, config);
 
   return runWithContext({ config, paths, hooks, memory, monitors }, async () => {
     const plugins = await PluginRegistry.create();

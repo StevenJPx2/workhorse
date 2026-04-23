@@ -12,16 +12,19 @@ Each `Monitor` owns its own poll loop, scheduling, error counting, and status. `
 
 ### Starting a Monitor (in a plugin or Harness)
 
+The `MonitorService` automatically constructs the `MonitorContext` for each monitor, so callers only need to provide the issue ID and monitor instance:
+
 ```typescript
-hooks.on("agent.started", ({ instance }) => {
-  monitorService.startMonitor(
+// In a plugin's setup()
+ctx.hooks.on("agent.started", ({ instance }) => {
+  ctx.monitors.startMonitor(
     instance.issueId,
-    ctx,
     new Monitor({
       name: "jira-comments",
       type: "remote",
       interval: 30_000,
       async poll(ctx) {
+        // ctx contains: issueId, hooks, memory, config
         const comments = await fetchNewComments(ctx.issueId);
         return { hasChanges: comments.length > 0, data: comments };
       },
@@ -75,9 +78,8 @@ Stub implementation for checking if the agent process is alive. Started by Harne
 ```typescript
 import { createAgentHealthMonitor } from "#services/monitor";
 
-monitorService.startMonitor(
+ctx.monitors.startMonitor(
   issueId,
-  ctx,
   createAgentHealthMonitor({
     interval: config.behavior.pollInterval,
     port: 3000,

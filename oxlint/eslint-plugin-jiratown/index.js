@@ -255,9 +255,182 @@ var rule5 = {
 };
 var no_single_reference_function_default = rule5;
 
+// rules/no-single-use-variable.ts
+var rule6 = {
+  meta: {
+    docs: {
+      description: "Disallow variables that are declared and used exactly once in the same scope. Inline them instead."
+    }
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    if (/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(filename)) {
+      return {};
+    }
+    const declarations = new Map;
+    const references = new Map;
+    const reassigned = new Set;
+    const exported = new Set;
+    let currentScopeId = 0;
+    const scopeStack = [0];
+    function enterScope() {
+      currentScopeId++;
+      scopeStack.push(currentScopeId);
+    }
+    function exitScope() {
+      scopeStack.pop();
+    }
+    function getCurrentScope() {
+      return scopeStack[scopeStack.length - 1];
+    }
+    function makeKey(scopeId, name) {
+      return `${scopeId}:${name}`;
+    }
+    function isSimpleIdentifier(node) {
+      return node?.type === "Identifier";
+    }
+    function isInLoop(node) {
+      let current = node;
+      while (current.parent) {
+        const parentType = current.parent.type;
+        if (parentType === "ForStatement" || parentType === "ForInStatement" || parentType === "ForOfStatement" || parentType === "WhileStatement" || parentType === "DoWhileStatement") {
+          return true;
+        }
+        current = current.parent;
+      }
+      return false;
+    }
+    function isExported(node) {
+      return node.parent?.type === "ExportNamedDeclaration" || node.parent?.type === "ExportDefaultDeclaration";
+    }
+    function isDeclarationSite(node) {
+      const parentType = node.parent?.type;
+      return parentType === "VariableDeclarator" && node.parent?.id === node;
+    }
+    function isAssignmentTarget(node) {
+      const parent = node.parent;
+      if (!parent)
+        return false;
+      if (parent.type === "AssignmentExpression" && parent.left === node) {
+        return true;
+      }
+      if (parent.type === "UpdateExpression") {
+        return true;
+      }
+      return false;
+    }
+    function findDeclarationKey(name) {
+      for (let i = scopeStack.length - 1;i >= 0; i--) {
+        const key = makeKey(scopeStack[i], name);
+        if (declarations.has(key)) {
+          return key;
+        }
+      }
+      return null;
+    }
+    return {
+      FunctionDeclaration() {
+        enterScope();
+      },
+      "FunctionDeclaration:exit"() {
+        exitScope();
+      },
+      FunctionExpression() {
+        enterScope();
+      },
+      "FunctionExpression:exit"() {
+        exitScope();
+      },
+      ArrowFunctionExpression() {
+        enterScope();
+      },
+      "ArrowFunctionExpression:exit"() {
+        exitScope();
+      },
+      VariableDeclaration(node) {
+        if (isExported(node)) {
+          for (const declarator of node.declarations) {
+            if (isSimpleIdentifier(declarator.id)) {
+              exported.add(declarator.id.name);
+            }
+          }
+          return;
+        }
+        if (isInLoop(node))
+          return;
+        for (const declarator of node.declarations) {
+          if (!isSimpleIdentifier(declarator.id))
+            continue;
+          if (!declarator.init)
+            continue;
+          const name = declarator.id.name;
+          const key = makeKey(getCurrentScope(), name);
+          declarations.set(key, {
+            node: declarator,
+            scopeId: getCurrentScope(),
+            name
+          });
+        }
+      },
+      ExportNamedDeclaration(node) {
+        for (const specifier of node.specifiers ?? []) {
+          if (specifier.local?.name)
+            exported.add(specifier.local.name);
+        }
+      },
+      Identifier(node) {
+        const name = node.name;
+        const declKey = findDeclarationKey(name);
+        if (!declKey)
+          return;
+        if (isDeclarationSite(node))
+          return;
+        if (isAssignmentTarget(node)) {
+          reassigned.add(declKey);
+          return;
+        }
+        if (node.parent?.type === "MemberExpression" && node.parent?.property === node && !node.parent?.computed) {
+          return;
+        }
+        if (node.parent?.type === "Property" && node.parent?.key === node && !node.parent?.computed) {
+          return;
+        }
+        if (node.parent?.type === "CallExpression" && node.parent?.callee === node) {
+          return;
+        }
+        if (!references.has(declKey)) {
+          references.set(declKey, []);
+        }
+        references.get(declKey).push({
+          scopeId: getCurrentScope()
+        });
+      },
+      "Program:exit"() {
+        for (const [key, decl] of declarations) {
+          if (exported.has(decl.name))
+            continue;
+          if (reassigned.has(key))
+            continue;
+          const refs = references.get(key) ?? [];
+          if (refs.length !== 1)
+            continue;
+          const ref = refs[0];
+          if (ref.scopeId !== decl.scopeId)
+            continue;
+          context.report({
+            node: decl.node,
+            message: `Variable "${decl.name}" is only used once. Inline it instead.`
+          });
+        }
+      }
+    };
+  }
+};
+var no_single_use_variable_default = rule6;
+
 // rules/enforce-barrel-exports.ts
 import path4 from "path";
-var rule6 = {
+var rule7 = {
   meta: {
     type: "suggestion",
     docs: {
@@ -301,10 +474,10 @@ function isBarrelImport(source) {
   }
   return false;
 }
-var enforce_barrel_exports_default = rule6;
+var enforce_barrel_exports_default = rule7;
 
 // rules/no-index-imports.ts
-var rule7 = {
+var rule8 = {
   meta: {
     type: "suggestion",
     docs: {
@@ -362,10 +535,10 @@ var rule7 = {
     };
   }
 };
-var no_index_imports_default = rule7;
+var no_index_imports_default = rule8;
 
 // rules/no-section-comments.ts
-var rule8 = {
+var rule9 = {
   meta: {
     docs: {
       description: "Disallow section divider comments (// --) and numbered step comments (// 1.). Replace with meaningful comments or remove."
@@ -424,7 +597,7 @@ var rule8 = {
     };
   }
 };
-var no_section_comments_default = rule8;
+var no_section_comments_default = rule9;
 
 // rules/utils.ts
 import path5 from "path";
@@ -455,7 +628,7 @@ function isIndexFile(ctx) {
 }
 
 // rules/prefer-folder-barrel.ts
-var rule9 = {
+var rule10 = {
   meta: {
     type: "suggestion",
     docs: {
@@ -538,7 +711,7 @@ var rule9 = {
     };
   }
 };
-var prefer_folder_barrel_default = rule9;
+var prefer_folder_barrel_default = rule10;
 
 // index.ts
 var plugin = {
@@ -552,6 +725,7 @@ var plugin = {
     "enforce-colocated-exports": enforce_colocated_exports_default,
     "enforce-test-colocation": enforce_test_colocation_default,
     "no-single-reference-function": no_single_reference_function_default,
+    "no-single-use-variable": no_single_use_variable_default,
     "enforce-barrel-exports": enforce_barrel_exports_default,
     "no-index-imports": no_index_imports_default,
     "no-section-comments": no_section_comments_default,

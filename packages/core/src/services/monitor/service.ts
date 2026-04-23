@@ -1,5 +1,9 @@
+import type { Emitter } from "mitt";
+import type { JiratownConfig } from "#config";
+import type { HookEventMap } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
 import { Monitor } from "./monitor.ts";
-import type { MonitorContext, MonitorStatus } from "./types.ts";
+import type { MonitorStatus } from "./types.ts";
 
 /**
  * Polling framework for Jiratown. Core provides infrastructure, plugins bring the "what" to monitor.
@@ -8,21 +12,31 @@ import type { MonitorContext, MonitorStatus } from "./types.ts";
 export class MonitorService {
   private running = new Map<string, Monitor>();
 
+  constructor(
+    private readonly hooks: Emitter<HookEventMap>,
+    private readonly memory: MemoryService,
+    private readonly config: Readonly<JiratownConfig>,
+  ) {}
+
   /**
    * Start a monitor for an issue.
    * If a monitor with the same name is already running for this issue, this is a no-op.
    *
    * @param issueId - Issue to monitor
-   * @param ctx - Context passed to the monitor's poll function
    * @param monitor - Monitor instance to start
    */
-  startMonitor(issueId: string, ctx: MonitorContext, monitor: Monitor): void {
+  startMonitor(issueId: string, monitor: Monitor): void {
     const key = this.makeKey(issueId, monitor.name);
     if (this.running.has(key)) return;
 
-    ctx.hooks.emit("monitor.registered", { name: monitor.name, type: monitor.type });
+    this.hooks.emit("monitor.registered", { name: monitor.name, type: monitor.type });
 
-    monitor.start(ctx);
+    monitor.start({
+      issueId,
+      hooks: this.hooks,
+      memory: this.memory,
+      config: this.config,
+    });
     this.running.set(key, monitor);
   }
 
