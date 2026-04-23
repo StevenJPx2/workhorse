@@ -2,7 +2,8 @@ import mitt from "mitt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HookEventMap } from "#lib/hooks";
 import { MonitorService } from "../service.ts";
-import type { Monitor, MonitorContext, MonitorFactory, MonitorResult } from "../types.ts";
+import { Monitor } from "../monitor.ts";
+import type { MonitorContext, MonitorResult } from "../types.ts";
 
 describe("MonitorService", () => {
   let service: MonitorService;
@@ -11,7 +12,7 @@ describe("MonitorService", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     hooks = mitt<HookEventMap>();
-    service = new MonitorService(hooks);
+    service = new MonitorService();
   });
 
   afterEach(() => {
@@ -28,18 +29,17 @@ describe("MonitorService", () => {
     };
   }
 
-  function createMockFactory(
+  function createMonitor(
     name: string,
     options: {
       type?: "remote" | "local";
       interval?: number;
       pollResult?: MonitorResult;
-      pollFn?: () => Promise<MonitorResult>;
+      pollFn?: (ctx: MonitorContext) => Promise<MonitorResult>;
     } = {},
-  ): MonitorFactory {
+  ): Monitor {
     const { type = "remote", interval = 1000, pollResult = { hasChanges: false } } = options;
-
-    return (_ctx: MonitorContext): Monitor => ({
+    return new Monitor({
       name,
       type,
       interval,
@@ -47,77 +47,63 @@ describe("MonitorService", () => {
     });
   }
 
-  describe("registration", () => {
-    it("registers a monitor factory", () => {
-      const factory = createMockFactory("test-monitor");
-      service.registerMonitor("test-monitor", factory);
+  describe("startMonitor", () => {
+    it("starts a monitor for an issue", () => {
+      service.startMonitor("AM-123", createMockContext("AM-123"), createMonitor("test"));
 
-      // Verify by starting monitors - factory should be invoked
-      service.startMonitors("AM-123", createMockContext("AM-123"));
       const running = service.getRunningMonitors("AM-123");
       expect(running).toHaveLength(1);
-      expect(running[0]!.name).toBe("test-monitor");
+      expect(running[0]!.name).toBe("test");
     });
 
-    it("throws if registering duplicate name", () => {
-      const factory = createMockFactory("duplicate");
-      service.registerMonitor("duplicate", factory);
-
-      expect(() => service.registerMonitor("duplicate", factory)).toThrow(
-        'Monitor "duplicate" is already registered',
-      );
-    });
-  });
-
-  describe("startMonitors", () => {
-    it("creates running instances for all registered factories", () => {
-      service.registerMonitor("monitor-a", createMockFactory("monitor-a"));
-      service.registerMonitor("monitor-b", createMockFactory("monitor-b"));
-
-      service.startMonitors("AM-123", createMockContext("AM-123"));
-
-      const running = service.getRunningMonitors("AM-123");
-      expect(running).toHaveLength(2);
-      expect(running.map((r) => r.name).sort()).toEqual(["monitor-a", "monitor-b"]);
-    });
-
-    it("emits monitor.registered hook for each monitor", () => {
+    it("emits monitor.registered hook", () => {
       const handler = vi.fn();
       hooks.on("monitor.registered", handler);
 
-      service.registerMonitor("my-monitor", createMockFactory("my-monitor", { type: "local" }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("my-monitor", { type: "local" }),
+      );
 
       expect(handler).toHaveBeenCalledWith({ name: "my-monitor", type: "local" });
     });
 
-    it("does not start duplicate monitors for same issue", () => {
-      service.registerMonitor("test", createMockFactory("test"));
-
+    it("is a no-op if the same monitor name is already running for that issue", () => {
       const ctx = createMockContext("AM-123");
-      service.startMonitors("AM-123", ctx);
-      service.startMonitors("AM-123", ctx); // Second call should be ignored
+      service.startMonitor("AM-123", ctx, createMonitor("test"));
+      service.startMonitor("AM-123", ctx, createMonitor("test"));
 
-      const running = service.getRunningMonitors("AM-123");
-      expect(running).toHaveLength(1);
+      expect(service.getRunningMonitors("AM-123")).toHaveLength(1);
     });
 
     it("starts separate monitors for different issues", () => {
-      service.registerMonitor("test", createMockFactory("test"));
-
-      service.startMonitors("AM-123", createMockContext("AM-123"));
-      service.startMonitors("AM-456", createMockContext("AM-456"));
+      service.startMonitor("AM-123", createMockContext("AM-123"), createMonitor("test"));
+      service.startMonitor("AM-456", createMockContext("AM-456"), createMonitor("test"));
 
       expect(service.getRunningMonitors("AM-123")).toHaveLength(1);
       expect(service.getRunningMonitors("AM-456")).toHaveLength(1);
+    });
+
+    it("can start multiple monitors for the same issue", () => {
+      const ctx = createMockContext("AM-123");
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-a"));
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-b"));
+
+      const running = service.getRunningMonitors("AM-123");
+      expect(running).toHaveLength(2);
+      expect(running.map((r) => r.name).sort()).toEqual(["monitor-a", "monitor-b"]);
     });
   });
 
   describe("poll loop", () => {
     it("calls poll() at configured interval", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
       expect(pollFn).not.toHaveBeenCalled();
 
@@ -131,18 +117,28 @@ describe("MonitorService", () => {
       expect(pollFn).toHaveBeenCalledTimes(3);
     });
 
+    it("passes MonitorContext to poll()", async () => {
+      const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
+      const ctx = createMockContext("AM-123");
+      service.startMonitor("AM-123", ctx, createMonitor("test", { interval: 100, pollFn }));
+
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(pollFn).toHaveBeenCalledWith(ctx);
+    });
+
     it("emits monitor.tick when hasChanges is true", async () => {
       const handler = vi.fn();
       hooks.on("monitor.tick", handler);
 
-      service.registerMonitor(
-        "test",
-        createMockFactory("test", {
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", {
           interval: 100,
           pollResult: { hasChanges: true, data: { comments: ["new"] } },
         }),
       );
-      service.startMonitors("AM-123", createMockContext("AM-123"));
 
       await vi.advanceTimersByTimeAsync(100);
 
@@ -157,11 +153,11 @@ describe("MonitorService", () => {
       const handler = vi.fn();
       hooks.on("monitor.tick", handler);
 
-      service.registerMonitor(
-        "test",
-        createMockFactory("test", { interval: 100, pollResult: { hasChanges: false } }),
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollResult: { hasChanges: false } }),
       );
-      service.startMonitors("AM-123", createMockContext("AM-123"));
 
       await vi.advanceTimersByTimeAsync(100);
 
@@ -169,46 +165,45 @@ describe("MonitorService", () => {
     });
 
     it("updates lastPoll after each poll", async () => {
-      service.registerMonitor(
-        "test",
-        createMockFactory("test", { interval: 100, pollResult: { hasChanges: false } }),
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollResult: { hasChanges: false } }),
       );
-      service.startMonitors("AM-123", createMockContext("AM-123"));
 
-      const beforePoll = service.getRunningMonitors("AM-123")[0]!;
-      expect(beforePoll.lastPoll).toBeUndefined();
+      expect(service.getRunningMonitors("AM-123")[0]!.lastPoll).toBeUndefined();
 
       await vi.advanceTimersByTimeAsync(100);
 
-      const afterPoll = service.getRunningMonitors("AM-123")[0]!;
-      expect(afterPoll.lastPoll).toBeInstanceOf(Date);
+      expect(service.getRunningMonitors("AM-123")[0]!.lastPoll).toBeInstanceOf(Date);
     });
 
     it("updates lastResult after each poll", async () => {
       const result = { hasChanges: true, data: { foo: "bar" } };
-      service.registerMonitor(
-        "test",
-        createMockFactory("test", { interval: 100, pollResult: result }),
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollResult: result }),
       );
-      service.startMonitors("AM-123", createMockContext("AM-123"));
 
       await vi.advanceTimersByTimeAsync(100);
 
-      const status = service.getRunningMonitors("AM-123")[0]!;
-      expect(status.lastResult).toEqual(result);
+      expect(service.getRunningMonitors("AM-123")[0]!.lastResult).toEqual(result);
     });
   });
 
   describe("error handling", () => {
     it("increments errorCount on poll failure", async () => {
       const pollFn = vi.fn().mockRejectedValue(new Error("Poll failed"));
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
       await vi.advanceTimersByTimeAsync(100);
 
-      const status = service.getRunningMonitors("AM-123")[0]!;
-      expect(status.errorCount).toBe(1);
+      expect(service.getRunningMonitors("AM-123")[0]!.errorCount).toBe(1);
     });
 
     it("emits monitor.error when poll fails", async () => {
@@ -217,8 +212,11 @@ describe("MonitorService", () => {
 
       const error = new Error("Something went wrong");
       const pollFn = vi.fn().mockRejectedValue(error);
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
       await vi.advanceTimersByTimeAsync(100);
 
@@ -232,44 +230,38 @@ describe("MonitorService", () => {
 
     it("stops monitor after ERROR_THRESHOLD (5) consecutive errors", async () => {
       const pollFn = vi.fn().mockRejectedValue(new Error("Persistent failure"));
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
-      // Advance through 5 errors
       for (let i = 0; i < 5; i++) {
         await vi.advanceTimersByTimeAsync(100);
       }
 
-      // Monitor should be stopped after 5th error
-      const running = service.getRunningMonitors("AM-123");
-      expect(running).toHaveLength(0);
+      expect(service.getRunningMonitors("AM-123")).toHaveLength(0);
     });
 
     it("resets errorCount on successful poll", async () => {
       let callCount = 0;
       const pollFn = vi.fn().mockImplementation(async () => {
-        callCount++;
-        if (callCount < 3) {
-          throw new Error("Temporary failure");
-        }
+        if (++callCount < 3) throw new Error("Temporary failure");
         return { hasChanges: false };
       });
 
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
-      // Two failures
       await vi.advanceTimersByTimeAsync(100);
       await vi.advanceTimersByTimeAsync(100);
+      expect(service.getRunningMonitors("AM-123")[0]!.errorCount).toBe(2);
 
-      let status = service.getRunningMonitors("AM-123")[0]!;
-      expect(status.errorCount).toBe(2);
-
-      // One success
       await vi.advanceTimersByTimeAsync(100);
-
-      status = service.getRunningMonitors("AM-123")[0]!;
-      expect(status.errorCount).toBe(0);
+      expect(service.getRunningMonitors("AM-123")[0]!.errorCount).toBe(0);
     });
 
     it("sets state to error when threshold reached", async () => {
@@ -277,30 +269,26 @@ describe("MonitorService", () => {
       hooks.on("monitor.error", errorHandler);
 
       const pollFn = vi.fn().mockRejectedValue(new Error("Failure"));
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
-      // Advance through 5 errors
       for (let i = 0; i < 5; i++) {
         await vi.advanceTimersByTimeAsync(100);
       }
 
-      // Last error event should have errorCount of 5
-      const lastCall = errorHandler.mock.calls[4]![0] as {
-        name: string;
-        issueId: string;
-        error: Error;
-        errorCount: number;
-      };
+      const lastCall = errorHandler.mock.calls[4]![0] as { errorCount: number };
       expect(lastCall.errorCount).toBe(5);
     });
   });
 
   describe("stopMonitor", () => {
-    it("stops a specific monitor by name", async () => {
-      service.registerMonitor("monitor-a", createMockFactory("monitor-a"));
-      service.registerMonitor("monitor-b", createMockFactory("monitor-b"));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+    it("stops a specific monitor by name", () => {
+      const ctx = createMockContext("AM-123");
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-a"));
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-b"));
 
       service.stopMonitor("AM-123", "monitor-a");
 
@@ -311,8 +299,11 @@ describe("MonitorService", () => {
 
     it("clears the timeout", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
       service.stopMonitor("AM-123", "test");
 
@@ -321,8 +312,7 @@ describe("MonitorService", () => {
     });
 
     it("does nothing for unknown monitor", () => {
-      service.registerMonitor("test", createMockFactory("test"));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      service.startMonitor("AM-123", createMockContext("AM-123"), createMonitor("test"));
 
       // Should not throw
       service.stopMonitor("AM-123", "unknown");
@@ -332,9 +322,9 @@ describe("MonitorService", () => {
 
   describe("stopMonitors", () => {
     it("stops all monitors for an issue", () => {
-      service.registerMonitor("monitor-a", createMockFactory("monitor-a"));
-      service.registerMonitor("monitor-b", createMockFactory("monitor-b"));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      const ctx = createMockContext("AM-123");
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-a"));
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-b"));
 
       service.stopMonitors("AM-123");
 
@@ -342,9 +332,8 @@ describe("MonitorService", () => {
     });
 
     it("does not affect other issues", () => {
-      service.registerMonitor("test", createMockFactory("test"));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
-      service.startMonitors("AM-456", createMockContext("AM-456"));
+      service.startMonitor("AM-123", createMockContext("AM-123"), createMonitor("test"));
+      service.startMonitor("AM-456", createMockContext("AM-456"), createMonitor("test"));
 
       service.stopMonitors("AM-123");
 
@@ -355,9 +344,9 @@ describe("MonitorService", () => {
 
   describe("getRunningMonitors", () => {
     it("returns statuses for all monitors of an issue", () => {
-      service.registerMonitor("monitor-a", createMockFactory("monitor-a", { type: "remote" }));
-      service.registerMonitor("monitor-b", createMockFactory("monitor-b", { type: "local" }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+      const ctx = createMockContext("AM-123");
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-a", { type: "remote" }));
+      service.startMonitor("AM-123", ctx, createMonitor("monitor-b", { type: "local" }));
 
       const statuses = service.getRunningMonitors("AM-123");
 
@@ -370,24 +359,28 @@ describe("MonitorService", () => {
       expect(service.getRunningMonitors("unknown")).toEqual([]);
     });
 
-    it("returns copies of statuses (immutable)", () => {
-      service.registerMonitor("test", createMockFactory("test"));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
+    it("returns the live status object (callers should not mutate)", () => {
+      service.startMonitor("AM-123", createMockContext("AM-123"), createMonitor("test"));
 
       const statuses = service.getRunningMonitors("AM-123");
-      statuses[0]!.errorCount = 999;
-
-      const freshStatuses = service.getRunningMonitors("AM-123");
-      expect(freshStatuses[0]!.errorCount).toBe(0);
+      // Status is the live object — callers should treat it as read-only
+      expect(statuses[0]).toBe(service.getRunningMonitors("AM-123")[0]);
     });
   });
 
   describe("shutdown", () => {
     it("stops all running monitors", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor("test", createMockFactory("test", { interval: 100, pollFn }));
-      service.startMonitors("AM-123", createMockContext("AM-123"));
-      service.startMonitors("AM-456", createMockContext("AM-456"));
+      service.startMonitor(
+        "AM-123",
+        createMockContext("AM-123"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
+      service.startMonitor(
+        "AM-456",
+        createMockContext("AM-456"),
+        createMonitor("test", { interval: 100, pollFn }),
+      );
 
       service.shutdown();
 
@@ -401,8 +394,8 @@ describe("MonitorService", () => {
 
   it.fails("TODO: monitor continues polling after stopping until next tick", () => {
     // Edge case: what if poll is in progress when stopMonitor is called?
-    // Currently we just clear the timeout, but an in-flight poll will complete
-    // This test documents that we may want to add an AbortController later
+    // Currently we just clear the timeout, but an in-flight poll will complete.
+    // This test documents that we may want to add an AbortController later.
     expect(true).toBe(false);
   });
 });

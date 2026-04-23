@@ -1,80 +1,29 @@
-import type { Emitter } from "mitt";
-import type { HookEventMap } from "#lib/hooks";
-import type { MonitorContext, MonitorFactory, MonitorStatus, RunningMonitor } from "./types.ts";
-
-/** Number of consecutive errors before a monitor is stopped */
-const ERROR_THRESHOLD = 5;
+import { Monitor } from "./monitor.ts";
+import type { MonitorContext, MonitorStatus } from "./types.ts";
 
 /**
  * Polling framework for Jiratown. Core provides infrastructure, plugins bring the "what" to monitor.
- * Register factories via `registerMonitor()`, start/stop per issue. See README.md for examples.
+ * Callers construct Monitor instances and start them per-issue via startMonitor(). See README.md for examples.
  */
 export class MonitorService {
-  private factories = new Map<string, MonitorFactory>();
-  private running = new Map<string, RunningMonitor>();
-
-  constructor(private hooks: Emitter<HookEventMap>) {}
+  private running = new Map<string, Monitor>();
 
   /**
-   * Register a monitor factory.
-   * Factories are invoked when startMonitors() is called for an issue.
-   *
-   * @param name - Unique monitor name
-   * @param factory - Function that creates a Monitor instance
-   * @throws Error if a monitor with this name is already registered
-   */
-  registerMonitor(name: string, factory: MonitorFactory): void {
-    if (this.factories.has(name)) {
-      throw new Error(`Monitor "${name}" is already registered`);
-    }
-    this.factories.set(name, factory);
-  }
-
-  /**
-   * Start all registered monitors for an issue.
-   * Creates monitor instances from factories and begins polling.
+   * Start a monitor for an issue.
+   * If a monitor with the same name is already running for this issue, this is a no-op.
    *
    * @param issueId - Issue to monitor
-   * @param ctx - Context passed to monitor factories
+   * @param ctx - Context passed to the monitor's poll function
+   * @param monitor - Monitor instance to start
    */
-  startMonitors(issueId: string, ctx: MonitorContext): void {
-    for (const [name, factory] of this.factories) {
-      const key = this.makeKey(issueId, name);
+  startMonitor(issueId: string, ctx: MonitorContext, monitor: Monitor): void {
+    const key = this.makeKey(issueId, monitor.name);
+    if (this.running.has(key)) return;
 
-      if (this.running.has(key)) continue;
+    ctx.hooks.emit("monitor.registered", { name: monitor.name, type: monitor.type });
 
-      const monitor = factory(ctx);
-
-      this.hooks.emit("monitor.registered", { name, type: monitor.type });
-
-      const running: RunningMonitor = {
-        monitor,
-        status: {
-          name,
-          type: monitor.type,
-          issueId,
-          state: "running",
-          errorCount: 0,
-        },
-        timeoutId: null,
-      };
-
-      this.running.set(key, running);
-      this.schedulePoll(key, running);
-    }
-  }
-
-  /**
-   * Stop all monitors for an issue.
-   *
-   * @param issueId - Issue to stop monitoring
-   */
-  stopMonitors(issueId: string): void {
-    for (const [key, running] of this.running) {
-      if (running.status.issueId === issueId) {
-        this.stopRunningMonitor(key, running);
-      }
-    }
+    monitor.start(ctx);
+    this.running.set(key, monitor);
   }
 
   /**
@@ -85,25 +34,48 @@ export class MonitorService {
    */
   stopMonitor(issueId: string, name: string): void {
     const key = this.makeKey(issueId, name);
-    const running = this.running.get(key);
-    if (running) {
-      this.stopRunningMonitor(key, running);
+    const monitor = this.running.get(key);
+    if (monitor) {
+      monitor.stop();
+      this.running.delete(key);
+    }
+  }
+
+  /**
+   * Stop all monitors for an issue.
+   *
+   * @param issueId - Issue to stop monitoring
+   */
+  stopMonitors(issueId: string): void {
+    for (const [key, monitor] of this.running) {
+      if (monitor.status.issueId === issueId) {
+        monitor.stop();
+        this.running.delete(key);
+      }
     }
   }
 
   /**
    * Get status of all running monitors for an issue.
+   * Auto-purges monitors that have self-stopped due to error threshold.
    *
    * @param issueId - Issue to query
    * @returns Array of monitor statuses
    */
   getRunningMonitors(issueId: string): MonitorStatus[] {
     const statuses: MonitorStatus[] = [];
-    for (const running of this.running.values()) {
-      if (running.status.issueId === issueId) {
-        statuses.push({ ...running.status });
+
+    for (const [key, monitor] of this.running) {
+      const status = monitor.status;
+      if (status.issueId !== issueId) continue;
+
+      if (status.state !== "running") {
+        this.running.delete(key);
+      } else {
+        statuses.push(status);
       }
     }
+
     return statuses;
   }
 
@@ -111,69 +83,13 @@ export class MonitorService {
    * Shutdown all monitors. Called during application shutdown.
    */
   shutdown(): void {
-    for (const [key, running] of this.running) {
-      this.stopRunningMonitor(key, running);
+    for (const monitor of this.running.values()) {
+      monitor.stop();
     }
+    this.running.clear();
   }
 
   private makeKey(issueId: string, name: string): string {
     return `${issueId}:${name}`;
-  }
-
-  private stopRunningMonitor(key: string, running: RunningMonitor): void {
-    if (running.timeoutId !== null) {
-      clearTimeout(running.timeoutId);
-      running.timeoutId = null;
-    }
-    running.status.state = "stopped";
-    this.running.delete(key);
-  }
-
-  private schedulePoll(key: string, running: RunningMonitor): void {
-    if (running.status.state !== "running") return;
-
-    running.timeoutId = setTimeout(() => {
-      void this.executePoll(key, running);
-    }, running.monitor.interval);
-  }
-
-  private async executePoll(key: string, running: RunningMonitor): Promise<void> {
-    if (running.status.state !== "running") return;
-
-    const { monitor, status } = running;
-
-    try {
-      const result = await monitor.poll();
-
-      status.lastPoll = new Date();
-      status.lastResult = result;
-      status.errorCount = 0;
-
-      if (result.hasChanges) {
-        this.hooks.emit("monitor.tick", {
-          name: monitor.name,
-          issueId: status.issueId,
-          result: result.data,
-        });
-      }
-    } catch (error) {
-      status.errorCount++;
-      status.lastPoll = new Date();
-
-      this.hooks.emit("monitor.error", {
-        name: monitor.name,
-        issueId: status.issueId,
-        error: error as Error,
-        errorCount: status.errorCount,
-      });
-
-      if (status.errorCount >= ERROR_THRESHOLD) {
-        status.state = "error";
-        this.stopRunningMonitor(key, running);
-        return;
-      }
-    }
-
-    this.schedulePoll(key, running);
   }
 }

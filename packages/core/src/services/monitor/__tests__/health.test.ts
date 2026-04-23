@@ -21,54 +21,42 @@ describe("createAgentHealthMonitor", () => {
     };
   }
 
-  it("creates a monitor factory", () => {
-    const factory = createAgentHealthMonitor();
-    expect(typeof factory).toBe("function");
+  it("returns a Monitor instance", () => {
+    const monitor = createAgentHealthMonitor({ interval: 5000 });
+    expect(monitor).toBeDefined();
+    expect(typeof monitor.start).toBe("function");
+    expect(typeof monitor.stop).toBe("function");
+    expect(typeof monitor.poll).toBe("function");
   });
 
   it("creates monitor with name 'agent-health'", () => {
-    const factory = createAgentHealthMonitor();
-    const monitor = factory(createMockContext());
+    const monitor = createAgentHealthMonitor({ interval: 5000 });
     expect(monitor.name).toBe("agent-health");
   });
 
   it("creates monitor with type 'local'", () => {
-    const factory = createAgentHealthMonitor();
-    const monitor = factory(createMockContext());
+    const monitor = createAgentHealthMonitor({ interval: 5000 });
     expect(monitor.type).toBe("local");
   });
 
-  it("uses config.behavior.pollInterval as default interval", () => {
-    const factory = createAgentHealthMonitor();
-    const ctx = createMockContext();
-    const monitor = factory(ctx);
+  it("uses the provided interval", () => {
+    const monitor = createAgentHealthMonitor({ interval: 5000 });
     expect(monitor.interval).toBe(5000);
   });
 
-  it("uses custom checkInterval when provided", () => {
-    const factory = createAgentHealthMonitor({ checkInterval: 2000 });
-    const monitor = factory(createMockContext());
-    expect(monitor.interval).toBe(2000);
-  });
-
   it("poll returns hasChanges: false (stub)", async () => {
-    const factory = createAgentHealthMonitor();
-    const monitor = factory(createMockContext());
-    const result = await monitor.poll();
+    const monitor = createAgentHealthMonitor({ interval: 5000 });
+    const result = await monitor.poll(createMockContext());
     expect(result).toEqual({ hasChanges: false });
   });
 
   it("accepts port option for Opencode", () => {
-    const factory = createAgentHealthMonitor({ port: 3000 });
-    const monitor = factory(createMockContext());
-    // Just verifies it doesn't throw - port is stored for future use
+    const monitor = createAgentHealthMonitor({ interval: 5000, port: 3000 });
     expect(monitor.name).toBe("agent-health");
   });
 
   it("accepts pid option for process checking", () => {
-    const factory = createAgentHealthMonitor({ pid: 12345 });
-    const monitor = factory(createMockContext());
-    // Just verifies it doesn't throw - pid is stored for future use
+    const monitor = createAgentHealthMonitor({ interval: 5000, pid: 12345 });
     expect(monitor.name).toBe("agent-health");
   });
 

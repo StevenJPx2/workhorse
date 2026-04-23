@@ -4,46 +4,40 @@ Polling framework for Jiratown. Core provides the infrastructure, plugins bring 
 
 ## Overview
 
-MonitorService manages periodic polling for external changes (Jira comments, GitHub reviews, etc.) and local checks (agent health). Plugins register monitor factories during setup, which are invoked when monitoring starts for a specific issue.
+MonitorService manages periodic polling for external changes (Jira comments, GitHub reviews, etc.) and local checks (agent health). Callers construct `Monitor` instances and start them per-issue via `startMonitor()`.
+
+Each `Monitor` owns its own poll loop, scheduling, error counting, and status. `MonitorService` is a thin map that tracks running monitors and stops them on request.
 
 ## Usage
 
-### Registering a Monitor (in a plugin)
+### Starting a Monitor (in a plugin or Harness)
 
 ```typescript
-export default definePlugin({
-  manifest: { name: "jira", version: "1.0.0" },
-  setup(ctx) {
-    // Register a monitor factory
-    ctx.monitors.registerMonitor("jira-comments", (monitorCtx) => ({
+hooks.on("agent.started", ({ instance }) => {
+  monitorService.startMonitor(
+    instance.issueId,
+    ctx,
+    new Monitor({
       name: "jira-comments",
       type: "remote",
-      interval: 30000, // 30 seconds
-      async poll() {
-        const comments = await fetchNewComments(monitorCtx.issueId);
-        return {
-          hasChanges: comments.length > 0,
-          data: comments,
-        };
+      interval: 30_000,
+      async poll(ctx) {
+        const comments = await fetchNewComments(ctx.issueId);
+        return { hasChanges: comments.length > 0, data: comments };
       },
-    }));
-  },
+    }),
+  );
 });
 ```
 
-### Starting/Stopping Monitors (by Harness)
+### Stopping Monitors
 
 ```typescript
-// When agent spawns
-monitors.startMonitors("AM-123", {
-  issueId: "AM-123",
-  hooks,
-  memory,
-  config,
-});
+// Stop all monitors for an issue (e.g. when agent stops)
+monitorService.stopMonitors("AM-123");
 
-// When agent stops
-monitors.stopMonitors("AM-123");
+// Stop a specific monitor by name
+monitorService.stopMonitor("AM-123", "jira-comments");
 ```
 
 ### Responding to Monitor Events
@@ -51,7 +45,6 @@ monitors.stopMonitors("AM-123");
 ```typescript
 hooks.on("monitor.tick", ({ name, issueId, result }) => {
   if (name === "jira-comments") {
-    // Push notification to agent
     harness.sendMessage(issueId, formatComments(result));
   }
 });
@@ -65,26 +58,31 @@ hooks.on("monitor.error", ({ name, issueId, error, errorCount }) => {
 
 | Event | Payload | When |
 |-------|---------|------|
-| `monitor.registered` | `{ name, type }` | Monitor factory is invoked |
+| `monitor.registered` | `{ name, type }` | `startMonitor()` is called |
 | `monitor.tick` | `{ name, issueId, result }` | Poll returns `hasChanges: true` |
 | `monitor.error` | `{ name, issueId, error, errorCount }` | Poll throws an error |
 
 ## Error Handling
 
-Monitors are stopped after 5 consecutive errors. The error count resets on successful poll.
+Monitors self-stop after 5 consecutive errors (`state` transitions to `"error"`). The error count resets on a successful poll. `getRunningMonitors()` auto-purges self-stopped monitors from the map.
 
 ## Built-in Monitors
 
 ### Agent Health (`health.ts`)
 
-Stub implementation for checking if the agent process is alive. Registered by Harness during agent spawn. Full implementation pending Harness (Step 9).
+Stub implementation for checking if the agent process is alive. Started by Harness during agent spawn. Full implementation pending Harness (Step 9).
 
 ```typescript
 import { createAgentHealthMonitor } from "#services/monitor";
 
-monitors.registerMonitor(
-  "agent-health",
-  createAgentHealthMonitor({ port: 3000, pid: 12345 }),
+monitorService.startMonitor(
+  issueId,
+  ctx,
+  createAgentHealthMonitor({
+    interval: config.behavior.pollInterval,
+    port: 3000,
+    pid: 12345,
+  }),
 );
 ```
 
@@ -92,7 +90,7 @@ monitors.registerMonitor(
 
 | File | Purpose |
 |------|---------|
-| `types.ts` | Domain types (Monitor, MonitorFactory, etc.) |
-| `service.ts` | MonitorService class |
+| `types.ts` | `Monitor` class + domain types (`MonitorOptions`, `MonitorResult`, etc.) |
+| `service.ts` | `MonitorService` — thin map of running monitors |
 | `health.ts` | Agent health monitor factory (stub) |
 | `index.ts` | Barrel exports |

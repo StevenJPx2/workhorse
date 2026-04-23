@@ -4,21 +4,6 @@ import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 
 /**
- * A monitor that periodically polls for changes.
- * Created by a MonitorFactory when monitors are started for an issue.
- */
-export interface Monitor {
-  /** Unique name identifying this monitor type */
-  name: string;
-  /** Whether this monitors remote APIs or local resources */
-  type: "remote" | "local";
-  /** Polling interval in milliseconds */
-  interval: number;
-  /** Poll function - returns whether changes were detected */
-  poll: () => Promise<MonitorResult>;
-}
-
-/**
  * Result returned by a monitor's poll function.
  */
 export interface MonitorResult {
@@ -29,13 +14,7 @@ export interface MonitorResult {
 }
 
 /**
- * Factory function that creates a Monitor instance.
- * Plugins register factories, which are invoked when monitors start for an issue.
- */
-export type MonitorFactory = (ctx: MonitorContext) => Monitor;
-
-/**
- * Context passed to MonitorFactory when creating a monitor instance.
+ * Context passed to poll() on each invocation and to start().
  */
 export interface MonitorContext {
   /** The issue ID this monitor is watching */
@@ -49,7 +28,7 @@ export interface MonitorContext {
 }
 
 /**
- * Status of a running monitor, exposed via getRunningMonitors().
+ * Status of a monitor, exposed via getRunningMonitors().
  */
 export interface MonitorStatus {
   /** Monitor name */
@@ -69,14 +48,15 @@ export interface MonitorStatus {
 }
 
 /**
- * Internal representation of a running monitor instance.
- * Not exported from barrel - implementation detail.
+ * Options for creating a Monitor instance.
  */
-export interface RunningMonitor {
-  /** The monitor instance */
-  monitor: Monitor;
-  /** Current status */
-  status: MonitorStatus;
-  /** Timeout ID for the next scheduled poll, null if stopped */
-  timeoutId: ReturnType<typeof setTimeout> | null;
+export interface MonitorOptions {
+  /** Unique name identifying this monitor type */
+  name: string;
+  /** Whether this monitors remote APIs or local resources */
+  type: "remote" | "local";
+  /** Polling interval in milliseconds */
+  interval: number;
+  /** Poll function - receives full context on each call */
+  poll: (ctx: MonitorContext) => Promise<MonitorResult>;
 }
