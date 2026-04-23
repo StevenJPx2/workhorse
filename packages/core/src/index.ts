@@ -25,7 +25,13 @@ export type {
   NotificationPriority,
   NotificationStatus,
 } from "#db";
-export { hooks, type HookEventMap, type PromptContext, type AgentInstance } from "#lib/hooks";
+export {
+  hooks,
+  type HookEventMap,
+  type PromptBuildingContext,
+  type PromptContextBlock,
+  type AgentInstance,
+} from "#lib/hooks";
 export { useJiratown, tryUseJiratown, runWithContext, type JiratownContext } from "#context";
 export {
   definePlugin,

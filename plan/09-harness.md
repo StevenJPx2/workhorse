@@ -6,6 +6,8 @@ Location: `packages/core/src/workflow/harness/`
 
 ## Domain Types (colocated)
 
+> **Note:** `AgentInstance` is currently defined in `lib/hooks/types.ts`. When implementing the harness, move it here and have the hooks file import/re-export it (same pattern used for `PromptContextBlock` in `workflow/tracker/types.ts`).
+
 ```typescript
 interface AgentInstance {
   issueId: string

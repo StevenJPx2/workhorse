@@ -1,4 +1,8 @@
 import type { Issue, IssueStatus, Notification } from "#db";
+import type { PromptContextBlock, PromptBuildingContext } from "../../workflow/tracker/types.ts";
+
+// Re-export for convenience
+export type { PromptContextBlock, PromptBuildingContext } from "../../workflow/tracker/types.ts";
 
 export interface AgentInstance {
   id: string;
@@ -7,18 +11,13 @@ export interface AgentInstance {
   worktree?: string;
 }
 
-export interface PromptContext {
-  issueId: string;
-  metadata: Record<string, unknown>;
-}
-
 type KnownEvents = {
   // Issues
   "issue.parsed": { issue: Issue; raw: unknown };
   "issue.status_changed": { issue: Issue; from: IssueStatus; to: IssueStatus };
 
   // Prompts
-  "prompt.building": { issueId: string; context: PromptContext };
+  "prompt.building": { issueId: string; context: PromptBuildingContext };
   "prompt.built": { issueId: string; prompt: string };
 
   // Agents

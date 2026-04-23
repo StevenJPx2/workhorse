@@ -31,6 +31,7 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     // Mock services - tests don't actually use them
     memory: {} as any,
     monitors: {} as any,
+    tracker: {} as any,
   };
 }
 

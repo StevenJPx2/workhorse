@@ -2,13 +2,14 @@ import type { Emitter } from "mitt";
 import type { ConfigPaths, JiratownConfig } from "#config";
 import { loadConfig, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
+import type { Issue } from "#db";
 import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
 import { definePlugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
-import type { Issue } from "#db";
+import { Tracker } from "#workflow/tracker";
 
 const loggerPlugin = definePlugin({
   manifest: {
@@ -58,6 +59,9 @@ export interface Jiratown {
   /** Event hooks for pub/sub */
   readonly hooks: Emitter<HookEventMap>;
 
+  /** Tracker for issue parsing and prompt building */
+  readonly tracker: Tracker;
+
   /** Plugin registry */
   readonly plugins: PluginRegistry;
 
@@ -96,7 +100,10 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   // Initialize monitor service (polling framework for plugins)
   const monitors = new MonitorService(hooks, memory, config);
 
-  return runWithContext({ config, paths, hooks, memory, monitors }, async () => {
+  // Initialize tracker (issue parsing and prompt building)
+  const tracker = new Tracker(db, hooks);
+
+  return runWithContext({ config, paths, hooks, memory, monitors, tracker }, async () => {
     const plugins = await PluginRegistry.create();
     plugins.register(loggerPlugin);
     await plugins.setup();
@@ -107,6 +114,7 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
       db,
       memory,
       monitors,
+      tracker,
       hooks,
       plugins,
       async shutdown() {

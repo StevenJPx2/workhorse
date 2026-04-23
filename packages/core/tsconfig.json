@@ -12,7 +12,8 @@
       "#services/monitor": ["./src/services/monitor/index.ts"],
       "#issue-provider": ["./src/issue-provider/index.ts"],
       "#agent-adapter": ["./src/agent-adapter/index.ts"],
-      "#mcp-server": ["./src/mcp-server/index.ts"]
+      "#mcp-server": ["./src/mcp-server/index.ts"],
+      "#workflow/tracker": ["./src/workflow/tracker/index.ts"]
     }
   },
   "include": ["src/**/*.ts"]

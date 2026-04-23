@@ -9,8 +9,8 @@
 | 4 | Plugins | ✅ Done | `unctx` + `definePlugin()` + `PluginRegistry` + builtin sample plugin |
 | 5 | Database | ✅ Done | Drizzle ORM + better-sqlite3, schema-derived types |
 | 6 | MemoryService | ✅ Done | L1 (context.md) + L2 (retriv) + notifications + events |
-| 7 | MonitorService | ⬜ Pending | Empty stub |
-| 8 | Tracker | ⬜ Pending | Empty stub |
+| 7 | MonitorService | ✅ Done | Polling framework + agent health stub |
+| 8 | Tracker | ✅ Done | Issue parsing + prompt building |
 | 9 | Harness | ⬜ Pending | Empty stub |
 | 10 | MCP | ⬜ Pending | Empty stub |
 | 11 | Jira Plugin | ⬜ Pending | |

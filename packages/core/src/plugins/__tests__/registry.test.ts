@@ -37,6 +37,7 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     // Mock services - tests don't actually use them
     memory: {} as any,
     monitors: {} as any,
+    tracker: {} as any,
   };
 }
 
@@ -217,6 +218,7 @@ describe("PluginRegistry.create", () => {
       hooks,
       memory: {} as any,
       monitors: {} as any,
+      tracker: {} as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -240,6 +242,7 @@ describe("PluginRegistry.create", () => {
       hooks,
       memory: {} as any,
       monitors: {} as any,
+      tracker: {} as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -263,6 +266,7 @@ describe("PluginRegistry.create", () => {
       hooks,
       memory: {} as any,
       monitors: {} as any,
+      tracker: {} as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -312,6 +316,7 @@ describe("PluginRegistry.create", () => {
       hooks,
       memory: {} as any,
       monitors: {} as any,
+      tracker: {} as any,
     });
 
     const registry = await PluginRegistry.create();

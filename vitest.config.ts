@@ -37,6 +37,7 @@ export default defineConfig({
       "#issue-provider": path.resolve(__dirname, "packages/core/src/issue-provider/index.ts"),
       "#agent-adapter": path.resolve(__dirname, "packages/core/src/agent-adapter/index.ts"),
       "#mcp-server": path.resolve(__dirname, "packages/core/src/mcp-server/index.ts"),
+      "#workflow/tracker": path.resolve(__dirname, "packages/core/src/workflow/tracker/index.ts"),
     },
   },
 });

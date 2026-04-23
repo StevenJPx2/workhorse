@@ -2,6 +2,7 @@ import type { ConfigPaths, JiratownConfig } from "#config";
 import type { hooks } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { MonitorService } from "#services/monitor";
+import type { Tracker } from "#workflow/tracker";
 
 /**
  * The Jiratown context available everywhere within the app lifecycle.
@@ -17,4 +18,6 @@ export interface JiratownContext {
   readonly memory: MemoryService;
   /** Monitor service for polling framework */
   readonly monitors: MonitorService;
+  /** Tracker for parsing input and building prompts */
+  readonly tracker: Tracker;
 }
