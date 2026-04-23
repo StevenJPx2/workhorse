@@ -31,6 +31,7 @@ describe("loadConfig", () => {
       projectConfig: join(tmpDir, "project.toml"),
       database: join(tmpDir, "jiratown.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
+      worktreesRoot: join(tmpDir, "worktrees"),
     };
 
     const config = loadConfig(paths);
@@ -66,6 +67,7 @@ theme = "gruvbox"
       projectConfig: join(tmpDir, ".jiratown.toml"),
       database: join(tmpDir, "jiratown.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
+      worktreesRoot: join(tmpDir, "worktrees"),
     };
 
     const config = loadConfig(paths);
@@ -84,9 +86,10 @@ theme = "gruvbox"
     const paths = {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: null,
+      projectConfig: join(tmpDir, "nonexistent-project.toml"),
       database: join(tmpDir, "jiratown.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
+      worktreesRoot: join(tmpDir, "worktrees"),
     };
 
     const config = loadConfig(paths);
@@ -116,6 +119,7 @@ cloud_id = "company.atlassian.net"
       projectConfig: join(tmpDir, ".jiratown.toml"),
       database: join(tmpDir, "jiratown.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
+      worktreesRoot: join(tmpDir, "worktrees"),
     };
 
     const config = loadConfig(paths);

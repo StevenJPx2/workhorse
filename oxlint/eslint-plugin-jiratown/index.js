@@ -105,7 +105,7 @@ import path3 from "path";
 var IMPLEMENTATION_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 var TEST_SUFFIXES = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"];
 var MIN_FILES_THRESHOLD = 2;
-var MAX_TEST_RATIO = 0.4;
+var MAX_TEST_RATIO = 0.3;
 function isTestFile(filename) {
   return TEST_SUFFIXES.some((suffix) => filename.endsWith(suffix));
 }
@@ -118,7 +118,7 @@ function isImplementationFile(filename) {
 var rule4 = {
   meta: {
     docs: {
-      description: "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 40%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it."
+      description: "Enforce test file colocation boundaries. When a folder has >2 files and the test-to-implementation ratio exceeds 30%, move tests to a __tests__/ directory. When a __tests__/ directory already exists, all test files in the same folder must be placed inside it."
     }
   },
   create(context) {
@@ -303,6 +303,243 @@ function isBarrelImport(source) {
 }
 var enforce_barrel_exports_default = rule6;
 
+// rules/no-index-imports.ts
+var rule7 = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Disallow explicit /index.ts imports. Use directory imports instead."
+    },
+    fixable: "code",
+    messages: {
+      noIndexImport: 'Import from directory instead of index file. Use "{{suggested}}" instead of "{{source}}"',
+      useDotIndex: 'Use "./index" or "./index.ts" instead of "." for current directory imports'
+    }
+  },
+  create(context) {
+    const filename = context.filename;
+    if (filename.includes("node_modules") || filename.includes("dist")) {
+      return {};
+    }
+    function checkSource(node) {
+      if (!node.source)
+        return;
+      const source = node.source.value;
+      if (source === ".") {
+        context.report({
+          node: node.source,
+          messageId: "useDotIndex",
+          fix(fixer) {
+            const raw = node.source.raw;
+            const quote = raw[0];
+            return fixer.replaceText(node.source, `${quote}./index${quote}`);
+          }
+        });
+        return;
+      }
+      if (/^\.\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/.test(source)) {
+        return;
+      }
+      const indexMatch = source.match(/^(.+)\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/);
+      if (indexMatch) {
+        const suggested = indexMatch[1];
+        context.report({
+          node: node.source,
+          messageId: "noIndexImport",
+          data: { source, suggested },
+          fix(fixer) {
+            const raw = node.source.raw;
+            const quote = raw[0];
+            return fixer.replaceText(node.source, `${quote}${suggested}${quote}`);
+          }
+        });
+      }
+    }
+    return {
+      ImportDeclaration: checkSource,
+      ExportNamedDeclaration: checkSource,
+      ExportAllDeclaration: checkSource
+    };
+  }
+};
+var no_index_imports_default = rule7;
+
+// rules/no-section-comments.ts
+var rule8 = {
+  meta: {
+    docs: {
+      description: "Disallow section divider comments (// --) and numbered step comments (// 1.). Replace with meaningful comments or remove."
+    },
+    fixable: "code"
+  },
+  create(context) {
+    const sectionDividerPattern = /^-{2,}$/;
+    const numberedStepPattern = /^\d+\.\s*/;
+    const stepLabelPattern = /^step\s+\d+[:\s-]/i;
+    const separatorPattern = /^[=#]{3,}/;
+    return {
+      Program() {
+        const sourceCode = context.sourceCode;
+        const comments = sourceCode.getAllComments?.() ?? [];
+        for (const comment of comments) {
+          if (comment.type !== "Line")
+            continue;
+          const text = comment.value.trim();
+          let message = null;
+          if (sectionDividerPattern.test(text)) {
+            message = "Remove section divider comment. Use meaningful comments or whitespace instead.";
+          } else if (numberedStepPattern.test(text)) {
+            message = "Remove numbered step comment. Code should be self-documenting or use descriptive comments.";
+          } else if (stepLabelPattern.test(text)) {
+            message = "Remove step label comment. Code should be self-documenting or use descriptive comments.";
+          } else if (separatorPattern.test(text)) {
+            message = "Remove section separator comment. Use whitespace to separate logical sections.";
+          }
+          if (message) {
+            context.report({
+              node: comment,
+              message,
+              fix(fixer) {
+                const start = comment.range[0];
+                const end = comment.range[1];
+                const sourceText = sourceCode.text;
+                let removeStart = start;
+                let removeEnd = end;
+                while (removeStart > 0 && /[ \t]/.test(sourceText[removeStart - 1])) {
+                  removeStart--;
+                }
+                if (sourceText[removeEnd] === `
+`) {
+                  removeEnd++;
+                } else if (sourceText[removeEnd] === "\r" && sourceText[removeEnd + 1] === `
+`) {
+                  removeEnd += 2;
+                }
+                return fixer.removeRange([removeStart, removeEnd]);
+              }
+            });
+          }
+        }
+      }
+    };
+  }
+};
+var no_section_comments_default = rule8;
+
+// rules/utils.ts
+import path5 from "path";
+function parseFileContext(filename) {
+  const basename = path5.basename(filename);
+  const ext = path5.extname(filename);
+  const nameWithoutExt = basename.replace(ext, "");
+  const dirname = path5.dirname(filename);
+  return {
+    filename,
+    basename,
+    ext,
+    nameWithoutExt,
+    dirname
+  };
+}
+function shouldSkipFile(ctx) {
+  if (ctx.ext !== ".ts" && ctx.ext !== ".tsx") {
+    return true;
+  }
+  if (ctx.filename.includes("node_modules") || ctx.filename.includes("dist")) {
+    return true;
+  }
+  return false;
+}
+function isIndexFile(ctx) {
+  return ctx.nameWithoutExt === "index";
+}
+
+// rules/prefer-folder-barrel.ts
+var rule9 = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Suggest converting non-index barrel files to folder structure with index.ts"
+    },
+    messages: {
+      preferFolderBarrel: 'File "{{filename}}" only contains re-exports from sibling files. Convert to folder: {{folderName}}/index.ts with source files moved inside.'
+    }
+  },
+  create(context) {
+    const ctx = parseFileContext(context.filename);
+    if (isIndexFile(ctx) || shouldSkipFile(ctx)) {
+      return {};
+    }
+    let hasSiblingReExports = false;
+    let hasNonSiblingReExports = false;
+    let hasOtherStatements = false;
+    let programNode = null;
+    function isSiblingImport(source) {
+      if (!source.startsWith("./"))
+        return false;
+      const rest = source.slice(2);
+      return !rest.includes("/");
+    }
+    return {
+      Program(node) {
+        programNode = node;
+      },
+      ExportNamedDeclaration(node) {
+        if (node.source) {
+          const source = node.source.value;
+          if (isSiblingImport(source)) {
+            hasSiblingReExports = true;
+          } else {
+            hasNonSiblingReExports = true;
+          }
+        } else if (node.declaration) {
+          hasOtherStatements = true;
+        }
+      },
+      ExportAllDeclaration(node) {
+        const source = node.source?.value ?? "";
+        if (isSiblingImport(source)) {
+          hasSiblingReExports = true;
+        } else {
+          hasNonSiblingReExports = true;
+        }
+      },
+      VariableDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      FunctionDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      ClassDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      TSTypeAliasDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      TSInterfaceDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      TSEnumDeclaration(_node) {
+        hasOtherStatements = true;
+      },
+      ImportDeclaration(_node) {},
+      "Program:exit"(_node) {
+        if (hasSiblingReExports && !hasNonSiblingReExports && !hasOtherStatements && programNode) {
+          context.report({
+            node: programNode,
+            messageId: "preferFolderBarrel",
+            data: {
+              filename: ctx.basename,
+              folderName: ctx.nameWithoutExt
+            }
+          });
+        }
+      }
+    };
+  }
+};
+var prefer_folder_barrel_default = rule9;
+
 // index.ts
 var plugin = {
   meta: {
@@ -315,7 +552,10 @@ var plugin = {
     "enforce-colocated-exports": enforce_colocated_exports_default,
     "enforce-test-colocation": enforce_test_colocation_default,
     "no-single-reference-function": no_single_reference_function_default,
-    "enforce-barrel-exports": enforce_barrel_exports_default
+    "enforce-barrel-exports": enforce_barrel_exports_default,
+    "no-index-imports": no_index_imports_default,
+    "no-section-comments": no_section_comments_default,
+    "prefer-folder-barrel": prefer_folder_barrel_default
   }
 };
 var eslint_plugin_jiratown_default = plugin;

@@ -71,6 +71,14 @@ oxlint/            # Custom oxlint plugin (eslint-plugin-jiratown)
 - Max cyclomatic: 15
 - Max cognitive: 12
 
+### Barrel export hygiene (manual review)
+
+When working with barrel files (`index.ts`), check that exports are actually needed externally:
+
+- **Internal-only exports**: If a symbol exported from `module/index.ts` is only imported by files within `module/`, it shouldn't be exported from the barrel — it's an implementation detail
+- **Re-export chains**: When symbol `X` is exported from `l1/index.ts` → re-exported by `memory/index.ts` → re-exported by `src/index.ts`, that's fine (external consumers can reach it)
+- **Rule of thumb**: Only export from barrels what logically belongs to the module's public API
+
 ## Bun-Specific APIs
 
 Prefer Bun builtins:

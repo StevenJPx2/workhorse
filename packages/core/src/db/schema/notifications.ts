@@ -1,5 +1,6 @@
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { z } from "zod/v4";
 import { dateText, nullableDateText } from "./custom-types.ts";
 import { issues } from "./issues.ts";
 
@@ -33,3 +34,9 @@ export const notifications = sqliteTable("notifications", {
 
 /** Notification type derived from schema */
 export type Notification = typeof notifications.$inferSelect;
+
+/** Zod schema for validating notification priority */
+export const NotificationPrioritySchema = z.enum(["blocking", "high", "normal", "low"]);
+
+/** Zod schema for validating notification status */
+export const NotificationStatusSchema = z.enum(["unread", "read", "acknowledged"]);

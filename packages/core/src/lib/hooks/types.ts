@@ -1,4 +1,11 @@
-import type { AgentInstance, Issue, IssueStatus, Notification } from "#types";
+import type { Issue, IssueStatus, Notification } from "#db";
+
+export interface AgentInstance {
+  id: string;
+  issueId: string;
+  pid?: number;
+  worktree?: string;
+}
 
 export interface PromptContext {
   issueId: string;

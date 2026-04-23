@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { z } from "zod/v4";
 import { dateText } from "./custom-types.ts";
 
 /** Valid issue statuses */
@@ -45,3 +46,15 @@ export const issues = sqliteTable(
 
 /** Issue type derived from schema */
 export type Issue = typeof issues.$inferSelect;
+
+/** Zod schema for validating issue status */
+export const IssueStatusSchema = z.enum([
+  "pending",
+  "queued",
+  "planning",
+  "implementing",
+  "blocked",
+  "pr_created",
+  "in_review",
+  "done",
+]);

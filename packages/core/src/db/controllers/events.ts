@@ -1,7 +1,7 @@
 import { eq, asc } from "drizzle-orm";
 import { issueEvents } from "../schema";
 import type { DrizzleDb } from "../types.ts";
-import type { IssueEvent } from "#types";
+import type { IssueEvent } from "#db";
 
 /**
  * Controller for IssueEvent operations

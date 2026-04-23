@@ -1,5 +1,3 @@
-import type { ZodType } from "zod/v4";
-
 export type AgentHarness = "claude-code" | "opencode";
 
 export interface JiratownConfig {
@@ -30,9 +28,5 @@ export interface ConfigPaths {
   projectConfig: string;
   database: string;
   memoryDatabase: string;
-}
-
-export interface PluginConfigSchema {
-  pluginName: string;
-  schema: ZodType;
+  worktreesRoot: string;
 }

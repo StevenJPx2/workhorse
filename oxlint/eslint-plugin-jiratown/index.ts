@@ -5,6 +5,8 @@ import enforceTestColocation from "./rules/enforce-test-colocation";
 import noSingleReferenceFunction from "./rules/no-single-reference-function";
 import enforceBarrelExports from "./rules/enforce-barrel-exports";
 import noIndexImports from "./rules/no-index-imports";
+import noSectionComments from "./rules/no-section-comments";
+import preferFolderBarrel from "./rules/prefer-folder-barrel";
 
 const plugin = {
   meta: {
@@ -19,6 +21,8 @@ const plugin = {
     "no-single-reference-function": noSingleReferenceFunction,
     "enforce-barrel-exports": enforceBarrelExports,
     "no-index-imports": noIndexImports,
+    "no-section-comments": noSectionComments,
+    "prefer-folder-barrel": preferFolderBarrel,
   },
 };
 

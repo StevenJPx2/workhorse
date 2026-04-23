@@ -6,7 +6,8 @@ import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
 import { definePlugin, PluginRegistry } from "#plugins";
-import type { Issue } from "#types";
+import { MemoryService } from "#services/memory";
+import type { Issue } from "#db";
 
 const loggerPlugin = definePlugin({
   manifest: {
@@ -47,6 +48,9 @@ export interface Jiratown {
   /** Database instance */
   readonly db: Database;
 
+  /** Memory service for session memory (L1) and semantic search (L2) */
+  readonly memory: MemoryService;
+
   /** Event hooks for pub/sub */
   readonly hooks: Emitter<HookEventMap>;
 
@@ -77,7 +81,15 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   const config = loadConfig(paths);
   const db = new Database(paths.database);
 
-  return runWithContext({ config, paths, hooks }, async () => {
+  // Initialize memory service (includes L1 session memory and L2 semantic search)
+  const memory = await MemoryService.create({
+    db,
+    hooks,
+    worktreesRoot: paths.worktreesRoot,
+    memoryDbPath: paths.memoryDatabase,
+  });
+
+  return runWithContext({ config, paths, hooks, memory }, async () => {
     const plugins = await PluginRegistry.create();
     plugins.register(loggerPlugin);
     await plugins.setup();
@@ -86,10 +98,12 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
       config: Object.freeze(config),
       paths: Object.freeze(paths),
       db,
+      memory,
       hooks,
       plugins,
       async shutdown() {
         await plugins.teardown();
+        await memory.shutdown();
         db.close();
         hooks.all.clear();
       },

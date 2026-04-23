@@ -4,7 +4,6 @@
     "types": ["bun", "vitest/globals"],
     "paths": {
       "#config": ["./src/config/index.ts"],
-      "#types": ["./src/types/index.ts"],
       "#lib/hooks": ["./src/lib/hooks/index.ts"],
       "#context": ["./src/context/index.ts"],
       "#plugins": ["./src/plugins/index.ts"],

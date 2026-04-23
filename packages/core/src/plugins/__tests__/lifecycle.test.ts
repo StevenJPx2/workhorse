@@ -19,6 +19,7 @@ const mockPaths: ConfigPaths = {
   projectConfig: "/tmp/project/.jiratown.toml",
   database: "/tmp/jiratown/jiratown.db",
   memoryDatabase: "/tmp/jiratown/memory.db",
+  worktreesRoot: "/tmp/project-worktrees",
 };
 
 // Helper to create a mock context with optional config overrides
@@ -27,6 +28,8 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     config: { ...DEFAULT_CONFIG, ...configOverrides },
     paths: mockPaths,
     hooks,
+    // Mock memory service - tests don't actually use it
+    memory: {} as any,
   };
 }
 

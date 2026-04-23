@@ -1,4 +1,4 @@
-import type { Issue, IssueEvent, Notification } from "#types";
+import type { Issue, IssueEvent, Notification } from "#db";
 import { Database } from "./database.ts";
 
 // ─── Test Factories ──────────────────────────────────────────────────────────

@@ -37,6 +37,7 @@
         "drizzle-orm": "^0.45.2",
         "keytar": "^7.9.0",
         "mitt": "^3.0.1",
+        "retriv": "^0.13.2",
         "smol-toml": "^1.6.1",
         "string-ts": "^2.3.1",
         "unctx": "^2.5.0",
@@ -634,6 +635,8 @@
     "resolve-pkg-maps": ["resolve-pkg-maps@1.0.0", "", {}, "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw=="],
 
     "restore-cursor": ["restore-cursor@5.1.0", "", { "dependencies": { "onetime": "^7.0.0", "signal-exit": "^4.1.0" } }, "sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA=="],
+
+    "retriv": ["retriv@0.13.2", "", { "peerDependencies": { "@ai-sdk/cohere": "^3.0.0", "@ai-sdk/google": "^3.0.0", "@ai-sdk/mistral": "^3.0.0", "@ai-sdk/openai": "^3.0.0", "@huggingface/transformers": "^3.0.0", "@libsql/client": "^0.14.0 || ^0.15.0 || ^0.16.0 || ^0.17.0", "@upstash/vector": "^1.0.0", "ai": "^4.0.0 || ^5.0.0 || ^6.0.0", "ollama-ai-provider-v2": "^1.0.0", "pg": "^8.0.0", "sqlite-vec": "^0.1.0-alpha.0", "typescript": "^5.0.0 || ^6.0.0-0" }, "optionalPeers": ["@ai-sdk/cohere", "@ai-sdk/google", "@ai-sdk/mistral", "@ai-sdk/openai", "@huggingface/transformers", "@libsql/client", "@upstash/vector", "ai", "ollama-ai-provider-v2", "pg", "sqlite-vec", "typescript"] }, "sha512-pHnZhCZtaXF0NjR2PFBmFOgepF1QgkooJ1B7f33Hl+iYyZbuupaa0hSLasxiQaiwlQc7h1Toeslpd5AkhEmriw=="],
 
     "rfdc": ["rfdc@1.4.1", "", {}, "sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA=="],
 

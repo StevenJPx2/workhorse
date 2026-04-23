@@ -1,6 +1,5 @@
-import { hooks } from "./index";
-import type { AgentInstance } from "#types";
-import type { HookEventMap } from "./types.ts";
+import { hooks } from "../index.ts";
+import type { AgentInstance, HookEventMap } from "../types.ts";
 
 const testInstance: AgentInstance = { id: "a1", issueId: "1" };
 

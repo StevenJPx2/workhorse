@@ -7,6 +7,8 @@
     "jiratown/enforce-kebab-case-filenames": "warn",
     "jiratown/enforce-colocated-exports": "warn",
     "jiratown/enforce-test-colocation": "warn",
-    "jiratown/no-single-reference-function": "warn"
+    "jiratown/no-single-reference-function": "warn",
+    "jiratown/no-section-comments": "warn",
+    "jiratown/prefer-folder-barrel": "warn"
   }
 }

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type { ConfigPaths } from "./types.ts";
 
 /**
@@ -13,6 +13,8 @@ import type { ConfigPaths } from "./types.ts";
  *
  * Data directory: ~/.local/share/jiratown/
  * Respects XDG_CONFIG_HOME and XDG_DATA_HOME environment variables.
+ *
+ * Worktrees root: ../repo-worktrees/ (sibling to repo)
  */
 export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
   const home = homedir();
@@ -28,11 +30,16 @@ export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPath
 
   const globalDir = join(xdgData, "jiratown");
 
+  // Worktrees root is a sibling directory: ../repo-worktrees/
+  const repoName = basename(repoRoot);
+  const worktreesRoot = join(dirname(repoRoot), `${repoName}-worktrees`);
+
   return {
     globalDir,
     globalConfig,
     projectConfig: join(repoRoot, ".jiratown.toml"),
     database: join(globalDir, "jiratown.db"),
     memoryDatabase: join(globalDir, "memory.db"),
+    worktreesRoot,
   };
 }

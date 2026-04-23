@@ -164,9 +164,9 @@ config.behavior.pollInterval  // 5000
 Config is validated with Zod. Invalid configs throw with helpful error messages:
 
 ```typescript
-import { JiratownConfigSchema } from "#config";
+import { jiratownConfigSchema } from "#config";
 
-const result = JiratownConfigSchema.safeParse(data);
+const result = jiratownConfigSchema.safeParse(data);
 if (!result.success) {
   console.error(result.error.issues);
 }
@@ -190,5 +190,5 @@ if (!result.success) {
 |-------------|-------------|
 | `JiratownConfig` | Config interface |
 | `ConfigPaths` | Paths interface |
-| `JiratownConfigSchema` | Zod validation schema |
+| `jiratownConfigSchema` | Zod validation schema |
 | `defaultConfig` | Default config values |

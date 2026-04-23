@@ -37,7 +37,7 @@ describe("bootstrap", () => {
   });
 
   it("returns Jiratown instance with config and hooks", async () => {
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
     const jt = await bootstrap(tmpDir);
 
     expect(jt.config).toBeDefined();
@@ -46,7 +46,7 @@ describe("bootstrap", () => {
   });
 
   it("loads config from project root", async () => {
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
 
     writeTempToml(
       tmpDir,
@@ -68,7 +68,7 @@ theme = "gruvbox"
   });
 
   it("config is frozen (readonly)", async () => {
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
     const jt = await bootstrap(tmpDir);
 
     expect(() => {
@@ -78,7 +78,7 @@ theme = "gruvbox"
   });
 
   it("shutdown clears all hook handlers", async () => {
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
     const jt = await bootstrap(tmpDir);
 
     let called = false;
@@ -93,7 +93,7 @@ theme = "gruvbox"
   });
 
   it("multiple bootstrap calls get fresh hooks state", async () => {
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
 
     const jt1 = await bootstrap(tmpDir);
     let callCount = 0;
@@ -112,7 +112,7 @@ theme = "gruvbox"
     // This test documents planned behavior that is not yet implemented.
     // When shutdown is called with a timeout, it should reject pending operations
     // after the timeout expires.
-    const { bootstrap } = await import("./bootstrap.ts");
+    const { bootstrap } = await import("../bootstrap.ts");
     const jt = await bootstrap(tmpDir);
 
     // Expected: shutdown(timeout) should return a promise that resolves

@@ -27,5 +27,3 @@ export const jiratownConfigSchema = z.object({
     })
     .passthrough(), // Allow plugin-specific keys like [plugins.jira]
 });
-
-export type JiratownConfigSchema = z.infer<typeof jiratownConfigSchema>;

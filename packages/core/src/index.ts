@@ -2,8 +2,30 @@
 
 export { bootstrap, type Jiratown } from "./bootstrap.ts";
 export * from "#config";
-export * from "#types";
-export { hooks, type HookEventMap, type PromptContext } from "#lib/hooks";
+export {
+  // Database
+  Database,
+  // Tables
+  issues,
+  issueEvents,
+  notifications,
+  // Custom column types
+  dateText,
+  nullableDateText,
+  // Zod schemas
+  IssueStatusSchema,
+  NotificationPrioritySchema,
+  NotificationStatusSchema,
+} from "#db";
+export type {
+  Issue,
+  IssueStatus,
+  IssueEvent,
+  Notification,
+  NotificationPriority,
+  NotificationStatus,
+} from "#db";
+export { hooks, type HookEventMap, type PromptContext, type AgentInstance } from "#lib/hooks";
 export { useJiratown, tryUseJiratown, runWithContext, type JiratownContext } from "#context";
 export {
   definePlugin,
@@ -15,4 +37,23 @@ export {
   type PluginOptions,
   type PluginManifest,
 } from "#plugins";
-export { Database } from "#db";
+
+// Memory service exports
+export {
+  MemoryService,
+  L1Store,
+  L2Store,
+  NotificationService,
+  generateSystemInbox,
+  parseSessionMemory,
+  serializeSessionMemory,
+  // Types
+  type CreateNotificationInput,
+  type IssueEventType,
+  type MemoryDocument,
+  type MemoryDocumentType,
+  type MemorySearchOptions,
+  type SearchResult,
+  type SessionEntry,
+  type SessionMemory,
+} from "#services/memory";

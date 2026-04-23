@@ -80,8 +80,3 @@ export interface Plugin {
   teardown?: () => void | Promise<void>;
   [PluginSymbol]: true;
 }
-
-/**
- * Type alias for plugins in contexts where type doesn't matter (e.g., registry).
- */
-export type AnyPlugin = Plugin;

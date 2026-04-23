@@ -18,3 +18,7 @@ export { notifications } from "./notifications.ts";
 export type { Issue, IssueStatus } from "./issues.ts";
 export type { IssueEvent } from "./events.ts";
 export type { Notification, NotificationPriority, NotificationStatus } from "./notifications.ts";
+
+// Zod schemas for runtime validation
+export { IssueStatusSchema } from "./issues.ts";
+export { NotificationPrioritySchema, NotificationStatusSchema } from "./notifications.ts";

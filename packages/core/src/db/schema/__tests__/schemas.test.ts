@@ -2,7 +2,7 @@ import {
   IssueStatusSchema,
   NotificationPrioritySchema,
   NotificationStatusSchema,
-} from "./schemas.ts";
+} from "../index.ts";
 import type {
   Issue,
   IssueStatus,
@@ -10,7 +10,7 @@ import type {
   Notification,
   NotificationPriority,
   NotificationStatus,
-} from "./index";
+} from "../index.ts";
 
 // oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
 function makeIssue(overrides?: Partial<Issue>): Issue {
@@ -177,7 +177,7 @@ test.skip("TODO: implement IssuePrioritySchema for issue prioritization", () => 
   // Issues should have a priority field with validated values.
   // Expected values: "critical", "high", "medium", "low"
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const schemas = require("./schemas.ts") as Record<string, unknown>;
+  const schemas = require("../index.ts") as Record<string, unknown>;
   const IssuePrioritySchema = schemas["IssuePrioritySchema"] as { parse: (v: string) => string };
   expect(IssuePrioritySchema.parse("high")).toBe("high");
 });
