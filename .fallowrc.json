@@ -17,7 +17,9 @@
     { "file": "packages/core/src/workflow/orchestrator/types/index.ts", "exports": ["JSONSchema"] },
     { "file": "packages/plugins/jira/src/auth.ts", "exports": ["loadCredentials", "saveCredentials", "clearCredentials"] },
     { "file": "packages/plugins/jira/src/parser.ts", "exports": ["canParseJira"] },
-    { "file": "packages/plugins/pi-adapter/src/events.ts", "exports": ["EventHandlerContext", "ToolFactoryContext"] }
+    { "file": "packages/plugins/pi-adapter/src/events.ts", "exports": ["EventHandlerContext", "ToolFactoryContext"] },
+    { "file": "packages/core/src/workflow/orchestrator/steering/evaluator.ts", "exports": ["matchesCondition"] },
+    { "file": "packages/plugins/github/src/monitor-notifications.ts", "exports": ["REVIEW_PRIORITIES", "PRMeta"] }
   ],
   "ignorePatterns": [
     "**/node_modules/**",

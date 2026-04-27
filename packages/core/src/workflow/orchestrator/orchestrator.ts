@@ -3,13 +3,13 @@
  * @module workflow/orchestrator/orchestrator
  */
 
+import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
-import { removeWorktree } from "#lib/git/worktree/index";
-import type { Emitter } from "mitt";
-import type { HookEventMap } from "#lib/hooks/types";
-import type { MemoryService } from "#services/memory/service";
-import { PromptEngineer } from "#workflow/tracker/engineer";
+import { removeWorktree } from "#lib/git";
+import type { HookEventMap } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
+import { PromptEngineer } from "#workflow/tracker";
 import { spawnAgent } from "./spawn.ts";
 import { SteeringService } from "./steering/service.ts";
 import type { SteeringRule } from "./steering/types.ts";

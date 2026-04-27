@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
-import { createWorktree } from "#lib/git/worktree/index";
+import { createWorktree } from "#lib/git/worktree";
 import type { HookEmitter } from "#lib/hooks/types";
 import type { MemoryService } from "#services/memory/service";
 import { PromptEngineer } from "#workflow/tracker/engineer";
