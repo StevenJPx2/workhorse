@@ -12,7 +12,7 @@
 | 7 | MonitorService | ✅ Done | Polling framework + agent health stub |
 | 8 | Tracker | ✅ Done | Issue parsing + prompt building |
 | 9 | Harness | ✅ Done | AgentAdapter abstract class, pluggable adapters via plugins, Pi adapter plugin, spawn/stop flow, Orchestrator with registerAdapter |
-| 10 | MCP | ⬜ Pending | Empty stub |
+| 10 | MCP | ✅ Merged into Step 9 | Superseded by `OrchestratorTool` + `Adapter` pattern. Each adapter translates tools to its native harness (Pi uses Extension API, Claude Code uses `.mcp.json`, etc.). No standalone MCP server needed in core. |
 | 11 | Jira Plugin | ⬜ Pending | |
 | 12 | GitHub Plugin | ⬜ Pending | |
 

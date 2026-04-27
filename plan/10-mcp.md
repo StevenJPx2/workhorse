@@ -1,3 +1,15 @@
+# Step 10: MCP (MERGED INTO STEP 9)
+
+> **Status: Superseded.** The functionality described here is now handled by the `OrchestratorTool` + `Adapter` pattern implemented in step 9 (`plan/09-harness.md`).
+>
+> Each adapter plugin (e.g., Pi, Claude Code, Opencode) translates `OrchestratorTool[]` into its harness-native tool format. For Pi, that means `ExtensionAPI.registerTool()`. For Claude Code, a future adapter would generate `.mcp.json`. For Opencode, it would generate its JS/TS plugin modules.
+>
+> **Core tools** (`jiratown_acknowledge`, `jiratown_update_status`, `jiratown_escalate`) live in `packages/core/src/plugins/builtin/tools/definitions.ts`.
+>
+> See `plan/PROGRESS.md` for the updated status.
+
+---
+
 # Step 10: MCP
 
 Agent's interface back to Jiratown via stdio. 3 core tools (source-agnostic). Plugins contribute additional tools via hooks. Lives inside `workflow/harness/` because it's a harness-specific concern — each harness type configures and launches the MCP server as part of its provisioning.
