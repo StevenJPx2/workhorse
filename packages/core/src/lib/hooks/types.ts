@@ -1,9 +1,10 @@
+import type { Emitter } from "mitt";
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { AgentAdapter, SpawnOptions } from "../../workflow/orchestrator/types/index.ts";
-import type { PromptBuildingContext, PromptContextBlock } from "../../workflow/tracker/types.ts";
+import type { AgentAdapter, SpawnOptions } from "#workflow/orchestrator";
+import type { PromptBuildingContext } from "#workflow/tracker";
 
 // Re-export for convenience
-export type { PromptBuildingContext, PromptContextBlock } from "../../workflow/tracker/types.ts";
+export type { PromptBuildingContext, PromptContextBlock } from "#workflow/tracker";
 
 type KnownEvents = {
   // Issues
@@ -24,7 +25,7 @@ type KnownEvents = {
   "agent.output": { issueId: string; delta: string };
   "agent.tool_call": { issueId: string; tool: string; args: unknown };
   "agent.crashed": { issueId: string; error: Error };
-  "agent.idle": { issueId: string; status: IssueStatus };
+  "agent.idle": { issueId: string; status: IssueStatus; source: string };
 
   // Steering (idle steering system)
   "steering.reminder": { issueId: string; reminder: string };
@@ -48,3 +49,5 @@ type KnownEvents = {
 };
 
 export type HookEventMap = KnownEvents & Record<string, unknown>;
+
+export type HookEmitter = Emitter<HookEventMap>;

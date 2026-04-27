@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Issue } from "#db";
-import { PromptEngineer } from "../engineer.ts";
+import { PromptEngineer } from "#workflow/tracker/engineer";
 
 const mockMemory = {
   l1: {
@@ -21,6 +21,7 @@ const mockConfig = {
   prompt: { custom: undefined as string | undefined },
   ui: { theme: "default" },
   plugins: { enabled: [] },
+  steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
 };
 
 const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({

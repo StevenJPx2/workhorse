@@ -4,10 +4,9 @@
  * @module workflow/orchestrator/types/tools
  */
 
-import type { Emitter } from "mitt";
-import type { Database } from "../../../db/database.ts";
-import type { HookEventMap } from "../../../lib/hooks/types.ts";
-import type { MemoryService } from "../../../services/memory/service.ts";
+import type { Database } from "#db/database";
+import type { HookEmitter } from "#lib/hooks/types";
+import type { MemoryService } from "#services/memory/service";
 
 /**
  * JSON Schema type for tool parameter definitions.
@@ -38,7 +37,7 @@ export interface ToolExecutionContext {
   db: Database;
 
   /** Hook emitter for events */
-  hooks: Emitter<HookEventMap>;
+  hooks: HookEmitter;
 
   /** Memory service access */
   memory: MemoryService;

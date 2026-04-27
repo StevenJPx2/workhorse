@@ -15,6 +15,12 @@ export interface JiratownConfig {
   ui: {
     theme: string;
   };
+  steering: {
+    enabled: boolean;
+    debounceMs: number;
+    maxReminders: number;
+    cooldownMs: number;
+  };
   plugins: {
     enabled: string[];
     [pluginName: string]: unknown;

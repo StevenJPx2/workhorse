@@ -20,6 +20,19 @@ export const jiratownConfigSchema = z.object({
   ui: z.object({
     theme: z.string().default("tokyonight"),
   }),
+  steering: z
+    .object({
+      enabled: z.boolean().default(true),
+      debounceMs: z.number().int().positive().default(2000),
+      maxReminders: z.number().int().positive().default(3),
+      cooldownMs: z.number().int().positive().default(30000),
+    })
+    .default({
+      enabled: true,
+      debounceMs: 2000,
+      maxReminders: 3,
+      cooldownMs: 30000,
+    }),
   plugins: z
     .object({
       enabled: z.array(z.string()).default([]),

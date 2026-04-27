@@ -4,9 +4,8 @@
  * @module workflow/orchestrator/types/adapter-context
  */
 
-import type { Emitter } from "mitt";
 import type { Database, Issue } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { OrchestratorTool } from "./tools.ts";
 
@@ -51,7 +50,7 @@ export interface AdapterContext {
   db: Database;
 
   /** Hook emitter for events */
-  hooks: Emitter<HookEventMap>;
+  hooks: HookEmitter;
 
   /** Memory service access */
   memory: MemoryService;

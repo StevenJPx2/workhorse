@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
-import type { IssueParserOptions } from "../parser.ts";
-import { Tracker } from "../tracker.ts";
-import type { ParsedIssue } from "../types.ts";
+import type { IssueParserOptions } from "#workflow/tracker/parser";
+import { Tracker } from "#workflow/tracker/tracker";
+import type { ParsedIssue } from "#workflow/tracker/types";
 
 // Mock MemoryService
 const mockMemory = {
@@ -25,6 +25,7 @@ const mockConfig = {
   prompt: { custom: undefined },
   ui: { theme: "default" },
   plugins: { enabled: [] },
+  steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
 };
 
 function createParserOptions(overrides: {

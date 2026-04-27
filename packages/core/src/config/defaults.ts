@@ -12,6 +12,12 @@ export const DEFAULT_CONFIG: JiratownConfig = {
   ui: {
     theme: "tokyonight",
   },
+  steering: {
+    enabled: true,
+    debounceMs: 2000,
+    maxReminders: 3,
+    cooldownMs: 30000,
+  },
   plugins: {
     enabled: [],
   },

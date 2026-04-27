@@ -77,9 +77,7 @@ export function createGitHubPRMonitor(
         hasChanges = true;
         changes.newReviews = newReviews.length;
         createReviewNotifications(ctx, newReviews, meta);
-
-        // Emit hook for each new review
-        for (const review of newReviews) {
+        newReviews.forEach((review) => {
           ctx.hooks.emit("github:review.submitted", {
             issueId: issue.id,
             review: {
@@ -88,7 +86,7 @@ export function createGitHubPRMonitor(
               body: review.body ?? "",
             },
           });
-        }
+        });
       }
 
       // Process new comments
@@ -104,32 +102,25 @@ export function createGitHubPRMonitor(
         checkRuns,
         state.lastCheckConclusions,
         ctx.memory.notifications,
-        {
-          issueId: ctx.issueId,
-          ...meta,
-        },
+        { issueId: ctx.issueId, ...meta },
       );
       if (checkChanges.hasChanges) {
         hasChanges = true;
         changes.checkChanges = checkChanges.summary;
-
-        // Emit hooks for check status changes
         if (checkChanges.summary.failed) {
-          const failedChecks = checkRuns.filter((c) => c.conclusion === "failure");
           ctx.hooks.emit("github:checks.failed", {
             issueId: issue.id,
             pr: { number: prNumber },
-            failedChecks: failedChecks.map((c) => ({
-              name: c.name,
-              url: c.html_url ?? "",
-            })),
+            failedChecks: checkRuns
+              .filter((c) => c.conclusion === "failure")
+              .map((c) => ({
+                name: c.name,
+                url: c.html_url ?? "",
+              })),
           });
         }
         if (checkChanges.summary.allPassing) {
-          ctx.hooks.emit("github:checks.passed", {
-            issueId: issue.id,
-            pr: { number: prNumber },
-          });
+          ctx.hooks.emit("github:checks.passed", { issueId: issue.id, pr: { number: prNumber } });
         }
       }
 
@@ -140,12 +131,7 @@ export function createGitHubPRMonitor(
         createMergeableNotification(ctx, pr.mergeable_state, meta);
       }
 
-      // Detect PR merge and emit plugin hook for cross-plugin coordination
-      if (pr.merged && !state.lastMerged) {
-        hasChanges = true;
-        changes.merged = true;
-
-        // Emit plugin hook for cross-plugin listeners (e.g., Jira plugin)
+      const emitMergeHook = () => {
         ctx.hooks.emit("github:pr.merged", {
           issueId: issue.id,
           externalId: issue.externalId,
@@ -157,6 +143,21 @@ export function createGitHubPRMonitor(
             mergedAt: pr.merged_at ?? new Date().toISOString(),
           },
         });
+      };
+
+      const emitCloseHook = (isClosed: boolean) => {
+        if (!isClosed) return;
+        ctx.hooks.emit("github:pr.closed", {
+          issueId: issue.id,
+          pr: { number: prNumber, url: pr.html_url },
+        });
+      };
+
+      // Detect PR merge and emit plugin hook for cross-plugin coordination
+      if (pr.merged && !state.lastMerged) {
+        hasChanges = true;
+        changes.merged = true;
+        emitMergeHook();
       }
 
       // Detect PR closed without merge
@@ -164,14 +165,7 @@ export function createGitHubPRMonitor(
       if (isClosed && !state.lastClosed) {
         hasChanges = true;
         changes.closed = true;
-
-        ctx.hooks.emit("github:pr.closed", {
-          issueId: issue.id,
-          pr: {
-            number: prNumber,
-            url: pr.html_url,
-          },
-        });
+        emitCloseHook(isClosed);
       }
 
       // Update state

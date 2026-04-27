@@ -3,4 +3,9 @@ import type { HookEventMap } from "./types.ts";
 
 export const hooks = mitt<HookEventMap>();
 
-export type { HookEventMap, PromptBuildingContext, PromptContextBlock } from "./types.ts";
+export type {
+  HookEmitter,
+  HookEventMap,
+  PromptBuildingContext,
+  PromptContextBlock,
+} from "./types.ts";

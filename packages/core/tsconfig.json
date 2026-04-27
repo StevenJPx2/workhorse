@@ -6,18 +6,28 @@
 		"declarationMap": true,
 		"rootDir": "./src",
 		"paths": {
+			"#bootstrap": ["./src/bootstrap.ts"],
 			"#config": ["./src/config/index.ts"],
+			"#config/*": ["./src/config/*.ts"],
 			"#context": ["./src/context/index.ts"],
+			"#context/*": ["./src/context/*.ts"],
 			"#db": ["./src/db/index.ts"],
+			"#db/*": ["./src/db/*.ts"],
 			"#lib/git": ["./src/lib/git/index.ts"],
+			"#lib/git/*": ["./src/lib/git/*.ts"],
 			"#lib/hooks": ["./src/lib/hooks/index.ts"],
+			"#lib/hooks/*": ["./src/lib/hooks/*.ts"],
 			"#plugins": ["./src/plugins/index.ts"],
+			"#plugins/*": ["./src/plugins/*.ts"],
 			"#services/memory": ["./src/services/memory/index.ts"],
+			"#services/memory/*": ["./src/services/memory/*.ts"],
 			"#services/monitor": ["./src/services/monitor/index.ts"],
+			"#services/monitor/*": ["./src/services/monitor/*.ts"],
 			"#workflow/orchestrator": ["./src/workflow/orchestrator/index.ts"],
-			"#workflow/tracker": ["./src/workflow/tracker/index.ts"]
+			"#workflow/orchestrator/*": ["./src/workflow/orchestrator/*.ts"],
+			"#workflow/tracker": ["./src/workflow/tracker/index.ts"],
+			"#workflow/tracker/*": ["./src/workflow/tracker/*.ts"]
 		}
 	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["src/**/*.test.ts", "src/**/__tests__/**"]
+	"include": ["src/**/*.ts"]
 }

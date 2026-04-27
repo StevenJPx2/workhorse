@@ -106,10 +106,6 @@ function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orchestrat
         status: string;
       };
       try {
-        // Get current issue to capture the "from" status
-        const issue = await client.fetchIssue(ticketKey);
-        const fromStatus = issue.fields.status.name;
-
         const transitions = await client.getTransitions(ticketKey);
         const transition = transitions.find((t) =>
           t.name.toLowerCase().includes(status.toLowerCase()),
@@ -127,7 +123,7 @@ function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orchestrat
         // Emit hook for cross-plugin coordination
         hooks.emit("jira:issue.transitioned", {
           issueId: ticketKey,
-          from: fromStatus,
+          from: (await client.fetchIssue(ticketKey)).fields.status.name,
           to: transition.to.name,
         });
 

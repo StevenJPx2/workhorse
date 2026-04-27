@@ -1,6 +1,5 @@
-import type { Emitter } from "mitt";
 import type { Database, Notification } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import { generateSystemInbox } from "./inbox.ts";
 import type { CreateNotificationInput } from "./types.ts";
 
@@ -43,7 +42,7 @@ export class NotificationService {
    */
   constructor(
     private db: Database,
-    private hooks: Emitter<HookEventMap>,
+    private hooks: HookEmitter,
   ) {}
 
   /**

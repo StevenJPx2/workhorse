@@ -1,6 +1,5 @@
-import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 
 /**
@@ -20,7 +19,7 @@ export interface MonitorContext {
   /** The issue ID this monitor is watching */
   issueId: string;
   /** Event hooks for emitting events */
-  hooks: Emitter<HookEventMap>;
+  hooks: HookEmitter;
   /** Memory service for accessing session memory and notifications */
   memory: MemoryService;
   /** Application configuration */

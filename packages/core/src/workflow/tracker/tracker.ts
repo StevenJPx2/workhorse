@@ -1,6 +1,5 @@
-import type { Emitter } from "mitt";
 import type { Database, Issue } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { BuildPromptOptions } from "./engineer.ts";
 import { IssueParser, type IssueParserOptions } from "./parser.ts";
 
@@ -35,7 +34,7 @@ export class Tracker {
 
   constructor(
     private readonly db: Database,
-    private readonly hooks: Emitter<HookEventMap>,
+    private readonly hooks: HookEmitter,
   ) {}
 
   /**

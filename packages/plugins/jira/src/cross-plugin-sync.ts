@@ -65,8 +65,7 @@ export function registerCrossPluginSync(
       const reporterAccountId = jiraIssue.fields.reporter?.accountId;
 
       // Get available transitions and find "In QA" or similar
-      const transitions = await client.getTransitions(ticketKey);
-      const qaTransition = findQATransition(transitions);
+      const qaTransition = findQATransition(await client.getTransitions(ticketKey));
 
       // Transition to QA status if available
       if (qaTransition) {
@@ -80,14 +79,13 @@ export function registerCrossPluginSync(
         });
       }
 
-      // Add a comment noting the PR merge and assignment
-      const assignmentNote = reporterAccountId
-        ? "Assigned to reporter for QA verification."
-        : "Ready for QA verification.";
-
       await client.addComment(
         ticketKey,
-        `✅ PR #${pr.number} has been merged.\n\n${assignmentNote}\n\nMerged by: ${pr.mergedBy ?? "unknown"}\nPR URL: ${pr.url}`,
+        `✅ PR #${pr.number} has been merged.\n\n${
+          reporterAccountId
+            ? "Assigned to reporter for QA verification."
+            : "Ready for QA verification."
+        }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\nPR URL: ${pr.url}`,
       );
 
       // Emit hook for other listeners

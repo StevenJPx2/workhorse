@@ -256,6 +256,9 @@ interface SteeringCondition {
   /** Issue source(s) this applies to */
   source?: string | string[]; // "jira", "github", etc.
 
+  /** Hook event(s) that must have recently fired for this issue */
+  hook?: string | string[]; // e.g. "github:pr.merged"
+
   /** Custom predicate for complex conditions */
   when?: (ctx: SteeringContext) => boolean | Promise<boolean>;
 }
@@ -274,6 +277,9 @@ interface SteeringContext {
 
   /** Recent tool calls (last N) */
   recentTools: Array<{ name: string; timestamp: number }>;
+
+  /** Recent hook events for this issue */
+  recentHooks: Array<{ name: string; timestamp: number; payload: unknown }>;
 }
 ```
 
@@ -385,6 +391,17 @@ class SteeringService {
       if (!sources.includes(ctx.issue.source)) return false;
     }
 
+    // Check hook events
+    if (condition.hook) {
+      const hooks = Array.isArray(condition.hook)
+        ? condition.hook
+        : [condition.hook];
+      const hasRecentHook = hooks.some((h) =>
+        ctx.recentHooks.some((r) => r.name === h),
+      );
+      if (!hasRecentHook) return false;
+    }
+
     // Check custom predicate
     if (condition.when) {
       if (!(await condition.when(ctx))) return false;
@@ -402,6 +419,7 @@ class SteeringService {
       notifications: this.memory.getNotifications(issue.externalId),
       hasPR: Boolean(issue.prUrl),
       recentTools: [], // TODO: Track in adapter
+      recentHooks: [], // TODO: Track hook events
     };
   }
 

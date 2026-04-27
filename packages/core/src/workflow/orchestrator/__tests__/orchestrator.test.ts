@@ -1,11 +1,10 @@
-import type { Emitter } from "mitt";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JiratownConfig } from "#config";
-import type { HookEventMap } from "#lib/hooks";
+import type { Database } from "#db/database";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import type { Database } from "../../../db/database.ts";
-import { HarnessOrchestrator } from "../orchestrator.ts";
-import type { OrchestratorTool } from "../types/index.ts";
+import type { OrchestratorTool } from "#workflow/orchestrator";
+import { HarnessOrchestrator } from "#workflow/orchestrator";
 
 /** Creates minimal mock dependencies */
 function createMockDeps() {
@@ -20,7 +19,7 @@ function createMockDeps() {
     on: vi.fn(),
     off: vi.fn(),
     emit: vi.fn(),
-  } as unknown as Emitter<HookEventMap>;
+  } as unknown as HookEmitter;
 
   const memory = {
     l1: { get: vi.fn().mockReturnValue(null) },

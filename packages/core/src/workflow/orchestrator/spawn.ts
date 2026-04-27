@@ -5,19 +5,18 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
-import type { Database } from "../../db/database.ts";
-import { createWorktree } from "../../lib/git/worktree/index.ts";
-import type { HookEventMap } from "../../lib/hooks/types.ts";
-import type { MemoryService } from "../../services/memory/service.ts";
-import { PromptEngineer } from "../tracker/engineer.ts";
+import type { Database } from "#db/database";
+import { createWorktree } from "#lib/git/worktree/index";
+import type { HookEmitter } from "#lib/hooks/types";
+import type { MemoryService } from "#services/memory/service";
+import { PromptEngineer } from "#workflow/tracker/engineer";
 import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types/index.ts";
 import type { AdapterClass } from "./types/index.ts";
 
 interface SpawnContext {
   db: Database;
-  hooks: Emitter<HookEventMap>;
+  hooks: HookEmitter;
   memory: MemoryService;
   config: Readonly<JiratownConfig>;
   agents: Map<string, AgentAdapter>;

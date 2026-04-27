@@ -3,14 +3,16 @@
  * @module workflow/orchestrator/orchestrator
  */
 
-import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
-import type { Database } from "../../db/database.ts";
-import { removeWorktree } from "../../lib/git/worktree/index.ts";
-import type { HookEventMap } from "../../lib/hooks/types.ts";
-import type { MemoryService } from "../../services/memory/service.ts";
-import { PromptEngineer } from "../tracker/engineer.ts";
+import type { Database } from "#db/database";
+import { removeWorktree } from "#lib/git/worktree/index";
+import type { Emitter } from "mitt";
+import type { HookEventMap } from "#lib/hooks/types";
+import type { MemoryService } from "#services/memory/service";
+import { PromptEngineer } from "#workflow/tracker/engineer";
 import { spawnAgent } from "./spawn.ts";
+import { SteeringService } from "./steering/service.ts";
+import type { SteeringRule } from "./steering/types.ts";
 import type {
   AdapterClass,
   AgentAdapter,
@@ -27,6 +29,7 @@ export class HarnessOrchestrator {
   private readonly tools = new Map<string, OrchestratorTool>();
   private readonly adapters = new Map<string, AdapterClass>();
   private readonly engineer: PromptEngineer;
+  private readonly steering: SteeringService;
 
   constructor(
     private readonly db: Database,
@@ -36,6 +39,8 @@ export class HarnessOrchestrator {
   ) {
     this.engineer = new PromptEngineer(memory, config);
 
+    this.steering = new SteeringService(db, memory, hooks, this.config.steering);
+
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
@@ -43,6 +48,18 @@ export class HarnessOrchestrator {
           await agent.sendMessage(this.memory.notifications.generateInbox([notification]));
         } catch (err) {
           console.error(`Failed to push notification to agent ${issueId}:`, err);
+        }
+      }
+    });
+
+    // Deliver steering reminders to running agents
+    this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
+      const agent = this.agents.get(issueId);
+      if (agent?.state === "running") {
+        try {
+          await agent.sendMessage(reminder);
+        } catch (err) {
+          console.error(`Failed to deliver steering reminder to agent ${issueId}:`, err);
         }
       }
     });
@@ -125,6 +142,16 @@ export class HarnessOrchestrator {
   /** Get all active agents. */
   getAll(): AgentAdapter[] {
     return Array.from(this.agents.values());
+  }
+
+  /** Register a steering rule. Plugins call this during setup. */
+  registerSteeringRule(rule: SteeringRule): void {
+    this.steering.registerRule(rule);
+  }
+
+  /** Unregister a steering rule. */
+  unregisterSteeringRule(id: string): void {
+    this.steering.unregisterRule(id);
   }
 
   /** Shutdown all agents. */

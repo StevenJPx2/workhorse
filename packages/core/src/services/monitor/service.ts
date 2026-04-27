@@ -1,6 +1,5 @@
-import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { Monitor } from "./monitor.ts";
 import type { MonitorOptions, MonitorStatus } from "./types.ts";
@@ -21,7 +20,7 @@ export class MonitorService {
   private running = new Map<string, Monitor>();
 
   constructor(
-    private readonly hooks: Emitter<HookEventMap>,
+    private readonly hooks: HookEmitter,
     private readonly memory: MemoryService,
     private readonly config: Readonly<JiratownConfig>,
   ) {}

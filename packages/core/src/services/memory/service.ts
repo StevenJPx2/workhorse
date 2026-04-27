@@ -1,6 +1,5 @@
-import type { Emitter } from "mitt";
 import type { Database } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import { L1Store } from "./l1/store.ts";
 import { L2Store } from "./l2.ts";
 import { NotificationService } from "./notifications.ts";
@@ -58,7 +57,7 @@ export class MemoryService {
    */
   static async create(options: {
     db: Database;
-    hooks: Emitter<HookEventMap>;
+    hooks: HookEmitter;
     worktreesRoot: string;
     memoryDbPath: string;
   }): Promise<MemoryService> {

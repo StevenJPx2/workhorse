@@ -19,6 +19,7 @@ import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
 import { createGitHubParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
+import { registerGitHubSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
 import { createGitHubTools } from "./tools.ts";
 
@@ -91,5 +92,8 @@ export const githubPlugin = definePlugin({
     for (const tool of createGitHubTools(client, ctx.db, ctx.hooks, ctx.monitors)) {
       ctx.orchestrator.registerTool(tool);
     }
+
+    // Register GitHub steering rules
+    registerGitHubSteering(ctx);
   },
 });

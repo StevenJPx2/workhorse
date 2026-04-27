@@ -16,6 +16,7 @@ describe("createAgentHealthMonitor", () => {
         prompt: {},
         ui: { theme: "default" },
         plugins: { enabled: [] },
+        steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
       },
       ...overrides,
     };

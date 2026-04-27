@@ -1,9 +1,8 @@
-import type { Emitter } from "mitt";
 import type { ConfigPaths, JiratownConfig } from "#config";
 import { loadConfig, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
 import { CORE_PLUGINS, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
@@ -28,7 +27,7 @@ export interface Jiratown {
   readonly monitors: MonitorService;
 
   /** Event hooks for pub/sub */
-  readonly hooks: Emitter<HookEventMap>;
+  readonly hooks: HookEmitter;
 
   /** Tracker for issue parsing and prompt building */
   readonly tracker: Tracker;
