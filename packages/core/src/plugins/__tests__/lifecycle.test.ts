@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod/v4";
+import type { ConfigPaths, JiratownConfig } from "#config";
+import { DEFAULT_CONFIG } from "#config";
+import { setContext, unsetContext } from "#context";
+import { hooks } from "#lib/hooks";
 import { definePlugin } from "../define.ts";
 import { PluginRegistry } from "../registry.ts";
-import { setContext, unsetContext } from "#context";
-import { DEFAULT_CONFIG } from "#config";
-import type { ConfigPaths, JiratownConfig } from "#config";
-import { hooks } from "#lib/hooks";
 
 // Helper to create registry for tests
 function createTestRegistry(): PluginRegistry {
@@ -32,6 +32,10 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     memory: {} as any,
     monitors: {} as any,
     tracker: {} as any,
+    orchestrator: {
+      registerTool: vi.fn(),
+      getTools: vi.fn(() => []),
+    } as any,
   };
 }
 

@@ -1,0 +1,88 @@
+/**
+ * Agent spawn logic for the orchestrator.
+ * @module workflow/orchestrator/spawn
+ */
+
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import type { Emitter } from "mitt";
+import type { JiratownConfig } from "#config";
+import type { Database } from "../../db/database.ts";
+import { createWorktree } from "../../lib/git/worktree/index.ts";
+import type { HookEventMap } from "../../lib/hooks/types.ts";
+import type { MemoryService } from "../../services/memory/service.ts";
+import { PromptEngineer } from "../tracker/engineer.ts";
+import { PiAgentAdapter } from "./adapters/pi/adapter.ts";
+import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types/index.ts";
+
+interface SpawnContext {
+  db: Database;
+  hooks: Emitter<HookEventMap>;
+  memory: MemoryService;
+  config: Readonly<JiratownConfig>;
+  agents: Map<string, AgentAdapter>;
+  getTools: () => OrchestratorTool[];
+}
+
+/** Spawn a new agent for an issue. */
+export async function spawnAgent(
+  options: SpawnOptions,
+  ctx: SpawnContext,
+  engineer: PromptEngineer,
+): Promise<AgentAdapter> {
+  const { issue, harness = "pi-coding-agent", repoPath, baseBranch = "main" } = options;
+  const issueId = issue.externalId;
+
+  // Check if agent already exists
+  const existing = ctx.agents.get(issueId);
+  if (existing) {
+    if (existing.state === "running" || existing.state === "starting") {
+      throw new Error(`Agent for issue ${issueId} is already running`);
+    }
+    ctx.agents.delete(issueId);
+  }
+
+  ctx.hooks.emit("orchestrator.spawn.pre", { issue, options });
+
+  // Create or reuse worktree
+  const worktree = await createWorktree(repoPath, issueId, issue.issueType, baseBranch);
+  if (!worktree) {
+    throw new Error(`Failed to create worktree for ${issueId}`);
+  }
+
+  ctx.db.issues.update(issue.id, { worktreePath: worktree.path });
+
+  // Build hybrid prompt (detects resume via .jiratown/session/)
+  const tools = ctx.getTools();
+  const { systemPrompt, initialMessage } = await engineer.buildHybridPrompt(issue, {
+    isResume: existsSync(join(worktree.path, ".jiratown", "session")),
+    tools,
+  });
+
+  // Create adapter based on harness type
+  if (harness !== "pi-coding-agent") {
+    throw new Error(`Unsupported harness: ${harness}`);
+  }
+  const adapter = new PiAgentAdapter({
+    issue,
+    worktreePath: worktree.path,
+    systemPrompt,
+    initialMessage,
+    tools,
+    db: ctx.db,
+    hooks: ctx.hooks,
+    memory: ctx.memory,
+    model: options.model,
+  });
+
+  ctx.agents.set(issueId, adapter);
+
+  try {
+    await adapter.start();
+    ctx.hooks.emit("orchestrator.spawn.post", { adapter });
+    return adapter;
+  } catch (error) {
+    ctx.agents.delete(issueId);
+    throw error;
+  }
+}

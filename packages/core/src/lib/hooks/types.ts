@@ -1,15 +1,9 @@
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { PromptContextBlock, PromptBuildingContext } from "../../workflow/tracker/types.ts";
+import type { AgentAdapter, SpawnOptions } from "../../workflow/orchestrator/types/index.ts";
+import type { PromptBuildingContext, PromptContextBlock } from "../../workflow/tracker/types.ts";
 
 // Re-export for convenience
-export type { PromptContextBlock, PromptBuildingContext } from "../../workflow/tracker/types.ts";
-
-export interface AgentInstance {
-  id: string;
-  issueId: string;
-  pid?: number;
-  worktree?: string;
-}
+export type { PromptBuildingContext, PromptContextBlock } from "../../workflow/tracker/types.ts";
 
 type KnownEvents = {
   // Issues
@@ -20,14 +14,16 @@ type KnownEvents = {
   "prompt.building": { issueId: string; context: PromptBuildingContext };
   "prompt.built": { issueId: string; prompt: string };
 
-  // Agents
-  "agent.starting": { instance: AgentInstance };
-  "agent.started": { instance: AgentInstance };
+  // Orchestrator lifecycle
+  "orchestrator.spawn.pre": { issue: Issue; options: SpawnOptions };
+  "orchestrator.spawn.post": { adapter: AgentAdapter };
+  "orchestrator.stop.pre": { adapter: AgentAdapter };
+  "orchestrator.stop.post": { adapter: AgentAdapter };
 
-  "agent.stopping": { instance: AgentInstance };
-  "agent.stopped": { instance: AgentInstance };
-
-  "agent.crashed": { instance: AgentInstance; error?: Error };
+  // Agent events (bridged from harness session.subscribe())
+  "agent.output": { issueId: string; delta: string };
+  "agent.tool_call": { issueId: string; tool: string; args: unknown };
+  "agent.crashed": { issueId: string; error: Error };
 
   // Notifications
   "notification.created": { notification: Notification; issueId: string };
@@ -35,7 +31,12 @@ type KnownEvents = {
   // Monitors
   "monitor.registered": { name: string; type: "remote" | "local" };
   "monitor.tick": { id: string; issueId: string; result: unknown };
-  "monitor.error": { id: string; issueId: string; error: Error; errorCount: number };
+  "monitor.error": {
+    id: string;
+    issueId: string;
+    error: Error;
+    errorCount: number;
+  };
 
   // Plugins
   "plugin.loaded": { name: string };

@@ -63,9 +63,7 @@ export class PluginRegistry {
   private async discover(directory: string): Promise<void> {
     if (!existsSync(directory)) return;
 
-    const entries = readdirSync(directory, { withFileTypes: true });
-
-    for (const entry of entries) {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const fullPath = join(directory, entry.name);
 
       if (entry.isFile() && !/\.(ts|js|mjs|mts)$/.test(entry.name)) continue;

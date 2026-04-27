@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { join } from "node:path";
-import { definePlugin } from "../define.ts";
-import { PluginRegistry, isPlugin } from "../registry.ts";
-import { setContext, unsetContext } from "#context";
-import { DEFAULT_CONFIG } from "#config";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConfigPaths, JiratownConfig } from "#config";
+import { DEFAULT_CONFIG } from "#config";
+import { setContext, unsetContext } from "#context";
 import { hooks } from "#lib/hooks";
+import { definePlugin } from "../define.ts";
+import { isPlugin, PluginRegistry } from "../registry.ts";
 import type { Plugin } from "../types.ts";
 
 const FIXTURES_DIR = join(import.meta.dirname, "fixtures");
@@ -38,6 +38,10 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     memory: {} as any,
     monitors: {} as any,
     tracker: {} as any,
+    orchestrator: {
+      registerTool: vi.fn(),
+      getTools: vi.fn(() => []),
+    } as any,
   };
 }
 
@@ -193,7 +197,10 @@ describe("PluginRegistry.create", () => {
 
     setContext(
       createMockContext({
-        plugins: { enabled: [validPluginPath, validPluginPath], directories: [] },
+        plugins: {
+          enabled: [validPluginPath, validPluginPath],
+          directories: [],
+        },
       }),
     );
 
@@ -219,6 +226,10 @@ describe("PluginRegistry.create", () => {
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
+      orchestrator: {
+        registerTool: vi.fn(),
+        getTools: vi.fn(() => []),
+      } as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -243,6 +254,10 @@ describe("PluginRegistry.create", () => {
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
+      orchestrator: {
+        registerTool: vi.fn(),
+        getTools: vi.fn(() => []),
+      } as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -267,6 +282,10 @@ describe("PluginRegistry.create", () => {
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
+      orchestrator: {
+        registerTool: vi.fn(),
+        getTools: vi.fn(() => []),
+      } as any,
     });
 
     const registry = await PluginRegistry.create();
@@ -317,6 +336,10 @@ describe("PluginRegistry.create", () => {
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
+      orchestrator: {
+        registerTool: vi.fn(),
+        getTools: vi.fn(() => []),
+      } as any,
     });
 
     const registry = await PluginRegistry.create();

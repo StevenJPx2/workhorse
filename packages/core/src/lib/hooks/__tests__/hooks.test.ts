@@ -1,7 +1,5 @@
 import { hooks } from "../index.ts";
-import type { AgentInstance, HookEventMap } from "../types.ts";
-
-const testInstance: AgentInstance = { id: "a1", issueId: "1" };
+import type { HookEventMap } from "../types.ts";
 
 describe("hooks", () => {
   test("registers and calls handlers", () => {
@@ -44,9 +42,9 @@ describe("hooks", () => {
       called = true;
     };
 
-    hooks.on("agent.started", handler);
-    hooks.off("agent.started", handler);
-    hooks.emit("agent.started", { instance: testInstance });
+    hooks.on("plugin.loaded", handler);
+    hooks.off("plugin.loaded", handler);
+    hooks.emit("plugin.loaded", { name: "test" });
 
     expect(called).toBe(false);
   });
@@ -73,7 +71,10 @@ describe("hooks", () => {
       called = true;
     });
     hooks.all.clear();
-    hooks.emit("agent.crashed", { instance: testInstance });
+    hooks.emit("agent.crashed", {
+      issueId: "test-1",
+      error: new Error("test"),
+    });
 
     expect(called).toBe(false);
   });

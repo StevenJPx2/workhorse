@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { PromptEngineer } from "../engineer.ts";
+import { describe, expect, it, vi } from "vitest";
 import type { Issue } from "#db";
+import { PromptEngineer } from "../engineer.ts";
 
 const mockMemory = {
   l1: {
@@ -217,7 +217,10 @@ describe("PromptEngineer", () => {
         },
       };
       const engineer = new PromptEngineer(memory as any, mockConfig);
-      const issue = createMockIssue({ worktreePath: "/path/to/worktree", status: "implementing" });
+      const issue = createMockIssue({
+        worktreePath: "/path/to/worktree",
+        status: "implementing",
+      });
 
       const prompt = await engineer.buildPrompt(issue);
 
@@ -250,7 +253,10 @@ describe("PromptEngineer", () => {
         },
       };
       const engineer = new PromptEngineer(memory as any, mockConfig);
-      const issue = createMockIssue({ worktreePath: "/path/to/worktree", status: "implementing" });
+      const issue = createMockIssue({
+        worktreePath: "/path/to/worktree",
+        status: "implementing",
+      });
 
       const prompt = await engineer.buildPrompt(issue);
 
@@ -296,7 +302,10 @@ describe("PromptEngineer", () => {
         },
       };
       const engineer = new PromptEngineer(memory as any, mockConfig);
-      const issue = createMockIssue({ worktreePath: "/path/to/worktree", status: "implementing" });
+      const issue = createMockIssue({
+        worktreePath: "/path/to/worktree",
+        status: "implementing",
+      });
 
       const prompt = await engineer.buildPrompt(issue);
 

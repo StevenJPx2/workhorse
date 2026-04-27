@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
-import { Tracker } from "../tracker.ts";
 import type { IssueParserOptions } from "../parser.ts";
+import { Tracker } from "../tracker.ts";
 import type { ParsedIssue } from "../types.ts";
 
 // Mock MemoryService
@@ -408,7 +408,9 @@ describe("Tracker", () => {
     it("includes custom instructions from config", async () => {
       const customConfig = {
         ...mockConfig,
-        prompt: { custom: "Always follow best practices" as string | undefined },
+        prompt: {
+          custom: "Always follow best practices" as string | undefined,
+        },
       };
 
       tracker.registerParser(createParserOptions({ source: "jira", config: customConfig as any }));

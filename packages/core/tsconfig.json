@@ -1,20 +1,22 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "types": ["bun", "vitest/globals"],
-    "paths": {
-      "#config": ["./src/config/index.ts"],
-      "#lib/hooks": ["./src/lib/hooks/index.ts"],
-      "#context": ["./src/context/index.ts"],
-      "#plugins": ["./src/plugins/index.ts"],
-      "#db": ["./src/db/index.ts"],
-      "#services/memory": ["./src/services/memory/index.ts"],
-      "#services/monitor": ["./src/services/monitor/index.ts"],
-      "#issue-provider": ["./src/issue-provider/index.ts"],
-      "#agent-adapter": ["./src/agent-adapter/index.ts"],
-      "#mcp-server": ["./src/mcp-server/index.ts"],
-      "#workflow/tracker": ["./src/workflow/tracker/index.ts"]
-    }
-  },
-  "include": ["src/**/*.ts"]
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"types": ["bun", "vitest/globals"],
+		"paths": {
+			"#config": ["./src/config/index.ts"],
+			"#lib/hooks": ["./src/lib/hooks/index.ts"],
+			"#context": ["./src/context/index.ts"],
+			"#plugins": ["./src/plugins/index.ts"],
+			"#db": ["./src/db/index.ts"],
+			"#lib/git": ["./src/lib/git/index.ts"],
+			"#services/memory": ["./src/services/memory/index.ts"],
+			"#services/monitor": ["./src/services/monitor/index.ts"],
+			"#issue-provider": ["./src/issue-provider/index.ts"],
+			"#agent-adapter": ["./src/agent-adapter/index.ts"],
+			"#mcp-server": ["./src/mcp-server/index.ts"],
+			"#workflow/tracker": ["./src/workflow/tracker/index.ts"],
+			"#workflow/orchestrator": ["./src/workflow/orchestrator/index.ts"]
+		}
+	},
+	"include": ["src/**/*.ts"]
 }

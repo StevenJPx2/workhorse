@@ -1,4 +1,6 @@
+// Built-in plugins
+export { corePlugin } from "./builtin/index.ts";
 export { definePlugin } from "./define.ts";
-export { PluginRegistry, isPlugin } from "./registry.ts";
-export { PluginSymbol, PluginManifestSchema } from "./types.ts";
-export type { PluginManifest, PluginOptions, Plugin } from "./types.ts";
+export { isPlugin, PluginRegistry } from "./registry.ts";
+export type { Plugin, PluginManifest, PluginOptions } from "./types.ts";
+export { PluginManifestSchema, PluginSymbol } from "./types.ts";

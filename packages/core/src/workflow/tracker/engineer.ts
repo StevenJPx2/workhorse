@@ -1,30 +1,36 @@
+import type { JiratownConfig } from "#config";
 import type { Issue } from "#db";
 import type { MemoryService, SearchResult, SessionMemory } from "#services/memory";
-import type { JiratownConfig } from "#config";
-import type { PromptContextBlock } from "./types.ts";
+import type { OrchestratorTool } from "#workflow/orchestrator";
 import {
-  renderIssueSection,
-  renderContextBlock,
-  renderSearchResults,
-  sortContextBlocks,
   buildInitialPrompt,
   buildResumePrompt,
+  renderContextBlock,
+  renderIssueSection,
+  renderSearchResults,
+  sortContextBlocks,
 } from "./render.ts";
+import type { PromptContextBlock } from "./types.ts";
 
-/**
- * Options for building a prompt.
- */
+/** Options for building a prompt. */
 export interface BuildPromptOptions {
-  /** Override isResume detection */
   isResume?: boolean;
 }
 
-/**
- * PromptEngineer - Builds prompts for issues with memory enrichment.
- *
- * Handles the assembly of system prompts, initial prompts, and resume prompts,
- * enriching them with session memory, semantic search results, and notifications.
- */
+/** Options for building a hybrid prompt (system + initial message). */
+// fallow-ignore-next-line unused-type
+export interface HybridPromptOptions extends BuildPromptOptions {
+  tools?: OrchestratorTool[];
+}
+
+/** Result from buildHybridPrompt(). Split into system prompt and initial message. */
+// fallow-ignore-next-line unused-type
+export interface HybridPrompt {
+  systemPrompt: string;
+  initialMessage: string;
+}
+
+/** PromptEngineer - Builds prompts for issues with memory enrichment. */
 export class PromptEngineer {
   private readonly customInstructions?: string;
 
@@ -101,42 +107,55 @@ export class PromptEngineer {
     };
   }
 
-  /**
-   * Build the system prompt (common for both initial and resume).
-   */
+  /** Build system prompt with optional tools section. */
   private buildSystemPrompt(
     issue: Issue,
     contextBlocks: PromptContextBlock[],
     searchResults: SearchResult[],
+    tools: OrchestratorTool[] = [],
   ): string {
-    const sections: string[] = [];
-
-    // Issue context
-    sections.push(renderIssueSection(issue));
-
-    // Context blocks (sorted by priority, lower first)
-    for (const block of sortContextBlocks(contextBlocks)) {
-      sections.push(renderContextBlock(block));
-    }
-
-    // Search results from L2 memory
-    if (searchResults.length > 0) {
-      sections.push(renderSearchResults(searchResults));
-    }
-
-    // Custom instructions
-    if (this.customInstructions) {
+    const sections: string[] = [renderIssueSection(issue)];
+    if (tools.length > 0) sections.push(this.renderToolsSection(tools));
+    for (const block of sortContextBlocks(contextBlocks)) sections.push(renderContextBlock(block));
+    if (searchResults.length > 0) sections.push(renderSearchResults(searchResults));
+    if (this.customInstructions)
       sections.push(`## Custom Instructions\n\n${this.customInstructions}`);
-    }
-
     return sections.join("\n\n");
   }
 
-  /**
-   * Search L2 memory for relevant context.
-   */
+  /** Search L2 memory for relevant context. */
   private async searchL2Memory(query: string): Promise<SearchResult[]> {
-    if (!query) return [];
-    return this.memory.l2.search(query, { limit: 5, returnContent: true });
+    return query ? this.memory.l2.search(query, { limit: 5, returnContent: true }) : [];
+  }
+
+  /** Build hybrid prompt split into system prompt and initial message for pi-coding-agent. */
+  async buildHybridPrompt(issue: Issue, options: HybridPromptOptions = {}): Promise<HybridPrompt> {
+    const { sessionMemory, searchResults, contextBlocks, isResume } = await this.gatherContext(
+      issue,
+      options,
+    );
+    return {
+      systemPrompt: this.buildSystemPrompt(
+        issue,
+        contextBlocks,
+        searchResults,
+        options.tools ?? [],
+      ),
+      initialMessage: isResume
+        ? buildResumePrompt(issue, sessionMemory)
+        : buildInitialPrompt(issue),
+    };
+  }
+
+  /** Render tools section for system prompt. */
+  private renderToolsSection(tools: OrchestratorTool[]): string {
+    const lines = [
+      "## Jiratown Tools",
+      "",
+      "The following tools are available for interacting with Jiratown:",
+      "",
+    ];
+    for (const tool of tools) lines.push(`### ${tool.name}`, tool.description, "");
+    return lines.join("\n");
   }
 }

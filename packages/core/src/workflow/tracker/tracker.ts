@@ -1,8 +1,8 @@
 import type { Emitter } from "mitt";
 import type { Database, Issue } from "#db";
 import type { HookEventMap } from "#lib/hooks";
-import { IssueParser, type IssueParserOptions } from "./parser.ts";
 import type { BuildPromptOptions } from "./engineer.ts";
+import { IssueParser, type IssueParserOptions } from "./parser.ts";
 
 /**
  * Tracker - Entry point for parsing user input into issues and building prompts.

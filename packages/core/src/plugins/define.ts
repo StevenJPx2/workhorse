@@ -54,17 +54,13 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
           return;
         }
 
-        const rawConfig = ctx.config.plugins[manifest.name];
-        const result = options.configSchema.safeParse(rawConfig);
+        const result = options.configSchema.safeParse(ctx.config.plugins[manifest.name]);
 
         if (!result.success) {
-          const errors = result.error.issues
-            .map((i) => `${i.path.join(".")}: ${i.message}`)
-            .join("\n");
-
-          throw new Error(`Invalid config for plugin "${manifest.name}":\n${errors}`);
+          throw new Error(
+            `Invalid config for plugin "${manifest.name}":\n${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n")}`,
+          );
         }
-
         await options.setup(ctx, result.data);
       } catch (error) {
         ctx.hooks.emit("plugin.error", {

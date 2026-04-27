@@ -38,6 +38,11 @@ export default defineConfig({
       "#agent-adapter": path.resolve(__dirname, "packages/core/src/agent-adapter/index.ts"),
       "#mcp-server": path.resolve(__dirname, "packages/core/src/mcp-server/index.ts"),
       "#workflow/tracker": path.resolve(__dirname, "packages/core/src/workflow/tracker/index.ts"),
+      "#workflow/orchestrator": path.resolve(
+        __dirname,
+        "packages/core/src/workflow/orchestrator/index.ts",
+      ),
+      "#lib/git": path.resolve(__dirname, "packages/core/src/lib/git/index.ts"),
     },
   },
 });

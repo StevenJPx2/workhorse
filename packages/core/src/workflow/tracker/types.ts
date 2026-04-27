@@ -37,6 +37,7 @@ export type IssueSource = "jira" | "github" | "manual" | (string & {});
  * Type of issue (task, bug, story, etc.).
  * Extensible via `& {}` for plugin-defined types.
  */
+// fallow-ignore-next-line unused-type
 export type IssueType = "task" | "bug" | "story" | "epic" | (string & {});
 
 /**
