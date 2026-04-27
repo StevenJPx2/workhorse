@@ -3,11 +3,11 @@
  *
  * Handles OAuth 2.0 3LO flow for Atlassian, storing tokens in the system keychain.
  *
- * @module plugins/builtin/jira/auth
+ * @module @jiratown/plugin-jira/auth
  */
 
 import { z } from "zod/v4";
-import { getCredential, storeCredential } from "../../../config/keychain.ts";
+import { getCredential, storeCredential } from "@jiratown/core";
 import type { JiraCredentials } from "./types.ts";
 
 const SERVICE = "jira";

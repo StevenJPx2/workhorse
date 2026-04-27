@@ -2,7 +2,7 @@
 
 All Jira functionality in a self-contained plugin. Core has zero Jira knowledge.
 
-Location: `packages/core/src/plugins/builtin/jira/`
+Location: `packages/plugins/jira/` (standalone package: `@jiratown/plugin-jira`)
 
 ## What It Registers
 
@@ -66,8 +66,9 @@ Hooks `issue.status_changed`. Maps `IssueStatus` → Jira transition heuristical
 
 Registers Jira-specific tools with the orchestrator:
 
-- `jira_add_comment(ticketKey: string, body: string)` — Add a comment to the Jira issue
+- `jira_add_comment(ticketKey: string, body: string, replyToId?: string)` — Add a comment to the Jira issue, optionally as a reply to an existing comment
 - `jira_transition_issue(ticketKey: string, status: string)` — Transition a Jira issue to a new status
+- `jira_get_comments(ticketKey: string)` — Get all comments from the Jira issue with threaded replies (returns array of { id, author, body, created, replies: [...] })
 
 ### Mapper
 

@@ -1,11 +1,10 @@
 /**
  * Jira status sync — transitions Jira tickets when issue.status_changed fires.
  *
- * @module plugins/builtin/jira/sync
+ * @module @jiratown/plugin-jira/sync
  */
 
-import type { IssueStatus } from "#db";
-import type { JiratownContext } from "#context";
+import type { IssueStatus, JiratownContext } from "@jiratown/core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Register status sync hook */

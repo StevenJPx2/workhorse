@@ -1,0 +1,25 @@
+{
+	"name": "@jiratown/plugin-jira",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"main": "src/index.ts",
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@jiratown/core": "workspace:*",
+		"arctic": "^3.7.0",
+		"zod": "^4"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5",
+		"vitest": "^4.1.4"
+	},
+	"peerDependencies": {
+		"@jiratown/core": "workspace:*"
+	}
+}

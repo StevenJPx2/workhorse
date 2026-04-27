@@ -1,7 +1,7 @@
 /**
  * Jira domain types for the Jira plugin.
  *
- * @module plugins/builtin/jira/types
+ * @module @jiratown/plugin-jira/types
  */
 
 /** Jira issue as returned by the REST API */
@@ -50,6 +50,8 @@ export interface JiraComment {
   body: string;
   created: string;
   updated: string;
+  /** Parent comment ID if this is a reply */
+  parentId?: string;
 }
 
 /** Jira workflow transition */

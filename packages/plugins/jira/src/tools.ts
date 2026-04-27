@@ -1,15 +1,19 @@
 /**
  * Jira tools registered with the orchestrator.
  *
- * @module plugins/builtin/jira/tools
+ * @module @jiratown/plugin-jira/tools
  */
 
-import type { OrchestratorTool } from "../../../workflow/orchestrator/types/tools.ts";
+import type { OrchestratorTool } from "@jiratown/core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Create Jira tool definitions bound to a client */
 export function createJiraTools(client: AtlassianClient): OrchestratorTool[] {
-  return [createAddCommentTool(client), createTransitionTool(client)];
+  return [
+    createAddCommentTool(client),
+    createTransitionTool(client),
+    createGetCommentsTool(client),
+  ];
 }
 
 /** Tool: Add a comment to a Jira issue */
@@ -18,7 +22,7 @@ function createAddCommentTool(client: AtlassianClient): OrchestratorTool {
     name: "jira_add_comment",
     description:
       "Add a comment to a Jira issue. Use this to provide updates, ask questions, " +
-      "or share findings with the Jira ticket stakeholders.",
+      "or share findings with the Jira ticket stakeholders. Optionally reply to an existing comment.",
     schema: {
       type: "object",
       properties: {
@@ -30,14 +34,26 @@ function createAddCommentTool(client: AtlassianClient): OrchestratorTool {
           type: "string",
           description: "The comment body in plain text or markdown",
         },
+        replyToId: {
+          type: "string",
+          description:
+            "Optional: The ID of an existing comment to reply to. Get comment IDs from jira_get_comments.",
+        },
       },
       required: ["ticketKey", "body"],
     },
     execute: async (args, _ctx) => {
-      const { ticketKey, body } = args as { ticketKey: string; body: string };
+      const { ticketKey, body, replyToId } = args as {
+        ticketKey: string;
+        body: string;
+        replyToId?: string;
+      };
       try {
-        await client.addComment(ticketKey, body);
-        return { success: true, output: `Comment added to ${ticketKey}` };
+        await client.addComment(ticketKey, body, replyToId);
+        return {
+          success: true,
+          output: `Comment added to ${ticketKey}${replyToId ? ` (reply to comment ${replyToId})` : ""}`,
+        };
       } catch (error) {
         return {
           success: false,
@@ -71,7 +87,10 @@ function createTransitionTool(client: AtlassianClient): OrchestratorTool {
       required: ["ticketKey", "status"],
     },
     execute: async (args, _ctx) => {
-      const { ticketKey, status } = args as { ticketKey: string; status: string };
+      const { ticketKey, status } = args as {
+        ticketKey: string;
+        status: string;
+      };
       try {
         const transitions = await client.getTransitions(ticketKey);
         const transition = transitions.find((t) =>
@@ -89,6 +108,53 @@ function createTransitionTool(client: AtlassianClient): OrchestratorTool {
         return {
           success: true,
           output: `Transitioned ${ticketKey} to "${transition.to.name}"`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  };
+}
+
+/** Tool: Get all comments from a Jira issue */
+function createGetCommentsTool(client: AtlassianClient): OrchestratorTool {
+  return {
+    name: "jira_get_comments",
+    description:
+      "Get all comments from a Jira issue. Returns an array of comments with id, author, body, " +
+      "creation timestamp, and parentId for threaded replies. Use the id field to reply to a specific comment.",
+    schema: {
+      type: "object",
+      properties: {
+        ticketKey: {
+          type: "string",
+          description: "The Jira ticket key (e.g., AM-123)",
+        },
+      },
+      required: ["ticketKey"],
+    },
+    execute: async (args, _ctx) => {
+      const { ticketKey } = args as { ticketKey: string };
+      try {
+        return {
+          success: true,
+          output: JSON.stringify(
+            await client.fetchIssue(ticketKey).then(
+              (issue) =>
+                issue.fields.comment?.comments.map((c) => ({
+                  id: c.id,
+                  author: c.author.displayName,
+                  body: c.body,
+                  created: c.created,
+                  parentId: c.parentId,
+                })) ?? [],
+            ),
+            null,
+            2,
+          ),
         };
       } catch (error) {
         return {

@@ -5,7 +5,7 @@ import { runWithContext } from "#context";
 import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
-import { CORE_PLUGINS, OPTIONAL_PLUGINS, PluginRegistry } from "#plugins";
+import { CORE_PLUGINS, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
 import { HarnessOrchestrator } from "#workflow/orchestrator";
@@ -90,12 +90,8 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
         plugins.register(plugin);
       }
 
-      // Optional built-in plugins — activated via config.plugins.enabled
-      for (const plugin of OPTIONAL_PLUGINS) {
-        if (config.plugins.enabled.includes(plugin.manifest.name)) {
-          plugins.register(plugin);
-        }
-      }
+      // Note: Optional plugins (like @jiratown/plugin-jira) are now external packages.
+      // Applications should register them manually via plugins.register() after bootstrap.
 
       await plugins.setup();
 

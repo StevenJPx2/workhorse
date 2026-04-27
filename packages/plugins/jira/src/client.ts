@@ -3,7 +3,7 @@
  *
  * Uses direct fetch calls (via Bun) with Bearer token auth.
  *
- * @module plugins/builtin/jira/client
+ * @module @jiratown/plugin-jira/client
  */
 
 import type { JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
@@ -74,9 +74,16 @@ export class AtlassianClient {
     return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`);
   }
 
-  /** Add a comment to an issue */
-  async addComment(ticketKey: string, body: string): Promise<void> {
-    await this.post(`/issue/${encodeURIComponent(ticketKey)}/comment`, { body });
+  /** Add a comment to an issue, optionally as a reply to another comment */
+  async addComment(ticketKey: string, body: string, replyToId?: string): Promise<void> {
+    const payload: Record<string, unknown> = { body };
+    if (replyToId) {
+      // Jira REST API v3 uses jsdPublic for comment properties including parent
+      payload.properties = [{ key: "sd.public.comment", value: { internal: false } }];
+      // For threaded replies, we need to use the comment property
+      payload.parentId = replyToId;
+    }
+    await this.post(`/issue/${encodeURIComponent(ticketKey)}/comment`, payload);
   }
 
   /** Get available transitions for an issue */

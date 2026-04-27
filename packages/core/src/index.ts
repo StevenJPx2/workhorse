@@ -43,6 +43,22 @@ export {
 } from "#plugins";
 // Orchestrator exports for plugin authors
 export { AgentAdapter } from "#workflow/orchestrator";
+export type {
+  JSONSchema,
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "./workflow/orchestrator/types/tools.ts";
+// Tracker exports for plugin authors
+export type { IssueParserOptions } from "./workflow/tracker/parser.ts";
+export type { IssueSource, IssueType, ParsedIssue } from "./workflow/tracker/types.ts";
+// Monitor exports for plugin authors
+export type {
+  MonitorContext,
+  MonitorOptions,
+  MonitorResult,
+  MonitorStatus,
+} from "./services/monitor/types.ts";
 // Memory service exports
 export {
   // Types
@@ -62,4 +78,6 @@ export {
   type SessionMemory,
   serializeSessionMemory,
 } from "#services/memory";
+// Config exports for plugin authors
+export { getCredential, storeCredential } from "./config/keychain.ts";
 export { bootstrap, type Jiratown } from "./bootstrap.ts";

@@ -5,8 +5,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createJiraCommentMonitor } from "../monitor.ts";
 import type { AtlassianClient } from "../client.ts";
-import type { MonitorContext } from "../../../../services/monitor/types.ts";
-import type { Issue } from "#db";
+import type { MonitorContext, Issue } from "@jiratown/core";
 
 describe("createJiraCommentMonitor", () => {
   it("returns monitor options with correct id and type", () => {

@@ -1,5 +1,5 @@
 /**
- * Jira Plugin — Built-in Jiratown plugin for Jira Cloud integration.
+ * Jira Plugin — Jiratown plugin for Jira Cloud integration.
  *
  * Provides:
  * - Issue parsing for Jira ticket keys and URLs
@@ -8,11 +8,11 @@
  * - Status sync (Jiratown status → Jira transitions)
  * - Jira tools (add_comment, transition_issue)
  *
- * @module plugins/builtin/jira
+ * @module @jiratown/plugin-jira
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "../../define.ts";
+import { definePlugin } from "@jiratown/core";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter } from "./auth.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
@@ -40,7 +40,7 @@ export const jiraPlugin = definePlugin({
     capabilities: {
       parsers: ["jira"],
       monitors: ["jira-comments"],
-      tools: ["jira_add_comment", "jira_transition_issue"],
+      tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
     },
   },
   configSchema: JiraConfigSchema,

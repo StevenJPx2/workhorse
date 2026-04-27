@@ -1,10 +1,10 @@
 /**
  * Mapper for converting Jira API responses to Jiratown's generic ParsedIssue.
  *
- * @module plugins/builtin/jira/mapper
+ * @module @jiratown/plugin-jira/mapper
  */
 
-import type { IssueSource, IssueType, ParsedIssue } from "../../../workflow/tracker/types.ts";
+import type { IssueSource, IssueType, ParsedIssue } from "@jiratown/core";
 import type { JiraComment, JiraIssue } from "./types.ts";
 
 /** Map a Jira issue to the generic ParsedIssue format */

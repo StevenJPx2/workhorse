@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { jiraPlugin, JiraConfigSchema } from "../index.ts";
-import { PluginSymbol } from "../../../types.ts";
+import { PluginSymbol } from "@jiratown/core";
 
 describe("jiraPlugin", () => {
   it("is a valid Jiratown plugin", () => {
@@ -17,7 +17,7 @@ describe("jiraPlugin", () => {
     expect(jiraPlugin.manifest.capabilities).toEqual({
       parsers: ["jira"],
       monitors: ["jira-comments"],
-      tools: ["jira_add_comment", "jira_transition_issue"],
+      tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
     });
   });
 
@@ -53,6 +53,8 @@ describe("JiraConfigSchema", () => {
   });
 });
 
-it.fails("TODO: plugin setup integrates with Jiratown context", async () => {
-  throw new Error("Not yet implemented");
+describe("plugin setup", () => {
+  it.fails("TODO: integrates with Jiratown context", async () => {
+    throw new Error("Not yet implemented");
+  });
 });

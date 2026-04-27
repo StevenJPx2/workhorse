@@ -26,6 +26,7 @@ export default defineConfig({
   resolve: {
     conditions: ["bun"],
     alias: {
+      "@jiratown/core": path.resolve(__dirname, "packages/core/src/index.ts"),
       "#config": path.resolve(__dirname, "packages/core/src/config/index.ts"),
       "#types": path.resolve(__dirname, "packages/core/src/types/index.ts"),
       "#lib/hooks": path.resolve(__dirname, "packages/core/src/lib/hooks/index.ts"),

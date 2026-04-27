@@ -2,14 +2,20 @@
  * Tests for Jira auth module.
  */
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCredentials, saveCredentials, createCredentialGetter } from "../auth.ts";
-import * as keychain from "../../../../config/keychain.ts";
+import * as keychain from "@jiratown/core";
 
-vi.mock("../../../../config/keychain.ts", () => ({
+vi.mock("@jiratown/core", () => ({
   getCredential: vi.fn(),
   storeCredential: vi.fn(),
+  // Re-export other things that might be needed
+  PluginSymbol: Symbol.for("jiratown.plugin"),
 }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("loadCredentials", () => {
   it("returns null when no credentials stored", async () => {
