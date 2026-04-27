@@ -13,7 +13,7 @@
 | 8 | Tracker | ✅ Done | Issue parsing + prompt building |
 | 9 | Harness | ✅ Done | AgentAdapter abstract class, pluggable adapters via plugins, Pi adapter plugin, spawn/stop flow, Orchestrator with registerAdapter |
 | 10 | MCP | ✅ Merged into Step 9 | Superseded by `OrchestratorTool` + `Adapter` pattern. Each adapter translates tools to its native harness (Pi uses Extension API, Claude Code uses `.mcp.json`, etc.). No standalone MCP server needed in core. |
-| 11 | Jira Plugin | ⬜ Pending | |
+| 11 | Jira Plugin | ✅ Done | Built-in plugin at `packages/core/src/plugins/builtin/jira/` |
 | 12 | GitHub Plugin | ⬜ Pending | |
 
 ## After Core

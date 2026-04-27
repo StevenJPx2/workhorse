@@ -26,7 +26,7 @@ export class PluginRegistry {
   private plugins: Plugin[] = [];
 
   /**
-   * Load all configured plugins from enabled list and plugin directories.
+   * Load all configured plugins from enabled list and hardcoded plugin directories.
    */
   static async create(): Promise<PluginRegistry> {
     const registry = new PluginRegistry();

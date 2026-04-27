@@ -2,44 +2,14 @@ import type { Emitter } from "mitt";
 import type { ConfigPaths, JiratownConfig } from "#config";
 import { loadConfig, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
-import type { Issue } from "#db";
 import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
-import { corePlugin, definePlugin, piAdapterPlugin, PluginRegistry } from "#plugins";
+import { CORE_PLUGINS, OPTIONAL_PLUGINS, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
 import { HarnessOrchestrator } from "#workflow/orchestrator";
 import { Tracker } from "#workflow/tracker";
-
-const loggerPlugin = definePlugin({
-  manifest: {
-    name: "builtin-logger",
-    version: "1.0.0",
-    description: "Logs Jiratown lifecycle events",
-    capabilities: {
-      monitors: ["lifecycle"],
-    },
-  },
-  setup(ctx) {
-    ctx.hooks.on("plugin.loaded", ({ name }: { name: string }) => {
-      console.log(`[plugin] Loaded: ${name}`);
-    });
-
-    ctx.hooks.on("plugin.error", ({ name, error }: { name: string; error: Error }) => {
-      console.error(`[plugin] Error in ${name}: ${error.message}`);
-    });
-
-    ctx.hooks.on("issue.parsed", ({ issue }: { issue: Issue }) => {
-      console.log(`[issue] Parsed: ${issue.title} (${issue.externalId})`);
-    });
-
-    console.log("[logger] Plugin initialized");
-  },
-  teardown() {
-    console.log("[logger] Plugin shutting down");
-  },
-});
 
 export interface Jiratown {
   /** Loaded configuration (readonly) */
@@ -111,12 +81,22 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   const orchestrator = new HarnessOrchestrator(db, hooks, memory, config);
 
   return runWithContext(
-    { config, paths, hooks, memory, monitors, tracker, orchestrator },
+    { config, paths, hooks, db, memory, monitors, tracker, orchestrator },
     async () => {
       const plugins = await PluginRegistry.create();
-      plugins.register(loggerPlugin);
-      plugins.register(corePlugin);
-      plugins.register(piAdapterPlugin);
+
+      // Core plugins always registered
+      for (const plugin of CORE_PLUGINS) {
+        plugins.register(plugin);
+      }
+
+      // Optional built-in plugins — activated via config.plugins.enabled
+      for (const plugin of OPTIONAL_PLUGINS) {
+        if (config.plugins.enabled.includes(plugin.manifest.name)) {
+          plugins.register(plugin);
+        }
+      }
+
       await plugins.setup();
 
       return {

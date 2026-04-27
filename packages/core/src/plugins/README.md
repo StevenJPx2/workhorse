@@ -70,7 +70,7 @@ Plugins are loaded from:
 
 ```typescript
 const registry = new PluginRegistry();
-await registry.loadPlugins();       // Load from config and directories
+await registry.loadPlugins();       // Load from config and plugin directories
 
 registry.register(plugin);          // Add plugin manually
 await registry.setup();             // Call all setup()
@@ -84,7 +84,7 @@ registry.list();                    // Plugin[]
 ## Lifecycle
 
 1. **Plugin creation** — `definePlugin()` validates manifest and wraps setup/teardown
-2. **Loading** — `loadPlugins()` imports from config.plugins.enabled and directories
+2. **Loading** — `loadPlugins()` imports from config.plugins.enabled and plugin directories
 3. **Registration** — `register()` adds plugin, emits `plugin.loaded` hook
 4. **Setup** — `setup()` calls each plugin's setup with context (and validated config)
 5. **Teardown** — `teardown()` calls in reverse order for graceful shutdown

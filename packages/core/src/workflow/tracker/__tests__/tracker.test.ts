@@ -24,7 +24,7 @@ const mockConfig = {
   behavior: { autoResume: true, pollInterval: 30000 },
   prompt: { custom: undefined },
   ui: { theme: "default" },
-  plugins: { enabled: [], directories: [] },
+  plugins: { enabled: [] },
 };
 
 function createParserOptions(overrides: {

@@ -35,6 +35,7 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     paths: mockPaths,
     hooks,
     // Mock services - tests don't actually use them
+    db: {} as any,
     memory: {} as any,
     monitors: {} as any,
     tracker: {} as any,
@@ -172,7 +173,7 @@ describe("PluginRegistry.create", () => {
     const validPluginPath = join(FIXTURES_DIR, "plugins", "valid-plugin.ts");
     setContext(
       createMockContext({
-        plugins: { enabled: [validPluginPath], directories: [] },
+        plugins: { enabled: [validPluginPath] },
       }),
     );
 
@@ -184,7 +185,7 @@ describe("PluginRegistry.create", () => {
     const invalidPluginPath = join(FIXTURES_DIR, "plugins", "invalid-plugin.ts");
     setContext(
       createMockContext({
-        plugins: { enabled: [invalidPluginPath], directories: [] },
+        plugins: { enabled: [invalidPluginPath] },
       }),
     );
 
@@ -199,7 +200,6 @@ describe("PluginRegistry.create", () => {
       createMockContext({
         plugins: {
           enabled: [validPluginPath, validPluginPath],
-          directories: [],
         },
       }),
     );
@@ -220,9 +220,10 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [], directories: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
       paths: pathsWithFixtures,
       hooks,
+      db: {} as any,
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
@@ -248,9 +249,10 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [], directories: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
       paths: pathsWithFixtures,
       hooks,
+      db: {} as any,
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
@@ -276,9 +278,10 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [], directories: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
       paths: pathsWithFixtures,
       hooks,
+      db: {} as any,
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,
@@ -299,7 +302,7 @@ describe("PluginRegistry.create", () => {
   });
 
   it("handles non-existent plugin directories gracefully", async () => {
-    setContext(createMockContext({ plugins: { enabled: [], directories: [] } }));
+    setContext(createMockContext({ plugins: { enabled: [] } }));
 
     // Should not throw even though /tmp/jiratown/plugins doesn't exist
     const registry = await PluginRegistry.create();
@@ -312,7 +315,7 @@ describe("PluginRegistry.create", () => {
     const namedPluginPath = join(FIXTURES_DIR, "plugins", "named-export-plugin.ts");
     setContext(
       createMockContext({
-        plugins: { enabled: [namedPluginPath], directories: [] },
+        plugins: { enabled: [namedPluginPath] },
       }),
     );
 
@@ -330,9 +333,10 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [], directories: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
       paths: pathsWithFixtures,
       hooks,
+      db: {} as any,
       memory: {} as any,
       monitors: {} as any,
       tracker: {} as any,

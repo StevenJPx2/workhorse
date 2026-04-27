@@ -106,7 +106,6 @@ theme = "gruvbox"
       `
 [plugins]
 enabled = ["jira", "github"]
-directories = ["/custom/plugins"]
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"
@@ -125,7 +124,6 @@ cloud_id = "company.atlassian.net"
     const config = loadConfig(paths);
 
     expect(config.plugins.enabled).toEqual(["jira", "github"]);
-    expect(config.plugins.directories).toEqual(["/custom/plugins"]);
     expect((config.plugins["jira"] as Record<string, unknown>)?.["cloudId"]).toBe(
       "company.atlassian.net",
     );

@@ -104,7 +104,6 @@ theme = "tokyonight"
 
 [plugins]
 enabled = ["jira", "github"]
-directories = []
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"
@@ -130,7 +129,6 @@ interface JiratownConfig {
   };
   plugins: {
     enabled: string[];
-    directories: string[];
     [pluginName: string]: unknown;
   };
 }

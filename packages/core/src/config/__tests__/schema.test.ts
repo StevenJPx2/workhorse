@@ -7,7 +7,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: { custom: "Be helpful" },
       ui: { theme: "tokyonight" },
-      plugins: { enabled: ["jira"], directories: [] },
+      plugins: { enabled: ["jira"] },
     });
 
     expect(result.success).toBe(true);
@@ -21,7 +21,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
       ui: { theme: "tokyonight" },
-      plugins: { enabled: [], directories: [] },
+      plugins: { enabled: [] },
     });
 
     expect(result.success).toBe(true);
@@ -37,7 +37,6 @@ describe("jiratownConfigSchema", () => {
       ui: { theme: "tokyonight" },
       plugins: {
         enabled: ["jira"],
-        directories: [],
         jira: { cloudId: "company.atlassian.net" },
       },
     });

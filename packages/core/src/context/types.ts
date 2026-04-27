@@ -1,4 +1,5 @@
 import type { ConfigPaths, JiratownConfig } from "#config";
+import type { Database } from "#db";
 import type { hooks } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { MonitorService } from "#services/monitor";
@@ -12,6 +13,8 @@ export interface JiratownContext {
   readonly config: JiratownConfig;
   readonly paths: ConfigPaths;
   readonly hooks: typeof hooks;
+  /** Database access */
+  readonly db: Database;
   /** Memory service for L1 session memory and L2 semantic search */
   readonly memory: MemoryService;
   /** Monitor service for polling framework */

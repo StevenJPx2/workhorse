@@ -29,6 +29,7 @@ function createMockContext(configOverrides: Partial<JiratownConfig> = {}) {
     paths: mockPaths,
     hooks,
     // Mock services - tests don't actually use them
+    db: {} as any,
     memory: {} as any,
     monitors: {} as any,
     tracker: {} as any,
@@ -201,7 +202,6 @@ describe("Plugin configSchema", () => {
       createMockContext({
         plugins: {
           enabled: [],
-          directories: [],
           jira: { cloudId: "company.atlassian.net" },
         },
       }),
@@ -236,7 +236,6 @@ describe("Plugin configSchema", () => {
       createMockContext({
         plugins: {
           enabled: [],
-          directories: [],
           jira: { cloudId: "" },
         },
       }),

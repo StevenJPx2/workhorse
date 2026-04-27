@@ -20,7 +20,7 @@ const mockConfig = {
   behavior: { autoResume: true, pollInterval: 30000 },
   prompt: { custom: undefined as string | undefined },
   ui: { theme: "default" },
-  plugins: { enabled: [], directories: [] },
+  plugins: { enabled: [] },
 };
 
 const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({

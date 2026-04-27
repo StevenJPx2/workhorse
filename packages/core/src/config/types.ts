@@ -17,7 +17,6 @@ export interface JiratownConfig {
   };
   plugins: {
     enabled: string[];
-    directories: string[];
     [pluginName: string]: unknown;
   };
 }

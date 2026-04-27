@@ -15,7 +15,7 @@ describe("createAgentHealthMonitor", () => {
         agent: { harness: "claude-code" },
         prompt: {},
         ui: { theme: "default" },
-        plugins: { enabled: [], directories: [] },
+        plugins: { enabled: [] },
       },
       ...overrides,
     };

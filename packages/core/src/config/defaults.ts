@@ -14,6 +14,5 @@ export const DEFAULT_CONFIG: JiratownConfig = {
   },
   plugins: {
     enabled: [],
-    directories: [],
   },
 };
