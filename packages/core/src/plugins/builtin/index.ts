@@ -4,5 +4,5 @@
  * @module plugins/builtin
  */
 
-export { corePlugin } from "./plugin.ts";
+export { corePlugin } from "./tools/plugin.ts";
 export { piAdapterPlugin } from "./pi-adapter/index.ts";

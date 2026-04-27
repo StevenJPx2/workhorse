@@ -1,11 +1,11 @@
 /**
  * Core plugin - registers built-in Jiratown tools.
  *
- * @module plugins/builtin/plugin
+ * @module plugins/builtin/tools/plugin
  */
 
-import { definePlugin } from "../define.ts";
-import { acknowledgeTool, escalateTool, updateStatusTool } from "./tools/definitions.ts";
+import { definePlugin } from "../../define.ts";
+import { acknowledgeTool, escalateTool, updateStatusTool } from "./definitions.ts";
 
 export const corePlugin = definePlugin({
   manifest: {
