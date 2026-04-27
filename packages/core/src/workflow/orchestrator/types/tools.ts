@@ -12,7 +12,6 @@ import type { MemoryService } from "../../../services/memory/service.ts";
 /**
  * JSON Schema type for tool parameter definitions.
  */
-// fallow-ignore-next-line unused-type
 export interface JSONSchema {
   type: string;
   properties?: Record<string, JSONSchema>;

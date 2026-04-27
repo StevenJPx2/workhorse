@@ -10,9 +10,6 @@ export { HarnessOrchestrator } from "./orchestrator.ts";
 export { AgentAdapter } from "./types/index.ts";
 // Types
 export type {
-  AdapterClass,
-  AdapterContext,
-  AgentHarness,
   AgentState,
   JSONSchema,
   OrchestratorTool,

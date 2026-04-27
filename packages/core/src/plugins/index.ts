@@ -7,5 +7,3 @@ export type { Plugin, PluginManifest, PluginOptions } from "./types.ts";
 export { PluginManifestSchema, PluginSymbol } from "./types.ts";
 
 export const CORE_PLUGINS = [corePlugin];
-
-export { corePlugin };

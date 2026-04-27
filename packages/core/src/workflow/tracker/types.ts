@@ -28,17 +28,16 @@ export interface PromptBuildingContext {
 }
 
 /**
- * Source of an issue (e.g., Jira, GitHub, manual).
- * Extensible via `& {}` for plugin-defined sources.
+ * Source of an issue (e.g., "jira", "github", "manual").
+ * Plugins define their own source identifiers.
  */
-export type IssueSource = "jira" | "github" | "manual" | (string & {});
+export type IssueSource = string;
 
 /**
- * Type of issue (task, bug, story, etc.).
- * Extensible via `& {}` for plugin-defined types.
+ * Type of issue (e.g., "task", "bug", "story", "epic").
+ * Plugins define their own issue type identifiers.
  */
-// fallow-ignore-next-line unused-type
-export type IssueType = "task" | "bug" | "story" | "epic" | (string & {});
+export type IssueType = string;
 
 /**
  * Parsed representation of an issue from external input.

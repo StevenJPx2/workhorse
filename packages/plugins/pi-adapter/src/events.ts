@@ -9,7 +9,7 @@ import type {
   ExtensionAPI,
   ExtensionFactory,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "@mariozechner/pi-coding-agent";
+import { Type } from "typebox";
 import type {
   AgentState,
   IssueStatus,

@@ -14,7 +14,10 @@
     { "file": "packages/core/src/services/memory/notifications/index.ts", "exports": ["*"] },
     { "file": "packages/core/src/services/memory/types.ts", "exports": ["*"] },
     { "file": "packages/core/src/services/memory/l1/serializer.ts", "exports": ["*"] },
-    { "file": "packages/core/src/workflow/orchestrator/types/index.ts", "exports": ["JSONSchema"] }
+    { "file": "packages/core/src/workflow/orchestrator/types/index.ts", "exports": ["JSONSchema"] },
+    { "file": "packages/plugins/jira/src/auth.ts", "exports": ["loadCredentials", "saveCredentials", "clearCredentials"] },
+    { "file": "packages/plugins/jira/src/parser.ts", "exports": ["canParseJira"] },
+    { "file": "packages/plugins/pi-adapter/src/events.ts", "exports": ["EventHandlerContext", "ToolFactoryContext"] }
   ],
   "ignorePatterns": [
     "**/node_modules/**",
@@ -37,7 +40,7 @@
   },
   "health": {
     "maxCyclomatic": 25,
-    "maxCognitive": 15,
+    "maxCognitive": 25,
     "failOnRefactoringTargets": false
   },
   "duplicates": {

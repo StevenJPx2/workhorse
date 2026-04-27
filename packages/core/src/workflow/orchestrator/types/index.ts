@@ -11,10 +11,7 @@
 
 // Agent types
 export { AgentAdapter } from "./agent.ts";
-export type { AgentHarness, AgentState } from "./agent.ts";
-
-// Adapter context
-export type { AdapterContext } from "./adapter-context.ts";
+export type { AgentState } from "./agent.ts";
 
 // Adapter class constructor
 export type { AdapterClass } from "./adapter-class.ts";
