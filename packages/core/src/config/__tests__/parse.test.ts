@@ -1,6 +1,6 @@
-import { join } from "node:path";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 describe("parseTomlFile", () => {
   let tmpDir: string;
@@ -35,7 +35,10 @@ describe("configToToml", () => {
   it("serializes to valid TOML with snake_case keys", async () => {
     const { configToToml } = await import("../parse.ts");
 
-    const toml = configToToml({ agent: { harness: "opencode" }, ui: { theme: "tokyonight" } });
+    const toml = configToToml({
+      agent: { harness: "opencode" },
+      ui: { theme: "tokyonight" },
+    });
 
     expect(toml).toContain("[agent]");
     expect(toml).toContain('harness = "opencode"');
@@ -62,7 +65,9 @@ describe("mergeConfigs", () => {
     const { mergeConfigs } = await import("../parse.ts");
     const { DEFAULT_CONFIG } = await import("../defaults.ts");
 
-    const override = { agent: { harness: "opencode" as const, model: "opus-4" } };
+    const override = {
+      agent: { harness: "opencode" as const, model: "opus-4" },
+    };
     const result = mergeConfigs(DEFAULT_CONFIG, override);
 
     expect(result.agent.harness).toBe("opencode"); // default preserved
@@ -85,7 +90,9 @@ describe("writeTomlFile", () => {
     const { writeTomlFile, parseTomlFile } = await import("../parse.ts");
 
     const filePath = join(tmpDir, "config.toml");
-    writeTomlFile(filePath, { agent: { harness: "claude-code", model: "sonnet-4" } });
+    writeTomlFile(filePath, {
+      agent: { harness: "claude-code", model: "sonnet-4" },
+    });
 
     const parsed = parseTomlFile(filePath);
     expect(parsed.agent?.harness).toBe("claude-code");

@@ -38,7 +38,10 @@ export class MonitorService {
       throw new Error(`Monitor "${options.id}" is already registered`);
     }
     this.registered.set(options.id, options);
-    this.hooks.emit("monitor.registered", { name: options.id, type: options.type });
+    this.hooks.emit("monitor.registered", {
+      name: options.id,
+      type: options.type,
+    });
   }
 
   /**

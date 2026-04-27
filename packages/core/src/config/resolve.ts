@@ -19,27 +19,19 @@ import type { ConfigPaths } from "./types.ts";
 export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
-  const xdgData = process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share");
-
-  const globalConfig =
-    [
-      join(home, ".jiratown.toml"),
-      join(xdgConfig, "jiratown.toml"),
-      join(xdgConfig, "jiratown", "config.toml"),
-    ].find((path) => existsSync(path)) ?? join(home, ".jiratown.toml");
-
-  const globalDir = join(xdgData, "jiratown");
-
-  // Worktrees root is a sibling directory: ../repo-worktrees/
-  const repoName = basename(repoRoot);
-  const worktreesRoot = join(dirname(repoRoot), `${repoName}-worktrees`);
+  const globalDir = join(process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share"), "jiratown");
 
   return {
     globalDir,
-    globalConfig,
+    globalConfig:
+      [
+        join(home, ".jiratown.toml"),
+        join(xdgConfig, "jiratown.toml"),
+        join(xdgConfig, "jiratown", "config.toml"),
+      ].find((path) => existsSync(path)) ?? join(home, ".jiratown.toml"),
     projectConfig: join(repoRoot, ".jiratown.toml"),
     database: join(globalDir, "jiratown.db"),
     memoryDatabase: join(globalDir, "memory.db"),
-    worktreesRoot,
+    worktreesRoot: join(dirname(repoRoot), `${basename(repoRoot)}-worktrees`),
   };
 }

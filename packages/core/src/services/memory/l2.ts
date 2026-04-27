@@ -51,14 +51,14 @@ export class L2Store {
    * ```
    */
   static async create(dbPath: string): Promise<L2Store> {
-    const retriv = await createRetriv({
-      driver: sqlite({
-        path: dbPath,
-        embeddings: transformersJs({ model: "Xenova/all-MiniLM-L6-v2" }),
+    return new L2Store(
+      await createRetriv({
+        driver: sqlite({
+          path: dbPath,
+          embeddings: transformersJs({ model: "Xenova/all-MiniLM-L6-v2" }),
+        }),
       }),
-    });
-
-    return new L2Store(retriv);
+    );
   }
 
   /**
@@ -67,14 +67,13 @@ export class L2Store {
    * @param documents - Documents to index
    */
   async index(documents: MemoryDocument[]): Promise<void> {
-    // Transform to retriv format
-    const docs = documents.map((doc) => ({
-      id: doc.id,
-      content: doc.content,
-      metadata: doc.metadata,
-    }));
-
-    await this.retriv.index(docs);
+    await this.retriv.index(
+      documents.map((doc) => ({
+        id: doc.id,
+        content: doc.content,
+        metadata: doc.metadata,
+      })),
+    );
   }
 
   /**
@@ -87,16 +86,13 @@ export class L2Store {
   async search(query: string, options: MemorySearchOptions = {}): Promise<SearchResult[]> {
     const { limit = 10, filter, returnContent = false } = options;
 
-    // Build retriv filter from our filter options
-    const retrivFilter = filter ? buildFilter(filter) : undefined;
-
-    const results = await this.retriv.search(query, {
-      limit,
-      filter: retrivFilter,
-      returnContent,
-    });
-
-    return results.map((r) => ({
+    return (
+      await this.retriv.search(query, {
+        limit,
+        filter: filter ? buildFilter(filter) : undefined,
+        returnContent,
+      })
+    ).map((r) => ({
       id: r.id,
       score: r.score,
       content: returnContent ? r.content : undefined,

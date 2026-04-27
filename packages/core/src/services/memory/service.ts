@@ -62,11 +62,11 @@ export class MemoryService {
     worktreesRoot: string;
     memoryDbPath: string;
   }): Promise<MemoryService> {
-    const l1 = new L1Store(options.worktreesRoot);
-    const l2 = await L2Store.create(options.memoryDbPath);
-    const notifications = new NotificationService(options.db, options.hooks);
-
-    return new MemoryService(l1, l2, notifications);
+    return new MemoryService(
+      new L1Store(options.worktreesRoot),
+      await L2Store.create(options.memoryDbPath),
+      new NotificationService(options.db, options.hooks),
+    );
   }
 
   /**

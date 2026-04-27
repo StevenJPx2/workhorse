@@ -19,7 +19,10 @@ export const dateText = customType<{ data: Date; driverData: string }>({
 /**
  * Custom nullable date column that stores as TEXT but returns as Date | null.
  */
-export const nullableDateText = customType<{ data: Date | null; driverData: string | null }>({
+export const nullableDateText = customType<{
+  data: Date | null;
+  driverData: string | null;
+}>({
   dataType() {
     return "text";
   },

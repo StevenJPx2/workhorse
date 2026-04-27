@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { parseSessionMemory } from "./parse.ts";
 import { CONTEXT_FILE, L1Context } from "./context.ts";
+import { parseSessionMemory } from "./parse.ts";
 
 /**
  * L1Store - L1 memory layer managing context.md files across all worktrees.
@@ -62,8 +62,7 @@ export class L1Store {
   private scan(): void {
     if (!existsSync(this.worktreesRoot)) return;
 
-    const entries = readdirSync(this.worktreesRoot);
-    for (const entry of entries) {
+    for (const entry of readdirSync(this.worktreesRoot)) {
       const worktreePath = join(this.worktreesRoot, entry);
       const contextPath = join(worktreePath, CONTEXT_FILE);
 

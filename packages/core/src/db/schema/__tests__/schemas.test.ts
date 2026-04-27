@@ -1,15 +1,15 @@
+import type {
+  Issue,
+  IssueEvent,
+  IssueStatus,
+  Notification,
+  NotificationPriority,
+  NotificationStatus,
+} from "../index.ts";
 import {
   IssueStatusSchema,
   NotificationPrioritySchema,
   NotificationStatusSchema,
-} from "../index.ts";
-import type {
-  Issue,
-  IssueStatus,
-  IssueEvent,
-  Notification,
-  NotificationPriority,
-  NotificationStatus,
 } from "../index.ts";
 
 // oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
@@ -178,6 +178,8 @@ test.skip("TODO: implement IssuePrioritySchema for issue prioritization", () => 
   // Expected values: "critical", "high", "medium", "low"
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const schemas = require("../index.ts") as Record<string, unknown>;
-  const IssuePrioritySchema = schemas["IssuePrioritySchema"] as { parse: (v: string) => string };
+  const IssuePrioritySchema = schemas["IssuePrioritySchema"] as {
+    parse: (v: string) => string;
+  };
   expect(IssuePrioritySchema.parse("high")).toBe("high");
 });

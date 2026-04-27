@@ -1,7 +1,7 @@
-import { eq, and, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+import type { InsertNotification, Notification } from "#db";
 import { notifications } from "../schema";
 import type { DrizzleDb } from "../types.ts";
-import type { InsertNotification, Notification } from "#db";
 
 /**
  * Controller for Notification operations
@@ -31,10 +31,9 @@ export class NotificationController {
    * Mark a notification as read
    */
   markRead(id: string): void {
-    const now = new Date();
     this.db
       .update(notifications)
-      .set({ status: "read", readAt: now })
+      .set({ status: "read", readAt: new Date() })
       .where(eq(notifications.id, id))
       .run();
   }
@@ -43,10 +42,9 @@ export class NotificationController {
    * Mark a notification as acknowledged
    */
   markAcknowledged(id: string): void {
-    const now = new Date();
     this.db
       .update(notifications)
-      .set({ status: "acknowledged", acknowledgedAt: now })
+      .set({ status: "acknowledged", acknowledgedAt: new Date() })
       .where(eq(notifications.id, id))
       .run();
   }
@@ -57,10 +55,9 @@ export class NotificationController {
   acknowledgeMany(ids: string[]): void {
     if (ids.length === 0) return;
 
-    const now = new Date();
     this.db
       .update(notifications)
-      .set({ status: "acknowledged", acknowledgedAt: now })
+      .set({ status: "acknowledged", acknowledgedAt: new Date() })
       .where(inArray(notifications.id, ids))
       .run();
   }

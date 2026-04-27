@@ -25,18 +25,13 @@ import type { SessionEntry, SessionMemory } from "../types.ts";
  * ```
  */
 export function parseSessionMemory(content: string): SessionMemory {
-  const title = parseTitle(content);
-  const patterns = parsePatterns(content);
   const sessions = parseSessions(content);
-  const latestStatus = sessions.at(-1)?.status ?? "pending";
-
-  return { title, patterns, sessions, latestStatus };
-}
-
-/** Extract title from markdown h1 header */
-function parseTitle(content: string): string {
-  const match = content.match(/^# (.+)$/m);
-  return match?.[1]?.trim() ?? "";
+  return {
+    title: content.match(/^# (.+)$/m)?.[1]?.trim() ?? "",
+    patterns: parsePatterns(content),
+    sessions,
+    latestStatus: sessions.at(-1)?.status ?? "pending",
+  };
 }
 
 /** Extract patterns from ## Patterns section */
@@ -67,24 +62,27 @@ function parseSessionEntry(block: string): SessionEntry | null {
   const header = parseSessionHeader(block);
   if (!header) return null;
 
-  const status = parseSessionStatus(block);
   const { summary, learnings, filesChanged } = parseSessionContent(block);
 
-  return { ...header, status, summary, learnings, filesChanged };
+  return {
+    ...header,
+    status: parseSessionStatus(block),
+    summary,
+    learnings,
+    filesChanged,
+  };
 }
 
 /** Parse session header for timestamp */
 function parseSessionHeader(block: string): { timestamp: Date } | null {
-  const firstLine = block.split("\n")[0] ?? "";
-  const match = firstLine.match(/^### (\d{4}-\d{2}-\d{2}T[\d:]+Z?) — .+$/);
+  const match = (block.split("\n")[0] ?? "").match(/^### (\d{4}-\d{2}-\d{2}T[\d:]+Z?) — .+$/);
   if (!match?.[1]) return null;
   return { timestamp: new Date(match[1]) };
 }
 
 /** Parse status line from session block */
 function parseSessionStatus(block: string): IssueStatus {
-  const match = block.match(/^Status: (\w+)$/m);
-  return (match?.[1] as IssueStatus) ?? "pending";
+  return (block.match(/^Status: (\w+)$/m)?.[1] as IssueStatus) ?? "pending";
 }
 
 /** Parse session content: summary items, learnings, and files changed */
@@ -93,13 +91,12 @@ function parseSessionContent(block: string): {
   learnings: string[];
   filesChanged: string[];
 } {
-  const lines = block.split("\n").slice(1);
   const summary: string[] = [];
   const learnings: string[] = [];
   let filesChanged: string[] = [];
   let inLearnings = false;
 
-  for (const line of lines) {
+  for (const line of block.split("\n").slice(1)) {
     const result = processLine(line, inLearnings);
     if (result.skip) continue;
 

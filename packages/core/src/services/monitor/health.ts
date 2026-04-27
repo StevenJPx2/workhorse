@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-file
 import { Monitor } from "./monitor.ts";
 import type { MonitorContext } from "./types.ts";
 

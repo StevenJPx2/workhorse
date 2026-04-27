@@ -1,7 +1,6 @@
 import type { Emitter } from "mitt";
-import type { Database } from "#db";
+import type { Database, Notification } from "#db";
 import type { HookEventMap } from "#lib/hooks";
-import type { Notification } from "#db";
 import { generateSystemInbox } from "./inbox.ts";
 import type { CreateNotificationInput } from "./types.ts";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { generateSystemInbox } from "../inbox.ts";
 import type { Notification } from "#db";
+import { generateSystemInbox } from "../inbox.ts";
 
 describe("inbox: XML notification formatting", () => {
   describe("generateSystemInbox", () => {

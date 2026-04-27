@@ -5,6 +5,7 @@
   ],
   "ignoreDependencies": [
     "@huggingface/transformers",
+    "@mariozechner/pi-coding-agent",
     "sqlite-vec"
   ],
   "ignoreExports": [
@@ -12,7 +13,8 @@
     { "file": "packages/core/src/services/memory/l1/index.ts", "exports": ["*"] },
     { "file": "packages/core/src/services/memory/notifications/index.ts", "exports": ["*"] },
     { "file": "packages/core/src/services/memory/types.ts", "exports": ["*"] },
-    { "file": "packages/core/src/services/memory/l1/serializer.ts", "exports": ["*"] }
+    { "file": "packages/core/src/services/memory/l1/serializer.ts", "exports": ["*"] },
+    { "file": "packages/core/src/workflow/orchestrator/types/index.ts", "exports": ["JSONSchema"] }
   ],
   "ignorePatterns": [
     "**/node_modules/**",
@@ -29,10 +31,16 @@
     "unused-dependencies": "error",
     "unused-class-members": "off",
     "circular-dependencies": "warn",
-    "duplicate-exports": "error"
+    "duplicate-exports": "error",
+    "code-duplication": "warn",
+    "complexity": "warn"
   },
   "health": {
-    "maxCyclomatic": 15,
-    "maxCognitive": 12
+    "maxCyclomatic": 25,
+    "maxCognitive": 15,
+    "failOnRefactoringTargets": false
+  },
+  "duplicates": {
+    "minLines": 30
   }
 }

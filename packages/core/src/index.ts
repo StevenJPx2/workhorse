@@ -1,65 +1,63 @@
 // @jiratown/core — main entry point
 
-export { bootstrap, type Jiratown } from "./bootstrap.ts";
 export * from "#config";
-export {
-  // Database
-  Database,
-  // Tables
-  issues,
-  issueEvents,
-  notifications,
-  // Custom column types
-  dateText,
-  nullableDateText,
-  // Zod schemas
-  IssueStatusSchema,
-  NotificationPrioritySchema,
-  NotificationStatusSchema,
-} from "#db";
+export { type JiratownContext, runWithContext, tryUseJiratown, useJiratown } from "#context";
 export type {
   Issue,
-  IssueStatus,
   IssueEvent,
+  IssueStatus,
   Notification,
   NotificationPriority,
   NotificationStatus,
 } from "#db";
 export {
-  hooks,
+  // Database
+  Database,
+  // Custom column types
+  dateText,
+  // Zod schemas
+  IssueStatusSchema,
+  issueEvents,
+  // Tables
+  issues,
+  NotificationPrioritySchema,
+  NotificationStatusSchema,
+  notifications,
+  nullableDateText,
+} from "#db";
+export {
   type HookEventMap,
+  hooks,
   type PromptBuildingContext,
   type PromptContextBlock,
-  type AgentInstance,
 } from "#lib/hooks";
-export { useJiratown, tryUseJiratown, runWithContext, type JiratownContext } from "#context";
 export {
   definePlugin,
-  PluginRegistry,
-  PluginManifestSchema,
-  PluginSymbol,
   isPlugin,
   type Plugin,
-  type PluginOptions,
   type PluginManifest,
+  PluginManifestSchema,
+  type PluginOptions,
+  PluginRegistry,
+  PluginSymbol,
 } from "#plugins";
-
 // Memory service exports
 export {
-  MemoryService,
-  L1Store,
-  L2Store,
-  NotificationService,
-  generateSystemInbox,
-  parseSessionMemory,
-  serializeSessionMemory,
   // Types
   type CreateNotificationInput,
+  generateSystemInbox,
   type IssueEventType,
+  L1Store,
+  L2Store,
   type MemoryDocument,
   type MemoryDocumentType,
   type MemorySearchOptions,
+  MemoryService,
+  NotificationService,
+  parseSessionMemory,
   type SearchResult,
   type SessionEntry,
   type SessionMemory,
+  serializeSessionMemory,
 } from "#services/memory";
+export { bootstrap, type Jiratown } from "./bootstrap.ts";

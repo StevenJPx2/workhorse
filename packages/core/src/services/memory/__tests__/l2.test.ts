@@ -145,7 +145,10 @@ describe("L2: Semantic Search (retriv)", () => {
     });
 
     it("returns content when requested", async () => {
-      const results = await store!.search("bcrypt", { returnContent: true, limit: 1 });
+      const results = await store!.search("bcrypt", {
+        returnContent: true,
+        limit: 1,
+      });
       expect(results.length).toBeGreaterThan(0);
       expect(results[0]!.content).toBeDefined();
       expect(results[0]!.content).toContain("bcrypt");
@@ -170,8 +173,16 @@ describe("L2: Semantic Search (retriv)", () => {
       store = await L2Store.create(DB_PATH);
 
       await store!.index([
-        { id: "to-remove", content: "This will be removed", metadata: { type: "decision" } },
-        { id: "to-keep", content: "This will stay", metadata: { type: "decision" } },
+        {
+          id: "to-remove",
+          content: "This will be removed",
+          metadata: { type: "decision" },
+        },
+        {
+          id: "to-keep",
+          content: "This will stay",
+          metadata: { type: "decision" },
+        },
       ]);
     });
 

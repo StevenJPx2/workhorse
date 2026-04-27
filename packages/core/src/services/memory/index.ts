@@ -1,5 +1,7 @@
 // Main service export
-export { MemoryService } from "./service.ts";
+
+// System inbox
+export { generateSystemInbox } from "./inbox.ts";
 
 // L1: Session memory store
 export { L1Context, L1Store, parseSessionMemory, serializeSessionMemory } from "./l1/index.ts";
@@ -9,9 +11,7 @@ export { L2Store } from "./l2.ts";
 
 // Notifications
 export { NotificationService } from "./notifications.ts";
-
-// System inbox
-export { generateSystemInbox } from "./inbox.ts";
+export { MemoryService } from "./service.ts";
 
 // Types
 export type {

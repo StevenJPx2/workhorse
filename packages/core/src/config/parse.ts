@@ -9,9 +9,7 @@ export function parseTomlFile(filePath: string | null): Partial<JiratownConfig> 
   if (!existsSync(filePath)) return {};
 
   try {
-    const content = readFileSync(filePath, "utf-8");
-    const raw = parseToml(content);
-    return deepCamelKeys(raw) as Partial<JiratownConfig>;
+    return deepCamelKeys(parseToml(readFileSync(filePath, "utf-8"))) as Partial<JiratownConfig>;
   } catch (err) {
     console.error(`Error parsing ${filePath}:`, err);
     return {};

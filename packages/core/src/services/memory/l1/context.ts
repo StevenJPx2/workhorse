@@ -2,9 +2,9 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { IssueStatus } from "#db";
+import type { SessionEntry, SessionMemory } from "../types.ts";
 import { parseSessionMemory } from "./parse.ts";
 import { serializeSessionMemory } from "./serialize.ts";
-import type { SessionEntry, SessionMemory } from "../types.ts";
 
 /** Path to context.md within a worktree */
 export const CONTEXT_FILE = ".jiratown/context.md";
@@ -28,8 +28,7 @@ export class L1Context {
   /** Read and parse the context.md file */
   async read(): Promise<SessionMemory | null> {
     if (!this.exists()) return null;
-    const content = await readFile(this.contextPath, "utf-8");
-    return parseSessionMemory(content);
+    return parseSessionMemory(await readFile(this.contextPath, "utf-8"));
   }
 
   /** Write a SessionMemory to the context.md file */
@@ -38,8 +37,7 @@ export class L1Context {
     if (!existsSync(dir)) {
       await mkdir(dir, { recursive: true });
     }
-    const content = serializeSessionMemory(memory);
-    await writeFile(this.contextPath, content, "utf-8");
+    await writeFile(this.contextPath, serializeSessionMemory(memory), "utf-8");
   }
 
   /** Create a new context.md file with initial session */

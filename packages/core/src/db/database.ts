@@ -1,10 +1,10 @@
-import BetterSqlite from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import * as schema from "./schema";
-import { IssueController, EventController, NotificationController } from "./controllers";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import BetterSqlite from "better-sqlite3";
+import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { EventController, IssueController, NotificationController } from "./controllers";
+import * as schema from "./schema";
 
 /**
  * Database class that provides access to all data controllers.
@@ -54,8 +54,9 @@ export class Database {
 
     this.db = drizzle(this.sqlite, { schema });
 
-    const currentDir = dirname(fileURLToPath(import.meta.url));
-    migrate(this.db, { migrationsFolder: join(currentDir, "../../drizzle") });
+    migrate(this.db, {
+      migrationsFolder: join(dirname(fileURLToPath(import.meta.url)), "../../drizzle"),
+    });
 
     this.issues = new IssueController(this.db);
     this.events = new EventController(this.db);

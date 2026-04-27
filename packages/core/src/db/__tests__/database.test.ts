@@ -1,62 +1,5 @@
-import type { Issue, IssueEvent, Notification } from "#db";
-import { Database } from "./database.ts";
-
-// ─── Test Factories ──────────────────────────────────────────────────────────
-
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
-function makeIssueInput(
-  overrides?: Partial<Omit<Issue, "id" | "createdAt" | "updatedAt">>,
-): Omit<Issue, "id" | "createdAt" | "updatedAt"> {
-  return {
-    externalId: "AM-123",
-    source: "jira",
-    title: "Fix login bug",
-    description: "Users cannot log in",
-    status: "pending",
-    issueType: "bug",
-    url: "https://example.com/AM-123",
-    assignee: "alice",
-    labels: ["backend", "urgent"],
-    metadata: { priority: "high" },
-    worktreePath: null,
-    prUrl: null,
-    prNumber: null,
-    ...overrides,
-  };
-}
-
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
-function makeEventInput(
-  overrides?: Partial<Omit<IssueEvent, "id" | "createdAt">>,
-): Omit<IssueEvent, "id" | "createdAt"> {
-  return {
-    issueId: "", // Must be set by test
-    type: "comment_added",
-    message: "Bob commented on this issue",
-    metadata: { author: "bob" },
-    ...overrides,
-  };
-}
-
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
-function makeNotificationInput(
-  overrides?: Partial<
-    Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status">
-  >,
-): Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status"> {
-  return {
-    issueId: "", // Must be set by test
-    source: "jira_comment",
-    sourceId: "comment-789",
-    priority: "high",
-    title: "New comment",
-    body: "Please review this issue",
-    metadata: { author: "bob" },
-    ...overrides,
-  };
-}
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
+import { Database } from "../database.ts";
+import { makeEventInput, makeIssueInput, makeNotificationInput } from "./factories.ts";
 
 describe("Database", () => {
   let db: Database;
@@ -184,7 +127,13 @@ describe("Database", () => {
 
     it("filters issues by status", () => {
       db.issues.insert(makeIssueInput({ externalId: "1", source: "a", status: "pending" }));
-      db.issues.insert(makeIssueInput({ externalId: "2", source: "b", status: "implementing" }));
+      db.issues.insert(
+        makeIssueInput({
+          externalId: "2",
+          source: "b",
+          status: "implementing",
+        }),
+      );
       db.issues.insert(makeIssueInput({ externalId: "3", source: "c", status: "done" }));
       db.issues.insert(makeIssueInput({ externalId: "4", source: "d", status: "pending" }));
 
@@ -271,20 +220,32 @@ describe("Database", () => {
 
       // Insert events with small delays to ensure different timestamps
       const event1 = db.events.insert(
-        makeEventInput({ issueId: issue.id, message: "First", type: "created" }),
+        makeEventInput({
+          issueId: issue.id,
+          message: "First",
+          type: "created",
+        }),
       );
 
       // Small delay to ensure different timestamp
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const event2 = db.events.insert(
-        makeEventInput({ issueId: issue.id, message: "Second", type: "updated" }),
+        makeEventInput({
+          issueId: issue.id,
+          message: "Second",
+          type: "updated",
+        }),
       );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const event3 = db.events.insert(
-        makeEventInput({ issueId: issue.id, message: "Third", type: "commented" }),
+        makeEventInput({
+          issueId: issue.id,
+          message: "Third",
+          type: "commented",
+        }),
       );
 
       const events = db.events.getForIssue(issue.id);
@@ -339,12 +300,18 @@ describe("Database", () => {
       const issue = db.issues.insert(makeIssueInput());
 
       db.notifications.create(
-        makeNotificationInput({ issueId: issue.id, sourceId: "unique-source-1" }),
+        makeNotificationInput({
+          issueId: issue.id,
+          sourceId: "unique-source-1",
+        }),
       );
 
       expect(() =>
         db.notifications.create(
-          makeNotificationInput({ issueId: issue.id, sourceId: "unique-source-1" }),
+          makeNotificationInput({
+            issueId: issue.id,
+            sourceId: "unique-source-1",
+          }),
         ),
       ).toThrow();
     });

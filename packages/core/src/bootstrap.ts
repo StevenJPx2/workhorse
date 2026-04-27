@@ -6,9 +6,10 @@ import type { Issue } from "#db";
 import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
-import { definePlugin, PluginRegistry } from "#plugins";
+import { corePlugin, definePlugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
+import { HarnessOrchestrator } from "#workflow/orchestrator";
 import { Tracker } from "#workflow/tracker";
 
 const loggerPlugin = definePlugin({
@@ -62,6 +63,9 @@ export interface Jiratown {
   /** Tracker for issue parsing and prompt building */
   readonly tracker: Tracker;
 
+  /** Orchestrator for agent lifecycle management */
+  readonly orchestrator: HarnessOrchestrator;
+
   /** Plugin registry */
   readonly plugins: PluginRegistry;
 
@@ -103,27 +107,36 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
   // Initialize tracker (issue parsing and prompt building)
   const tracker = new Tracker(db, hooks);
 
-  return runWithContext({ config, paths, hooks, memory, monitors, tracker }, async () => {
-    const plugins = await PluginRegistry.create();
-    plugins.register(loggerPlugin);
-    await plugins.setup();
+  // Initialize orchestrator for agent lifecycle management
+  const orchestrator = new HarnessOrchestrator(db, hooks, memory, config);
 
-    return {
-      config: Object.freeze(config),
-      paths: Object.freeze(paths),
-      db,
-      memory,
-      monitors,
-      tracker,
-      hooks,
-      plugins,
-      async shutdown() {
-        monitors.shutdown();
-        await plugins.teardown();
-        await memory.shutdown();
-        db.close();
-        hooks.all.clear();
-      },
-    };
-  });
+  return runWithContext(
+    { config, paths, hooks, memory, monitors, tracker, orchestrator },
+    async () => {
+      const plugins = await PluginRegistry.create();
+      plugins.register(loggerPlugin);
+      plugins.register(corePlugin);
+      await plugins.setup();
+
+      return {
+        config: Object.freeze(config),
+        paths: Object.freeze(paths),
+        db,
+        memory,
+        monitors,
+        tracker,
+        orchestrator,
+        hooks,
+        plugins,
+        async shutdown() {
+          await orchestrator.shutdown();
+          monitors.shutdown();
+          await plugins.teardown();
+          await memory.shutdown();
+          db.close();
+          hooks.all.clear();
+        },
+      };
+    },
+  );
 }

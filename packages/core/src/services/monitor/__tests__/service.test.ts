@@ -178,7 +178,10 @@ describe("MonitorService", () => {
       hooks.on("monitor.tick", handler);
 
       service.registerMonitor(
-        createMonitorOptions("test", { interval: 100, pollResult: { hasChanges: false } }),
+        createMonitorOptions("test", {
+          interval: 100,
+          pollResult: { hasChanges: false },
+        }),
       );
       service.startMonitor("test", "AM-123");
 
@@ -189,7 +192,10 @@ describe("MonitorService", () => {
 
     it("updates lastPoll after each poll", async () => {
       service.registerMonitor(
-        createMonitorOptions("test", { interval: 100, pollResult: { hasChanges: false } }),
+        createMonitorOptions("test", {
+          interval: 100,
+          pollResult: { hasChanges: false },
+        }),
       );
       service.startMonitor("test", "AM-123");
 

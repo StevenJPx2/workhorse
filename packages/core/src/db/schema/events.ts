@@ -1,5 +1,5 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { dateText } from "./custom-types.ts";
 import { issues } from "./issues.ts";
 

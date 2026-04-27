@@ -8,22 +8,21 @@
 
 // Custom column types
 export { dateText, nullableDateText } from "./custom-types.ts";
-
-// Tables
-export { issues } from "./issues.ts";
+export type { InsertIssueEvent, IssueEvent } from "./events.ts";
 export { issueEvents } from "./events.ts";
-export { notifications } from "./notifications.ts";
-
 // Domain types (derived from schema)
 export type { InsertIssue, Issue, IssueStatus } from "./issues.ts";
-export type { InsertIssueEvent, IssueEvent } from "./events.ts";
+// Tables
+// Zod schemas for runtime validation
+export { IssueStatusSchema, issues } from "./issues.ts";
 export type {
   InsertNotification,
   Notification,
   NotificationPriority,
   NotificationStatus,
 } from "./notifications.ts";
-
-// Zod schemas for runtime validation
-export { IssueStatusSchema } from "./issues.ts";
-export { NotificationPrioritySchema, NotificationStatusSchema } from "./notifications.ts";
+export {
+  NotificationPrioritySchema,
+  NotificationStatusSchema,
+  notifications,
+} from "./notifications.ts";

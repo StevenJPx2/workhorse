@@ -1,16 +1,4 @@
 export { Database } from "./database.ts";
-
-// Re-export schema tables and types
-export {
-  // Tables
-  issues,
-  issueEvents,
-  notifications,
-  // Custom column types
-  dateText,
-  nullableDateText,
-} from "./schema/index.ts";
-
 // Domain types (derived from schema)
 export type {
   InsertIssue,
@@ -23,10 +11,17 @@ export type {
   NotificationPriority,
   NotificationStatus,
 } from "./schema/index.ts";
-
+// Re-export schema tables and types
 // Zod schemas for runtime validation
 export {
+  // Custom column types
+  dateText,
   IssueStatusSchema,
+  issueEvents,
+  // Tables
+  issues,
   NotificationPrioritySchema,
   NotificationStatusSchema,
+  notifications,
+  nullableDateText,
 } from "./schema/index.ts";

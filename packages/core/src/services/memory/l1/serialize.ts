@@ -33,9 +33,9 @@ export function serializeSessionMemory(memory: SessionMemory): string {
 function serializeSessionEntry(entry: SessionEntry): string {
   const lines: string[] = [];
 
-  const timestamp = entry.timestamp.toISOString().replace(/\.\d{3}Z$/, "Z");
-  const title = entry.summary[0] ?? "Work session";
-  lines.push(`### ${timestamp} — ${title}`);
+  lines.push(
+    `### ${entry.timestamp.toISOString().replace(/\.\d{3}Z$/, "Z")} — ${entry.summary[0] ?? "Work session"}`,
+  );
   lines.push(`Status: ${entry.status}`);
 
   for (const item of entry.summary.slice(1)) {
