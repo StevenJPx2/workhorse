@@ -1,17 +1,20 @@
 /**
- * Builtin Pi Coding Agent adapter plugin.
+ * Pi Coding Agent adapter plugin.
  *
- * @module plugins/builtin/pi-adapter
+ * Standalone plugin package that wraps @mariozechner/pi-coding-agent
+ * for use with Jiratown's orchestrator.
+ *
+ * @module @jiratown/plugin-pi-adapter
  */
 
-import { definePlugin } from "../../define.ts";
+import { definePlugin } from "@jiratown/core";
 import { PiAgentAdapter } from "./adapter.ts";
 
 export { PiAgentAdapter } from "./adapter.ts";
 
 export const piAdapterPlugin = definePlugin({
   manifest: {
-    name: "builtin-pi-adapter",
+    name: "pi-adapter",
     version: "1.0.0",
     description: "Pi Coding Agent adapter",
     capabilities: {

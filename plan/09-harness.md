@@ -19,11 +19,8 @@ packages/core/src/
 │
 ├── plugins/
 │   └── builtin/
-│       ├── plugin.ts             # corePlugin (tools)
-│       └── pi-adapter/           # piAdapterPlugin (registers PiAgentAdapter)
-│           ├── index.ts          # Plugin definition
-│           ├── adapter.ts        # PiAgentAdapter class
-│           └── events.ts         # Pi SDK event handling
+│       └── tools/
+│           └── plugin.ts         # corePlugin (Jiratown agent tools)
 │
 └── workflow/
     └── orchestrator/
@@ -37,6 +34,14 @@ packages/core/src/
             ├── adapter-context.ts # AdapterContext (passed to adapter constructor)
             ├── tools.ts          # OrchestratorTool, ToolExecutionContext, ToolResult
             └── spawn.ts          # SpawnOptions, StopOptions
+
+packages/plugins/
+└── pi-adapter/                   # @jiratown/plugin-pi-adapter (standalone package)
+    ├── package.json
+    └── src/
+        ├── index.ts              # Plugin definition
+        ├── adapter.ts            # PiAgentAdapter class
+        └── events.ts             # Pi SDK event handling
 ```
 
 ## Domain Types
@@ -194,13 +199,13 @@ Adapters are entirely plugin-based. The orchestrator only knows about the `Agent
 Plugins register adapter classes via `ctx.orchestrator.registerAdapter()`:
 
 ```typescript
-// plugins/builtin/pi-adapter/index.ts
-import { definePlugin } from "#plugins"
+// packages/plugins/pi-adapter/src/index.ts
+import { definePlugin } from "@jiratown/core"
 import { PiAgentAdapter } from "./adapter.ts"
 
 export const piAdapterPlugin = definePlugin({
   manifest: {
-    name: "builtin-pi-adapter",
+    name: "pi-adapter",
     version: "1.0.0",
     description: "Pi Coding Agent adapter",
     capabilities: { adapters: ["pi-coding-agent"] },
@@ -394,12 +399,19 @@ export const corePlugin = definePlugin({
 
 ## Bootstrap
 
+Core only registers the corePlugin (tools). Adapter plugins are external packages:
+
 ```typescript
-// bootstrap.ts
-plugins.register(loggerPlugin)
-plugins.register(corePlugin)        // Register core tools
-plugins.register(piAdapterPlugin)   // Register pi-coding-agent adapter
+// bootstrap.ts (inside @jiratown/core)
+for (const plugin of CORE_PLUGINS) {  // Only corePlugin
+  plugins.register(plugin)
+}
 await plugins.setup()
+
+// Application code registers adapter plugins
+import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter"
+jt.plugins.register(piAdapterPlugin)
+await jt.plugins.setup()
 ```
 
 ## PromptEngineer Extension

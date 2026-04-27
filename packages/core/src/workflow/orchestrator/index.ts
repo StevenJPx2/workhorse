@@ -14,6 +14,7 @@ export type {
   AdapterContext,
   AgentHarness,
   AgentState,
+  JSONSchema,
   OrchestratorTool,
   ToolExecutionContext,
   ToolResult,

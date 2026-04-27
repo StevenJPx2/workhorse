@@ -1,26 +1,27 @@
 /**
  * Pi session event handling.
  *
- * @module plugins/builtin/pi-adapter/events
+ * @module @jiratown/plugin-pi-adapter/events
  */
 
-import type { Emitter } from "mitt";
 import type {
   AgentSessionEvent,
   ExtensionAPI,
   ExtensionFactory,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "typebox";
-import type { IssueStatus } from "#db";
-import type { HookEventMap } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
-import type { AgentState, OrchestratorTool, ToolExecutionContext } from "#workflow/orchestrator";
+import { Type } from "@mariozechner/pi-coding-agent";
+import type {
+  AgentState,
+  IssueStatus,
+  MemoryService,
+  OrchestratorTool,
+  ToolExecutionContext,
+} from "@jiratown/core";
 
-// fallow-ignore-next-line unused-type
 export interface EventHandlerContext {
   issueId: string;
   worktreePath: string;
-  hooks: Emitter<HookEventMap>;
+  hooks: ToolExecutionContext["hooks"];
   memory: MemoryService;
   setState: (state: AgentState) => void;
   /** Get the current issue status from the database */
@@ -77,12 +78,11 @@ async function updateL1Memory(ctx: EventHandlerContext): Promise<void> {
   await l1.write(sessionData);
 }
 
-// fallow-ignore-next-line unused-type
 export interface ToolFactoryContext {
   issueId: string;
   worktreePath: string;
   db: ToolExecutionContext["db"];
-  hooks: Emitter<HookEventMap>;
+  hooks: ToolExecutionContext["hooks"];
   memory: MemoryService;
 }
 

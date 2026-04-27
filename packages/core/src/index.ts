@@ -44,11 +44,12 @@ export {
 // Orchestrator exports for plugin authors
 export { AgentAdapter } from "#workflow/orchestrator";
 export type {
+  AgentState,
   JSONSchema,
   OrchestratorTool,
   ToolExecutionContext,
   ToolResult,
-} from "./workflow/orchestrator/types/tools.ts";
+} from "#workflow/orchestrator";
 // Tracker exports for plugin authors
 export type { IssueParserOptions } from "./workflow/tracker/parser.ts";
 export type { IssueSource, IssueType, ParsedIssue } from "./workflow/tracker/types.ts";

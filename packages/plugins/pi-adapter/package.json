@@ -1,0 +1,14 @@
+{
+  "name": "@jiratown/plugin-pi-adapter",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@jiratown/core": "workspace:*",
+    "@mariozechner/pi-coding-agent": "^0.70.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.3"
+  }
+}

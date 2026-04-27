@@ -4,7 +4,7 @@
  * Uses @mariozechner/pi-coding-agent SDK directly (no subprocess, no TUI).
  * Session files are stored in `.jiratown/session/` inside the worktree.
  *
- * @module plugins/builtin/pi-adapter/adapter
+ * @module @jiratown/plugin-pi-adapter/adapter
  */
 
 import {
@@ -16,8 +16,8 @@ import {
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
 
-import { AgentAdapter } from "#workflow/orchestrator";
-import type { AgentState } from "#workflow/orchestrator";
+import { AgentAdapter } from "@jiratown/core";
+import type { AgentState } from "@jiratown/core";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 
 /**
