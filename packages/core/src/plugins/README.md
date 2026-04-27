@@ -96,6 +96,102 @@ When a plugin's setup fails:
 2. Error is re-thrown (fail fast behavior)
 3. Registry stops setting up further plugins
 
+## Extending Jiratown
+
+Plugins can hook into every part of Jiratown. Here are the common extension points:
+
+### Issue Parser
+
+Register a parser so the Tracker can handle your source's issue IDs/URLs:
+
+```typescript
+setup(ctx) {
+  ctx.tracker.registerParser({
+    source: "jira",
+    canParse: (input) => /^[A-Z]+-\d+$/.test(input) || input.includes("atlassian.net"),
+    parse: async (input) => {
+      // Fetch issue from external API and return ParsedIssue
+      return { externalId: "AM-123", source: "jira", title: "...", description: "...", issueType: "task", metadata: {} };
+    },
+    memory: ctx.memory,
+    config: ctx.config,
+  });
+}
+```
+
+### Prompt Context
+
+Push additional context blocks into the system prompt via the `prompt.building` hook:
+
+```typescript
+setup(ctx) {
+  ctx.hooks.on("prompt.building", ({ issueId, context }) => {
+    context.contextBlocks.push({
+      id: "jira-state",
+      title: "Jira State",
+      content: `Priority: High\nStatus: In Progress`,
+      priority: 10, // Lower = earlier in prompt
+    });
+  });
+}
+```
+
+### Monitor (Poller)
+
+Register a monitor definition once at setup, then start it per-issue (e.g., when an agent spawns):
+
+```typescript
+setup(ctx) {
+  ctx.monitors.registerMonitor({
+    id: "jira-comments",
+    type: "remote",
+    interval: 30000,
+    poll: async (monitorCtx) => {
+      // Poll external API for changes
+      const hasChanges = await checkForNewComments(monitorCtx.issueId);
+      return { hasChanges, data: { comments: [] } };
+    },
+  });
+
+  ctx.hooks.on("orchestrator.spawn.post", ({ adapter }) => {
+    ctx.monitors.startMonitor("jira-comments", adapter.issueId);
+  });
+}
+```
+
+### Tools
+
+Register tools that agents can invoke:
+
+```typescript
+import type { OrchestratorTool } from "#workflow/orchestrator";
+
+const myTool: OrchestratorTool = {
+  name: "jiratown_custom_action",
+  description: "Does something useful",
+  schema: { type: "object", properties: { param: { type: "string" } }, required: ["param"] },
+  execute: async (args, toolCtx) => {
+    // args is validated against schema
+    // toolCtx has issueId, worktreePath, db, hooks, memory
+    return { success: true, output: "Done" };
+  },
+};
+
+setup(ctx) {
+  ctx.orchestrator.registerTool(myTool);
+}
+```
+
+### Adapters
+
+Register an agent adapter class for a new harness:
+
+```typescript
+setup(ctx) {
+  ctx.orchestrator.registerAdapter("my-harness", MyAgentAdapter);
+}
+```
+
 ## Files
 
 - `define.ts` — `definePlugin()` factory with setup/teardown wrapping
