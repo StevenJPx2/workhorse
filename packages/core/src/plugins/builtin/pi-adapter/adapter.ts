@@ -4,7 +4,7 @@
  * Uses @mariozechner/pi-coding-agent SDK directly (no subprocess, no TUI).
  * Session files are stored in `.jiratown/session/` inside the worktree.
  *
- * @module workflow/orchestrator/adapters/pi/adapter
+ * @module plugins/builtin/pi-adapter/adapter
  */
 
 import {
@@ -16,28 +16,20 @@ import {
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
 
-import type { AgentAdapter, AgentHarness, AgentState } from "../../types/index.ts";
-import type { AdapterContext } from "../types.ts";
+import { AgentAdapter } from "#workflow/orchestrator";
+import type { AgentState } from "#workflow/orchestrator";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 
 /**
  * Pi Coding Agent adapter implementation.
  *
- * Implements AgentAdapter interface by wrapping the pi SDK session.
+ * Extends AgentAdapter to wrap the pi SDK session.
  */
-export class PiAgentAdapter implements AgentAdapter {
-  readonly harness: AgentHarness = "pi-coding-agent";
-  readonly issueId: string;
-  readonly worktreePath: string;
-  state: AgentState = "stopped";
+export class PiAgentAdapter extends AgentAdapter {
+  readonly harness = "pi-coding-agent";
 
   private session: AgentSession | null = null;
   private unsubscribe: (() => void) | null = null;
-
-  constructor(private readonly ctx: AdapterContext) {
-    this.issueId = ctx.issue.externalId;
-    this.worktreePath = ctx.worktreePath;
-  }
 
   /** Start the agent session. */
   async start(): Promise<void> {
@@ -77,15 +69,14 @@ export class PiAgentAdapter implements AgentAdapter {
           worktreePath: this.worktreePath,
           hooks: this.ctx.hooks,
           memory: this.ctx.memory,
-          setState: (s) => {
+          setState: (s: AgentState) => {
             this.state = s;
           },
           getIssueStatus: () => {
-            const issue = this.ctx.db.issues.getByExternalId(
-              this.ctx.issue.externalId,
-              this.ctx.issue.source,
+            return (
+              this.ctx.db.issues.getByExternalId(this.ctx.issue.externalId, this.ctx.issue.source)
+                ?.status ?? this.ctx.issue.status
             );
-            return issue?.status ?? this.ctx.issue.status;
           },
         }),
       );

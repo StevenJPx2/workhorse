@@ -1,10 +1,10 @@
 # Step 9: Orchestrator
 
-Agent-agnostic orchestrator. Takes Jiratown's internal representation, manages worktrees and agent processes via pi-coding-agent SDK. Extensible via hooks.
+Agent-agnostic orchestrator. Takes Jiratown's internal representation, manages worktrees and agent lifecycles. Adapters are pluggable — registered via plugins.
 
 Location: `packages/core/src/workflow/orchestrator/`
 
-Deps: `@mariozechner/pi-coding-agent`
+Deps: None (adapters bring their own dependencies via plugins)
 
 Git worktree utilities live in `lib/git/worktree.ts` (general-purpose, reusable).
 
@@ -19,30 +19,36 @@ packages/core/src/
 │
 ├── plugins/
 │   └── builtin/
-│       └── tools.ts              # coreToolsPlugin (acknowledge, update_status, escalate)
+│       ├── plugin.ts             # corePlugin (tools)
+│       └── pi-adapter/           # piAdapterPlugin (registers PiAgentAdapter)
+│           ├── index.ts          # Plugin definition
+│           ├── adapter.ts        # PiAgentAdapter class
+│           └── events.ts         # Pi SDK event handling
 │
 └── workflow/
     └── orchestrator/
         ├── README.md
         ├── index.ts              # Public exports
-        ├── types.ts              # AgentAdapter, SpawnOptions, OrchestratorTool, etc.
         ├── orchestrator.ts       # Main HarnessOrchestrator class
-        └── adapters/
-            ├── types.ts          # AdapterContext (shared context for adapter construction)
-            └── pi/
-                └── adapter.ts    # PiAgentAdapter extends AgentAdapter
+        ├── spawn.ts              # Agent spawn logic (uses registered adapter class)
+        └── types/
+            ├── index.ts          # Re-exports
+            ├── agent.ts          # AgentAdapter abstract class, AgentHarness, AgentState
+            ├── adapter-context.ts # AdapterContext (passed to adapter constructor)
+            ├── tools.ts          # OrchestratorTool, ToolExecutionContext, ToolResult
+            └── spawn.ts          # SpawnOptions, StopOptions
 ```
 
 ## Domain Types
 
 ```typescript
-type AgentHarness = "pi-coding-agent" | (string & {})
+type AgentHarness = string  // Validated at runtime against registered adapters
 type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed"
 
 interface SpawnOptions {
   issue: Issue
   prompt?: string           // Overrides PromptEngineer output if provided
-  harness?: AgentHarness    // Defaults to "pi-coding-agent"
+  harness?: AgentHarness    // Uses config default if not specified
   model?: string
   repoPath: string
   baseBranch?: string
@@ -71,33 +77,37 @@ interface ToolResult {
 }
 ```
 
-## AgentAdapter Interface
+## AgentAdapter Abstract Class
 
-Each adapter is a class instantiated per issue — combines tracking data and control methods:
+Each adapter extends this abstract base class. The base handles common construction (`issueId`, `worktreePath`, `state` init) and stores `ctx` as a protected field. Subclasses only implement harness-specific logic.
 
 ```typescript
-interface AgentAdapter {
-  readonly issueId: string
-  readonly harness: AgentHarness
-  readonly worktreePath: string
-  state: AgentState
-  
-  start(): Promise<void>
-  sendMessage(content: string): Promise<void>
-  stop(): Promise<void>
-  isRunning(): boolean
+// workflow/orchestrator/types/agent.ts
+abstract class AgentAdapter {
+  get issueId(): string { return this.ctx.issue.externalId }
+  get worktreePath(): string { return this.ctx.worktreePath }
+  state: AgentState = "stopped"
+  abstract readonly harness: AgentHarness
+
+  constructor(protected readonly ctx: AdapterContext) {}
+
+  abstract start(): Promise<void>
+  abstract sendMessage(content: string): Promise<void>
+  abstract stop(): Promise<void>
+  abstract isRunning(): boolean
 }
 
 // Context passed to adapter constructor
 interface AdapterContext {
   issue: Issue
   worktreePath: string
-  systemPrompt: string       // From PromptEngineer.buildHybridPrompt() — includes tool descriptions
-  initialMessage: string     // From PromptEngineer.buildHybridPrompt()
-  tools: OrchestratorTool[]  // Core + plugin tools — adapter translates to native format
+  systemPrompt: string
+  initialMessage: string
+  tools: OrchestratorTool[]
   db: Database
   hooks: Emitter<HookEventMap>
   memory: MemoryService
+  model?: string
 }
 ```
 
@@ -107,15 +117,18 @@ interface AdapterContext {
 class HarnessOrchestrator {
   private agents = new Map<string, AgentAdapter>()
   private tools = new Map<string, OrchestratorTool>()
+  private adapters = new Map<string, typeof AgentAdapter>()
 
   constructor(
     private db: Database,
     private hooks: Emitter<HookEventMap>,
     private memory: MemoryService,
-    private tracker: { engineer: PromptEngineer },
     private config: Readonly<JiratownConfig>
   )
 
+  // Adapter registration — plugins call this during setup
+  registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void
+  
   // Tool registration — plugins call this, harness-agnostic
   registerTool(tool: OrchestratorTool): void
   getTools(): OrchestratorTool[]
@@ -136,11 +149,34 @@ class HarnessOrchestrator {
 2. Create git worktree via `lib/git/worktree.ts` (or reuse existing)
 3. Detect resume: check if `.jiratown/session/` exists in worktree
 4. Get all registered tools via `this.getTools()`
-5. Build hybrid prompt via `PromptEngineer.buildHybridPrompt()` with `{ resume, tools }` — includes tool descriptions in system prompt
-6. Instantiate adapter: `const adapter = new PiAgentAdapter(ctx)` (harness selection via switch on `options.harness`)
-7. Start adapter: `await adapter.start()`
-8. Store adapter in map, update issue status in DB
-9. Emit `orchestrator.spawn.post` hook
+5. Build hybrid prompt via `PromptEngineer.buildHybridPrompt()` with `{ resume, tools }`
+6. Look up adapter class: `const AdapterClass = this.adapters.get(harness)`
+7. Instantiate adapter: `const adapter = new AdapterClass(adapterCtx)`
+8. Start adapter: `await adapter.start()`
+9. Store adapter in map, update issue status in DB
+10. Emit `orchestrator.spawn.post` hook
+
+```typescript
+// spawn.ts
+const harness = options.harness ?? config.agent.harness
+const AdapterClass = this.adapters.get(harness)
+if (!AdapterClass) {
+  throw new Error(`No adapter registered for harness: ${harness}`)
+}
+
+const adapter = new AdapterClass({
+  issue,
+  worktreePath: worktree.path,
+  systemPrompt,
+  initialMessage,
+  tools: this.getTools(),
+  db: this.db,
+  hooks: this.hooks,
+  memory: this.memory,
+  model: options.model,
+})
+await adapter.start()
+```
 
 ## Stop Flow
 
@@ -149,45 +185,80 @@ class HarnessOrchestrator {
 3. Optionally remove worktree via `lib/git/worktree.ts`
 4. Emit `orchestrator.stop.post` hook
 
-## PiAgentAdapter (`adapters/pi/adapter.ts`)
+## Pluggable Adapters
 
-Uses `@mariozechner/pi-coding-agent` SDK directly (no subprocess, no TUI, no headless-terminal). There is no terminal to observe — all output is accessed via `session.subscribe()`.
+Adapters are entirely plugin-based. The orchestrator only knows about the `AgentAdapter` interface — it has no knowledge of specific implementations like pi-coding-agent.
 
-Pi's `SessionManager` is pointed at `.jiratown/session/` inside the worktree so session JSONL files persist there. The agent can resume across restarts via pi's own session continuity. The session summary at the top of the JSONL serves as L1 context readable by both Jiratown and the agent itself.
+### Registering an Adapter
 
-`session.subscribe()` is used to:
-- Bridge key pi events into Jiratown hook events (`agent.output`, `agent.tool_call`)
-- Append a `SessionEntry` to `.jiratown/context.md` (L1 memory) at `agent_end`
-
-The adapter **translates** `OrchestratorTool[]` into pi's native extension format:
+Plugins register adapter classes via `ctx.orchestrator.registerAdapter()`:
 
 ```typescript
-import { createAgentSession, DefaultResourceLoader, SessionManager } from "@mariozechner/pi-coding-agent"
+// plugins/builtin/pi-adapter/index.ts
+import { definePlugin } from "#plugins"
+import { PiAgentAdapter } from "./adapter.ts"
 
-class PiAgentAdapter implements AgentAdapter {
-  readonly harness = "pi-coding-agent" as const
-  readonly issueId: string
-  readonly worktreePath: string
-  state: AgentState = "stopped"
+export const piAdapterPlugin = definePlugin({
+  manifest: {
+    name: "builtin-pi-adapter",
+    version: "1.0.0",
+    description: "Pi Coding Agent adapter",
+    capabilities: { adapters: ["pi-coding-agent"] },
+  },
+  setup(ctx) {
+    ctx.orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter)
+  },
+})
+```
 
-  private session: Session | null = null
+### Plugin Manifest Capabilities
 
-  constructor(private ctx: AdapterContext) {
-    this.issueId = ctx.issue.externalId
-    this.worktreePath = ctx.worktreePath
-  }
+```typescript
+// plugins/types.ts
+capabilities: z.object({
+  parsers: z.array(z.string()).optional(),
+  monitors: z.array(z.string()).optional(),
+  tools: z.array(z.string()).optional(),
+  adapters: z.array(z.string()).optional(),
+}).optional()
+```
+
+### Config Schema
+
+Harness is a string validated at runtime against registered adapters:
+
+```typescript
+// config/schema.ts
+harness: z.string().default("pi-coding-agent")
+
+// config/types.ts
+type AgentHarness = string
+```
+
+## Example: Pi Adapter Plugin
+
+The builtin pi-adapter plugin shows the pattern for implementing an adapter:
+
+```typescript
+// plugins/builtin/pi-adapter/adapter.ts
+import {
+  type AgentSession,
+  createAgentSession,
+  DefaultResourceLoader,
+  SessionManager,
+} from "@mariozechner/pi-coding-agent"
+import type { AgentAdapter, AdapterContext, AgentState } from "#workflow/orchestrator"
+
+export class PiAgentAdapter extends AgentAdapter {
+  readonly harness = "pi-coding-agent"
+
+  private session: AgentSession | null = null
 
   async start(): Promise<void> {
     this.state = "starting"
 
     // Translate OrchestratorTool[] → pi ExtensionFactory
-    const extensionFactory = createExtensionFromTools(this.ctx.tools, {
-      issueId: this.issueId,
-      worktreePath: this.worktreePath,
-      db: this.ctx.db,
-      hooks: this.ctx.hooks,
-      memory: this.ctx.memory,
-    })
+    const extensionFactory = this.createExtensionFromTools()
 
     const loader = new DefaultResourceLoader({
       cwd: this.worktreePath,
@@ -199,31 +270,12 @@ class PiAgentAdapter implements AgentAdapter {
     const { session } = await createAgentSession({
       cwd: this.worktreePath,
       resourceLoader: loader,
-      sessionManager: SessionManager.create(this.worktreePath, {
-        sessionDir: ".jiratown/session",
-      }),
+      sessionManager: SessionManager.create(this.worktreePath),
     })
     this.session = session
 
-    // Bridge pi events → Jiratown hooks + L1 memory
-    session.subscribe((event) => {
-      if (event.type === "message_update") {
-        const delta = event.assistantMessageEvent
-        if (delta.type === "text_delta") {
-          this.ctx.hooks.emit("agent.output", { issueId: this.issueId, delta: delta.delta })
-        }
-      }
-      if (event.type === "tool_execution_start") {
-        this.ctx.hooks.emit("agent.tool_call", { issueId: this.issueId, tool: event.toolName, args: event.args })
-      }
-      if (event.type === "agent_end") {
-        // Append session entry to .jiratown/context.md
-        const l1 = this.ctx.memory.l1.get(this.issueId)
-        const sessionData = await l1.load()
-        sessionData.entries.push({ type: "session", timestamp: new Date().toISOString(), summary: "..." })
-        await l1.save(sessionData)
-      }
-    })
+    // Bridge pi events → Jiratown hooks
+    this.subscribeToEvents()
 
     this.state = "running"
     await session.prompt(this.ctx.initialMessage)
@@ -248,34 +300,84 @@ class PiAgentAdapter implements AgentAdapter {
   isRunning(): boolean {
     return this.session?.isStreaming ?? false
   }
-}
 
-// Translate OrchestratorTool[] → pi ExtensionFactory
-function createExtensionFromTools(tools: OrchestratorTool[], execCtx: ToolExecutionContext) {
-  return function(pi: ExtensionAPI) {
-    for (const tool of tools) {
-      pi.registerTool({
-        name: tool.name,
-        description: tool.description,
-        schema: tool.schema,
-        execute: async (args) => {
-          const result = await tool.execute(args, execCtx)
-          if (!result.success) throw new Error(result.error ?? "Tool execution failed")
-          return result.output ?? ""
-        }
-      })
+  private createExtensionFromTools() {
+    const { tools } = this.ctx
+    const execCtx = {
+      issueId: this.issueId,
+      worktreePath: this.worktreePath,
+      db: this.ctx.db,
+      hooks: this.ctx.hooks,
+      memory: this.ctx.memory,
     }
+    
+    return (pi: ExtensionAPI) => {
+      for (const tool of tools) {
+        pi.registerTool({
+          name: tool.name,
+          description: tool.description,
+          schema: tool.schema,
+          execute: async (args) => {
+            const result = await tool.execute(args, execCtx)
+            if (!result.success) throw new Error(result.error ?? "Tool execution failed")
+            return result.output ?? ""
+          }
+        })
+      }
+    }
+  }
+
+  private subscribeToEvents() {
+    this.session?.subscribe((event) => {
+      if (event.type === "message_update") {
+        const delta = event.assistantMessageEvent
+        if (delta.type === "text_delta") {
+          this.ctx.hooks.emit("agent.output", { issueId: this.issueId, delta: delta.delta })
+        }
+      }
+      if (event.type === "tool_execution_start") {
+        this.ctx.hooks.emit("agent.tool_call", { issueId: this.issueId, tool: event.toolName, args: event.args })
+      }
+    })
   }
 }
 ```
 
-## Core Tools Plugin
-
-Core Jiratown tools are registered via a builtin plugin (like `loggerPlugin`), keeping the orchestrator tool-agnostic:
+## Example: Third-Party Adapter Plugin
 
 ```typescript
-// plugins/builtin/tools.ts
-export const coreToolsPlugin = definePlugin({
+// @jiratown/opencode-adapter (hypothetical npm package)
+import { definePlugin, type AdapterContext, type AgentAdapter, type AgentState } from "@jiratown/core"
+import { OpencodeSDK } from "opencode-sdk"
+
+class OpencodeAdapter extends AgentAdapter {
+  readonly harness = "opencode"
+
+  async start(): Promise<void> { /* ... */ }
+  async sendMessage(content: string): Promise<void> { /* ... */ }
+  async stop(): Promise<void> { /* ... */ }
+  isRunning(): boolean { /* ... */ }
+}
+
+export default definePlugin({
+  manifest: {
+    name: "opencode-adapter",
+    version: "1.0.0",
+    capabilities: { adapters: ["opencode"] },
+  },
+  setup(ctx) {
+    ctx.orchestrator.registerAdapter("opencode", OpencodeAdapter)
+  },
+})
+```
+
+## Core Tools Plugin
+
+Core Jiratown tools are registered via a builtin plugin, keeping the orchestrator tool-agnostic:
+
+```typescript
+// plugins/builtin/plugin.ts
+export const corePlugin = definePlugin({
   manifest: {
     name: "builtin-tools",
     version: "1.0.0",
@@ -283,84 +385,22 @@ export const coreToolsPlugin = definePlugin({
     capabilities: { tools: ["jiratown_acknowledge", "jiratown_update_status", "jiratown_escalate"] },
   },
   setup(ctx) {
-    ctx.orchestrator.registerTool({
-      name: "jiratown_acknowledge",
-      description: "Mark notification(s) as read. Call after processing system inbox messages.",
-      schema: { type: "object", properties: { notificationIds: { type: "array", items: { type: "string" } } } },
-      execute: async (args, toolCtx) => {
-        // Mark notifications as read in memory service
-        return { success: true, output: "Notifications acknowledged" }
-      }
-    })
-    
-    ctx.orchestrator.registerTool({
-      name: "jiratown_update_status",
-      description: "Update the issue status (e.g., 'in-progress', 'blocked', 'done').",
-      schema: { type: "object", properties: { status: { type: "string" } } },
-      execute: async (args, toolCtx) => {
-        // Update issue status in DB, emit hook
-        return { success: true, output: `Status updated to ${args.status}` }
-      }
-    })
-    
-    ctx.orchestrator.registerTool({
-      name: "jiratown_escalate",
-      description: "Escalate to a human when blocked or need clarification. Creates a notification.",
-      schema: { type: "object", properties: { message: { type: "string" }, blocking: { type: "boolean" } } },
-      execute: async (args, toolCtx) => {
-        // Create escalation notification
-        return { success: true, output: "Escalation created" }
-      }
-    })
+    ctx.orchestrator.registerTool(acknowledgeTool)
+    ctx.orchestrator.registerTool(updateStatusTool)
+    ctx.orchestrator.registerTool(escalateTool)
   },
 })
+```
 
+## Bootstrap
+
+```typescript
 // bootstrap.ts
 plugins.register(loggerPlugin)
-plugins.register(coreToolsPlugin)  // Register core tools
+plugins.register(corePlugin)        // Register core tools
+plugins.register(piAdapterPlugin)   // Register pi-coding-agent adapter
 await plugins.setup()
 ```
-
-## Plugin Tool Registration
-
-Plugins register tools via `ctx.orchestrator.registerTool()` in their `setup()` function:
-
-```typescript
-// Example plugin with custom tool
-export default definePlugin({
-  manifest: {
-    name: "my-plugin",
-    version: "1.0.0",
-    capabilities: { tools: ["my_plugin_tool"] },
-  },
-  setup(ctx) {
-    ctx.orchestrator.registerTool({
-      name: "my_plugin_tool",
-      description: "Does something useful for the agent",
-      schema: { type: "object", properties: { input: { type: "string" } } },
-      execute: async (args, toolCtx) => {
-        // toolCtx has issueId, worktreePath, db, hooks, memory
-        return { success: true, output: "Result" }
-      }
-    })
-  },
-})
-```
-
-Requires adding `orchestrator` to `JiratownContext`:
-
-```typescript
-// context/types.ts
-interface JiratownContext {
-  // ... existing fields ...
-  readonly orchestrator: HarnessOrchestrator
-}
-```
-
-Benefits:
-1. **Plugins don't know about pi** — they use the unified `OrchestratorTool` interface
-2. **Tool descriptions in system prompt** — `PromptEngineer` renders them so agent knows what's available
-3. **Adapters translate** — pi adapter wraps tools in `ExtensionFactory`, future adapters do their own thing
 
 ## PromptEngineer Extension
 
@@ -372,48 +412,29 @@ interface HybridPromptOptions extends BuildPromptOptions {
 }
 
 interface HybridPrompt {
-  systemPrompt: string    // Issue context, tools, instructions, memory — goes to pi systemPromptOverride
-  initialMessage: string  // Task description, notifications — goes to session.prompt()
+  systemPrompt: string    // Issue context, tools, instructions, memory
+  initialMessage: string  // Task description, notifications
 }
 
 async buildHybridPrompt(issue: Issue, options?: HybridPromptOptions): Promise<HybridPrompt>
 ```
 
-The system prompt includes a "## Available Tools" section rendered from `options.tools`:
-
-```typescript
-private renderToolsSection(tools: OrchestratorTool[]): string {
-  if (!tools.length) return ""
-  
-  const lines = ["## Available Tools", ""]
-  for (const tool of tools) {
-    lines.push(`### ${tool.name}`)
-    lines.push(tool.description)
-    lines.push("")
-  }
-  return lines.join("\n")
-}
-```
-
-This ensures the agent knows what tools exist regardless of which harness runs it. The harness then makes those tools actually callable.
+The system prompt includes a "## Available Tools" section rendered from `options.tools`. This ensures the agent knows what tools exist regardless of which harness runs it.
 
 ## Hook Events
 
-Add to `lib/hooks/types.ts`:
-
 ```typescript
+// lib/hooks/types.ts
 "orchestrator.spawn.pre":  { issue: Issue; options: SpawnOptions }
 "orchestrator.spawn.post": { adapter: AgentAdapter }
 "orchestrator.stop.pre":   { adapter: AgentAdapter }
 "orchestrator.stop.post":  { adapter: AgentAdapter }
 
-// Bridged from pi session.subscribe()
+// Bridged from adapter implementations
 "agent.output":    { issueId: string; delta: string }
 "agent.tool_call": { issueId: string; tool: string; args: unknown }
 "agent.crashed":   { issueId: string; error: Error }
 ```
-
-Consolidated: `agent.starting`/`agent.stopping`/`agent.started`/`agent.stopped` are all replaced by the orchestrator hooks above. `agent.crashed` is emitted when the adapter detects unexpected termination.
 
 ## Notification Delivery (push-based)
 
@@ -421,21 +442,17 @@ The orchestrator constructor subscribes to `notification.created` hook:
 
 ```typescript
 constructor(...) {
-  this.hooks.on("notification.created", async ({ notification }) => {
-    const agent = this.agents.get(notification.issueId)
+  this.hooks.on("notification.created", async ({ notification, issueId }) => {
+    const agent = this.agents.get(issueId)
     if (agent?.state === "running") {
-      const inbox = generateSystemInbox([notification])  // from services/memory/inbox.ts
+      const inbox = generateSystemInbox([notification])
       await agent.sendMessage(inbox)
     }
   })
 }
 ```
 
-The agent never polls — notifications are pushed in real-time via `session.steer()`. Pending notifications at spawn time are already bundled into the initial message by `PromptEngineer`.
-
 ## lib/git/worktree.ts
-
-Port of `session/worktree/` from the old codebase. Stateless functions, no MCP config writing (that was old Claude Code concern):
 
 ```typescript
 createWorktree(repoPath, issueId, issueType?, baseBranch?): Promise<WorktreeInfo | null>
@@ -451,9 +468,18 @@ interface WorktreeInfo {
 }
 ```
 
+## Benefits
+
+1. **Extensible**: Third-party harnesses via npm packages
+2. **Consistent**: Same registration pattern as tools (`registerTool` / `registerAdapter`)
+3. **Type-safe**: `AgentAdapter` abstract class enforces correct implementation
+4. **Fail-fast**: Clear error at spawn time if harness not registered
+5. **Clean separation**: Orchestrator has no knowledge of specific adapters
+
 ## Tests
 
 - `lib/git/worktree`: create/remove/list/get (real git ops in temp dirs)
-- `adapters/pi/extension`: each tool executes correctly with mock db/hooks
-- `adapters/pi/agent`: spawn calls pi SDK with correct system prompt + initial message
 - `orchestrator`: spawn flow emits correct hooks, stop flow cleans up, notification delivery via `sendMessage`
+- `orchestrator.registerAdapter`: class registration and instantiation
+- `spawn with registered adapter`: adapter constructor receives correct AdapterContext
+- `spawn with unknown harness`: throws clear error

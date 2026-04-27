@@ -1,4 +1,4 @@
-export type AgentHarness = "claude-code" | "opencode";
+export type AgentHarness = string;
 
 export interface JiratownConfig {
   agent: {

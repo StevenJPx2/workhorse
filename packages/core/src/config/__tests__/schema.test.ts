@@ -13,18 +13,18 @@ describe("jiratownConfigSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects invalid harness", async () => {
+  it("allows any string as harness", async () => {
     const { jiratownConfigSchema } = await import("../schema.ts");
 
     const result = jiratownConfigSchema.safeParse({
-      agent: { harness: "invalid-harness" },
+      agent: { harness: "custom-harness" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
       ui: { theme: "tokyonight" },
       plugins: { enabled: [], directories: [] },
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("allows passthrough for plugin-specific keys", async () => {

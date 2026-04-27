@@ -2,7 +2,7 @@ import type { JiratownConfig } from "./types.ts";
 
 export const DEFAULT_CONFIG: JiratownConfig = {
   agent: {
-    harness: "opencode",
+    harness: "pi-coding-agent",
   },
   behavior: {
     autoResume: true,

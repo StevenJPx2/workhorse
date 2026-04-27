@@ -5,3 +5,4 @@
  */
 
 export { corePlugin } from "./plugin.ts";
+export { piAdapterPlugin } from "./pi-adapter/index.ts";

@@ -1,15 +1,14 @@
 /**
- * Shared types for agent adapters.
+ * Adapter context types.
  *
- * @module workflow/orchestrator/adapters/types
+ * @module workflow/orchestrator/types/adapter-context
  */
 
 import type { Emitter } from "mitt";
-import type { Issue } from "#db";
-import type { Database } from "../../../db/database.ts";
-import type { HookEventMap } from "../../../lib/hooks/types.ts";
-import type { MemoryService } from "../../../services/memory/service.ts";
-import type { OrchestratorTool } from "../types/index.ts";
+import type { Database, Issue } from "#db";
+import type { HookEventMap } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
+import type { OrchestratorTool } from "./tools.ts";
 
 /**
  * Context passed to adapter constructors.

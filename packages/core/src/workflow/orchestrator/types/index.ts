@@ -10,7 +10,14 @@
  */
 
 // Agent types
-export type { AgentAdapter, AgentHarness, AgentState } from "./agent.ts";
+export { AgentAdapter } from "./agent.ts";
+export type { AgentHarness, AgentState } from "./agent.ts";
+
+// Adapter context
+export type { AdapterContext } from "./adapter-context.ts";
+
+// Adapter class constructor
+export type { AdapterClass } from "./adapter-class.ts";
 
 // Spawn/stop options
 export type { SpawnOptions, StopOptions } from "./spawn.ts";

@@ -11,7 +11,13 @@ import type { HookEventMap } from "../../lib/hooks/types.ts";
 import type { MemoryService } from "../../services/memory/service.ts";
 import { PromptEngineer } from "../tracker/engineer.ts";
 import { spawnAgent } from "./spawn.ts";
-import type { AgentAdapter, OrchestratorTool, SpawnOptions, StopOptions } from "./types/index.ts";
+import type {
+  AdapterClass,
+  AgentAdapter,
+  OrchestratorTool,
+  SpawnOptions,
+  StopOptions,
+} from "./types/index.ts";
 
 /**
  * Main orchestrator class for managing agent lifecycles.
@@ -19,6 +25,7 @@ import type { AgentAdapter, OrchestratorTool, SpawnOptions, StopOptions } from "
 export class HarnessOrchestrator {
   private readonly agents = new Map<string, AgentAdapter>();
   private readonly tools = new Map<string, OrchestratorTool>();
+  private readonly adapters = new Map<string, AdapterClass>();
   private readonly engineer: PromptEngineer;
 
   constructor(
@@ -39,6 +46,19 @@ export class HarnessOrchestrator {
         }
       }
     });
+  }
+
+  /** Register an adapter class. Plugins call this during setup. */
+  registerAdapter(harness: string, adapterClass: AdapterClass): void {
+    if (this.adapters.has(harness)) {
+      console.warn(`Adapter for harness "${harness}" already registered, overwriting`);
+    }
+    this.adapters.set(harness, adapterClass);
+  }
+
+  /** Get an adapter class by harness name. */
+  getAdapterClass(harness: string): AdapterClass | undefined {
+    return this.adapters.get(harness);
   }
 
   /** Register a tool. Plugins call this during setup. */
@@ -63,6 +83,7 @@ export class HarnessOrchestrator {
         config: this.config,
         agents: this.agents,
         getTools: () => this.getTools(),
+        getAdapterClass: (harness: string) => this.getAdapterClass(harness),
       },
       this.engineer,
     );

@@ -7,7 +7,7 @@ import { z } from "zod/v4";
  */
 export const jiratownConfigSchema = z.object({
   agent: z.object({
-    harness: z.enum(["claude-code", "opencode"]).default("opencode"),
+    harness: z.string().default("pi-coding-agent"),
     model: z.string().optional(),
   }),
   behavior: z.object({

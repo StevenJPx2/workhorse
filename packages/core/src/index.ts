@@ -41,6 +41,8 @@ export {
   PluginRegistry,
   PluginSymbol,
 } from "#plugins";
+// Orchestrator exports for plugin authors
+export { AgentAdapter } from "#workflow/orchestrator";
 // Memory service exports
 export {
   // Types

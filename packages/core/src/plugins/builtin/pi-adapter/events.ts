@@ -1,7 +1,7 @@
 /**
  * Pi session event handling.
  *
- * @module workflow/orchestrator/adapters/pi/events
+ * @module plugins/builtin/pi-adapter/events
  */
 
 import type { Emitter } from "mitt";
@@ -12,9 +12,9 @@ import type {
 } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 import type { IssueStatus } from "#db";
-import type { HookEventMap } from "../../../../lib/hooks/types.ts";
-import type { MemoryService } from "../../../../services/memory/service.ts";
-import type { AgentState, OrchestratorTool, ToolExecutionContext } from "../../types/index.ts";
+import type { HookEventMap } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
+import type { AgentState, OrchestratorTool, ToolExecutionContext } from "#workflow/orchestrator";
 
 // fallow-ignore-next-line unused-type
 export interface EventHandlerContext {

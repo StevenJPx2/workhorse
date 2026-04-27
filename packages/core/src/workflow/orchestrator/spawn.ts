@@ -12,8 +12,8 @@ import { createWorktree } from "../../lib/git/worktree/index.ts";
 import type { HookEventMap } from "../../lib/hooks/types.ts";
 import type { MemoryService } from "../../services/memory/service.ts";
 import { PromptEngineer } from "../tracker/engineer.ts";
-import { PiAgentAdapter } from "./adapters/pi/adapter.ts";
 import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types/index.ts";
+import type { AdapterClass } from "./types/index.ts";
 
 interface SpawnContext {
   db: Database;
@@ -22,6 +22,7 @@ interface SpawnContext {
   config: Readonly<JiratownConfig>;
   agents: Map<string, AgentAdapter>;
   getTools: () => OrchestratorTool[];
+  getAdapterClass: (harness: string) => AdapterClass | undefined;
 }
 
 /** Spawn a new agent for an issue. */
@@ -30,7 +31,8 @@ export async function spawnAgent(
   ctx: SpawnContext,
   engineer: PromptEngineer,
 ): Promise<AgentAdapter> {
-  const { issue, harness = "pi-coding-agent", repoPath, baseBranch = "main" } = options;
+  const harness = options.harness ?? ctx.config.agent.harness;
+  const { issue, repoPath, baseBranch = "main" } = options;
   const issueId = issue.externalId;
 
   // Check if agent already exists
@@ -59,11 +61,13 @@ export async function spawnAgent(
     tools,
   });
 
-  // Create adapter based on harness type
-  if (harness !== "pi-coding-agent") {
-    throw new Error(`Unsupported harness: ${harness}`);
+  // Look up adapter class by harness
+  const AdapterClass = ctx.getAdapterClass(harness);
+  if (!AdapterClass) {
+    throw new Error(`No adapter registered for harness: ${harness}`);
   }
-  const adapter = new PiAgentAdapter({
+
+  const adapter = new AdapterClass({
     issue,
     worktreePath: worktree.path,
     systemPrompt,

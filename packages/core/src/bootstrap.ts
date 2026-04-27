@@ -6,7 +6,7 @@ import type { Issue } from "#db";
 import { Database } from "#db";
 import type { HookEventMap } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
-import { corePlugin, definePlugin, PluginRegistry } from "#plugins";
+import { corePlugin, definePlugin, piAdapterPlugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
 import { HarnessOrchestrator } from "#workflow/orchestrator";
@@ -116,6 +116,7 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
       const plugins = await PluginRegistry.create();
       plugins.register(loggerPlugin);
       plugins.register(corePlugin);
+      plugins.register(piAdapterPlugin);
       await plugins.setup();
 
       return {

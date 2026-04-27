@@ -6,5 +6,15 @@
 
 // Main orchestrator
 export { HarnessOrchestrator } from "./orchestrator.ts";
+// Agent adapter base class
+export { AgentAdapter } from "./types/index.ts";
 // Types
-export type { OrchestratorTool, ToolExecutionContext, ToolResult } from "./types/index.ts";
+export type {
+  AdapterClass,
+  AdapterContext,
+  AgentHarness,
+  AgentState,
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "./types/index.ts";
