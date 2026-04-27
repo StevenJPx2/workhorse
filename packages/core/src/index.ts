@@ -51,15 +51,15 @@ export type {
   ToolResult,
 } from "#workflow/orchestrator";
 // Tracker exports for plugin authors
-export type { IssueParserOptions } from "./workflow/tracker/parser.ts";
-export type { IssueSource, IssueType, ParsedIssue } from "./workflow/tracker/types.ts";
+export type { IssueParserOptions } from "#workflow/tracker";
+export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";
 // Monitor exports for plugin authors
 export type {
   MonitorContext,
   MonitorOptions,
   MonitorResult,
   MonitorStatus,
-} from "./services/monitor/types.ts";
+} from "#services/monitor";
 // Memory service exports
 export {
   // Types
@@ -80,5 +80,5 @@ export {
   serializeSessionMemory,
 } from "#services/memory";
 // Config exports for plugin authors
-export { getCredential, storeCredential } from "./config/keychain.ts";
+export { getCredential, storeCredential } from "#config";
 export { bootstrap, type Jiratown } from "./bootstrap.ts";
