@@ -40,6 +40,9 @@ packages/core/src/
 | [10](./10-mcp.md) | MCP | Steps 2, 3, 5, 6 | `@modelcontextprotocol/sdk` | `workflow/harness/mcp/` |
 | [11](./11-jira-plugin.md) | Jira Plugin | Steps 0–10 | `mcp-remote` (external) | `plugins/` |
 | [12](./12-github-plugin.md) | GitHub Plugin | Steps 0–10 | `gh` CLI (external) | `plugins/` |
+| [13](./13-idle-steering.md) | Idle Steering & Plugin Hooks | Steps 9, 11, 12 | — | `workflow/orchestrator/steering/` |
+| [14](./14-cli.md) | CLI | Steps 0–13 | `commander`, `picocolors`, `ora` | `packages/cli/` |
+| [15](./15-tui.md) | TUI | Steps 0–14 | `ink`, `react`, `zustand` | `packages/tui/` |
 
 ## Key Decisions
 

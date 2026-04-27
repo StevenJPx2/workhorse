@@ -26,6 +26,8 @@ export interface GitHubPR extends GitHubIssue {
   mergeable: boolean | null;
   mergeable_state: string;
   merged: boolean;
+  merged_at: string | null;
+  merged_by: { login: string } | null;
   draft: boolean;
   additions: number;
   deletions: number;
@@ -97,6 +99,8 @@ export interface GitHubPRMonitorState {
   lastSeenCommentIds: number[];
   lastCheckConclusions: Record<string, string>; // checkName -> conclusion
   lastMergeableState: string;
+  lastMerged: boolean;
+  lastClosed: boolean;
 }
 
 /** PR status summary returned by github_get_pr_status tool */

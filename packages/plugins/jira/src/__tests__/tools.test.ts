@@ -6,10 +6,18 @@ import { describe, expect, it, vi } from "vitest";
 import type { AtlassianClient } from "../client.ts";
 import { createJiraTools } from "../tools.ts";
 
+/** Mock hooks emitter for testing */
+const mockHooks = {
+  emit: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
+  all: new Map(),
+} as unknown as Parameters<typeof createJiraTools>[1];
+
 describe("createJiraTools", () => {
   it("returns all three tools", () => {
     const mockClient = {} as AtlassianClient;
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     expect(tools).toHaveLength(3);
     expect(tools[0]!.name).toBe("jira_add_comment");
     expect(tools[1]!.name).toBe("jira_transition_issue");
@@ -23,7 +31,7 @@ describe("jira_add_comment tool", () => {
       addComment: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
@@ -46,7 +54,7 @@ describe("jira_add_comment tool", () => {
       addComment: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
@@ -74,7 +82,7 @@ describe("jira_add_comment tool", () => {
       addComment: vi.fn().mockRejectedValue(new Error("Network error")),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
@@ -96,6 +104,10 @@ describe("jira_add_comment tool", () => {
 describe("jira_transition_issue tool", () => {
   it("transitions an issue successfully", async () => {
     const mockClient = {
+      fetchIssue: vi.fn().mockResolvedValue({
+        key: "AM-123",
+        fields: { status: { name: "To Do", id: "1" } },
+      }),
       getTransitions: vi.fn().mockResolvedValue([
         { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
         { id: "41", name: "Done", to: { name: "Done", id: "6" } },
@@ -103,7 +115,7 @@ describe("jira_transition_issue tool", () => {
       transitionIssue: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
 
     const result = await transitionTool.execute(
@@ -125,6 +137,10 @@ describe("jira_transition_issue tool", () => {
 
   it("returns error when no matching transition found", async () => {
     const mockClient = {
+      fetchIssue: vi.fn().mockResolvedValue({
+        key: "AM-123",
+        fields: { status: { name: "To Do", id: "1" } },
+      }),
       getTransitions: vi
         .fn()
         .mockResolvedValue([
@@ -133,7 +149,7 @@ describe("jira_transition_issue tool", () => {
       transitionIssue: vi.fn(),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
 
     const result = await transitionTool.execute(
@@ -184,7 +200,7 @@ describe("jira_get_comments tool", () => {
       }),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(
@@ -224,7 +240,7 @@ describe("jira_get_comments tool", () => {
       }),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(
@@ -248,7 +264,7 @@ describe("jira_get_comments tool", () => {
       fetchIssue: vi.fn().mockRejectedValue(new Error("Issue not found")),
     } as unknown as AtlassianClient;
 
-    const tools = createJiraTools(mockClient);
+    const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(

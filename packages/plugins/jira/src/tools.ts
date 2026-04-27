@@ -4,20 +4,22 @@
  * @module @jiratown/plugin-jira/tools
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { JiratownContext, OrchestratorTool } from "@jiratown/core";
 import type { AtlassianClient } from "./client.ts";
 
+type Hooks = JiratownContext["hooks"];
+
 /** Create Jira tool definitions bound to a client */
-export function createJiraTools(client: AtlassianClient): OrchestratorTool[] {
+export function createJiraTools(client: AtlassianClient, hooks: Hooks): OrchestratorTool[] {
   return [
-    createAddCommentTool(client),
-    createTransitionTool(client),
+    createAddCommentTool(client, hooks),
+    createTransitionTool(client, hooks),
     createGetCommentsTool(client),
   ];
 }
 
 /** Tool: Add a comment to a Jira issue */
-function createAddCommentTool(client: AtlassianClient): OrchestratorTool {
+function createAddCommentTool(client: AtlassianClient, hooks: Hooks): OrchestratorTool {
   return {
     name: "jira_add_comment",
     description:
@@ -50,6 +52,18 @@ function createAddCommentTool(client: AtlassianClient): OrchestratorTool {
       };
       try {
         await client.addComment(ticketKey, body, replyToId);
+
+        // Emit hook for cross-plugin coordination
+        // Note: We don't have the comment ID from addComment response, so we use a timestamp-based ID
+        hooks.emit("jira:comment.added", {
+          issueId: ticketKey,
+          comment: {
+            id: `comment-${Date.now()}`,
+            author: "jiratown-agent",
+            body,
+          },
+        });
+
         return {
           success: true,
           output: `Comment added to ${ticketKey}${replyToId ? ` (reply to comment ${replyToId})` : ""}`,
@@ -65,7 +79,7 @@ function createAddCommentTool(client: AtlassianClient): OrchestratorTool {
 }
 
 /** Tool: Transition a Jira issue to a new status */
-function createTransitionTool(client: AtlassianClient): OrchestratorTool {
+function createTransitionTool(client: AtlassianClient, hooks: Hooks): OrchestratorTool {
   return {
     name: "jira_transition_issue",
     description:
@@ -92,6 +106,10 @@ function createTransitionTool(client: AtlassianClient): OrchestratorTool {
         status: string;
       };
       try {
+        // Get current issue to capture the "from" status
+        const issue = await client.fetchIssue(ticketKey);
+        const fromStatus = issue.fields.status.name;
+
         const transitions = await client.getTransitions(ticketKey);
         const transition = transitions.find((t) =>
           t.name.toLowerCase().includes(status.toLowerCase()),
@@ -105,6 +123,14 @@ function createTransitionTool(client: AtlassianClient): OrchestratorTool {
         }
 
         await client.transitionIssue(ticketKey, transition.id);
+
+        // Emit hook for cross-plugin coordination
+        hooks.emit("jira:issue.transitioned", {
+          issueId: ticketKey,
+          from: fromStatus,
+          to: transition.to.name,
+        });
+
         return {
           success: true,
           output: `Transitioned ${ticketKey} to "${transition.to.name}"`,

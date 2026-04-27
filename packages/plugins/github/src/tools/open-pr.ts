@@ -112,6 +112,16 @@ export function createOpenPRTool(
           });
         }
 
+        // Emit PR created hook for cross-plugin coordination
+        hooks.emit("github:pr.created", {
+          issueId: ctx.issueId,
+          pr: {
+            number: result.number,
+            url: result.url,
+            title,
+          },
+        });
+
         // Start PR monitor for this issue
         monitors.startMonitor("github-pr", ctx.issueId);
 

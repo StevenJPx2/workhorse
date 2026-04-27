@@ -285,4 +285,137 @@ describe("createGitHubPRMonitor", () => {
       }),
     );
   });
+
+  it("emits github:pr.merged hook when PR is merged", async () => {
+    const db = createMockDb({
+      id: "issue-1",
+      externalId: "octocat/hello-world#42",
+      source: "github",
+      metadata: {
+        owner: "octocat",
+        repo: "hello-world",
+        github_pr_monitor_state: {
+          lastSeenReviewIds: [],
+          lastSeenCommentIds: [],
+          lastCheckConclusions: {},
+          lastMergeableState: "clean",
+          lastMerged: false, // Was not merged
+        },
+      },
+      prNumber: 42,
+      prUrl: "https://github.com/octocat/hello-world/pull/42",
+    });
+    const client = createMockClient({
+      fetchPR: vi.fn().mockResolvedValue({
+        number: 42,
+        html_url: "https://github.com/octocat/hello-world/pull/42",
+        mergeable_state: "clean",
+        merged: true, // Now merged
+        merged_at: "2024-01-15T10:30:00Z",
+        merged_by: { login: "octocat" },
+        state: "closed",
+      }),
+    });
+    const monitor = createGitHubPRMonitor(client, 30000, db);
+    const ctx = createMockContext();
+
+    const result = await monitor.poll(ctx);
+
+    expect(result.hasChanges).toBe(true);
+    expect(ctx.hooks.emit).toHaveBeenCalledWith("github:pr.merged", {
+      issueId: "issue-1",
+      externalId: "octocat/hello-world#42",
+      source: "github",
+      pr: {
+        number: 42,
+        url: "https://github.com/octocat/hello-world/pull/42",
+        mergedBy: "octocat",
+        mergedAt: "2024-01-15T10:30:00Z",
+      },
+    });
+  });
+
+  it("does not emit github:pr.merged hook if already merged", async () => {
+    const db = createMockDb({
+      id: "issue-1",
+      externalId: "octocat/hello-world#42",
+      source: "github",
+      metadata: {
+        owner: "octocat",
+        repo: "hello-world",
+        github_pr_monitor_state: {
+          lastSeenReviewIds: [],
+          lastSeenCommentIds: [],
+          lastCheckConclusions: {},
+          lastMergeableState: "clean",
+          lastMerged: true, // Already recorded as merged
+        },
+      },
+      prNumber: 42,
+      prUrl: "https://github.com/octocat/hello-world/pull/42",
+    });
+    const client = createMockClient({
+      fetchPR: vi.fn().mockResolvedValue({
+        number: 42,
+        html_url: "https://github.com/octocat/hello-world/pull/42",
+        mergeable_state: "clean",
+        merged: true,
+        merged_at: "2024-01-15T10:30:00Z",
+        merged_by: { login: "octocat" },
+        state: "closed",
+      }),
+    });
+    const monitor = createGitHubPRMonitor(client, 30000, db);
+    const ctx = createMockContext();
+
+    await monitor.poll(ctx);
+
+    // Should not emit the hook since we already knew it was merged
+    expect(ctx.hooks.emit).not.toHaveBeenCalledWith("github:pr.merged", expect.anything());
+  });
+
+  it("updates lastMerged state after detecting merge", async () => {
+    const db = createMockDb({
+      id: "issue-1",
+      externalId: "octocat/hello-world#42",
+      source: "github",
+      metadata: {
+        owner: "octocat",
+        repo: "hello-world",
+        github_pr_monitor_state: {
+          lastSeenReviewIds: [],
+          lastSeenCommentIds: [],
+          lastCheckConclusions: {},
+          lastMergeableState: "clean",
+          lastMerged: false,
+        },
+      },
+      prNumber: 42,
+    });
+    const client = createMockClient({
+      fetchPR: vi.fn().mockResolvedValue({
+        number: 42,
+        mergeable_state: "clean",
+        merged: true,
+        merged_at: "2024-01-15T10:30:00Z",
+        merged_by: { login: "octocat" },
+        state: "closed",
+      }),
+    });
+    const monitor = createGitHubPRMonitor(client, 30000, db);
+    const ctx = createMockContext();
+
+    await monitor.poll(ctx);
+
+    expect(db.issues.update).toHaveBeenCalledWith(
+      "issue-1",
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          github_pr_monitor_state: expect.objectContaining({
+            lastMerged: true,
+          }),
+        }),
+      }),
+    );
+  });
 });

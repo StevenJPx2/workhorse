@@ -15,6 +15,7 @@ import { z } from "zod/v4";
 import { definePlugin } from "@jiratown/core";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter } from "./auth.ts";
+import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
@@ -31,6 +32,9 @@ export type JiraConfig = z.infer<typeof JiraConfigSchema>;
 
 // fallow-ignore-next-line unused-exports
 export type { JiraCredentials } from "./types.ts";
+
+// Export plugin hook types for cross-plugin coordination
+export type { JiraPluginHooks } from "./hooks.ts";
 
 export const jiraPlugin = definePlugin({
   manifest: {
@@ -71,8 +75,11 @@ export const jiraPlugin = definePlugin({
     // Register status sync
     registerStatusSync(ctx, client);
 
+    // Register cross-plugin sync (reacts to GitHub plugin events)
+    registerCrossPluginSync(ctx, client, ctx.db);
+
     // Register Jira tools with orchestrator
-    for (const tool of createJiraTools(client)) {
+    for (const tool of createJiraTools(client, ctx.hooks)) {
       ctx.orchestrator.registerTool(tool);
     }
   },

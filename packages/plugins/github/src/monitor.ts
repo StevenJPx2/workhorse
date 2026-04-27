@@ -1,14 +1,17 @@
 /**
  * Unified GitHub PR monitor.
  *
- * Polls for all PR activity: reviews, comments, check status, and mergeable state.
+ * Polls for all PR activity: reviews, comments, check status, mergeable state, and merge events.
  * Creates notifications with appropriate priorities.
+ * Emits plugin hooks for cross-plugin coordination.
  *
  * @module @jiratown/plugin-github/monitor
  */
 
 import type { Database, MonitorOptions } from "@jiratown/core";
 import type { GitHubClient } from "./client.ts";
+// Import hooks types to enable module augmentation
+import "./hooks.ts";
 import { processCheckChanges } from "./monitor-checks";
 import {
   createCommentNotifications,
@@ -52,6 +55,8 @@ export function createGitHubPRMonitor(
         lastSeenCommentIds: [],
         lastCheckConclusions: {},
         lastMergeableState: "",
+        lastMerged: false,
+        lastClosed: false,
       };
 
       let hasChanges = false;
@@ -72,6 +77,18 @@ export function createGitHubPRMonitor(
         hasChanges = true;
         changes.newReviews = newReviews.length;
         createReviewNotifications(ctx, newReviews, meta);
+
+        // Emit hook for each new review
+        for (const review of newReviews) {
+          ctx.hooks.emit("github:review.submitted", {
+            issueId: issue.id,
+            review: {
+              state: review.state as "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED",
+              author: review.user?.login ?? "unknown",
+              body: review.body ?? "",
+            },
+          });
+        }
       }
 
       // Process new comments
@@ -95,6 +112,25 @@ export function createGitHubPRMonitor(
       if (checkChanges.hasChanges) {
         hasChanges = true;
         changes.checkChanges = checkChanges.summary;
+
+        // Emit hooks for check status changes
+        if (checkChanges.summary.failed) {
+          const failedChecks = checkRuns.filter((c) => c.conclusion === "failure");
+          ctx.hooks.emit("github:checks.failed", {
+            issueId: issue.id,
+            pr: { number: prNumber },
+            failedChecks: failedChecks.map((c) => ({
+              name: c.name,
+              url: c.html_url ?? "",
+            })),
+          });
+        }
+        if (checkChanges.summary.allPassing) {
+          ctx.hooks.emit("github:checks.passed", {
+            issueId: issue.id,
+            pr: { number: prNumber },
+          });
+        }
       }
 
       // Process mergeable state changes
@@ -102,6 +138,40 @@ export function createGitHubPRMonitor(
         hasChanges = true;
         changes.mergeableStateChanged = { from: state.lastMergeableState, to: pr.mergeable_state };
         createMergeableNotification(ctx, pr.mergeable_state, meta);
+      }
+
+      // Detect PR merge and emit plugin hook for cross-plugin coordination
+      if (pr.merged && !state.lastMerged) {
+        hasChanges = true;
+        changes.merged = true;
+
+        // Emit plugin hook for cross-plugin listeners (e.g., Jira plugin)
+        ctx.hooks.emit("github:pr.merged", {
+          issueId: issue.id,
+          externalId: issue.externalId,
+          source: issue.source,
+          pr: {
+            number: prNumber,
+            url: pr.html_url,
+            mergedBy: pr.merged_by?.login,
+            mergedAt: pr.merged_at ?? new Date().toISOString(),
+          },
+        });
+      }
+
+      // Detect PR closed without merge
+      const isClosed = pr.state === "closed" && !pr.merged;
+      if (isClosed && !state.lastClosed) {
+        hasChanges = true;
+        changes.closed = true;
+
+        ctx.hooks.emit("github:pr.closed", {
+          issueId: issue.id,
+          pr: {
+            number: prNumber,
+            url: pr.html_url,
+          },
+        });
       }
 
       // Update state
@@ -115,6 +185,8 @@ export function createGitHubPRMonitor(
               checkRuns.map((c) => [c.name, c.conclusion ?? ""]),
             ),
             lastMergeableState: pr.mergeable_state,
+            lastMerged: pr.merged,
+            lastClosed: isClosed,
           } satisfies GitHubPRMonitorState,
         },
       });

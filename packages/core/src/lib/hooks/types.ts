@@ -24,6 +24,10 @@ type KnownEvents = {
   "agent.output": { issueId: string; delta: string };
   "agent.tool_call": { issueId: string; tool: string; args: unknown };
   "agent.crashed": { issueId: string; error: Error };
+  "agent.idle": { issueId: string; status: IssueStatus };
+
+  // Steering (idle steering system)
+  "steering.reminder": { issueId: string; reminder: string };
 
   // Notifications
   "notification.created": { notification: Notification; issueId: string };

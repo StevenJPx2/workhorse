@@ -41,6 +41,9 @@ export type {
   PRStatusSummary,
 } from "./types.ts";
 
+// Export plugin hook types for cross-plugin coordination
+export type { GitHubPluginHooks } from "./hooks.ts";
+
 export { GitHubClient } from "./client.ts";
 export { canParseGitHub, parseGitHubRef } from "./parser.ts";
 export { mapGitHubToIssue } from "./mapper.ts";
