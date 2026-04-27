@@ -11,7 +11,7 @@
 | 6 | MemoryService | ✅ Done | L1 (context.md) + L2 (retriv) + notifications + events |
 | 7 | MonitorService | ✅ Done | Polling framework + agent health stub |
 | 8 | Tracker | ✅ Done | Issue parsing + prompt building |
-| 9 | Harness | ⬜ Pending | Empty stub |
+| 9 | Harness | ✅ Done | AgentAdapter abstract class, pluggable adapters via plugins, Pi adapter plugin, spawn/stop flow, Orchestrator with registerAdapter |
 | 10 | MCP | ⬜ Pending | Empty stub |
 | 11 | Jira Plugin | ⬜ Pending | |
 | 12 | GitHub Plugin | ⬜ Pending | |
