@@ -11,6 +11,7 @@
     "jiratown/no-single-use-variable": "warn",
     "jiratown/no-section-comments": "warn",
     "jiratown/prefer-folder-barrel": "warn",
-    "jiratown/no-index-imports": "warn"
+    "jiratown/no-index-imports": "warn",
+    "jiratown/prefer-path-alias": "warn"
   }
 }

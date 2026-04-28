@@ -91,6 +91,8 @@ import { parent } from "../index.ts";
 - **kebab-case filenames** (`jiratown/enforce-kebab-case-filenames`)
 - **Colocated tests**: Test files must be next to implementation (`foo.ts` + `foo.test.ts`)
 - **Colocated exports**: Prefer exporting from the same file, not barrel re-exports only
+- **Prefer path aliases** (`jiratown/prefer-path-alias`): Flag deep relative imports (2+ parent traversals) when a path alias exists. Autofix converts `../../config` → `#config`
+- **No explicit /index.ts** (`jiratown/no-index-imports`): Use `./types` not `./types/index.ts`. Exception: `./index.ts`, `../index.ts` are allowed
 
 ### Test requirements
 

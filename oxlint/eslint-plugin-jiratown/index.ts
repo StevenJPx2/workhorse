@@ -8,6 +8,7 @@ import enforceBarrelExports from "./rules/enforce-barrel-exports";
 import noIndexImports from "./rules/no-index-imports";
 import noSectionComments from "./rules/no-section-comments";
 import preferFolderBarrel from "./rules/prefer-folder-barrel";
+import preferPathAlias from "./rules/prefer-path-alias";
 
 const plugin = {
   meta: {
@@ -25,6 +26,7 @@ const plugin = {
     "no-index-imports": noIndexImports,
     "no-section-comments": noSectionComments,
     "prefer-folder-barrel": preferFolderBarrel,
+    "prefer-path-alias": preferPathAlias,
   },
 };
 
