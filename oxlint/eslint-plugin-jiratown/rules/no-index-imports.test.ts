@@ -138,6 +138,25 @@ describe("no-index-imports", () => {
       );
     });
 
+    it("allows ../index.ts (parent directory index)", () => {
+      expect(
+        runRule("/project/src/utils/helper.ts", `import { foo } from "../index.ts";`).length,
+      ).toBe(0);
+    });
+
+    it("allows ../../index.ts (grandparent directory index)", () => {
+      expect(
+        runRule("/project/src/utils/deep/helper.ts", `import { foo } from "../../index.ts";`)
+          .length,
+      ).toBe(0);
+    });
+
+    it("allows ../index (parent directory index without extension)", () => {
+      expect(
+        runRule("/project/src/utils/helper.ts", `import { foo } from "../index";`).length,
+      ).toBe(0);
+    });
+
     it("skips '.' in node_modules", () => {
       expect(runRule("/project/node_modules/pkg/foo.ts", `import { a } from ".";`).length).toBe(0);
     });
@@ -255,9 +274,9 @@ describe("no-index-imports", () => {
   });
 
   describe("future behavior", () => {
-    it.fails("TODO: should also catch dynamic imports with /index.ts", () => {
-      // This test documents planned behavior that is not yet implemented.
-      // Dynamic imports like `import("./utils/index.ts")` should also be flagged.
+    // TODO: Dynamic imports like `import("./utils/index.ts")` should also be flagged.
+    // Currently not implemented - the rule only catches static imports/exports.
+    it.skip("should also catch dynamic imports with /index.ts", () => {
       const reports = runRule(
         "/project/src/foo.ts",
         `const utils = await import("./utils/index.ts");`,

@@ -4,4 +4,4 @@
  * @module @jiratown/plugin-github/tools
  */
 
-export { createGitHubTools } from "./tools/index";
+export { createGitHubTools } from "./tools";

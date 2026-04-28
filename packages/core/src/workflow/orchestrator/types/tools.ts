@@ -5,8 +5,8 @@
  */
 
 import type { Database } from "#db/database";
-import type { HookEmitter } from "#lib/hooks/types";
-import type { MemoryService } from "#services/memory/service";
+import type { HookEmitter } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
 
 /**
  * JSON Schema type for tool parameter definitions.

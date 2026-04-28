@@ -3,9 +3,9 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { evaluateRules, formatReminders, matchesCondition } from "../evaluator";
-import type { SteeringContext, SteeringRule } from "../types";
-import { baseIssue, createMockMemory } from "./fixtures";
+import { evaluateRules, formatReminders, matchesCondition } from "../evaluator.ts";
+import type { SteeringContext, SteeringRule } from "../types.ts";
+import { baseIssue, createMockMemory } from "./fixtures.ts";
 
 describe("evaluateRules", () => {
   let ctx: SteeringContext;

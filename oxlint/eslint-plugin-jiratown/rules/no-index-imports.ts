@@ -1,7 +1,10 @@
 /**
  * Disallow explicit /index.ts imports.
  * Import from the directory instead: `./foo` not `./foo/index.ts`
- * Exception: `./index.ts` is allowed, but `"."` should use `"./index.ts"` instead.
+ *
+ * Exceptions (allowed):
+ * - `./index.ts`, `../index.ts`, `../../index.ts` — direct index imports to current/parent dirs
+ * - `"."` should be flagged and suggest `"./index.ts"` instead
  */
 const rule = {
   meta: {
@@ -44,9 +47,14 @@ const rule = {
         return;
       }
 
-      // Allow ./index.ts (current directory index import)
+      // Allow direct index imports: ./index.ts, ../index.ts, ../../index.ts, etc.
+      // These point directly to an index file without any named subdirectory.
+      // Patterns: ./index, ./index.ts, ../index.ts, ../../index, etc.
+      if (/^(?:\.\.\/)+index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/.test(source)) {
+        return; // ../index, ../../index, etc.
+      }
       if (/^\.\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/.test(source)) {
-        return;
+        return; // ./index, ./index.ts
       }
 
       // Check for explicit index imports: ./foo/index, ./foo/index.ts, ./foo/index.js, etc.

@@ -25,6 +25,8 @@
 			"#services/monitor/*": ["./src/services/monitor/*.ts"],
 			"#workflow/orchestrator": ["./src/workflow/orchestrator/index.ts"],
 			"#workflow/orchestrator/*": ["./src/workflow/orchestrator/*.ts"],
+			"#workflow/steering": ["./src/workflow/steering/index.ts"],
+			"#workflow/steering/*": ["./src/workflow/steering/*.ts"],
 			"#workflow/tracker": ["./src/workflow/tracker/index.ts"],
 			"#workflow/tracker/*": ["./src/workflow/tracker/*.ts"]
 		}

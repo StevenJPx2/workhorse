@@ -3,9 +3,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SteeringService } from "../service";
-import { baseIssue, createMockDb, createMockHooks, createMockMemory, fastConfig } from "./fixtures";
-import type { SteeringRule } from "../types";
+import { SteeringService } from "../service.ts";
+import {
+  baseIssue,
+  createMockDb,
+  createMockHooks,
+  createMockMemory,
+  fastConfig,
+} from "./fixtures.ts";
+import type { SteeringRule } from "../types.ts";
 
 describe("SteeringService", () => {
   let service: SteeringService;

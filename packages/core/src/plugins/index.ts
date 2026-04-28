@@ -1,5 +1,5 @@
 // Built-in plugins
-import { corePlugin } from "./builtin/index.ts";
+import { corePlugin } from "./builtin";
 
 export { definePlugin } from "./define.ts";
 export { isPlugin, PluginRegistry } from "./registry.ts";

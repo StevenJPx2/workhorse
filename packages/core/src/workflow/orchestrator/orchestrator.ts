@@ -9,17 +9,16 @@ import type { Database } from "#db/database";
 import { removeWorktree } from "#lib/git";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
+import { SteeringService, type SteeringRule } from "#workflow/steering";
 import { PromptEngineer } from "#workflow/tracker";
 import { spawnAgent } from "./spawn.ts";
-import { SteeringService } from "./steering/service.ts";
-import type { SteeringRule } from "./steering/types.ts";
 import type {
   AdapterClass,
   AgentAdapter,
   OrchestratorTool,
   SpawnOptions,
   StopOptions,
-} from "./types/index.ts";
+} from "./types";
 
 /**
  * Main orchestrator class for managing agent lifecycles.

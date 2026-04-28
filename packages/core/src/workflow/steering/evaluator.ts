@@ -1,12 +1,7 @@
 import type { Issue } from "#db";
-import type { MemoryService } from "#services/memory";
 import type { Database } from "#db/database";
-import type {
-  RecentHookEvent,
-  SteeringCondition,
-  SteeringContext,
-  SteeringRule,
-} from "#workflow/orchestrator/steering/types";
+import type { MemoryService } from "#services/memory";
+import type { RecentHookEvent, SteeringCondition, SteeringContext, SteeringRule } from "./types.ts";
 
 export async function evaluateRules(
   rules: Map<string, SteeringRule>,

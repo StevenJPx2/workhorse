@@ -510,6 +510,9 @@ var rule8 = {
         });
         return;
       }
+      if (/^(?:\.\.\/)+index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/.test(source)) {
+        return;
+      }
       if (/^\.\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/.test(source)) {
         return;
       }

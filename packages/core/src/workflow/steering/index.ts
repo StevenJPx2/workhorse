@@ -5,5 +5,5 @@
  * providing workflow-specific reminders.
  */
 
-export { SteeringService } from "./service";
-export type { SteeringCondition, SteeringContext, SteeringRule } from "./types";
+export { SteeringService } from "./service.ts";
+export type { SteeringCondition, SteeringContext, SteeringRule } from "./types.ts";

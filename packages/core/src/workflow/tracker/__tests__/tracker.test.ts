@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
-import type { IssueParserOptions } from "#workflow/tracker/parser";
-import { Tracker } from "#workflow/tracker/tracker";
-import type { ParsedIssue } from "#workflow/tracker/types";
+import type { IssueParserOptions, ParsedIssue } from "#workflow/tracker";
+import { Tracker } from "#workflow/tracker";
 
 // Mock MemoryService
 const mockMemory = {

@@ -10,7 +10,7 @@ export type {
   Notification,
   NotificationPriority,
   NotificationStatus,
-} from "./schema/index.ts";
+} from "./schema";
 // Re-export schema tables and types
 // Zod schemas for runtime validation
 export {
@@ -24,4 +24,4 @@ export {
   NotificationStatusSchema,
   notifications,
   nullableDateText,
-} from "./schema/index.ts";
+} from "./schema";

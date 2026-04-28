@@ -7,12 +7,11 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
-import { createWorktree } from "#lib/git/worktree";
-import type { HookEmitter } from "#lib/hooks/types";
-import type { MemoryService } from "#services/memory/service";
-import { PromptEngineer } from "#workflow/tracker/engineer";
-import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types/index.ts";
-import type { AdapterClass } from "./types/index.ts";
+import { createWorktree } from "#lib/git";
+import type { HookEmitter } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
+import type { PromptEngineer } from "#workflow/tracker";
+import type { AdapterClass, AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 interface SpawnContext {
   db: Database;
