@@ -4,14 +4,14 @@ import type { MemoryService } from "#services/memory";
 import type { RecentHookEvent, SteeringCondition, SteeringContext, SteeringRule } from "./types.ts";
 
 export async function evaluateRules(
-  rules: Map<string, SteeringRule>,
+  rules: SteeringRule[],
   ctx: SteeringContext,
   firedOnce: Set<string>,
 ): Promise<{ matching: Array<{ rule: SteeringRule; reminder: string }>; firedRules: string[] }> {
   const matching: Array<{ rule: SteeringRule; reminder: string }> = [];
   const firedRules: string[] = [];
 
-  for (const rule of rules.values()) {
+  for (const rule of rules) {
     if (rule.once && firedOnce.has(rule.id)) continue;
 
     if (!(await matchesCondition(rule.condition, ctx))) continue;

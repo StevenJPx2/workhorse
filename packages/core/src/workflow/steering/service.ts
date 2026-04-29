@@ -46,13 +46,13 @@ export class SteeringService {
     private readonly memory: MemoryService,
     private readonly hooks: HookEmitter,
     private readonly config: SteeringConfig,
-    private readonly getRules: () => Map<string, SteeringRule>,
+    private readonly getRules: () => SteeringRule[],
   ) {
     this.boundHandleIdle = this.handleIdle.bind(this);
     this.hooks.on("agent.idle", this.boundHandleIdle);
 
     // Set up tracking for hooks referenced in existing rules
-    for (const rule of this.getRules().values()) {
+    for (const rule of this.getRules()) {
       if (rule.condition.hook) {
         for (const name of Array.isArray(rule.condition.hook)
           ? rule.condition.hook
@@ -70,9 +70,8 @@ export class SteeringService {
 
     const handler = (payload: unknown) => {
       if (this.disposed) return;
-      const p = payload as { issueId?: string };
       // Only track hooks for this issue
-      if (p.issueId !== this.issue.externalId) return;
+      if ((payload as { issueId?: string }).issueId !== this.issue.externalId) return;
 
       this.recentHooks.push({
         name,
@@ -89,17 +88,11 @@ export class SteeringService {
   }
 
   /** Handle agent idle event - only process if it's for our issue */
-  private handleIdle({ issueId, status, source }: HookEventMap["agent.idle"]): void {
-    if (this.disposed) return;
-    // Only handle if it's for our issue
-    if (issueId !== this.issue.externalId) return;
-    if (!this.config.enabled) return;
+  private handleIdle(e: HookEventMap["agent.idle"]): void {
+    if (this.disposed || !this.config.enabled || e.issueId !== this.issue.externalId) return;
 
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
-
-    this.debounceTimer = setTimeout(() => {
-      void this.processIdle();
-    }, this.config.debounceMs);
+    this.debounceTimer = setTimeout(() => void this.processIdle(), this.config.debounceMs);
   }
 
   private async processIdle(): Promise<void> {

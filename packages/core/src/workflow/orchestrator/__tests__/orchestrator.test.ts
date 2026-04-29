@@ -118,10 +118,11 @@ describe("HarnessOrchestrator", () => {
     });
   });
 
-  describe("stop", () => {
-    it("does nothing if no agent for issue", async () => {
+  describe("untrack", () => {
+    it("does nothing if no agent for issue", () => {
       // Should not throw
-      await orchestrator.stop("PROJ-999");
+      orchestrator.untrack("PROJ-999");
+      expect(orchestrator.getAgent("PROJ-999")).toBeUndefined();
     });
   });
 

@@ -2,6 +2,7 @@
  * Tests for GitHub tools.
  */
 
+import type { OrchestratorTool } from "@jiratown/core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools.ts";
@@ -24,7 +25,7 @@ describe("github_add_comment tool", () => {
     } as unknown as GitHubClient;
 
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_add_comment")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_add_comment")!;
 
     const result = await tool.execute(
       { owner: "octocat", repo: "hello-world", number: 42, body: "LGTM!" },
@@ -48,7 +49,7 @@ describe("github_add_comment tool", () => {
     } as unknown as GitHubClient;
 
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_add_comment")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_add_comment")!;
 
     const result = await tool.execute(
       { owner: "octocat", repo: "hello-world", number: 42, body: "Test" },
@@ -93,7 +94,7 @@ describe("github_get_pr_status tool", () => {
     } as unknown as GitHubClient;
 
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_get_pr_status")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_get_pr_status")!;
 
     const result = await tool.execute(
       { owner: "octocat", repo: "hello-world", number: 42 },
@@ -137,7 +138,7 @@ describe("github_get_pr_status tool", () => {
     } as unknown as GitHubClient;
 
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_get_pr_status")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_get_pr_status")!;
 
     const result = await tool.execute(
       { owner: "octocat", repo: "hello-world", number: 42 },
@@ -231,7 +232,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       mockHooks as any,
       mockMonitors as any,
     );
-    const tool = tools.find((t) => t.name === "github_open_pr")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_open_pr")!;
 
     const result = await tool.execute(
       { title: "Add feature", body: "Description", base: "main" },
@@ -266,7 +267,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
     };
 
     const tools = createGitHubTools({} as GitHubClient, mockDb as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_open_pr")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_open_pr")!;
 
     const result = await tool.execute(
       { title: "Test", base: "main" },
@@ -295,7 +296,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
     };
 
     const tools = createGitHubTools({} as GitHubClient, mockDb as any, {} as any, {} as any);
-    const tool = tools.find((t) => t.name === "github_open_pr")!;
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_open_pr")!;
 
     const result = await tool.execute(
       { title: "Test", base: "main" },

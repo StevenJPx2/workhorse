@@ -1,6 +1,6 @@
 import type { Emitter } from "mitt";
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { AgentAdapter, SpawnOptions } from "#workflow/orchestrator";
+import type { AgentAdapter, CreateOptions } from "#workflow/orchestrator";
 import type { PromptBuildingContext } from "#workflow/tracker";
 
 // Re-export for convenience
@@ -15,11 +15,13 @@ type KnownEvents = {
   "prompt.building": { issueId: string; context: PromptBuildingContext };
   "prompt.built": { issueId: string; prompt: string };
 
-  // Orchestrator lifecycle
-  "orchestrator.spawn.pre": { issue: Issue; options: SpawnOptions };
-  "orchestrator.spawn.post": { adapter: AgentAdapter };
-  "orchestrator.stop.pre": { adapter: AgentAdapter };
-  "orchestrator.stop.post": { adapter: AgentAdapter };
+  // Agent lifecycle
+  "agent.create.pre": { issue: Issue; options: CreateOptions };
+  "agent.create.post": { adapter: AgentAdapter };
+  "agent.start.pre": { adapter: AgentAdapter };
+  "agent.start.post": { adapter: AgentAdapter };
+  "agent.stop.pre": { adapter: AgentAdapter };
+  "agent.stop.post": { adapter: AgentAdapter };
 
   // Agent events (bridged from harness session.subscribe())
   "agent.output": { issueId: string; delta: string };

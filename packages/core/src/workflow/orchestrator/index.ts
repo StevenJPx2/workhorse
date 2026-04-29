@@ -6,17 +6,21 @@
 
 // Main orchestrator
 export { HarnessOrchestrator } from "./orchestrator.ts";
+
 // Steering (re-exported from workflow/steering)
 export type { SteeringCondition, SteeringContext, SteeringRule } from "#workflow/steering";
 export { SteeringService } from "#workflow/steering";
-// Types
+
+// Agent adapter base class and types
+export { AgentAdapter } from "./types";
 export type {
+  AgentHarness,
   AgentState,
+  CreateOptions,
+  StopOptions,
+  SpawnOptions,
   JSONSchema,
   OrchestratorTool,
-  SpawnOptions,
   ToolExecutionContext,
   ToolResult,
 } from "./types";
-// Agent adapter base class
-export { AgentAdapter } from "./types";

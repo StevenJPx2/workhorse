@@ -16,13 +16,13 @@ import type { SteeringRule } from "../types.ts";
 describe("SteeringService", () => {
   let service: SteeringService;
   let hooks: ReturnType<typeof createMockHooks>;
-  let rules: Map<string, SteeringRule>;
+  let rules: SteeringRule[];
 
   beforeEach(() => {
     hooks = createMockHooks();
     const db = createMockDb(baseIssue);
     const memory = createMockMemory();
-    rules = new Map();
+    rules = [];
 
     // Create per-issue service with a getRules getter
     service = new SteeringService(baseIssue, db, memory, hooks, fastConfig, () => rules);
@@ -42,7 +42,7 @@ describe("SteeringService", () => {
         reminder: "Status matched!",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -67,7 +67,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -94,7 +94,7 @@ describe("SteeringService", () => {
         reminder: "Source matched!",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -119,7 +119,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -146,7 +146,7 @@ describe("SteeringService", () => {
         reminder: "Predicate true!",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -171,7 +171,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -199,7 +199,7 @@ describe("SteeringService", () => {
         once: true,
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -236,7 +236,7 @@ describe("SteeringService", () => {
         once: true,
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -293,7 +293,7 @@ describe("SteeringService", () => {
         () => rules,
       );
 
-      rules.set("test:disabled", {
+      rules.push({
         id: "test:disabled",
         name: "Disabled",
         description: "",
@@ -322,7 +322,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire for other issue",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
 
       // Emit for a different issue
       hooks.emit("agent.idle", {
@@ -351,7 +351,7 @@ describe("SteeringService", () => {
         condition: { hook: "github:pr.merged" },
         reminder: "PR was merged!",
       };
-      rules.set(rule.id, rule);
+      rules.push(rule);
 
       // Create new service that will set up hook tracking
       service.dispose();
@@ -394,7 +394,7 @@ describe("SteeringService", () => {
         condition: { hook: "github:pr.merged" },
         reminder: "Should not fire",
       };
-      rules.set(rule.id, rule);
+      rules.push(rule);
 
       // Create new service that will set up hook tracking
       service.dispose();
@@ -437,7 +437,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire after dispose",
       };
 
-      rules.set(rule.id, rule);
+      rules.push(rule);
       service.dispose();
 
       hooks.emit("agent.idle", {

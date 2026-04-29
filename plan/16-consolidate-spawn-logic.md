@@ -4,25 +4,24 @@ Move spawn orchestration logic from `spawn.ts` into the `AgentAdapter` class and
 
 ## Status
 
-**State:** In progress
+**State:** ✅ Complete
 
 ### Completed
 
-- Created plan with full design
+1. ✅ Refactored `PromptEngineer` to per-issue instantiation (constructor takes `issue`, methods no longer need `issue` param)
+2. ✅ Refactored `SteeringService` to per-issue state with global rules via `getRules` getter
+3. ✅ Rewrote `AgentAdapter` as concrete class with `create()` factory (owns engineer + steering)
+4. ✅ Deleted `types/adapter-context.ts` (absorbed into AgentAdapter)
+5. ✅ Deleted `types/adapter-class.ts` (use `typeof AgentAdapter` directly)
+6. ✅ Moved `StopOptions` to `types/agent.ts`, added `CreateOptions` interface
+7. ✅ Deleted `spawn.ts` (logic moved to `AgentAdapter.create()`)
+8. ✅ Simplified orchestrator to registry/factory role (steering rules stored in orchestrator, state per-adapter)
+9. ✅ Added new hooks: `agent.create.pre/post`, `agent.start.pre/post`, `agent.stop.pre/post` (kept legacy `orchestrator.*` hooks for backwards compatibility)
+10. ✅ Updated `types/index.ts` exports (added `CreateOptions`, `StopOptions`, `AgentHarness`)
+11. ✅ Updated tests for new APIs
+12. ✅ Made orchestrator `db`, `hooks`, `memory`, `config` public (readonly) for adapter access
 
-### Remaining
-
-1. Refactor `PromptEngineer` to per-issue instantiation
-2. Refactor `SteeringService` to per-issue instantiation
-3. Rewrite `AgentAdapter` as concrete class with `create()` factory (owns engineer + steering)
-4. Delete `types/adapter-context.ts`
-5. Delete `types/adapter-class.ts` (inline `typeof AgentAdapter` where needed)
-6. Move `StopOptions` to `types/agent.ts`, add `CreateOptions`
-7. Delete `spawn.ts`
-8. Simplify orchestrator to registry/factory role (remove engineer/steering)
-9. Rename hooks in `lib/hooks/types.ts`
-10. Update `types/index.ts` exports
-11. Update tests
+All 288 tests passing.
 
 ### Implementation Notes
 

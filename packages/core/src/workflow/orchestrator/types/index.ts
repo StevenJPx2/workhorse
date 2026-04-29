@@ -4,20 +4,19 @@
  * Key concepts:
  * - AgentAdapter: Per-issue class combining tracking data and control methods
  * - OrchestratorTool: Harness-agnostic tool interface that plugins use
- * - SpawnOptions: Configuration for starting a new agent
+ * - SpawnOptions: Configuration for spawning an agent
+ * - CreateOptions: SpawnOptions + orchestrator reference for adapter creation
+ * - StopOptions: Configuration for stopping an agent
  *
  * @module workflow/orchestrator/types
  */
 
-// Agent types
+// Agent types (base class and options)
 export { AgentAdapter } from "./agent.ts";
-export type { AgentState } from "./agent.ts";
+export type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./agent.ts";
 
-// Adapter class constructor
-export type { AdapterClass } from "./adapter-class.ts";
-
-// Spawn/stop options
-export type { SpawnOptions, StopOptions } from "./spawn.ts";
+// Spawn options
+export type { SpawnOptions } from "./spawn.ts";
 
 // Tool types
 export type { JSONSchema, OrchestratorTool, ToolExecutionContext, ToolResult } from "./tools.ts";

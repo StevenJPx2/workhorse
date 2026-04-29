@@ -65,7 +65,6 @@ export class IssueParser {
    * Creates a per-issue PromptEngineer to build the prompt.
    */
   buildPrompt(issue: Issue, options: BuildPromptOptions = {}): Promise<string> {
-    const engineer = new PromptEngineer(issue, this.memory, this.config.prompt.custom);
-    return engineer.buildPrompt(options);
+    return new PromptEngineer(issue, this.memory, this.config.prompt.custom).buildPrompt(options);
   }
 }

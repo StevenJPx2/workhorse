@@ -27,30 +27,24 @@ describe("evaluateRules", () => {
   });
 
   it("sorts matching rules by priority descending", async () => {
-    const rules = new Map<string, SteeringRule>([
-      [
-        "test:priority-low",
-        {
-          id: "test:priority-low",
-          name: "Low",
-          description: "",
-          condition: {},
-          reminder: "Low priority",
-          priority: 1,
-        },
-      ],
-      [
-        "test:priority-high",
-        {
-          id: "test:priority-high",
-          name: "High",
-          description: "",
-          condition: {},
-          reminder: "High priority",
-          priority: 10,
-        },
-      ],
-    ]);
+    const rules: SteeringRule[] = [
+      {
+        id: "test:priority-low",
+        name: "Low",
+        description: "",
+        condition: {},
+        reminder: "Low priority",
+        priority: 1,
+      },
+      {
+        id: "test:priority-high",
+        name: "High",
+        description: "",
+        condition: {},
+        reminder: "High priority",
+        priority: 10,
+      },
+    ];
 
     const result = await evaluateRules(rules, ctx, new Set());
     expect(result.matching[0]!.rule.id).toBe("test:priority-high");
@@ -58,56 +52,47 @@ describe("evaluateRules", () => {
   });
 
   it("calls function reminders and uses return value", async () => {
-    const rules = new Map<string, SteeringRule>([
-      [
-        "test:fn-reminder",
-        {
-          id: "test:fn-reminder",
-          name: "Fn Reminder",
-          description: "",
-          condition: {},
-          reminder: (c) => `Issue: ${c.issue.externalId}`,
-        },
-      ],
-    ]);
+    const rules: SteeringRule[] = [
+      {
+        id: "test:fn-reminder",
+        name: "Fn Reminder",
+        description: "",
+        condition: {},
+        reminder: (c) => `Issue: ${c.issue.externalId}`,
+      },
+    ];
 
     const result = await evaluateRules(rules, ctx, new Set());
     expect(result.matching[0]!.reminder).toContain("Issue: AM-123");
   });
 
   it("tracks once-per-session rules in firedRules", async () => {
-    const rules = new Map<string, SteeringRule>([
-      [
-        "test:once",
-        {
-          id: "test:once",
-          name: "Once",
-          description: "",
-          condition: {},
-          reminder: "Once!",
-          once: true,
-        },
-      ],
-    ]);
+    const rules: SteeringRule[] = [
+      {
+        id: "test:once",
+        name: "Once",
+        description: "",
+        condition: {},
+        reminder: "Once!",
+        once: true,
+      },
+    ];
 
     const result = await evaluateRules(rules, ctx, new Set());
     expect(result.firedRules).toContain("test:once");
   });
 
   it("skips already-fired once-per-session rules", async () => {
-    const rules = new Map<string, SteeringRule>([
-      [
-        "test:once",
-        {
-          id: "test:once",
-          name: "Once",
-          description: "",
-          condition: {},
-          reminder: "Once!",
-          once: true,
-        },
-      ],
-    ]);
+    const rules: SteeringRule[] = [
+      {
+        id: "test:once",
+        name: "Once",
+        description: "",
+        condition: {},
+        reminder: "Once!",
+        once: true,
+      },
+    ];
 
     // firedOnce is now a simple Set<string> (per-issue)
     const firedOnce = new Set(["test:once"]);

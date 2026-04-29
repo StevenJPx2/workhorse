@@ -10,23 +10,18 @@
  *
  * Steering rules are global (registered here), but state (firedOnce, cooldowns)
  * is per-adapter via SteeringService instances created by each adapter.
+ *
+ * Lifecycle control (start/stop/sendMessage) is owned by the adapter itself.
+ * The orchestrator just spawns and tracks agents.
  */
 
 import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
-import { removeWorktree } from "#lib/git";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { SteeringRule } from "#workflow/steering";
-import { spawnAgent } from "./spawn.ts";
-import type {
-  AdapterClass,
-  AgentAdapter,
-  OrchestratorTool,
-  SpawnOptions,
-  StopOptions,
-} from "./types";
+import { AgentAdapter, type OrchestratorTool, type SpawnOptions } from "./types";
 
 /**
  * Main orchestrator class for managing agent lifecycles.
@@ -34,15 +29,16 @@ import type {
 export class HarnessOrchestrator {
   private readonly agents = new Map<string, AgentAdapter>();
   private readonly tools = new Map<string, OrchestratorTool>();
-  private readonly adapters = new Map<string, AdapterClass>();
+  private readonly adapters = new Map<string, typeof AgentAdapter>();
   private readonly steeringRules = new Map<string, SteeringRule>();
 
   constructor(
-    private readonly db: Database,
-    private readonly hooks: Emitter<HookEventMap>,
-    private readonly memory: MemoryService,
-    private readonly config: Readonly<JiratownConfig>,
+    readonly db: Database,
+    readonly hooks: Emitter<HookEventMap>,
+    readonly memory: MemoryService,
+    readonly config: Readonly<JiratownConfig>,
   ) {
+    // Push notifications to running agents
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
@@ -69,7 +65,7 @@ export class HarnessOrchestrator {
   }
 
   /** Register an adapter class. Plugins call this during setup. */
-  registerAdapter(harness: string, adapterClass: AdapterClass): void {
+  registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void {
     if (this.adapters.has(harness)) {
       console.warn(`Adapter for harness "${harness}" already registered, overwriting`);
     }
@@ -77,7 +73,7 @@ export class HarnessOrchestrator {
   }
 
   /** Get an adapter class by harness name. */
-  getAdapterClass(harness: string): AdapterClass | undefined {
+  getAdapterClass(harness: string): typeof AgentAdapter | undefined {
     return this.adapters.get(harness);
   }
 
@@ -92,35 +88,40 @@ export class HarnessOrchestrator {
     return Array.from(this.tools.values());
   }
 
-  /** Spawn a new agent for an issue. */
+  /**
+   * Spawn a new agent for an issue.
+   * Creates worktree, builds prompt, returns adapter.
+   * Does NOT start the agent — call adapter.start() for that.
+   */
   async spawn(options: SpawnOptions): Promise<AgentAdapter> {
-    return spawnAgent(options, {
-      db: this.db,
-      hooks: this.hooks,
-      memory: this.memory,
-      config: this.config,
-      agents: this.agents,
-      getTools: () => this.getTools(),
-      getAdapterClass: (harness: string) => this.getAdapterClass(harness),
-    });
-  }
+    const harness = options.harness ?? this.config.agent.harness;
+    const { issue } = options;
+    const issueId = issue.externalId;
 
-  /** Stop an agent for an issue. */
-  async stop(issueId: string, options: StopOptions = {}): Promise<void> {
-    const adapter = this.agents.get(issueId);
-    if (!adapter) return;
-
-    this.hooks.emit("orchestrator.stop.pre", { adapter });
-    try {
-      await adapter.stop();
-    } finally {
-      this.agents.delete(issueId);
-      if (options.removeWorktree && adapter.worktreePath) {
-        const repoPath = adapter.worktreePath.match(/^(.+)-worktrees[/\\][^/\\]+$/)?.[1];
-        if (repoPath) await removeWorktree(repoPath, issueId, options.deleteBranch);
+    // Check if agent already exists
+    const existing = this.agents.get(issueId);
+    if (existing) {
+      if (existing.state === "running" || existing.state === "starting") {
+        throw new Error(`Agent for issue ${issueId} is already running`);
       }
-      this.hooks.emit("orchestrator.stop.post", { adapter });
+      this.agents.delete(issueId);
     }
+
+    // Look up adapter class
+    const AdapterClass = this.getAdapterClass(harness);
+    if (!AdapterClass) {
+      throw new Error(`No adapter registered for harness: ${harness}`);
+    }
+
+    // Create adapter (handles worktree + prompt via AgentAdapter.create())
+    const adapter = await AdapterClass.create({
+      ...options,
+      orchestrator: this,
+    });
+
+    this.agents.set(issueId, adapter);
+
+    return adapter;
   }
 
   /** Send a message to a running agent. */
@@ -143,6 +144,11 @@ export class HarnessOrchestrator {
     return Array.from(this.agents.values());
   }
 
+  /** Remove an agent from tracking (call after adapter.stop()). */
+  untrack(issueId: string): void {
+    this.agents.delete(issueId);
+  }
+
   /** Register a steering rule. Plugins call this during setup. Rules are global. */
   registerSteeringRule(rule: SteeringRule): void {
     this.steeringRules.set(rule.id, rule);
@@ -154,16 +160,17 @@ export class HarnessOrchestrator {
   }
 
   /** Get all steering rules (called by per-adapter SteeringService). */
-  getSteeringRules(): Map<string, SteeringRule> {
-    return this.steeringRules;
+  getSteeringRules(): SteeringRule[] {
+    return Array.from(this.steeringRules.values());
   }
 
   /** Shutdown all agents. */
   async shutdown(): Promise<void> {
     await Promise.all(
-      Array.from(this.agents.keys()).map((id) =>
-        this.stop(id).catch((err) => console.error(`Error stopping agent ${id}:`, err)),
+      Array.from(this.agents.values()).map((agent) =>
+        agent.stop().catch((err) => console.error(`Error stopping agent ${agent.issueId}:`, err)),
       ),
     );
+    this.agents.clear();
   }
 }

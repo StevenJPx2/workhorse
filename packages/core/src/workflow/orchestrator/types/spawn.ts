@@ -30,13 +30,4 @@ export interface SpawnOptions {
   baseBranch?: string;
 }
 
-/**
- * Options for stopping an agent.
- */
-export interface StopOptions {
-  /** Remove the git worktree after stopping (default: false) */
-  removeWorktree?: boolean;
-
-  /** Also delete the branch when removing worktree (default: false) */
-  deleteBranch?: boolean;
-}
+// Note: StopOptions has been moved to agent.ts

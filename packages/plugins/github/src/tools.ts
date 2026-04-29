@@ -4,4 +4,5 @@
  * @module @jiratown/plugin-github/tools
  */
 
-export { createGitHubTools } from "./tools";
+// eslint-disable-next-line jiratown/no-index-imports -- Explicit index.ts required to avoid circular import with tools.ts
+export { createGitHubTools } from "./tools/index.ts";
