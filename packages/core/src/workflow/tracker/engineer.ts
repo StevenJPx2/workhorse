@@ -1,4 +1,3 @@
-import type { JiratownConfig } from "#config";
 import type { Issue } from "#db";
 import type { MemoryService, SearchResult, SessionMemory } from "#services/memory";
 import type { OrchestratorTool } from "#workflow/orchestrator";
@@ -18,57 +17,67 @@ export interface BuildPromptOptions {
 }
 
 /** Options for building a hybrid prompt (system + initial message). */
-// fallow-ignore-next-line unused-type
 export interface HybridPromptOptions extends BuildPromptOptions {
   tools?: OrchestratorTool[];
 }
 
 /** Result from buildHybridPrompt(). Split into system prompt and initial message. */
-// fallow-ignore-next-line unused-type
 export interface HybridPrompt {
   systemPrompt: string;
   initialMessage: string;
 }
 
-/** PromptEngineer - Builds prompts for issues with memory enrichment. */
+/**
+ * PromptEngineer - Builds prompts for a specific issue with memory enrichment.
+ *
+ * Instantiated per-issue and bound to that issue at construction time.
+ */
 export class PromptEngineer {
-  private readonly customInstructions?: string;
-
   constructor(
+    /** The issue this engineer builds prompts for */
+    private readonly issue: Issue,
+
     /** Memory service for context enrichment */
     private readonly memory: MemoryService,
 
-    /** App configuration */
-    config: Readonly<JiratownConfig>,
-  ) {
-    this.customInstructions = config.prompt.custom;
+    /** Custom instructions from config */
+    private readonly customInstructions?: string,
+  ) {}
+
+  /**
+   * Build a complete prompt for the issue.
+   */
+  async buildPrompt(options: BuildPromptOptions = {}): Promise<string> {
+    const { sessionMemory, searchResults, contextBlocks, isResume } =
+      await this.gatherContext(options);
+
+    const systemPrompt = this.buildSystemPrompt(contextBlocks, searchResults);
+
+    if (isResume) {
+      return `${systemPrompt}\n\n${buildResumePrompt(this.issue, sessionMemory)}`;
+    }
+
+    return `${systemPrompt}\n\n${buildInitialPrompt(this.issue)}`;
   }
 
   /**
-   * Build a complete prompt for an issue.
+   * Build hybrid prompt split into system prompt and initial message.
    */
-  async buildPrompt(issue: Issue, options: BuildPromptOptions = {}): Promise<string> {
-    const { sessionMemory, searchResults, contextBlocks, isResume } = await this.gatherContext(
-      issue,
-      options,
-    );
-
-    const systemPrompt = this.buildSystemPrompt(issue, contextBlocks, searchResults);
-
-    if (isResume) {
-      return `${systemPrompt}\n\n${buildResumePrompt(issue, sessionMemory)}`;
-    }
-
-    return `${systemPrompt}\n\n${buildInitialPrompt(issue)}`;
+  async buildHybridPrompt(options: HybridPromptOptions = {}): Promise<HybridPrompt> {
+    const { sessionMemory, searchResults, contextBlocks, isResume } =
+      await this.gatherContext(options);
+    return {
+      systemPrompt: this.buildSystemPrompt(contextBlocks, searchResults, options.tools ?? []),
+      initialMessage: isResume
+        ? buildResumePrompt(this.issue, sessionMemory)
+        : buildInitialPrompt(this.issue),
+    };
   }
 
   /**
    * Gather context from memory and notifications.
    */
-  private async gatherContext(
-    issue: Issue,
-    options: BuildPromptOptions,
-  ): Promise<{
+  private async gatherContext(options: BuildPromptOptions): Promise<{
     sessionMemory?: SessionMemory;
     searchResults: SearchResult[];
     contextBlocks: PromptContextBlock[];
@@ -78,8 +87,8 @@ export class PromptEngineer {
     let sessionMemory: SessionMemory | undefined;
     let isResume = options.isResume ?? false;
 
-    if (issue.worktreePath) {
-      const l1Context = this.memory.l1.get(issue.externalId);
+    if (this.issue.worktreePath) {
+      const l1Context = this.memory.l1.get(this.issue.externalId);
       if (l1Context?.exists()) {
         sessionMemory = (await l1Context.read()) ?? undefined;
         isResume = options.isResume ?? true;
@@ -87,7 +96,7 @@ export class PromptEngineer {
     }
 
     // Get unread notifications and add as context block
-    const notifications = this.memory.notifications.getUnread(issue.id);
+    const notifications = this.memory.notifications.getUnread(this.issue.id);
     const contextBlocks: PromptContextBlock[] = [];
 
     if (notifications.length > 0) {
@@ -101,7 +110,9 @@ export class PromptEngineer {
 
     return {
       sessionMemory,
-      searchResults: await this.searchL2Memory(`${issue.title} ${issue.description}`.trim()),
+      searchResults: await this.searchL2Memory(
+        `${this.issue.title} ${this.issue.description}`.trim(),
+      ),
       contextBlocks,
       isResume,
     };
@@ -109,12 +120,11 @@ export class PromptEngineer {
 
   /** Build system prompt with optional tools section. */
   private buildSystemPrompt(
-    issue: Issue,
     contextBlocks: PromptContextBlock[],
     searchResults: SearchResult[],
     tools: OrchestratorTool[] = [],
   ): string {
-    const sections: string[] = [renderIssueSection(issue)];
+    const sections: string[] = [renderIssueSection(this.issue)];
     if (tools.length > 0) sections.push(this.renderToolsSection(tools));
     for (const block of sortContextBlocks(contextBlocks)) sections.push(renderContextBlock(block));
     if (searchResults.length > 0) sections.push(renderSearchResults(searchResults));
@@ -126,25 +136,6 @@ export class PromptEngineer {
   /** Search L2 memory for relevant context. */
   private async searchL2Memory(query: string): Promise<SearchResult[]> {
     return query ? this.memory.l2.search(query, { limit: 5, returnContent: true }) : [];
-  }
-
-  /** Build hybrid prompt split into system prompt and initial message for pi-coding-agent. */
-  async buildHybridPrompt(issue: Issue, options: HybridPromptOptions = {}): Promise<HybridPrompt> {
-    const { sessionMemory, searchResults, contextBlocks, isResume } = await this.gatherContext(
-      issue,
-      options,
-    );
-    return {
-      systemPrompt: this.buildSystemPrompt(
-        issue,
-        contextBlocks,
-        searchResults,
-        options.tools ?? [],
-      ),
-      initialMessage: isResume
-        ? buildResumePrompt(issue, sessionMemory)
-        : buildInitialPrompt(issue),
-    };
   }
 
   /** Render tools section for system prompt. */

@@ -10,7 +10,6 @@ import { removeWorktree } from "#lib/git";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { SteeringService, type SteeringRule } from "#workflow/steering";
-import { PromptEngineer } from "#workflow/tracker";
 import { spawnAgent } from "./spawn.ts";
 import type {
   AdapterClass,
@@ -27,7 +26,6 @@ export class HarnessOrchestrator {
   private readonly agents = new Map<string, AgentAdapter>();
   private readonly tools = new Map<string, OrchestratorTool>();
   private readonly adapters = new Map<string, AdapterClass>();
-  private readonly engineer: PromptEngineer;
   private readonly steering: SteeringService;
 
   constructor(
@@ -36,8 +34,6 @@ export class HarnessOrchestrator {
     private readonly memory: MemoryService,
     private readonly config: Readonly<JiratownConfig>,
   ) {
-    this.engineer = new PromptEngineer(memory, config);
-
     this.steering = new SteeringService(db, memory, hooks, this.config.steering);
 
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
@@ -90,19 +86,15 @@ export class HarnessOrchestrator {
 
   /** Spawn a new agent for an issue. */
   async spawn(options: SpawnOptions): Promise<AgentAdapter> {
-    return spawnAgent(
-      options,
-      {
-        db: this.db,
-        hooks: this.hooks,
-        memory: this.memory,
-        config: this.config,
-        agents: this.agents,
-        getTools: () => this.getTools(),
-        getAdapterClass: (harness: string) => this.getAdapterClass(harness),
-      },
-      this.engineer,
-    );
+    return spawnAgent(options, {
+      db: this.db,
+      hooks: this.hooks,
+      memory: this.memory,
+      config: this.config,
+      agents: this.agents,
+      getTools: () => this.getTools(),
+      getAdapterClass: (harness: string) => this.getAdapterClass(harness),
+    });
   }
 
   /** Stop an agent for an issue. */

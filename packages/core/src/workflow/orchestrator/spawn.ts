@@ -10,7 +10,7 @@ import type { Database } from "#db/database";
 import { createWorktree } from "#lib/git";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import type { PromptEngineer } from "#workflow/tracker";
+import { PromptEngineer } from "#workflow/tracker";
 import type { AdapterClass, AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 interface SpawnContext {
@@ -24,11 +24,7 @@ interface SpawnContext {
 }
 
 /** Spawn a new agent for an issue. */
-export async function spawnAgent(
-  options: SpawnOptions,
-  ctx: SpawnContext,
-  engineer: PromptEngineer,
-): Promise<AgentAdapter> {
+export async function spawnAgent(options: SpawnOptions, ctx: SpawnContext): Promise<AgentAdapter> {
   const harness = options.harness ?? ctx.config.agent.harness;
   const { issue, repoPath, baseBranch = "main" } = options;
   const issueId = issue.externalId;
@@ -53,8 +49,10 @@ export async function spawnAgent(
   ctx.db.issues.update(issue.id, { worktreePath: worktree.path });
 
   // Build hybrid prompt (detects resume via .jiratown/session/)
+  // Create per-issue PromptEngineer
+  const engineer = new PromptEngineer(issue, ctx.memory, ctx.config.prompt.custom);
   const tools = ctx.getTools();
-  const { systemPrompt, initialMessage } = await engineer.buildHybridPrompt(issue, {
+  const { systemPrompt, initialMessage } = await engineer.buildHybridPrompt({
     isResume: existsSync(join(worktree.path, ".jiratown", "session")),
     tools,
   });

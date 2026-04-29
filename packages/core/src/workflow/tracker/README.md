@@ -71,18 +71,24 @@ const parser = IssueParser.from({
 
 ### PromptEngineer
 
-Assembles prompts from issues with memory enrichment. Constructed with `memory` and `config` as direct arguments.
+Assembles prompts from issues with memory enrichment. Instantiated per-issue.
 
 ```typescript
 import { PromptEngineer } from "#workflow/tracker";
 
-const engineer = new PromptEngineer(memory, config);
+// Create engineer for a specific issue
+const engineer = new PromptEngineer(issue, memory, config.prompt.custom);
 
 // Build prompt (gathers context from memory automatically)
-const prompt = await engineer.buildPrompt(issue);
+const prompt = await engineer.buildPrompt();
 
 // With options
-const prompt = await engineer.buildPrompt(issue, { isResume: true });
+const prompt = await engineer.buildPrompt({ isResume: true });
+
+// Build hybrid prompt (system + initial message)
+const { systemPrompt, initialMessage } = await engineer.buildHybridPrompt({
+  tools: orchestratorTools,
+});
 ```
 
 ## Parse Flow

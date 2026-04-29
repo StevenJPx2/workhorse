@@ -23,12 +23,10 @@ export interface IssueParserOptions {
 /**
  * Parser for converting user input into issues and building prompts.
  *
- * Handles both parsing input and building prompts, containing the PromptEngineer
- * internally.
+ * Handles both parsing input and building prompts, creating a PromptEngineer
+ * per-issue when building prompts.
  */
 export class IssueParser {
-  private readonly engineer: PromptEngineer;
-
   constructor(
     /** Source this parser handles */
     readonly source: IssueSource,
@@ -45,11 +43,9 @@ export class IssueParser {
      */
     readonly parse: (input: string) => Promise<ParsedIssue>,
 
-    memory: MemoryService,
-    config: Readonly<JiratownConfig>,
-  ) {
-    this.engineer = new PromptEngineer(memory, config);
-  }
+    private readonly memory: MemoryService,
+    private readonly config: Readonly<JiratownConfig>,
+  ) {}
 
   /**
    * Create an IssueParser from options object.
@@ -66,8 +62,10 @@ export class IssueParser {
 
   /**
    * Build a prompt for an issue.
+   * Creates a per-issue PromptEngineer to build the prompt.
    */
   buildPrompt(issue: Issue, options: BuildPromptOptions = {}): Promise<string> {
-    return this.engineer.buildPrompt(issue, options);
+    const engineer = new PromptEngineer(issue, this.memory, this.config.prompt.custom);
+    return engineer.buildPrompt(options);
   }
 }
