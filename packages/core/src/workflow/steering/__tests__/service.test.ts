@@ -1,8 +1,8 @@
 /**
- * Tests for SteeringService mechanics.
+ * Tests for SteeringService (per-issue) mechanics.
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SteeringService } from "../service.ts";
 import {
   baseIssue,
@@ -16,41 +16,20 @@ import type { SteeringRule } from "../types.ts";
 describe("SteeringService", () => {
   let service: SteeringService;
   let hooks: ReturnType<typeof createMockHooks>;
+  let rules: Map<string, SteeringRule>;
 
   beforeEach(() => {
     hooks = createMockHooks();
     const db = createMockDb(baseIssue);
     const memory = createMockMemory();
-    service = new SteeringService(db, memory, hooks, fastConfig);
+    rules = new Map();
+
+    // Create per-issue service with a getRules getter
+    service = new SteeringService(baseIssue, db, memory, hooks, fastConfig, () => rules);
   });
 
-  describe("registerRule / unregisterRule", () => {
-    it("registers and returns a rule", () => {
-      const rule: SteeringRule = {
-        id: "test:rule",
-        name: "Test Rule",
-        description: "A test rule",
-        condition: {},
-        reminder: "Hello!",
-      };
-
-      service.registerRule(rule);
-      expect(service.getRules()).toContain(rule);
-    });
-
-    it("unregisters a rule by id", () => {
-      const rule: SteeringRule = {
-        id: "test:rule",
-        name: "Test Rule",
-        description: "A test rule",
-        condition: {},
-        reminder: "Hello!",
-      };
-
-      service.registerRule(rule);
-      service.unregisterRule("test:rule");
-      expect(service.getRules()).toHaveLength(0);
-    });
+  afterEach(() => {
+    service.dispose();
   });
 
   describe("status condition", () => {
@@ -63,7 +42,7 @@ describe("SteeringService", () => {
         reminder: "Status matched!",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -88,7 +67,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -115,7 +94,7 @@ describe("SteeringService", () => {
         reminder: "Source matched!",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -140,7 +119,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -167,7 +146,7 @@ describe("SteeringService", () => {
         reminder: "Predicate true!",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -192,7 +171,7 @@ describe("SteeringService", () => {
         reminder: "Should not fire",
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -220,7 +199,7 @@ describe("SteeringService", () => {
         once: true,
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -247,7 +226,7 @@ describe("SteeringService", () => {
       expect(steeringCalls).toHaveLength(0);
     });
 
-    it("resets when resetForIssue is called", async () => {
+    it("new service instance starts with fresh state", async () => {
       const rule: SteeringRule = {
         id: "test:once-reset",
         name: "Once Reset",
@@ -257,7 +236,7 @@ describe("SteeringService", () => {
         once: true,
       };
 
-      service.registerRule(rule);
+      rules.set(rule.id, rule);
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
@@ -265,20 +244,40 @@ describe("SteeringService", () => {
       });
       await new Promise((r) => setTimeout(r, 10));
 
-      vi.clearAllMocks();
-      service.resetForIssue("AM-123");
-
-      hooks.emit("agent.idle", {
-        issueId: "AM-123",
-        status: "implementing",
-        source: "jira",
-      });
-      await new Promise((r) => setTimeout(r, 10));
-
+      // First service fires
       expect(hooks.emit).toHaveBeenCalledWith(
         "steering.reminder",
         expect.objectContaining({ reminder: expect.stringContaining("Once!") }),
       );
+
+      vi.clearAllMocks();
+      service.dispose();
+
+      // Create new service instance (simulates new agent spawn)
+      const newHooks = createMockHooks();
+      const newService = new SteeringService(
+        baseIssue,
+        createMockDb(baseIssue),
+        createMockMemory(),
+        newHooks,
+        fastConfig,
+        () => rules,
+      );
+
+      newHooks.emit("agent.idle", {
+        issueId: "AM-123",
+        status: "implementing",
+        source: "jira",
+      });
+      await new Promise((r) => setTimeout(r, 10));
+
+      // New service should fire (fresh state)
+      expect(newHooks.emit).toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.objectContaining({ reminder: expect.stringContaining("Once!") }),
+      );
+
+      newService.dispose();
     });
   });
 
@@ -286,13 +285,15 @@ describe("SteeringService", () => {
     it("does not emit reminders when disabled", async () => {
       const disabledHooks = createMockHooks();
       const disabledService = new SteeringService(
+        baseIssue,
         createMockDb(baseIssue),
         createMockMemory(),
         disabledHooks,
         { ...fastConfig, enabled: false },
+        () => rules,
       );
 
-      disabledService.registerRule({
+      rules.set("test:disabled", {
         id: "test:disabled",
         name: "Disabled",
         description: "",
@@ -307,11 +308,42 @@ describe("SteeringService", () => {
       await new Promise((r) => setTimeout(r, 10));
 
       expect(disabledHooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      disabledService.dispose();
+    });
+  });
+
+  describe("issue filtering", () => {
+    it("ignores idle events for other issues", async () => {
+      const rule: SteeringRule = {
+        id: "test:filter",
+        name: "Filter Test",
+        description: "",
+        condition: {},
+        reminder: "Should not fire for other issue",
+      };
+
+      rules.set(rule.id, rule);
+
+      // Emit for a different issue
+      hooks.emit("agent.idle", {
+        issueId: "OTHER-456",
+        status: "implementing",
+        source: "jira",
+      });
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.objectContaining({
+          reminder: expect.stringContaining("Should not fire"),
+        }),
+      );
     });
   });
 
   describe("hook condition", () => {
     it("fires when specified hook recently fired", async () => {
+      // Register rule with hook condition first (before creating service to trigger tracking)
       const rule: SteeringRule = {
         id: "test:hook-condition",
         name: "Hook Condition",
@@ -319,22 +351,39 @@ describe("SteeringService", () => {
         condition: { hook: "github:pr.merged" },
         reminder: "PR was merged!",
       };
+      rules.set(rule.id, rule);
 
-      service.registerRule(rule);
-      hooks.emit("github:pr.merged", { issueId: "AM-123", pr: { number: 42 } });
-      hooks.emit("agent.idle", {
+      // Create new service that will set up hook tracking
+      service.dispose();
+      const newHooks = createMockHooks();
+      const newService = new SteeringService(
+        baseIssue,
+        createMockDb(baseIssue),
+        createMockMemory(),
+        newHooks,
+        fastConfig,
+        () => rules,
+      );
+
+      // Emit the tracked hook event first
+      newHooks.emit("github:pr.merged", { issueId: "AM-123", pr: { number: 42 } });
+
+      // Then emit idle
+      newHooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
         source: "jira",
       });
       await new Promise((r) => setTimeout(r, 10));
 
-      expect(hooks.emit).toHaveBeenCalledWith(
+      expect(newHooks.emit).toHaveBeenCalledWith(
         "steering.reminder",
         expect.objectContaining({
           reminder: expect.stringContaining("PR was merged!"),
         }),
       );
+
+      newService.dispose();
     });
 
     it("does not fire when specified hook did not fire", async () => {
@@ -345,8 +394,52 @@ describe("SteeringService", () => {
         condition: { hook: "github:pr.merged" },
         reminder: "Should not fire",
       };
+      rules.set(rule.id, rule);
 
-      service.registerRule(rule);
+      // Create new service that will set up hook tracking
+      service.dispose();
+      const newHooks = createMockHooks();
+      const newService = new SteeringService(
+        baseIssue,
+        createMockDb(baseIssue),
+        createMockMemory(),
+        newHooks,
+        fastConfig,
+        () => rules,
+      );
+
+      // Don't emit the hook, just go idle
+      newHooks.emit("agent.idle", {
+        issueId: "AM-123",
+        status: "implementing",
+        source: "jira",
+      });
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(newHooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.objectContaining({
+          reminder: expect.stringContaining("Should not fire"),
+        }),
+      );
+
+      newService.dispose();
+    });
+  });
+
+  describe("dispose", () => {
+    it("stops processing after dispose", async () => {
+      const rule: SteeringRule = {
+        id: "test:dispose",
+        name: "Dispose Test",
+        description: "",
+        condition: {},
+        reminder: "Should not fire after dispose",
+      };
+
+      rules.set(rule.id, rule);
+      service.dispose();
+
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",

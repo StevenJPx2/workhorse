@@ -52,7 +52,7 @@ describe("evaluateRules", () => {
       ],
     ]);
 
-    const result = await evaluateRules(rules, ctx, new Map());
+    const result = await evaluateRules(rules, ctx, new Set());
     expect(result.matching[0]!.rule.id).toBe("test:priority-high");
     expect(result.matching[1]!.rule.id).toBe("test:priority-low");
   });
@@ -71,7 +71,7 @@ describe("evaluateRules", () => {
       ],
     ]);
 
-    const result = await evaluateRules(rules, ctx, new Map());
+    const result = await evaluateRules(rules, ctx, new Set());
     expect(result.matching[0]!.reminder).toContain("Issue: AM-123");
   });
 
@@ -90,7 +90,7 @@ describe("evaluateRules", () => {
       ],
     ]);
 
-    const result = await evaluateRules(rules, ctx, new Map());
+    const result = await evaluateRules(rules, ctx, new Set());
     expect(result.firedRules).toContain("test:once");
   });
 
@@ -109,8 +109,8 @@ describe("evaluateRules", () => {
       ],
     ]);
 
-    const firedOnce = new Map<string, Set<string>>();
-    firedOnce.set("AM-123", new Set(["test:once"]));
+    // firedOnce is now a simple Set<string> (per-issue)
+    const firedOnce = new Set(["test:once"]);
 
     const result = await evaluateRules(rules, ctx, firedOnce);
     expect(result.matching).toHaveLength(0);

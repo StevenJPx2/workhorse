@@ -1,6 +1,15 @@
 /**
  * HarnessOrchestrator - Manages agent instances across multiple issues.
  * @module workflow/orchestrator/orchestrator
+ *
+ * The orchestrator is a registry/factory for agent adapters:
+ * - Registers adapter classes, tools, and steering rules (plugins call these)
+ * - Creates adapter instances via spawn()
+ * - Tracks active agents for lookup
+ * - Handles notification and steering reminder delivery to running agents
+ *
+ * Steering rules are global (registered here), but state (firedOnce, cooldowns)
+ * is per-adapter via SteeringService instances created by each adapter.
  */
 
 import type { Emitter } from "mitt";
@@ -9,7 +18,7 @@ import type { Database } from "#db/database";
 import { removeWorktree } from "#lib/git";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import { SteeringService, type SteeringRule } from "#workflow/steering";
+import type { SteeringRule } from "#workflow/steering";
 import { spawnAgent } from "./spawn.ts";
 import type {
   AdapterClass,
@@ -26,7 +35,7 @@ export class HarnessOrchestrator {
   private readonly agents = new Map<string, AgentAdapter>();
   private readonly tools = new Map<string, OrchestratorTool>();
   private readonly adapters = new Map<string, AdapterClass>();
-  private readonly steering: SteeringService;
+  private readonly steeringRules = new Map<string, SteeringRule>();
 
   constructor(
     private readonly db: Database,
@@ -34,8 +43,6 @@ export class HarnessOrchestrator {
     private readonly memory: MemoryService,
     private readonly config: Readonly<JiratownConfig>,
   ) {
-    this.steering = new SteeringService(db, memory, hooks, this.config.steering);
-
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
@@ -48,6 +55,7 @@ export class HarnessOrchestrator {
     });
 
     // Deliver steering reminders to running agents
+    // (emitted by per-adapter SteeringService instances)
     this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
@@ -135,14 +143,19 @@ export class HarnessOrchestrator {
     return Array.from(this.agents.values());
   }
 
-  /** Register a steering rule. Plugins call this during setup. */
+  /** Register a steering rule. Plugins call this during setup. Rules are global. */
   registerSteeringRule(rule: SteeringRule): void {
-    this.steering.registerRule(rule);
+    this.steeringRules.set(rule.id, rule);
   }
 
   /** Unregister a steering rule. */
   unregisterSteeringRule(id: string): void {
-    this.steering.unregisterRule(id);
+    this.steeringRules.delete(id);
+  }
+
+  /** Get all steering rules (called by per-adapter SteeringService). */
+  getSteeringRules(): Map<string, SteeringRule> {
+    return this.steeringRules;
   }
 
   /** Shutdown all agents. */

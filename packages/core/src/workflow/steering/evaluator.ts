@@ -6,16 +6,13 @@ import type { RecentHookEvent, SteeringCondition, SteeringContext, SteeringRule 
 export async function evaluateRules(
   rules: Map<string, SteeringRule>,
   ctx: SteeringContext,
-  firedOnce: Map<string, Set<string>>,
+  firedOnce: Set<string>,
 ): Promise<{ matching: Array<{ rule: SteeringRule; reminder: string }>; firedRules: string[] }> {
   const matching: Array<{ rule: SteeringRule; reminder: string }> = [];
   const firedRules: string[] = [];
 
   for (const rule of rules.values()) {
-    if (rule.once) {
-      const fired = firedOnce.get(ctx.issue.externalId);
-      if (fired?.has(rule.id)) continue;
-    }
+    if (rule.once && firedOnce.has(rule.id)) continue;
 
     if (!(await matchesCondition(rule.condition, ctx))) continue;
 
@@ -57,7 +54,7 @@ export function buildContext(
   issue: Issue,
   db: Database,
   memory: MemoryService,
-  recentHooks: Map<string, RecentHookEvent[]>,
+  recentHooks: RecentHookEvent[],
 ): SteeringContext {
   return {
     issue,
@@ -67,7 +64,7 @@ export function buildContext(
     notifications: memory.notifications.getUnread(issue.externalId),
     hasPR: Boolean(issue.prUrl),
     recentTools: [],
-    recentHooks: recentHooks.get(issue.externalId) ?? [],
+    recentHooks,
   };
 }
 
