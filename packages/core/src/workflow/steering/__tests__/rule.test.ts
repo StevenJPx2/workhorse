@@ -364,6 +364,65 @@ describe("SteeringRule", () => {
     });
   });
 
+  describe("reset", () => {
+    it("resets fired flag allowing once rule to fire again", async () => {
+      const hooks = createMockHooks();
+      const rule = createRule(
+        {
+          id: "test:reset",
+          name: "Reset Test",
+          description: "",
+          reminder: "x",
+          once: true,
+        },
+        hooks,
+      );
+
+      // Fire once
+      await triggerEvaluation(hooks);
+      expect(hooks.emit).toHaveBeenCalledWith("steering.reminder", expect.anything());
+
+      // Clear mocks and advance past cooldown
+      (hooks.emit as ReturnType<typeof vi.fn>).mockClear();
+      await vi.advanceTimersByTimeAsync(defaultSteeringConfig.cooldownMs);
+
+      // Reset the rule
+      rule.reset();
+
+      // Trigger again - should fire because reset cleared fired flag
+      await triggerEvaluation(hooks);
+      expect(hooks.emit).toHaveBeenCalledWith("steering.reminder", expect.anything());
+
+      rule.dispose();
+    });
+
+    it("clears recent hooks", async () => {
+      const hooks = createMockHooks();
+      const rule = createRule(
+        {
+          id: "test:reset-hooks",
+          name: "Reset Hooks",
+          description: "",
+          condition: { hook: "github:pr.merged" },
+          reminder: "PR merged!",
+        },
+        hooks,
+      );
+
+      // Simulate hook firing
+      hooks.emit("github:pr.merged", { issueId: "AM-123" });
+
+      // Reset clears recent hooks
+      rule.reset();
+
+      // Trigger evaluation - should NOT fire because recent hooks cleared
+      await triggerEvaluation(hooks);
+      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+
+      rule.dispose();
+    });
+  });
+
   describe("dispose", () => {
     it("unsubscribes from hooks", () => {
       const hooks = createMockHooks();

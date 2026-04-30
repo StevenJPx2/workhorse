@@ -283,4 +283,109 @@ describe("PromptEngineer", () => {
       expect(prompt).not.toContain("First session");
     });
   });
+
+  describe("buildHybridPrompt", () => {
+    it("returns system prompt and initial message separately", async () => {
+      const mockMemory = createMockMemory();
+      const issue = createMockIssue();
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const result = await engineer.buildHybridPrompt();
+
+      expect(result.systemPrompt).toContain("## Issue: AM-123");
+      expect(result.initialMessage).toContain("You are starting work on issue");
+    });
+
+    it("includes tools section when tools provided", async () => {
+      const mockMemory = createMockMemory();
+      const issue = createMockIssue();
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const tools = [
+        {
+          name: "update_status",
+          description: "Updates the issue status",
+          schema: { type: "object" },
+          execute: vi.fn(),
+        },
+        {
+          name: "add_comment",
+          description: "Adds a comment to the issue",
+          schema: { type: "object" },
+          execute: vi.fn(),
+        },
+      ];
+
+      const result = await engineer.buildHybridPrompt({ tools });
+
+      expect(result.systemPrompt).toContain("## Jiratown Tools");
+      expect(result.systemPrompt).toContain("### update_status");
+      expect(result.systemPrompt).toContain("Updates the issue status");
+      expect(result.systemPrompt).toContain("### add_comment");
+    });
+
+    it("returns resume prompt when L1 memory exists", async () => {
+      const mockMemory = createMockMemory();
+      mockMemory.l1.get = vi.fn().mockReturnValue({
+        exists: () => true,
+        read: vi.fn().mockResolvedValue({
+          title: "AM-123: Test Issue",
+          patterns: [],
+          sessions: [],
+          latestStatus: "implementing",
+        }),
+      });
+      const issue = createMockIssue({ worktreePath: "/path/to/worktree" });
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const result = await engineer.buildHybridPrompt();
+
+      expect(result.initialMessage).toContain("You are resuming work on issue");
+    });
+
+    it("respects explicit isResume=false even with L1 memory", async () => {
+      const mockMemory = createMockMemory();
+      mockMemory.l1.get = vi.fn().mockReturnValue({
+        exists: () => true,
+        read: vi.fn().mockResolvedValue({
+          title: "AM-123: Test Issue",
+          patterns: [],
+          sessions: [],
+          latestStatus: "implementing",
+        }),
+      });
+      const issue = createMockIssue({ worktreePath: "/path/to/worktree" });
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const result = await engineer.buildHybridPrompt({ isResume: false });
+
+      expect(result.initialMessage).toContain("You are starting work on issue");
+    });
+
+    it("skips L2 search when issue has empty title and description", async () => {
+      const mockMemory = createMockMemory();
+      const issue = createMockIssue({ title: "", description: "" });
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      await engineer.buildHybridPrompt();
+
+      // Should not call search with empty query
+      expect(mockMemory.l2.search).not.toHaveBeenCalled();
+    });
+
+    it("handles L1 context returning null from read", async () => {
+      const mockMemory = createMockMemory();
+      mockMemory.l1.get = vi.fn().mockReturnValue({
+        exists: () => true,
+        read: vi.fn().mockResolvedValue(null), // read() returns null
+      });
+      const issue = createMockIssue({ worktreePath: "/path/to/worktree" });
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const result = await engineer.buildHybridPrompt();
+
+      // Should still work, using resume mode since L1 exists (but no memory content)
+      expect(result.initialMessage).toContain("You are resuming work on issue");
+    });
+  });
 });

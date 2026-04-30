@@ -14,6 +14,7 @@ export default defineConfig({
         "**/db/schema/custom-types.ts", // Drizzle custom type definitions
         "**/__tests__/fixtures/**", // Test fixtures
         "**/bootstrap.ts", // Bootstrap infrastructure with logger plugin
+        "**/orchestrator/agent.ts", // Base class with git/fs operations - tested via adapter plugins
       ],
       thresholds: {
         lines: 97,
