@@ -1,4 +1,4 @@
-# Step 13: CLI
+# Step 15: CLI
 
 Command-line interface for Jiratown. Thin wrapper over core APIs — no business logic, just argument parsing and output formatting.
 
@@ -8,6 +8,17 @@ Command-line interface for Jiratown. Thin wrapper over core APIs — no business
 
 - **citty** — Lightweight CLI argument parsing from UnJS (same ecosystem as `unctx`)
 - **@clack/prompts** — Beautiful terminal output: spinners, styled logs, notes, intro/outro
+
+## Default Behavior
+
+Running `jiratown` with no arguments opens the TUI:
+
+```bash
+jiratown          # Opens the TUI (interactive mode)
+jiratown spawn    # Subcommand mode (non-interactive)
+```
+
+The CLI delegates to `@jiratown/tui` for the interactive experience. Subcommands (`spawn`, `stop`, `list`, etc.) run non-interactively with clack-formatted output.
 
 ## File Structure
 
@@ -328,6 +339,7 @@ All commands support:
 #!/usr/bin/env bun
 import { defineCommand, runMain } from "citty";
 import { version } from "../package.json";
+import { startTUI } from "@jiratown/tui";
 import {
   spawnCommand,
   stopCommand,
@@ -361,6 +373,10 @@ const main = defineCommand({
     auth: authCommand,
     plugin: pluginCommand,
   },
+  // No subcommand = open TUI
+  async run() {
+    await startTUI();
+  },
 });
 
 // Graceful shutdown
@@ -384,6 +400,7 @@ runMain(main);
   },
   "dependencies": {
     "@jiratown/core": "workspace:*",
+    "@jiratown/tui": "workspace:*",
     "@jiratown/plugin-pi-adapter": "workspace:*",
     "@jiratown/plugin-jira": "workspace:*",
     "@jiratown/plugin-github": "workspace:*",
