@@ -52,7 +52,7 @@ export class Database {
     this.sqlite.exec("PRAGMA foreign_keys = ON;");
     this.sqlite.exec("PRAGMA busy_timeout = 5000;");
 
-    this.db = drizzle(this.sqlite, { schema });
+    this.db = drizzle({ client: this.sqlite, schema });
 
     migrate(this.db, {
       migrationsFolder: join(dirname(fileURLToPath(import.meta.url)), "../../drizzle"),

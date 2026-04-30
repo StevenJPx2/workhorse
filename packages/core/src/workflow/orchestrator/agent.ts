@@ -48,26 +48,22 @@ export class AgentAdapter {
       this.orchestrator.config.prompt.custom,
     );
 
-    this.steering = this.orchestrator.getSteeringRules().map((rule) => {
-      return new SteeringRule(rule, this.hooks, this.issue, this.orchestrator.config.steering);
+    this.steering = this.orchestrator.getSteeringRules().map((config) => {
+      return new SteeringRule({
+        config,
+        hooks: this.hooks,
+        issue: this.issue,
+        steeringConfig: this.orchestrator.config.steering,
+        getNotifications: () => this.memory.notifications.getUnread(this.issue.externalId),
+      });
     });
   }
 
-  get tools(): OrchestratorTool[] {
-    return this.orchestrator.getTools();
-  }
-  get db(): Database {
-    return this.orchestrator.db;
-  }
-  get hooks(): HookEmitter {
-    return this.orchestrator.hooks;
-  }
-  get memory(): MemoryService {
-    return this.orchestrator.memory;
-  }
-  get issueId(): string {
-    return this.issue.externalId;
-  }
+  get tools(): OrchestratorTool[] { return this.orchestrator.getTools(); }
+  get db(): Database { return this.orchestrator.db; }
+  get hooks(): HookEmitter { return this.orchestrator.hooks; }
+  get memory(): MemoryService { return this.orchestrator.memory; }
+  get issueId(): string { return this.issue.externalId; }
 
   /** Factory method. Does NOT call start(). */
   static async create(options: CreateOptions): Promise<AgentAdapter> {

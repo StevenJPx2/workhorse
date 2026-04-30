@@ -6,7 +6,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { baseIssue, createMockHooks, createRule, defaultSteeringConfig } from "./fixtures.ts";
+import {
+  baseIssue,
+  createMockHooks,
+  createRule,
+  defaultSteeringConfig,
+} from "./fixtures.ts";
 
 describe("SteeringRule", () => {
   beforeEach(() => {
@@ -291,13 +296,13 @@ describe("SteeringRule", () => {
       rule.dispose();
     });
 
-    it("passes rule instance to when() predicate", async () => {
+    it("passes SteeringContext to when() predicate", async () => {
       const hooks = createMockHooks();
       const whenFn = vi.fn().mockReturnValue(true);
       const rule = createRule(
         {
-          id: "test:when-instance",
-          name: "When Instance",
+          id: "test:when-context",
+          name: "When Context",
           description: "",
           condition: { when: whenFn },
           reminder: "test",
@@ -307,19 +312,25 @@ describe("SteeringRule", () => {
 
       await triggerEvaluation(hooks);
 
-      expect(whenFn).toHaveBeenCalledWith(rule);
+      expect(whenFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          issue: expect.objectContaining({ externalId: "AM-123" }),
+          notifications: expect.any(Array),
+          toolHistory: expect.any(Array),
+        }),
+      );
 
       rule.dispose();
     });
 
-    it("calls reminder function with rule instance", async () => {
+    it("calls reminder function with SteeringContext", async () => {
       const hooks = createMockHooks();
       const rule = createRule(
         {
           id: "test:fn-reminder",
           name: "Fn Reminder",
           description: "",
-          reminder: (r) => `Issue: ${r.issue.externalId}`,
+          reminder: (ctx) => `Issue: ${ctx.issue.externalId}`,
         },
         hooks,
       );
@@ -443,4 +454,5 @@ describe("SteeringRule", () => {
       expect(hooks.off).toHaveBeenCalledWith("agent.idle", expect.any(Function));
     });
   });
+
 });

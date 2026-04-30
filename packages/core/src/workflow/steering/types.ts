@@ -6,16 +6,12 @@
  */
 
 import { type ZodType, z } from "zod/v4";
-import { IssueStatusSchema } from "#db";
-
-// Forward declaration to avoid circular dependency
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SteeringRuleRef = any;
+import { IssueSchema, IssueStatusSchema, NotificationSchema } from "#db";
 
 /**
- * A record of a recently fired hook event.
+ * A record of a hook event in the history.
  */
-export interface RecentHookEvent {
+export interface HookHistoryEntry {
   /** Hook name (e.g. "plugin:event.type") - plugins define their own hook namespaces */
   name: string;
 
@@ -26,12 +22,41 @@ export interface RecentHookEvent {
   payload: unknown;
 }
 
+/** Schema for a tool call in the history. */
+export const ToolHistoryEntrySchema = z.object({
+  /** Tool name (e.g. "edit", "github_open_pr") */
+  name: z.string(),
+  /** Arguments passed to the tool */
+  args: z.unknown(),
+  /** Timestamp when the tool was called */
+  timestamp: z.number(),
+});
+
+export type ToolHistoryEntry = z.infer<typeof ToolHistoryEntrySchema>;
+
+/**
+ * Context passed to `when()` and `reminder()` callbacks.
+ * Provides access to issue state, notifications, and tool/hook history.
+ */
+export const SteeringContextSchema = z.object({
+  /** The issue this rule is evaluating for */
+  issue: IssueSchema,
+  /** Unread notifications for this issue */
+  notifications: z.array(NotificationSchema),
+  /** History of tool calls made by the agent (consumers can filter by timestamp) */
+  toolHistory: z.array(ToolHistoryEntrySchema),
+});
+
+export type SteeringContext = z.infer<typeof SteeringContextSchema>;
+
 /** Transform string | string[] | undefined to string[] (defaults to []) */
 const arrayUnionSchema = (zType: ZodType) =>
   z
     .union([zType, z.array(zType)])
     .optional()
-    .transform((val) => (val === undefined ? [] : Array.isArray(val) ? val : [val]));
+    .transform((val) =>
+      val === undefined ? [] : Array.isArray(val) ? val : [val],
+    );
 
 /** Zod schema for SteeringCondition - normalizes and sets defaults */
 export const SteeringConditionSchema = z.object({
@@ -40,7 +65,7 @@ export const SteeringConditionSchema = z.object({
   hook: arrayUnionSchema(z.string()),
   when: z
     .function({
-      input: [z.any()],
+      input: [SteeringContextSchema],
       output: z.union([z.boolean(), z.promise(z.boolean())]),
     })
     .optional()
@@ -62,11 +87,13 @@ export const SteeringRuleConfigSchema = z.object({
     .union([
       z.string(),
       z.function({
-        input: [z.any()],
-        output: z.promise(z.string()),
+        input: [SteeringContextSchema],
+        output: z.union([z.string(), z.promise(z.string())]),
       }),
     ])
-    .transform((val) => (typeof val === "function" ? val : (_: SteeringRuleRef) => val)),
+    .transform((val) =>
+      typeof val === "function" ? val : (_: SteeringContext) => val,
+    ),
   priority: z.number().optional().default(0),
   once: z.boolean().optional().default(false),
 });

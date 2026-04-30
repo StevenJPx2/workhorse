@@ -1,10 +1,10 @@
-# Step 14: TUI
+# Step 15: TUI
 
-Terminal user interface for Jiratown. Real-time dashboard showing agent activity, notifications, and controls. Built with Ink (React for terminals).
+Terminal user interface for Jiratown. Real-time dashboard showing agent activity, notifications, and controls. Built with OpenTUI + Solid.js for fine-grained reactivity and native performance.
 
 **Location:** `packages/tui/` (standalone package: `@jiratown/tui`)
 
-**External deps:** `ink`, `react`, `ink-select-input`, `ink-spinner`, `ink-text-input`, `ink-use-stdout-dimensions`
+**External deps:** `solid-js`, `@opentui/solid`
 
 ## Design Goals
 
@@ -19,14 +19,17 @@ Terminal user interface for Jiratown. Real-time dashboard showing agent activity
 ```
 packages/tui/
 ├── package.json
+├── bunfig.toml               # Bun config with OpenTUI preload
+├── tsconfig.json             # JSX config for @opentui/solid
 ├── bin/
 │   └── jiratown-tui.ts       # Entry point
 └── src/
-    ├── index.ts              # Main app, Ink render
+    ├── index.tsx             # Main app, OpenTUI render
     ├── app.tsx               # Root component
     ├── context/
-    │   ├── jiratown.tsx      # JiratownContext provider for React
-    │   └── keyboard.tsx      # Global keyboard handler context
+    │   └── jiratown.tsx      # JiratownContext provider for Solid
+    ├── state/
+    │   └── ui.ts             # UI state with Solid signals
     ├── screens/
     │   ├── dashboard.tsx     # Main dashboard (agent list + preview)
     │   ├── agent.tsx         # Single agent view (output + controls)
@@ -37,28 +40,22 @@ packages/tui/
     ├── components/
     │   ├── agent-list.tsx    # Selectable list of agents
     │   ├── agent-card.tsx    # Agent status card
-    │   ├── agent-output.tsx  # Scrollable agent output
+    │   ├── agent-output.tsx  # Scrollable agent output (uses <scrollbox>)
     │   ├── notification-list.tsx
     │   ├── notification-badge.tsx
     │   ├── status-bar.tsx    # Bottom status bar
     │   ├── command-palette.tsx # Ctrl+P command search
-    │   ├── input-modal.tsx   # Modal for text input
-    │   ├── confirm-modal.tsx # Modal for confirmations
-    │   └── spinner.tsx       # Loading indicator
-    ├── hooks/
-    │   ├── use-agents.ts     # Subscribe to agent state
-    │   ├── use-agent-output.ts # Stream agent output
-    │   ├── use-notifications.ts # Subscribe to notifications
-    │   ├── use-keyboard.ts   # Keyboard shortcuts
-    │   └── use-focus.ts      # Focus management
-    ├── store/
-    │   ├── index.ts          # Zustand store
-    │   ├── agents.ts         # Agent state slice
-    │   └── ui.ts             # UI state slice (active screen, modals)
+    │   └── modal.tsx         # Reusable modal (uses Portal)
+    ├── primitives/
+    │   ├── create-agents.ts      # Reactive agent list
+    │   ├── create-agent-output.ts # Stream agent output
+    │   ├── create-notifications.ts # Reactive notifications
+    │   └── create-keyboard.ts    # Keyboard handler
+    ├── theme.ts              # Color constants
     └── __tests__/
         ├── dashboard.test.tsx
         ├── agent-list.test.tsx
-        └── hooks.test.ts
+        └── primitives.test.ts
 ```
 
 ## Screens
@@ -164,68 +161,86 @@ Full notification inbox.
 
 ## Components
 
+OpenTUI uses lowercase intrinsic elements (`<box>`, `<text>`, `<select>`) with Solid's fine-grained reactivity.
+
 ### AgentList
 
 ```tsx
 // components/agent-list.tsx
-import { Box, Text } from "ink";
-import SelectInput from "ink-select-input";
+import { For } from "solid-js";
+import { SelectRenderableEvents } from "@opentui/core";
 import type { AgentAdapter } from "@jiratown/core";
-import { useAgents } from "../hooks/use-agents.ts";
+import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
 
 interface AgentListProps {
   onSelect: (agent: AgentAdapter) => void;
 }
 
-export function AgentList({ onSelect }: AgentListProps) {
-  const agents = useAgents();
+export function AgentList(props: AgentListProps) {
+  const agents = createAgents();
 
-  const items = agents.map((agent) => ({
-    label: formatAgentLabel(agent),
-    value: agent,
-  }));
+  const options = () =>
+    agents().map((agent) => ({
+      name: formatAgentLabel(agent),
+      description: `${agent.state} · ${agent.harness}`,
+      value: agent,
+    }));
+
+  let selectRef: any;
+
+  // Handle selection via event
+  const handleSelect = (_index: number, option: any) => {
+    props.onSelect(option.value);
+  };
 
   return (
-    <Box flexDirection="column">
-      <Text bold>AGENTS</Text>
-      <SelectInput items={items} onSelect={(item) => onSelect(item.value)} />
-    </Box>
+    <box flexDirection="column" flexGrow={1}>
+      <text>
+        <b>AGENTS</b>
+      </text>
+      <select
+        ref={selectRef}
+        options={options()}
+        onItemSelected={handleSelect}
+        selectedBackgroundColor={theme.colors.selection}
+        selectedTextColor={theme.colors.text}
+        showDescription
+      />
+    </box>
   );
 }
 
 function formatAgentLabel(agent: AgentAdapter): string {
-  const status = theme.status[agent.state];
   const icon = agent.state === "running" ? "●" : "○";
-  return `${icon} ${agent.issueId.padEnd(12)} ${status(agent.state)}`;
+  return `${icon} ${agent.issueId.padEnd(12)} ${agent.state}`;
 }
 ```
 
 ### AgentOutput
 
+Uses `<scrollbox>` for scrollable output and `<markdown>` for rich agent responses:
+
 ```tsx
 // components/agent-output.tsx
-import { Box, Text, useStdout } from "ink";
-import { useAgentOutput } from "../hooks/use-agent-output.ts";
+import { useTerminalDimensions } from "@opentui/solid";
+import { createAgentOutput } from "../primitives/create-agent-output.ts";
 
 interface AgentOutputProps {
   issueId: string;
   maxLines?: number;
 }
 
-export function AgentOutput({ issueId, maxLines = 20 }: AgentOutputProps) {
-  const output = useAgentOutput(issueId);
-  const { stdout } = useStdout();
-  const height = Math.min(maxLines, stdout?.rows ?? 20);
+export function AgentOutput(props: AgentOutputProps) {
+  const output = createAgentOutput(() => props.issueId);
+  const dimensions = useTerminalDimensions();
 
-  const lines = output.split("\n").slice(-height);
+  const height = () => Math.min(props.maxLines ?? 20, dimensions().height - 10);
 
   return (
-    <Box flexDirection="column" height={height}>
-      {lines.map((line, i) => (
-        <Text key={i}>{line}</Text>
-      ))}
-    </Box>
+    <scrollbox height={height()} flexGrow={1}>
+      <markdown content={output()} />
+    </scrollbox>
   );
 }
 ```
@@ -234,50 +249,64 @@ export function AgentOutput({ issueId, maxLines = 20 }: AgentOutputProps) {
 
 ```tsx
 // components/status-bar.tsx
-import { Box, Text } from "ink";
-import { useNotifications } from "../hooks/use-notifications.ts";
-import { useAgents } from "../hooks/use-agents.ts";
+import { For } from "solid-js";
+import { createAgents } from "../primitives/create-agents.ts";
+import { createNotifications } from "../primitives/create-notifications.ts";
+import { theme } from "../theme.ts";
 
-interface StatusBarProps {
-  shortcuts: Array<{ key: string; label: string }>;
+interface Shortcut {
+  key: string;
+  label: string;
 }
 
-export function StatusBar({ shortcuts }: StatusBarProps) {
-  const notifications = useNotifications();
-  const agents = useAgents();
+interface StatusBarProps {
+  shortcuts: Shortcut[];
+}
 
-  const running = agents.filter((a) => a.state === "running").length;
-  const pending = notifications.filter((n) => !n.acknowledged).length;
+export function StatusBar(props: StatusBarProps) {
+  const agents = createAgents();
+  const notifications = createNotifications();
+
+  const running = () => agents().filter((a) => a.state === "running").length;
+  const pending = () => notifications().filter((n) => !n.acknowledged).length;
 
   return (
-    <Box borderStyle="single" borderTop borderBottom={false} borderLeft={false} borderRight={false}>
-      <Box flexGrow={1}>
-        {shortcuts.map(({ key, label }) => (
-          <Text key={key}>
-            <Text bold>[{key}]</Text>
-            <Text>{label}  </Text>
-          </Text>
-        ))}
-      </Box>
-      <Box>
-        <Text color="green">● {running}</Text>
-        <Text>  </Text>
-        <Text color={pending > 0 ? "yellow" : "dim"}>🔔 {pending}</Text>
-      </Box>
-    </Box>
+    <box
+      flexDirection="row"
+      justifyContent="space-between"
+      borderStyle="single"
+      padding={1}
+    >
+      <box flexDirection="row" gap={2}>
+        <For each={props.shortcuts}>
+          {(shortcut) => (
+            <text>
+              <b>[{shortcut.key}]</b>
+              <span>{shortcut.label}</span>
+            </text>
+          )}
+        </For>
+      </box>
+      <box flexDirection="row" gap={2}>
+        <text fg={theme.colors.success}>● {running()}</text>
+        <text fg={pending() > 0 ? theme.colors.warning : theme.colors.dim}>
+          🔔 {pending()}
+        </text>
+      </box>
+    </box>
   );
 }
 ```
 
 ### CommandPalette
 
+Uses OpenTUI's built-in `<select>` with filtering:
+
 ```tsx
 // components/command-palette.tsx
-import { Box, Text } from "ink";
-import TextInput from "ink-text-input";
-import SelectInput from "ink-select-input";
-import { useState, useMemo } from "react";
-import Fuse from "fuse.js";
+import { createSignal, createMemo, For } from "solid-js";
+import { Portal, useRenderer } from "@opentui/solid";
+import { theme } from "../theme.ts";
 
 interface Command {
   id: string;
@@ -291,243 +320,360 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
-export function CommandPalette({ commands, onClose }: CommandPaletteProps) {
-  const [query, setQuery] = useState("");
+export function CommandPalette(props: CommandPaletteProps) {
+  const renderer = useRenderer();
+  const [query, setQuery] = createSignal("");
 
-  const fuse = useMemo(
-    () => new Fuse(commands, { keys: ["label", "id"] }),
-    [commands]
+  // Simple filter (no external fuzzy lib needed for MVP)
+  const filtered = createMemo(() => {
+    const q = query().toLowerCase();
+    if (!q) return props.commands;
+    return props.commands.filter(
+      (cmd) =>
+        cmd.label.toLowerCase().includes(q) ||
+        cmd.id.toLowerCase().includes(q)
+    );
+  });
+
+  const options = createMemo(() =>
+    filtered().map((cmd) => ({
+      name: `${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ""}`,
+      description: cmd.id,
+      value: cmd,
+    }))
   );
 
-  const filtered = query
-    ? fuse.search(query).map((r) => r.item)
-    : commands;
-
-  const items = filtered.map((cmd) => ({
-    label: `${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ""}`,
-    value: cmd,
-  }));
+  const handleSelect = (_index: number, option: any) => {
+    option.value.action();
+    props.onClose();
+  };
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      padding={1}
-      width={50}
-    >
-      <TextInput
-        value={query}
-        onChange={setQuery}
-        placeholder="Search commands..."
-      />
-      <SelectInput
-        items={items}
-        onSelect={(item) => {
-          item.value.action();
-          onClose();
-        }}
-      />
-    </Box>
+    <Portal mount={renderer.root}>
+      <box
+        flexDirection="column"
+        borderStyle="rounded"
+        title="Command Palette"
+        padding={1}
+        width={50}
+        backgroundColor={theme.colors.background}
+      >
+        <input
+          value={query()}
+          onInput={(e) => setQuery(e.target.value)}
+          placeholder="Search commands..."
+        />
+        <select
+          options={options()}
+          onItemSelected={handleSelect}
+          height={10}
+          showDescription={false}
+        />
+      </box>
+    </Portal>
   );
 }
 ```
 
-## Hooks
+### Modal (reusable)
 
-### useAgents
+```tsx
+// components/modal.tsx
+import { JSX } from "solid-js";
+import { Portal, useRenderer } from "@opentui/solid";
+import { theme } from "../theme.ts";
+
+interface ModalProps {
+  title: string;
+  children: JSX.Element;
+  width?: number;
+}
+
+export function Modal(props: ModalProps) {
+  const renderer = useRenderer();
+
+  return (
+    <Portal mount={renderer.root}>
+      <box
+        flexDirection="column"
+        borderStyle="rounded"
+        title={props.title}
+        padding={1}
+        width={props.width ?? 40}
+        backgroundColor={theme.colors.background}
+      >
+        {props.children}
+      </box>
+    </Portal>
+  );
+}
+```
+
+## Primitives (Solid Reactive Functions)
+
+Solid uses the `create*` naming convention for reactive primitives instead of React's `use*` hooks.
+
+### createAgents
 
 ```typescript
-// hooks/use-agents.ts
-import { useState, useEffect } from "react";
+// primitives/create-agents.ts
+import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
 import type { AgentAdapter } from "@jiratown/core";
 import { useJiratown } from "../context/jiratown.tsx";
 
-export function useAgents(): AgentAdapter[] {
+export function createAgents(): Accessor<AgentAdapter[]> {
   const { orchestrator, hooks } = useJiratown();
-  const [agents, setAgents] = useState<AgentAdapter[]>(() =>
-    orchestrator.getAll()
-  );
+  const [agents, setAgents] = createSignal<AgentAdapter[]>(orchestrator.getAll());
 
-  useEffect(() => {
+  onMount(() => {
     const refresh = () => setAgents(orchestrator.getAll());
 
     hooks.on("orchestrator.spawn.post", refresh);
     hooks.on("orchestrator.stop.post", refresh);
 
-    return () => {
+    onCleanup(() => {
       hooks.off("orchestrator.spawn.post", refresh);
       hooks.off("orchestrator.stop.post", refresh);
-    };
-  }, [orchestrator, hooks]);
+    });
+  });
 
   return agents;
 }
 ```
 
-### useAgentOutput
+### createAgentOutput
 
 ```typescript
-// hooks/use-agent-output.ts
-import { useState, useEffect, useRef } from "react";
+// primitives/create-agent-output.ts
+import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
 import { useJiratown } from "../context/jiratown.tsx";
 
-export function useAgentOutput(issueId: string): string {
+export function createAgentOutput(issueId: Accessor<string>): Accessor<string> {
   const { hooks } = useJiratown();
-  const [output, setOutput] = useState("");
-  const bufferRef = useRef("");
+  const [output, setOutput] = createSignal("");
+  let buffer = "";
 
-  useEffect(() => {
+  onMount(() => {
     const handler = ({ issueId: id, delta }: { issueId: string; delta: string }) => {
-      if (id === issueId) {
-        bufferRef.current += delta;
-        setOutput(bufferRef.current);
+      if (id === issueId()) {
+        buffer += delta;
+        setOutput(buffer);
       }
     };
 
     hooks.on("agent.output", handler);
-    return () => hooks.off("agent.output", handler);
-  }, [issueId, hooks]);
+
+    onCleanup(() => {
+      hooks.off("agent.output", handler);
+    });
+  });
 
   return output;
 }
 ```
 
-### useNotifications
+### createNotifications
 
 ```typescript
-// hooks/use-notifications.ts
-import { useState, useEffect } from "react";
+// primitives/create-notifications.ts
+import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
 import type { Notification } from "@jiratown/core";
 import { useJiratown } from "../context/jiratown.tsx";
 
-export function useNotifications(issueId?: string): Notification[] {
+export function createNotifications(issueId?: Accessor<string | undefined>): Accessor<Notification[]> {
   const { memory, hooks } = useJiratown();
-  const [notifications, setNotifications] = useState<Notification[]>(() =>
-    memory.getNotifications(issueId)
+  const [notifications, setNotifications] = createSignal<Notification[]>(
+    memory.getNotifications(issueId?.())
   );
 
-  useEffect(() => {
-    const refresh = () => setNotifications(memory.getNotifications(issueId));
+  onMount(() => {
+    const refresh = () => setNotifications(memory.getNotifications(issueId?.()));
 
     hooks.on("notification.created", refresh);
     hooks.on("notification.acknowledged", refresh);
 
-    return () => {
+    onCleanup(() => {
       hooks.off("notification.created", refresh);
       hooks.off("notification.acknowledged", refresh);
-    };
-  }, [memory, hooks, issueId]);
+    });
+  });
 
   return notifications;
 }
 ```
 
-### useKeyboard
+### createKeyboardHandler
+
+Uses OpenTUI's `useKeyboard` hook:
 
 ```typescript
-// hooks/use-keyboard.ts
-import { useInput } from "ink";
-import { useCallback } from "react";
+// primitives/create-keyboard.ts
+import { useKeyboard, useRenderer } from "@opentui/solid";
 
 interface KeyMap {
   [key: string]: () => void;
 }
 
-export function useKeyboard(keyMap: KeyMap) {
-  useInput((input, key) => {
-    // Handle special keys
-    if (key.escape && keyMap["escape"]) {
-      keyMap["escape"]();
-      return;
-    }
-    if (key.return && keyMap["enter"]) {
-      keyMap["enter"]();
-      return;
-    }
-    if (key.ctrl && input === "p" && keyMap["ctrl+p"]) {
-      keyMap["ctrl+p"]();
-      return;
-    }
-    if (key.ctrl && input === "c" && keyMap["ctrl+c"]) {
-      keyMap["ctrl+c"]();
-      return;
+export function createKeyboardHandler(keyMap: KeyMap) {
+  const renderer = useRenderer();
+
+  useKeyboard((event) => {
+    // Build key string
+    let keyStr = event.name;
+    if (event.ctrl) keyStr = `ctrl+${keyStr}`;
+    if (event.shift) keyStr = `shift+${keyStr}`;
+    if (event.alt) keyStr = `alt+${keyStr}`;
+
+    // Check keymap
+    const handler = keyMap[keyStr] ?? keyMap[event.name];
+    if (handler) {
+      handler();
     }
 
-    // Handle regular keys
-    if (keyMap[input]) {
-      keyMap[input]();
+    // Special: quit on 'q'
+    if (event.name === "q" && keyMap["q"]) {
+      renderer.destroy();
     }
   });
 }
-```
 
-## Store (Zustand)
+## UI State (Solid Signals)
+
+Using Solid signals instead of Zustand — no external state library needed:
 
 ```typescript
-// store/index.ts
-import { create } from "zustand";
+// state/ui.ts
+import { createSignal } from "solid-js";
 
-type Screen = "dashboard" | "agent" | "notifications" | "config" | "help";
-type Modal = "spawn" | "confirm-stop" | "command-palette" | null;
+export type Screen = "dashboard" | "agent" | "notifications" | "config" | "help";
+export type Modal = "spawn" | "confirm-stop" | "command-palette" | null;
 
-interface UIState {
-  screen: Screen;
-  modal: Modal;
-  selectedIssueId: string | null;
+// Global UI state signals
+const [screen, setScreen] = createSignal<Screen>("dashboard");
+const [modal, setModal] = createSignal<Modal>(null);
+const [selectedIssueId, setSelectedIssueId] = createSignal<string | null>(null);
 
-  setScreen: (screen: Screen) => void;
-  openModal: (modal: Modal) => void;
-  closeModal: () => void;
-  selectAgent: (issueId: string) => void;
+export const ui = {
+  // Accessors (read)
+  screen,
+  modal,
+  selectedIssueId,
+
+  // Actions (write)
+  setScreen,
+  openModal: (m: Modal) => setModal(m),
+  closeModal: () => setModal(null),
+  selectAgent: (issueId: string) => setSelectedIssueId(issueId),
+};
+```
+
+## Context (Jiratown Provider)
+
+```tsx
+// context/jiratown.tsx
+import { createContext, useContext, type JSX } from "solid-js";
+import type { Orchestrator, Hooks, Memory } from "@jiratown/core";
+
+interface JiratownContextValue {
+  orchestrator: Orchestrator;
+  hooks: Hooks;
+  memory: Memory;
 }
 
-export const useUIStore = create<UIState>((set) => ({
-  screen: "dashboard",
-  modal: null,
-  selectedIssueId: null,
+const JiratownContext = createContext<JiratownContextValue>();
 
-  setScreen: (screen) => set({ screen }),
-  openModal: (modal) => set({ modal }),
-  closeModal: () => set({ modal: null }),
-  selectAgent: (issueId) => set({ selectedIssueId: issueId }),
-}));
+export function useJiratown(): JiratownContextValue {
+  const ctx = useContext(JiratownContext);
+  if (!ctx) throw new Error("useJiratown must be used within JiratownProvider");
+  return ctx;
+}
+
+interface JiratownProviderProps extends JiratownContextValue {
+  children: JSX.Element;
+}
+
+export function JiratownProvider(props: JiratownProviderProps) {
+  const value = {
+    orchestrator: props.orchestrator,
+    hooks: props.hooks,
+    memory: props.memory,
+  };
+
+  return (
+    <JiratownContext.Provider value={value}>
+      {props.children}
+    </JiratownContext.Provider>
+  );
+}
 ```
 
 ## App Root
 
 ```tsx
 // app.tsx
-import { Box } from "ink";
+import { Match, Switch } from "solid-js";
+import { useRenderer } from "@opentui/solid";
 import { JiratownProvider } from "./context/jiratown.tsx";
 import { Dashboard } from "./screens/dashboard.tsx";
 import { AgentView } from "./screens/agent.tsx";
 import { Notifications } from "./screens/notifications.tsx";
 import { SpawnModal } from "./screens/spawn.tsx";
 import { CommandPalette } from "./components/command-palette.tsx";
-import { useUIStore } from "./store/index.ts";
-import { useKeyboard } from "./hooks/use-keyboard.ts";
+import { ui } from "./state/ui.ts";
+import { createKeyboardHandler } from "./primitives/create-keyboard.ts";
+import { commands } from "./commands.ts";
+import type { Orchestrator, Hooks, Memory } from "@jiratown/core";
 
-export function App() {
-  const { screen, modal, openModal, closeModal } = useUIStore();
+interface AppProps {
+  orchestrator: Orchestrator;
+  hooks: Hooks;
+  memory: Memory;
+}
 
-  useKeyboard({
-    "ctrl+p": () => openModal("command-palette"),
-    "?": () => useUIStore.getState().setScreen("help"),
-    "q": () => process.exit(0),
+export function App(props: AppProps) {
+  const renderer = useRenderer();
+
+  createKeyboardHandler({
+    "ctrl+p": () => ui.openModal("command-palette"),
+    "?": () => ui.setScreen("help"),
+    q: () => renderer.destroy(),
+    escape: () => {
+      if (ui.modal()) {
+        ui.closeModal();
+      } else if (ui.screen() !== "dashboard") {
+        ui.setScreen("dashboard");
+      }
+    },
   });
 
   return (
-    <JiratownProvider>
-      <Box flexDirection="column" width="100%" height="100%">
-        {screen === "dashboard" && <Dashboard />}
-        {screen === "agent" && <AgentView />}
-        {screen === "notifications" && <Notifications />}
+    <JiratownProvider
+      orchestrator={props.orchestrator}
+      hooks={props.hooks}
+      memory={props.memory}
+    >
+      <box flexDirection="column" width="100%" height="100%">
+        <Switch>
+          <Match when={ui.screen() === "dashboard"}>
+            <Dashboard />
+          </Match>
+          <Match when={ui.screen() === "agent"}>
+            <AgentView />
+          </Match>
+          <Match when={ui.screen() === "notifications"}>
+            <Notifications />
+          </Match>
+        </Switch>
 
-        {modal === "spawn" && <SpawnModal onClose={closeModal} />}
-        {modal === "command-palette" && (
-          <CommandPalette commands={commands} onClose={closeModal} />
-        )}
-      </Box>
+        <Switch>
+          <Match when={ui.modal() === "spawn"}>
+            <SpawnModal onClose={ui.closeModal} />
+          </Match>
+          <Match when={ui.modal() === "command-palette"}>
+            <CommandPalette commands={commands} onClose={ui.closeModal} />
+          </Match>
+        </Switch>
+      </box>
     </JiratownProvider>
   );
 }
@@ -538,10 +684,42 @@ export function App() {
 ```typescript
 // bin/jiratown-tui.ts
 #!/usr/bin/env bun
-import { render } from "ink";
+import { render } from "@opentui/solid";
+import { initJiratown } from "@jiratown/core";
 import { App } from "../src/app.tsx";
 
-render(<App />);
+// Initialize Jiratown core
+const jiratown = await initJiratown();
+
+// Render TUI with OpenTUI
+render(() => (
+  <App
+    orchestrator={jiratown.orchestrator}
+    hooks={jiratown.hooks}
+    memory={jiratown.memory}
+  />
+));
+```
+
+## Configuration Files
+
+### bunfig.toml
+
+```toml
+preload = ["@opentui/solid/preload"]
+```
+
+### tsconfig.json
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "@opentui/solid"
+  },
+  "include": ["src/**/*", "bin/**/*"]
+}
 ```
 
 ## package.json
@@ -559,19 +737,11 @@ render(<App />);
     "@jiratown/plugin-pi-adapter": "workspace:*",
     "@jiratown/plugin-jira": "workspace:*",
     "@jiratown/plugin-github": "workspace:*",
-    "ink": "^5.0.0",
-    "react": "^18.3.0",
-    "ink-select-input": "^6.0.0",
-    "ink-spinner": "^5.0.0",
-    "ink-text-input": "^6.0.0",
-    "ink-use-stdout-dimensions": "^1.0.5",
-    "zustand": "^5.0.0",
-    "fuse.js": "^7.0.0"
+    "solid-js": "^1.9.0",
+    "@opentui/solid": "^0.1.0"
   },
   "devDependencies": {
-    "@types/react": "^18.3.0",
-    "@types/bun": "latest",
-    "ink-testing-library": "^4.0.0"
+    "@types/bun": "latest"
   }
 }
 ```
@@ -614,44 +784,170 @@ render(<App />);
 
 ## Theme
 
+OpenTUI uses hex colors and RGBA values:
+
 ```typescript
 // theme.ts
-import { type TextProps } from "ink";
-
 export const theme = {
+  colors: {
+    // Base
+    background: "#1a1a2e",
+    surface: "#16213e",
+    text: "#eaeaea",
+    dim: "#666666",
+
+    // Semantic
+    success: "#4ade80",
+    warning: "#facc15",
+    error: "#f87171",
+    info: "#60a5fa",
+
+    // UI
+    selection: "#334155",
+    border: "#475569",
+  },
+
   status: {
-    running: { color: "green" } as TextProps,
-    stopped: { dimColor: true } as TextProps,
-    crashed: { color: "red" } as TextProps,
-    starting: { color: "yellow" } as TextProps,
-    stopping: { color: "yellow" } as TextProps,
+    running: "#4ade80",   // green
+    stopped: "#666666",   // dim
+    crashed: "#f87171",   // red
+    starting: "#facc15",  // yellow
+    stopping: "#facc15",  // yellow
   },
+
   priority: {
-    high: { color: "red", bold: true } as TextProps,
-    normal: { color: "yellow" } as TextProps,
-    low: { dimColor: true } as TextProps,
+    high: "#f87171",
+    normal: "#facc15",
+    low: "#666666",
   },
+
   border: {
-    style: "round" as const,
+    style: "rounded" as const,
   },
 };
 ```
 
+## OpenTUI-Specific Features
+
+OpenTUI provides built-in components perfect for agent output:
+
+### Markdown Rendering
+
+```tsx
+// Agent responses are rendered with full markdown support
+<markdown content={agentOutput()} />
+```
+
+### Syntax-Highlighted Code
+
+```tsx
+// Code blocks with tree-sitter highlighting
+<code language="typescript" content={codeSnippet} />
+```
+
+### Diff Viewer
+
+```tsx
+// Show file changes made by agents
+<diff
+  before={originalCode}
+  after={modifiedCode}
+  mode="unified"
+/>
+```
+
+### Scrollable Output
+
+```tsx
+// Scrollable container for long agent output
+<scrollbox height={20}>
+  <markdown content={output()} />
+</scrollbox>
+```
+
 ## Tests
 
-- **Dashboard**: renders agent list, updates on spawn/stop
-- **AgentList**: navigation with j/k, selection with enter
-- **AgentOutput**: streams output correctly, handles rapid updates
-- **Notifications**: shows correct counts, acknowledges properly
-- **CommandPalette**: fuzzy search works, executes commands
-- **Keyboard**: shortcuts work globally and per-screen
-- **Store**: state updates propagate to components
+Using OpenTUI's `testRender` for snapshot and interaction tests:
+
+```typescript
+// __tests__/dashboard.test.tsx
+import { describe, it, expect } from "vitest";
+import { testRender } from "@opentui/solid";
+import { Dashboard } from "../screens/dashboard.tsx";
+
+describe("Dashboard", () => {
+  it("renders agent list", async () => {
+    const { snapshot } = await testRender(() => <Dashboard />, {
+      width: 80,
+      height: 24,
+    });
+
+    expect(snapshot()).toContain("AGENTS");
+  });
+
+  it("updates on agent spawn", async () => {
+    const { snapshot, rerender } = await testRender(() => <Dashboard />);
+
+    // Simulate spawn event
+    mockHooks.emit("orchestrator.spawn.post", { issueId: "AM-123" });
+
+    // Snapshot should update
+    expect(snapshot()).toContain("AM-123");
+  });
+});
+```
+
+```typescript
+// __tests__/agent-list.test.tsx
+import { describe, it, expect } from "vitest";
+import { testRender } from "@opentui/solid";
+import { AgentList } from "../components/agent-list.tsx";
+
+describe("AgentList", () => {
+  it("navigates with j/k", async () => {
+    const onSelect = vi.fn();
+    const { pressKey, snapshot } = await testRender(
+      () => <AgentList onSelect={onSelect} />,
+      { width: 40, height: 10 }
+    );
+
+    await pressKey("j"); // Move down
+    await pressKey("enter"); // Select
+
+    expect(onSelect).toHaveBeenCalled();
+  });
+});
+```
+
+```typescript
+// __tests__/primitives.test.ts
+import { describe, it, expect } from "vitest";
+import { createRoot } from "solid-js";
+import { createAgents } from "../primitives/create-agents.ts";
+
+describe("createAgents", () => {
+  it("returns reactive agent list", () => {
+    createRoot((dispose) => {
+      const agents = createAgents();
+      expect(agents()).toEqual([]);
+
+      // Simulate spawn
+      mockOrchestrator.spawn({ issueId: "AM-123" });
+      mockHooks.emit("orchestrator.spawn.post");
+
+      expect(agents()).toHaveLength(1);
+      dispose();
+    });
+  });
+});
+```
 
 ## Future Enhancements
 
-- **Themes**: Dark/light mode, custom color schemes
-- **Mouse support**: Click to select agents
-- **Split views**: Multiple agents visible at once
-- **Search**: Filter agents by name/status
-- **Logs view**: Full session log browser
-- **Performance graphs**: CPU/memory usage per agent
+- **Themes**: Dark/light mode, custom color schemes via theme.ts
+- **Mouse support**: OpenTUI supports mouse events on boxes
+- **Split views**: Multiple agents visible using flexbox layout
+- **Search**: Filter agents using `<input>` + derived signals
+- **Logs view**: Full session log browser using `<scrollbox>`
+- **Performance graphs**: Could use `<ascii_font>` for sparklines
+- **Animations**: OpenTUI supports `useTimeline` for transitions

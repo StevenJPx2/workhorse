@@ -14,14 +14,22 @@ export function registerJiraSteering(ctx: JiratownContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:update-after-implementation",
     name: "Update Jira after implementation",
-    description: "Remind to add a comment or transition Jira after implementing",
+    description:
+      "Remind to add a comment or transition Jira after implementing",
     condition: {
       source: "jira",
       status: "implementing",
-      when: (steerCtx) =>
-        steerCtx.recentTools.some((t: { name: string }) =>
-          ["edit", "write", "create_file"].includes(t.name),
-        ) && !steerCtx.recentTools.some((t: { name: string }) => t.name.startsWith("jira_")),
+      when: (steerCtx) => {
+        const editTools = ["edit", "write", "create_file"];
+        const lastEditIdx = steerCtx.toolHistory.findLastIndex(
+          (t: { name: string }) => editTools.includes(t.name),
+        );
+        if (lastEditIdx === -1) return false; // No edits at all
+        // Fire if no Jira calls after the last edit
+        return !steerCtx.toolHistory
+          .slice(lastEditIdx + 1)
+          .some((t: { name: string }) => t.name.startsWith("jira_"));
+      },
     },
     reminder: `You've made code changes. Consider:
 - Adding a progress comment to the Jira ticket with \`jira_add_comment\`
@@ -48,12 +56,14 @@ export function registerJiraSteering(ctx: JiratownContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:address-feedback",
     name: "Address review feedback",
-    description: "Remind to address comments when there are unacknowledged notifications",
+    description:
+      "Remind to address comments when there are unacknowledged notifications",
     condition: {
       source: "jira",
       when: (steerCtx) =>
-        steerCtx.notifications.filter((n: { status: string }) => n.status !== "acknowledged")
-          .length > 0,
+        steerCtx.notifications.filter(
+          (n: { status: string }) => n.status !== "acknowledged",
+        ).length > 0,
     },
     reminder: (steerCtx) =>
       `You have ${steerCtx.notifications.filter((n: { status: string }) => n.status !== "acknowledged").length} unread notification(s). Check the notification inbox and address any feedback.`,

@@ -17,10 +17,11 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
     description: "Remind to create a PR when code is ready",
     condition: {
       status: "implementing",
-      when: (steerCtx) =>
-        steerCtx.recentTools.some((t: { name: string }) =>
-          ["edit", "write", "create_file"].includes(t.name),
-        ) && !steerCtx.hasPR,
+      when: (steerCtx) => {
+        return !steerCtx.toolHistory.some(
+          (t: { name: string }) => t.name === "github_open_pr",
+        );
+      },
     },
     reminder: `You've made code changes but haven't created a PR yet. When ready:
 1. Run tests to verify the fix
@@ -63,7 +64,12 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
       status: "in_review",
       when: (steerCtx) =>
         steerCtx.notifications.some(
-          (n: { source: string; title: string; priority: string; status: string }) =>
+          (n: {
+            source: string;
+            title: string;
+            priority: string;
+            status: string;
+          }) =>
             n.source === "github" &&
             n.title.startsWith("PR Review: changes requested") &&
             n.priority === "high" &&

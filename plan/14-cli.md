@@ -4,7 +4,10 @@ Command-line interface for Jiratown. Thin wrapper over core APIs — no business
 
 **Location:** `packages/cli/` (standalone package: `@jiratown/cli`)
 
-**External deps:** `commander`, `picocolors`, `ora`
+**External deps:** `citty`, `@clack/prompts`
+
+- **citty** — Lightweight CLI argument parsing from UnJS (same ecosystem as `unctx`)
+- **@clack/prompts** — Beautiful terminal output: spinners, styled logs, notes, intro/outro
 
 ## File Structure
 
@@ -25,9 +28,7 @@ packages/cli/
     │   ├── auth.ts           # jiratown auth <provider>
     │   └── plugin.ts         # jiratown plugin list|enable|disable
     ├── output/
-    │   ├── formatters.ts     # Table, JSON, pretty output formatters
-    │   ├── spinner.ts        # Progress indicators (ora wrapper)
-    │   └── colors.ts         # Consistent color scheme (picocolors)
+    │   └── formatters.ts     # Table, JSON formatters (clack handles the rest)
     ├── context.ts            # CLI-specific bootstrap (creates JiratownContext)
     └── __tests__/
         ├── spawn.test.ts
@@ -35,6 +36,8 @@ packages/cli/
         ├── list.test.ts
         └── output.test.ts
 ```
+
+> **Note:** Clack provides spinners, styled logs, notes, and colors out of the box — no separate `spinner.ts` or `colors.ts` needed.
 
 ## Commands
 
@@ -64,37 +67,42 @@ jiratown spawn https://github.com/owner/repo/issues/123
 
 ```typescript
 // commands/spawn.ts
-import { Command } from "commander";
+import { defineCommand } from "citty";
+import * as p from "@clack/prompts";
 import { createContext } from "../context.ts";
-import { spinner, success, error } from "../output/index.ts";
 
-export const spawnCommand = new Command("spawn")
-  .description("Start an agent on an issue")
-  .argument("<issue>", "Issue identifier (e.g., AM-123, owner/repo#45)")
-  .option("-h, --harness <name>", "Agent harness to use")
-  .option("-m, --model <model>", "Model to use")
-  .option("-b, --base <branch>", "Base branch", "main")
-  .option("-r, --repo <path>", "Repository path", process.cwd())
-  .option("-p, --prompt <text>", "Custom initial prompt")
-  .option("--json", "Output JSON")
-  .action(async (issueRef, options) => {
+export const spawnCommand = defineCommand({
+  meta: { name: "spawn", description: "Start an agent on an issue" },
+  args: {
+    issue: { type: "positional", description: "Issue identifier (e.g., AM-123, owner/repo#45)", required: true },
+    harness: { type: "string", alias: "h", description: "Agent harness to use" },
+    model: { type: "string", alias: "m", description: "Model to use" },
+    base: { type: "string", alias: "b", default: "main", description: "Base branch" },
+    repo: { type: "string", alias: "r", description: "Repository path" },
+    prompt: { type: "string", alias: "p", description: "Custom initial prompt" },
+    json: { type: "boolean", description: "Output JSON" },
+  },
+  async run({ args }) {
+    p.intro("jiratown spawn");
+
     const ctx = await createContext();
-    const spin = spinner("Parsing issue...");
+    const s = p.spinner();
 
     try {
-      const issue = await ctx.tracker.parse(issueRef);
-      spin.text = `Starting agent on ${issue.externalId}...`;
+      s.start("Parsing issue...");
+      const issue = await ctx.tracker.parse(args.issue);
 
+      s.message(`Starting agent on ${issue.externalId}...`);
       const adapter = await ctx.orchestrator.spawn({
         issue,
-        harness: options.harness,
-        model: options.model,
-        baseBranch: options.base,
-        repoPath: options.repo,
-        prompt: options.prompt,
+        harness: args.harness,
+        model: args.model,
+        baseBranch: args.base,
+        repoPath: args.repo ?? process.cwd(),
+        prompt: args.prompt,
       });
 
-      spin.succeed(`Agent started: ${adapter.worktreePath}`);
+      s.stop(`Agent started: ${adapter.worktreePath}`);
 
       // Stream output
       ctx.hooks.on("agent.output", ({ issueId, delta }) => {
@@ -109,11 +117,16 @@ export const spawnCommand = new Command("spawn")
           if (a.issueId === issue.externalId) resolve(undefined);
         });
       });
+
+      p.outro("Agent completed");
     } catch (err) {
-      spin.fail(err instanceof Error ? err.message : String(err));
+      s.stop("Failed");
+      p.log.error(err instanceof Error ? err.message : String(err));
+      p.cancel("Spawn failed");
       process.exit(1);
     }
-  });
+  },
+});
 ```
 
 ### `jiratown stop <issue>`
@@ -228,55 +241,46 @@ jiratown plugin install <package> # Install from npm (future)
 
 ## Output Formatting
 
-### Formatters
+Clack provides most output utilities out of the box. We only need a custom `formatters.ts` for tabular data.
+
+### Clack Utilities (built-in)
+
+```typescript
+import * as p from "@clack/prompts";
+
+// Session boundaries
+p.intro("jiratown spawn");
+p.outro("Done!");
+
+// Semantic logging
+p.log.info("Starting...");
+p.log.success("Completed!");
+p.log.warn("Deprecated API");
+p.log.error("Failed to connect");
+p.log.step("Loading config");
+
+// Boxed notes (great for hints, next steps)
+p.note("cd my-project\nnpm run dev", "Next steps");
+
+// Spinner for async operations
+const s = p.spinner();
+s.start("Loading...");
+s.message("Still working...");
+s.stop("Done!");
+
+// Cancellation
+p.cancel("Operation cancelled");
+```
+
+### Custom Formatters
 
 ```typescript
 // output/formatters.ts
 export function table(headers: string[], rows: string[][]): string
 export function json<T>(data: T): string
-export function keyValue(pairs: Record<string, string>): string
-export function list(items: string[], bullet?: string): string
 ```
 
-### Colors
-
-```typescript
-// output/colors.ts
-import pc from "picocolors";
-
-export const theme = {
-  success: pc.green,
-  error: pc.red,
-  warning: pc.yellow,
-  info: pc.blue,
-  dim: pc.dim,
-  bold: pc.bold,
-  issue: pc.cyan,
-  status: {
-    running: pc.green,
-    stopped: pc.dim,
-    crashed: pc.red,
-    starting: pc.yellow,
-    stopping: pc.yellow,
-  },
-  priority: {
-    high: pc.red,
-    normal: pc.yellow,
-    low: pc.dim,
-  },
-};
-```
-
-### Spinner
-
-```typescript
-// output/spinner.ts
-import ora from "ora";
-
-export function spinner(text: string) {
-  return ora({ text, spinner: "dots" }).start();
-}
-```
+Table formatting is the only thing Clack doesn't provide — we'll implement a simple column-aligned formatter.
 
 ## CLI Context
 
@@ -322,7 +326,7 @@ All commands support:
 ```typescript
 // bin/jiratown.ts
 #!/usr/bin/env bun
-import { program } from "commander";
+import { defineCommand, runMain } from "citty";
 import { version } from "../package.json";
 import {
   spawnCommand,
@@ -336,22 +340,28 @@ import {
 } from "../src/commands/index.ts";
 import { destroyContext } from "../src/context.ts";
 
-program
-  .name("jiratown")
-  .description("AI agent orchestration for issue tracking")
-  .version(version)
-  .option("-v, --verbose", "Verbose output")
-  .option("-q, --quiet", "Suppress non-essential output")
-  .option("--config <path>", "Config file path");
-
-program.addCommand(spawnCommand);
-program.addCommand(stopCommand);
-program.addCommand(listCommand);
-program.addCommand(statusCommand);
-program.addCommand(sendCommand);
-program.addCommand(configCommand);
-program.addCommand(authCommand);
-program.addCommand(pluginCommand);
+const main = defineCommand({
+  meta: {
+    name: "jiratown",
+    version,
+    description: "AI agent orchestration for issue tracking",
+  },
+  args: {
+    verbose: { type: "boolean", alias: "v", description: "Verbose output" },
+    quiet: { type: "boolean", alias: "q", description: "Suppress non-essential output" },
+    config: { type: "string", description: "Config file path" },
+  },
+  subCommands: {
+    spawn: spawnCommand,
+    stop: stopCommand,
+    list: listCommand,
+    status: statusCommand,
+    send: sendCommand,
+    config: configCommand,
+    auth: authCommand,
+    plugin: pluginCommand,
+  },
+});
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
@@ -359,7 +369,7 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-program.parse();
+runMain(main);
 ```
 
 ## package.json
@@ -377,9 +387,8 @@ program.parse();
     "@jiratown/plugin-pi-adapter": "workspace:*",
     "@jiratown/plugin-jira": "workspace:*",
     "@jiratown/plugin-github": "workspace:*",
-    "commander": "^13.0.0",
-    "picocolors": "^1.1.0",
-    "ora": "^8.0.0"
+    "@clack/prompts": "^0.10.0",
+    "citty": "^0.1.6"
   },
   "devDependencies": {
     "@types/bun": "latest"
@@ -390,18 +399,22 @@ program.parse();
 ## Error Handling
 
 ```typescript
-// Consistent error output
+import * as p from "@clack/prompts";
+import { JiratownError } from "@jiratown/core";
+
+// Consistent error output using Clack
 function handleError(err: unknown): never {
   if (err instanceof JiratownError) {
-    console.error(theme.error(`Error: ${err.message}`));
+    p.log.error(err.message);
     if (err.hint) {
-      console.error(theme.dim(`Hint: ${err.hint}`));
+      p.note(err.hint, "Hint");
     }
   } else if (err instanceof Error) {
-    console.error(theme.error(`Error: ${err.message}`));
+    p.log.error(err.message);
   } else {
-    console.error(theme.error(`Error: ${String(err)}`));
+    p.log.error(String(err));
   }
+  p.cancel("Operation failed");
   process.exit(1);
 }
 ```

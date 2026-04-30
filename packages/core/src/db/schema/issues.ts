@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { z } from "zod/v4";
 import { dateText } from "./custom-types.ts";
@@ -47,3 +48,6 @@ export type Issue = typeof issues.$inferSelect;
 
 /** Insert type - nullable fields are optional, auto-filled with null */
 export type InsertIssue = typeof issues.$inferInsert;
+
+/** Zod schema for validating Issue objects (generated from Drizzle table) */
+export const IssueSchema = createSelectSchema(issues);

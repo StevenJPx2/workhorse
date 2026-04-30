@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod/v4";
 import { dateText, nullableDateText } from "./custom-types.ts";
@@ -45,3 +46,6 @@ export const NotificationPrioritySchema = z.enum(["blocking", "high", "normal", 
 
 /** Zod schema for validating notification status */
 export const NotificationStatusSchema = z.enum(["unread", "read", "acknowledged"]);
+
+/** Zod schema for validating Notification objects (generated from Drizzle table) */
+export const NotificationSchema = createSelectSchema(notifications);

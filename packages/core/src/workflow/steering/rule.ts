@@ -2,22 +2,41 @@
  * SteeringRule class - Fully autonomous rule evaluation.
  *
  * Rules subscribe to agent.idle, evaluate conditions, and emit reminders directly.
+ * Builds a SteeringContext for condition/reminder callbacks.
  */
 
 import { debounce } from "es-toolkit";
-import type { Issue } from "#db";
+import type { Issue, Notification } from "#db";
 import type { HookEmitter, HookEventName } from "#lib/hooks";
-import type { RecentHookEvent, SteeringRuleConfig } from "./types.ts";
+import type {
+  HookHistoryEntry,
+  SteeringContext,
+  SteeringRuleConfig,
+  ToolHistoryEntry,
+} from "./types.ts";
 
 /** Steering behavior config passed from service. */
-interface SteeringConfig {
+export interface SteeringConfig {
   debounceMs: number;
   cooldownMs: number;
   maxReminders: number;
 }
 
+/** Options for creating a SteeringRule. */
+export interface SteeringRuleOptions {
+  config: SteeringRuleConfig;
+  hooks: HookEmitter;
+  issue: Issue;
+  steeringConfig: SteeringConfig;
+  /** Function to get unread notifications for this issue */
+  getNotifications: () => Notification[];
+}
+
 /**
  * SteeringRule - Autonomous rule that evaluates itself and emits reminders.
+ *
+ * Builds a `SteeringContext` containing issue, notifications, and toolHistory
+ * to pass to condition `when()` and `reminder()` callbacks.
  */
 export class SteeringRule {
   readonly id: string;
@@ -30,18 +49,17 @@ export class SteeringRule {
   private readonly hooks: HookEmitter;
   private readonly config: SteeringRuleConfig;
   private readonly steeringConfig: SteeringConfig;
+  private readonly getNotifications: () => Notification[];
 
   private fired = false;
-  private recentHooks: RecentHookEvent[] = [];
+  private hookHistory: HookHistoryEntry[] = [];
+  private toolHistory: ToolHistoryEntry[] = [];
   private disposers: (() => void)[] = [];
   private lastReminderTime = 0;
 
-  constructor(
-    config: SteeringRuleConfig,
-    hooks: HookEmitter,
-    issue: Issue,
-    steeringConfig: SteeringConfig,
-  ) {
+  constructor(options: SteeringRuleOptions) {
+    const { config, hooks, issue, steeringConfig, getNotifications } = options;
+
     this.id = config.id;
     this.name = config.name;
     this.description = config.description;
@@ -51,6 +69,7 @@ export class SteeringRule {
     this.hooks = hooks;
     this.issue = issue;
     this.steeringConfig = steeringConfig;
+    this.getNotifications = getNotifications;
 
     // Subscribe to idle agent events
     this.subscribe(
@@ -61,15 +80,30 @@ export class SteeringRule {
       }, this.steeringConfig.debounceMs),
     );
 
+    // Track tool calls for this issue (no pruning - consumers filter by timestamp)
+    this.subscribe("agent.tool_call", (payload: unknown) => {
+      const { tool, args } = payload as { tool: string; args: unknown };
+      this.toolHistory.push({ name: tool, args, timestamp: Date.now() });
+    });
+
     // Subscribe to hook events from condition (already normalized to string[])
     for (const hookName of config.condition.hook) {
       this.subscribe(hookName);
     }
   }
 
+  /** Build the context object passed to when() and reminder() callbacks. */
+  private buildContext(): SteeringContext {
+    return {
+      issue: this.issue,
+      notifications: this.getNotifications(),
+      toolHistory: this.toolHistory,
+    };
+  }
+
   reset(): void {
     this.fired = false;
-    this.recentHooks = [];
+    this.hookHistory = [];
   }
 
   dispose(): void {
@@ -87,9 +121,8 @@ export class SteeringRule {
 
       if (issueId !== this.issue.externalId) return;
 
-      this.recentHooks.push({ name, timestamp: Date.now(), payload });
-
-      if (this.recentHooks.length > 10) this.recentHooks.shift();
+      // No pruning - consumers filter by timestamp
+      this.hookHistory.push({ name, timestamp: Date.now(), payload });
 
       handler?.(payload);
     };
@@ -112,11 +145,15 @@ export class SteeringRule {
 
     if (
       condition.hook.length > 0 &&
-      !condition.hook.some((hookName) => this.recentHooks.some((h) => h.name === hookName))
+      !condition.hook.some((hookName) =>
+        this.hookHistory.some((h: HookHistoryEntry) => h.name === hookName),
+      )
     )
       return;
 
-    if (!(await condition.when(this))) return;
+    const ctx = this.buildContext();
+
+    if (!(await condition.when(ctx))) return;
 
     if (this.once) this.fired = true;
 
@@ -124,9 +161,9 @@ export class SteeringRule {
 
     this.hooks.emit("steering.reminder", {
       issueId: this.issue.externalId,
-      reminder: `📋 **Reminder:**\n\n${await reminder(this)}`,
+      reminder: `📋 **Reminder:**\n\n${await reminder(ctx)}`,
     });
 
-    this.recentHooks = [];
+    this.hookHistory = [];
   }
 }

@@ -14,7 +14,7 @@ export { issueEvents } from "./events.ts";
 export type { InsertIssue, Issue, IssueStatus } from "./issues.ts";
 // Tables
 // Zod schemas for runtime validation
-export { IssueStatusSchema, issues } from "./issues.ts";
+export { IssueSchema, IssueStatusSchema, issues } from "./issues.ts";
 export type {
   InsertNotification,
   Notification,
@@ -23,6 +23,7 @@ export type {
 } from "./notifications.ts";
 export {
   NotificationPrioritySchema,
+  NotificationSchema,
   NotificationStatusSchema,
   notifications,
 } from "./notifications.ts";

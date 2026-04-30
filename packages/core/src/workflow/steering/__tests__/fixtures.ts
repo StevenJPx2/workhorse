@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { Issue, IssueStatus } from "#db";
+import type { Issue, IssueStatus, Notification } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import { SteeringRule } from "../rule.ts";
 import { type SteeringRuleConfigInput, SteeringRuleConfigSchema } from "../types.ts";
@@ -34,8 +34,15 @@ export function createRule(
   hooks: HookEmitter,
   issue: Issue = baseIssue,
   steeringConfig = defaultSteeringConfig,
+  getNotifications: () => Notification[] = () => [],
 ): SteeringRule {
-  return new SteeringRule(SteeringRuleConfigSchema.parse(config), hooks, issue, steeringConfig);
+  return new SteeringRule({
+    config: SteeringRuleConfigSchema.parse(config),
+    hooks,
+    issue,
+    steeringConfig,
+    getNotifications,
+  });
 }
 
 export const baseIssue: Issue = {
@@ -68,3 +75,21 @@ export const defaultSteeringConfig = {
   cooldownMs: 1000,
   maxReminders: 3,
 };
+
+/** Create a mock notification with required fields */
+export function createMockNotification(
+  overrides: Partial<Notification> & Pick<Notification, "id" | "source" | "status">,
+): Notification {
+  return {
+    issueId: "uuid-1",
+    sourceId: null,
+    priority: "normal",
+    title: "Test notification",
+    body: "Test body",
+    metadata: null,
+    createdAt: new Date(),
+    readAt: null,
+    acknowledgedAt: null,
+    ...overrides,
+  };
+}

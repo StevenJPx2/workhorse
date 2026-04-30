@@ -16,11 +16,13 @@ export type {
 export {
   // Custom column types
   dateText,
+  IssueSchema,
   IssueStatusSchema,
   issueEvents,
   // Tables
   issues,
   NotificationPrioritySchema,
+  NotificationSchema,
   NotificationStatusSchema,
   notifications,
   nullableDateText,
