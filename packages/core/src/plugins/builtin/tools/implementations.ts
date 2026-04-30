@@ -20,11 +20,12 @@ export const acknowledgeToolImpl = async (
     if (!notificationIds || notificationIds.length === 0) {
       // Mark all unread notifications for this issue as read
       // issueId in ToolExecutionContext is the externalId, so find by that
-      const issue = ctx.db.issues.getAll().find((i) => i.externalId === ctx.issueId);
+      const issues = await ctx.db.issues.getAll();
+      const issue = issues.find((i) => i.externalId === ctx.issueId);
       if (issue) {
-        const notifications = ctx.db.notifications.getUnread(issue.id);
+        const notifications = await ctx.db.notifications.getUnread(issue.id);
         for (const notification of notifications) {
-          ctx.db.notifications.markRead(notification.id);
+          await ctx.db.notifications.markRead(notification.id);
         }
         return {
           success: true,
@@ -36,7 +37,7 @@ export const acknowledgeToolImpl = async (
 
     // Mark specific notifications as read
     for (const id of notificationIds) {
-      ctx.db.notifications.markRead(id);
+      await ctx.db.notifications.markRead(id);
     }
 
     return {
@@ -81,7 +82,8 @@ export const updateStatusToolImpl = async (
     }
 
     // Find issue by external ID
-    const issue = ctx.db.issues.getAll().find((i) => i.externalId === ctx.issueId);
+    const issues = await ctx.db.issues.getAll();
+    const issue = issues.find((i) => i.externalId === ctx.issueId);
 
     if (!issue) {
       return {
@@ -98,7 +100,7 @@ export const updateStatusToolImpl = async (
     });
 
     // Update status
-    ctx.db.issues.updateStatus(issue.id, status as typeof issue.status);
+    await ctx.db.issues.updateStatus(issue.id, status as typeof issue.status);
 
     return {
       success: true,
@@ -126,7 +128,8 @@ export const escalateToolImpl = async (
     };
 
     // Find issue
-    const issue = ctx.db.issues.getAll().find((i) => i.externalId === ctx.issueId);
+    const issues = await ctx.db.issues.getAll();
+    const issue = issues.find((i) => i.externalId === ctx.issueId);
 
     if (!issue) {
       return {
@@ -137,7 +140,7 @@ export const escalateToolImpl = async (
 
     // Create escalation notification
     // Priority: "blocking" for blocking escalations, "high" for non-blocking
-    ctx.db.notifications.create({
+    await ctx.db.notifications.create({
       issueId: issue.id,
       source: "agent",
       priority: blocking ? "blocking" : "high",
@@ -156,7 +159,7 @@ export const escalateToolImpl = async (
         from: issue.status,
         to: "blocked",
       });
-      ctx.db.issues.updateStatus(issue.id, "blocked");
+      await ctx.db.issues.updateStatus(issue.id, "blocked");
     }
 
     return {

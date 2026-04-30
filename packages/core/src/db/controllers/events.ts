@@ -12,19 +12,19 @@ export class EventController {
   /**
    * Insert a new event. Fields with defaults (id, createdAt) are optional.
    */
-  insert(input: InsertIssueEvent): IssueEvent {
-    return this.db.insert(issueEvents).values(input).returning().get()!;
+  async insert(input: InsertIssueEvent): Promise<IssueEvent> {
+    const result = await this.db.insert(issueEvents).values(input).returning();
+    return result[0]!;
   }
 
   /**
    * Get all events for an issue, ordered by created_at ascending
    */
-  getForIssue(issueId: string): IssueEvent[] {
+  async getForIssue(issueId: string): Promise<IssueEvent[]> {
     return this.db
       .select()
       .from(issueEvents)
       .where(eq(issueEvents.issueId, issueId))
-      .orderBy(asc(issueEvents.createdAt))
-      .all();
+      .orderBy(asc(issueEvents.createdAt));
   }
 }

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { z } from "zod/v4";
+import z from "zod";
 import { dateText } from "./custom-types.ts";
 
 /** Zod schema for validating issue status */
@@ -22,7 +22,7 @@ export const issues = sqliteTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    externalId: text("external_id").notNull(),
+    externalId: text("external_id").notNull().default(""),
     source: text("source").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
@@ -31,7 +31,10 @@ export const issues = sqliteTable(
     url: text("url"),
     assignee: text("assignee"),
     labels: text("labels", { mode: "json" }).$type<string[]>(),
-    metadata: text("metadata", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
+    metadata: text("metadata", { mode: "json" })
+      .notNull()
+      .$type<Record<string, unknown>>()
+      .default({}),
     worktreePath: text("worktree_path"),
     createdAt: dateText("created_at")
       .notNull()

@@ -12,61 +12,62 @@ export class NotificationController {
   /**
    * Create a new notification. Fields with defaults (id, status, timestamps) are optional.
    */
-  create(input: InsertNotification): Notification {
-    return this.db.insert(notifications).values(input).returning().get()!;
+  async create(input: InsertNotification): Promise<Notification> {
+    const result = await this.db.insert(notifications).values(input).returning();
+    return result[0]!;
   }
 
   /**
    * Get all unread notifications for an issue
    */
-  getUnread(issueId: string): Notification[] {
+  async getUnread(issueId: string): Promise<Notification[]> {
     return this.db
       .select()
       .from(notifications)
-      .where(and(eq(notifications.issueId, issueId), eq(notifications.status, "unread")))
-      .all();
+      .where(and(eq(notifications.issueId, issueId), eq(notifications.status, "unread")));
   }
 
   /**
    * Mark a notification as read
    */
-  markRead(id: string): void {
-    this.db
+  async markRead(id: string): Promise<void> {
+    await this.db
       .update(notifications)
       .set({ status: "read", readAt: new Date() })
-      .where(eq(notifications.id, id))
-      .run();
+      .where(eq(notifications.id, id));
   }
 
   /**
    * Mark a notification as acknowledged
    */
-  markAcknowledged(id: string): void {
-    this.db
+  async markAcknowledged(id: string): Promise<void> {
+    await this.db
       .update(notifications)
       .set({ status: "acknowledged", acknowledgedAt: new Date() })
-      .where(eq(notifications.id, id))
-      .run();
+      .where(eq(notifications.id, id));
   }
 
   /**
    * Acknowledge multiple notifications at once
    */
-  acknowledgeMany(ids: string[]): void {
+  async acknowledgeMany(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
 
-    this.db
+    await this.db
       .update(notifications)
       .set({ status: "acknowledged", acknowledgedAt: new Date() })
-      .where(inArray(notifications.id, ids))
-      .run();
+      .where(inArray(notifications.id, ids));
   }
 
   /**
    * Find a notification by its source-specific ID.
    * Used for deduplication when creating notifications.
    */
-  findBySourceId(sourceId: string): Notification | undefined {
-    return this.db.select().from(notifications).where(eq(notifications.sourceId, sourceId)).get();
+  async findBySourceId(sourceId: string): Promise<Notification | undefined> {
+    const result = await this.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.sourceId, sourceId));
+    return result[0];
   }
 }

@@ -34,7 +34,7 @@ export function createRule(
   hooks: HookEmitter,
   issue: Issue = baseIssue,
   steeringConfig = defaultSteeringConfig,
-  getNotifications: () => Notification[] = () => [],
+  getNotifications: () => Promise<Notification[]> = async () => [],
 ): SteeringRule {
   return new SteeringRule({
     config: SteeringRuleConfigSchema.parse(config),

@@ -1,5 +1,4 @@
-import type { ZodType } from "zod/v4";
-import { z } from "zod/v4";
+import z from "zod";
 import type { JiratownContext } from "#context";
 
 /**
@@ -56,7 +55,7 @@ export type PluginOptions<TConfig = void> = {
        * Optional Zod schema to validate the plugin's config section.
        * If provided, the validated config is passed to setup().
        */
-      configSchema: ZodType<TConfig>;
+      configSchema: z.ZodType<TConfig>;
 
       /**
        * Config schema provided.

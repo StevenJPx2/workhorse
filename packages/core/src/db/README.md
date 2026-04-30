@@ -1,29 +1,30 @@
 # db
 
-SQLite database via better-sqlite3 + drizzle-orm.
+SQLite database via @libsql/client + drizzle-orm.
 
 ## Usage
 
 ```typescript
 import { Database } from "#db";
 
-const db = new Database(":memory:");  // or "/path/to/jiratown.db"
+// Create database (async factory - libsql is async)
+const db = await Database.create(":memory:");  // or "/path/to/jiratown.db"
 
-// Issues
-const issue = db.issues.insert({ externalId: "PROJ-123", ... });
-db.issues.getById(id);
-db.issues.getByExternalId("PROJ-123");
-db.issues.updateStatus(id, "in_progress");
+// Issues (all methods are async)
+const issue = await db.issues.insert({ externalId: "PROJ-123", ... });
+await db.issues.getById(id);
+await db.issues.getByExternalId("PROJ-123");
+await db.issues.updateStatus(id, "in_progress");
 
 // Events
-db.events.insert({ issueId, type: "comment", message: "..." });
-db.events.getForIssue(issueId);
+await db.events.insert({ issueId, type: "comment", message: "..." });
+await db.events.getForIssue(issueId);
 
 // Notifications
-db.notifications.create({ issueId, priority: "high", ... });
-db.notifications.getUnread(issueId);
-db.notifications.markRead(id);
-db.notifications.markAcknowledged(id);
+await db.notifications.create({ issueId, priority: "high", ... });
+await db.notifications.getUnread(issueId);
+await db.notifications.markRead(id);
+await db.notifications.markAcknowledged(id);
 
 db.close();
 ```
@@ -46,10 +47,17 @@ db/
 cd packages/core && bunx drizzle-kit generate
 ```
 
-Migrations run automatically on `new Database()`.
+Migrations run automatically on `await Database.create()`.
 
 ## Pragmas
 
 - `journal_mode = WAL`
 - `foreign_keys = ON`
 - `busy_timeout = 5000`
+
+## Notes
+
+- Uses `@libsql/client` which provides an async API (unlike better-sqlite3's sync API)
+- All controller methods are async and return Promises
+- File-based databases automatically create parent directories
+- Supports both `file:` URLs and plain paths (converted to `file:` URLs internally)

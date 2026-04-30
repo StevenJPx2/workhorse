@@ -47,9 +47,9 @@ describe("Tracker", () => {
   let db: Database;
   let tracker: Tracker;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     hooks.all.clear();
-    db = new Database(":memory:");
+    db = await Database.create(":memory:");
     tracker = new Tracker(db, hooks);
     vi.clearAllMocks();
   });
@@ -246,7 +246,7 @@ describe("Tracker", () => {
     });
 
     it("throws if no parser for source", async () => {
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-100",
         source: "unknown-source",
         title: "Test Issue",
@@ -270,7 +270,7 @@ describe("Tracker", () => {
       tracker.registerParser(createParserOptions({ source: "test-source" }));
 
       // Insert an issue directly
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-100",
         source: "test-source",
         title: "Build Test Issue",
@@ -294,7 +294,7 @@ describe("Tracker", () => {
     it("emits prompt.built hook", async () => {
       tracker.registerParser(createParserOptions({ source: "test-source" }));
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-101",
         source: "test-source",
         title: "Hook Test",
@@ -334,7 +334,7 @@ describe("Tracker", () => {
 
       tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-102",
         source: "test-source",
         title: "Notification Test",
@@ -371,7 +371,7 @@ describe("Tracker", () => {
 
       tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-103",
         source: "test-source",
         title: "L2 Search Test",
@@ -407,7 +407,7 @@ describe("Tracker", () => {
         createParserOptions({ source: "test-source", config: customConfig as any }),
       );
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-104",
         source: "test-source",
         title: "Custom Instructions Test",
@@ -439,7 +439,7 @@ describe("Tracker", () => {
 
       tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-105",
         source: "test-source",
         title: "Error Handling Test",
@@ -464,7 +464,7 @@ describe("Tracker", () => {
       tracker.registerParser(createParserOptions({ source: "test-source" }));
 
       // Insert an issue with missing title (simulating data corruption)
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-999",
         source: "test-source",
         title: "", // Empty title should be invalid

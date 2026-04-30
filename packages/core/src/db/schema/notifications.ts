@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { z } from "zod/v4";
+import z from "zod";
 import { dateText, nullableDateText } from "./custom-types.ts";
 import { issues } from "./issues.ts";
 

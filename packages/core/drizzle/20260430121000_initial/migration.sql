@@ -3,26 +3,24 @@ CREATE TABLE `issue_events` (
 	`issue_id` text NOT NULL,
 	`type` text NOT NULL,
 	`message` text NOT NULL,
-	`metadata` text DEFAULT '{}',
+	`metadata` text,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL,
 	FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `issues` (
 	`id` text PRIMARY KEY NOT NULL,
-	`external_id` text NOT NULL,
+	`external_id` text DEFAULT '' NOT NULL,
 	`source` text NOT NULL,
 	`title` text NOT NULL,
-	`description` text DEFAULT '',
+	`description` text DEFAULT '' NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
-	`issue_type` text DEFAULT 'task',
+	`issue_type` text DEFAULT 'task' NOT NULL,
 	`url` text,
 	`assignee` text,
 	`labels` text,
 	`metadata` text DEFAULT '{}' NOT NULL,
 	`worktree_path` text,
-	`pr_url` text,
-	`pr_number` integer,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL,
 	`updated_at` text DEFAULT (datetime('now')) NOT NULL
 );
@@ -37,7 +35,7 @@ CREATE TABLE `notifications` (
 	`status` text DEFAULT 'unread' NOT NULL,
 	`title` text NOT NULL,
 	`body` text NOT NULL,
-	`metadata` text DEFAULT '{}',
+	`metadata` text,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL,
 	`read_at` text,
 	`acknowledged_at` text,

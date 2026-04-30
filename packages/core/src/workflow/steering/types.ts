@@ -5,7 +5,7 @@
  * providing workflow-specific reminders.
  */
 
-import { type ZodType, z } from "zod/v4";
+import z from "zod";
 import { IssueSchema, IssueStatusSchema, NotificationSchema } from "#db";
 
 /**
@@ -50,13 +50,11 @@ export const SteeringContextSchema = z.object({
 export type SteeringContext = z.infer<typeof SteeringContextSchema>;
 
 /** Transform string | string[] | undefined to string[] (defaults to []) */
-const arrayUnionSchema = (zType: ZodType) =>
+const arrayUnionSchema = (zType: z.ZodType) =>
   z
     .union([zType, z.array(zType)])
     .optional()
-    .transform((val) =>
-      val === undefined ? [] : Array.isArray(val) ? val : [val],
-    );
+    .transform((val) => (val === undefined ? [] : Array.isArray(val) ? val : [val]));
 
 /** Zod schema for SteeringCondition - normalizes and sets defaults */
 export const SteeringConditionSchema = z.object({
@@ -91,9 +89,7 @@ export const SteeringRuleConfigSchema = z.object({
         output: z.union([z.string(), z.promise(z.string())]),
       }),
     ])
-    .transform((val) =>
-      typeof val === "function" ? val : (_: SteeringContext) => val,
-    ),
+    .transform((val) => (typeof val === "function" ? val : (_: SteeringContext) => val)),
   priority: z.number().optional().default(0),
   once: z.boolean().optional().default(false),
 });

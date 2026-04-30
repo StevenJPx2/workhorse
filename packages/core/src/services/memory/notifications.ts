@@ -23,14 +23,14 @@ import type { CreateNotificationInput } from "./types.ts";
  * });
  *
  * // Get unread notifications
- * const unread = notifications.getUnread("AM-123");
+ * const unread = await notifications.getUnread("AM-123");
  *
  * // Generate XML for system prompt
  * const xml = notifications.generateInbox(unread);
  *
  * // Mark as read/acknowledged
- * notifications.markRead(notification.id);
- * notifications.acknowledge([notification.id]);
+ * await notifications.markRead(notification.id);
+ * await notifications.acknowledge([notification.id]);
  * ```
  */
 export class NotificationService {
@@ -54,17 +54,17 @@ export class NotificationService {
    * @param input - Notification creation input
    * @returns Created or existing notification
    */
-  create(input: CreateNotificationInput): Notification {
+  async create(input: CreateNotificationInput): Promise<Notification> {
     // Check for duplicate via sourceId
     if (input.sourceId) {
-      const existing = this.db.notifications.findBySourceId(input.sourceId);
+      const existing = await this.db.notifications.findBySourceId(input.sourceId);
       if (existing) {
         return existing;
       }
     }
 
     // Create notification with defaults for optional fields
-    const notification = this.db.notifications.create({
+    const notification = await this.db.notifications.create({
       ...input,
       sourceId: input.sourceId ?? null,
       priority: input.priority ?? "normal",
@@ -86,7 +86,7 @@ export class NotificationService {
    * @param issueId - Issue ID to get notifications for
    * @returns Array of unread notifications
    */
-  getUnread(issueId: string): Notification[] {
+  async getUnread(issueId: string): Promise<Notification[]> {
     return this.db.notifications.getUnread(issueId);
   }
 
@@ -105,8 +105,8 @@ export class NotificationService {
    *
    * @param id - Notification ID
    */
-  markRead(id: string): void {
-    this.db.notifications.markRead(id);
+  async markRead(id: string): Promise<void> {
+    await this.db.notifications.markRead(id);
   }
 
   /**
@@ -114,7 +114,7 @@ export class NotificationService {
    *
    * @param ids - Notification IDs to acknowledge
    */
-  acknowledge(ids: string[]): void {
-    this.db.notifications.acknowledgeMany(ids);
+  async acknowledge(ids: string[]): Promise<void> {
+    await this.db.notifications.acknowledgeMany(ids);
   }
 }

@@ -1,18 +1,32 @@
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import BetterSqlite from "better-sqlite3";
-import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { type Client, createClient } from "@libsql/client";
+import { type LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
 import { EventController, IssueController, NotificationController } from "./controllers";
 import * as schema from "./schema";
+
+function resolveMigrationsFolder(): string {
+  const thisDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    join(thisDir, "../../drizzle"),
+    join(thisDir, "../drizzle"),
+    join(thisDir, "../../src/drizzle"),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(dir)) return dir;
+  }
+  throw new Error(`Could not find drizzle migrations folder from ${thisDir}`);
+}
 
 /**
  * Database class that provides access to all data controllers.
  *
  * @example
  * ```typescript
- * const db = new Database(":memory:"); // for tests
- * const db = new Database("/path/to/jiratown.db"); // for production
+ * const db = await Database.create(":memory:"); // for tests
+ * const db = await Database.create("/path/to/jiratown.db"); // for production
  *
  * // Issues
  * const issue = db.issues.insert({ ... });
@@ -29,8 +43,8 @@ import * as schema from "./schema";
  * ```
  */
 export class Database {
-  private sqlite: BetterSqlite.Database;
-  private db: BetterSQLite3Database<typeof schema>;
+  private client: Client;
+  private db: LibSQLDatabase<typeof schema>;
 
   /** Issue CRUD operations */
   public readonly issues: IssueController;
@@ -42,21 +56,11 @@ export class Database {
   public readonly notifications: NotificationController;
 
   /**
-   * Create a new Database instance.
-   *
-   * @param path - Path to the SQLite database file, or ":memory:" for in-memory database
+   * Private constructor - use Database.create() instead.
    */
-  constructor(path: string) {
-    this.sqlite = new BetterSqlite(path);
-    this.sqlite.exec("PRAGMA journal_mode = WAL;");
-    this.sqlite.exec("PRAGMA foreign_keys = ON;");
-    this.sqlite.exec("PRAGMA busy_timeout = 5000;");
-
-    this.db = drizzle({ client: this.sqlite, schema });
-
-    migrate(this.db, {
-      migrationsFolder: join(dirname(fileURLToPath(import.meta.url)), "../../drizzle"),
-    });
+  private constructor(client: Client, db: LibSQLDatabase<typeof schema>) {
+    this.client = client;
+    this.db = db;
 
     this.issues = new IssueController(this.db);
     this.events = new EventController(this.db);
@@ -64,10 +68,43 @@ export class Database {
   }
 
   /**
+   * Create a new Database instance.
+   *
+   * @param path - Path to the SQLite database file, or ":memory:" for in-memory database
+   */
+  static async create(path: string): Promise<Database> {
+    // Ensure parent directory exists for file-based databases
+    if (path !== ":memory:") {
+      const dir = dirname(path);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+    }
+
+    // libsql uses file: prefix for local files
+    const url = path === ":memory:" ? ":memory:" : `file:${path}`;
+
+    const client = createClient({ url });
+
+    // Set pragmas
+    await client.execute("PRAGMA journal_mode = WAL;");
+    await client.execute("PRAGMA foreign_keys = ON;");
+    await client.execute("PRAGMA busy_timeout = 5000;");
+
+    const db = drizzle({ client, schema });
+
+    await migrate(db, {
+      migrationsFolder: resolveMigrationsFolder(),
+    });
+
+    return new Database(client, db);
+  }
+
+  /**
    * Close the database connection.
    * Should be called when done using the database.
    */
   close(): void {
-    this.sqlite.close();
+    this.client.close();
   }
 }

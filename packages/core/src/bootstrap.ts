@@ -76,7 +76,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratow
 
   const paths = resolveConfigPaths(repoRoot);
   const config = loadConfig(paths);
-  const db = new Database(paths.database);
+  const db = await Database.create(paths.database);
 
   // Initialize memory service (includes L1 session memory and L2 semantic search)
   const memory = await MemoryService.create({

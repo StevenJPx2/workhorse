@@ -17,14 +17,14 @@ describe("MemoryService", () => {
   let hooks: ReturnType<typeof mitt<HookEventMap>>;
   let service: MemoryService | null = null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });
     }
     mkdirSync(TEST_DIR, { recursive: true });
     mkdirSync(WORKTREE_PATH, { recursive: true });
 
-    db = new Database(DB_PATH);
+    db = await Database.create(DB_PATH);
     hooks = mitt<HookEventMap>();
   });
 
@@ -190,7 +190,7 @@ describe("MemoryService", () => {
         memoryDbPath: MEMORY_DB_PATH,
       });
 
-      const issue = db.issues.insert({
+      const issue = await db.issues.insert({
         externalId: "AM-123",
         source: "jira",
         title: "Test issue",
@@ -207,7 +207,7 @@ describe("MemoryService", () => {
     });
 
     it("creates a notification", async () => {
-      const notification = service!.notifications.create({
+      const notification = await service!.notifications.create({
         issueId,
         source: "jira",
         title: "New comment",
@@ -225,7 +225,7 @@ describe("MemoryService", () => {
       const handler = vi.fn();
       hooks.on("notification.created", handler);
 
-      service!.notifications.create({
+      await service!.notifications.create({
         issueId,
         source: "jira",
         title: "Test notification",
@@ -244,7 +244,7 @@ describe("MemoryService", () => {
     });
 
     it("deduplicates by sourceId", async () => {
-      const first = service!.notifications.create({
+      const first = await service!.notifications.create({
         issueId,
         source: "jira",
         sourceId: "jira-comment-123",
@@ -252,7 +252,7 @@ describe("MemoryService", () => {
         body: "First body",
       });
 
-      const second = service!.notifications.create({
+      const second = await service!.notifications.create({
         issueId,
         source: "jira",
         sourceId: "jira-comment-123",
@@ -265,56 +265,56 @@ describe("MemoryService", () => {
     });
 
     it("getUnread returns unread notifications", async () => {
-      service!.notifications.create({
+      await service!.notifications.create({
         issueId,
         source: "jira",
         title: "Unread 1",
         body: "Body 1",
       });
 
-      service!.notifications.create({
+      await service!.notifications.create({
         issueId,
         source: "github",
         title: "Unread 2",
         body: "Body 2",
       });
 
-      const unread = service!.notifications.getUnread(issueId);
+      const unread = await service!.notifications.getUnread(issueId);
       expect(unread).toHaveLength(2);
     });
 
     it("markRead updates notification status", async () => {
-      const notification = service!.notifications.create({
+      const notification = await service!.notifications.create({
         issueId,
         source: "jira",
         title: "Test",
         body: "Test body",
       });
 
-      service!.notifications.markRead(notification.id);
+      await service!.notifications.markRead(notification.id);
 
-      const unread = service!.notifications.getUnread(issueId);
+      const unread = await service!.notifications.getUnread(issueId);
       expect(unread).toHaveLength(0);
     });
 
     it("acknowledge marks multiple notifications", async () => {
-      const n1 = service!.notifications.create({
+      const n1 = await service!.notifications.create({
         issueId,
         source: "jira",
         title: "Test 1",
         body: "Body 1",
       });
 
-      const n2 = service!.notifications.create({
+      const n2 = await service!.notifications.create({
         issueId,
         source: "github",
         title: "Test 2",
         body: "Body 2",
       });
 
-      service!.notifications.acknowledge([n1.id, n2.id]);
+      await service!.notifications.acknowledge([n1.id, n2.id]);
 
-      const unread = service!.notifications.getUnread(issueId);
+      const unread = await service!.notifications.getUnread(issueId);
       expect(unread).toHaveLength(0);
     });
 

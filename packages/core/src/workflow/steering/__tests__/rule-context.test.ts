@@ -34,10 +34,20 @@ describe("SteeringContext.notifications", () => {
   it("passes notifications to when() callback", async () => {
     const hooks = createMockHooks();
     const mockNotifications = [
-      createMockNotification({ id: "notif-1", source: "test", title: "Test notification", status: "unread" }),
-      createMockNotification({ id: "notif-2", source: "test", title: "Another notification", status: "unread" }),
+      createMockNotification({
+        id: "notif-1",
+        source: "test",
+        title: "Test notification",
+        status: "unread",
+      }),
+      createMockNotification({
+        id: "notif-2",
+        source: "test",
+        title: "Another notification",
+        status: "unread",
+      }),
     ];
-    const getNotifications = vi.fn().mockReturnValue(mockNotifications);
+    const getNotifications = vi.fn().mockResolvedValue(mockNotifications);
     const whenFn = vi.fn().mockReturnValue(true);
 
     const rule = createRule(
@@ -87,7 +97,7 @@ describe("SteeringContext.notifications", () => {
       hooks,
       baseIssue,
       defaultSteeringConfig,
-      () => mockNotifications,
+      async () => mockNotifications,
     );
 
     await triggerEvaluation(hooks);
@@ -122,7 +132,7 @@ describe("SteeringContext.notifications", () => {
       hooks,
       baseIssue,
       defaultSteeringConfig,
-      () => mockNotifications,
+      async () => mockNotifications,
     );
 
     await triggerEvaluation(hooks);

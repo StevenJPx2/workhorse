@@ -29,7 +29,7 @@ export interface SteeringRuleOptions {
   issue: Issue;
   steeringConfig: SteeringConfig;
   /** Function to get unread notifications for this issue */
-  getNotifications: () => Notification[];
+  getNotifications: () => Promise<Notification[]>;
 }
 
 /**
@@ -49,7 +49,7 @@ export class SteeringRule {
   private readonly hooks: HookEmitter;
   private readonly config: SteeringRuleConfig;
   private readonly steeringConfig: SteeringConfig;
-  private readonly getNotifications: () => Notification[];
+  private readonly getNotifications: () => Promise<Notification[]>;
 
   private fired = false;
   private hookHistory: HookHistoryEntry[] = [];
@@ -93,10 +93,10 @@ export class SteeringRule {
   }
 
   /** Build the context object passed to when() and reminder() callbacks. */
-  private buildContext(): SteeringContext {
+  private async buildContext(): Promise<SteeringContext> {
     return {
       issue: this.issue,
-      notifications: this.getNotifications(),
+      notifications: await this.getNotifications(),
       toolHistory: this.toolHistory,
     };
   }
@@ -151,7 +151,7 @@ export class SteeringRule {
     )
       return;
 
-    const ctx = this.buildContext();
+    const ctx = await this.buildContext();
 
     if (!(await condition.when(ctx))) return;
 

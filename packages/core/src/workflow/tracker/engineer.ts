@@ -96,7 +96,7 @@ export class PromptEngineer {
     }
 
     // Get unread notifications and add as context block
-    const notifications = this.memory.notifications.getUnread(this.issue.id);
+    const notifications = await this.memory.notifications.getUnread(this.issue.id);
     const contextBlocks: PromptContextBlock[] = [];
 
     if (notifications.length > 0) {

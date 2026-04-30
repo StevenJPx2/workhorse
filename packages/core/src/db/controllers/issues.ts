@@ -12,55 +12,56 @@ export class IssueController {
   /**
    * Insert a new issue. Fields with defaults (id, status, timestamps) are optional.
    */
-  insert(input: InsertIssue): Issue {
-    return this.db.insert(issues).values(input).returning().get()!;
+  async insert(input: InsertIssue): Promise<Issue> {
+    const result = await this.db.insert(issues).values(input).returning();
+    return result[0]!;
   }
 
   /**
    * Get an issue by its internal ID
    */
-  getById(id: string): Issue | undefined {
-    return this.db.select().from(issues).where(eq(issues.id, id)).get();
+  async getById(id: string): Promise<Issue | undefined> {
+    const result = await this.db.select().from(issues).where(eq(issues.id, id));
+    return result[0];
   }
 
   /**
    * Get an issue by its external ID and source
    */
-  getByExternalId(externalId: string, source: string): Issue | undefined {
-    return this.db
+  async getByExternalId(externalId: string, source: string): Promise<Issue | undefined> {
+    const result = await this.db
       .select()
       .from(issues)
-      .where(and(eq(issues.externalId, externalId), eq(issues.source, source)))
-      .get();
+      .where(and(eq(issues.externalId, externalId), eq(issues.source, source)));
+    return result[0];
   }
 
   /**
    * Get all issues
    */
-  getAll(): Issue[] {
-    return this.db.select().from(issues).all();
+  async getAll(): Promise<Issue[]> {
+    return this.db.select().from(issues);
   }
 
   /**
    * Get issues by status(es)
    */
-  getByStatus(...statuses: IssueStatus[]): Issue[] {
+  async getByStatus(...statuses: IssueStatus[]): Promise<Issue[]> {
     if (statuses.length === 0) return [];
 
-    return this.db.select().from(issues).where(inArray(issues.status, statuses)).all();
+    return this.db.select().from(issues).where(inArray(issues.status, statuses));
   }
 
   /**
    * Update an issue
    */
-  update(id: string, updates: Partial<Omit<Issue, "id" | "createdAt">>): Issue {
-    this.db
+  async update(id: string, updates: Partial<Omit<Issue, "id" | "createdAt">>): Promise<Issue> {
+    await this.db
       .update(issues)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(issues.id, id))
-      .run();
+      .where(eq(issues.id, id));
 
-    const updated = this.getById(id);
+    const updated = await this.getById(id);
     if (!updated) {
       throw new Error(`Issue not found: ${id}`);
     }
@@ -70,14 +71,14 @@ export class IssueController {
   /**
    * Update only the status of an issue
    */
-  updateStatus(id: string, status: IssueStatus): Issue {
+  async updateStatus(id: string, status: IssueStatus): Promise<Issue> {
     return this.update(id, { status });
   }
 
   /**
    * Delete an issue
    */
-  delete(id: string): void {
-    this.db.delete(issues).where(eq(issues.id, id)).run();
+  async delete(id: string): Promise<void> {
+    await this.db.delete(issues).where(eq(issues.id, id));
   }
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod/v4";
+import z from "zod";
 import type { ConfigPaths, JiratownConfig } from "#config";
 import { DEFAULT_CONFIG } from "#config";
 import { setContext, unsetContext } from "#context";

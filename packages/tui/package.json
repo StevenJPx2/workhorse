@@ -1,0 +1,25 @@
+{
+  "name": "@jiratown/tui",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.tsx",
+  "bin": {
+    "jiratown": "./src/index.tsx"
+  },
+  "exports": {
+    ".": "./src/index.tsx",
+    "./plugin": "./src/plugin.ts",
+    "./renderers": "./src/renderers/index.ts"
+  },
+  "dependencies": {
+    "@jiratown/core": "workspace:*",
+    "@jiratown/plugin-jira": "workspace:*",
+    "@jiratown/plugin-github": "workspace:*",
+    "@jiratown/plugin-pi-adapter": "workspace:*",
+    "solid-js": "^1.9.0",
+    "@opentui/solid": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

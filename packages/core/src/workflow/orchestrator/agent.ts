@@ -59,11 +59,21 @@ export class AgentAdapter {
     });
   }
 
-  get tools(): OrchestratorTool[] { return this.orchestrator.getTools(); }
-  get db(): Database { return this.orchestrator.db; }
-  get hooks(): HookEmitter { return this.orchestrator.hooks; }
-  get memory(): MemoryService { return this.orchestrator.memory; }
-  get issueId(): string { return this.issue.externalId; }
+  get tools(): OrchestratorTool[] {
+    return this.orchestrator.getTools();
+  }
+  get db(): Database {
+    return this.orchestrator.db;
+  }
+  get hooks(): HookEmitter {
+    return this.orchestrator.hooks;
+  }
+  get memory(): MemoryService {
+    return this.orchestrator.memory;
+  }
+  get issueId(): string {
+    return this.issue.externalId;
+  }
 
   /** Factory method. Does NOT call start(). */
   static async create(options: CreateOptions): Promise<AgentAdapter> {
@@ -88,7 +98,7 @@ export class AgentAdapter {
     }
 
     this.worktreePath = worktree.path;
-    this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
+    await this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
 
     const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
       isResume: existsSync(join(worktree.path, ".jiratown", "session")),
@@ -100,23 +110,15 @@ export class AgentAdapter {
 
     // Push notifications to agent
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
-      if (this.issueId !== issueId) return;
-
-      if (this.state !== "running") return;
-
-      await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch(
-        (err) => {
-          console.error(`Failed to push notification to agent ${issueId}:`, err);
-        },
+      if (this.issueId !== issueId || this.state !== "running") return;
+      await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch((err) =>
+        console.error(`Failed to push notification to agent ${issueId}:`, err),
       );
     });
 
     // Deliver steering reminders to agent
     this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
-      if (this.issueId !== issueId) return;
-
-      if (this.state !== "running") return;
-
+      if (this.issueId !== issueId || this.state !== "running") return;
       await this.sendMessage(reminder).catch((err) => {
         console.error(`Failed to deliver steering reminder to agent ${issueId}:`, err);
       });

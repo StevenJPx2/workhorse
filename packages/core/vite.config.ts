@@ -25,7 +25,7 @@ export default defineConfig({
         // Node builtins
         /^node:/,
         // External dependencies - don't bundle these
-        "better-sqlite3",
+        "@libsql/client",
         "keytar",
         "drizzle-orm",
         "mitt",
@@ -34,6 +34,9 @@ export default defineConfig({
         "defu",
         "smol-toml",
         "retriv",
+        /^retriv\//,
+        "@huggingface/transformers",
+        "onnxruntime-node",
         "string-ts",
         "typebox",
         "@mariozechner/pi-coding-agent",

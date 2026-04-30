@@ -77,20 +77,29 @@ export class Tracker {
     const parsed = await parser.parse(trimmed);
 
     // Check for existing issue
-    const existing = this.db.issues.getByExternalId(parsed.externalId, parsed.source);
+    const existing = await this.db.issues.getByExternalId(parsed.externalId, parsed.source);
     if (existing) {
       this.hooks.emit("issue.parsed", { issue: existing, raw: parsed });
       return existing;
     }
 
     // Insert new issue
-    const issue = this.db.issues.insert({
+    const issue = await this.db.issues.insert({
       ...parsed,
       status: "pending",
     });
 
     this.hooks.emit("issue.parsed", { issue, raw: parsed });
     return issue;
+  }
+
+  /**
+   * Fetch all issues in the backlog (pending status, not assigned to an agent).
+   *
+   * @returns Array of issues in pending status
+   */
+  async fetchBacklog(): Promise<Issue[]> {
+    return this.db.issues.getByStatus("pending");
   }
 
   /**
@@ -102,7 +111,7 @@ export class Tracker {
    */
   async buildPrompt(issueId: string, options: BuildPromptOptions = {}): Promise<string> {
     // Fetch issue
-    const issue = this.db.issues.getById(issueId);
+    const issue = await this.db.issues.getById(issueId);
     if (!issue) {
       throw new Error(`Issue not found: ${issueId}`);
     }
