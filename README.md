@@ -1,6 +1,8 @@
 # Jiratown
 
-An AI-powered Jira workflow assistant that helps manage tickets, track progress, and automate development workflows.
+An AI-powered agent orchestrator that manages coding agents working on Jira and GitHub issues.
+
+![Architecture](./architecture.png)
 
 ## Installation
 
@@ -34,7 +36,7 @@ Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/jiratown/`
 
 ```toml
 [agent]
-harness = "opencode"           # "opencode" | "claude-code"
+harness = "opencode"           # "opencode" | "claude-code" | "pi"
 model = "sonnet-4"
 
 [behavior]
@@ -59,6 +61,38 @@ cloud_id = "company.atlassian.net"
 auto_poll_reviews = true
 ```
 
+## Architecture
+
+```
+packages/
+├── core/              # @jiratown/core — main library
+│   └── src/
+│       ├── config/        # Config loading & validation
+│       ├── context/       # Async context (useJiratown)
+│       ├── db/            # SQLite via drizzle-orm
+│       ├── lib/hooks/     # Event system (mitt)
+│       ├── plugins/       # Plugin system & registry
+│       ├── services/
+│       │   ├── memory/    # L1 (context.md) + L2 (retriv hybrid search)
+│       │   └── monitor/   # Polling framework
+│       └── workflow/
+│           ├── orchestrator/  # Agent lifecycle, adapters, tools
+│           ├── steering/      # Idle reminders, autonomous rules
+│           └── tracker/       # Issue parsing, prompt engineering
+└── plugins/           # External plugins
+    ├── github/        # @jiratown/plugin-github
+    ├── jira/          # @jiratown/plugin-jira
+    └── pi-adapter/    # @jiratown/plugin-pi-adapter
+```
+
+### Key Concepts
+
+- **Tracker** — Parses user input (ticket keys, URLs) via plugin-registered parsers, engineers prompts with context from MemoryService
+- **HarnessOrchestrator** — Manages agent lifecycle via pluggable adapters registered by plugins
+- **MemoryService** — L1 (per-worktree `context.md`) + L2 (semantic search via retriv) + notifications
+- **MonitorService** — Polling framework for health checks and plugin-registered monitors
+- **Plugins** — Hook into tracker, orchestrator, and services via `definePlugin()`. Agent harnesses (Pi, Claude Code, Opencode) are also plugins that register their adapters.
+
 ## Plugins
 
 Plugins extend Jiratown's functionality. Define a plugin with optional config validation:
@@ -73,13 +107,12 @@ export default definePlugin({
     version: "1.0.0",
     description: "My custom plugin",
   },
-  // Optional: Zod schema for plugin config validation
   configSchema: z.object({
     apiKey: z.string(),
     timeout: z.number().default(5000),
   }),
-  // Validated config is passed to setup when configSchema is provided
   setup(config) {
+    // Access services via useJiratown()
     console.log("Plugin initialized with:", config.apiKey);
   },
   teardown() {
@@ -96,31 +129,21 @@ api_key = "secret"
 timeout = 10000
 ```
 
+### Plugin Types
+
+- **Integration plugins** — Connect to external services (Jira, GitHub)
+- **Adapter plugins** — Register agent harness adapters (Pi, Claude Code, Opencode)
+
 ## Development
 
 ```bash
-# Run tests
-bun test
-
-# Run tests for a specific package
-cd packages/core && bun test
-
-# Type checking
-bun run typecheck
+bun run check              # lint → typecheck → test → fallow
+bun run test               # vitest across all packages
+bun run typecheck          # tsc across all packages
+bun run lint               # oxlint with custom rules
 ```
 
-## Architecture
-
-```
-packages/
-├── core/           # Core library: config, plugins, context, hooks
-│   └── src/
-│       ├── config/     # Config loading & validation
-│       ├── plugins/    # Plugin system
-│       ├── context/    # Async context (useJiratown)
-│       └── hooks/      # Event system
-└── cli/            # Command-line interface
-```
+See [AGENTS.md](./AGENTS.md) for detailed coding conventions and contribution guidelines.
 
 ## License
 

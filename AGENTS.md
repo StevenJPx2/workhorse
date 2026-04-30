@@ -1,127 +1,69 @@
 # AGENTS.md
 
-Jiratown is an agent orchestrator that manages coding agents working on Jira/GitHub issues. This is an active rewrite.
+Jiratown is an agent orchestrator managing coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for current status.
 
-## Build Plan
-
-This repo is being built incrementally. Before starting work:
-
-1. Check `plan/PROGRESS.md` for current status (steps 0–5 done, 6–12 pending)
-2. Read the relevant `plan/XX-module.md` for the module you're working on
-3. See `MIGRATION.md` for old → new architecture mapping
-
-## Quick Start
+## Quick Reference
 
 ```bash
 bun install                    # Install dependencies
-bun run check                  # Verify everything works
-```
-
-## Key Entry Points
-
-- `packages/core/src/bootstrap.ts` — Main entry, creates `Jiratown` instance
-- `packages/core/src/index.ts` — Public API exports
-- Each module in `packages/core/src/*/` has a `README.md` explaining its purpose
-
-## Runtime & Commands
-
-Use **Bun** everywhere. All commands use `bun run <script>`.
-
-```bash
-bun run check      # Full audit: lint → typecheck → test → fallow (run before commits)
-bun run lint       # oxlint
-bun run typecheck  # tsc across workspaces
-bun run test       # vitest across workspaces
-bun run fallow     # Dead code, duplication, complexity analysis
-```
-
-Single-package commands:
-
-```bash
-bun run --filter @jiratown/core test   # Test one package
-bun run --filter '*' typecheck         # All packages
+bun run check                  # Full audit: lint → typecheck → test → fallow (run before commits)
+bun run --filter @jiratown/core test   # Test single package
 ```
 
 ## Project Structure
 
 ```
-packages/core/     # Main package (@jiratown/core)
-oxlint/            # Custom oxlint plugin (eslint-plugin-jiratown)
+packages/core/     # Main package (@jiratown/core) — bootstrap, config, plugins, services
+packages/plugins/  # External plugins (github, jira, pi-adapter)
+oxlint/            # Custom lint rules (eslint-plugin-jiratown)
+plan/              # Build plan docs — read XX-module.md for context on each module
 ```
 
-**Path aliases**: Use `#config`, `#types`, `#db`, `#plugins`, `#context`, `#lib/hooks`, `#workflow/steering`, etc. instead of relative imports within `packages/core/`. Defined in `packages/core/tsconfig.json` and mirrored in `vitest.config.ts`.
+**Entry points**:
+- `packages/core/src/bootstrap.ts` — Creates `Jiratown` instance
+- `packages/core/src/index.ts` — Public API exports
 
-**Subpath import rule**: Always import from the module's index, not inner files. Each module should export everything needed from its `index.ts`.
+## Import Rules (enforced by oxlint)
 
+**Use path aliases** — defined in `packages/core/tsconfig.json`:
 ```typescript
-// ✅ Good - import from module index
-import { SteeringRule, type SteeringRuleConfig } from "#workflow/steering";
-import { PromptEngineer } from "#workflow/tracker";
-
-// ❌ Bad - reaching into module internals
-import { SteeringRule } from "#workflow/steering/rule";
-import { PromptEngineer } from "#workflow/tracker/engineer";
-```
-
-If you need something from a module that isn't exported, add it to the module's `index.ts` rather than using a deep path.
-
-**Prefer direct paths over explicit `/index.ts`**: Let TypeScript resolve the index file automatically. This applies to both path aliases and relative imports with subpaths. Only keep explicit `/index.ts` for imports that point directly to the current or parent index file (i.e., `./index.ts`, `../index.ts`).
-
-```typescript
-// ✅ Good - no /index.ts suffix
+// ✅ Good
 import { SteeringRule } from "#workflow/steering";
 import { HookEmitter } from "#lib/hooks";
-import { something } from "./types";
-import { other } from "../utils";
 
-// ❌ Bad - explicit /index.ts on subpaths
-import { SteeringRule } from "#workflow/steering/index.ts";
-import { something } from "./types/index.ts";
-
-// ✅ Good - keep explicit /index.ts only for direct index imports
-import { other } from "./index.ts";
-import { parent } from "../index.ts";
+// ❌ Bad — deep relative paths
+import { SteeringRule } from "../../workflow/steering/rule";
 ```
 
-## Code Conventions
+**Import from module index only** — never reach into internals:
+```typescript
+// ✅ Good
+import { SteeringRule, type SteeringRuleConfig } from "#workflow/steering";
 
-### File constraints (enforced by oxlint)
+// ❌ Bad
+import { SteeringRule } from "#workflow/steering/rule";
+```
 
-- **Max 200 lines per file** (`jiratown/max-lines-per-file`)
-- **kebab-case filenames** (`jiratown/enforce-kebab-case-filenames`)
-- **Colocated tests**: Test files must be next to implementation (`foo.ts` + `foo.test.ts`)
-- **Colocated exports**: Prefer exporting from the same file, not barrel re-exports only
-- **Prefer path aliases** (`jiratown/prefer-path-alias`): Flag deep relative imports (2+ parent traversals) when a path alias exists. Autofix converts `../../config` → `#config`
-- **No explicit /index.ts** (`jiratown/no-index-imports`): Use `./types` not `./types/index.ts`. Exception: `./index.ts`, `../index.ts` are allowed
+**No explicit `/index.ts`** on subpaths:
+```typescript
+// ✅ Good
+import { something } from "./types";
 
-### Test requirements
+// ❌ Bad
+import { something } from "./types/index.ts";
+```
 
-- **97% coverage minimum** (lines, functions, branches) — enforced by `vitest.config.ts`
-- **Every test file must have at least one `it.fails("TODO: ...")`** case documenting planned behavior
-- Use `vitest` globals (`describe`, `it`, `expect`) — no imports needed
+## Code Constraints
 
-### Complexity limits (fallow)
+| Rule | Limit | Enforced by |
+|------|-------|-------------|
+| Max file lines | 200 | oxlint `jiratown/max-lines-per-file` |
+| Coverage (lines, functions) | 97% | vitest.config.ts |
+| Coverage (branches) | 95% | vitest.config.ts |
+| Filenames | kebab-case | oxlint |
+| Test location | Colocated (`foo.ts` + `foo.test.ts`) | oxlint |
 
-- Max cyclomatic: 15
-- Max cognitive: 12
-
-### Barrel export hygiene (manual review)
-
-When working with barrel files (`index.ts`), check that exports are actually needed externally:
-
-- **Internal-only exports**: If a symbol exported from `module/index.ts` is only imported by files within `module/`, it shouldn't be exported from the barrel — it's an implementation detail
-- **Re-export chains**: When symbol `X` is exported from `l1/index.ts` → re-exported by `memory/index.ts` → re-exported by `src/index.ts`, that's fine (external consumers can reach it)
-- **Rule of thumb**: Only export from barrels what logically belongs to the module's public API
-
-## Bun-Specific APIs
-
-Prefer Bun builtins:
-
-- `Bun.serve()` over express
-- `bun:sqlite` over better-sqlite3 (note: core currently uses better-sqlite3 + drizzle)
-- `Bun.file()` over `node:fs` read/write
-- `Bun.$\`cmd\`` over execa
-- Bun auto-loads `.env` — no dotenv
+**Every test file must have at least one `it.fails("TODO: ...")`** documenting planned behavior.
 
 ## Database
 
@@ -133,13 +75,12 @@ cd packages/core && bunx drizzle-kit generate  # Generate migrations
 
 ## Pre-commit
 
-`simple-git-hooks` + `lint-staged` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files.
+`simple-git-hooks` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files automatically.
 
 ## Architecture Notes
 
-See `MIGRATION.md` for the full architecture reference. Key concepts:
-
-- **bootstrap()** creates the `Jiratown` instance with config, db, hooks, plugins
-- **Context system**: Use `useJiratown()` inside plugin setup to access hooks/config
-- **Plugins**: Define with `definePlugin({ manifest, setup, teardown })`
+- **bootstrap()** creates `Jiratown` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
+- **Context system**: Use `useJiratown()` inside plugin setup to access services
+- **Plugins**: Define with `definePlugin({ manifest, setup, teardown })` — see `MIGRATION.md` for full architecture
 - **Hooks**: Event-based pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
+- **Services**: MemoryService (L1 context.md + L2 semantic search), MonitorService (polling framework)
