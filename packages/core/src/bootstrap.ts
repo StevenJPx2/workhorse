@@ -4,11 +4,22 @@ import { runWithContext } from "#context";
 import { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import { hooks } from "#lib/hooks";
-import { CORE_PLUGINS, PluginRegistry } from "#plugins";
+import { CORE_PLUGINS, type Plugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
 import { HarnessOrchestrator } from "#workflow/orchestrator";
 import { Tracker } from "#workflow/tracker";
+
+/**
+ * Options for bootstrapping a Jiratown instance.
+ */
+export interface BootstrapOptions {
+  /** Project root directory (defaults to cwd) */
+  repoRoot?: string;
+
+  /** Additional plugins to register after core plugins */
+  plugins?: Plugin[];
+}
 
 export interface Jiratown {
   /** Loaded configuration (readonly) */
@@ -45,17 +56,22 @@ export interface Jiratown {
 /**
  * Initialize a Jiratown instance with config, database, and plugins.
  *
- * @param repoRoot - Project root directory (defaults to cwd)
+ * @param options - Bootstrap options (repoRoot, plugins)
  * @returns Fully initialized Jiratown instance
  *
  * @example
  * ```typescript
- * const jt = await bootstrap();
- * // ... use jt.db, jt.hooks, jt.plugins ...
+ * const jt = await bootstrap({
+ *   repoRoot: "/path/to/repo",
+ *   plugins: [jiraPlugin, githubPlugin],
+ * });
+ *
  * await jt.shutdown();
  * ```
  */
-export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
+export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratown> {
+  const { repoRoot, plugins: extraPlugins = [] } = options;
+
   hooks.all.clear();
 
   const paths = resolveConfigPaths(repoRoot);
@@ -84,13 +100,15 @@ export async function bootstrap(repoRoot?: string): Promise<Jiratown> {
     async () => {
       const plugins = await PluginRegistry.create();
 
-      // Core plugins always registered
+      // Core plugins always registered first
       for (const plugin of CORE_PLUGINS) {
         plugins.register(plugin);
       }
 
-      // Note: Optional plugins (like @jiratown/plugin-jira) are now external packages.
-      // Applications should register them manually via plugins.register() after bootstrap.
+      // Register additional plugins provided via options
+      for (const plugin of extraPlugins) {
+        plugins.register(plugin);
+      }
 
       await plugins.setup();
 

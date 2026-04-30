@@ -44,7 +44,6 @@ export function createGitHubPRMonitor(
       const owner = metadata.owner as string | undefined;
       const repo = metadata.repo as string | undefined;
       const prNumber = metadata.prNumber as number | undefined;
-      const prUrl = metadata.prUrl as string | undefined;
 
       if (!owner || !repo || !prNumber) {
         return { hasChanges: false };
@@ -69,7 +68,11 @@ export function createGitHubPRMonitor(
         client.fetchPR(owner, repo, prNumber),
         client.getPRReviews(owner, repo, prNumber),
         client.getPRComments(owner, repo, prNumber),
-        client.getCheckRuns(owner, repo, prUrl?.match(/\/([a-f0-9]+)$/)?.[1] ?? "HEAD"),
+        client.getCheckRuns(
+          owner,
+          repo,
+          (metadata.prUrl as string | undefined)?.match(/\/([a-f0-9]+)$/)?.[1] ?? "HEAD",
+        ),
       ]);
 
       // Process new reviews

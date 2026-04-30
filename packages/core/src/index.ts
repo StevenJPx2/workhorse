@@ -89,4 +89,4 @@ export {
 } from "#services/memory";
 // Config exports for plugin authors
 export { getCredential, storeCredential } from "#config";
-export { bootstrap, type Jiratown } from "./bootstrap.ts";
+export { bootstrap, type BootstrapOptions, type Jiratown } from "./bootstrap.ts";

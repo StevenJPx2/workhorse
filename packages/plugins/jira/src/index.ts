@@ -63,7 +63,7 @@ export const jiraPlugin = definePlugin({
     // Register comment monitor (started per-issue when agent spawns)
     ctx.monitors.registerMonitor(createJiraCommentMonitor(client, config.pollInterval, ctx.db));
 
-    ctx.hooks.on("orchestrator.spawn.post", ({ adapter }) => {
+    ctx.hooks.on("agent.create.post", ({ adapter }) => {
       const issue = ctx.db.issues.getByExternalId(adapter.issueId, "jira");
       if (issue) {
         ctx.monitors.startMonitor("jira-comments", issue.id);

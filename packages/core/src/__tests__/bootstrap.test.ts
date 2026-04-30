@@ -38,7 +38,7 @@ describe("bootstrap", () => {
 
   it("returns Jiratown instance with config and hooks", async () => {
     const { bootstrap } = await import("../bootstrap.ts");
-    const jt = await bootstrap(tmpDir);
+    const jt = await bootstrap({ repoRoot: tmpDir });
 
     expect(jt.config).toBeDefined();
     expect(jt.hooks).toBeDefined();
@@ -60,7 +60,7 @@ theme = "gruvbox"
 `,
     );
 
-    const jt = await bootstrap(tmpDir);
+    const jt = await bootstrap({ repoRoot: tmpDir });
 
     expect(jt.config.agent.harness).toBe("claude-code");
     expect(jt.config.agent.model).toBe("opus-4");
@@ -69,7 +69,7 @@ theme = "gruvbox"
 
   it("config is frozen (readonly)", async () => {
     const { bootstrap } = await import("../bootstrap.ts");
-    const jt = await bootstrap(tmpDir);
+    const jt = await bootstrap({ repoRoot: tmpDir });
 
     expect(() => {
       // @ts-expect-error - intentionally testing runtime freeze
@@ -79,7 +79,7 @@ theme = "gruvbox"
 
   it("shutdown clears all hook handlers", async () => {
     const { bootstrap } = await import("../bootstrap.ts");
-    const jt = await bootstrap(tmpDir);
+    const jt = await bootstrap({ repoRoot: tmpDir });
 
     let called = false;
     jt.hooks.on("plugin.loaded", () => {
@@ -95,17 +95,36 @@ theme = "gruvbox"
   it("multiple bootstrap calls get fresh hooks state", async () => {
     const { bootstrap } = await import("../bootstrap.ts");
 
-    const jt1 = await bootstrap(tmpDir);
+    const jt1 = await bootstrap({ repoRoot: tmpDir });
     let callCount = 0;
     jt1.hooks.on("plugin.loaded", () => {
       callCount++;
     });
 
     // Second bootstrap clears previous handlers
-    const jt2 = await bootstrap(tmpDir);
+    const jt2 = await bootstrap({ repoRoot: tmpDir });
     jt2.hooks.emit("plugin.loaded", { name: "test" });
 
     expect(callCount).toBe(0);
+  });
+
+  it("registers plugins provided in options", async () => {
+    const { bootstrap } = await import("../bootstrap.ts");
+    const { definePlugin } = await import("../plugins/define.ts");
+
+    let setupCalled = false;
+    const testPlugin = definePlugin({
+      manifest: { name: "test-plugin", version: "1.0.0" },
+      setup() {
+        setupCalled = true;
+      },
+    });
+
+    const jt = await bootstrap({ repoRoot: tmpDir, plugins: [testPlugin] });
+
+    expect(setupCalled).toBe(true);
+    expect(jt.plugins.has("test-plugin")).toBe(true);
+    await jt.shutdown();
   });
 
   it.fails("TODO: implement graceful shutdown timeout handling", async () => {
@@ -113,7 +132,7 @@ theme = "gruvbox"
     // When shutdown is called with a timeout, it should reject pending operations
     // after the timeout expires.
     const { bootstrap } = await import("../bootstrap.ts");
-    const jt = await bootstrap(tmpDir);
+    const jt = await bootstrap({ repoRoot: tmpDir });
 
     // Expected: shutdown(timeout) should return a promise that resolves
     // even if some hooks are still processing, after the timeout

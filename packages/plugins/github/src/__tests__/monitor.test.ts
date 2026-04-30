@@ -63,8 +63,7 @@ describe("createGitHubPRMonitor", () => {
     const db = createMockDb({
       id: "issue-1",
       source: "github",
-      metadata: { owner: "octocat", repo: "hello-world" },
-      prNumber: null,
+      metadata: { owner: "octocat", repo: "hello-world", prNumber: null },
     });
     const client = createMockClient();
     const monitor = createGitHubPRMonitor(client, 30000, db);
@@ -78,8 +77,7 @@ describe("createGitHubPRMonitor", () => {
     const db = createMockDb({
       id: "issue-1",
       source: "github",
-      metadata: { owner: "octocat", repo: "hello-world" },
-      prNumber: 42,
+      metadata: { owner: "octocat", repo: "hello-world", prNumber: 42 },
     });
     const client = createMockClient({
       getPRReviews: vi.fn().mockResolvedValue([
@@ -112,8 +110,7 @@ describe("createGitHubPRMonitor", () => {
     const db = createMockDb({
       id: "issue-1",
       source: "github",
-      metadata: { owner: "octocat", repo: "hello-world" },
-      prNumber: 42,
+      metadata: { owner: "octocat", repo: "hello-world", prNumber: 42 },
     });
     const client = createMockClient({
       getPRComments: vi.fn().mockResolvedValue([
@@ -145,8 +142,7 @@ describe("createGitHubPRMonitor", () => {
     const db = createMockDb({
       id: "issue-1",
       source: "github",
-      metadata: { owner: "octocat", repo: "hello-world" },
-      prNumber: 42,
+      metadata: { owner: "octocat", repo: "hello-world", prNumber: 42 },
     });
     const client = createMockClient({
       getPRComments: vi.fn().mockResolvedValue([
@@ -191,9 +187,9 @@ describe("createGitHubPRMonitor", () => {
           lastCheckConclusions: { CI: "success" }, // Was passing
           lastMergeableState: "clean",
         },
+        prNumber: 42,
+        prUrl: "https://github.com/octocat/hello-world/pull/42",
       },
-      prNumber: 42,
-      prUrl: "https://github.com/octocat/hello-world/pull/42",
     });
     const client = createMockClient({
       getCheckRuns: vi.fn().mockResolvedValue([
@@ -233,8 +229,8 @@ describe("createGitHubPRMonitor", () => {
           lastCheckConclusions: {},
           lastMergeableState: "clean", // Was clean
         },
+        prNumber: 42,
       },
-      prNumber: 42,
     });
     const client = createMockClient({
       fetchPR: vi.fn().mockResolvedValue({
@@ -261,8 +257,7 @@ describe("createGitHubPRMonitor", () => {
     const db = createMockDb({
       id: "issue-1",
       source: "github",
-      metadata: { owner: "octocat", repo: "hello-world" },
-      prNumber: 42,
+      metadata: { owner: "octocat", repo: "hello-world", prNumber: 42 },
     });
     const client = createMockClient({
       getPRReviews: vi
@@ -301,9 +296,9 @@ describe("createGitHubPRMonitor", () => {
           lastMergeableState: "clean",
           lastMerged: false, // Was not merged
         },
+        prNumber: 42,
+        prUrl: "https://github.com/octocat/hello-world/pull/42",
       },
-      prNumber: 42,
-      prUrl: "https://github.com/octocat/hello-world/pull/42",
     });
     const client = createMockClient({
       fetchPR: vi.fn().mockResolvedValue({
@@ -350,9 +345,9 @@ describe("createGitHubPRMonitor", () => {
           lastMergeableState: "clean",
           lastMerged: true, // Already recorded as merged
         },
+        prNumber: 42,
+        prUrl: "https://github.com/octocat/hello-world/pull/42",
       },
-      prNumber: 42,
-      prUrl: "https://github.com/octocat/hello-world/pull/42",
     });
     const client = createMockClient({
       fetchPR: vi.fn().mockResolvedValue({
@@ -389,8 +384,8 @@ describe("createGitHubPRMonitor", () => {
           lastMergeableState: "clean",
           lastMerged: false,
         },
+        prNumber: 42,
       },
-      prNumber: 42,
     });
     const client = createMockClient({
       fetchPR: vi.fn().mockResolvedValue({

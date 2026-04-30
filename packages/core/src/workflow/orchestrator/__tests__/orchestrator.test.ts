@@ -61,40 +61,36 @@ function createMockIssue(externalId = "TEST-123"): Issue {
   };
 }
 
-/** Creates a mock adapter that mimics AgentAdapter interface */
-function createMockAdapter(issue: Issue) {
-  return {
-    harness: "test" as const,
-    state: "stopped" as "stopped" | "starting" | "running" | "stopping" | "crashed",
-    issue,
-    worktreePath: "/test/worktree",
-    repoPath: "/test/repo",
-    systemPrompt: "",
-    initialMessage: "",
-    model: undefined,
-    issueId: issue.externalId,
-    async start() {
-      this.state = "running";
-    },
-    async sendMessage(_content: string) {
-      if (this.state !== "running") {
-        throw new Error(`Agent not running (state: ${this.state})`);
-      }
-    },
-    async stop() {
-      this.state = "stopped";
-    },
-    isRunning() {
-      return this.state === "running";
-    },
-  };
-}
-
 /** Creates a mock adapter class that returns mock adapters */
 function createMockAdapterClass() {
   const MockAdapterClass = class {
     static async create(options: { issue: Issue; repoPath: string }) {
-      return createMockAdapter(options.issue);
+      const issue = options.issue;
+      return {
+        harness: "test" as const,
+        state: "stopped" as "stopped" | "starting" | "running" | "stopping" | "crashed",
+        issue,
+        worktreePath: "/test/worktree",
+        repoPath: "/test/repo",
+        systemPrompt: "",
+        initialMessage: "",
+        model: undefined,
+        issueId: issue.externalId,
+        async start() {
+          this.state = "running";
+        },
+        async sendMessage(_content: string) {
+          if (this.state !== "running") {
+            throw new Error(`Agent not running (state: ${this.state})`);
+          }
+        },
+        async stop() {
+          this.state = "stopped";
+        },
+        isRunning() {
+          return this.state === "running";
+        },
+      };
     }
   };
   return MockAdapterClass as unknown as typeof AgentAdapter;
@@ -338,7 +334,8 @@ describe("HarnessOrchestrator", () => {
       const rules = orchestrator.getSteeringRules();
 
       expect(rules).toHaveLength(1);
-      expect(rules[0].id).toBe("test-rule");
+      const rule = rules[0];
+      expect(rule?.id).toBe("test-rule");
     });
 
     it("validates and normalizes the rule config", () => {
@@ -353,9 +350,10 @@ describe("HarnessOrchestrator", () => {
       orchestrator.registerSteeringRule(ruleConfig);
       const rules = orchestrator.getSteeringRules();
 
-      expect(rules[0].priority).toBe(0); // default
-      expect(rules[0].once).toBe(false); // default
-      expect(rules[0].condition.status).toEqual([]); // default
+      const rule = rules[0];
+      expect(rule?.priority).toBe(0); // default
+      expect(rule?.once).toBe(false); // default
+      expect(rule?.condition.status).toEqual([]); // default
     });
   });
 

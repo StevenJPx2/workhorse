@@ -4,7 +4,8 @@
  * @module plugins/builtin/tools/plugin
  */
 
-import { definePlugin } from "#plugins";
+// oxlint-disable-next-line jiratown/prefer-path-alias -- Vite build doesn't resolve path aliases
+import { definePlugin } from "../../define.ts";
 import { acknowledgeTool, escalateTool, updateStatusTool } from "./definitions.ts";
 
 export const corePlugin = definePlugin({

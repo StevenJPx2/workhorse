@@ -26,74 +26,62 @@ import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
  * Extends AgentAdapter to wrap the pi SDK session.
  */
 export class PiAgentAdapter extends AgentAdapter {
-  readonly harness = "pi-coding-agent";
+  override readonly harness = "pi-coding-agent";
 
   private session: AgentSession | null = null;
   private unsubscribe: (() => void) | null = null;
 
-  /** Start the agent session. */
-  async start(): Promise<void> {
+  /** Start the agent session via doStart(). Called by base class start(). */
+  protected override async doStart(): Promise<void> {
     if (this.session) {
       throw new Error("Session already started");
     }
 
-    this.state = "starting";
-
-    try {
-      const loader = new DefaultResourceLoader({
-        cwd: this.worktreePath,
-        agentDir: getAgentDir(),
-        systemPromptOverride: () => this.ctx.systemPrompt,
-        extensionFactories: [
-          createExtensionFromTools(this.ctx.tools, {
-            issueId: this.issueId,
-            worktreePath: this.worktreePath,
-            db: this.ctx.db,
-            hooks: this.ctx.hooks,
-            memory: this.ctx.memory,
-          }),
-        ],
-      });
-      await loader.reload();
-
-      const { session } = await createAgentSession({
-        cwd: this.worktreePath,
-        resourceLoader: loader,
-        sessionManager: SessionManager.create(this.worktreePath),
-      });
-
-      this.session = session;
-      this.unsubscribe = session.subscribe((event: AgentSessionEvent) =>
-        handleSessionEvent(event, {
+    const loader = new DefaultResourceLoader({
+      cwd: this.worktreePath,
+      agentDir: getAgentDir(),
+      systemPromptOverride: () => this.systemPrompt,
+      extensionFactories: [
+        createExtensionFromTools(this.tools, {
           issueId: this.issueId,
           worktreePath: this.worktreePath,
-          hooks: this.ctx.hooks,
-          memory: this.ctx.memory,
-          setState: (s: AgentState) => {
-            this.state = s;
-          },
-          getIssueStatus: () => {
-            return (
-              this.ctx.db.issues.getByExternalId(this.ctx.issue.externalId, this.ctx.issue.source)
-                ?.status ?? this.ctx.issue.status
-            );
-          },
+          db: this.db,
+          hooks: this.hooks,
+          memory: this.memory,
         }),
-      );
-      this.state = "running";
-      await session.prompt(this.ctx.initialMessage);
-    } catch (error) {
-      this.state = "crashed";
-      this.ctx.hooks.emit("agent.crashed", {
+      ],
+    });
+    await loader.reload();
+
+    const { session } = await createAgentSession({
+      cwd: this.worktreePath,
+      resourceLoader: loader,
+      sessionManager: SessionManager.create(this.worktreePath),
+    });
+
+    this.session = session;
+    this.unsubscribe = session.subscribe((event: AgentSessionEvent) =>
+      handleSessionEvent(event, {
         issueId: this.issueId,
-        error: error instanceof Error ? error : new Error(String(error)),
-      });
-      throw error;
-    }
+        worktreePath: this.worktreePath,
+        hooks: this.hooks,
+        memory: this.memory,
+        setState: (s: AgentState) => {
+          this.state = s;
+        },
+        getIssueStatus: () => {
+          return (
+            this.db.issues.getByExternalId(this.issue.externalId, this.issue.source)?.status ??
+            this.issue.status
+          );
+        },
+      }),
+    );
+    await session.prompt(this.initialMessage);
   }
 
   /** Send a message to the running agent. */
-  async sendMessage(content: string): Promise<void> {
+  override async sendMessage(content: string): Promise<void> {
     if (!this.session) {
       throw new Error("Session not started");
     }
@@ -105,26 +93,20 @@ export class PiAgentAdapter extends AgentAdapter {
     }
   }
 
-  /** Stop the agent session. */
-  async stop(): Promise<void> {
+  /** Stop the agent session via doStop(). Called by base class stop(). */
+  protected override async doStop(): Promise<void> {
     if (!this.session) {
       return;
     }
 
-    this.state = "stopping";
-
-    try {
-      this.unsubscribe?.();
-      this.session.dispose();
-    } finally {
-      this.session = null;
-      this.unsubscribe = null;
-      this.state = "stopped";
-    }
+    this.unsubscribe?.();
+    this.session.dispose();
+    this.session = null;
+    this.unsubscribe = null;
   }
 
   /** Check if the agent is currently running/streaming. */
-  isRunning(): boolean {
+  override isRunning(): boolean {
     return this.session?.isStreaming ?? false;
   }
 }

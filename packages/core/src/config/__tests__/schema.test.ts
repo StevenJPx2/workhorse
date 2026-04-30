@@ -136,9 +136,7 @@ describe("jiratownConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it.fails("TODO: add validation for known harness names", async () => {
-    // Currently any string is accepted as harness, but we may want to
-    // validate against a list of known harnesses in the future.
+  it("rejects unknown harness names", async () => {
     const { jiratownConfigSchema } = await import("../schema.ts");
     const result = jiratownConfigSchema.safeParse({
       agent: { harness: "unknown-harness-xyz" },
