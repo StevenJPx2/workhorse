@@ -5,10 +5,17 @@
  * providing workflow-specific reminders.
  *
  * Architecture:
- * - Rules are global (registered with orchestrator)
- * - State (firedOnce, cooldowns, recentHooks) is per-issue
- * - Each adapter creates its own SteeringService instance
+ * - Configs are registered with orchestrator (plain objects)
+ * - AgentAdapter creates SteeringRule instances with hooks/issue injected
+ * - Rules are fully autonomous: subscribe to hooks, evaluate, emit reminders
  */
 
-export { SteeringService, type SteeringConfig } from "./service.ts";
-export type { SteeringCondition, SteeringContext, SteeringRule } from "./types.ts";
+export { SteeringRule } from "./rule.ts";
+export {
+  type RecentHookEvent,
+  type SteeringCondition,
+  SteeringConditionSchema,
+  type SteeringRuleConfig,
+  type SteeringRuleConfigInput,
+  SteeringRuleConfigSchema,
+} from "./types.ts";

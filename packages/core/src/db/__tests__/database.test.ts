@@ -90,8 +90,6 @@ describe("Database", () => {
         labels: ["new-label"],
         metadata: { new: "data" },
         worktreePath: "/new/path",
-        prUrl: "https://github.com/pr/456",
-        prNumber: 456,
       });
 
       expect(updated.externalId).toBe("NEW-123");
@@ -105,8 +103,6 @@ describe("Database", () => {
       expect(updated.labels).toEqual(["new-label"]);
       expect(updated.metadata).toEqual({ new: "data" });
       expect(updated.worktreePath).toBe("/new/path");
-      expect(updated.prUrl).toBe("https://github.com/pr/456");
-      expect(updated.prNumber).toBe(456);
     });
 
     it("deletes issue", () => {
@@ -170,8 +166,6 @@ describe("Database", () => {
           assignee: null,
           labels: null,
           worktreePath: null,
-          prUrl: null,
-          prNumber: null,
         }),
       );
 
@@ -181,24 +175,18 @@ describe("Database", () => {
       expect(retrieved!.assignee).toBeNull();
       expect(retrieved!.labels).toBeNull();
       expect(retrieved!.worktreePath).toBeNull();
-      expect(retrieved!.prUrl).toBeNull();
-      expect(retrieved!.prNumber).toBeNull();
     });
 
-    it("stores worktree and PR fields", () => {
+    it("stores worktree field", () => {
       const issue = db.issues.insert(
         makeIssueInput({
           worktreePath: "/path/to/worktree",
-          prUrl: "https://github.com/org/repo/pull/123",
-          prNumber: 123,
         }),
       );
 
       const retrieved = db.issues.getById(issue.id);
       expect(retrieved).toBeDefined();
       expect(retrieved!.worktreePath).toBe("/path/to/worktree");
-      expect(retrieved!.prUrl).toBe("https://github.com/org/repo/pull/123");
-      expect(retrieved!.prNumber).toBe(123);
     });
   });
 

@@ -22,8 +22,6 @@ export function makeIssueInput(
     labels: ["backend", "urgent"],
     metadata: { priority: "high" },
     worktreePath: null,
-    prUrl: null,
-    prNumber: null,
     ...overrides,
   };
 }

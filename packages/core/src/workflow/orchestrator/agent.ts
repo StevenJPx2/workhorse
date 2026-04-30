@@ -11,13 +11,13 @@ import type { Database } from "#db/database";
 import { createWorktree, removeWorktree } from "#lib/git";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import { SteeringService, type SteeringConfig } from "#workflow/steering";
+import { SteeringRule } from "#workflow/steering";
 import { PromptEngineer } from "#workflow/tracker";
-import type { OrchestratorTool } from "./tools.ts";
-import type { HarnessOrchestrator } from "../orchestrator.ts";
-import type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./adapter.ts";
+import type { HarnessOrchestrator } from "./orchestrator.ts";
+import type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./types/adapter.ts";
+import type { OrchestratorTool } from "./types/tools.ts";
 
-export type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./adapter.ts";
+export type { AgentHarness, AgentState, CreateOptions, StopOptions };
 
 /**
  * Base class for agent adapters. Subclasses override doStart(), doStop(),
@@ -34,7 +34,7 @@ export class AgentAdapter {
   readonly model?: string;
   protected readonly orchestrator: HarnessOrchestrator;
   protected engineer: PromptEngineer;
-  protected steering: SteeringService;
+  protected steering: SteeringRule[];
 
   protected constructor(options: CreateOptions) {
     this.issue = options.issue;
@@ -48,14 +48,9 @@ export class AgentAdapter {
       this.orchestrator.config.prompt.custom,
     );
 
-    this.steering = new SteeringService(
-      this.issue,
-      this.db,
-      this.memory,
-      this.hooks,
-      this.orchestrator.config.steering as SteeringConfig,
-      () => this.orchestrator.getSteeringRules(),
-    );
+    this.steering = this.orchestrator.getSteeringRules().map((rule) => {
+      return new SteeringRule(rule, this.hooks, this.issue, this.orchestrator.config.steering);
+    });
   }
 
   get tools(): OrchestratorTool[] {
@@ -76,7 +71,7 @@ export class AgentAdapter {
 
   /** Factory method. Does NOT call start(). */
   static async create(options: CreateOptions): Promise<AgentAdapter> {
-    const adapter = new this(options);
+    const adapter = new AgentAdapter(options);
     await adapter.initialize(options);
     return adapter;
   }
@@ -91,9 +86,11 @@ export class AgentAdapter {
       this.issue.issueType,
       options.baseBranch ?? "main",
     );
+
     if (!worktree) {
       throw new Error(`Failed to create worktree for ${this.issue.externalId}`);
     }
+
     this.worktreePath = worktree.path;
     this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
 
@@ -101,6 +98,7 @@ export class AgentAdapter {
       isResume: existsSync(join(worktree.path, ".jiratown", "session")),
       tools: this.tools,
     });
+
     this.systemPrompt = systemPrompt;
     this.initialMessage = initialMessage;
 
@@ -112,14 +110,18 @@ export class AgentAdapter {
     if (this.state === "running" || this.state === "starting") {
       throw new Error(`Agent for ${this.issueId} is already running`);
     }
+
     this.hooks.emit("agent.start.pre", { adapter: this });
     this.state = "starting";
+
     try {
       await this.doStart();
+
       this.state = "running";
       this.hooks.emit("agent.start.post", { adapter: this });
     } catch (error) {
       this.state = "crashed";
+
       throw error;
     }
   }
@@ -140,16 +142,20 @@ export class AgentAdapter {
   /** Stop the agent. Subclasses override doStop(). */
   async stop(options: StopOptions = {}): Promise<void> {
     if (this.state === "stopped" || this.state === "stopping") return;
+
     this.hooks.emit("agent.stop.pre", { adapter: this });
     this.state = "stopping";
+
     try {
       await this.doStop();
     } finally {
       this.state = "stopped";
-      this.steering.dispose();
+      for (const rule of this.steering) rule.dispose();
+
       if (options.removeWorktree && this.worktreePath) {
         await removeWorktree(this.repoPath, this.issueId, options.deleteBranch);
       }
+
       this.hooks.emit("agent.stop.post", { adapter: this });
     }
   }

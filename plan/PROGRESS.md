@@ -15,9 +15,11 @@
 | 10 | MCP | ✅ Merged into Step 9 | Superseded by `OrchestratorTool` + `Adapter` pattern. Each adapter translates tools to its native harness (Pi uses Extension API, Claude Code uses `.mcp.json`, etc.). No standalone MCP server needed in core. |
 | 11 | Jira Plugin | ✅ Done | Built-in plugin at `packages/core/src/plugins/builtin/jira/` |
 | 12 | GitHub Plugin | ✅ Done | `@jiratown/plugin-github` at `packages/plugins/github/` |
-| 13 | Idle Steering & Plugin Hooks | ⬜ Pending | Plugin hooks for cross-plugin coordination + idle steering reminders |
+| 13 | Idle Steering & Plugin Hooks | ✅ Done | Plugin hooks for cross-plugin coordination + idle steering reminders |
 | 14 | CLI | ⬜ Pending | `@jiratown/cli` — commander-based CLI |
 | 15 | TUI | ⬜ Pending | `@jiratown/tui` — Ink-based terminal UI |
+| 16 | Consolidate Spawn Logic | ✅ Done | `AgentAdapter` owns lifecycle, orchestrator is registry/factory |
+| 17 | SteeringRule Class | ⬜ Pending | Convert `SteeringRule` interface to class with `matches()`, `getReminder()` |
 
 ## After Core
 - [ ] Integration testing

@@ -21,8 +21,6 @@ describe("hooks", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },

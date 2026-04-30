@@ -5,40 +5,12 @@
  * providing workflow-specific reminders.
  */
 
-import type { Issue, IssueStatus, Notification } from "#db";
-import type { Database } from "#db/database";
-import type { MemoryService } from "#services/memory";
-import type { AgentAdapter } from "#workflow/orchestrator";
+import { type ZodType, z } from "zod/v4";
+import { IssueStatusSchema } from "#db";
 
-/**
- * Context available to steering rules when evaluating conditions
- * and generating reminders.
- */
-export interface SteeringContext {
-  /** The issue the idle agent is working on */
-  issue: Issue;
-
-  /** The adapter for the idle agent */
-  adapter: AgentAdapter;
-
-  /** Database access */
-  db: Database;
-
-  /** Memory service */
-  memory: MemoryService;
-
-  /** Notifications for this issue */
-  notifications: Notification[];
-
-  /** Has a PR been created? (checked via issue.prUrl) */
-  hasPR: boolean;
-
-  /** Recent tool calls (last N) */
-  recentTools: Array<{ name: string; timestamp: number }>;
-
-  /** Recent hook events for this issue */
-  recentHooks: Array<{ name: string; timestamp: number; payload: unknown }>;
-}
+// Forward declaration to avoid circular dependency
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SteeringRuleRef = any;
 
 /**
  * A record of a recently fired hook event.
@@ -50,52 +22,60 @@ export interface RecentHookEvent {
   /** Timestamp when the hook fired */
   timestamp: number;
 
-  /** Issue ID the hook was for */
-  issueId: string;
-
   /** Hook payload (opaque) */
   payload: unknown;
 }
 
-/**
- * Condition for when a steering rule should apply.
- */
-export interface SteeringCondition {
-  /** Issue status(es) that trigger this rule */
-  status?: IssueStatus | IssueStatus[];
+/** Transform string | string[] | undefined to string[] (defaults to []) */
+const arrayUnionSchema = (zType: ZodType) =>
+  z
+    .union([zType, z.array(zType)])
+    .optional()
+    .transform((val) => (val === undefined ? [] : Array.isArray(val) ? val : [val]));
 
-  /** Issue source(s) this applies to */
-  source?: string | string[];
+/** Zod schema for SteeringCondition - normalizes and sets defaults */
+export const SteeringConditionSchema = z.object({
+  status: arrayUnionSchema(IssueStatusSchema),
+  source: arrayUnionSchema(z.string()),
+  hook: arrayUnionSchema(z.string()),
+  when: z
+    .function({
+      input: [z.any()],
+      output: z.union([z.boolean(), z.promise(z.boolean())]),
+    })
+    .optional()
+    .transform((fn) => fn ?? (async () => true)), // Default: always pass if no when() specified
+});
 
-  /** Hook event(s) that must have recently fired for this issue */
-  hook?: string | string[];
+/** Zod schema for SteeringRuleConfig - validates, normalizes, and sets defaults */
+export const SteeringRuleConfigSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  condition: SteeringConditionSchema.optional().default({
+    status: [],
+    source: [],
+    hook: [],
+    when: async () => true,
+  }),
+  reminder: z
+    .union([
+      z.string(),
+      z.function({
+        input: [z.any()],
+        output: z.promise(z.string()),
+      }),
+    ])
+    .transform((val) => (typeof val === "function" ? val : (_: SteeringRuleRef) => val)),
+  priority: z.number().optional().default(0),
+  once: z.boolean().optional().default(false),
+});
 
-  /** Custom predicate for complex conditions */
-  when?: (ctx: SteeringContext) => boolean | Promise<boolean>;
-}
+/** Normalized condition type (after Zod transform) */
+export type SteeringCondition = z.infer<typeof SteeringConditionSchema>;
 
-/**
- * A steering rule defines when to remind an idle agent and what to say.
- */
-export interface SteeringRule {
-  /** Unique identifier */
-  id: string;
+/** Normalized config type (after Zod transform) */
+export type SteeringRuleConfig = z.infer<typeof SteeringRuleConfigSchema>;
 
-  /** Human-readable name */
-  name: string;
-
-  /** Human-readable description */
-  description: string;
-
-  /** When should this rule apply? */
-  condition: SteeringCondition;
-
-  /** What reminder to send */
-  reminder: string | ((ctx: SteeringContext) => string | Promise<string>);
-
-  /** Priority for ordering (higher = earlier). Default: 0 */
-  priority?: number;
-
-  /** Only fire once per session? Default: false */
-  once?: boolean;
-}
+/** Input type for SteeringRuleConfig (before Zod normalization) */
+export type SteeringRuleConfigInput = z.input<typeof SteeringRuleConfigSchema>;

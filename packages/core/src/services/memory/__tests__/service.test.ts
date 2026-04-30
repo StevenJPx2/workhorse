@@ -202,8 +202,6 @@ describe("MemoryService", () => {
         labels: [],
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
       issueId = issue.id;
     });

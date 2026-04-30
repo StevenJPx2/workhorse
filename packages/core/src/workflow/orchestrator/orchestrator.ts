@@ -9,7 +9,7 @@
  * - Handles notification and steering reminder delivery to running agents
  *
  * Steering rules are global (registered here), but state (firedOnce, cooldowns)
- * is per-adapter via SteeringService instances created by each adapter.
+ * is per-adapter via SteeringRule instances created by each adapter.
  *
  * Lifecycle control (start/stop/sendMessage) is owned by the adapter itself.
  * The orchestrator just spawns and tracks agents.
@@ -20,8 +20,8 @@ import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import type { SteeringRule } from "#workflow/steering";
-import { AgentAdapter, type OrchestratorTool, type SpawnOptions } from "./types";
+import { type SteeringRuleConfig, SteeringRuleConfigSchema } from "#workflow/steering";
+import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
  * Main orchestrator class for managing agent lifecycles.
@@ -30,7 +30,7 @@ export class HarnessOrchestrator {
   private readonly agents = new Map<string, AgentAdapter>();
   private readonly tools = new Map<string, OrchestratorTool>();
   private readonly adapters = new Map<string, typeof AgentAdapter>();
-  private readonly steeringRules = new Map<string, SteeringRule>();
+  private readonly steeringRules: SteeringRuleConfig[] = [];
 
   constructor(
     readonly db: Database,
@@ -51,7 +51,7 @@ export class HarnessOrchestrator {
     });
 
     // Deliver steering reminders to running agents
-    // (emitted by per-adapter SteeringService instances)
+    // (emitted by per-adapter SteeringRule instances)
     this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
@@ -149,19 +149,13 @@ export class HarnessOrchestrator {
     this.agents.delete(issueId);
   }
 
-  /** Register a steering rule. Plugins call this during setup. Rules are global. */
-  registerSteeringRule(rule: SteeringRule): void {
-    this.steeringRules.set(rule.id, rule);
+  /** Register a steering rule config. Plugins call this during setup. */
+  registerSteeringRule(config: SteeringRuleConfig): void {
+    this.steeringRules.push(SteeringRuleConfigSchema.parse(config));
   }
 
-  /** Unregister a steering rule. */
-  unregisterSteeringRule(id: string): void {
-    this.steeringRules.delete(id);
-  }
-
-  /** Get all steering rules (called by per-adapter SteeringService). */
-  getSteeringRules(): SteeringRule[] {
-    return Array.from(this.steeringRules.values());
+  getSteeringRules(): SteeringRuleConfig[] {
+    return this.steeringRules;
   }
 
   /** Shutdown all agents. */

@@ -258,8 +258,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       await expect(tracker.buildPrompt(issue.id)).rejects.toThrow(
@@ -284,8 +282,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       const prompt = await tracker.buildPrompt(issue.id);
@@ -310,8 +306,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       const builtHandler = vi.fn();
@@ -352,8 +346,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       const prompt = await tracker.buildPrompt(issue.id);
@@ -391,8 +383,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       const prompt = await tracker.buildPrompt(issue.id);
@@ -427,8 +417,6 @@ describe("Tracker", () => {
         labels: null,
         metadata: {},
         worktreePath: null,
-        prUrl: null,
-        prNumber: null,
       });
 
       const prompt = await tracker.buildPrompt(issue.id);

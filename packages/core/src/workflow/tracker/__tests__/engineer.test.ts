@@ -28,8 +28,6 @@ const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
   labels: null,
   metadata: {},
   worktreePath: null,
-  prUrl: null,
-  prNumber: null,
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
   ...overrides,

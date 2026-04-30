@@ -6,6 +6,7 @@ export const hooks = mitt<HookEventMap>();
 export type {
   HookEmitter,
   HookEventMap,
+  HookEventName,
   PromptBuildingContext,
   PromptContextBlock,
 } from "./types.ts";

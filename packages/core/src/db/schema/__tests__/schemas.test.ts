@@ -27,8 +27,6 @@ function makeIssue(overrides?: Partial<Issue>): Issue {
     labels: ["backend", "urgent"],
     metadata: { jiraPriority: "high" },
     worktreePath: null,
-    prUrl: null,
-    prNumber: null,
     createdAt: new Date("2025-01-01"),
     updatedAt: new Date("2025-01-02"),
     ...overrides,
@@ -83,8 +81,9 @@ test("IssueStatusSchema accepts valid statuses", () => {
   }
 });
 
-test("IssueStatusSchema rejects invalid status", () => {
-  expect(() => IssueStatusSchema.parse("unknown")).toThrow();
+test("IssueStatusSchema accepts custom string status", () => {
+  // Schema accepts any string to support custom statuses
+  expect(IssueStatusSchema.parse("custom-status")).toBe("custom-status");
 });
 
 test("NotificationPrioritySchema accepts valid priorities", () => {
@@ -130,8 +129,6 @@ test("Issue type accepts null for optional fields", () => {
     labels: null,
     metadata: {},
     worktreePath: null,
-    prUrl: null,
-    prNumber: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

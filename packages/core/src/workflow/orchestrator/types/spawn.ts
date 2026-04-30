@@ -5,7 +5,7 @@
  */
 
 import type { Issue } from "#db";
-import type { AgentHarness } from "./agent.ts";
+import type { AgentHarness } from "./adapter.ts";
 
 /**
  * Options for spawning a new agent.

@@ -3,16 +3,14 @@ import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core
 import { z } from "zod/v4";
 import { dateText } from "./custom-types.ts";
 
+/** Zod schema for validating issue status */
+export const IssueStatusSchema = z.union([
+  z.enum(["pending", "queued", "planning", "implementing", "blocked", "in_review", "done"]),
+  z.string<string & {}>(),
+]);
+
 /** Valid issue statuses */
-export type IssueStatus =
-  | "pending"
-  | "queued"
-  | "planning"
-  | "implementing"
-  | "blocked"
-  | "pr_created"
-  | "in_review"
-  | "done";
+export type IssueStatus = z.infer<typeof IssueStatusSchema>;
 
 /**
  * Issues table - tracks issues from external sources (Jira, GitHub, etc.)
@@ -34,8 +32,6 @@ export const issues = sqliteTable(
     labels: text("labels", { mode: "json" }).$type<string[]>(),
     metadata: text("metadata", { mode: "json" }).notNull().$type<Record<string, unknown>>(),
     worktreePath: text("worktree_path"),
-    prUrl: text("pr_url"),
-    prNumber: integer("pr_number"),
     createdAt: dateText("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -51,15 +47,3 @@ export type Issue = typeof issues.$inferSelect;
 
 /** Insert type - nullable fields are optional, auto-filled with null */
 export type InsertIssue = typeof issues.$inferInsert;
-
-/** Zod schema for validating issue status */
-export const IssueStatusSchema = z.enum([
-  "pending",
-  "queued",
-  "planning",
-  "implementing",
-  "blocked",
-  "pr_created",
-  "in_review",
-  "done",
-]);

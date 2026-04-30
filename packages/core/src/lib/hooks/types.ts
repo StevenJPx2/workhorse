@@ -50,6 +50,8 @@ type KnownEvents = {
   "plugin.error": { name: string; error: Error };
 };
 
+export type HookEventName = keyof KnownEvents | (string & {});
+
 export type HookEventMap = KnownEvents & Record<string, unknown>;
 
 export type HookEmitter = Emitter<HookEventMap>;
