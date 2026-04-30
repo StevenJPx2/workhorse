@@ -69,11 +69,11 @@ export interface MemoryDocument {
 
 /**
  * Types of documents stored in L2 memory.
+ * Plugins can register additional document types via the `string & {}` escape hatch.
  */
 export type MemoryDocumentType =
   | "session_memory"
   | "issue_context"
-  | "pr_context"
   | "decision"
   | "code_context"
   | (string & {});
@@ -98,22 +98,21 @@ export interface MemorySearchOptions {
 /**
  * Types of events that can be emitted for an issue.
  * Used for tracking issue activity and history.
+ *
+ * Core events are platform-agnostic. Plugin-specific events (e.g., github:pr.created,
+ * github:review.submitted) should be added by plugins using the string escape hatch.
  */
 export type IssueEventType =
   | "status_changed"
   | "comment_added"
-  | "pr_created"
-  | "pr_merged"
-  | "pr_closed"
-  | "review_requested"
-  | "review_submitted"
   | "blocked"
   | "unblocked"
   | "assigned"
   | "work_started"
   | "work_completed"
   | "error"
-  | "info";
+  | "info"
+  | (string & {});
 
 /**
  * Input for creating a new notification.

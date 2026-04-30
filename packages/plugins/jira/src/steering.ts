@@ -36,7 +36,7 @@ export function registerJiraSteering(ctx: JiratownContext): void {
     description: "Remind to transition the Jira ticket after PR is merged",
     condition: {
       source: "jira",
-      status: "pr_created",
+      status: "in_review",
       hook: "github:pr.merged",
     },
     reminder: `The PR has been merged! Transition the Jira ticket to "In QA" and assign to reporter with \`jira_transition_issue\`.`,

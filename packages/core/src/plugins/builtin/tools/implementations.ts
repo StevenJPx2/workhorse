@@ -62,13 +62,13 @@ export const updateStatusToolImpl = async (
     const { status } = args as { status: string };
 
     // Validate status (basic validation, could be more strict)
+    // Note: VCS plugins can register additional statuses via hooks
     const validStatuses = [
       "pending",
       "queued",
       "planning",
       "implementing",
       "blocked",
-      "pr_created",
       "in_review",
       "done",
     ];

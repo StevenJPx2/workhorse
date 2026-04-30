@@ -16,7 +16,7 @@ type SteeringRuleRef = any;
  * A record of a recently fired hook event.
  */
 export interface RecentHookEvent {
-  /** Hook name (e.g. "github:pr.merged") */
+  /** Hook name (e.g. "plugin:event.type") - plugins define their own hook namespaces */
   name: string;
 
   /** Timestamp when the hook fired */

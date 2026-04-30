@@ -252,7 +252,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       expect.objectContaining({
         prUrl: "https://github.com/octocat/hello-world/pull/99",
         prNumber: 99,
-        status: "pr_created",
+        status: "in_review",
       }),
     );
     expect(mockHooks.emit).toHaveBeenCalledWith("issue.status_changed", expect.any(Object));

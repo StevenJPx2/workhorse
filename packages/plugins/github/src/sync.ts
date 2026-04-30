@@ -13,13 +13,9 @@ const STATUS_LABELS: Partial<Record<IssueStatus, { add?: string; remove?: string
     add: "blocked",
     remove: ["ready-for-review"],
   },
-  pr_created: {
+  in_review: {
     add: "ready-for-review",
     remove: ["blocked", "work-in-progress"],
-  },
-  in_review: {
-    add: "in-review",
-    remove: ["ready-for-review", "blocked"],
   },
   done: {
     remove: ["blocked", "work-in-progress", "ready-for-review", "in-review"],

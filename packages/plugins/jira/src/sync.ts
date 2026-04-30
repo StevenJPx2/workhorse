@@ -15,7 +15,6 @@ export function registerStatusSync(ctx: JiratownContext, client: AtlassianClient
     planning: "In Progress",
     implementing: "In Progress",
     blocked: "Blocked",
-    pr_created: "In Review",
     in_review: "In Review",
     done: "Done",
   };

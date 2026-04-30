@@ -34,7 +34,7 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
     name: "Fix CI failures",
     description: "Remind to fix CI when checks fail",
     condition: {
-      status: "pr_created",
+      status: "in_review",
       when: (steerCtx) =>
         steerCtx.notifications.some(
           (n: { source: string; title: string; status: string }) =>
@@ -60,7 +60,7 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
     name: "Address PR review comments",
     description: "Remind to address review feedback",
     condition: {
-      status: "pr_created",
+      status: "in_review",
       when: (steerCtx) =>
         steerCtx.notifications.some(
           (n: { source: string; title: string; priority: string; status: string }) =>

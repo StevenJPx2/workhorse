@@ -35,7 +35,7 @@ function createParserOptions(overrides: {
   config?: typeof mockConfig;
 }): IssueParserOptions {
   return {
-    source: overrides.source ?? "jira",
+    source: overrides.source ?? "test-source",
     canParse: overrides.canParse ?? ((input) => /^[A-Z]+-\d+$/.test(input)),
     parse: overrides.parse ?? vi.fn(),
     memory: (overrides.memory ?? mockMemory) as any,
@@ -65,10 +65,10 @@ describe("Tracker", () => {
     });
 
     it("allows multiple parsers", () => {
-      tracker.registerParser(createParserOptions({ source: "jira" }));
+      tracker.registerParser(createParserOptions({ source: "source-a" }));
       tracker.registerParser(
         createParserOptions({
-          source: "github",
+          source: "source-b",
           canParse: (input) => input.includes("#"),
         }),
       );
@@ -87,7 +87,7 @@ describe("Tracker", () => {
     it("uses the first matching parser", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-123",
-        source: "jira",
+        source: "test-source",
         title: "Test Issue",
         description: "A test issue",
         issueType: "task",
@@ -100,14 +100,14 @@ describe("Tracker", () => {
 
       expect(parseFn).toHaveBeenCalledWith("AM-123");
       expect(issue.externalId).toBe("AM-123");
-      expect(issue.source).toBe("jira");
+      expect(issue.source).toBe("test-source");
       expect(issue.title).toBe("Test Issue");
     });
 
     it("trims input before parsing", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-123",
-        source: "jira",
+        source: "test-source",
         title: "Test Issue",
         description: "",
         issueType: "task",
@@ -124,7 +124,7 @@ describe("Tracker", () => {
     it("returns existing issue if already in database", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-123",
-        source: "jira",
+        source: "test-source",
         title: "Test Issue",
         description: "A test issue",
         issueType: "task",
@@ -151,7 +151,7 @@ describe("Tracker", () => {
     it("emits issue.parsed hook", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-123",
-        source: "jira",
+        source: "test-source",
         title: "Test Issue",
         description: "",
         issueType: "task",
@@ -174,7 +174,7 @@ describe("Tracker", () => {
         expect.objectContaining({
           issue: expect.objectContaining({
             externalId: "AM-123",
-            source: "jira",
+            source: "test-source",
           }),
           raw: parsed,
         }),
@@ -184,7 +184,7 @@ describe("Tracker", () => {
     it("inserts issue with correct fields", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-456",
-        source: "jira",
+        source: "test-source",
         title: "My Title",
         description: "My Description",
         issueType: "bug",
@@ -203,7 +203,7 @@ describe("Tracker", () => {
       const issue = await tracker.parseInput("AM-456");
 
       expect(issue.externalId).toBe("AM-456");
-      expect(issue.source).toBe("jira");
+      expect(issue.source).toBe("test-source");
       expect(issue.title).toBe("My Title");
       expect(issue.description).toBe("My Description");
       expect(issue.issueType).toBe("bug");
@@ -217,7 +217,7 @@ describe("Tracker", () => {
     it("handles optional fields as null", async () => {
       const parsed: ParsedIssue = {
         externalId: "AM-789",
-        source: "jira",
+        source: "test-source",
         title: "Minimal Issue",
         description: "",
         issueType: "task",
@@ -266,13 +266,13 @@ describe("Tracker", () => {
     });
 
     it("builds prompt for existing issue", async () => {
-      // Register a parser for jira source
-      tracker.registerParser(createParserOptions({ source: "jira" }));
+      // Register a parser for test-source
+      tracker.registerParser(createParserOptions({ source: "test-source" }));
 
       // Insert an issue directly
       const issue = db.issues.insert({
         externalId: "AM-100",
-        source: "jira",
+        source: "test-source",
         title: "Build Test Issue",
         description: "Testing prompt building",
         status: "pending",
@@ -292,11 +292,11 @@ describe("Tracker", () => {
     });
 
     it("emits prompt.built hook", async () => {
-      tracker.registerParser(createParserOptions({ source: "jira" }));
+      tracker.registerParser(createParserOptions({ source: "test-source" }));
 
       const issue = db.issues.insert({
         externalId: "AM-101",
-        source: "jira",
+        source: "test-source",
         title: "Hook Test",
         description: "",
         status: "pending",
@@ -332,11 +332,11 @@ describe("Tracker", () => {
         },
       };
 
-      tracker.registerParser(createParserOptions({ source: "jira", memory }));
+      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
       const issue = db.issues.insert({
         externalId: "AM-102",
-        source: "jira",
+        source: "test-source",
         title: "Notification Test",
         description: "",
         status: "pending",
@@ -369,11 +369,11 @@ describe("Tracker", () => {
         },
       };
 
-      tracker.registerParser(createParserOptions({ source: "jira", memory }));
+      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
       const issue = db.issues.insert({
         externalId: "AM-103",
-        source: "jira",
+        source: "test-source",
         title: "L2 Search Test",
         description: "Find related context",
         status: "pending",
@@ -403,11 +403,13 @@ describe("Tracker", () => {
         },
       };
 
-      tracker.registerParser(createParserOptions({ source: "jira", config: customConfig as any }));
+      tracker.registerParser(
+        createParserOptions({ source: "test-source", config: customConfig as any }),
+      );
 
       const issue = db.issues.insert({
         externalId: "AM-104",
-        source: "jira",
+        source: "test-source",
         title: "Custom Instructions Test",
         description: "",
         status: "pending",
@@ -435,11 +437,11 @@ describe("Tracker", () => {
         },
       };
 
-      tracker.registerParser(createParserOptions({ source: "jira", memory }));
+      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
 
       const issue = db.issues.insert({
         externalId: "AM-105",
-        source: "jira",
+        source: "test-source",
         title: "Error Handling Test",
         description: "",
         status: "pending",
@@ -459,12 +461,12 @@ describe("Tracker", () => {
     it.fails("TODO: buildPrompt should validate issue data before building", async () => {
       // Currently buildPrompt doesn't validate that the issue has required fields
       // for prompt generation. Future enhancement: validate and throw meaningful errors.
-      tracker.registerParser(createParserOptions({ source: "jira" }));
+      tracker.registerParser(createParserOptions({ source: "test-source" }));
 
       // Insert an issue with missing title (simulating data corruption)
       const issue = db.issues.insert({
         externalId: "AM-999",
-        source: "jira",
+        source: "test-source",
         title: "", // Empty title should be invalid
         description: "",
         status: "pending",

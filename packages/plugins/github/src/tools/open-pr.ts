@@ -95,11 +95,11 @@ export function createOpenPRTool(
         // Create PR
         const result = await client.createPR({ owner, repo, head, base, title, body, draft });
 
-        // Update issue in DB
+        // Update issue in DB - PR created means we're now awaiting review
         db.issues.update(ctx.issueId, {
           prUrl: result.url,
           prNumber: result.number,
-          status: "pr_created",
+          status: "in_review",
         });
 
         // Emit status changed hook
@@ -108,7 +108,7 @@ export function createOpenPRTool(
           hooks.emit("issue.status_changed", {
             issue: updatedIssue,
             from: issue.status,
-            to: "pr_created",
+            to: "in_review",
           });
         }
 

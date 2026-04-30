@@ -22,7 +22,7 @@ describe("SteeringRule", () => {
     hooks.emit("agent.idle", {
       issueId,
       status: "implementing",
-      source: "jira",
+      source: "test-source",
     });
     await vi.advanceTimersByTimeAsync(defaultSteeringConfig.debounceMs + 10);
   }
@@ -94,13 +94,13 @@ describe("SteeringRule", () => {
           id: "test:hook-sub",
           name: "Hook Sub",
           description: "",
-          condition: { hook: "github:pr.merged" },
+          condition: { hook: "test:custom.event" },
           reminder: "test",
         },
         hooks,
       );
 
-      expect(hooks.on).toHaveBeenCalledWith("github:pr.merged", expect.any(Function));
+      expect(hooks.on).toHaveBeenCalledWith("test:custom.event", expect.any(Function));
 
       rule.dispose();
     });
@@ -157,17 +157,17 @@ describe("SteeringRule", () => {
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
-        source: "jira",
+        source: "test-source",
       });
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
-        source: "jira",
+        source: "test-source",
       });
       hooks.emit("agent.idle", {
         issueId: "AM-123",
         status: "implementing",
-        source: "jira",
+        source: "test-source",
       });
 
       await vi.advanceTimersByTimeAsync(defaultSteeringConfig.debounceMs + 10);
@@ -209,11 +209,11 @@ describe("SteeringRule", () => {
           id: "test:source-fail",
           name: "Source Fail",
           description: "",
-          condition: { source: "github" },
+          condition: { source: "other-source" },
           reminder: "test",
         },
         hooks,
-        baseIssue, // source is "jira"
+        baseIssue, // source is "test-source"
       );
 
       await triggerEvaluation(hooks);
@@ -230,7 +230,7 @@ describe("SteeringRule", () => {
           id: "test:hook-fail",
           name: "Hook Fail",
           description: "",
-          condition: { hook: "github:pr.merged" },
+          condition: { hook: "test:custom.event" },
           reminder: "test",
         },
         hooks,
@@ -251,20 +251,20 @@ describe("SteeringRule", () => {
           id: "test:hook-pass",
           name: "Hook Pass",
           description: "",
-          condition: { hook: "github:pr.merged" },
-          reminder: "PR merged!",
+          condition: { hook: "test:custom.event" },
+          reminder: "Event received!",
         },
         hooks,
       );
 
       // Simulate hook firing before idle
-      hooks.emit("github:pr.merged", { issueId: "AM-123" });
+      hooks.emit("test:custom.event", { issueId: "AM-123" });
       await triggerEvaluation(hooks);
 
       expect(hooks.emit).toHaveBeenCalledWith(
         "steering.reminder",
         expect.objectContaining({
-          reminder: expect.stringContaining("PR merged!"),
+          reminder: expect.stringContaining("Event received!"),
         }),
       );
 
@@ -403,14 +403,14 @@ describe("SteeringRule", () => {
           id: "test:reset-hooks",
           name: "Reset Hooks",
           description: "",
-          condition: { hook: "github:pr.merged" },
-          reminder: "PR merged!",
+          condition: { hook: "test:custom.event" },
+          reminder: "Event received!",
         },
         hooks,
       );
 
       // Simulate hook firing
-      hooks.emit("github:pr.merged", { issueId: "AM-123" });
+      hooks.emit("test:custom.event", { issueId: "AM-123" });
 
       // Reset clears recent hooks
       rule.reset();
@@ -431,7 +431,7 @@ describe("SteeringRule", () => {
           id: "test:dispose",
           name: "Dispose",
           description: "",
-          condition: { hook: "github:pr.merged" },
+          condition: { hook: "test:custom.event" },
           reminder: "x",
         },
         hooks,
@@ -439,7 +439,7 @@ describe("SteeringRule", () => {
 
       rule.dispose();
 
-      expect(hooks.off).toHaveBeenCalledWith("github:pr.merged", expect.any(Function));
+      expect(hooks.off).toHaveBeenCalledWith("test:custom.event", expect.any(Function));
       expect(hooks.off).toHaveBeenCalledWith("agent.idle", expect.any(Function));
     });
   });

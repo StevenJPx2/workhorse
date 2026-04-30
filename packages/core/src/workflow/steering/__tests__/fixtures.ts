@@ -41,7 +41,7 @@ export function createRule(
 export const baseIssue: Issue = {
   id: "uuid-1",
   externalId: "AM-123",
-  source: "jira",
+  source: "test-source",
   title: "Test issue",
   description: "",
   status: "implementing" as IssueStatus,

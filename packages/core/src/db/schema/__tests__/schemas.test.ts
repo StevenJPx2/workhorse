@@ -72,7 +72,6 @@ test("IssueStatusSchema accepts valid statuses", () => {
     "planning",
     "implementing",
     "blocked",
-    "pr_created",
     "in_review",
     "done",
   ];

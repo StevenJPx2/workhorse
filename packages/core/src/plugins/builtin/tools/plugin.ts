@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/plugin
  */
 
-import { definePlugin } from "#plugins/define";
+import { definePlugin } from "#plugins";
 import { acknowledgeTool, escalateTool, updateStatusTool } from "./definitions.ts";
 
 export const corePlugin = definePlugin({

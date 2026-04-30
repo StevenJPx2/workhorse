@@ -31,22 +31,13 @@ export const updateStatusTool: OrchestratorTool = {
   description:
     "Update the current issue's status. Use this to reflect progress: " +
     "'planning' when analyzing requirements, 'implementing' when coding, " +
-    "'pr_created' after opening a PR, 'blocked' when stuck, 'done' when complete.",
+    "'in_review' when awaiting review, 'blocked' when stuck, 'done' when complete.",
   schema: {
     type: "object",
     properties: {
       status: {
         type: "string",
-        enum: [
-          "pending",
-          "queued",
-          "planning",
-          "implementing",
-          "blocked",
-          "pr_created",
-          "in_review",
-          "done",
-        ],
+        enum: ["pending", "queued", "planning", "implementing", "blocked", "in_review", "done"],
         description: "The new status for the issue",
       },
     },

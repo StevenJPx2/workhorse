@@ -12,9 +12,9 @@ type RetrivInstance = Awaited<ReturnType<typeof createRetriv>>;
  * This provides semantic search capabilities for long-term memory:
  * - Session memories
  * - Issue context
- * - PR context
  * - Decisions
  * - Code context
+ * - Plugin-defined document types (e.g., VCS plugins can add "pr_context")
  *
  * @example
  * ```typescript

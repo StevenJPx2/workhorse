@@ -18,7 +18,7 @@ const createMockMemory = () => ({
 const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
   id: "test-uuid",
   externalId: "AM-123",
-  source: "jira",
+  source: "test-source",
   title: "Test Issue Title",
   description: "Test issue description",
   status: "pending",
