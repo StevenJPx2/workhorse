@@ -37,32 +37,7 @@ export class HarnessOrchestrator {
     readonly hooks: Emitter<HookEventMap>,
     readonly memory: MemoryService,
     readonly config: Readonly<JiratownConfig>,
-  ) {
-    // Push notifications to running agents
-    this.hooks.on("notification.created", async ({ notification, issueId }) => {
-      const agent = this.agents.get(issueId);
-      if (agent?.state === "running") {
-        try {
-          await agent.sendMessage(this.memory.notifications.generateInbox([notification]));
-        } catch (err) {
-          console.error(`Failed to push notification to agent ${issueId}:`, err);
-        }
-      }
-    });
-
-    // Deliver steering reminders to running agents
-    // (emitted by per-adapter SteeringRule instances)
-    this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
-      const agent = this.agents.get(issueId);
-      if (agent?.state === "running") {
-        try {
-          await agent.sendMessage(reminder);
-        } catch (err) {
-          console.error(`Failed to deliver steering reminder to agent ${issueId}:`, err);
-        }
-      }
-    });
-  }
+  ) {}
 
   /** Register an adapter class. Plugins call this during setup. */
   registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void {

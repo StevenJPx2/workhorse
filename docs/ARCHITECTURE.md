@@ -136,10 +136,12 @@ const agent = await orchestrator.spawn({
 ```
 
 **AgentAdapter** — Abstract class for harness implementations:
-- `initialize()` — Set up the agent
+- `initialize()` — Set up worktree, build prompt, subscribe to hooks
 - `start()` — Begin agent execution
 - `sendMessage()` — Send messages to running agent
-- `stop()` — Graceful shutdown
+- `stop()` — Graceful shutdown, dispose steering rules
+
+Each adapter subscribes to `notification.created` and `steering.reminder` hooks during initialization, handling its own message delivery rather than relying on the orchestrator.
 
 ### 5. Tracker (`workflow/tracker/`)
 

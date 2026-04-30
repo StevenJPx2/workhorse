@@ -102,6 +102,30 @@ export class AgentAdapter {
     this.systemPrompt = systemPrompt;
     this.initialMessage = initialMessage;
 
+    // Push notifications to agent
+    this.hooks.on("notification.created", async ({ notification, issueId }) => {
+      if (this.issueId !== issueId) return;
+
+      if (this.state !== "running") return;
+
+      await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch(
+        (err) => {
+          console.error(`Failed to push notification to agent ${issueId}:`, err);
+        },
+      );
+    });
+
+    // Deliver steering reminders to agent
+    this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
+      if (this.issueId !== issueId) return;
+
+      if (this.state !== "running") return;
+
+      await this.sendMessage(reminder).catch((err) => {
+        console.error(`Failed to deliver steering reminder to agent ${issueId}:`, err);
+      });
+    });
+
     this.hooks.emit("agent.create.post", { adapter: this });
   }
 
