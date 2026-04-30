@@ -12,7 +12,7 @@ import type { AtlassianClient } from "./client.ts";
 /** Register prompt enrichment hooks */
 export function registerPromptHooks(ctx: JiratownContext, client: AtlassianClient): void {
   ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
-    const issue = ctx.db.issues.getById(issueId);
+    const issue = await ctx.db.issues.getById(issueId);
     if (!issue || issue.source !== "jira") return;
 
     try {

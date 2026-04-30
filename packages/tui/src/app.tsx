@@ -1,5 +1,5 @@
 import { Match, Switch, Show } from "solid-js";
-import { useRenderer } from "@opentui/solid";
+import { useRenderer, useKeyboard } from "@opentui/solid";
 import type {
   JiratownConfig,
   HookEmitter,
@@ -25,11 +25,46 @@ interface AppProps {
  * Handles screen routing and modal display.
  */
 export function App(props: AppProps) {
-  // Renderer is available via useRenderer() if needed for focus/keyboard handling
-  const _renderer = useRenderer();
+  const renderer = useRenderer();
 
   // Global keyboard handler
-  // TODO: Use createKeyboardHandler primitive when implemented
+  useKeyboard((key) => {
+    // If a modal is open, only handle escape to close it
+    if (ui.modal()) {
+      if (key.name === "escape") {
+        ui.closeModal();
+      }
+      return;
+    }
+
+    // Global shortcuts
+    if (key.name === "q") {
+      renderer.destroy();
+      return;
+    }
+
+    if (key.raw === "?" || key.name === "h") {
+      ui.setScreen("help");
+      return;
+    }
+
+    // Screen-specific shortcuts
+    const screen = ui.screen();
+
+    if (screen === "help") {
+      if (key.name === "escape") {
+        ui.backToOverview();
+      }
+      return;
+    }
+
+    if (screen === "agent") {
+      if (key.name === "escape") {
+        ui.backToOverview();
+      }
+      return;
+    }
+  });
 
   const handleSpawn = async (config: SpawnConfig) => {
     await props.orchestrator.spawn({

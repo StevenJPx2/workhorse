@@ -50,7 +50,7 @@ export function registerCrossPluginSync(
     }
 
     // Find the issue by its internal ID
-    const issue = db.issues.getById(issueId);
+    const issue = await db.issues.getById(issueId);
     if (!issue) {
       // Issue not found, skip
       return;

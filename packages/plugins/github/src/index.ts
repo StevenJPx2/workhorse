@@ -75,8 +75,8 @@ export const githubPlugin = definePlugin({
     ctx.monitors.registerMonitor(createGitHubPRMonitor(client, config.pollInterval, ctx.db));
 
     // Start monitor when agent spawns on a GitHub issue with PR
-    ctx.hooks.on("agent.create.post", ({ adapter }) => {
-      const issue = ctx.db.issues.getByExternalId(adapter.issueId, "github");
+    ctx.hooks.on("agent.create.post", async ({ adapter }) => {
+      const issue = await ctx.db.issues.getByExternalId(adapter.issueId, "github");
       if (issue && (issue.metadata as Record<string, unknown> | null)?.prNumber) {
         ctx.monitors.startMonitor("github-pr", issue.id);
       }

@@ -42,7 +42,7 @@ export function createOpenPRTool(
       };
 
       try {
-        const issue = db.issues.getById(ctx.issueId);
+        const issue = await db.issues.getById(ctx.issueId);
         if (!issue) {
           return { success: false, error: "Issue not found" };
         }
@@ -107,7 +107,7 @@ export function createOpenPRTool(
         });
 
         // Emit status changed hook
-        const updatedIssue = db.issues.getById(ctx.issueId);
+        const updatedIssue = await db.issues.getById(ctx.issueId);
         if (updatedIssue) {
           hooks.emit("issue.status_changed", {
             issue: updatedIssue,

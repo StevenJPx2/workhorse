@@ -34,7 +34,7 @@ export function createGitHubPRMonitor(
     type: "remote",
     interval,
     poll: async (ctx) => {
-      const issue = db.issues.getById(ctx.issueId);
+      const issue = await db.issues.getById(ctx.issueId);
       if (!issue || issue.source !== "github") {
         return { hasChanges: false };
       }

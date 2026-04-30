@@ -13,7 +13,7 @@ import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";
 /** Register prompt enrichment hooks */
 export function registerPromptHooks(ctx: JiratownContext, client: GitHubClient): void {
   ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
-    const issue = ctx.db.issues.getById(issueId);
+    const issue = await ctx.db.issues.getById(issueId);
     if (!issue || issue.source !== "github") return;
 
     const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
