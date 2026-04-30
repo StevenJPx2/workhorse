@@ -20,7 +20,11 @@ import type { JiratownConfig } from "#config";
 import type { Database } from "#db/database";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import { type SteeringRuleConfig, SteeringRuleConfigSchema } from "#workflow/steering";
+import {
+  type SteeringRuleConfig,
+  type SteeringRuleConfigInput,
+  SteeringRuleConfigSchema,
+} from "#workflow/steering";
 import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
@@ -125,7 +129,7 @@ export class HarnessOrchestrator {
   }
 
   /** Register a steering rule config. Plugins call this during setup. */
-  registerSteeringRule(config: SteeringRuleConfig): void {
+  registerSteeringRule(config: SteeringRuleConfigInput): void {
     this.steeringRules.push(SteeringRuleConfigSchema.parse(config));
   }
 

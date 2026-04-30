@@ -77,7 +77,8 @@ export const githubPlugin = definePlugin({
     // Start monitor when agent spawns on a GitHub issue with PR
     ctx.hooks.on("orchestrator.spawn.post", ({ adapter }) => {
       const issue = ctx.db.issues.getByExternalId(adapter.issueId, "github");
-      if (issue?.prNumber) {
+      const metadata = (issue?.metadata ?? {}) as Record<string, unknown>;
+      if (issue && metadata.prNumber) {
         ctx.monitors.startMonitor("github-pr", issue.id);
       }
     });

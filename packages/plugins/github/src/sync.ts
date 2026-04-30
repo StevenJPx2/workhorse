@@ -30,7 +30,7 @@ export function registerStatusSync(ctx: JiratownContext, client: GitHubClient): 
     const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
     const owner = metadata.owner as string | undefined;
     const repo = metadata.repo as string | undefined;
-    const prNumber = issue.prNumber;
+    const prNumber = metadata.prNumber as number | undefined;
 
     // Only sync if we have a PR
     if (!owner || !repo || !prNumber) return;

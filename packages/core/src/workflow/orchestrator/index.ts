@@ -8,7 +8,11 @@
 export { HarnessOrchestrator } from "./orchestrator.ts";
 
 // Steering (re-exported from workflow/steering)
-export type { SteeringCondition, SteeringRuleConfig } from "#workflow/steering";
+export type {
+  SteeringCondition,
+  SteeringRuleConfig,
+  SteeringRuleConfigInput,
+} from "#workflow/steering";
 export { SteeringRule } from "#workflow/steering";
 
 // Agent adapter base class and types

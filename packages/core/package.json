@@ -19,7 +19,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@mariozechner/pi-coding-agent": "^0.70.2",
+		"@libsql/client": "^0.17.3",
 		"better-sqlite3": "^12.9.0",
 		"defu": "^6.1.7",
 		"drizzle-orm": "^0.45.2",

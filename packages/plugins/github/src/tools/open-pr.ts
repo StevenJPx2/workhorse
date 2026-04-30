@@ -96,10 +96,14 @@ export function createOpenPRTool(
         const result = await client.createPR({ owner, repo, head, base, title, body, draft });
 
         // Update issue in DB - PR created means we're now awaiting review
+        // Store PR info in metadata (prNumber, prUrl) for cross-plugin access
         db.issues.update(ctx.issueId, {
-          prUrl: result.url,
-          prNumber: result.number,
           status: "in_review",
+          metadata: {
+            ...metadata,
+            prNumber: result.number,
+            prUrl: result.url,
+          },
         });
 
         // Emit status changed hook

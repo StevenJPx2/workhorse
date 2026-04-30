@@ -250,9 +250,11 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
     expect(mockDb.issues.update).toHaveBeenCalledWith(
       "issue-1",
       expect.objectContaining({
-        prUrl: "https://github.com/octocat/hello-world/pull/99",
-        prNumber: 99,
         status: "in_review",
+        metadata: expect.objectContaining({
+          prNumber: 99,
+          prUrl: "https://github.com/octocat/hello-world/pull/99",
+        }),
       }),
     );
     expect(mockHooks.emit).toHaveBeenCalledWith("issue.status_changed", expect.any(Object));

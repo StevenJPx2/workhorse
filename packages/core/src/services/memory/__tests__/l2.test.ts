@@ -202,7 +202,8 @@ describe("L2: Semantic Search (retriv)", () => {
     });
 
     it("handles empty removal array gracefully", async () => {
-      await expect(store!.remove([])).resolves.not.toThrow();
+      // Should complete without error
+      await store!.remove([]);
     });
   });
 

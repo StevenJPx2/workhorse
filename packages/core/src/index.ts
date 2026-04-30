@@ -53,7 +53,11 @@ export type {
 } from "#workflow/orchestrator";
 // Steering exports for plugin authors
 export { SteeringRule } from "#workflow/orchestrator";
-export type { SteeringCondition, SteeringRuleConfig } from "#workflow/orchestrator";
+export type {
+  SteeringCondition,
+  SteeringRuleConfig,
+  SteeringRuleConfigInput,
+} from "#workflow/orchestrator";
 // Tracker exports for plugin authors
 export type { IssueParserOptions } from "#workflow/tracker";
 export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";

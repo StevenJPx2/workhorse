@@ -1,5 +1,5 @@
 import { createRetriv, type SearchFilter } from "retriv";
-import { sqlite } from "retriv/db/sqlite";
+import { libsql } from "retriv/db/libsql";
 import { transformersJs } from "retriv/embeddings/transformers-js";
 import type { MemoryDocument, MemorySearchOptions, SearchResult } from "./types.ts";
 
@@ -51,10 +51,11 @@ export class L2Store {
    * ```
    */
   static async create(dbPath: string): Promise<L2Store> {
+    // Use libsql for Bun compatibility (node:sqlite requires Node.js 22.5+)
     return new L2Store(
       await createRetriv({
-        driver: sqlite({
-          path: dbPath,
+        driver: libsql({
+          url: `file:${dbPath}`,
           embeddings: transformersJs({ model: "Xenova/all-MiniLM-L6-v2" }),
         }),
       }),

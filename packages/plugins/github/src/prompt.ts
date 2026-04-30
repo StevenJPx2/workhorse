@@ -22,6 +22,8 @@ export function registerPromptHooks(ctx: JiratownContext, client: GitHubClient):
 
     if (!owner || !repo) return;
 
+    const prNumber = metadata.prNumber as number | undefined;
+
     try {
       // Fetch GitHub issue data and add context block
       context.contextBlocks.push(
@@ -29,10 +31,10 @@ export function registerPromptHooks(ctx: JiratownContext, client: GitHubClient):
       );
 
       // If there's a PR, fetch and add PR context
-      if (issue.prNumber) {
+      if (prNumber) {
         const [pr, reviews, checkRuns] = await Promise.all([
-          client.fetchPR(owner, repo, issue.prNumber),
-          client.getPRReviews(owner, repo, issue.prNumber),
+          client.fetchPR(owner, repo, prNumber),
+          client.getPRReviews(owner, repo, prNumber),
           client.getCheckRuns(owner, repo, "HEAD").catch(() => []),
         ]);
 
@@ -40,7 +42,7 @@ export function registerPromptHooks(ctx: JiratownContext, client: GitHubClient):
       }
 
       // Always add workflow instructions
-      context.contextBlocks.push(buildGitHubWorkflowBlock(issue.prNumber !== null));
+      context.contextBlocks.push(buildGitHubWorkflowBlock(prNumber !== undefined));
     } catch {
       // Silently skip if GitHub API fails
     }
