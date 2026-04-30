@@ -19,7 +19,7 @@
 | 14 | CLI | ⬜ Pending | `@jiratown/cli` — commander-based CLI |
 | 15 | TUI | ⬜ Pending | `@jiratown/tui` — Ink-based terminal UI |
 | 16 | Consolidate Spawn Logic | ✅ Done | `AgentAdapter` owns lifecycle, orchestrator is registry/factory |
-| 17 | SteeringRule Class | ⬜ Pending | Convert `SteeringRule` interface to class with `matches()`, `getReminder()` |
+| 17 | SteeringRule Class | ✅ Done | Autonomous `SteeringRule` class, removed `SteeringService` |
 
 ## After Core
 - [ ] Integration testing

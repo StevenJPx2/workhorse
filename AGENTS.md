@@ -55,11 +55,11 @@ oxlint/            # Custom oxlint plugin (eslint-plugin-jiratown)
 
 ```typescript
 // ✅ Good - import from module index
-import { SteeringService, type SteeringRule } from "#workflow/steering";
+import { SteeringRule, type SteeringRuleConfig } from "#workflow/steering";
 import { PromptEngineer } from "#workflow/tracker";
 
 // ❌ Bad - reaching into module internals
-import { SteeringService } from "#workflow/steering/service";
+import { SteeringRule } from "#workflow/steering/rule";
 import { PromptEngineer } from "#workflow/tracker/engineer";
 ```
 
@@ -69,13 +69,13 @@ If you need something from a module that isn't exported, add it to the module's 
 
 ```typescript
 // ✅ Good - no /index.ts suffix
-import { SteeringService } from "#workflow/steering";
+import { SteeringRule } from "#workflow/steering";
 import { HookEmitter } from "#lib/hooks";
 import { something } from "./types";
 import { other } from "../utils";
 
 // ❌ Bad - explicit /index.ts on subpaths
-import { SteeringService } from "#workflow/steering/index.ts";
+import { SteeringRule } from "#workflow/steering/index.ts";
 import { something } from "./types/index.ts";
 
 // ✅ Good - keep explicit /index.ts only for direct index imports

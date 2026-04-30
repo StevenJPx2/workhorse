@@ -1,11 +1,15 @@
 # Step 13: Idle Steering & Plugin Hooks
 
+> **⚠️ Partially Superseded:** The `SteeringService` class described in this document was removed in Step 17. The steering system now uses autonomous `SteeringRule` instances created directly by `AgentAdapter`. See `plan/17-steering-rule-class.md` for the current architecture.
+>
+> **Still valid:** Plugin hooks, steering rule registration API, and the conceptual design remain accurate.
+
 Two related enhancements to the orchestrator:
 
 1. **Plugin Hooks** — Plugins can define and emit their own hooks for cross-plugin coordination
 2. **Idle Steering** — Plugin-driven system reminders when agents become idle
 
-**Location:** `packages/core/src/workflow/orchestrator/steering/`
+**Location:** `packages/core/src/workflow/steering/`
 
 **Deps:** None (uses existing hooks system)
 

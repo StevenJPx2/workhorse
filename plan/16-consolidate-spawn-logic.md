@@ -6,10 +6,12 @@ Move spawn orchestration logic from `spawn.ts` into the `AgentAdapter` class and
 
 **State:** ✅ Complete
 
+> **Note:** Step 17 subsequently removed `SteeringService` entirely. `AgentAdapter` now creates `SteeringRule` instances directly. See `plan/17-steering-rule-class.md` for details.
+
 ### Completed
 
 1. ✅ Refactored `PromptEngineer` to per-issue instantiation (constructor takes `issue`, methods no longer need `issue` param)
-2. ✅ Refactored `SteeringService` to per-issue state with global rules via `getRules` getter
+2. ✅ Refactored `SteeringService` to per-issue state with global rules via `getRules` getter (later removed in Step 17)
 3. ✅ Rewrote `AgentAdapter` as concrete class with `create()` factory (owns engineer + steering)
 4. ✅ Deleted `types/adapter-context.ts` (absorbed into AgentAdapter)
 5. ✅ Deleted `types/adapter-class.ts` (use `typeof AgentAdapter` directly)

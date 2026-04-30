@@ -16,6 +16,12 @@ tracker: Tracker {
 }
 
 workflow: Workflow {
+  orchestrator: Orchestrator {
+    adapters: Agent Adapters
+    tools: Tools Registry
+    steering: Steering Rules
+  }
+
   harness: Harness {
     plugin: Agent Plugin {
       mcp: MCP
@@ -49,8 +55,10 @@ workflow: Workflow {
     }
   }
 
-  services.monitor -> harness
-  services.memory <-> harness
+  orchestrator -> harness: spawn/manage
+  orchestrator.steering -> harness: idle reminders
+  services.monitor -> orchestrator
+  services.memory <-> orchestrator
 }
 
 claude: Claude Code
@@ -61,7 +69,7 @@ plugin: Plugins
 github: Github Plugin
 jira: Jira Plugin
 
-tracker -> workflow
+tracker -> workflow.orchestrator
 tracker.prompt <- workflow.services.memory
 
 claude -> workflow.harness
