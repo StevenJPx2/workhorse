@@ -145,6 +145,14 @@ bun run lint               # oxlint with custom rules
 
 See [AGENTS.md](./AGENTS.md) for detailed coding conventions and contribution guidelines.
 
+## Documentation
+
+- [Architecture Overview](./docs/ARCHITECTURE.md) — Key concepts, data flow, configuration
+- [Development Guide](./docs/DEVELOPMENT.md) — Commands, code constraints, testing
+- [Plugin Guide](./docs/PLUGIN-GUIDE.md) — How to create plugins
+- [Build Plan](./plan/README.md) — Module layout and build order
+- [Progress](./plan/PROGRESS.md) — Current rewrite status
+
 ## License
 
 MIT
