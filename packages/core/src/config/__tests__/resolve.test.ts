@@ -57,4 +57,27 @@ describe("resolveConfigPaths", () => {
       if (originalXdgConfig) process.env["XDG_CONFIG_HOME"] = originalXdgConfig;
     }
   });
+
+  it("constructs worktreesRoot from repoRoot", async () => {
+    const { resolveConfigPaths } = await import("../resolve.ts");
+    const paths = resolveConfigPaths("/my/project");
+
+    expect(paths.worktreesRoot).toBe("/my/project-worktrees");
+  });
+
+  it("handles repoRoot with trailing slash", async () => {
+    const { resolveConfigPaths } = await import("../resolve.ts");
+    const paths = resolveConfigPaths("/my/project/");
+
+    expect(paths.projectConfig).toBe("/my/project/.jiratown.toml");
+  });
+
+  it.fails("TODO: resolveConfigPaths should validate repoRoot exists", async () => {
+    // Currently resolveConfigPaths doesn't check if the provided repoRoot
+    // actually exists on the filesystem. Future enhancement: validate and
+    // throw a meaningful error.
+    const { resolveConfigPaths } = await import("../resolve.ts");
+
+    expect(() => resolveConfigPaths("/nonexistent/repo/path/xyz123")).toThrow();
+  });
 });

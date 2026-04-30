@@ -387,5 +387,31 @@ describe("PromptEngineer", () => {
       // Should still work, using resume mode since L1 exists (but no memory content)
       expect(result.initialMessage).toContain("You are resuming work on issue");
     });
+
+    it.fails("TODO: buildHybridPrompt should handle L2 search errors gracefully", async () => {
+      // Currently L2 search errors propagate up. Future enhancement: catch
+      // errors and continue building prompt without context.
+      const mockMemory = createMockMemory();
+      mockMemory.l2.search = vi.fn().mockRejectedValue(new Error("Search failed"));
+      const issue = createMockIssue();
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      // Should not throw (but currently does)
+      const result = await engineer.buildHybridPrompt();
+      expect(result.systemPrompt).toContain("## Issue: AM-123");
+    });
+
+    it.fails("TODO: PromptEngineer should validate issue has required fields", () => {
+      // Currently PromptEngineer doesn't validate that the issue has
+      // required fields. Future enhancement: validate constructor args.
+      const mockMemory = createMockMemory();
+      const invalidIssue = {
+        id: "test-uuid",
+        // Missing externalId, source, title, etc.
+      } as unknown as Issue;
+
+      // This should throw a validation error
+      expect(() => new PromptEngineer(invalidIssue, mockMemory as any)).toThrow();
+    });
   });
 });

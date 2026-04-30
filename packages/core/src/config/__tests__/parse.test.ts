@@ -99,3 +99,59 @@ describe("writeTomlFile", () => {
     expect(parsed.agent?.model).toBe("sonnet-4");
   });
 });
+
+describe("edge cases and error handling", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-edge-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("parseTomlFile handles file with only comments", async () => {
+    const { parseTomlFile } = await import("../parse.ts");
+    const filePath = join(tmpDir, "comments-only.toml");
+    writeFileSync(filePath, "# This is a comment\n# Another comment", "utf-8");
+    expect(parseTomlFile(filePath)).toEqual({});
+  });
+
+  it("parseTomlFile handles empty file", async () => {
+    const { parseTomlFile } = await import("../parse.ts");
+    const filePath = join(tmpDir, "empty.toml");
+    writeFileSync(filePath, "", "utf-8");
+    expect(parseTomlFile(filePath)).toEqual({});
+  });
+
+  it("mergeConfigs handles deeply nested objects", async () => {
+    const { mergeConfigs } = await import("../parse.ts");
+    const { DEFAULT_CONFIG } = await import("../defaults.ts");
+
+    const override = {
+      plugins: { enabled: [], jira: { nested: { value: 2, extra: true } } },
+    };
+
+    const result = mergeConfigs(DEFAULT_CONFIG, override);
+    const jiraConfig = result.plugins["jira"] as { nested: { value: number; extra: boolean } };
+    expect(jiraConfig.nested.value).toBe(2);
+    expect(jiraConfig.nested.extra).toBe(true);
+  });
+
+  it.fails("TODO: parseTomlFile should validate against schema", async () => {
+    // Currently parseTomlFile just parses TOML without schema validation.
+    // Future enhancement: validate against jiratownConfigSchema and throw
+    // meaningful errors for invalid configurations.
+    const { parseTomlFile } = await import("../parse.ts");
+    const filePath = join(tmpDir, "invalid-schema.toml");
+    writeFileSync(
+      filePath,
+      `[behavior]
+poll_interval = -1000`,
+      "utf-8",
+    );
+    // This should throw a validation error
+    expect(() => parseTomlFile(filePath)).toThrow();
+  });
+});

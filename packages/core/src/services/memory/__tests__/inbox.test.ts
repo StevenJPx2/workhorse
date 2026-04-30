@@ -186,5 +186,30 @@ describe("inbox: XML notification formatting", () => {
       expect(lines[2]).toMatch(/^\s{4}<title>/);
       expect(lines[3]).toMatch(/^\s{4}<body>/);
     });
+
+    it.fails("TODO: generateSystemInbox should handle null body gracefully", () => {
+      // Currently generateSystemInbox crashes when body is null because
+      // escapeXml doesn't handle null values. Future enhancement: handle nulls.
+      const notifications: Notification[] = [
+        {
+          id: "notif-1",
+          issueId: "AM-123",
+          priority: "normal",
+          status: "unread",
+          source: "jira",
+          sourceId: null,
+          title: "Test",
+          body: null as unknown as string, // Simulating unexpected null
+          createdAt: new Date("2025-07-15T10:00:00Z"),
+          readAt: null,
+          acknowledgedAt: null,
+          metadata: null,
+        },
+      ];
+
+      // Should not throw, but currently does
+      const result = generateSystemInbox(notifications);
+      expect(result).toContain("<notification");
+    });
   });
 });

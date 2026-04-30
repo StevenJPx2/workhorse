@@ -424,5 +424,60 @@ describe("Tracker", () => {
       expect(prompt).toContain("Custom Instructions");
       expect(prompt).toContain("Always follow best practices");
     });
+
+    it.fails("TODO: buildPrompt should handle L2 search errors gracefully", async () => {
+      // Currently L2 search errors propagate up. Future enhancement: catch
+      // errors and continue building prompt without context.
+      const memory = {
+        ...mockMemory,
+        l2: {
+          search: vi.fn().mockRejectedValue(new Error("Search failed")),
+        },
+      };
+
+      tracker.registerParser(createParserOptions({ source: "jira", memory }));
+
+      const issue = db.issues.insert({
+        externalId: "AM-105",
+        source: "jira",
+        title: "Error Handling Test",
+        description: "",
+        status: "pending",
+        issueType: "task",
+        url: null,
+        assignee: null,
+        labels: null,
+        metadata: {},
+        worktreePath: null,
+      });
+
+      // Should not throw, should handle gracefully (but currently throws)
+      const prompt = await tracker.buildPrompt(issue.id);
+      expect(prompt).toContain("AM-105");
+    });
+
+    it.fails("TODO: buildPrompt should validate issue data before building", async () => {
+      // Currently buildPrompt doesn't validate that the issue has required fields
+      // for prompt generation. Future enhancement: validate and throw meaningful errors.
+      tracker.registerParser(createParserOptions({ source: "jira" }));
+
+      // Insert an issue with missing title (simulating data corruption)
+      const issue = db.issues.insert({
+        externalId: "AM-999",
+        source: "jira",
+        title: "", // Empty title should be invalid
+        description: "",
+        status: "pending",
+        issueType: "task",
+        url: null,
+        assignee: null,
+        labels: null,
+        metadata: {},
+        worktreePath: null,
+      });
+
+      // This should throw a validation error
+      await expect(tracker.buildPrompt(issue.id)).rejects.toThrow();
+    });
   });
 });

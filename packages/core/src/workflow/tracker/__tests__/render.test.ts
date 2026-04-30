@@ -284,5 +284,29 @@ describe("render", () => {
 
       expect(result).not.toContain("### Codebase Patterns");
     });
+
+    it.fails("TODO: buildResumePrompt should validate session timestamps", () => {
+      // Currently buildResumePrompt doesn't validate that session timestamps
+      // are valid dates. Future enhancement: validate and handle invalid dates.
+      const issue = createMockIssue();
+      const memory: SessionMemory = {
+        title: "AM-123: Test",
+        patterns: [],
+        sessions: [
+          {
+            timestamp: new Date("invalid"), // Invalid date
+            status: "planning",
+            summary: ["Did work"],
+            learnings: [],
+            filesChanged: [],
+          },
+        ],
+        latestStatus: "implementing",
+      };
+
+      // This should either throw or handle gracefully (not produce "Invalid Date")
+      const result = buildResumePrompt(issue, memory);
+      expect(result).not.toContain("Invalid Date");
+    });
   });
 });
