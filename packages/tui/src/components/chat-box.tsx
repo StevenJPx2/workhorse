@@ -1,6 +1,6 @@
-import { createSignal, For, type Accessor } from "solid-js";
-import { theme } from "../theme.ts";
+import { type Accessor, createSignal, For } from "solid-js";
 import type { ChatMessage } from "../primitives/create-chat.ts";
+import { theme } from "../theme.ts";
 
 interface ChatBoxProps {
   messages: Accessor<ChatMessage[]>;
@@ -13,14 +13,6 @@ interface ChatBoxProps {
  */
 export function ChatBox(props: ChatBoxProps) {
   const [input, setInput] = createSignal("");
-
-  const handleSubmit = () => {
-    const msg = input().trim();
-    if (msg) {
-      props.onSend(msg);
-      setInput("");
-    }
-  };
 
   return (
     <box flexDirection="column" flexGrow={1}>
@@ -42,8 +34,14 @@ export function ChatBox(props: ChatBoxProps) {
       <box borderStyle="single" padding={1}>
         <input
           value={input()}
-          onInput={(e) => setInput(e.target.value)}
-          onSubmit={handleSubmit}
+          onInput={(e) => setInput(e)}
+          onSubmit={() => {
+            const msg = input().trim();
+            if (msg) {
+              props.onSend(msg);
+              setInput("");
+            }
+          }}
           placeholder={props.placeholder ?? "Type a message..."}
         />
       </box>

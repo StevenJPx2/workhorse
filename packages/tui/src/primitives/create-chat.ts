@@ -81,9 +81,9 @@ export function createChat(issueId: Accessor<string | null>) {
 
     // Send to agent via orchestrator
     // The orchestrator will handle injecting the message into the agent's session
-    const adapter = orchestrator.get(id);
+    const adapter = orchestrator.getAgent(id);
     if (adapter) {
-      adapter.inject(content);
+      adapter.sendMessage(content);
     }
   };
 

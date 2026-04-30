@@ -38,6 +38,7 @@ export function AgentList(props: AgentListProps) {
 
       return {
         name: `${agent.issueId} ${status.icon}${crashed}`,
+        description: agent.state,
         value: agent,
       };
     });
@@ -46,16 +47,18 @@ export function AgentList(props: AgentListProps) {
     props.onSelect(option.value);
   };
 
+  const selectProps = {
+    options: options(),
+    onItemSelected: handleSelect,
+    selectedBackgroundColor: theme.colors.selection,
+  };
+
   return (
     <box flexDirection="column" flexGrow={1}>
       <text>
         <b>AGENTS</b>
       </text>
-      <select
-        options={options()}
-        onItemSelected={handleSelect}
-        selectedBackgroundColor={theme.colors.selection}
-      />
+      <select {...(selectProps as any)} />
     </box>
   );
 }

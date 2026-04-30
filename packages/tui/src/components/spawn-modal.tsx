@@ -10,7 +10,7 @@ interface SpawnModalProps {
 }
 
 export interface SpawnConfig {
-  issueId: string;
+  issue: Issue;
   harness: string;
   baseBranch: string;
 }
@@ -24,6 +24,14 @@ export function SpawnModal(props: SpawnModalProps) {
   const [_harness, setHarness] = createSignal("pi");
   const [baseBranch, setBaseBranch] = createSignal("main");
 
+  const harnessSelectProps = {
+    options: [
+      { name: "Pi Coding Agent", description: "Default agent", value: "pi" },
+      { name: "Claude Code", description: "Claude agent", value: "claude-code" },
+    ],
+    onItemSelected: (_: number, opt: { value: string }) => setHarness(opt.value),
+  };
+
   return (
     <Portal mount={_renderer.root}>
       <box
@@ -35,23 +43,17 @@ export function SpawnModal(props: SpawnModalProps) {
         backgroundColor={theme.colors.background}
       >
         <text>
-          <b>Issue:</b> {props.issue.key} — {props.issue.title}
+          <b>Issue:</b> {props.issue.externalId || props.issue.id} — {props.issue.title}
         </text>
 
         <box marginTop={1}>
           <text>Harness:</text>
-          <select
-            options={[
-              { name: "Pi Coding Agent", value: "pi" },
-              { name: "Claude Code", value: "claude-code" },
-            ]}
-            onItemSelected={(_, opt) => setHarness(opt.value)}
-          />
+          <select {...(harnessSelectProps as any)} />
         </box>
 
         <box marginTop={1}>
           <text>Base branch:</text>
-          <input value={baseBranch()} onInput={(e) => setBaseBranch(e.target.value)} />
+          <input value={baseBranch()} onInput={(e) => setBaseBranch(e)} />
         </box>
 
         <box flexDirection="row" gap={2} marginTop={2}>

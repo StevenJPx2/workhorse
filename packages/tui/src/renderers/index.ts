@@ -26,7 +26,7 @@ export function registerRenderer(type: string, renderer: NotificationRenderer): 
  * Falls back to defaultRenderer if no specific renderer is registered.
  */
 export function renderNotification(notification: Notification): RenderedNotification {
-  const renderer = renderers.get(notification.type) ?? defaultRenderer;
+  const renderer = renderers.get(notification.source) ?? defaultRenderer;
   return renderer(notification);
 }
 

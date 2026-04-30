@@ -2,10 +2,12 @@ import { Match, Switch, Show } from "solid-js";
 import { useRenderer, useKeyboard } from "@opentui/solid";
 import type {
   JiratownConfig,
+  ConfigPaths,
   HookEmitter,
   MemoryService,
   Tracker,
   HarnessOrchestrator,
+  Issue,
 } from "@jiratown/core";
 import { JiratownProvider } from "./context/jiratown.tsx";
 import { Overview, Agent, Help } from "./screens";
@@ -14,6 +16,7 @@ import { ui } from "./state/ui.ts";
 
 interface AppProps {
   config: JiratownConfig;
+  paths: ConfigPaths;
   hooks: HookEmitter;
   memory: MemoryService;
   tracker: Tracker;
@@ -67,13 +70,19 @@ export function App(props: AppProps) {
   });
 
   const handleSpawn = async (config: SpawnConfig) => {
+    // Derive repoPath from worktreesRoot (worktreesRoot = dirname(repo) + basename(repo)-worktrees)
+    // So repo = dirname(worktreesRoot.replace(/-worktrees$/, ''))
+    const worktreesRoot = props.paths.worktreesRoot;
+    const repoPath = worktreesRoot.replace(/-worktrees$/, "");
+
     await props.orchestrator.spawn({
-      issueId: config.issueId,
-      harness: config.harness,
+      issue: config.issue,
+      harness: config.harness as any, // AgentHarness type
       baseBranch: config.baseBranch,
+      repoPath,
     });
     ui.closeModal();
-    ui.enterAgentView(config.issueId);
+    ui.enterAgentView(config.issue.externalId);
   };
 
   return (
@@ -102,7 +111,9 @@ export function App(props: AppProps) {
 
         {/* Modal overlay */}
         <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
-          {(issue) => <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />}
+          {(issue: () => Issue) => (
+            <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
+          )}
         </Show>
       </box>
     </JiratownProvider>

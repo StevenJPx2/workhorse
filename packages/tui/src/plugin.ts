@@ -17,7 +17,8 @@ export default definePlugin({
     const { hooks } = useJiratown();
 
     // Register hook for other plugins to add notification renderers
-    hooks.on("tui.register_renderer", (payload: RegisterRendererPayload) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (hooks as any).on("tui.register_renderer", (payload: RegisterRendererPayload) => {
       registerRenderer(payload.type, payload.renderer);
     });
   },

@@ -57,15 +57,15 @@ export function Agent() {
     <box flexDirection="column" width="100%" height="100%">
       {/* Header with agent info */}
       <Show when={selectedAgent()}>
-        {(agent) => (
+        {(agent: () => AgentAdapter) => (
           <box flexDirection="row" justifyContent="space-between" borderStyle="single" padding={1}>
             <text>
               <b>
-                {agent().issueKey} — {agent().issueTitle}
+                {agent().issueId} — {agent().issue.title}
               </b>
             </text>
-            <text fg={agent().status === "blocked" ? theme.colors.warning : theme.colors.success}>
-              {agent().status === "blocked" ? "⚠ BLOCKED" : "● running"}
+            <text fg={agent().state === "crashed" ? theme.colors.warning : theme.colors.success}>
+              {agent().state === "crashed" ? "⚠ CRASHED" : `● ${agent().state}`}
             </text>
           </box>
         )}
@@ -79,22 +79,22 @@ export function Agent() {
             <b>AGENTS</b>
           </text>
           <For each={agents()}>
-            {(agent) => (
+            {(agent: AgentAdapter) => (
               <box
-                onClick={() => handleAgentSelect(agent)}
+                {...({ onClick: () => handleAgentSelect(agent) } as any)}
                 backgroundColor={
                   agent.issueId === selectedId() ? theme.colors.selection : undefined
                 }
               >
                 <text>
                   {agent.issueId === selectedId() ? "▸ " : "  "}
-                  {agent.issueKey}
+                  {agent.issueId}
                 </text>
                 <text fg={theme.colors.dim}>
-                  {agent.status === "running" ? "●" : "○"} {formatDuration(agent.startedAt)}
+                  {agent.state === "running" ? "●" : "○"} {agent.state}
                 </text>
-                <Show when={agent.status === "blocked"}>
-                  <text fg={theme.colors.warning}>⚠ blocked</text>
+                <Show when={agent.state === "crashed"}>
+                  <text fg={theme.colors.warning}>⚠ crashed</text>
                 </Show>
               </box>
             )}

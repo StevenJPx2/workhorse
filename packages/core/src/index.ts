@@ -43,7 +43,7 @@ export {
   PluginSymbol,
 } from "#plugins";
 // Orchestrator exports for plugin authors
-export { AgentAdapter } from "#workflow/orchestrator";
+export { AgentAdapter, HarnessOrchestrator } from "#workflow/orchestrator";
 export type {
   AgentState,
   JSONSchema,
@@ -59,6 +59,7 @@ export type {
   SteeringRuleConfigInput,
 } from "#workflow/orchestrator";
 // Tracker exports for plugin authors
+export { Tracker } from "#workflow/tracker";
 export type { IssueParserOptions } from "#workflow/tracker";
 export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";
 // Monitor exports for plugin authors

@@ -15,6 +15,7 @@ export function IssueList(props: IssueListProps) {
   const options = () =>
     issues().map((issue) => ({
       name: `${issue.externalId || issue.id.slice(0, 8)} ${issue.title.slice(0, 25)}`,
+      description: issue.status,
       value: issue,
     }));
 
@@ -22,16 +23,18 @@ export function IssueList(props: IssueListProps) {
     props.onSelect(option.value);
   };
 
+  const selectProps = {
+    options: options(),
+    onItemSelected: handleSelect,
+    selectedBackgroundColor: theme.colors.selection,
+  };
+
   return (
     <box flexDirection="column" flexGrow={1}>
       <text>
         <b>ISSUES</b>
       </text>
-      <select
-        options={options()}
-        onItemSelected={handleSelect}
-        selectedBackgroundColor={theme.colors.selection}
-      />
+      <select {...(selectProps as any)} />
     </box>
   );
 }
