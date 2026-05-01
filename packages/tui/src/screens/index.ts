@@ -1,4 +1,4 @@
-export { Overview } from "./overview.tsx";
+export { Overview } from "./overview";
 export { Agent } from "./agent.tsx";
 export { Help } from "./help.tsx";
 export { Setup } from "./setup";

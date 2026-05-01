@@ -2,8 +2,11 @@ import { bootstrap, resolveConfigPaths } from "@jiratown/core";
 import { githubPlugin } from "@jiratown/plugin-github";
 import { jiraPlugin } from "@jiratown/plugin-jira";
 import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
+import { createCliRenderer } from "@opentui/core";
+import { KeymapProvider } from "@opentui/keymap/solid";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
+import { createAppKeymap } from "./keymap.ts";
 import tuiPlugin from "./plugin.ts";
 import { Setup } from "./screens";
 import type { SetupPluginConfig } from "./screens";
@@ -93,17 +96,26 @@ export async function startTUI() {
   // Initialize theme from config
   setTheme(jiratown.config.ui.theme);
 
-  // Render the TUI (after all plugins have registered renderers)
-  render(() => (
-    <App
-      config={jiratown.config}
-      paths={jiratown.paths}
-      hooks={jiratown.hooks}
-      memory={jiratown.memory}
-      tracker={jiratown.tracker}
-      orchestrator={jiratown.orchestrator}
-    />
-  ));
+  // Create renderer and keymap
+  const renderer = await createCliRenderer();
+  const keymap = createAppKeymap(renderer);
+
+  // Render the TUI with keymap provider
+  await render(
+    () => (
+      <KeymapProvider keymap={keymap}>
+        <App
+          config={jiratown.config}
+          paths={jiratown.paths}
+          hooks={jiratown.hooks}
+          memory={jiratown.memory}
+          tracker={jiratown.tracker}
+          orchestrator={jiratown.orchestrator}
+        />
+      </KeymapProvider>
+    ),
+    renderer,
+  );
 
   // Cleanup on exit
   process.on("SIGINT", async () => {
