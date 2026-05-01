@@ -6,7 +6,7 @@ import { ui } from "../state/ui.ts";
 interface Shortcut {
   key: string;
   action: string;
-  onClick?: () => void;
+  onActivate?: () => void;
 }
 
 interface StatusBarProps {
@@ -16,7 +16,7 @@ interface StatusBarProps {
 /**
  * Bottom status bar showing available keyboard shortcuts.
  * Uses surface background for visual separation.
- * Shortcuts are clickable.
+ * Shortcuts are clickable via onMouseDown.
  */
 export function StatusBar(props: StatusBarProps) {
   const theme = getTheme();
@@ -27,8 +27,8 @@ export function StatusBar(props: StatusBarProps) {
   };
 
   const handleShortcutClick = (shortcut: Shortcut) => {
-    if (shortcut.onClick) {
-      shortcut.onClick();
+    if (shortcut.onActivate) {
+      shortcut.onActivate();
     } else {
       // Default actions based on common shortcut names
       switch (shortcut.action) {
@@ -58,7 +58,7 @@ export function StatusBar(props: StatusBarProps) {
       <box flexDirection="row" gap={3}>
         <For each={props.shortcuts}>
           {(shortcut) => (
-            <box flexDirection="row" {...({ onClick: () => handleShortcutClick(shortcut) } as any)}>
+            <box flexDirection="row" onMouseDown={() => handleShortcutClick(shortcut)}>
               <text fg={theme.colors.accent}>
                 <b>{shortcut.key}</b>
               </text>
@@ -67,7 +67,7 @@ export function StatusBar(props: StatusBarProps) {
           )}
         </For>
       </box>
-      <box flexDirection="row" {...({ onClick: handleQuit } as any)}>
+      <box flexDirection="row" onMouseDown={handleQuit}>
         <text fg={theme.colors.error}>
           <b>q</b>
         </text>

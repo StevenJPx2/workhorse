@@ -56,24 +56,21 @@ export function Help() {
 
       {/* Content */}
       <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
-        <Section title="Global">
-          <Shortcut keys="q" description="Quit application" />
-          <Shortcut keys="? or h" description="Show this help screen" />
+        <Section title="Command Mode (Ctrl+X, then...)">
+          <Shortcut keys="Ctrl+X Q" description="Quit application" />
+          <Shortcut keys="Ctrl+X H" description="Show this help screen" />
+        </Section>
+
+        <Section title="Always Available">
+          <Shortcut keys="Tab" description="Switch focus between panels" />
+          <Shortcut keys="Shift+Tab" description="Switch focus (reverse)" />
           <Shortcut keys="ESC" description="Close modal / Go back" />
         </Section>
 
-        <Section title="Overview Screen">
-          <Shortcut keys="j / k" description="Navigate up/down in lists" />
-          <Shortcut keys="↑ / ↓" description="Navigate up/down in lists" />
-          <Shortcut keys="Tab" description="Switch between Issues and Agents" />
+        <Section title="Navigation (when not typing)">
+          <Shortcut keys="j/k or ↑/↓" description="Navigate up/down in lists" />
+          <Shortcut keys="h/l or ←/→" description="Switch between panels" />
           <Shortcut keys="Enter" description="Select item / Spawn agent" />
-        </Section>
-
-        <Section title="Agent Screen">
-          <Shortcut keys="j / k" description="Navigate agents in sidebar" />
-          <Shortcut keys="Enter" description="Send message" />
-          <Shortcut keys="s" description="Stop current agent" />
-          <Shortcut keys="ESC" description="Return to overview" />
         </Section>
       </box>
 

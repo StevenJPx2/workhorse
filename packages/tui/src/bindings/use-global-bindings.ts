@@ -1,11 +1,17 @@
 /**
  * Global keybindings for the Jiratown TUI.
- * These are always active (but some are conditionally enabled).
+ *
+ * Uses Ctrl+X as command prefix to avoid conflicts with text input.
+ * Example: Ctrl+X then Q to quit, Ctrl+X then H for help.
+ *
+ * Tab and ESC work directly (not in command mode).
  */
-import { useBindings, reactiveMatcherFromSignal } from "@opentui/keymap/solid";
-import { useRenderer } from "@opentui/solid";
-import { Commands } from "../keymap.ts";
+import { createSignal } from "solid-js";
+import { useKeyboard, useRenderer } from "@opentui/solid";
 import { ui } from "../state/ui.ts";
+
+// Command mode state - true after Ctrl+X is pressed, waiting for next key
+const [commandMode, setCommandMode] = createSignal(false);
 
 /**
  * Setup global keybindings for the app.
@@ -13,119 +19,59 @@ import { ui } from "../state/ui.ts";
  */
 export function useGlobalBindings() {
   const renderer = useRenderer();
-  const notInputOrModal = () => !ui.inputMode() && !ui.modal();
 
-  useBindings(() => ({
-    commands: [
-      {
-        name: Commands.QUIT,
-        title: "Quit",
-        desc: "Exit the application",
-        run: () => {
+  useKeyboard((key) => {
+    const keyName = key.name;
+    const isCtrl = key.ctrl;
+
+    // Ctrl+X enters command mode
+    if (isCtrl && keyName === "x") {
+      setCommandMode(true);
+      return;
+    }
+
+    // If in command mode, handle the command key
+    if (commandMode()) {
+      setCommandMode(false); // Reset command mode
+
+      switch (keyName) {
+        case "q":
           renderer.destroy();
-        },
-      },
-      {
-        name: Commands.SHOW_HELP,
-        title: "Help",
-        desc: "Show help screen",
-        run: () => {
+          return;
+        case "h":
+        case "?":
           ui.setScreen("help");
-        },
-      },
-      {
-        name: Commands.CLOSE_MODAL,
-        title: "Close Modal",
-        desc: "Close the current modal",
-        run: () => {
-          ui.closeModal();
-        },
-      },
-      {
-        name: Commands.FOCUS_NEXT,
-        title: "Focus Next",
-        desc: "Move focus to next component",
-        run: () => {
-          ui.focusNext();
-        },
-      },
-      {
-        name: Commands.FOCUS_PREV,
-        title: "Focus Previous",
-        desc: "Move focus to previous component",
-        run: () => {
-          ui.focusPrev();
-        },
-      },
-      {
-        name: Commands.BACK,
-        title: "Back",
-        desc: "Go back to overview",
-        run: () => {
-          ui.backToOverview();
-        },
-      },
-      {
-        name: Commands.EXIT_INPUT,
-        title: "Exit Input",
-        desc: "Exit input mode and return to navigation",
-        run: () => {
-          ui.exitInputMode();
-          // Move focus back to issues list when exiting input
-          ui.setFocusedComponent("issues");
-        },
-      },
-    ],
-    bindings: [
-      {
-        key: "q",
-        cmd: Commands.QUIT,
-        enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
-      },
-      {
-        key: "?",
-        cmd: Commands.SHOW_HELP,
-        enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
-      },
-      {
-        key: "h",
-        cmd: Commands.SHOW_HELP,
-        enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
-      },
-      {
-        key: "tab",
-        cmd: Commands.FOCUS_NEXT,
-        enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
-      },
-      {
-        key: "shift+tab",
-        cmd: Commands.FOCUS_PREV,
-        enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
-      },
-      // ESC: close modal (highest priority)
-      {
-        key: "escape",
-        cmd: Commands.CLOSE_MODAL,
-        enabled: reactiveMatcherFromSignal(ui.modal, (v) => v !== null),
-      },
-      // ESC: exit input mode when typing
-      {
-        key: "escape",
-        cmd: Commands.EXIT_INPUT,
-        enabled: reactiveMatcherFromSignal(
-          () => !ui.modal() && ui.inputMode(),
-          (v) => v,
-        ),
-      },
-      // ESC: go back from help/agent screens
-      {
-        key: "escape",
-        cmd: Commands.BACK,
-        enabled: reactiveMatcherFromSignal(
-          () => !ui.modal() && !ui.inputMode() && ui.screen() !== "overview",
-          (v) => v,
-        ),
-      },
-    ],
-  }));
+          return;
+      }
+      // Unknown command key - just ignore
+      return;
+    }
+
+    // Tab always works for focus switching (not in command mode)
+    if (keyName === "tab") {
+      if (key.shift) {
+        ui.focusPrev();
+      } else {
+        ui.focusNext();
+      }
+      return;
+    }
+
+    // ESC always works (even in input mode)
+    if (keyName === "escape") {
+      if (ui.modal()) {
+        ui.closeModal();
+      } else if (ui.screen() !== "overview") {
+        ui.backToOverview();
+      }
+      return;
+    }
+  });
+}
+
+/**
+ * Check if command mode is active (for UI display).
+ */
+export function isCommandMode() {
+  return commandMode();
 }
