@@ -1,1 +1,3 @@
+# OpenTUI Solid JSX support
+# See: https://github.com/anomalyco/opentui
 preload = ["@opentui/solid/preload"]
