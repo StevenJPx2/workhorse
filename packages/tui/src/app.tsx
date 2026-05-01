@@ -40,7 +40,26 @@ export function App(props: AppProps) {
       return;
     }
 
-    // Global shortcuts
+    // In input mode, only handle escape to exit input mode
+    // All other keys are captured by the input component
+    if (ui.inputMode()) {
+      if (key.name === "escape") {
+        ui.exitInputMode();
+      }
+      return;
+    }
+
+    // Tab navigation between components
+    if (key.name === "tab") {
+      if (key.shift) {
+        ui.focusPrev();
+      } else {
+        ui.focusNext();
+      }
+      return;
+    }
+
+    // Global shortcuts (only active when not in input mode)
     if (key.name === "q") {
       renderer.destroy();
       return;

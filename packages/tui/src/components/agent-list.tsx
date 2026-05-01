@@ -2,6 +2,7 @@ import type { AgentAdapter } from "@jiratown/core";
 import { For, Show } from "solid-js";
 import { createAgents } from "../primitives/create-agents.ts";
 import { getTheme } from "../theme.ts";
+import { ui } from "../state/ui.ts";
 
 interface AgentListProps {
   onSelect: (agent: AgentAdapter) => void;
@@ -11,10 +12,19 @@ interface AgentListProps {
 /**
  * Displays running agents with their status.
  * Uses background colors for visual hierarchy.
+ * Click to focus, Tab to navigate between components.
  */
 export function AgentList(props: AgentListProps) {
   const agents = createAgents();
   const theme = getTheme();
+
+  // Check if this component is focused
+  const isFocused = () => ui.focusedComponent() === "agents";
+
+  // Handle click to focus this component
+  const handleClick = () => {
+    ui.setFocusedComponent("agents");
+  };
 
   const getStatusColor = (state: string) => {
     switch (state) {
@@ -49,10 +59,15 @@ export function AgentList(props: AgentListProps) {
   };
 
   return (
-    <box flexDirection="column" flexGrow={1} backgroundColor={theme.colors.background}>
-      {/* Header */}
+    <box
+      flexDirection="column"
+      flexGrow={1}
+      backgroundColor={theme.colors.background}
+      {...({ onClick: handleClick } as any)}
+    >
+      {/* Header - highlighted when focused */}
       <box
-        backgroundColor={theme.colors.surface}
+        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
@@ -68,7 +83,8 @@ export function AgentList(props: AgentListProps) {
       <box flexDirection="column" flexGrow={1} paddingTop={1}>
         <For each={agents()}>
           {(agent, index) => {
-            const isSelected = () => index() === (props.selectedIndex ?? 0);
+            // Only show selection highlight if this list is focused
+            const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
             const statusColor = getStatusColor(agent.state);
             const statusIcon = getStatusIcon(agent.state);
 

@@ -1,6 +1,7 @@
 import type { Issue } from "@jiratown/core";
 import { For } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
+import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
 
 interface IssueListProps {
@@ -11,16 +12,27 @@ interface IssueListProps {
 /**
  * Displays unassigned issues from the backlog that can be picked up.
  * Uses background colors for visual hierarchy.
+ * Click to focus, Tab to navigate between components.
  */
 export function IssueList(props: IssueListProps) {
   const issues = createIssues();
   const theme = getTheme();
 
+  // Check if this component is focused
+  const isFocused = () => ui.focusedComponent() === "issues";
+
   return (
-    <box flexDirection="column" flexGrow={1} backgroundColor={theme.colors.background}>
-      {/* Header */}
+    <box
+      flexDirection="column"
+      flexGrow={1}
+      backgroundColor={theme.colors.background}
+      onMouseDown={() => {
+        ui.setFocusedComponent("issues");
+      }}
+    >
+      {/* Header - highlighted when focused */}
       <box
-        backgroundColor={theme.colors.surface}
+        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
@@ -36,7 +48,8 @@ export function IssueList(props: IssueListProps) {
       <box flexDirection="column" flexGrow={1} paddingTop={1}>
         <For each={issues()}>
           {(issue, index) => {
-            const isSelected = () => index() === (props.selectedIndex ?? 0);
+            // Only show selection highlight if this list is focused
+            const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
             return (
               <box
                 backgroundColor={isSelected() ? theme.colors.selection : undefined}

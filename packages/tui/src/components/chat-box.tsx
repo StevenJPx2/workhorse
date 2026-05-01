@@ -1,6 +1,7 @@
 import { type Accessor, createSignal, For, Show } from "solid-js";
 import type { ChatMessage } from "../primitives/create-chat.ts";
 import { getTheme } from "../theme.ts";
+import { ui } from "../state/ui.ts";
 
 interface ChatBoxProps {
   messages: Accessor<ChatMessage[]>;
@@ -11,13 +12,28 @@ interface ChatBoxProps {
 /**
  * Chat component with scrollable message history and input field.
  * Uses background colors for message distinction.
+ * Click anywhere on the component to focus the input.
  */
 export function ChatBox(props: ChatBoxProps) {
   const [input, setInput] = createSignal("");
   const theme = getTheme();
 
+  // Check if this component is focused (driven by global state)
+  const isFocused = () => ui.focusedComponent() === "chat";
+
+  // Handle click anywhere on the chat box to focus input
+  const handleClick = () => {
+    ui.setFocusedComponent("chat");
+    ui.enterInputMode();
+  };
+
   return (
-    <box flexDirection="column" flexGrow={1} backgroundColor={theme.colors.background}>
+    <box
+      flexDirection="column"
+      flexGrow={1}
+      backgroundColor={theme.colors.background}
+      {...({ onClick: handleClick } as any)}
+    >
       {/* Chat messages */}
       <scrollbox flexGrow={1} paddingLeft={2} paddingRight={2} paddingTop={1}>
         <For each={props.messages()}>
@@ -67,9 +83,9 @@ export function ChatBox(props: ChatBoxProps) {
         )}
       </scrollbox>
 
-      {/* Input area */}
+      {/* Input area - highlighted when focused */}
       <box
-        backgroundColor={theme.colors.surface}
+        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
@@ -78,6 +94,7 @@ export function ChatBox(props: ChatBoxProps) {
         <text fg={theme.colors.accent}>❯ </text>
         <input
           value={input()}
+          focused={isFocused()}
           onInput={(e) => setInput(e)}
           onSubmit={() => {
             const msg = input().trim();
