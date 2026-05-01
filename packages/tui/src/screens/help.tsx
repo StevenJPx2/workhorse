@@ -22,13 +22,15 @@ export function Help() {
   );
 
   const Shortcut = (props: { keys: string; description: string }) => (
-    <box flexDirection="row" marginBottom={0}>
-      <box width={12}>
+    <box flexDirection="row" marginBottom={1}>
+      <box width={16}>
         <text fg={theme.colors.info}>
           <b>{props.keys}</b>
         </text>
       </box>
-      <text fg={theme.colors.dim}>{props.description}</text>
+      <box flexGrow={1}>
+        <text fg={theme.colors.dim}>{props.description}</text>
+      </box>
     </box>
   );
 
