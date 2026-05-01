@@ -107,7 +107,7 @@ describe("jiratownConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-array plugins.enabled", async () => {
+  it("rejects non-array plugins.disabled", async () => {
     const { jiratownConfigSchema } = await import("../schema.ts");
 
     const result = jiratownConfigSchema.safeParse({
@@ -115,7 +115,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: "jira" },
+      plugins: { disabled: "jira" }, // should be an array, not a string
     });
 
     expect(result.success).toBe(false);
