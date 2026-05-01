@@ -3,7 +3,7 @@ import type { AgentAdapter } from "@jiratown/core";
 import { ChatBox, StatusBar } from "../components";
 import { createChat, createAgents } from "../primitives";
 import { ui } from "../state/ui.ts";
-import { theme } from "../theme.ts";
+import { getTheme } from "../theme.ts";
 
 /**
  * Agent dashboard screen - shows agent chat with sidebar navigation.
@@ -12,16 +12,22 @@ import { theme } from "../theme.ts";
  * ┌─────────────────────────────────────────────┐
  * │ AM-456 — Fix login bug           ● running │
  * ├───────────────┬─────────────────────────────┤
- * │ AGENTS        │ (Chat area with agent)     │
- * │ ▸ AM-456 ● 2h │                            │
- * │   PROJ-789    │                            │
+ * │ ● AGENTS      │                             │
+ * │ ▸ AM-456  ●   │  Agent                      │
+ * │   PROJ-789 ○  │  [message content]          │
+ * │               │                             │
+ * │               │  You                        │
+ * │               │  [message content]          │
  * ├───────────────┴─────────────────────────────┤
- * │ [Enter]send  [s]top  [ESC]back      q:quit │
+ * │ ❯ Type a message...                         │
+ * ├─────────────────────────────────────────────┤
+ * │ Enter send  s stop  ESC back         q quit │
  * └─────────────────────────────────────────────┘
  */
 export function Agent() {
   const agents = createAgents();
   const selectedId = ui.selectedAgentId;
+  const theme = getTheme();
 
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
@@ -39,20 +45,66 @@ export function Agent() {
     }
   };
 
+  const getStatusColor = (state: string) => {
+    switch (state) {
+      case "running":
+      case "starting":
+        return theme.colors.success;
+      case "crashed":
+        return theme.colors.warning;
+      case "stopped":
+      case "stopping":
+        return theme.colors.error;
+      default:
+        return theme.colors.dim;
+    }
+  };
+
+  const getStatusIcon = (state: string) => {
+    switch (state) {
+      case "running":
+        return "●";
+      case "starting":
+        return "◐";
+      case "crashed":
+        return "⚠";
+      case "stopped":
+        return "■";
+      default:
+        return "○";
+    }
+  };
+
   return (
-    <box flexDirection="column" width="100%" height="100%">
+    <box
+      flexDirection="column"
+      width="100%"
+      height="100%"
+      backgroundColor={theme.colors.background}
+    >
       {/* Header with agent info */}
       <Show when={selectedAgent()}>
         {(agent: () => AgentAdapter) => (
-          <box flexDirection="row" justifyContent="space-between" borderStyle="single" padding={1}>
-            <text>
-              <b>
-                {agent().issueId} — {agent().issue.title}
-              </b>
-            </text>
-            <text fg={agent().state === "crashed" ? theme.colors.warning : theme.colors.success}>
-              {agent().state === "crashed" ? "⚠ CRASHED" : `● ${agent().state}`}
-            </text>
+          <box
+            flexDirection="row"
+            justifyContent="space-between"
+            backgroundColor={theme.colors.surface}
+            paddingLeft={2}
+            paddingRight={2}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <box>
+              <text fg={theme.colors.accent}>
+                <b>{agent().issueId}</b>
+              </text>
+              <text fg={theme.colors.dim}> — {agent().issue.title}</text>
+            </box>
+            <box>
+              <text fg={getStatusColor(agent().state)}>
+                {getStatusIcon(agent().state)} {agent().state.toUpperCase()}
+              </text>
+            </box>
           </box>
         )}
       </Show>
@@ -60,32 +112,49 @@ export function Agent() {
       {/* Main content: sidebar + chat */}
       <box flexDirection="row" flexGrow={1}>
         {/* Agent sidebar */}
-        <box flexDirection="column" width={15} borderStyle="single">
-          <text>
-            <b>AGENTS</b>
-          </text>
-          <For each={agents()}>
-            {(agent: AgentAdapter) => (
-              <box
-                {...({ onClick: () => handleAgentSelect(agent) } as any)}
-                backgroundColor={
-                  agent.issueId === selectedId() ? theme.colors.selection : undefined
-                }
-              >
-                <text>
-                  {agent.issueId === selectedId() ? "▸ " : "  "}
-                  {agent.issueId}
-                </text>
-                <text fg={theme.colors.dim}>
-                  {agent.state === "running" ? "●" : "○"} {agent.state}
-                </text>
-                <Show when={agent.state === "crashed"}>
-                  <text fg={theme.colors.warning}>⚠ crashed</text>
-                </Show>
-              </box>
-            )}
-          </For>
+        <box flexDirection="column" width={18} backgroundColor={theme.colors.background}>
+          {/* Sidebar header */}
+          <box
+            backgroundColor={theme.colors.surface}
+            paddingLeft={1}
+            paddingRight={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <text fg={theme.colors.success}>
+              <b>● AGENTS</b>
+            </text>
+          </box>
+
+          {/* Agent list */}
+          <box flexDirection="column" flexGrow={1} paddingTop={1}>
+            <For each={agents()}>
+              {(agent: AgentAdapter) => {
+                const isSelected = () => agent.issueId === selectedId();
+                const statusColor = getStatusColor(agent.state);
+                const statusIcon = getStatusIcon(agent.state);
+
+                return (
+                  <box
+                    {...({ onClick: () => handleAgentSelect(agent) } as any)}
+                    backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                    paddingLeft={1}
+                    paddingRight={1}
+                  >
+                    <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                      {isSelected() ? "▸ " : "  "}
+                      {agent.issueId}
+                    </text>
+                    <text fg={statusColor}> {statusIcon}</text>
+                  </box>
+                );
+              }}
+            </For>
+          </box>
         </box>
+
+        {/* Separator */}
+        <box width={1} backgroundColor={theme.colors.surface} />
 
         {/* Chat area */}
         <ChatBox messages={messages} onSend={send} placeholder="Type a message to the agent..." />

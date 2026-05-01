@@ -13,6 +13,7 @@ import {
   savePluginConfig,
   setupValuesToConfig,
 } from "./setup";
+import { setTheme } from "./theme.ts";
 
 interface SetupWrapperProps {
   plugins: SetupPluginConfig[];
@@ -88,6 +89,9 @@ export async function startTUI() {
       piAdapterPlugin, // Default agent harness
     ],
   });
+
+  // Initialize theme from config
+  setTheme(jiratown.config.ui.theme);
 
   // Render the TUI (after all plugins have registered renderers)
   render(() => (

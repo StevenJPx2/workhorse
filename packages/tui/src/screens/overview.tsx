@@ -1,27 +1,29 @@
+import type { AgentAdapter, Issue } from "@jiratown/core";
 import { createSignal } from "solid-js";
-import type { Issue, AgentAdapter } from "@jiratown/core";
-import { IssueList, AgentList, StatusBar } from "../components";
+import { AgentList, IssueList, StatusBar } from "../components";
 import { createChat } from "../primitives";
 import { ui } from "../state/ui.ts";
+import { getTheme } from "../theme.ts";
 
 /**
- * Overview screen - main landing page with centered chat input.
+ * Overview screen - main landing page with two-pane layout.
  *
  * Layout:
  * ┌─────────────────────────────────────────────┐
- * │                                             │
- * │  ISSUES (dimmed)    │  AGENTS (dimmed)      │
- * │  ▸ AM-123 Fix...    │  ▸ AM-456 ● running   │
- * │                     │                       │
- * │        ┌─────────────────────────┐          │
- * │        │ > Ask or type command...│          │
- * │        └─────────────────────────┘          │
- * │                                             │
+ * │  ⚡ JIRATOWN                                │
+ * ├─────────────────────┬───────────────────────┤
+ * │  ⚡ ISSUES (3)      │  ● AGENTS (2 active)  │
+ * │  ▸ AM-123 Fix...    │  ▸ AM-456   ● running │
+ * │    AM-124 Add...    │    PROJ-789 ○ idle    │
+ * │    AM-125 Update... │                       │
+ * ├─────────────────────┴───────────────────────┤
+ * │  ❯ Ask or type a command...                 │
  * ├─────────────────────────────────────────────┤
- * │ [Enter]select  [?]help               q:quit │
+ * │  Enter select  Tab switch  ? help    q quit │
  * └─────────────────────────────────────────────┘
  */
 export function Overview() {
+  const theme = getTheme();
   // Overview doesn't have a specific issue selected for chat
   const [selectedIssueId] = createSignal<string | null>(null);
   const { send } = createChat(selectedIssueId);
@@ -44,32 +46,61 @@ export function Overview() {
   };
 
   return (
-    <box flexDirection="column" width="100%" height="100%">
-      {/* Main content area - issues/agents dimmed in background with floating input */}
-      <box flexDirection="column" flexGrow={1} position="relative">
-        {/* Background: Issues and Agents side by side */}
-        <box flexDirection="row" flexGrow={1}>
-          <IssueList onSelect={handleIssueSelect} />
-          <AgentList onSelect={handleAgentSelect} />
+    <box
+      flexDirection="column"
+      width="100%"
+      height="100%"
+      backgroundColor={theme.colors.background}
+    >
+      {/* Header */}
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+        justifyContent="space-between"
+        flexDirection="row"
+      >
+        <box>
+          <text fg={theme.colors.accent}>
+            <b>⚡ JIRATOWN</b>
+          </text>
         </box>
+        <box>
+          <text fg={theme.colors.dim}>AI-powered issue management</text>
+        </box>
+      </box>
 
-        {/* Floating centered chat input */}
-        <box position="absolute" top="50%" left="50%" marginTop={-2} marginLeft={-20} width={40}>
-          <box borderStyle="rounded" padding={1}>
-            <input
-              value={input()}
-              onInput={(e) => setInput(e)}
-              onSubmit={handleSubmit}
-              placeholder="Ask or type a command..."
-            />
-          </box>
-        </box>
+      {/* Main content area - issues/agents side by side */}
+      <box flexDirection="row" flexGrow={1}>
+        <IssueList onSelect={handleIssueSelect} />
+        <box width={1} backgroundColor={theme.colors.surface} />
+        <AgentList onSelect={handleAgentSelect} />
+      </box>
+
+      {/* Command input area */}
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        <text fg={theme.colors.accent}>❯ </text>
+        <input
+          value={input()}
+          onInput={(e) => setInput(e)}
+          onSubmit={handleSubmit}
+          placeholder="Ask or type a command..."
+        />
       </box>
 
       {/* Status bar */}
       <StatusBar
         shortcuts={[
           { key: "Enter", action: "select" },
+          { key: "Tab", action: "switch" },
           { key: "?", action: "help" },
         ]}
       />

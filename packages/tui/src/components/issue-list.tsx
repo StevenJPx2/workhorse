@@ -1,40 +1,63 @@
 import type { Issue } from "@jiratown/core";
+import { For } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
-import { theme } from "../theme.ts";
+import { getTheme } from "../theme.ts";
 
 interface IssueListProps {
   onSelect: (issue: Issue) => void;
+  selectedIndex?: number;
 }
 
 /**
  * Displays unassigned issues from the backlog that can be picked up.
+ * Uses background colors for visual hierarchy.
  */
 export function IssueList(props: IssueListProps) {
   const issues = createIssues();
-
-  const options = () =>
-    issues().map((issue) => ({
-      name: `${issue.externalId || issue.id.slice(0, 8)} ${issue.title.slice(0, 25)}`,
-      description: issue.status,
-      value: issue,
-    }));
-
-  const handleSelect = (_index: number, option: { value: Issue }) => {
-    props.onSelect(option.value);
-  };
-
-  const selectProps = {
-    options: options(),
-    onItemSelected: handleSelect,
-    selectedBackgroundColor: theme.colors.selection,
-  };
+  const theme = getTheme();
 
   return (
-    <box flexDirection="column" flexGrow={1}>
-      <text>
-        <b>ISSUES</b>
-      </text>
-      <select {...(selectProps as any)} />
+    <box flexDirection="column" flexGrow={1} backgroundColor={theme.colors.background}>
+      {/* Header */}
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        <text fg={theme.colors.accent}>
+          <b>⚡ ISSUES</b>
+        </text>
+        <text fg={theme.colors.dim}> ({issues().length})</text>
+      </box>
+
+      {/* Issue list */}
+      <box flexDirection="column" flexGrow={1} paddingTop={1}>
+        <For each={issues()}>
+          {(issue, index) => {
+            const isSelected = () => index() === (props.selectedIndex ?? 0);
+            return (
+              <box
+                backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                paddingLeft={2}
+                paddingRight={2}
+              >
+                <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                  {isSelected() ? "▸ " : "  "}
+                  <b>{issue.externalId || issue.id.slice(0, 8)}</b>
+                </text>
+                <text fg={theme.colors.dim}> {issue.title.slice(0, 20)}</text>
+              </box>
+            );
+          }}
+        </For>
+        {issues().length === 0 && (
+          <box paddingLeft={2}>
+            <text fg={theme.colors.dim}>No issues available</text>
+          </box>
+        )}
+      </box>
     </box>
   );
 }

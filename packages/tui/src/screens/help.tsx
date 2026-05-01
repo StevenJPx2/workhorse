@@ -1,105 +1,78 @@
 import { StatusBar } from "../components";
-import { theme } from "../theme.ts";
+import { getTheme } from "../theme.ts";
 
 /**
  * Help screen showing all keyboard shortcuts.
+ * Uses background colors for visual organization.
  */
 export function Help() {
+  const theme = getTheme();
+
+  const Section = (props: { title: string; children: any }) => (
+    <box flexDirection="column" marginBottom={2}>
+      <box backgroundColor={theme.colors.surface} paddingLeft={2} paddingRight={2} marginBottom={1}>
+        <text fg={theme.colors.accent}>
+          <b>{props.title}</b>
+        </text>
+      </box>
+      <box flexDirection="column" paddingLeft={2}>
+        {props.children}
+      </box>
+    </box>
+  );
+
+  const Shortcut = (props: { keys: string; description: string }) => (
+    <box flexDirection="row" marginBottom={0}>
+      <box width={12}>
+        <text fg={theme.colors.info}>
+          <b>{props.keys}</b>
+        </text>
+      </box>
+      <text fg={theme.colors.dim}>{props.description}</text>
+    </box>
+  );
+
   return (
-    <box flexDirection="column" width="100%" height="100%">
+    <box
+      flexDirection="column"
+      width="100%"
+      height="100%"
+      backgroundColor={theme.colors.background}
+    >
       {/* Header */}
-      <box borderStyle="single" padding={1}>
-        <text>
-          <b>Keyboard Shortcuts</b>
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        <text fg={theme.colors.accent}>
+          <b>⌨ KEYBOARD SHORTCUTS</b>
         </text>
       </box>
 
       {/* Content */}
-      <box flexDirection="column" padding={2} flexGrow={1}>
-        {/* Global */}
-        <text>
-          <b>Global</b>
-        </text>
-        <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <box flexDirection="row">
-            <text>
-              <b>q</b>
-            </text>
-            <text fg={theme.colors.dim}> Quit</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>?</b>
-            </text>
-            <text fg={theme.colors.dim}> Help screen</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>ESC</b>
-            </text>
-            <text fg={theme.colors.dim}> Close modal / Back</text>
-          </box>
-        </box>
+      <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
+        <Section title="Global">
+          <Shortcut keys="q" description="Quit application" />
+          <Shortcut keys="? or h" description="Show this help screen" />
+          <Shortcut keys="ESC" description="Close modal / Go back" />
+        </Section>
 
-        {/* Overview */}
-        <text>
-          <b>Overview Screen</b>
-        </text>
-        <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <box flexDirection="row">
-            <text>
-              <b>j/k</b>
-              {" or "}
-              <b>↑/↓</b>
-            </text>
-            <text fg={theme.colors.dim}> Navigate lists</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>Tab</b>
-            </text>
-            <text fg={theme.colors.dim}> Switch Issues/Agents</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>Enter</b>
-            </text>
-            <text fg={theme.colors.dim}> Select item</text>
-          </box>
-        </box>
+        <Section title="Overview Screen">
+          <Shortcut keys="j / k" description="Navigate up/down in lists" />
+          <Shortcut keys="↑ / ↓" description="Navigate up/down in lists" />
+          <Shortcut keys="Tab" description="Switch between Issues and Agents" />
+          <Shortcut keys="Enter" description="Select item / Spawn agent" />
+        </Section>
 
-        {/* Agent */}
-        <text>
-          <b>Agent Screen</b>
-        </text>
-        <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <box flexDirection="row">
-            <text>
-              <b>j/k</b>
-              {" or "}
-              <b>↑/↓</b>
-            </text>
-            <text fg={theme.colors.dim}> Navigate sidebar</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>Enter</b>
-            </text>
-            <text fg={theme.colors.dim}> Send message</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>s</b>
-            </text>
-            <text fg={theme.colors.dim}> Stop agent</text>
-          </box>
-          <box flexDirection="row">
-            <text>
-              <b>ESC</b>
-            </text>
-            <text fg={theme.colors.dim}> Back to overview</text>
-          </box>
-        </box>
+        <Section title="Agent Screen">
+          <Shortcut keys="j / k" description="Navigate agents in sidebar" />
+          <Shortcut keys="Enter" description="Send message" />
+          <Shortcut keys="s" description="Stop current agent" />
+          <Shortcut keys="ESC" description="Return to overview" />
+        </Section>
       </box>
 
       {/* Status bar */}

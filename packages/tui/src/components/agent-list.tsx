@@ -1,64 +1,109 @@
 import type { AgentAdapter } from "@jiratown/core";
+import { For, Show } from "solid-js";
 import { createAgents } from "../primitives/create-agents.ts";
-import { theme } from "../theme.ts";
+import { getTheme } from "../theme.ts";
 
 interface AgentListProps {
   onSelect: (agent: AgentAdapter) => void;
-}
-
-/**
- * Gets status indicator for an agent state.
- */
-function getStatusIndicator(state: string): { icon: string; color: string } {
-  switch (state) {
-    case "running":
-      return theme.status.running;
-    case "starting":
-      return theme.status.running; // Use running indicator for starting
-    case "stopping":
-    case "stopped":
-      return theme.status.stopped;
-    case "crashed":
-      return theme.status.blocked; // Use blocked indicator for crashed
-    default:
-      return theme.status.idle;
-  }
+  selectedIndex?: number;
 }
 
 /**
  * Displays running agents with their status.
+ * Uses background colors for visual hierarchy.
  */
 export function AgentList(props: AgentListProps) {
   const agents = createAgents();
+  const theme = getTheme();
 
-  const options = () =>
-    agents().map((agent) => {
-      const status = getStatusIndicator(agent.state);
-      const crashed = agent.state === "crashed" ? " ⚠ crashed" : "";
-
-      return {
-        name: `${agent.issueId} ${status.icon}${crashed}`,
-        description: agent.state,
-        value: agent,
-      };
-    });
-
-  const handleSelect = (_index: number, option: { value: AgentAdapter }) => {
-    props.onSelect(option.value);
+  const getStatusColor = (state: string) => {
+    switch (state) {
+      case "running":
+      case "starting":
+        return theme.colors.success;
+      case "crashed":
+        return theme.colors.warning;
+      case "stopped":
+      case "stopping":
+        return theme.colors.error;
+      default:
+        return theme.colors.dim;
+    }
   };
 
-  const selectProps = {
-    options: options(),
-    onItemSelected: handleSelect,
-    selectedBackgroundColor: theme.colors.selection,
+  const getStatusIcon = (state: string) => {
+    switch (state) {
+      case "running":
+        return "●";
+      case "starting":
+        return "◐";
+      case "crashed":
+        return "⚠";
+      case "stopped":
+        return "■";
+      case "stopping":
+        return "◌";
+      default:
+        return "○";
+    }
   };
 
   return (
-    <box flexDirection="column" flexGrow={1}>
-      <text>
-        <b>AGENTS</b>
-      </text>
-      <select {...(selectProps as any)} />
+    <box flexDirection="column" flexGrow={1} backgroundColor={theme.colors.background}>
+      {/* Header */}
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        <text fg={theme.colors.success}>
+          <b>● AGENTS</b>
+        </text>
+        <text fg={theme.colors.dim}> ({agents().length} active)</text>
+      </box>
+
+      {/* Agent list */}
+      <box flexDirection="column" flexGrow={1} paddingTop={1}>
+        <For each={agents()}>
+          {(agent, index) => {
+            const isSelected = () => index() === (props.selectedIndex ?? 0);
+            const statusColor = getStatusColor(agent.state);
+            const statusIcon = getStatusIcon(agent.state);
+
+            return (
+              <box
+                backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                paddingLeft={2}
+                paddingRight={2}
+                flexDirection="row"
+                justifyContent="space-between"
+              >
+                <box>
+                  <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                    {isSelected() ? "▸ " : "  "}
+                    <b>{agent.issueId}</b>
+                  </text>
+                </box>
+                <box>
+                  <text fg={statusColor}>
+                    {statusIcon} {agent.state}
+                  </text>
+                  <Show when={agent.state === "crashed"}>
+                    <text fg={theme.colors.error}> !</text>
+                  </Show>
+                </box>
+              </box>
+            );
+          }}
+        </For>
+        {agents().length === 0 && (
+          <box paddingLeft={2}>
+            <text fg={theme.colors.dim}>No agents running</text>
+          </box>
+        )}
+      </box>
     </box>
   );
 }
