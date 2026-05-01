@@ -105,7 +105,7 @@ theme = "gruvbox"
       ".jiratown.toml",
       `
 [plugins]
-enabled = ["jira", "github"]
+disabled = []
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"
@@ -123,7 +123,7 @@ cloud_id = "company.atlassian.net"
 
     const config = loadConfig(paths);
 
-    expect(config.plugins.enabled).toEqual(["jira", "github"]);
+    expect(config.plugins.disabled).toEqual([]);
     expect((config.plugins["jira"] as Record<string, unknown>)?.["cloudId"]).toBe(
       "company.atlassian.net",
     );

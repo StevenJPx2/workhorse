@@ -98,7 +98,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratow
   return runWithContext(
     { config, paths, hooks, db, memory, monitors, tracker, orchestrator },
     async () => {
-      const plugins = await PluginRegistry.create();
+      const plugins = new PluginRegistry();
 
       // Core plugins always registered first
       for (const plugin of CORE_PLUGINS) {
@@ -109,6 +109,9 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratow
       for (const plugin of extraPlugins) {
         plugins.register(plugin);
       }
+
+      // Discover custom plugins from plugin directories
+      await plugins.discoverCustomPlugins();
 
       await plugins.setup();
 

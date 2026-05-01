@@ -35,7 +35,7 @@ export const jiratownConfigSchema = z.object({
     }),
   plugins: z
     .object({
-      enabled: z.array(z.string()).default([]),
+      disabled: z.array(z.string()).default([]),
     })
     .passthrough(), // Allow plugin-specific keys like [plugins.jira]
 });

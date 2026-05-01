@@ -54,7 +54,8 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
           return;
         }
 
-        const result = options.configSchema.safeParse(ctx.config.plugins[manifest.name]);
+        // Pass {} as fallback so schemas with all-optional/defaulted fields work when config is missing
+        const result = options.configSchema.safeParse(ctx.config.plugins[manifest.name] ?? {});
 
         if (!result.success) {
           throw new Error(

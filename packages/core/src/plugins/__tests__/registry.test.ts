@@ -138,6 +138,37 @@ describe("PluginRegistry", () => {
 
       expect(listener).toHaveBeenCalledWith({ name: "test" });
     });
+
+    it("skips plugins in the disabled list", () => {
+      const plugin = createSamplePlugin("disabled-plugin");
+      const registry = new PluginRegistry();
+
+      setContext(
+        createMockContext({
+          plugins: { disabled: ["disabled-plugin"] },
+        }),
+      );
+      registry.register(plugin);
+
+      expect(registry.has("disabled-plugin")).toBe(false);
+    });
+
+    it("does not emit plugin.loaded for disabled plugins", () => {
+      const listener = vi.fn();
+      hooks.on("plugin.loaded", listener);
+
+      const plugin = createSamplePlugin("disabled-plugin");
+      const registry = new PluginRegistry();
+
+      setContext(
+        createMockContext({
+          plugins: { disabled: ["disabled-plugin"] },
+        }),
+      );
+      registry.register(plugin);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
   });
 
   describe("list query", () => {
@@ -159,7 +190,7 @@ describe("PluginRegistry", () => {
   });
 });
 
-describe("PluginRegistry.create", () => {
+describe("PluginRegistry.discoverCustomPlugins", () => {
   beforeEach(() => {
     hooks.all.clear();
   });
@@ -167,48 +198,6 @@ describe("PluginRegistry.create", () => {
   afterEach(() => {
     unsetContext();
     hooks.all.clear();
-  });
-
-  it("loads plugins from enabled list by path", async () => {
-    const validPluginPath = join(FIXTURES_DIR, "plugins", "valid-plugin.ts");
-    setContext(
-      createMockContext({
-        plugins: { enabled: [validPluginPath] },
-      }),
-    );
-
-    const registry = await PluginRegistry.create();
-    expect(registry.has("valid-fixture-plugin")).toBe(true);
-  });
-
-  it("throws when loading an invalid plugin from enabled list", async () => {
-    const invalidPluginPath = join(FIXTURES_DIR, "plugins", "invalid-plugin.ts");
-    setContext(
-      createMockContext({
-        plugins: { enabled: [invalidPluginPath] },
-      }),
-    );
-
-    await expect(PluginRegistry.create()).rejects.toThrow(/not a valid plugin/);
-  });
-
-  it("skips duplicate plugins and logs warning", async () => {
-    const validPluginPath = join(FIXTURES_DIR, "plugins", "valid-plugin.ts");
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    setContext(
-      createMockContext({
-        plugins: {
-          enabled: [validPluginPath, validPluginPath],
-        },
-      }),
-    );
-
-    const registry = await PluginRegistry.create();
-    expect(registry.has("valid-fixture-plugin")).toBe(true);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("already registered"));
-
-    consoleSpy.mockRestore();
   });
 
   it("discovers plugins from directory with file plugins", async () => {
@@ -220,7 +209,7 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { disabled: [] } },
       paths: pathsWithFixtures,
       hooks,
       db: {} as any,
@@ -233,7 +222,8 @@ describe("PluginRegistry.create", () => {
       } as any,
     });
 
-    const registry = await PluginRegistry.create();
+    const registry = new PluginRegistry();
+    await registry.discoverCustomPlugins();
 
     // Should discover valid-plugin.ts and directory-plugin/index.ts
     expect(registry.has("valid-fixture-plugin")).toBe(true);
@@ -249,7 +239,7 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { disabled: [] } },
       paths: pathsWithFixtures,
       hooks,
       db: {} as any,
@@ -262,7 +252,8 @@ describe("PluginRegistry.create", () => {
       } as any,
     });
 
-    const registry = await PluginRegistry.create();
+    const registry = new PluginRegistry();
+    await registry.discoverCustomPlugins();
 
     // Should have discovered the valid ones
     expect(registry.list().length).toBeGreaterThan(0);
@@ -278,7 +269,7 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { disabled: [] } },
       paths: pathsWithFixtures,
       hooks,
       db: {} as any,
@@ -291,7 +282,8 @@ describe("PluginRegistry.create", () => {
       } as any,
     });
 
-    const registry = await PluginRegistry.create();
+    const registry = new PluginRegistry();
+    await registry.discoverCustomPlugins();
 
     // Should have discovered valid plugins but skipped invalid-plugin.ts
     expect(registry.has("valid-fixture-plugin")).toBe(true);
@@ -302,26 +294,12 @@ describe("PluginRegistry.create", () => {
   });
 
   it("handles non-existent plugin directories gracefully", async () => {
-    setContext(createMockContext({ plugins: { enabled: [] } }));
+    setContext(createMockContext({ plugins: { disabled: [] } }));
 
+    const registry = new PluginRegistry();
     // Should not throw even though /tmp/jiratown/plugins doesn't exist
-    const registry = await PluginRegistry.create();
+    await registry.discoverCustomPlugins();
     expect(registry.list()).toHaveLength(0);
-  });
-
-  it("loads plugin with named export (no default export)", async () => {
-    // The named-export-plugin.ts exports `plugin` not `default`
-    // This tests the `mod.default ?? mod` branch
-    const namedPluginPath = join(FIXTURES_DIR, "plugins", "named-export-plugin.ts");
-    setContext(
-      createMockContext({
-        plugins: { enabled: [namedPluginPath] },
-      }),
-    );
-
-    // Should fail because named export without default is not directly usable
-    // The plugin is exported as `plugin` not as default
-    await expect(PluginRegistry.create()).rejects.toThrow(/not a valid plugin/);
   });
 
   it("skips directories without index.ts during discovery", async () => {
@@ -333,7 +311,7 @@ describe("PluginRegistry.create", () => {
     };
 
     setContext({
-      config: { ...DEFAULT_CONFIG, plugins: { enabled: [] } },
+      config: { ...DEFAULT_CONFIG, plugins: { disabled: [] } },
       paths: pathsWithFixtures,
       hooks,
       db: {} as any,
@@ -346,7 +324,8 @@ describe("PluginRegistry.create", () => {
       } as any,
     });
 
-    const registry = await PluginRegistry.create();
+    const registry = new PluginRegistry();
+    await registry.discoverCustomPlugins();
 
     // Should not have loaded empty-dir since it has no index.ts
     // We know valid-plugin and directory-plugin should be loaded
@@ -355,12 +334,4 @@ describe("PluginRegistry.create", () => {
     // Total should be 2 (not counting empty-dir or readme.md)
     expect(registry.list().length).toBe(2);
   });
-});
-
-it.fails("TODO: create resolves from node_modules", async () => {
-  // Test that loading a plugin by npm package name works
-  setContext(createMockContext());
-  const registry = await PluginRegistry.create();
-  // This will fail until we have actual published plugins
-  expect(registry.has("@jiratown/plugin-jira")).toBe(true);
 });

@@ -148,10 +148,9 @@ export function setupValuesToConfig(
       }
     }
 
-    if (Object.keys(pluginConfig).length > 0) {
-      plugins[pluginName] = pluginConfig;
-    }
+    // Add plugin config (even if empty, for plugins with all-optional fields)
+    plugins[pluginName] = pluginConfig;
   }
 
-  return { plugins: { enabled: [], ...plugins } };
+  return { plugins: { disabled: [], ...plugins } };
 }

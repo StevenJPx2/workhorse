@@ -7,7 +7,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: { custom: "Be helpful" },
       ui: { theme: "tokyonight" },
-      plugins: { enabled: ["jira"] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(true);
@@ -21,7 +21,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
       ui: { theme: "tokyonight" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(true);
@@ -36,7 +36,7 @@ describe("jiratownConfigSchema", () => {
       prompt: {},
       ui: { theme: "tokyonight" },
       plugins: {
-        enabled: ["jira"],
+        disabled: [],
         jira: { cloudId: "company.atlassian.net" },
       },
     });
@@ -59,7 +59,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: -1000 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(false);
@@ -73,7 +73,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 0 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(false);
@@ -87,7 +87,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000.5 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(false);
@@ -101,7 +101,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: "yes", pollInterval: 30000 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
     });
 
     expect(result.success).toBe(false);
@@ -129,7 +129,7 @@ describe("jiratownConfigSchema", () => {
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
       ui: { theme: "default" },
-      plugins: { enabled: [] },
+      plugins: { disabled: [] },
       steering: { debounceMs: -100, maxReminders: 0, cooldownMs: -1 },
     });
 

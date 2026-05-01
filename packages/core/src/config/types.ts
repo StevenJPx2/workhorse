@@ -1,31 +1,10 @@
+import type { z } from "zod";
+import type { jiratownConfigSchema } from "./schema.ts";
+
 export type AgentHarness = string;
 
-export interface JiratownConfig {
-  agent: {
-    harness: AgentHarness;
-    model?: string;
-  };
-  behavior: {
-    autoResume: boolean;
-    pollInterval: number;
-  };
-  prompt: {
-    custom?: string;
-  };
-  ui: {
-    theme: string;
-  };
-  steering: {
-    enabled: boolean;
-    debounceMs: number;
-    maxReminders: number;
-    cooldownMs: number;
-  };
-  plugins: {
-    enabled: string[];
-    [pluginName: string]: unknown;
-  };
-}
+/** Jiratown configuration derived from the Zod schema */
+export type JiratownConfig = z.infer<typeof jiratownConfigSchema>;
 
 export interface ConfigPaths {
   globalDir: string;

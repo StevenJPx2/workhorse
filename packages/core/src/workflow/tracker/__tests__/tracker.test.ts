@@ -23,7 +23,7 @@ const mockConfig = {
   behavior: { autoResume: true, pollInterval: 30000 },
   prompt: { custom: undefined },
   ui: { theme: "default" },
-  plugins: { enabled: [] },
+  plugins: { disabled: [] },
   steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
 };
 

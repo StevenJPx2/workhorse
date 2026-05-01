@@ -13,9 +13,16 @@ export function isPlugin(value: unknown): value is Plugin {
 /**
  * Registry for managing Jiratown plugins.
  *
+ * All plugins passed to bootstrap() are enabled by default.
+ * Use config.plugins.disabled array to opt-out of specific plugins.
+ *
+ * Custom plugins can be auto-discovered from:
+ * - ~/.jiratown/plugins/
+ * - .jiratown/plugins/
+ *
  * @example
  * ```typescript
- * const registry = await PluginRegistry.create();
+ * const registry = new PluginRegistry();
  * registry.register(myPlugin);
  * await registry.setup();
  * // ... use plugins ...
@@ -26,22 +33,15 @@ export class PluginRegistry {
   private plugins: Plugin[] = [];
 
   /**
-   * Load all configured plugins from enabled list and hardcoded plugin directories.
+   * Discover and load custom plugins from plugin directories.
    */
-  static async create(): Promise<PluginRegistry> {
-    const registry = new PluginRegistry();
-    const { config, paths } = useJiratown();
-
-    for (const name of config.plugins.enabled) {
-      await registry.load(name);
-    }
+  async discoverCustomPlugins(): Promise<void> {
+    const { paths } = useJiratown();
 
     await Promise.all([
-      registry.discover(join(dirname(paths.globalConfig), "plugins")),
-      registry.discover(join(dirname(paths.projectConfig), "plugins")),
+      this.discover(join(dirname(paths.globalConfig), "plugins")),
+      this.discover(join(dirname(paths.projectConfig), "plugins")),
     ]);
-
-    return registry;
   }
 
   private async load(nameOrPath: string): Promise<void> {
@@ -77,17 +77,22 @@ export class PluginRegistry {
 
   /**
    * Register a plugin instance directly.
+   * Skips if plugin is in the disabled list.
    */
   register(plugin: Plugin): void {
     const name = plugin.manifest.name;
+    const { config, hooks } = useJiratown();
+
+    // Skip if plugin is disabled
+    if (config.plugins.disabled?.includes(name)) {
+      return;
+    }
 
     if (this.has(name)) {
       throw new Error(`Plugin "${name}" is already registered`);
     }
 
     this.plugins.push(plugin);
-
-    const { hooks } = useJiratown();
     hooks.emit("plugin.loaded", { name });
   }
 

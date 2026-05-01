@@ -19,6 +19,6 @@ export const DEFAULT_CONFIG: JiratownConfig = {
     cooldownMs: 30000,
   },
   plugins: {
-    enabled: [],
+    disabled: [],
   },
 };

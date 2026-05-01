@@ -201,7 +201,7 @@ describe("Plugin configSchema", () => {
     setContext(
       createMockContext({
         plugins: {
-          enabled: [],
+          disabled: [],
           jira: { cloudId: "company.atlassian.net" },
         },
       }),
@@ -235,7 +235,7 @@ describe("Plugin configSchema", () => {
     setContext(
       createMockContext({
         plugins: {
-          enabled: [],
+          disabled: [],
           jira: { cloudId: "" },
         },
       }),

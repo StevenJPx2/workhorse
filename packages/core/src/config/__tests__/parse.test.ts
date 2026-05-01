@@ -130,7 +130,7 @@ describe("edge cases and error handling", () => {
     const { DEFAULT_CONFIG } = await import("../defaults.ts");
 
     const override = {
-      plugins: { enabled: [], jira: { nested: { value: 2, extra: true } } },
+      plugins: { disabled: [], jira: { nested: { value: 2, extra: true } } },
     };
 
     const result = mergeConfigs(DEFAULT_CONFIG, override);
