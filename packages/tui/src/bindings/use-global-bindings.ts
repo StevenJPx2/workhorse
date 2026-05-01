@@ -61,6 +61,10 @@ export function useGlobalBindings() {
     if (keyName === "escape") {
       if (ui.modal()) {
         ui.closeModal();
+      } else if (ui.inputMode()) {
+        // Exit input mode first, return to navigation
+        ui.exitInputMode();
+        ui.setFocusedComponent("issues");
       } else if (ui.screen() !== "overview") {
         ui.backToOverview();
       }
