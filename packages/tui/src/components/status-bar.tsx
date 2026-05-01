@@ -68,8 +68,8 @@ export function StatusBar(props: StatusBarProps) {
         </For>
       </box>
       <box flexDirection="row" onMouseDown={handleQuit}>
-        <text fg={theme.colors.error}>
-          <b>q</b>
+        <text fg={theme.colors.accent}>
+          <b>Ctrl+X Q</b>
         </text>
         <text fg={theme.colors.dim}> quit</text>
       </box>
