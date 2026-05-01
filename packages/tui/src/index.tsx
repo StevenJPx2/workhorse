@@ -1,16 +1,84 @@
-import { bootstrap } from "@jiratown/core";
+import { bootstrap, resolveConfigPaths } from "@jiratown/core";
 import { githubPlugin } from "@jiratown/plugin-github";
 import { jiraPlugin } from "@jiratown/plugin-jira";
 import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
-import { render } from "@opentui/solid";
+import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
 import tuiPlugin from "./plugin.ts";
+import { Setup } from "./screens";
+import type { SetupPluginConfig } from "./screens";
+import {
+  getPluginsNeedingSetup,
+  loadExistingConfig,
+  savePluginConfig,
+  setupValuesToConfig,
+} from "./setup";
+
+interface SetupWrapperProps {
+  plugins: SetupPluginConfig[];
+  configPath: string;
+  onComplete: () => void;
+  onSkip: () => void;
+}
+
+/**
+ * Wrapper component for Setup that can access the renderer via useRenderer().
+ */
+function SetupWrapper(props: SetupWrapperProps) {
+  const renderer = useRenderer();
+
+  const handleComplete = (configs: Record<string, Record<string, string>>) => {
+    const newConfig = setupValuesToConfig(configs);
+    savePluginConfig(props.configPath, newConfig);
+    renderer.destroy();
+    props.onComplete();
+  };
+
+  const handleSkip = () => {
+    renderer.destroy();
+    props.onSkip();
+  };
+
+  return <Setup plugins={props.plugins} onComplete={handleComplete} onSkip={handleSkip} />;
+}
+
+/**
+ * Run the setup wizard if required plugin configs are missing.
+ * Returns true if setup was completed, false if user skipped.
+ */
+async function runSetupIfNeeded(): Promise<boolean> {
+  const paths = resolveConfigPaths();
+  const existingConfig = loadExistingConfig(paths.globalConfig, paths.projectConfig);
+  const pluginsNeedingSetup = getPluginsNeedingSetup(existingConfig);
+
+  if (pluginsNeedingSetup.length === 0) {
+    return true; // No setup needed
+  }
+
+  return new Promise((resolve) => {
+    render(() => (
+      <SetupWrapper
+        plugins={pluginsNeedingSetup}
+        configPath={paths.globalConfig}
+        onComplete={() => resolve(true)}
+        onSkip={() => resolve(false)}
+      />
+    ));
+  });
+}
 
 /**
  * Start the Jiratown TUI.
- * Bootstraps the core system with all plugins and renders the terminal UI.
+ * Shows setup wizard if required config is missing, then bootstraps the system.
  */
 export async function startTUI() {
+  // Check if setup is needed before bootstrapping
+  const setupComplete = await runSetupIfNeeded();
+  if (!setupComplete) {
+    console.log("Setup skipped. Please configure plugins manually in ~/.jiratown.toml");
+    process.exit(1);
+  }
+
   // Bootstrap Jiratown with all plugins
   const jiratown = await bootstrap({
     plugins: [

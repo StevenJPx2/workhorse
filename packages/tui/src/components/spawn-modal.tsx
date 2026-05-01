@@ -42,9 +42,15 @@ export function SpawnModal(props: SpawnModalProps) {
         width={45}
         backgroundColor={theme.colors.background}
       >
-        <text>
-          <b>Issue:</b> {props.issue.externalId || props.issue.id} — {props.issue.title}
-        </text>
+        <box flexDirection="row">
+          <text>
+            <b>Issue:</b>
+          </text>
+          <text>
+            {" "}
+            {props.issue.externalId || props.issue.id} — {props.issue.title}
+          </text>
+        </box>
 
         <box marginTop={1}>
           <text>Harness:</text>
@@ -58,10 +64,12 @@ export function SpawnModal(props: SpawnModalProps) {
 
         <box flexDirection="row" gap={2} marginTop={2}>
           <text>
-            <b>[Enter]</b> Spawn
+            <b>[Enter]</b>
+            {" Spawn"}
           </text>
           <text>
-            <b>[ESC]</b> Cancel
+            <b>[ESC]</b>
+            {" Cancel"}
           </text>
         </box>
       </box>

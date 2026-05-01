@@ -21,15 +21,24 @@ export function Help() {
           <b>Global</b>
         </text>
         <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <text>
-            <b>q</b> <text fg={theme.colors.dim}>Quit</text>
-          </text>
-          <text>
-            <b>?</b> <text fg={theme.colors.dim}>Help screen</text>
-          </text>
-          <text>
-            <b>ESC</b> <text fg={theme.colors.dim}>Close modal / Back</text>
-          </text>
+          <box flexDirection="row">
+            <text>
+              <b>q</b>
+            </text>
+            <text fg={theme.colors.dim}> Quit</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>?</b>
+            </text>
+            <text fg={theme.colors.dim}> Help screen</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>ESC</b>
+            </text>
+            <text fg={theme.colors.dim}> Close modal / Back</text>
+          </box>
         </box>
 
         {/* Overview */}
@@ -37,15 +46,26 @@ export function Help() {
           <b>Overview Screen</b>
         </text>
         <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <text>
-            <b>j/k</b> or <b>↑/↓</b> <text fg={theme.colors.dim}>Navigate lists</text>
-          </text>
-          <text>
-            <b>Tab</b> <text fg={theme.colors.dim}>Switch Issues/Agents</text>
-          </text>
-          <text>
-            <b>Enter</b> <text fg={theme.colors.dim}>Select item</text>
-          </text>
+          <box flexDirection="row">
+            <text>
+              <b>j/k</b>
+              {" or "}
+              <b>↑/↓</b>
+            </text>
+            <text fg={theme.colors.dim}> Navigate lists</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>Tab</b>
+            </text>
+            <text fg={theme.colors.dim}> Switch Issues/Agents</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>Enter</b>
+            </text>
+            <text fg={theme.colors.dim}> Select item</text>
+          </box>
         </box>
 
         {/* Agent */}
@@ -53,18 +73,32 @@ export function Help() {
           <b>Agent Screen</b>
         </text>
         <box flexDirection="column" marginLeft={2} marginBottom={1}>
-          <text>
-            <b>j/k</b> or <b>↑/↓</b> <text fg={theme.colors.dim}>Navigate sidebar</text>
-          </text>
-          <text>
-            <b>Enter</b> <text fg={theme.colors.dim}>Send message</text>
-          </text>
-          <text>
-            <b>s</b> <text fg={theme.colors.dim}>Stop agent</text>
-          </text>
-          <text>
-            <b>ESC</b> <text fg={theme.colors.dim}>Back to overview</text>
-          </text>
+          <box flexDirection="row">
+            <text>
+              <b>j/k</b>
+              {" or "}
+              <b>↑/↓</b>
+            </text>
+            <text fg={theme.colors.dim}> Navigate sidebar</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>Enter</b>
+            </text>
+            <text fg={theme.colors.dim}> Send message</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>s</b>
+            </text>
+            <text fg={theme.colors.dim}> Stop agent</text>
+          </box>
+          <box flexDirection="row">
+            <text>
+              <b>ESC</b>
+            </text>
+            <text fg={theme.colors.dim}> Back to overview</text>
+          </box>
         </box>
       </box>
 

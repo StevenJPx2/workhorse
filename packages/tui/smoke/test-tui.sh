@@ -14,7 +14,8 @@
 
 set -e
 
-cd "$(dirname "$0")"
+# Change to the package root (parent of smoke/)
+cd "$(dirname "$0")/.."
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,10 +51,10 @@ check() {
     
     if echo "$RESULT" | grep -q "$pattern"; then
         echo -e "${GREEN}✓${NC} $name"
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
         echo -e "${RED}✗${NC} $name"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
@@ -61,10 +62,13 @@ echo ""
 echo "Running checks..."
 echo ""
 
+# Note: Without config, we'll see the Setup screen first
+# Test for Setup screen elements (first-run experience)
 check "Jiratown header" "Jiratown"
-check "ISSUES section" "ISSUES"
-check "Status bar quit hint" "q:quit"
+check "Setup screen shown" "Setup"
+check "Jira plugin config" "jira"
 check "Box borders rendered" "┌"
+check "Field indicator rendered" "▸"
 
 echo ""
 echo "---"

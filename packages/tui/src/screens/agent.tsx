@@ -6,20 +6,6 @@ import { ui } from "../state/ui.ts";
 import { theme } from "../theme.ts";
 
 /**
- * Formats duration since agent started.
- */
-function formatDuration(startedAt: Date): string {
-  const ms = Date.now() - startedAt.getTime();
-  const minutes = Math.floor(ms / 60000);
-  const hours = Math.floor(minutes / 60);
-
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-  return `${minutes}m`;
-}
-
-/**
  * Agent dashboard screen - shows agent chat with sidebar navigation.
  *
  * Layout:

@@ -19,16 +19,20 @@ export function NotificationBox(props: NotificationBoxProps) {
       when={rendered().style === "box"}
       fallback={
         // Inline style
-        <text>
-          {rendered().icon} {rendered().title}
-        </text>
+        <box flexDirection="row">
+          <text>{rendered().icon} </text>
+          <text>{rendered().title}</text>
+        </box>
       }
     >
       {/* Box style */}
       <box flexDirection="column" borderStyle="rounded" padding={1} marginBottom={1}>
-        <text>
-          {rendered().icon} <b>{rendered().title}</b>
-        </text>
+        <box flexDirection="row">
+          <text>{rendered().icon} </text>
+          <text>
+            <b>{rendered().title}</b>
+          </text>
+        </box>
         <Show when={rendered().subtitle}>
           <text fg={theme.colors.dim}>{rendered().subtitle}</text>
         </Show>
