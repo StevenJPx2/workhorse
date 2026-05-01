@@ -118,7 +118,6 @@
         "@jiratown/plugin-jira": "workspace:*",
         "@jiratown/plugin-pi-adapter": "workspace:*",
         "@opentui/core": "0.2.1",
-        "@opentui/keymap": "^0.2.1",
         "@opentui/solid": "0.2.1",
         "solid-js": "^1.9.0",
       },
@@ -479,8 +478,6 @@
     "@opentui/core-win32-arm64": ["@opentui/core-win32-arm64@0.2.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-VEuqX9OSFpw960mibe4OXVmnE43V/VYwB61zoxD5uw7L3jgCiOfrf+W2TuFbcRAgtTD35MypJ53fYxmUcVZc8g=="],
 
     "@opentui/core-win32-x64": ["@opentui/core-win32-x64@0.2.1", "", { "os": "win32", "cpu": "x64" }, "sha512-ywwRbyjPPEbNe3da+ez4NxIaJWQ79sA2gdepuHKUVdmdxsevdRpAxOHkEpJNtiVvphPc/On9EsP25Hmn5gjYxg=="],
-
-    "@opentui/keymap": ["@opentui/keymap@0.2.1", "", { "dependencies": { "@opentui/core": "0.2.1" }, "peerDependencies": { "@opentui/react": "0.2.1", "@opentui/solid": "0.2.1", "react": ">=19.0.0", "solid-js": "1.9.12" }, "optionalPeers": ["@opentui/react", "@opentui/solid", "react", "solid-js"] }, "sha512-3KDPg2pAvmeIhapiDEX/rf28DwcQzCnbOPazSiHa0pOxFS8dsrKqx/3FSNtL314E8fO1QOqcMvR4Rkr0kd/j6g=="],
 
     "@opentui/solid": ["@opentui/solid@0.2.1", "", { "dependencies": { "@babel/core": "7.28.0", "@babel/preset-typescript": "7.27.1", "@opentui/core": "0.2.1", "babel-plugin-module-resolver": "5.0.2", "babel-preset-solid": "1.9.12", "entities": "7.0.1", "s-js": "^0.4.9" }, "peerDependencies": { "solid-js": "1.9.12" } }, "sha512-/vlW9SmcqkarbMwB4JaIwwS3ovo42DSwAnyM04pjJVhG7DzKKwdUzozQMRgvEDZZ7oGYQRvHyVAfL8GCLh0AZw=="],
 
