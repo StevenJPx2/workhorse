@@ -17,6 +17,7 @@ export const Commands = {
   QUIT: "quit",
   SHOW_HELP: "show-help",
   CLOSE_MODAL: "close-modal",
+  EXIT_INPUT: "exit-input",
 
   // Navigation
   FOCUS_NEXT: "focus-next",

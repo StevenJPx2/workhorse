@@ -56,22 +56,28 @@ export const ui = {
 
   /**
    * Focus the next component in tab order.
+   * Automatically enters input mode when focusing chat.
    */
   focusNext: () => {
     const current = focusedComponent();
     const idx = FOCUS_ORDER.indexOf(current);
     const next = FOCUS_ORDER[(idx + 1) % FOCUS_ORDER.length]!;
     setFocusedComponent(next);
+    // Auto-toggle input mode based on what we're focusing
+    setInputMode(next === "chat");
   },
 
   /**
    * Focus the previous component in tab order.
+   * Automatically enters input mode when focusing chat.
    */
   focusPrev: () => {
     const current = focusedComponent();
     const idx = FOCUS_ORDER.indexOf(current);
     const prev = FOCUS_ORDER[(idx - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length]!;
     setFocusedComponent(prev);
+    // Auto-toggle input mode based on what we're focusing
+    setInputMode(prev === "chat");
   },
 
   /**

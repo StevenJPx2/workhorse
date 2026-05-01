@@ -65,6 +65,16 @@ export function useGlobalBindings() {
           ui.backToOverview();
         },
       },
+      {
+        name: Commands.EXIT_INPUT,
+        title: "Exit Input",
+        desc: "Exit input mode and return to navigation",
+        run: () => {
+          ui.exitInputMode();
+          // Move focus back to issues list when exiting input
+          ui.setFocusedComponent("issues");
+        },
+      },
     ],
     bindings: [
       {
@@ -92,16 +102,27 @@ export function useGlobalBindings() {
         cmd: Commands.FOCUS_PREV,
         enabled: reactiveMatcherFromSignal(notInputOrModal, (v) => v),
       },
+      // ESC: close modal (highest priority)
       {
         key: "escape",
         cmd: Commands.CLOSE_MODAL,
         enabled: reactiveMatcherFromSignal(ui.modal, (v) => v !== null),
       },
+      // ESC: exit input mode when typing
+      {
+        key: "escape",
+        cmd: Commands.EXIT_INPUT,
+        enabled: reactiveMatcherFromSignal(
+          () => !ui.modal() && ui.inputMode(),
+          (v) => v,
+        ),
+      },
+      // ESC: go back from help/agent screens
       {
         key: "escape",
         cmd: Commands.BACK,
         enabled: reactiveMatcherFromSignal(
-          () => !ui.modal() && (ui.screen() === "help" || ui.screen() === "agent"),
+          () => !ui.modal() && !ui.inputMode() && ui.screen() !== "overview",
           (v) => v,
         ),
       },
