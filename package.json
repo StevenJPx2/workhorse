@@ -10,6 +10,7 @@
     "test": "bun run --filter '*' test",
     "build": "bun run --filter '*' build",
     "build:plugins": "bun scripts/build-plugins.ts",
+    "build:tui": "bun scripts/build-tui.ts",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
