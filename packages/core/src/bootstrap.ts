@@ -90,7 +90,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratow
   const monitors = new MonitorService(hooks, memory, config);
 
   // Initialize tracker (issue parsing and prompt building)
-  const tracker = new Tracker(db, hooks);
+  const tracker = new Tracker(db, hooks, memory, config);
 
   // Initialize orchestrator for agent lifecycle management
   const orchestrator = new HarnessOrchestrator(db, hooks, memory, config);

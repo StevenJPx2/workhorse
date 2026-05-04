@@ -1,6 +1,7 @@
 import { createContext, useContext, type JSX } from "solid-js";
 import type {
   JiratownConfig,
+  ConfigPaths,
   HookEmitter,
   MemoryService,
   Tracker,
@@ -13,6 +14,7 @@ import type {
  */
 export interface JiratownContextValue {
   readonly config: JiratownConfig;
+  readonly paths: ConfigPaths;
   readonly hooks: HookEmitter;
   readonly memory: MemoryService;
   readonly tracker: Tracker;

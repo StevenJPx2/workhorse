@@ -25,15 +25,13 @@ Main entry point. Manages parsers and orchestrates prompt building.
 ```typescript
 import { Tracker } from "#workflow/tracker";
 
-const tracker = new Tracker(db, hooks);
+const tracker = new Tracker(db, hooks, memory, config);
 
 // Register a parser (plugins do this in setup())
 tracker.registerParser({
   source: "jira",
   canParse: (input) => /^[A-Z]+-\d+$/.test(input),
   parse: async (input) => fetchJiraIssue(input),
-  memory,
-  config,
 });
 
 // Parse user input
@@ -55,18 +53,18 @@ const parser = new IssueParser(
   "jira",                                    // source
   (input) => /^[A-Z]+-\d+$/.test(input),    // canParse
   async (input) => fetchJiraIssue(input),   // parse
+);
+
+// Or create from options object (memory/config injected by Tracker)
+const parser = IssueParser.from(
+  {
+    source: "jira",
+    canParse: (input) => /^[A-Z]+-\d+$/.test(input),
+    parse: async (input) => fetchJiraIssue(input),
+  },
   memory,
   config,
 );
-
-// Or create from options object
-const parser = IssueParser.from({
-  source: "jira",
-  canParse: (input) => /^[A-Z]+-\d+$/.test(input),
-  parse: async (input) => fetchJiraIssue(input),
-  memory,
-  config,
-});
 ```
 
 ### PromptEngineer
@@ -122,6 +120,7 @@ Plugins can:
 ```typescript
 definePlugin({
   setup(ctx) {
+    // memory/config are injected by Tracker automatically
     ctx.tracker.registerParser({
       source: "jira",
       canParse: (input) => /^[A-Z]+-\d+$/.test(input),
@@ -129,8 +128,6 @@ definePlugin({
         // Fetch from Jira API
         return { externalId: input, source: "jira", ... };
       },
-      memory: ctx.memory,
-      config: ctx.config,
     });
   },
 });

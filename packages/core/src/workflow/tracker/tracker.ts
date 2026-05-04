@@ -1,5 +1,7 @@
+import type { JiratownConfig } from "#config";
 import type { Database, Issue } from "#db";
 import type { HookEmitter } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
 import type { BuildPromptOptions } from "./engineer.ts";
 import { IssueParser, type IssueParserOptions } from "./parser.ts";
 
@@ -11,15 +13,13 @@ import { IssueParser, type IssueParserOptions } from "./parser.ts";
  *
  * @example
  * ```typescript
- * const tracker = new Tracker(db, hooks);
+ * const tracker = new Tracker(db, hooks, memory, config);
  *
  * // Register a parser (typically done by plugins)
  * tracker.registerParser({
  *   source: "jira",
  *   canParse: (input) => /^[A-Z]+-\d+$/.test(input),
  *   parse: async (input) => fetchJiraIssue(input),
- *   memory,
- *   config,
  * });
  *
  * // Parse user input
@@ -35,6 +35,8 @@ export class Tracker {
   constructor(
     private readonly db: Database,
     private readonly hooks: HookEmitter,
+    private readonly memory: MemoryService,
+    private readonly config: Readonly<JiratownConfig>,
   ) {}
 
   /**
@@ -42,7 +44,7 @@ export class Tracker {
    * Parsers are tried in registration order - first match wins.
    */
   registerParser(options: IssueParserOptions): void {
-    this.parsers.push(IssueParser.from(options));
+    this.parsers.push(IssueParser.from(options, this.memory, this.config));
   }
 
   /**

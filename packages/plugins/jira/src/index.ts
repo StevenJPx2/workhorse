@@ -54,11 +54,7 @@ export const jiraPlugin = definePlugin({
     const client = new AtlassianClient(config.cloudId, createCredentialGetter());
 
     // Register issue parser for Jira keys and URLs
-    ctx.tracker.registerParser({
-      ...createJiraParserOptions(client),
-      memory: ctx.memory,
-      config: ctx.config,
-    });
+    ctx.tracker.registerParser(createJiraParserOptions(client));
 
     // Register comment monitor (started per-issue when agent spawns)
     ctx.monitors.registerMonitor(createJiraCommentMonitor(client, config.pollInterval, ctx.db));

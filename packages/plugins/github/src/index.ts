@@ -65,11 +65,7 @@ export const githubPlugin = definePlugin({
     const client = new GitHubClient();
 
     // Register issue parser for GitHub refs and URLs
-    ctx.tracker.registerParser({
-      ...createGitHubParserOptions(client),
-      memory: ctx.memory,
-      config: ctx.config,
-    });
+    ctx.tracker.registerParser(createGitHubParserOptions(client));
 
     // Register unified PR monitor (reviews, comments, checks, mergeable)
     ctx.monitors.registerMonitor(createGitHubPRMonitor(client, config.pollInterval, ctx.db));

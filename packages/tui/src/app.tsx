@@ -46,6 +46,7 @@ export function App(props: AppProps) {
     <JiratownProvider
       value={{
         config: props.config,
+        paths: props.paths,
         hooks: props.hooks,
         memory: props.memory,
         tracker: props.tracker,

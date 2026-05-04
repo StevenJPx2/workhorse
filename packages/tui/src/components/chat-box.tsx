@@ -1,4 +1,4 @@
-import { type Accessor, createSignal, For, Show } from "solid-js";
+import { type Accessor, For, Show } from "solid-js";
 import type { ChatMessage } from "../primitives/create-chat.ts";
 import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
@@ -15,7 +15,6 @@ interface ChatBoxProps {
  * Click anywhere on the component to focus the input.
  */
 export function ChatBox(props: ChatBoxProps) {
-  const [input, setInput] = createSignal("");
   const theme = getTheme();
 
   // Check if this component is focused (driven by global state)
@@ -93,14 +92,12 @@ export function ChatBox(props: ChatBoxProps) {
       >
         <text fg={theme.colors.accent}>❯ </text>
         <input
-          value={input()}
           focused={isFocused()}
-          onInput={(e) => setInput(e)}
-          onSubmit={() => {
-            const msg = input().trim();
+          onSubmit={(value) => {
+            // value can be string or SubmitEvent - handle both
+            const msg = typeof value === "string" ? value.trim() : "";
             if (msg) {
               props.onSend(msg);
-              setInput("");
             }
           }}
           placeholder={props.placeholder ?? "Type a message..."}

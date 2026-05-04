@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { JiratownConfig } from "#config";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
+import type { MemoryService } from "#services/memory";
 import type { IssueParserOptions, ParsedIssue } from "#workflow/tracker";
 import { Tracker } from "#workflow/tracker";
 
 // Mock MemoryService
-const mockMemory = {
+const createMockMemory = () => ({
   l1: {
     get: vi.fn(),
   },
@@ -16,9 +18,9 @@ const mockMemory = {
     getUnread: vi.fn().mockReturnValue([]),
     generateInbox: vi.fn().mockReturnValue("<inbox />"),
   },
-};
+});
 
-const mockConfig = {
+const mockConfig: JiratownConfig = {
   agent: { harness: "claude-code" as const },
   behavior: { autoResume: true, pollInterval: 30000 },
   prompt: { custom: undefined },
@@ -27,30 +29,39 @@ const mockConfig = {
   steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
 };
 
-function createParserOptions(overrides: {
-  source?: string;
-  canParse?: (input: string) => boolean;
-  parse?: (input: string) => Promise<ParsedIssue>;
-  memory?: typeof mockMemory;
-  config?: typeof mockConfig;
-}): IssueParserOptions {
+function createParserOptions(overrides: Partial<IssueParserOptions> = {}): IssueParserOptions {
   return {
     source: overrides.source ?? "test-source",
     canParse: overrides.canParse ?? ((input) => /^[A-Z]+-\d+$/.test(input)),
     parse: overrides.parse ?? vi.fn(),
-    memory: (overrides.memory ?? mockMemory) as any,
-    config: overrides.config ?? mockConfig,
   };
 }
+
+const testIssue = (externalId: string, overrides: Record<string, unknown> = {}) => ({
+  externalId,
+  source: "test-source",
+  title: `Issue ${externalId}`,
+  description: "",
+  status: "pending" as const,
+  issueType: "task" as const,
+  url: null,
+  assignee: null,
+  labels: null,
+  metadata: {},
+  worktreePath: null,
+  ...overrides,
+});
 
 describe("Tracker", () => {
   let db: Database;
   let tracker: Tracker;
+  let mockMemory: ReturnType<typeof createMockMemory>;
 
   beforeEach(async () => {
     hooks.all.clear();
     db = await Database.create(":memory:");
-    tracker = new Tracker(db, hooks);
+    mockMemory = createMockMemory();
+    tracker = new Tracker(db, hooks, mockMemory as unknown as MemoryService, mockConfig);
     vi.clearAllMocks();
   });
 
@@ -246,239 +257,120 @@ describe("Tracker", () => {
     });
 
     it("throws if no parser for source", async () => {
-      const issue = await db.issues.insert({
-        externalId: "AM-100",
-        source: "unknown-source",
-        title: "Test Issue",
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
+      const issue = await db.issues.insert(testIssue("AM-100", { source: "unknown-source" }));
       await expect(tracker.buildPrompt(issue.id)).rejects.toThrow(
         'No parser found for source: "unknown-source"',
       );
     });
 
     it("builds prompt for existing issue", async () => {
-      // Register a parser for test-source
-      tracker.registerParser(createParserOptions({ source: "test-source" }));
-
-      // Insert an issue directly
-      const issue = await db.issues.insert({
-        externalId: "AM-100",
-        source: "test-source",
-        title: "Build Test Issue",
-        description: "Testing prompt building",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
+      tracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(
+        testIssue("AM-100", { title: "Build Test Issue", description: "Testing prompt building" }),
+      );
       const prompt = await tracker.buildPrompt(issue.id);
-
       expect(prompt).toContain("AM-100");
       expect(prompt).toContain("Build Test Issue");
       expect(prompt).toContain("Testing prompt building");
     });
 
     it("emits prompt.built hook", async () => {
-      tracker.registerParser(createParserOptions({ source: "test-source" }));
-
-      const issue = await db.issues.insert({
-        externalId: "AM-101",
-        source: "test-source",
-        title: "Hook Test",
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
+      tracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(testIssue("AM-101", { title: "Hook Test" }));
       const builtHandler = vi.fn();
       hooks.on("prompt.built", builtHandler);
-
       await tracker.buildPrompt(issue.id);
-
       expect(builtHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          issueId: issue.id,
-          prompt: expect.any(String),
-        }),
+        expect.objectContaining({ issueId: issue.id, prompt: expect.any(String) }),
       );
     });
 
     it("includes notifications as context block", async () => {
-      const memory = {
+      const customMemory = {
         ...mockMemory,
         notifications: {
           getUnread: vi.fn().mockReturnValue([{ id: "notif-1", title: "Test notification" }]),
-          generateInbox: vi
-            .fn()
-            .mockReturnValue("<system_inbox><notification>Test</notification></system_inbox>"),
+          generateInbox: vi.fn().mockReturnValue("<system_inbox>Test</system_inbox>"),
         },
       };
-
-      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
-
-      const issue = await db.issues.insert({
-        externalId: "AM-102",
-        source: "test-source",
-        title: "Notification Test",
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
-      const prompt = await tracker.buildPrompt(issue.id);
-
+      const customTracker = new Tracker(
+        db,
+        hooks,
+        customMemory as unknown as MemoryService,
+        mockConfig,
+      );
+      customTracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(testIssue("AM-102", { title: "Notification Test" }));
+      const prompt = await customTracker.buildPrompt(issue.id);
       expect(prompt).toContain("Pending Notifications");
-      expect(memory.notifications.generateInbox).toHaveBeenCalled();
+      expect(customMemory.notifications.generateInbox).toHaveBeenCalled();
     });
 
     it("queries L2 memory for context", async () => {
-      const memory = {
+      const customMemory = {
         ...mockMemory,
         l2: {
-          search: vi.fn().mockResolvedValue([
-            {
-              id: "doc-1",
-              score: 0.85,
-              content: "Related document content",
-              metadata: { type: "decision" },
-            },
-          ]),
+          search: vi
+            .fn()
+            .mockResolvedValue([
+              { id: "doc-1", score: 0.85, content: "Related doc", metadata: { type: "decision" } },
+            ]),
         },
       };
-
-      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
-
-      const issue = await db.issues.insert({
-        externalId: "AM-103",
-        source: "test-source",
-        title: "L2 Search Test",
-        description: "Find related context",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
-      const prompt = await tracker.buildPrompt(issue.id);
-
-      expect(memory.l2.search).toHaveBeenCalledWith(
+      const customTracker = new Tracker(
+        db,
+        hooks,
+        customMemory as unknown as MemoryService,
+        mockConfig,
+      );
+      customTracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(
+        testIssue("AM-103", { title: "L2 Search Test", description: "Find related context" }),
+      );
+      const prompt = await customTracker.buildPrompt(issue.id);
+      expect(customMemory.l2.search).toHaveBeenCalledWith(
         "L2 Search Test Find related context",
         expect.objectContaining({ limit: 5, returnContent: true }),
       );
       expect(prompt).toContain("Related Context");
-      expect(prompt).toContain("Related document content");
+      expect(prompt).toContain("Related doc");
     });
 
     it("includes custom instructions from config", async () => {
-      const customConfig = {
-        ...mockConfig,
-        prompt: {
-          custom: "Always follow best practices" as string | undefined,
-        },
-      };
-
-      tracker.registerParser(
-        createParserOptions({ source: "test-source", config: customConfig as any }),
+      const customConfig: JiratownConfig = { ...mockConfig, prompt: { custom: "Best practices" } };
+      const customTracker = new Tracker(
+        db,
+        hooks,
+        mockMemory as unknown as MemoryService,
+        customConfig,
       );
-
-      const issue = await db.issues.insert({
-        externalId: "AM-104",
-        source: "test-source",
-        title: "Custom Instructions Test",
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
-      const prompt = await tracker.buildPrompt(issue.id);
-
+      customTracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(testIssue("AM-104", { title: "Custom Instructions" }));
+      const prompt = await customTracker.buildPrompt(issue.id);
       expect(prompt).toContain("Custom Instructions");
-      expect(prompt).toContain("Always follow best practices");
+      expect(prompt).toContain("Best practices");
     });
 
     it.fails("TODO: buildPrompt should handle L2 search errors gracefully", async () => {
-      // Currently L2 search errors propagate up. Future enhancement: catch
-      // errors and continue building prompt without context.
-      const memory = {
+      const customMemory = {
         ...mockMemory,
-        l2: {
-          search: vi.fn().mockRejectedValue(new Error("Search failed")),
-        },
+        l2: { search: vi.fn().mockRejectedValue(new Error()) },
       };
-
-      tracker.registerParser(createParserOptions({ source: "test-source", memory }));
-
-      const issue = await db.issues.insert({
-        externalId: "AM-105",
-        source: "test-source",
-        title: "Error Handling Test",
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
-      // Should not throw, should handle gracefully (but currently throws)
-      const prompt = await tracker.buildPrompt(issue.id);
+      const customTracker = new Tracker(
+        db,
+        hooks,
+        customMemory as unknown as MemoryService,
+        mockConfig,
+      );
+      customTracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(testIssue("AM-105", { title: "Error Handling Test" }));
+      const prompt = await customTracker.buildPrompt(issue.id);
       expect(prompt).toContain("AM-105");
     });
 
     it.fails("TODO: buildPrompt should validate issue data before building", async () => {
-      // Currently buildPrompt doesn't validate that the issue has required fields
-      // for prompt generation. Future enhancement: validate and throw meaningful errors.
-      tracker.registerParser(createParserOptions({ source: "test-source" }));
-
-      // Insert an issue with missing title (simulating data corruption)
-      const issue = await db.issues.insert({
-        externalId: "AM-999",
-        source: "test-source",
-        title: "", // Empty title should be invalid
-        description: "",
-        status: "pending",
-        issueType: "task",
-        url: null,
-        assignee: null,
-        labels: null,
-        metadata: {},
-        worktreePath: null,
-      });
-
-      // This should throw a validation error
+      tracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(testIssue("AM-999", { title: "" }));
       await expect(tracker.buildPrompt(issue.id)).rejects.toThrow();
     });
   });

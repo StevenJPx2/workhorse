@@ -106,6 +106,7 @@ Register a parser so the Tracker can handle your source's issue IDs/URLs:
 
 ```typescript
 setup(ctx) {
+  // memory/config are injected by Tracker automatically
   ctx.tracker.registerParser({
     source: "jira",
     canParse: (input) => /^[A-Z]+-\d+$/.test(input) || input.includes("atlassian.net"),
@@ -113,8 +114,6 @@ setup(ctx) {
       // Fetch issue from external API and return ParsedIssue
       return { externalId: "AM-123", source: "jira", title: "...", description: "...", issueType: "task", metadata: {} };
     },
-    memory: ctx.memory,
-    config: ctx.config,
   });
 }
 ```

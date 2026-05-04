@@ -1,46 +1,61 @@
 import type { AgentAdapter, Issue } from "@jiratown/core";
-import { createSignal } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import { AgentList, IssueList, StatusBar } from "../../components";
+import { useJiratownContext } from "../../context/jiratown.tsx";
 import { createChat } from "../../primitives";
-import { createIssues } from "../../primitives/create-issues.ts";
 import { createAgents } from "../../primitives/create-agents.ts";
+import { createIssues } from "../../primitives/create-issues.ts";
 import { ui } from "../../state/ui.ts";
 import { getTheme } from "../../theme.ts";
 import { useOverviewBindings } from "./use-overview-bindings.ts";
 
 /**
- * Overview screen - main landing page with two-pane layout.
- *
- * Layout:
- * ┌─────────────────────────────────────────────┐
- * │  ⚡ JIRATOWN                                │
- * ├─────────────────────┬───────────────────────┤
- * │  ⚡ ISSUES (3)      │  ● AGENTS (2 active)  │
- * │  ▸ AM-123 Fix...    │  ▸ AM-456   ● running │
- * │    AM-124 Add...    │    PROJ-789 ○ idle    │
- * │    AM-125 Update... │                       │
- * ├─────────────────────┴───────────────────────┤
- * │  ❯ Ask or type a command...                 │
- * ├─────────────────────────────────────────────┤
- * │  Enter select  Tab switch  ? help    q quit │
- * └─────────────────────────────────────────────┘
- *
- * Tab: cycle focus between issues, agents, and chat input
- * Arrow keys: navigate within the focused list
- * Enter: select item or submit command
+ * Overview screen - main landing page with two-pane layout (issues | agents).
+ * Tab cycles focus, arrow keys navigate, Enter selects.
  */
 export function Overview() {
   const theme = getTheme();
-  const [selectedIssueId] = createSignal<string | null>(null);
-  const { send } = createChat(selectedIssueId);
-  const [input, setInput] = createSignal("");
+  const { paths, tracker, orchestrator } = useJiratownContext();
   const [issueIndex, setIssueIndex] = createSignal(0);
   const [agentIndex, setAgentIndex] = createSignal(0);
-
   const issues = createIssues();
   const agents = createAgents();
 
-  // Setup keybindings
+  // Derive selected issue ID from the currently highlighted agent
+  const selectedIssueId = createMemo(() => {
+    const agentList = agents();
+    const idx = agentIndex();
+    return agentList.length > 0 && idx >= 0 && idx < agentList.length
+      ? (agentList[idx]?.issueId ?? null)
+      : null;
+  });
+
+  const { messages, send } = createChat(selectedIssueId);
+
+  /** Handle chat input - send to agent or spawn new agent for issue */
+  const handleSubmit = async (msg: string) => {
+    const agentId = selectedIssueId();
+
+    if (agentId) {
+      send(msg);
+      ui.enterAgentView(agentId);
+      return;
+    }
+
+    try {
+      const issue = await tracker.parseInput(msg);
+      await orchestrator
+        .spawn({
+          issue,
+          repoPath: paths.worktreesRoot.replace(/-worktrees$/, ""),
+        })
+        .then((agent) => agent.start());
+      ui.enterAgentView(issue.externalId);
+    } catch (err) {
+      console.error("Failed to create agent:", err);
+    }
+  };
+
   useOverviewBindings({
     issues,
     agents,
@@ -94,6 +109,7 @@ export function Overview() {
 
       {/* Command input area - highlighted when focused */}
       <box
+        flexDirection="column"
         backgroundColor={
           ui.focusedComponent() === "chat" ? theme.colors.selection : theme.colors.surface
         }
@@ -108,20 +124,40 @@ export function Overview() {
           },
         } as any)}
       >
-        <text fg={theme.colors.accent}>❯ </text>
-        <input
-          value={input()}
-          focused={ui.focusedComponent() === "chat"}
-          onInput={(e) => setInput(e)}
-          onSubmit={() => {
-            const msg = input().trim();
-            if (msg) {
-              send(msg);
-              setInput("");
+        {/* Show recent messages if any */}
+        {messages().length > 0 && (
+          <box flexDirection="column" marginBottom={1}>
+            {messages()
+              .slice(-3)
+              .map((msg) => (
+                <text fg={msg.role === "user" ? theme.colors.info : theme.colors.success}>
+                  {msg.role === "user" ? "You: " : "Agent: "}
+                  {msg.content.slice(0, 60)}
+                  {msg.content.length > 60 ? "..." : ""}
+                </text>
+              ))}
+          </box>
+        )}
+        <box flexDirection="row">
+          <text fg={theme.colors.accent}>
+            {selectedIssueId() ? `[${selectedIssueId()}] ❯ ` : "❯ "}
+          </text>
+          <input
+            focused={ui.focusedComponent() === "chat"}
+            onSubmit={(value) => {
+              // value can be string or SubmitEvent - handle both
+              const msg = typeof value === "string" ? value.trim() : "";
+              if (msg) {
+                handleSubmit(msg);
+              }
+            }}
+            placeholder={
+              selectedIssueId()
+                ? `Message agent ${selectedIssueId()}...`
+                : "Type a task or issue key..."
             }
-          }}
-          placeholder="Ask or type a command..."
-        />
+          />
+        </box>
       </box>
 
       {/* Status bar */}

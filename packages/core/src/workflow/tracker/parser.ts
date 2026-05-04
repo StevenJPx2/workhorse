@@ -6,6 +6,7 @@ import type { IssueSource, ParsedIssue } from "./types.ts";
 
 /**
  * Options for registering an IssueParser.
+ * Memory and config are injected by Tracker, not provided by plugins.
  */
 export interface IssueParserOptions {
   /** Source this parser handles */
@@ -14,10 +15,6 @@ export interface IssueParserOptions {
   canParse: (input: string) => boolean;
   /** Parse the input into a ParsedIssue */
   parse: (input: string) => Promise<ParsedIssue>;
-  /** Memory service for context enrichment */
-  memory: MemoryService;
-  /** App configuration */
-  config: Readonly<JiratownConfig>;
 }
 
 /**
@@ -49,15 +46,14 @@ export class IssueParser {
 
   /**
    * Create an IssueParser from options object.
+   * Memory and config are injected by Tracker.
    */
-  static from(options: IssueParserOptions): IssueParser {
-    return new IssueParser(
-      options.source,
-      options.canParse,
-      options.parse,
-      options.memory,
-      options.config,
-    );
+  static from(
+    options: IssueParserOptions,
+    memory: MemoryService,
+    config: Readonly<JiratownConfig>,
+  ): IssueParser {
+    return new IssueParser(options.source, options.canParse, options.parse, memory, config);
   }
 
   /**
