@@ -47,6 +47,7 @@ export { AgentAdapter, HarnessOrchestrator } from "#workflow/orchestrator";
 export type {
   AdapterInfo,
   AgentState,
+  CreateOptions,
   JSONSchema,
   OrchestratorTool,
   ToolExecutionContext,

@@ -135,8 +135,8 @@ export class AgentAdapter {
       throw new Error(`Agent for ${this.issueId} is already running`);
     }
 
-    this.hooks.emit("agent.start.pre", { adapter: this });
     this.state = "starting";
+    this.hooks.emit("agent.start.pre", { adapter: this });
 
     try {
       await this.doStart();

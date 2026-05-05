@@ -7,7 +7,7 @@
  * @module @jiratown/plugin-pi-adapter/adapter
  */
 
-import type { AgentState } from "@jiratown/core";
+import type { AgentState, CreateOptions } from "@jiratown/core";
 
 import { AgentAdapter } from "@jiratown/core";
 import {
@@ -36,6 +36,13 @@ export class PiAgentAdapter extends AgentAdapter {
 
   private session: AgentSession | null = null;
   private unsubscribe: (() => void) | null = null;
+
+  /** Factory method. Creates a PiAgentAdapter (does NOT call start()). */
+  static override async create(options: CreateOptions): Promise<PiAgentAdapter> {
+    const adapter = new PiAgentAdapter(options);
+    await adapter.initialize(options);
+    return adapter;
+  }
 
   /** Start the agent session via doStart(). Called by base class start(). */
   protected override async doStart(): Promise<void> {
