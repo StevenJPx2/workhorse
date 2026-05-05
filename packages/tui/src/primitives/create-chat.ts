@@ -86,12 +86,30 @@ export function createChat(issueId: Accessor<string | null>) {
       return;
     }
 
+    // Add user message first (so it appears immediately)
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, msg]);
+
     // Check if agent is running
-    if (adapter.state !== "running") {
-      // Agent not running - start it first
-      try {
-        await adapter.start();
-      } catch (err) {
+    if (adapter.state !== "running" && adapter.state !== "starting") {
+      // Agent not running - start it in the background
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          content: "⏳ Starting agent... (this may take a moment)",
+          timestamp: new Date(),
+        },
+      ]);
+
+      // Start agent in background - don't block
+      adapter.start().catch((err) => {
         setMessages((prev) => [
           ...prev,
           {
@@ -101,20 +119,27 @@ export function createChat(issueId: Accessor<string | null>) {
             timestamp: new Date(),
           },
         ]);
-        return;
-      }
+      });
+
+      // Don't send message yet - agent is starting
+      return;
     }
 
-    // Add user message
-    const msg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, msg]);
+    // If agent is starting, queue the message
+    if (adapter.state === "starting") {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          content: "⏳ Agent is still starting... Please wait.",
+          timestamp: new Date(),
+        },
+      ]);
+      return;
+    }
 
-    // Send to agent
+    // Send to agent (only if running)
     try {
       await adapter.sendMessage(content);
     } catch (err) {

@@ -19,7 +19,7 @@ export function Overview() {
   const [issueIndex, setIssueIndex] = createSignal(0);
   const [agentIndex, setAgentIndex] = createSignal(0);
   const issues = createIssues();
-  const agents = createAgents();
+  const { agents } = createAgents();
 
   // Derive selected issue ID from the currently highlighted agent
   const selectedIssueId = createMemo(() => {

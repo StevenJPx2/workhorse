@@ -107,6 +107,7 @@ export const ui = {
   enterAgentView: (agentId: string) => {
     setSelectedAgentId(agentId);
     setScreen("agent");
+    setFocusedComponent("chat");
   },
 
   /**

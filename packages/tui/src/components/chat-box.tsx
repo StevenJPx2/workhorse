@@ -5,7 +5,7 @@ import { ui } from "../state/ui.ts";
 
 interface ChatBoxProps {
   messages: Accessor<ChatMessage[]>;
-  onSend: (message: string) => void;
+  onSend: (message: string) => void | Promise<void>;
   placeholder?: string;
 }
 

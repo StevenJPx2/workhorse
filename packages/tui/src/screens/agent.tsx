@@ -25,7 +25,7 @@ import { getTheme } from "../theme.ts";
  * └─────────────────────────────────────────────┘
  */
 export function Agent() {
-  const agents = createAgents();
+  const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
 
@@ -94,7 +94,7 @@ export function Agent() {
             paddingTop={1}
             paddingBottom={1}
           >
-            <box flexShrink={1} overflow="hidden">
+            <box flexDirection="row" flexShrink={1} overflow="hidden">
               <text fg={theme.colors.accent}>
                 <b>{agent().issueId}</b>
               </text>
@@ -106,8 +106,9 @@ export function Agent() {
               </text>
             </box>
             <box flexShrink={0}>
-              <text fg={getStatusColor(agent().state)}>
-                {getStatusIcon(agent().state)} {agent().state.toUpperCase()}
+              <text fg={getStatusColor(getState(selectedId()) ?? "stopped")}>
+                {getStatusIcon(getState(selectedId()) ?? "stopped")}{" "}
+                {(getState(selectedId()) ?? "stopped").toUpperCase()}
               </text>
             </box>
           </box>
@@ -136,8 +137,6 @@ export function Agent() {
             <For each={agents()}>
               {(agent: AgentAdapter) => {
                 const isSelected = () => agent.issueId === selectedId();
-                const statusColor = getStatusColor(agent.state);
-                const statusIcon = getStatusIcon(agent.state);
 
                 return (
                   <box
@@ -150,7 +149,10 @@ export function Agent() {
                       {isSelected() ? "▸ " : "  "}
                       {agent.issueId}
                     </text>
-                    <text fg={statusColor}> {statusIcon}</text>
+                    <text fg={getStatusColor(getState(agent.issueId) ?? "stopped")}>
+                      {" "}
+                      {getStatusIcon(getState(agent.issueId) ?? "stopped")}
+                    </text>
                   </box>
                 );
               }}

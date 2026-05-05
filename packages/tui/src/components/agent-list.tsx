@@ -15,7 +15,7 @@ interface AgentListProps {
  * Click to focus, Tab to navigate between components.
  */
 export function AgentList(props: AgentListProps) {
-  const agents = createAgents();
+  const { agents, getState } = createAgents();
   const theme = getTheme();
 
   // Check if this component is focused
@@ -85,8 +85,7 @@ export function AgentList(props: AgentListProps) {
           {(agent, index) => {
             // Only show selection highlight if this list is focused
             const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
-            const statusColor = getStatusColor(agent.state);
-            const statusIcon = getStatusIcon(agent.state);
+            const state = () => getState(agent.issueId) ?? "stopped";
 
             return (
               <box
@@ -103,10 +102,10 @@ export function AgentList(props: AgentListProps) {
                   </text>
                 </box>
                 <box>
-                  <text fg={statusColor}>
-                    {statusIcon} {agent.state}
+                  <text fg={getStatusColor(state())}>
+                    {getStatusIcon(state())} {state()}
                   </text>
-                  <Show when={agent.state === "crashed"}>
+                  <Show when={state() === "crashed"}>
                     <text fg={theme.colors.error}> !</text>
                   </Show>
                 </box>
