@@ -2,124 +2,194 @@
 /**
  * Build script for Jiratown TUI.
  *
- * Bundles the TUI application into a single executable using Bun's bundler.
- * Uses the @opentui/solid Babel plugin to transform SolidJS JSX.
- * Outputs to packages/tui/dist/jiratown.js
+ * Bundles the TUI into a single JS file. The bundle still requires the monorepo's
+ * node_modules for native deps (@opentui/core, keytar, @libsql, etc.).
  *
- * Usage:
- *   bun scripts/build-tui.ts           # Build TUI
- *   bun scripts/build-tui.ts --minify  # Build with minification
+ * For development: bun run dev (from packages/tui/)
+ * Run bundle: bun packages/tui/dist/jiratown.js
  *
  * @module scripts/build-tui
  */
 
-import { resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  copyFileSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { resolve, extname } from "node:path";
 import { parseArgs } from "node:util";
 
-const TUI_DIR = resolve(import.meta.dir, "../packages/tui");
+const ROOT = resolve(import.meta.dir, "..");
+const TUI = resolve(ROOT, "packages/tui");
+const ENTRY = resolve(TUI, "src/index.tsx");
+const OUTDIR = resolve(TUI, "dist");
+const BUNDLE = resolve(OUTDIR, "jiratown.js");
 
-// Import the Solid transform plugin from the TUI package's node_modules
 const { createSolidTransformPlugin } = await import(
-  resolve(TUI_DIR, "node_modules/@opentui/solid/scripts/solid-plugin.ts")
+  resolve(TUI, "node_modules/@opentui/solid/scripts/solid-plugin.ts")
 );
-const ENTRY = resolve(TUI_DIR, "src/index.tsx");
-const OUTDIR = resolve(TUI_DIR, "dist");
 
-interface BuildOptions {
-  minify: boolean;
-  sourcemap: boolean;
-}
-
-async function build(options: BuildOptions): Promise<void> {
+async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   const start = performance.now();
-
   console.log("\n⚡ Building @jiratown/tui...\n");
+
+  if (!existsSync(OUTDIR)) mkdirSync(OUTDIR, { recursive: true });
 
   const result = await Bun.build({
     entrypoints: [ENTRY],
     outdir: OUTDIR,
     target: "bun",
     format: "esm",
-    minify: options.minify,
-    sourcemap: options.sourcemap ? "linked" : "none",
+    minify,
+    sourcemap: sourcemap ? "linked" : "none",
     plugins: [createSolidTransformPlugin()],
-    external: [
-      // Keep native modules external - they can't be bundled
-      "keytar",
-      // Keep heavy ML dependencies external
-      "@huggingface/transformers",
-      "onnxruntime-node",
-      "retriv",
-      // drizzle has dynamic requires that break bundling
-      "@libsql/client",
-      "drizzle-orm",
-    ],
-    naming: {
-      entry: "jiratown.js",
-    },
+    external: [],
+    naming: { entry: "jiratown.js" },
   });
 
   if (!result.success) {
-    console.error("Build failed:\n");
-    for (const log of result.logs) {
-      console.error(log);
-    }
+    for (const log of result.logs) console.error(log);
     process.exit(1);
   }
 
-  const duration = performance.now() - start;
-  const output = result.outputs[0];
-  const size = output ? formatSize(output.size) : "unknown";
+  patchDynamicImports();
+  copyTreeSitterAssets();
+  copyDrizzleMigrations();
 
-  console.log(`✓ Built dist/jiratown.js (${size})`);
-  console.log(`  Duration: ${formatDuration(duration)}`);
-  console.log(`  Minified: ${options.minify}`);
-  console.log(`  Sourcemap: ${options.sourcemap}\n`);
+  const size = result.outputs[0] ? formatSize(result.outputs[0].size) : "?";
+  console.log(`✓ Built dist/jiratown.js (${size}) in ${formatDuration(performance.now() - start)}`);
+  console.log(`  Run with: bun packages/tui/dist/jiratown.js\n`);
 }
 
-function formatDuration(ms: number): string {
-  return ms < 1000 ? `${ms.toFixed(0)}ms` : `${(ms / 1000).toFixed(2)}s`;
+/** Patch dynamic platform imports to use absolute paths */
+function patchDynamicImports(): void {
+  const p = process.platform,
+    a = process.arch;
+  let content = readFileSync(BUNDLE, "utf-8");
+  let n = 0;
+
+  // @opentui/core dynamic import
+  const otuiPath = resolve(
+    ROOT,
+    `node_modules/.bun/@opentui+core-${p}-${a}@0.2.1/node_modules/@opentui/core-${p}-${a}/index.ts`,
+  );
+  if (existsSync(otuiPath)) {
+    content = content.replace(
+      /import\(`@opentui\/core-\$\{process\.platform\}-\$\{process\.arch\}\/index\.ts`\)/g,
+      `import("${otuiPath}")`,
+    );
+    n++;
+  }
+
+  // @libsql dynamic require
+  const lsqlTarget = p === "darwin" ? `darwin-${a}` : `linux-${a}-gnu`;
+  const lsqlPath = resolve(
+    ROOT,
+    `node_modules/.bun/@libsql+${lsqlTarget}@0.5.29/node_modules/@libsql/${lsqlTarget}`,
+  );
+  if (existsSync(lsqlPath)) {
+    content = content.replace(
+      /return __require\(`@libsql\/\$\{target\}`\);/g,
+      `return __require("${lsqlPath}");`,
+    );
+    n++;
+  }
+
+  // onnxruntime-node dynamic require
+  const onnxPath = resolve(
+    ROOT,
+    `node_modules/.bun/onnxruntime-node@1.24.3/node_modules/onnxruntime-node/bin/napi-v6/${p}/${a}/onnxruntime_binding.node`,
+  );
+  if (existsSync(onnxPath)) {
+    content = content.replace(
+      /__require\(`\.\.\/bin\/napi-v6\/\$\{process\.platform\}\/\$\{process\.arch\}\/onnxruntime_binding\.node`\)/g,
+      `__require("${onnxPath}")`,
+    );
+    n++;
+  }
+
+  // sharp dynamic require - patch the paths array to use absolute path
+  const sharpPlatform = p === "darwin" ? `darwin-${a}` : `linux-${a}`;
+  const sharpPath = resolve(
+    ROOT,
+    `node_modules/.bun/@img+sharp-${sharpPlatform}@0.34.5/node_modules/@img/sharp-${sharpPlatform}/lib/sharp-${sharpPlatform}.node`,
+  );
+  if (existsSync(sharpPath)) {
+    // Replace the dynamic path in the paths array: `@img/sharp-${runtimePlatform}/sharp.node`
+    content = content.replace(
+      /`@img\/sharp-\$\{runtimePlatform\}\/sharp\.node`/g,
+      `"${sharpPath}"`,
+    );
+    n++;
+  }
+
+  writeFileSync(BUNDLE, content);
+  console.log(`  ✓ Patched ${n} dynamic imports`);
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
+function copyTreeSitterAssets(): void {
+  const src = resolve(TUI, "tree-sitter");
+  if (!existsSync(src)) return;
+  const dest = resolve(OUTDIR, "tree-sitter");
+  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+  for (const f of readdirSync(src)) {
+    if ([".wasm", ".scm"].includes(extname(f))) copyFileSync(resolve(src, f), resolve(dest, f));
+  }
 }
 
-function main(): void {
-  const { values } = parseArgs({
-    args: Bun.argv.slice(2),
-    options: {
-      help: { type: "boolean", short: "h" },
-      minify: { type: "boolean", short: "m", default: false },
-      sourcemap: { type: "boolean", short: "s", default: true },
-    },
-  });
+/** Copy drizzle migrations to dist folder */
+function copyDrizzleMigrations(): void {
+  const src = resolve(ROOT, "packages/core/drizzle");
+  if (!existsSync(src)) return;
+  const dest = resolve(OUTDIR, "drizzle");
+  copyDirRecursive(src, dest);
+  console.log("  ✓ Copied drizzle migrations");
+}
 
-  if (values.help) {
-    console.log(`
+function copyDirRecursive(src: string, dest: string): void {
+  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+  for (const entry of readdirSync(src, { withFileTypes: true })) {
+    const srcPath = resolve(src, entry.name);
+    const destPath = resolve(dest, entry.name);
+    if (entry.isDirectory()) copyDirRecursive(srcPath, destPath);
+    else copyFileSync(srcPath, destPath);
+  }
+}
+
+const formatDuration = (ms: number) =>
+  ms < 1000 ? `${ms.toFixed(0)}ms` : `${(ms / 1000).toFixed(2)}s`;
+const formatSize = (b: number) =>
+  b < 1024 ? `${b}B` : b < 1048576 ? `${(b / 1024).toFixed(1)}KB` : `${(b / 1048576).toFixed(2)}MB`;
+
+const { values } = parseArgs({
+  args: Bun.argv.slice(2),
+  options: {
+    help: { type: "boolean", short: "h" },
+    minify: { type: "boolean", short: "m", default: false },
+    sourcemap: { type: "boolean", short: "s", default: true },
+  },
+});
+
+if (values.help) {
+  console.log(`
 Usage: bun scripts/build-tui.ts [options]
 
 Options:
-  -h, --help       Show this help message
-  -m, --minify     Minify the output (default: false)
+  -h, --help       Show this help
+  -m, --minify     Minify output (default: false)
   -s, --sourcemap  Generate sourcemap (default: true)
 
 Examples:
-  bun scripts/build-tui.ts              # Development build
+  bun scripts/build-tui.ts              # Dev build
   bun scripts/build-tui.ts --minify     # Production build
 `);
-    process.exit(0);
-  }
-
-  build({
-    minify: values.minify ?? false,
-    sourcemap: values.sourcemap ?? true,
-  }).catch((error) => {
-    console.error("Build failed:", error);
-    process.exit(1);
-  });
+  process.exit(0);
 }
 
-main();
+build(values.minify ?? false, values.sourcemap ?? true).catch((e) => {
+  console.error("Build failed:", e);
+  process.exit(1);
+});

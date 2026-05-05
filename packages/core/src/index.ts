@@ -45,6 +45,7 @@ export {
 // Orchestrator exports for plugin authors
 export { AgentAdapter, HarnessOrchestrator } from "#workflow/orchestrator";
 export type {
+  AdapterInfo,
   AgentState,
   JSONSchema,
   OrchestratorTool,

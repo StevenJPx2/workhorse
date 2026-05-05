@@ -4,7 +4,7 @@
  * @module lib/git/worktree/operations
  */
 
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import type { WorktreeInfo } from "./types.ts";
 import { buildBranchName, buildWorktreePath, execGit, parseWorktreeList } from "./utils.ts";
 
@@ -29,34 +29,41 @@ export async function createWorktree(
   const worktreePath = buildWorktreePath(repoPath, issueId);
   const branchName = buildBranchName(issueId, issueType);
 
-  // Check if worktree already exists
+  // Check if worktree already exists in git's records
   const existing = await getWorktree(repoPath, issueId);
   if (existing) {
-    return existing;
+    // Verify the path actually exists on disk
+    if (existsSync(existing.path)) {
+      return existing;
+    }
+    // Worktree is registered but path doesn't exist on disk - prune the stale reference
+    // (this only removes git's metadata, not any files)
+    await execGit(["git", "worktree", "prune"], repoPath);
+  }
+
+  // If directory exists on disk but isn't registered with git, it's orphaned
+  // Don't delete it - could contain uncommitted work. Fail with clear error.
+  if (existsSync(worktreePath)) {
+    console.error(
+      `Worktree directory exists but is not registered with git: ${worktreePath}\n` +
+        `This may contain uncommitted work. Please manually remove or repair it:\n` +
+        `  - To remove: rm -rf "${worktreePath}"\n` +
+        `  - To repair: git worktree repair "${worktreePath}"`,
+    );
+    return null;
   }
 
   // Fetch latest from origin
   await execGit(["git", "fetch", "origin"], repoPath);
 
   // Try to create worktree with new branch
-  if (
-    !(
-      await execGit(
-        ["git", "worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`],
-        repoPath,
-      )
-    ).success
-  ) {
-    // Branch might already exist, try without -b flag
-    // First, clean up any stale worktree directory
-    if (existsSync(worktreePath)) {
-      try {
-        rmSync(worktreePath, { recursive: true, force: true });
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
+  const createWithNewBranch = await execGit(
+    ["git", "worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`],
+    repoPath,
+  );
 
+  if (!createWithNewBranch.success) {
+    // Branch might already exist, try without -b flag
     const existingBranchResult = await execGit(
       ["git", "worktree", "add", worktreePath, branchName],
       repoPath,

@@ -13,7 +13,13 @@
 
 // Agent types (base class and options)
 export { AgentAdapter } from "../agent.ts";
-export type { AgentHarness, AgentState, CreateOptions, StopOptions } from "../agent.ts";
+export type {
+  AdapterInfo,
+  AgentHarness,
+  AgentState,
+  CreateOptions,
+  StopOptions,
+} from "../agent.ts";
 
 // Spawn options
 export type { SpawnOptions } from "./spawn.ts";

@@ -94,13 +94,18 @@ export function Agent() {
             paddingTop={1}
             paddingBottom={1}
           >
-            <box>
+            <box flexShrink={1} overflow="hidden">
               <text fg={theme.colors.accent}>
                 <b>{agent().issueId}</b>
               </text>
-              <text fg={theme.colors.dim}> — {agent().issue.title}</text>
+              <text fg={theme.colors.dim}>
+                {" — "}
+                {agent().issue.title.length > 40
+                  ? agent().issue.title.slice(0, 40) + "..."
+                  : agent().issue.title}
+              </text>
             </box>
-            <box>
+            <box flexShrink={0}>
               <text fg={getStatusColor(agent().state)}>
                 {getStatusIcon(agent().state)} {agent().state.toUpperCase()}
               </text>

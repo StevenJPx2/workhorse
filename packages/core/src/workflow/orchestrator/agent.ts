@@ -1,9 +1,4 @@
-/**
- * Agent adapter base class.
- * Lifecycle: create() → start() → sendMessage() → stop()
- * @module workflow/orchestrator/types/agent
- */
-
+/** Agent adapter base class. Lifecycle: create() → start() → sendMessage() → stop() */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Issue } from "#db";
@@ -19,12 +14,18 @@ import type { OrchestratorTool } from "./types/tools.ts";
 
 export type { AgentHarness, AgentState, CreateOptions, StopOptions };
 
-/**
- * Base class for agent adapters. Subclasses override doStart(), doStop(),
- * sendMessage(), and isRunning() for harness-specific behavior.
- */
+/** Metadata for a registered adapter (for UI display). */
+export interface AdapterInfo {
+  harness: string;
+  displayName: string;
+  icon: string;
+}
+
+/** Base class for agent adapters. Subclasses override doStart/doStop/sendMessage/isRunning. */
 export class AgentAdapter {
   readonly harness: AgentHarness = "base";
+  static readonly displayName: string = "Base Agent";
+  static readonly icon: string = "🤖";
   state: AgentState = "stopped";
   readonly issue: Issue;
   worktreePath: string = "";
@@ -86,6 +87,7 @@ export class AgentAdapter {
   protected async initialize(options: CreateOptions): Promise<void> {
     this.hooks.emit("agent.create.pre", { issue: this.issue, options });
 
+    // Create or reuse worktree (createWorktree handles existing worktrees)
     const worktree = await createWorktree(
       options.repoPath,
       this.issue.externalId,
@@ -101,7 +103,7 @@ export class AgentAdapter {
     await this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
 
     const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
-      isResume: existsSync(join(worktree.path, ".jiratown", "session")),
+      isResume: existsSync(join(this.worktreePath, ".jiratown", "session")),
       tools: this.tools,
     });
 

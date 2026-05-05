@@ -18,6 +18,7 @@ export { SteeringRule } from "#workflow/steering";
 // Agent adapter base class and types
 export { AgentAdapter } from "./types";
 export type {
+  AdapterInfo,
   AgentHarness,
   AgentState,
   CreateOptions,

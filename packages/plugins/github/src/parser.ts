@@ -69,7 +69,5 @@ export function createGitHubParserOptions(client: GitHubClient): IssueParserOpti
       // Fetch the issue/PR and map to ParsedIssue
       return mapGitHubToIssue(await client.fetchIssue(ref.owner, ref.repo, ref.number));
     },
-    memory: null as never, // Set by caller with actual memory service
-    config: null as never, // Set by caller with actual config
   };
 }

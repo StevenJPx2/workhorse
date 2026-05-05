@@ -25,7 +25,7 @@ import {
   type SteeringRuleConfigInput,
   SteeringRuleConfigSchema,
 } from "#workflow/steering";
-import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
+import type { AdapterInfo, AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
  * Main orchestrator class for managing agent lifecycles.
@@ -54,6 +54,20 @@ export class HarnessOrchestrator {
   /** Get an adapter class by harness name. */
   getAdapterClass(harness: string): typeof AgentAdapter | undefined {
     return this.adapters.get(harness);
+  }
+
+  /** Get all registered harness names. */
+  getRegisteredHarnesses(): string[] {
+    return Array.from(this.adapters.keys());
+  }
+
+  /** Get info about all registered adapters (for UI display). */
+  getAdapterInfoList(): AdapterInfo[] {
+    return Array.from(this.adapters.entries()).map(([harness, AdapterClass]) => ({
+      harness,
+      displayName: AdapterClass.displayName ?? harness,
+      icon: AdapterClass.icon ?? "🤖",
+    }));
   }
 
   /** Register a tool. Plugins call this during setup. */

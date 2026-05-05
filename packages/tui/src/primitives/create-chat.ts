@@ -67,10 +67,45 @@ export function createChat(issueId: Accessor<string | null>) {
   /**
    * Send a message to the agent.
    */
-  const send = (content: string) => {
+  const send = async (content: string) => {
     const id = issueId();
     if (!id) return;
 
+    const adapter = orchestrator.getAgent(id);
+    if (!adapter) {
+      // No agent found - add system message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          content: "⚠️ No agent found for this issue. Please spawn an agent first.",
+          timestamp: new Date(),
+        },
+      ]);
+      return;
+    }
+
+    // Check if agent is running
+    if (adapter.state !== "running") {
+      // Agent not running - start it first
+      try {
+        await adapter.start();
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "agent",
+            content: `⚠️ Failed to start agent: ${err instanceof Error ? err.message : String(err)}`,
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+    }
+
+    // Add user message
     const msg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -79,11 +114,19 @@ export function createChat(issueId: Accessor<string | null>) {
     };
     setMessages((prev) => [...prev, msg]);
 
-    // Send to agent via orchestrator
-    // The orchestrator will handle injecting the message into the agent's session
-    const adapter = orchestrator.getAgent(id);
-    if (adapter) {
-      adapter.sendMessage(content);
+    // Send to agent
+    try {
+      await adapter.sendMessage(content);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "agent",
+          content: `⚠️ Failed to send message: ${err instanceof Error ? err.message : String(err)}`,
+          timestamp: new Date(),
+        },
+      ]);
     }
   };
 

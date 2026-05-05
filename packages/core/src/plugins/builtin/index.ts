@@ -4,4 +4,4 @@
  * @module plugins/builtin
  */
 
-export { corePlugin } from "./tools/plugin.ts";
+export { corePlugin } from "./plugin.ts";

@@ -1,7 +1,8 @@
-import { createSignal, For } from "solid-js";
-import { Portal, useRenderer } from "@opentui/solid";
-import type { Issue } from "@jiratown/core";
+import { createSignal, createMemo, For } from "solid-js";
+import { useKeyboard } from "@opentui/solid";
+import type { AdapterInfo, Issue } from "@jiratown/core";
 import { getTheme } from "../theme.ts";
+import { useJiratownContext } from "../context/jiratown.tsx";
 
 interface SpawnModalProps {
   issue: Issue;
@@ -15,24 +16,64 @@ export interface SpawnConfig {
   baseBranch: string;
 }
 
-const HARNESS_OPTIONS = [
-  { name: "Pi Coding Agent", value: "pi", icon: "🤖" },
-  { name: "Claude Code", value: "claude-code", icon: "🧠" },
-];
-
-/**
- * Modal for configuring and spawning an agent for an issue.
- * Uses background colors for visual depth.
- */
+/** Modal for configuring and spawning an agent for an issue. */
 export function SpawnModal(props: SpawnModalProps) {
-  const renderer = useRenderer();
   const theme = getTheme();
-  const [harnessIndex, _setHarnessIndex] = createSignal(0);
+  const { orchestrator } = useJiratownContext();
+
+  // Get registered harnesses from orchestrator
+  const harnessOptions = createMemo<AdapterInfo[]>(() => {
+    const adapters = orchestrator.getAdapterInfoList();
+    // If no adapters registered, show a placeholder
+    return adapters.length > 0
+      ? adapters
+      : [{ harness: "none", displayName: "No adapters", icon: "⚠️" }];
+  });
+
+  const [harnessIndex, setHarnessIndex] = createSignal(0);
   const [baseBranch, _setBaseBranch] = createSignal("main");
-  const [focusedField, _setFocusedField] = createSignal<"harness" | "branch">("harness");
+  const [focusedField, setFocusedField] = createSignal<"harness" | "branch">("harness");
+
+  useKeyboard((key) => {
+    if (key.name === "return") {
+      const options = harnessOptions();
+      const selectedHarness = options[harnessIndex()];
+      if (selectedHarness && selectedHarness.harness !== "none") {
+        props.onSpawn({
+          issue: props.issue,
+          harness: selectedHarness.harness,
+          baseBranch: baseBranch(),
+        });
+      }
+      return;
+    }
+    if (key.name === "tab") {
+      setFocusedField((prev) => (prev === "harness" ? "branch" : "harness"));
+      return;
+    }
+    if (focusedField() === "harness") {
+      if (key.name === "up" || key.name === "k") {
+        setHarnessIndex((prev) => Math.max(0, prev - 1));
+        return;
+      }
+      if (key.name === "down" || key.name === "j") {
+        setHarnessIndex((prev) => Math.min(harnessOptions().length - 1, prev + 1));
+      }
+    }
+  });
 
   return (
-    <Portal mount={renderer.root}>
+    // Full-screen overlay container - uses absolute positioning to cover parent
+    <box
+      position="absolute"
+      top={0}
+      left={0}
+      width="100%"
+      height="100%"
+      zIndex={1000}
+      justifyContent="center"
+      alignItems="center"
+    >
       <box
         flexDirection="column"
         width={50}
@@ -79,7 +120,7 @@ export function SpawnModal(props: SpawnModalProps) {
             </text>
           </box>
           <box flexDirection="column" paddingLeft={4}>
-            <For each={HARNESS_OPTIONS}>
+            <For each={harnessOptions()}>
               {(option, index) => (
                 <box
                   backgroundColor={index() === harnessIndex() ? theme.colors.selection : undefined}
@@ -88,7 +129,7 @@ export function SpawnModal(props: SpawnModalProps) {
                 >
                   <text fg={index() === harnessIndex() ? theme.colors.success : theme.colors.dim}>
                     {index() === harnessIndex() ? "● " : "○ "}
-                    {option.icon} {option.name}
+                    {option.icon} {option.displayName}
                   </text>
                 </box>
               )}
@@ -147,6 +188,6 @@ export function SpawnModal(props: SpawnModalProps) {
           </box>
         </box>
       </box>
-    </Portal>
+    </box>
   );
 }

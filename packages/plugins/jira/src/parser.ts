@@ -39,7 +39,5 @@ export function createJiraParserOptions(client: AtlassianClient): IssueParserOpt
 
       return mapJiraToIssue(await client.fetchIssue(ticketKey));
     },
-    memory: null as never, // Set by caller with actual memory service
-    config: null as never, // Set by caller with actual config
   };
 }

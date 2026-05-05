@@ -10,9 +10,9 @@ import * as schema from "./schema";
 function resolveMigrationsFolder(): string {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    join(thisDir, "../../drizzle"),
-    join(thisDir, "../drizzle"),
-    join(thisDir, "../../src/drizzle"),
+    join(thisDir, "../../drizzle"), // packages/core/src/db -> packages/core/drizzle
+    join(thisDir, "../drizzle"), // packages/core/dist -> packages/core/drizzle
+    join(thisDir, "./drizzle"), // bundled: packages/tui/dist -> packages/tui/dist/drizzle
   ];
   for (const dir of candidates) {
     if (existsSync(dir)) return dir;

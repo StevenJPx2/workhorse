@@ -7,6 +7,9 @@
  * @module @jiratown/plugin-pi-adapter/adapter
  */
 
+import type { AgentState } from "@jiratown/core";
+
+import { AgentAdapter } from "@jiratown/core";
 import {
   type AgentSession,
   type AgentSessionEvent,
@@ -15,9 +18,6 @@ import {
   getAgentDir,
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
-
-import { AgentAdapter } from "@jiratown/core";
-import type { AgentState } from "@jiratown/core";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 
 /**
@@ -27,6 +27,12 @@ import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
  */
 export class PiAgentAdapter extends AgentAdapter {
   override readonly harness = "pi-coding-agent";
+
+  /** Display name for UI */
+  static override readonly displayName = "Pi Coding Agent";
+
+  /** Icon for UI */
+  static override readonly icon = "🥧";
 
   private session: AgentSession | null = null;
   private unsubscribe: (() => void) | null = null;

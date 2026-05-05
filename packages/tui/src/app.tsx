@@ -54,6 +54,14 @@ export function App(props: AppProps) {
       }}
     >
       <box flexDirection="column" width="100%" height="100%">
+        {/* Modal layer - rendered first but with higher zIndex to overlay */}
+        <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
+          {(issue: () => Issue) => (
+            <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
+          )}
+        </Show>
+
+        {/* Main content */}
         <Switch>
           <Match when={ui.screen() === "overview"}>
             <Overview />
@@ -65,12 +73,6 @@ export function App(props: AppProps) {
             <Help />
           </Match>
         </Switch>
-
-        <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
-          {(issue: () => Issue) => (
-            <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
-          )}
-        </Show>
       </box>
     </JiratownProvider>
   );

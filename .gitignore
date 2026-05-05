@@ -6,6 +6,7 @@ out
 dist
 *.tgz
 oxlint/eslint-plugin-jiratown/index.js
+*.bun-build
 
 # code coverage
 coverage
