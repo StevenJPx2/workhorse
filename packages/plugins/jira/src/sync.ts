@@ -23,9 +23,11 @@ export function registerStatusSync(ctx: JiratownContext, client: AtlassianClient
     if (issue.source !== "jira") return;
 
     try {
-      const transition = (await client.getTransitions(issue.externalId)).find((t) =>
-        t.name.toLowerCase().includes((statusMapping[to] ?? to).toLowerCase()),
-      );
+      const transition = await client
+        .getTransitions(issue.externalId)
+        .then((r) =>
+          r.find((t) => t.name.toLowerCase().includes((statusMapping[to] ?? to).toLowerCase())),
+        );
 
       if (!transition) {
         console.warn(`[jira] No transition found for status "${to}" on ${issue.externalId}`);

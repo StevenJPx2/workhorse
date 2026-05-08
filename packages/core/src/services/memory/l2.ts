@@ -87,18 +87,20 @@ export class L2Store {
   async search(query: string, options: MemorySearchOptions = {}): Promise<SearchResult[]> {
     const { limit = 10, filter, returnContent = false } = options;
 
-    return (
-      await this.retriv.search(query, {
+    return await this.retriv
+      .search(query, {
         limit,
         filter: filter ? buildFilter(filter) : undefined,
         returnContent,
       })
-    ).map((r) => ({
-      id: r.id,
-      score: r.score,
-      content: returnContent ? r.content : undefined,
-      metadata: r.metadata,
-    }));
+      .then((r) =>
+        r.map((r) => ({
+          id: r.id,
+          score: r.score,
+          content: returnContent ? r.content : undefined,
+          metadata: r.metadata,
+        })),
+      );
   }
 
   /**

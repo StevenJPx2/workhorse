@@ -147,7 +147,7 @@ describe("Database", () => {
       const metadata = { nested: { value: 123 }, array: [1, 2, 3] };
       const issue = await db.issues.insert(makeIssueInput({ metadata }));
 
-      const retrieved = (await db.issues.getById(issue.id))!;
+      const retrieved = await db.issues.getById(issue.id).then((r) => r!);
       expect(retrieved.metadata).toEqual(metadata);
     });
 
@@ -155,7 +155,7 @@ describe("Database", () => {
       const labels = ["bug", "urgent", "backend"];
       const issue = await db.issues.insert(makeIssueInput({ labels }));
 
-      const retrieved = (await db.issues.getById(issue.id))!;
+      const retrieved = await db.issues.getById(issue.id).then((r) => r!);
       expect(retrieved.labels).toEqual(labels);
     });
 

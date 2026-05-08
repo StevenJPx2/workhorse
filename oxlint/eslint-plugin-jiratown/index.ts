@@ -9,6 +9,7 @@ import noIndexImports from "./rules/no-index-imports";
 import noSectionComments from "./rules/no-section-comments";
 import preferFolderBarrel from "./rules/prefer-folder-barrel";
 import preferPathAlias from "./rules/prefer-path-alias";
+import preferThenChain from "./rules/prefer-then-chain";
 
 const plugin = {
   meta: {
@@ -27,6 +28,7 @@ const plugin = {
     "no-section-comments": noSectionComments,
     "prefer-folder-barrel": preferFolderBarrel,
     "prefer-path-alias": preferPathAlias,
+    "prefer-then-chain": preferThenChain,
   },
 };
 

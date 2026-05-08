@@ -57,12 +57,12 @@ export async function createWorktree(
   await execGit(["git", "fetch", "origin"], repoPath);
 
   // Try to create worktree with new branch
-  const createWithNewBranch = await execGit(
-    ["git", "worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`],
-    repoPath,
-  );
-
-  if (!createWithNewBranch.success) {
+  if (
+    !(await execGit(
+      ["git", "worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`],
+      repoPath,
+    ).then((r) => r.success))
+  ) {
     // Branch might already exist, try without -b flag
     const existingBranchResult = await execGit(
       ["git", "worktree", "add", worktreePath, branchName],

@@ -13,8 +13,11 @@ export class NotificationController {
    * Create a new notification. Fields with defaults (id, status, timestamps) are optional.
    */
   async create(input: InsertNotification): Promise<Notification> {
-    const result = await this.db.insert(notifications).values(input).returning();
-    return result[0]!;
+    return await this.db
+      .insert(notifications)
+      .values(input)
+      .returning()
+      .then((r) => r[0]!);
   }
 
   /**
@@ -64,10 +67,10 @@ export class NotificationController {
    * Used for deduplication when creating notifications.
    */
   async findBySourceId(sourceId: string): Promise<Notification | undefined> {
-    const result = await this.db
+    return await this.db
       .select()
       .from(notifications)
-      .where(eq(notifications.sourceId, sourceId));
-    return result[0];
+      .where(eq(notifications.sourceId, sourceId))
+      .then((r) => r[0]);
   }
 }

@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { defu } from "defu";
 import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 import { deepCamelKeys, deepSnakeKeys } from "string-ts";
-import type { JiratownConfig } from "./types.ts";
+import type { DeepPartial, JiratownConfig } from "./types.ts";
 
 export function parseTomlFile(filePath: string | null): Partial<JiratownConfig> {
   if (!filePath) return {};
@@ -19,7 +19,7 @@ export function parseTomlFile(filePath: string | null): Partial<JiratownConfig> 
 // Last arg wins. Call as mergeConfigs(base, global, project) → project wins.
 export function mergeConfigs(
   base: JiratownConfig,
-  ...overrides: Partial<JiratownConfig>[]
+  ...overrides: DeepPartial<JiratownConfig>[]
 ): JiratownConfig {
   let result = base;
   for (const override of overrides) {

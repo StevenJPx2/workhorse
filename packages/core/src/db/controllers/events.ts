@@ -13,8 +13,11 @@ export class EventController {
    * Insert a new event. Fields with defaults (id, createdAt) are optional.
    */
   async insert(input: InsertIssueEvent): Promise<IssueEvent> {
-    const result = await this.db.insert(issueEvents).values(input).returning();
-    return result[0]!;
+    return await this.db
+      .insert(issueEvents)
+      .values(input)
+      .returning()
+      .then((r) => r[0]!);
   }
 
   /**

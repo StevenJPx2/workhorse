@@ -17,7 +17,7 @@ export interface SpawnOptions {
   /** Custom prompt override (skips PromptEngineer if provided) */
   prompt?: string;
 
-  /** Harness to use (default: "pi-coding-agent") */
+  /** Harness to use (default: "pi-agent") */
   harness?: AgentHarness;
 
   /** Model to use (passed to harness) */

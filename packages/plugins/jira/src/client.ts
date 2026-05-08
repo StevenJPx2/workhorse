@@ -21,7 +21,7 @@ export class AtlassianClient {
   /** Build request headers with current access token */
   private async headers(): Promise<Record<string, string>> {
     return {
-      Authorization: `Bearer ${(await this.getCredentials()).accessToken}`,
+      Authorization: `Bearer ${await this.getCredentials().then((r) => r.accessToken)}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     };
@@ -88,11 +88,9 @@ export class AtlassianClient {
 
   /** Get available transitions for an issue */
   async getTransitions(ticketKey: string): Promise<JiraTransition[]> {
-    return (
-      await this.get<{ transitions: JiraTransition[] }>(
-        `/issue/${encodeURIComponent(ticketKey)}/transitions`,
-      )
-    ).transitions;
+    return await this.get<{ transitions: JiraTransition[] }>(
+      `/issue/${encodeURIComponent(ticketKey)}/transitions`,
+    ).then((r) => r.transitions);
   }
 
   /** Transition an issue */
@@ -110,7 +108,9 @@ export class AtlassianClient {
   /** Get current user profile */
   async getCurrentUser(): Promise<{ accountId: string; displayName: string }> {
     const response = await fetch("https://api.atlassian.com/me", {
-      headers: { Authorization: `Bearer ${(await this.getCredentials()).accessToken}` },
+      headers: {
+        Authorization: `Bearer ${await this.getCredentials().then((r) => r.accessToken)}`,
+      },
     });
 
     if (!response.ok) {

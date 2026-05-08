@@ -7,7 +7,7 @@ import z from "zod";
  */
 export const jiratownConfigSchema = z.object({
   agent: z.object({
-    harness: z.string().default("pi-coding-agent"),
+    harness: z.string().default("pi-agent"),
     model: z.string().optional(),
   }),
   behavior: z.object({

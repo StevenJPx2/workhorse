@@ -29,7 +29,9 @@ export function createJiraCommentMonitor(
         return { hasChanges: false };
       }
 
-      const comments = (await client.fetchIssue(issue.externalId)).fields.comment?.comments ?? [];
+      const comments = await client
+        .fetchIssue(issue.externalId)
+        .then((r) => r.fields.comment?.comments ?? []);
 
       // Get previously seen comment IDs from issue metadata
       const metadata = (issue.metadata ?? {}) as Record<string, unknown>;

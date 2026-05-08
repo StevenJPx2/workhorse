@@ -123,7 +123,7 @@ function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orchestrat
         // Emit hook for cross-plugin coordination
         hooks.emit("jira:issue.transitioned", {
           issueId: ticketKey,
-          from: (await client.fetchIssue(ticketKey)).fields.status.name,
+          from: await client.fetchIssue(ticketKey).then((r) => r.fields.status.name),
           to: transition.to.name,
         });
 

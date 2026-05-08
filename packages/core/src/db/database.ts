@@ -7,14 +7,14 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { EventController, IssueController, NotificationController } from "./controllers";
 import * as schema from "./schema";
 
+// oxlint-disable-next-line jiratown/no-single-reference-function
 function resolveMigrationsFolder(): string {
   const thisDir = dirname(fileURLToPath(import.meta.url));
-  const candidates = [
+  for (const dir of [
     join(thisDir, "../../drizzle"), // packages/core/src/db -> packages/core/drizzle
     join(thisDir, "../drizzle"), // packages/core/dist -> packages/core/drizzle
     join(thisDir, "./drizzle"), // bundled: packages/tui/dist -> packages/tui/dist/drizzle
-  ];
-  for (const dir of candidates) {
+  ]) {
     if (existsSync(dir)) return dir;
   }
   throw new Error(`Could not find drizzle migrations folder from ${thisDir}`);
@@ -82,9 +82,7 @@ export class Database {
     }
 
     // libsql uses file: prefix for local files
-    const url = path === ":memory:" ? ":memory:" : `file:${path}`;
-
-    const client = createClient({ url });
+    const client = createClient({ url: path === ":memory:" ? ":memory:" : `file:${path}` });
 
     // Set pragmas
     await client.execute("PRAGMA journal_mode = WAL;");

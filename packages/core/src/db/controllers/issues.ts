@@ -13,27 +13,33 @@ export class IssueController {
    * Insert a new issue. Fields with defaults (id, status, timestamps) are optional.
    */
   async insert(input: InsertIssue): Promise<Issue> {
-    const result = await this.db.insert(issues).values(input).returning();
-    return result[0]!;
+    return await this.db
+      .insert(issues)
+      .values(input)
+      .returning()
+      .then((r) => r[0]!);
   }
 
   /**
    * Get an issue by its internal ID
    */
   async getById(id: string): Promise<Issue | undefined> {
-    const result = await this.db.select().from(issues).where(eq(issues.id, id));
-    return result[0];
+    return await this.db
+      .select()
+      .from(issues)
+      .where(eq(issues.id, id))
+      .then((r) => r[0]);
   }
 
   /**
    * Get an issue by its external ID and source
    */
   async getByExternalId(externalId: string, source: string): Promise<Issue | undefined> {
-    const result = await this.db
+    return await this.db
       .select()
       .from(issues)
-      .where(and(eq(issues.externalId, externalId), eq(issues.source, source)));
-    return result[0];
+      .where(and(eq(issues.externalId, externalId), eq(issues.source, source)))
+      .then((r) => r[0]);
   }
 
   /**

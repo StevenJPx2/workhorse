@@ -1,5 +1,5 @@
-import type { ConfigPaths, JiratownConfig } from "#config";
-import { loadConfig, resolveConfigPaths } from "#config";
+import type { ConfigPaths, DeepPartial, JiratownConfig } from "#config";
+import { loadConfig, mergeConfigs, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
@@ -19,6 +19,9 @@ export interface BootstrapOptions {
 
   /** Additional plugins to register after core plugins */
   plugins?: Plugin[];
+
+  /** Config overrides (merged on top of loaded config) */
+  overrides?: DeepPartial<JiratownConfig>;
 }
 
 export interface Jiratown {
@@ -70,12 +73,18 @@ export interface Jiratown {
  * ```
  */
 export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratown> {
-  const { repoRoot, plugins: extraPlugins = [] } = options;
+  const { repoRoot, plugins: extraPlugins = [], overrides } = options;
 
   hooks.all.clear();
 
   const paths = resolveConfigPaths(repoRoot);
-  const config = loadConfig(paths);
+  let config = loadConfig(paths);
+
+  // Apply config overrides (e.g., from CLI flags)
+  if (overrides) {
+    config = mergeConfigs(config, overrides);
+  }
+
   const db = await Database.create(paths.database);
 
   // Initialize memory service (includes L1 session memory and L2 semantic search)
