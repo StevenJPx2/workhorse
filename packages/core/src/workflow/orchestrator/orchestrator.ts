@@ -65,6 +65,17 @@ export class HarnessOrchestrator {
     return this.adapters.get(harness)?.registry.getAvailable() ?? [];
   }
 
+  /** Get all models from all registered adapters, tagged with their harness. */
+  getAllModels(): (ModelInfo & { harness: string })[] {
+    const result: (ModelInfo & { harness: string })[] = [];
+    for (const [harness, AdapterClass] of this.adapters.entries()) {
+      for (const model of AdapterClass.registry.getAll()) {
+        result.push({ ...model, harness });
+      }
+    }
+    return result;
+  }
+
   /** Get the preferred provider from a specific adapter. */
   getPreferredProviderForAdapter(harness: string): string {
     return this.adapters.get(harness)?.registry.getPreferredProvider() ?? "unknown";

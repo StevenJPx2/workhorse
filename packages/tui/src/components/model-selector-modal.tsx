@@ -1,9 +1,10 @@
 import { createSignal, createMemo, For } from "solid-js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
-import { PiAdapterModelRegistry, type ModelInfo } from "@jiratown/plugin-pi-adapter";
+import { PiAdapterModelRegistry } from "@jiratown/plugin-pi-adapter";
 import { getTheme } from "../theme.ts";
 import { useJiratownContext } from "../context/jiratown.tsx";
 import { ui } from "../state/ui.ts";
+import { ModelRow } from "./model-row.tsx";
 
 interface ModelSelectorModalProps {
   currentModel: string;
@@ -33,6 +34,16 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
   const modalMaxHeight = () => Math.max(12, Math.floor(dimensions().height * 0.8));
   // Model list height: modal height minus header (2 rows) - provider info (2 rows) - actions (2 rows) - borders (2 rows)
   const modelListHeight = () => Math.max(4, modalMaxHeight() - 8);
+
+  // Calculate visible window of models to simulate scroll-follow
+  const visibleWindow = createMemo(() => {
+    const visibleCount = Math.max(3, modelListHeight());
+    // Calculate start index to keep selected item visible (center it when possible)
+    let startIdx = Math.max(0, selectedIndex() - Math.floor(visibleCount / 2));
+    // Don't scroll past the end
+    startIdx = Math.min(startIdx, Math.max(0, models().length - visibleCount));
+    return { startIndex: startIdx, visibleCount };
+  });
 
   useKeyboard((key) => {
     // Guard: only handle keys when this modal is actually open
@@ -100,20 +111,29 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
           <text fg={theme.colors.success}>{config.agent.model || "default"}</text>
         </box>
 
-        {/* Model list - scrollable to fit in constrained height */}
-        <scrollbox height={modelListHeight()} paddingLeft={2} paddingRight={2} paddingTop={1}>
-          <box flexDirection="column">
-            <For each={models()}>
-              {(model, index) => (
-                <ModelRow
-                  model={model}
-                  isSelected={index() === selectedIndex()}
-                  isCurrent={model.id === props.currentModel}
-                />
-              )}
-            </For>
-          </box>
-        </scrollbox>
+        {/* Model list - render only visible window */}
+        <box
+          height={modelListHeight()}
+          paddingLeft={2}
+          paddingRight={2}
+          paddingTop={1}
+          flexDirection="column"
+        >
+          <For
+            each={models().slice(
+              visibleWindow().startIndex,
+              visibleWindow().startIndex + visibleWindow().visibleCount,
+            )}
+          >
+            {(model, localIndex) => (
+              <ModelRow
+                model={model}
+                isSelected={visibleWindow().startIndex + localIndex() === selectedIndex()}
+                isCurrent={model.id === props.currentModel}
+              />
+            )}
+          </For>
+        </box>
 
         {/* Actions */}
         <box
@@ -125,65 +145,29 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
           flexDirection="row"
           gap={3}
         >
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.success}>
               <b>Enter</b>
             </text>
-            <text fg={theme.colors.dim}> select</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>select</text>
           </box>
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.warning}>
-              <b>ESC</b>
+              <b>Esc</b>
             </text>
-            <text fg={theme.colors.dim}> cancel</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>cancel</text>
           </box>
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.accent}>
-              <b>↑↓/jk</b>
+              <b>↑↓</b>
             </text>
-            <text fg={theme.colors.dim}> navigate</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>navigate</text>
           </box>
         </box>
       </box>
-    </box>
-  );
-}
-
-interface ModelRowProps {
-  model: ModelInfo;
-  isSelected: boolean;
-  isCurrent: boolean;
-}
-
-function ModelRow(props: ModelRowProps) {
-  const theme = getTheme();
-
-  const formatContext = (tokens: number) => {
-    if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
-    return `${Math.round(tokens / 1000)}K`;
-  };
-
-  // Derive these as getters so they react to prop changes
-  const providerIcon = () => (props.model.provider === "opencode" ? "⚡" : "🔷");
-  const indicator = () => (props.isCurrent ? "✓" : props.isSelected ? "●" : "○");
-  const textColor = () =>
-    props.isCurrent
-      ? theme.colors.success
-      : props.isSelected
-        ? theme.colors.accent
-        : theme.colors.dim;
-
-  return (
-    <box
-      backgroundColor={props.isSelected ? theme.colors.selection : undefined}
-      paddingLeft={1}
-      paddingRight={1}
-    >
-      <text fg={textColor()}>
-        {indicator()} {providerIcon()} {props.model.name}
-      </text>
-      <text fg={theme.colors.dim}> ({formatContext(props.model.contextWindow)})</text>
-      {props.model.isDefault && <text fg={theme.colors.info}> [default]</text>}
     </box>
   );
 }

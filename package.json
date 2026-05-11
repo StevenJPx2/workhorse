@@ -12,7 +12,7 @@
     "build:plugins": "bun scripts/build-plugins.ts",
     "build:tui": "bun scripts/build-tui.ts",
     "typecheck": "bun run --filter '*' typecheck",
-    "lint": "oxlint .",
+    "lint": "oxlint . --ignore-pattern 'packages/tui-worktrees/**'",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",
     "format:fix": "oxfmt . --write",
