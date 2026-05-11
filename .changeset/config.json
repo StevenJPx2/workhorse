@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "StevenJPx2/jiratown" }
+  ],
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@jiratown/core",
+    "@jiratown/plugin-jira",
+    "@jiratown/plugin-github",
+    "@jiratown/plugin-pi-adapter",
+    "eslint-plugin-jiratown"
+  ]
+}
