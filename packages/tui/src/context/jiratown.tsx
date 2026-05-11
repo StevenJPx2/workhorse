@@ -4,6 +4,7 @@ import type {
   ConfigPaths,
   HookEmitter,
   MemoryService,
+  MonitorService,
   Tracker,
   HarnessOrchestrator,
 } from "@jiratown/core";
@@ -17,6 +18,7 @@ export interface JiratownContextValue {
   readonly paths: ConfigPaths;
   readonly hooks: HookEmitter;
   readonly memory: MemoryService;
+  readonly monitors: MonitorService;
   readonly tracker: Tracker;
   readonly orchestrator: HarnessOrchestrator;
 }

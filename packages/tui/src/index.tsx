@@ -120,6 +120,7 @@ export async function startTUI() {
         paths={jiratown.paths}
         hooks={jiratown.hooks}
         memory={jiratown.memory}
+        monitors={jiratown.monitors}
         tracker={jiratown.tracker}
         orchestrator={jiratown.orchestrator}
       />

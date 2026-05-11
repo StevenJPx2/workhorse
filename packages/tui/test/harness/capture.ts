@@ -1,65 +1,58 @@
 /**
  * Snapshot capture functions for TUI testing.
- *
- * @module test/capture
+ * Uses the `ht` (headless terminal) CLI.
  */
 
 import { $ } from "bun";
 import type { Snapshot, HarnessOptions } from "./types.ts";
 
-/**
- * Run the TUI and capture a snapshot.
- *
- * Starts the TUI with `ht`, waits for it to render,
- * takes a snapshot, and returns the snapshot text.
- *
- * @example
- * ```typescript
- * const snapshot = await captureSnapshot({ renderWaitMs: 5000 });
- * console.log(snapshot.text);
- * ```
- */
-export async function captureSnapshot(options: HarnessOptions = {}): Promise<Snapshot> {
-  const cols = options.cols ?? 120;
-  const rows = options.rows ?? 40;
+async function cleanup(name: string): Promise<void> {
+  try {
+    await $`ht stop ${name} 2>/dev/null`.nothrow();
+    await $`ht remove ${name} 2>/dev/null`.nothrow();
+  } catch {
+    // Ignore cleanup errors
+  }
+}
 
-  const result = await $`
-    cd ${options.cwd ?? process.cwd()} && (
-      sleep ${(options.renderWaitMs ?? 4000) / 1000}
-      echo '{"type": "takeSnapshot"}'
-      sleep 1
-    ) | timeout ${options.timeoutSec ?? 15} ht --size ${cols}x${rows} --subscribe snapshot ${(options.command ?? "bun src/index.tsx").split(" ")} 2>&1 | grep '"type":"snapshot"'
-  `.text();
+async function startSession(options: HarnessOptions): Promise<{ name: string }> {
+  const name = `jt-test-${Math.random().toString(36).slice(2, 10)}`;
 
-  const match = result.match(/\{.*"type":"snapshot".*\}/);
+  const raw =
+    await $`ht run --name ${name} --size ${options.cols ?? 120}x${options.rows ?? 40} --json --cwd ${options.cwd ?? process.cwd()} ${(options.command ?? "bun src/index.tsx").split(" ")} 2>&1`.text();
+
+  const match = raw.match(/\{[^{}]*"name"[^{}]*\}/);
   if (!match) {
-    throw new Error(`Failed to capture snapshot. Raw output:\n${result}`);
+    throw new Error(`Failed to start ht session. Output:\n${raw}`);
   }
 
-  const event = JSON.parse(match[0]) as {
-    type: string;
-    data: { cols: number; rows: number; text: string; seq: string };
-  };
+  return { name: (JSON.parse(match[0]) as { name: string }).name };
+}
 
-  return {
-    cols: event.data.cols,
-    rows: event.data.rows,
-    text: event.data.text,
-    seq: event.data.seq,
-  };
+async function takeSnapshot(name: string): Promise<string> {
+  return $`ht view ${name} --format plain 2>&1`.text();
+}
+
+/**
+ * Run the TUI and capture a snapshot.
+ */
+export async function captureSnapshot(options: HarnessOptions = {}): Promise<Snapshot> {
+  const { name } = await startSession(options);
+
+  try {
+    await new Promise((r) => setTimeout(r, options.renderWaitMs ?? 4000));
+    return {
+      cols: options.cols ?? 120,
+      rows: options.rows ?? 40,
+      text: await takeSnapshot(name),
+    };
+  } finally {
+    await cleanup(name);
+  }
 }
 
 /**
  * Run the TUI, send keys, and capture a snapshot.
- *
- * @example
- * ```typescript
- * const snapshot = await captureWithKeys({
- *   keys: ["Tab", "Tab", "Enter"],
- *   renderWaitMs: 3000,
- *   postKeysWaitMs: 1000,
- * });
- * ```
  */
 export async function captureWithKeys(
   options: HarnessOptions & {
@@ -67,33 +60,21 @@ export async function captureWithKeys(
     postKeysWaitMs?: number;
   },
 ): Promise<Snapshot> {
-  const cols = options.cols ?? 120;
-  const rows = options.rows ?? 40;
+  const { name } = await startSession(options);
 
-  const result = await $`
-    cd ${options.cwd ?? process.cwd()} && (
-      sleep ${(options.renderWaitMs ?? 4000) / 1000}
-      echo '${JSON.stringify({ type: "sendKeys", keys: options.keys })}'
-      sleep ${(options.postKeysWaitMs ?? 1000) / 1000}
-      echo '{"type": "takeSnapshot"}'
-      sleep 1
-    ) | timeout ${options.timeoutSec ?? 20} ht --size ${cols}x${rows} --subscribe snapshot ${(options.command ?? "bun src/index.tsx").split(" ")} 2>&1 | grep '"type":"snapshot"'
-  `.text();
+  try {
+    await new Promise((r) => setTimeout(r, options.renderWaitMs ?? 4000));
 
-  const match = result.match(/\{.*"type":"snapshot".*\}/);
-  if (!match) {
-    throw new Error(`Failed to capture snapshot. Raw output:\n${result}`);
+    await $`ht send ${name} ${options.keys.join(" ")} --wait-idle ${options.postKeysWaitMs ?? 1000}ms 2>&1`
+      .nothrow()
+      .text();
+
+    return {
+      cols: options.cols ?? 120,
+      rows: options.rows ?? 40,
+      text: await takeSnapshot(name),
+    };
+  } finally {
+    await cleanup(name);
   }
-
-  const event = JSON.parse(match[0]) as {
-    type: string;
-    data: { cols: number; rows: number; text: string; seq: string };
-  };
-
-  return {
-    cols: event.data.cols,
-    rows: event.data.rows,
-    text: event.data.text,
-    seq: event.data.seq,
-  };
 }

@@ -1,12 +1,14 @@
 import type { AgentAdapter } from "@jiratown/core";
 import { createMemo, Show } from "solid-js";
-import { StatusBar } from "../components";
+import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
+import { useJiratownContext } from "../context/jiratown.tsx";
 import { createAgents, createChat } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
+import { createMonitors } from "../primitives/create-monitors.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
 
@@ -29,11 +31,17 @@ const FILES_PANEL_WIDTH = 32;
  * └─────────────────────────────────────────────────────────────┘
  */
 export function Agent() {
+  const { monitors } = useJiratownContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
 
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
+
+  const { state: monitorState } = createMonitors({
+    monitors,
+    issueId: () => selectedAgent()?.issue.externalId ?? null,
+  });
 
   const { state: activityState } = createActivity({ issueId: selectedId });
   const { state: fileChangesState } = createFileChanges({
@@ -95,9 +103,12 @@ export function Agent() {
                 <text fg={theme.colors.info}>{agent().model}</text>
               </Show>
             </box>
-            <box flexShrink={0}>
+            <box flexDirection="row" flexShrink={0}>
+              <MonitorIndicator state={monitorState()} />
+              <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
               <text fg={statusColor(getState(selectedId()) ?? "stopped")}>
-                {statusIcon(getState(selectedId()) ?? "stopped")}{" "}
+                {statusIcon(getState(selectedId()) ?? "stopped")}
+                {"\u00A0"}
                 {(getState(selectedId()) ?? "stopped").toUpperCase()}
               </text>
             </box>

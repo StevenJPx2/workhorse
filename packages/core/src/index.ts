@@ -68,11 +68,12 @@ export { Tracker } from "#workflow/tracker";
 export type { IssueParserOptions } from "#workflow/tracker";
 export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";
 // Monitor exports for plugin authors
-export type {
-  MonitorContext,
-  MonitorOptions,
-  MonitorResult,
-  MonitorStatus,
+export {
+  MonitorService,
+  type MonitorContext,
+  type MonitorOptions,
+  type MonitorResult,
+  type MonitorStatus,
 } from "#services/monitor";
 // Memory service exports
 export {

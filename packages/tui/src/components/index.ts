@@ -8,3 +8,4 @@ export { SpawnModal, type SpawnConfig } from "./spawn-modal";
 export { ModelSelectorModal } from "./model-selector-modal.tsx";
 export { DeleteConfirmModal } from "./delete-confirm-modal.tsx";
 export { ToastContainer } from "./toast.tsx";
+export { MonitorIndicator } from "./monitor-indicator.tsx";

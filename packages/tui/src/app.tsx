@@ -4,6 +4,7 @@ import type {
   ConfigPaths,
   HookEmitter,
   MemoryService,
+  MonitorService,
   Tracker,
   HarnessOrchestrator,
   Issue,
@@ -27,6 +28,7 @@ interface AppProps {
   paths: ConfigPaths;
   hooks: HookEmitter;
   memory: MemoryService;
+  monitors: MonitorService;
   tracker: Tracker;
   orchestrator: HarnessOrchestrator;
 }
@@ -74,6 +76,7 @@ export function App(props: AppProps) {
         paths: props.paths,
         hooks: props.hooks,
         memory: props.memory,
+        monitors: props.monitors,
         tracker: props.tracker,
         orchestrator: props.orchestrator,
       }}

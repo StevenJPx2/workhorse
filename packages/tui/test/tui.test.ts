@@ -10,34 +10,36 @@ import { runTests, printResults, type TestCase } from "./harness";
 const tests: TestCase[] = [
   // Basic rendering tests
   {
-    name: "renders Jiratown header",
-    assert: (text) => text.includes("Jiratown") || "Missing 'Jiratown' header",
+    name: "renders JIRATOWN header",
+    assert: (text) => text.includes("JIRATOWN") || "Missing 'JIRATOWN' header",
   },
   {
     name: "renders ISSUES section",
     assert: (text) => text.includes("ISSUES") || "Missing 'ISSUES' section heading",
   },
-  // Note: AGENTS section may be obscured by opentui's internal Console panel
-  // {
-  //   name: "renders AGENTS section",
-  //   assert: (text) => text.includes("AGENTS") || "Missing 'AGENTS' section heading",
-  // },
+  {
+    name: "renders AGENTS section",
+    assert: (text) => text.includes("AGENTS") || "Missing 'AGENTS' section heading",
+  },
   {
     name: "renders status bar with quit hint",
-    assert: (text) => text.includes("q:quit") || "Missing 'q:quit' in status bar",
+    assert: (text) => text.toLowerCase().includes("quit") || "Missing 'quit' hint in status bar",
   },
   {
     name: "renders chat input placeholder",
     assert: (text) =>
-      text.includes("Ask a q") || text.includes("command") || "Missing chat input placeholder",
+      text.includes("Type a task") ||
+      text.includes("issue key") ||
+      "Missing chat input placeholder",
   },
 
-  // Layout tests
+  // Layout tests — open spawn modal to get borders
   {
-    name: "has proper box borders",
+    name: "has proper box borders in modal",
+    keys: ["<CR>"],
     assert: (text) =>
-      (text.includes("┌") && text.includes("└") && text.includes("┐") && text.includes("┘")) ||
-      "Missing box border characters",
+      (text.includes("╭") && text.includes("╰") && text.includes("╮") && text.includes("╯")) ||
+      "Missing box border characters in modal",
   },
 
   // No crash tests
