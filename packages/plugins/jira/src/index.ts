@@ -14,7 +14,7 @@
 import { z } from "zod/v4";
 import { definePlugin } from "@jiratown/core";
 import { AtlassianClient } from "./client.ts";
-import { createCredentialGetter } from "./auth.ts";
+import { createCredentialGetter, jiraAuthProvider } from "./auth.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
@@ -49,6 +49,9 @@ export const jiraPlugin = definePlugin({
       tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
     },
   },
+  // OAuth 2.0 3LO auth provider for Atlassian
+  // Requires ATLASSIAN_CLIENT_ID env var; undefined if not configured
+  auth: jiraAuthProvider,
   configSchema: JiraConfigSchema,
   setup(ctx, config) {
     // Create Jira REST API client with credentials from keychain

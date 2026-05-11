@@ -95,7 +95,25 @@ export {
   serializeSessionMemory,
 } from "#services/memory";
 // Config exports for plugin authors
-export { getCredential, storeCredential } from "#config";
+export { deleteCredential, getCredential, storeCredential } from "#config";
+// Auth exports for plugin authors
+export type {
+  AuthProvider,
+  AuthProviderType,
+  AuthStatus,
+  ExternalAuthConfig,
+  ExternalProvider,
+  NoAuthProvider,
+  OAuthProvider,
+  OAuthTokens,
+} from "./auth/types.ts";
+export {
+  generateState,
+  startOAuthFlow,
+  type OAuthFlowError,
+  type OAuthFlowResult,
+  type OAuthResult,
+} from "./auth/index.ts";
 export { bootstrap, type BootstrapOptions, type Jiratown } from "./bootstrap.ts";
 // Path validation exports for harness authors
 export {

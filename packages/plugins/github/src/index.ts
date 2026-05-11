@@ -15,6 +15,7 @@
 
 import { z } from "zod/v4";
 import { definePlugin } from "@jiratown/core";
+import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
 import { createGitHubParserOptions } from "./parser.ts";
@@ -61,6 +62,8 @@ export const githubPlugin = definePlugin({
       tools: ["github_open_pr", "github_add_comment", "github_get_pr_status"],
     },
   },
+  // External auth provider - delegates to `gh` CLI
+  auth: githubAuthProvider,
   configSchema: GitHubConfigSchema,
   setup(ctx, config) {
     const client = new GitHubClient();

@@ -1,5 +1,6 @@
 import z from "zod";
 import type { JiratownContext } from "#context";
+import type { AuthProvider } from "../auth/types.ts";
 
 /**
  * Plugin manifest schema — validated with Zod.
@@ -30,6 +31,13 @@ export type PluginManifest = z.infer<typeof PluginManifestSchema>;
  */
 export type PluginOptions<TConfig = void> = {
   manifest: PluginManifest;
+
+  /**
+   * Authentication provider for this plugin.
+   * Declares how the plugin authenticates (OAuth, external CLI, or none).
+   * The TUI uses this to show appropriate auth flows.
+   */
+  auth?: AuthProvider;
 
   /**
    * Teardown function called when the plugin is shut down.
@@ -76,6 +84,8 @@ export const PluginSymbol = Symbol.for("jiratown.plugin");
  */
 export interface Plugin {
   manifest: PluginManifest;
+  /** Authentication provider for this plugin */
+  auth?: AuthProvider;
   setup?: () => void | Promise<void>;
   teardown?: () => void | Promise<void>;
   [PluginSymbol]: true;

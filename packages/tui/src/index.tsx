@@ -7,9 +7,10 @@ import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
 import { parseCliArgs, showHelp, showModels } from "./cli.ts";
 import tuiPlugin from "./plugin.ts";
-import { Setup } from "./screens";
-import type { SetupPluginConfig } from "./screens";
+import { Auth, Setup } from "./screens";
+import type { SetupPluginConfig, AuthScreenProps } from "./screens";
 import {
+  getPluginsNeedingAuth,
   getPluginsNeedingSetup,
   loadExistingConfig,
   savePluginConfig,
@@ -47,9 +48,37 @@ function SetupWrapper(props: SetupWrapperProps) {
   );
 }
 
+interface AuthWrapperProps {
+  plugins: AuthScreenProps["plugins"];
+  onComplete: () => void;
+  onSkip?: () => void;
+}
+
+/**
+ * Wrapper component for Auth that can access the renderer via useRenderer().
+ */
+function AuthWrapper(props: AuthWrapperProps) {
+  const renderer = useRenderer();
+
+  return (
+    <Auth
+      plugins={props.plugins}
+      onComplete={() => {
+        renderer.destroy();
+        props.onComplete();
+      }}
+      onSkip={() => {
+        renderer.destroy();
+        props.onSkip?.();
+      }}
+    />
+  );
+}
+
 /**
  * Start the Jiratown TUI.
- * Shows setup wizard if required config is missing, then bootstraps the system.
+ * Shows setup wizard if required config is missing, then authenticates plugins,
+ * then bootstraps the system.
  */
 export async function startTUI() {
   // Install error logging early
@@ -94,6 +123,26 @@ export async function startTUI() {
     }))
   ) {
     console.log("Setup skipped. Please configure plugins manually in ~/.jiratown.toml");
+    process.exit(1);
+  }
+
+  // Check if any plugins need authentication before bootstrapping
+  // Auth providers are self-contained (keychain, CLI checks) so this works pre-bootstrap
+  const pluginsNeedingAuth = await getPluginsNeedingAuth([jiraPlugin, githubPlugin]);
+
+  if (
+    pluginsNeedingAuth.length > 0 &&
+    !(await new Promise<boolean>((resolve) => {
+      render(() => (
+        <AuthWrapper
+          plugins={pluginsNeedingAuth}
+          onComplete={() => resolve(true)}
+          onSkip={() => resolve(false)}
+        />
+      ));
+    }))
+  ) {
+    console.log("Authentication skipped. Some features may be unavailable.");
     process.exit(1);
   }
 

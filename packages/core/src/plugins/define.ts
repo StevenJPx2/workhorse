@@ -45,6 +45,7 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
 
   return {
     manifest,
+    auth: options.auth,
     setup: async () => {
       const ctx = useJiratown();
 
