@@ -1,8 +1,10 @@
 import type { AgentAdapter } from "@jiratown/core";
-import { For, Show } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import { createAgents } from "../primitives/create-agents.ts";
+import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
 import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
+import { JiratownStatus } from "./jiratown-status.tsx";
 
 interface AgentListProps {
   onSelect: (agent: AgentAdapter) => void;
@@ -17,6 +19,11 @@ interface AgentListProps {
 export function AgentList(props: AgentListProps) {
   const { agents, getState } = createAgents();
   const theme = getTheme();
+
+  // Track issue statuses for all agents
+  const { getStatus } = createIssueStatuses({
+    issueIds: createMemo(() => agents().map((a) => a.issue.externalId)),
+  });
 
   // Check if this component is focused
   const isFocused = () => ui.focusedComponent() === "agents";
@@ -98,11 +105,15 @@ export function AgentList(props: AgentListProps) {
                     {getStatusIcon(state())} {state()}
                   </text>
                 </box>
-                <Show when={agent.model}>
-                  <box paddingLeft={2}>
-                    <text fg={theme.colors.dim}>{agent.model}</text>
-                  </box>
-                </Show>
+                <box paddingLeft={2} flexDirection="row">
+                  <JiratownStatus status={getStatus(agent.issue.externalId)} compact />
+                  <Show when={agent.model}>
+                    <text fg={theme.colors.dim}>
+                      {" · "}
+                      {agent.model}
+                    </text>
+                  </Show>
+                </box>
                 <Show when={state() === "crashed"}>
                   <text fg={theme.colors.error}> !</text>
                 </Show>

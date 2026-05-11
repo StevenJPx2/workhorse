@@ -4,8 +4,9 @@ import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
+import { JiratownStatus } from "../components/jiratown-status.tsx";
 import { useJiratownContext } from "../context/jiratown.tsx";
-import { createAgents, createChat } from "../primitives";
+import { createAgents, createChat, createIssueStatus } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { createMonitors } from "../primitives/create-monitors.ts";
@@ -40,6 +41,10 @@ export function Agent() {
 
   const { state: monitorState } = createMonitors({
     monitors,
+    issueId: () => selectedAgent()?.issue.externalId ?? null,
+  });
+
+  const { state: issueStatusState } = createIssueStatus({
     issueId: () => selectedAgent()?.issue.externalId ?? null,
   });
 
@@ -104,6 +109,8 @@ export function Agent() {
               </Show>
             </box>
             <box flexDirection="row" flexShrink={0}>
+              <JiratownStatus status={issueStatusState().status} />
+              <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
               <MonitorIndicator state={monitorState()} />
               <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
               <text fg={statusColor(getState(selectedId()) ?? "stopped")}>
