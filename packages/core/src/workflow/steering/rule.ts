@@ -44,7 +44,7 @@ export class SteeringRule {
   readonly description: string;
   readonly priority: number;
   readonly once: boolean;
-  readonly issue: Issue;
+  private _issue!: Issue;
 
   private readonly hooks: HookEmitter;
   private readonly config: SteeringRuleConfig;
@@ -57,6 +57,10 @@ export class SteeringRule {
   private disposers: (() => void)[] = [];
   private lastReminderTime = 0;
 
+  get issue(): Issue {
+    return this._issue;
+  }
+
   constructor(options: SteeringRuleOptions) {
     const { config, hooks, issue, steeringConfig, getNotifications } = options;
 
@@ -67,9 +71,17 @@ export class SteeringRule {
     this.once = config.once;
     this.config = config;
     this.hooks = hooks;
-    this.issue = issue;
+    this._issue = issue;
     this.steeringConfig = steeringConfig;
     this.getNotifications = getNotifications;
+
+    // Subscribe to status changes to keep issue state fresh
+    this.subscribe("issue.status_changed", (payload: unknown) => {
+      const { issue: updatedIssue } = payload as { issue: Issue };
+      if (updatedIssue.externalId === this._issue.externalId) {
+        this._issue = updatedIssue;
+      }
+    });
 
     // Subscribe to idle agent events
     this.subscribe(
@@ -135,6 +147,9 @@ export class SteeringRule {
     if (this.once && this.fired) return;
 
     if (Date.now() - this.lastReminderTime < this.steeringConfig.cooldownMs) return;
+
+    // Never send reminders when agent is blocked (waiting for human response)
+    if (this.issue.status === "blocked") return;
 
     const { condition, reminder } = this.config;
 

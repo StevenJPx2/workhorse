@@ -38,11 +38,14 @@ export function IssueList(props: IssueListProps) {
         paddingRight={2}
         paddingTop={1}
         paddingBottom={1}
+        flexDirection="row"
       >
         <text fg={theme.colors.accent}>
-          <b>⚡ ISSUES</b>
+          <b>ISSUES</b>
         </text>
-        <text fg={theme.colors.dim}> ({issues().length})</text>
+        <text fg={theme.colors.dim}>
+          {"\u00A0"}({issues().length})
+        </text>
       </box>
 
       {/* Issue list */}

@@ -134,26 +134,18 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
           paddingTop={1}
           paddingBottom={1}
           flexDirection="row"
-          gap={3}
+          gap={2}
         >
-          <box>
-            <text fg={theme.colors.accent}>
-              <b>←→/Tab</b>
-            </text>
-            <text fg={theme.colors.dim}> switch</text>
-          </box>
-          <box>
-            <text fg={theme.colors.success}>
-              <b>Enter</b>
-            </text>
-            <text fg={theme.colors.dim}> confirm</text>
-          </box>
-          <box>
-            <text fg={theme.colors.warning}>
-              <b>ESC</b>
-            </text>
-            <text fg={theme.colors.dim}> cancel</text>
-          </box>
+          <text fg={theme.colors.accent}>Tab</text>
+          <text fg={theme.colors.dim}>
+            {"\u00A0"}switch{"\u00A0\u00A0"}
+          </text>
+          <text fg={theme.colors.success}>Enter</text>
+          <text fg={theme.colors.dim}>
+            {"\u00A0"}confirm{"\u00A0\u00A0"}
+          </text>
+          <text fg={theme.colors.warning}>Esc</text>
+          <text fg={theme.colors.dim}>{"\u00A0"}cancel</text>
         </box>
       </box>
     </box>

@@ -24,9 +24,10 @@ export type ActivityItem =
 /** Categorize a tool call into a specific activity item type */
 export function categorizeToolCall(tool: string, args: unknown, timestamp: Date): ActivityItem {
   const obj = (args && typeof args === "object" ? args : {}) as Record<string, unknown>;
+  const lowerTool = tool.toLowerCase();
 
   // Read tool
-  if (tool.includes("Read") || tool === "mcp_Read") {
+  if (lowerTool.includes("read")) {
     return {
       type: "tool_read",
       path: getString(obj.filePath) || getString(obj.path) || "?",
@@ -35,22 +36,17 @@ export function categorizeToolCall(tool: string, args: unknown, timestamp: Date)
   }
 
   // Write/Edit tool
-  if (
-    tool.includes("Write") ||
-    tool.includes("Edit") ||
-    tool === "mcp_Write" ||
-    tool === "mcp_Edit"
-  ) {
+  if (lowerTool.includes("write") || lowerTool.includes("edit")) {
     return {
       type: "tool_write",
       path: getString(obj.filePath) || getString(obj.file) || getString(obj.path) || "?",
-      action: tool.includes("Write") ? "create" : "edit",
+      action: lowerTool.includes("write") ? "create" : "edit",
       timestamp,
     };
   }
 
   // Bash tool
-  if (tool.includes("Bash") || tool === "mcp_Bash") {
+  if (lowerTool.includes("bash")) {
     return {
       type: "tool_bash",
       command: getString(obj.command) || "?",
@@ -60,12 +56,12 @@ export function categorizeToolCall(tool: string, args: unknown, timestamp: Date)
   }
 
   // Grep tool
-  if (tool.includes("Grep") || tool === "mcp_Grep") {
+  if (lowerTool.includes("grep")) {
     return { type: "tool_grep", pattern: getString(obj.pattern) || "?", timestamp };
   }
 
   // Glob tool
-  if (tool.includes("Glob") || tool === "mcp_Glob") {
+  if (lowerTool.includes("glob")) {
     return { type: "tool_glob", pattern: getString(obj.pattern) || "?", timestamp };
   }
 

@@ -4,8 +4,7 @@ import { StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
-import { useJiratownContext } from "../context/jiratown.tsx";
-import { createAgents } from "../primitives";
+import { createAgents, createChat } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { ui } from "../state/ui.ts";
@@ -30,58 +29,39 @@ const FILES_PANEL_WIDTH = 32;
  * └─────────────────────────────────────────────────────────────┘
  */
 export function Agent() {
-  const { hooks } = useJiratownContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
 
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
-  // Get worktree path from selected agent
-  const worktreePath = () => selectedAgent()?.worktreePath ?? null;
-
-  const { state: activityState } = createActivity({
-    hooks,
-    issueId: selectedId,
-  });
-
+  const { state: activityState } = createActivity({ issueId: selectedId });
   const { state: fileChangesState } = createFileChanges({
-    worktreePath,
+    worktreePath: () => selectedAgent()?.worktreePath ?? null,
   });
+  const { send: sendMessage } = createChat(selectedId);
 
-  const handleAgentSelect = (agent: AgentAdapter) => {
-    ui.enterAgentView(agent.issueId);
-  };
+  const isChatFocused = () => ui.focusedComponent() === "chat";
 
-  const getStatusColor = (state: string) => {
-    switch (state) {
-      case "running":
-      case "starting":
-        return theme.colors.success;
-      case "crashed":
-        return theme.colors.warning;
-      case "stopped":
-      case "stopping":
-        return theme.colors.error;
-      default:
-        return theme.colors.dim;
-    }
-  };
+  const statusColor = (s: string) =>
+    s === "running" || s === "starting"
+      ? theme.colors.success
+      : s === "crashed"
+        ? theme.colors.warning
+        : s === "stopped" || s === "stopping"
+          ? theme.colors.error
+          : theme.colors.dim;
 
-  const getStatusIcon = (state: string) => {
-    switch (state) {
-      case "running":
-        return "●";
-      case "starting":
-        return "◐";
-      case "crashed":
-        return "!";
-      case "stopped":
-        return "■";
-      default:
-        return "○";
-    }
-  };
+  const statusIcon = (s: string) =>
+    s === "running"
+      ? "●"
+      : s === "starting"
+        ? "◐"
+        : s === "crashed"
+          ? "!"
+          : s === "stopped"
+            ? "■"
+            : "○";
 
   return (
     <box
@@ -116,8 +96,8 @@ export function Agent() {
               </Show>
             </box>
             <box flexShrink={0}>
-              <text fg={getStatusColor(getState(selectedId()) ?? "stopped")}>
-                {getStatusIcon(getState(selectedId()) ?? "stopped")}{" "}
+              <text fg={statusColor(getState(selectedId()) ?? "stopped")}>
+                {statusIcon(getState(selectedId()) ?? "stopped")}{" "}
                 {(getState(selectedId()) ?? "stopped").toUpperCase()}
               </text>
             </box>
@@ -131,36 +111,49 @@ export function Agent() {
           agents={agents}
           selectedId={selectedId}
           getState={getState}
-          onSelect={handleAgentSelect}
+          onSelect={(agent) => ui.enterAgentView(agent.issueId)}
         />
-
-        {/* Separator */}
         <box width={1} backgroundColor={theme.colors.surface} />
 
-        {/* Activity feed (main center panel) */}
+        {/* Activity feed + chat input */}
         <box flexDirection="column" flexGrow={1}>
-          <box
-            backgroundColor={theme.colors.surface}
-            paddingLeft={1}
-            paddingRight={1}
-            paddingTop={1}
-            paddingBottom={1}
-          >
+          <box backgroundColor={theme.colors.surface} paddingX={1} paddingY={1}>
             <text fg={theme.colors.info}>
               <b>⚡ ACTIVITY</b>
             </text>
           </box>
           <ActivityFeed state={activityState} />
+
+          {/* Chat input */}
+          <box
+            flexDirection="row"
+            backgroundColor={isChatFocused() ? theme.colors.selection : theme.colors.surface}
+            paddingX={1}
+            paddingY={1}
+            onMouseDown={() => {
+              ui.setFocusedComponent("chat");
+              ui.enterInputMode();
+            }}
+          >
+            <text fg={theme.colors.accent}>❯{"\u00A0"}</text>
+            <box flexGrow={1}>
+              <input
+                width="100%"
+                focused={isChatFocused()}
+                onSubmit={(v) => {
+                  const msg = typeof v === "string" ? v.trim() : "";
+                  if (msg) sendMessage(msg);
+                }}
+                placeholder="Send a message..."
+              />
+            </box>
+          </box>
         </box>
 
-        {/* Separator */}
         <box width={1} backgroundColor={theme.colors.surface} />
-
-        {/* File changes panel (right sidebar) */}
         <FileChangesPanel state={fileChangesState} width={FILES_PANEL_WIDTH} />
       </box>
 
-      {/* Status bar */}
       <StatusBar
         shortcuts={[
           { key: "s", action: "stop" },

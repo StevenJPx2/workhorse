@@ -3,7 +3,7 @@
  * Read, Write, Bash, Grep, Glob, and generic tool rows.
  */
 
-import type { ActivityItem } from "../primitives/create-activity.ts";
+import type { ActivityItem } from "../primitives/activity-types.ts";
 import { getTheme } from "../theme.ts";
 
 /** Read file tool */

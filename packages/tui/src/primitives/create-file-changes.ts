@@ -63,14 +63,13 @@ export function createFileChanges(options: CreateFileChangesOptions) {
     try {
       // Use git diff --numstat to get additions/deletions per file
       // Compare against the merge-base with origin/main (or origin/master)
-      const result =
-        await $`cd ${path} && git diff --numstat $(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD origin/master 2>/dev/null || echo HEAD~10) 2>/dev/null`.text();
-
       const files: FileChange[] = [];
       let totalAdditions = 0;
       let totalDeletions = 0;
 
-      for (const line of result.trim().split("\n")) {
+      for (const line of await $`cd ${path} && git diff --numstat $(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD origin/master 2>/dev/null || echo HEAD~10) 2>/dev/null`
+        .text()
+        .then((r) => r.trim().split("\n"))) {
         if (!line.trim()) continue;
 
         const parts = line.split("\t");
@@ -110,15 +109,13 @@ export function createFileChanges(options: CreateFileChangesOptions) {
 
   // Start/stop polling based on worktree path
   createEffect(() => {
-    const path = worktreePath();
-
     // Clear existing timer
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
     }
 
-    if (path) {
+    if (worktreePath()) {
       // Fetch immediately
       fetchChanges();
       // Then poll

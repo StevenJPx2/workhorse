@@ -82,5 +82,12 @@ export function useOverviewBindings(options: UseOverviewBindingsOptions) {
       }
       return;
     }
+
+    // Delete selected issue (d or backspace when issues focused)
+    if ((keyName === "d" || keyName === "backspace") && focused === "issues") {
+      const issue = options.issues()[options.issueIndex()];
+      if (issue) ui.openDeleteModal(issue);
+      return;
+    }
   });
 }

@@ -1,4 +1,4 @@
-import { Match, Switch, Show } from "solid-js";
+import { Match, Switch, Show, onMount } from "solid-js";
 import type {
   JiratownConfig,
   ConfigPaths,
@@ -18,6 +18,7 @@ import {
   ToastContainer,
 } from "./components";
 import { useGlobalBindings } from "./bindings";
+import { initActivityStore } from "./state/activity-store.ts";
 import { ui } from "./state/ui.ts";
 import { logError } from "./state/error-log.ts";
 
@@ -37,6 +38,9 @@ interface AppProps {
  */
 export function App(props: AppProps) {
   useGlobalBindings();
+
+  // Initialize global activity store with hooks (runs once)
+  onMount(() => initActivityStore(props.hooks));
 
   const handleSpawn = async (config: SpawnConfig) => {
     // Close modal immediately so user isn't stuck waiting

@@ -4,7 +4,7 @@
  */
 
 import { For, Show, type Accessor } from "solid-js";
-import type { ActivityState } from "../primitives/create-activity.ts";
+import type { ActivityState } from "../state/activity-store.ts";
 import { ActivityItemRow } from "./activity-rows.tsx";
 import { getTheme } from "../theme.ts";
 
@@ -16,8 +16,6 @@ interface ActivityFeedProps {
 
 /** Activity feed showing tool calls, text output, and file edits. */
 export function ActivityFeed(props: ActivityFeedProps) {
-  const theme = getTheme();
-
   return (
     <box flexDirection="column" flexGrow={1}>
       <scrollbox flexGrow={1} stickyScroll stickyStart="bottom">
@@ -25,7 +23,7 @@ export function ActivityFeed(props: ActivityFeedProps) {
           <For each={props.state().items}>{(item) => <ActivityItemRow item={item} />}</For>
           <Show when={props.state().isStreaming}>
             <box paddingLeft={1}>
-              <text fg={theme.colors.dim}>
+              <text fg={getTheme().colors.dim}>
                 <i>● thinking...</i>
               </text>
             </box>

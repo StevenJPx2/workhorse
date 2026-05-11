@@ -1,27 +1,23 @@
 import { For, Show } from "solid-js";
 import { getTheme } from "../theme.ts";
-import { ui, type Toast as ToastType, type ToastType as ToastVariant } from "../state/ui.ts";
-
-/** Get icon and color for toast type */
-function getToastStyle(type: ToastVariant) {
-  const theme = getTheme();
-  switch (type) {
-    case "error":
-      return { icon: "✖", color: theme.colors.error, bg: theme.colors.surface };
-    case "success":
-      return { icon: "✓", color: theme.colors.success, bg: theme.colors.surface };
-    case "warning":
-      return { icon: "⚠", color: theme.colors.warning, bg: theme.colors.surface };
-    case "info":
-    default:
-      return { icon: "ℹ", color: theme.colors.info, bg: theme.colors.surface };
-  }
-}
+import { ui, type Toast as ToastType } from "../state/ui.ts";
 
 /** Single toast notification item */
 function ToastItem(props: { toast: ToastType }) {
   const theme = getTheme();
-  const style = () => getToastStyle(props.toast.type);
+  const style = () => {
+    switch (props.toast.type) {
+      case "error":
+        return { icon: "✖", color: theme.colors.error, bg: theme.colors.surface };
+      case "success":
+        return { icon: "✓", color: theme.colors.success, bg: theme.colors.surface };
+      case "warning":
+        return { icon: "⚠", color: theme.colors.warning, bg: theme.colors.surface };
+      case "info":
+      default:
+        return { icon: "ℹ", color: theme.colors.info, bg: theme.colors.surface };
+    }
+  };
 
   return (
     <box
