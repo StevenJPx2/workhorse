@@ -1,5 +1,5 @@
 import type { Issue } from "@jiratown/core";
-import { createSignal, For } from "solid-js";
+import { For, Show } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
@@ -11,7 +11,7 @@ interface IssueListProps {
 }
 
 /**
- * Displays unassigned issues from the backlog that can be picked up.
+ * Displays all issues with status indicators.
  * Uses background colors for visual hierarchy.
  * Click to focus, Tab to navigate between components.
  */
@@ -25,7 +25,7 @@ export function IssueList(props: IssueListProps) {
   return (
     <box
       flexDirection="column"
-      flexGrow={1}
+      width="50%"
       backgroundColor={theme.colors.background}
       onMouseDown={() => {
         ui.setFocusedComponent("issues");
@@ -46,58 +46,83 @@ export function IssueList(props: IssueListProps) {
       </box>
 
       {/* Issue list */}
-      <box flexDirection="column" flexGrow={1} paddingTop={1}>
-        <For each={issues()}>
-          {(issue, index) => {
-            // Only show selection highlight if this list is focused
-            const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
-            const [isHovered, setIsHovered] = createSignal(false);
-            const showDelete = () => isSelected() || isHovered();
-            return (
-              <box
-                flexDirection="row"
-                backgroundColor={isSelected() ? theme.colors.selection : undefined}
-                paddingLeft={2}
-                paddingRight={2}
-                onMouseOver={() => setIsHovered(true)}
-                onMouseOut={() => setIsHovered(false)}
-                justifyContent="space-between"
-              >
-                <box flexDirection="row">
-                  <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
-                    {isSelected() ? "▸ " : "  "}
-                    <b>{issue.externalId || issue.id.slice(0, 8)}</b>
-                  </text>
-                  <text fg={theme.colors.dim}>{` ${issue.title.slice(0, 20)}`}</text>
-                </box>
-                {showDelete() && (
-                  <box
-                    backgroundColor={theme.colors.error}
-                    paddingLeft={1}
-                    paddingRight={1}
-                    onMouseDown={() => {
-                      if (props.onDelete) {
-                        props.onDelete(issue);
-                      } else {
-                        ui.openDeleteModal(issue);
-                      }
-                    }}
-                  >
-                    <text fg={theme.colors.background}>
-                      <b>x delete</b>
-                    </text>
+      <scrollbox flexGrow={1} stickyScroll stickyStart="top">
+        <box flexDirection="column" paddingTop={1}>
+          <For each={issues()}>
+            {(issue, index) => {
+              const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
+              return (
+                <box
+                  flexDirection="column"
+                  backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                  paddingLeft={2}
+                  paddingRight={2}
+                  paddingTop={1}
+                  paddingBottom={1}
+                >
+                  {/* First row: ID + status */}
+                  <box flexDirection="row" justifyContent="space-between">
+                    <box flexDirection="row">
+                      <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                        {isSelected() ? "▸ " : "  "}
+                        <b>{issue.externalId || issue.id.slice(0, 8)}</b>
+                      </text>
+                      <text fg={getStatusColor(issue.status, theme)}>
+                        {"\u00A0"}[{issue.status}]
+                      </text>
+                    </box>
+                    <Show when={isSelected()}>
+                      <box
+                        backgroundColor={theme.colors.error}
+                        paddingLeft={1}
+                        paddingRight={1}
+                        onMouseDown={() => {
+                          if (props.onDelete) {
+                            props.onDelete(issue);
+                          } else {
+                            ui.openDeleteModal(issue);
+                          }
+                        }}
+                      >
+                        <text fg={theme.colors.background}>
+                          <b>x</b>
+                        </text>
+                      </box>
+                    </Show>
                   </box>
-                )}
-              </box>
-            );
-          }}
-        </For>
-        {issues().length === 0 && (
-          <box paddingLeft={2}>
-            <text fg={theme.colors.dim}>No issues available</text>
-          </box>
-        )}
-      </box>
+                  {/* Second row: full title */}
+                  <box paddingLeft={2}>
+                    <text fg={theme.colors.dim}>{issue.title}</text>
+                  </box>
+                </box>
+              );
+            }}
+          </For>
+          <Show when={issues().length === 0}>
+            <box paddingLeft={2}>
+              <text fg={theme.colors.dim}>No issues available</text>
+            </box>
+          </Show>
+        </box>
+      </scrollbox>
     </box>
   );
+}
+
+function getStatusColor(status: string, theme: ReturnType<typeof getTheme>) {
+  switch (status) {
+    case "pending":
+      return theme.colors.dim;
+    case "implementing":
+    case "planning":
+      return theme.colors.info;
+    case "in_review":
+      return theme.colors.warning;
+    case "done":
+      return theme.colors.success;
+    case "blocked":
+      return theme.colors.error;
+    default:
+      return theme.colors.dim;
+  }
 }

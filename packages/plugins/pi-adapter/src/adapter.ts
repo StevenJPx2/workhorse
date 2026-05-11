@@ -71,6 +71,7 @@ export class PiAgentAdapter extends AgentAdapter {
         worktreePath: this.worktreePath,
         hooks: this.hooks,
         memory: this.memory,
+        source: this.issue.source,
         setState: (s: AgentState) => {
           this.state = s;
         },

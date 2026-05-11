@@ -175,11 +175,11 @@ export function Overview() {
       {/* Status bar */}
       <StatusBar
         shortcuts={[
-          { key: "↑↓←→", action: "navigate" },
-          { key: "Tab", action: "switch" },
+          { key: "↑↓", action: "scroll" },
+          { key: "←→", action: "switch" },
+          { key: "Tab", action: "cycle" },
           { key: "Enter", action: "select" },
           { key: "Ctrl+X M", action: "model" },
-          { key: "Ctrl+X H", action: "help" },
         ]}
       />
     </box>

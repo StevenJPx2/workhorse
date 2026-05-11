@@ -1,47 +1,56 @@
-import { createMemo, For, Show } from "solid-js";
 import type { AgentAdapter } from "@jiratown/core";
-import { ChatBox, StatusBar } from "../components";
-import { createChat, createAgents } from "../primitives";
+import { createMemo, Show } from "solid-js";
+import { StatusBar } from "../components";
+import { ActivityFeed } from "../components/activity-feed.tsx";
+import { AgentSidebar } from "../components/agent-sidebar.tsx";
+import { FileChangesPanel } from "../components/file-changes-panel.tsx";
+import { useJiratownContext } from "../context/jiratown.tsx";
+import { createAgents } from "../primitives";
+import { createActivity } from "../primitives/create-activity.ts";
+import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
 
+const FILES_PANEL_WIDTH = 32;
+
 /**
- * Agent dashboard screen - shows agent chat with sidebar navigation.
+ * Agent dashboard screen - shows activity feed with file changes sidebar.
  *
  * Layout:
- * ┌─────────────────────────────────────────────┐
- * │ AM-456 — Fix login bug           ● running │
- * ├───────────────┬─────────────────────────────┤
- * │ ● AGENTS      │                             │
- * │ ▸ AM-456  ●   │  Agent                      │
- * │   PROJ-789 ○  │  [message content]          │
- * │               │                             │
- * │               │  You                        │
- * │               │  [message content]          │
- * ├───────────────┴─────────────────────────────┤
- * │ ❯ Type a message...                         │
- * ├─────────────────────────────────────────────┤
- * │ Enter send  s stop  ESC back         q quit │
- * └─────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ AM-456 — Fix login bug                           ● running │
+ * ├──────────┬────────────────────────────────┬─────────────────┤
+ * │ ● AGENTS │  ⚡ ACTIVITY                   │ 📁 FILES  +42 -8│
+ * │ ▸ AM-456 │  ● thinking...                 │ src/app.ts +12-3│
+ * │   PROJ-1 │  ✏️ Edited src/app.ts          │ lib/util.ts +5  │
+ * │          │  📄 Created test.ts            │                 │
+ * │          │  [text output bubble]          │                 │
+ * ├──────────┴────────────────────────────────┴─────────────────┤
+ * │ Enter send  s stop  ESC back                         q quit │
+ * └─────────────────────────────────────────────────────────────┘
  */
 export function Agent() {
+  const { hooks } = useJiratownContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
 
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
-  const { messages, send } = createChat(() => selectedId());
+  // Get worktree path from selected agent
+  const worktreePath = () => selectedAgent()?.worktreePath ?? null;
+
+  const { state: activityState } = createActivity({
+    hooks,
+    issueId: selectedId,
+  });
+
+  const { state: fileChangesState } = createFileChanges({
+    worktreePath,
+  });
 
   const handleAgentSelect = (agent: AgentAdapter) => {
     ui.enterAgentView(agent.issueId);
-  };
-
-  const _handleStop = () => {
-    const agent = selectedAgent();
-    if (agent) {
-      agent.stop();
-    }
   };
 
   const getStatusColor = (state: string) => {
@@ -66,7 +75,7 @@ export function Agent() {
       case "starting":
         return "◐";
       case "crashed":
-        return "⚠";
+        return "!";
       case "stopped":
         return "■";
       default:
@@ -88,10 +97,8 @@ export function Agent() {
             flexDirection="row"
             justifyContent="space-between"
             backgroundColor={theme.colors.surface}
-            paddingLeft={2}
-            paddingRight={2}
-            paddingTop={1}
-            paddingBottom={1}
+            paddingX={2}
+            paddingY={2}
           >
             <box flexDirection="row" flexShrink={1} overflow="hidden">
               <text fg={theme.colors.accent}>
@@ -118,11 +125,20 @@ export function Agent() {
         )}
       </Show>
 
-      {/* Main content: sidebar + chat */}
-      <box flexDirection="row" flexGrow={1}>
-        {/* Agent sidebar */}
-        <box flexDirection="column" width={18} backgroundColor={theme.colors.background}>
-          {/* Sidebar header */}
+      {/* Main content: sidebar + activity (center) + files (right) */}
+      <box flexDirection="row" flexGrow={1} paddingY={2}>
+        <AgentSidebar
+          agents={agents}
+          selectedId={selectedId}
+          getState={getState}
+          onSelect={handleAgentSelect}
+        />
+
+        {/* Separator */}
+        <box width={1} backgroundColor={theme.colors.surface} />
+
+        {/* Activity feed (main center panel) */}
+        <box flexDirection="column" flexGrow={1}>
           <box
             backgroundColor={theme.colors.surface}
             paddingLeft={1}
@@ -130,58 +146,23 @@ export function Agent() {
             paddingTop={1}
             paddingBottom={1}
           >
-            <text fg={theme.colors.success}>
-              <b>● AGENTS</b>
+            <text fg={theme.colors.info}>
+              <b>⚡ ACTIVITY</b>
             </text>
           </box>
-
-          {/* Agent list */}
-          <box flexDirection="column" flexGrow={1} paddingTop={1}>
-            <For each={agents()}>
-              {(agent: AgentAdapter) => {
-                const isSelected = () => agent.issueId === selectedId();
-
-                return (
-                  <box
-                    onMouseDown={() => handleAgentSelect(agent)}
-                    backgroundColor={isSelected() ? theme.colors.selection : undefined}
-                    paddingLeft={1}
-                    paddingRight={1}
-                    flexDirection="column"
-                  >
-                    <box flexDirection="row" justifyContent="space-between">
-                      <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
-                        {isSelected() ? "▸ " : "  "}
-                        <b>{agent.issueId}</b>
-                      </text>
-                      <text fg={getStatusColor(getState(agent.issueId) ?? "stopped")}>
-                        {" "}
-                        {getStatusIcon(getState(agent.issueId) ?? "stopped")}
-                      </text>
-                    </box>
-                    <Show when={agent.model}>
-                      <box paddingLeft={2}>
-                        <text fg={theme.colors.dim}>{agent.model}</text>
-                      </box>
-                    </Show>
-                  </box>
-                );
-              }}
-            </For>
-          </box>
+          <ActivityFeed state={activityState} />
         </box>
 
         {/* Separator */}
         <box width={1} backgroundColor={theme.colors.surface} />
 
-        {/* Chat area */}
-        <ChatBox messages={messages} onSend={send} placeholder="Type a message to the agent..." />
+        {/* File changes panel (right sidebar) */}
+        <FileChangesPanel state={fileChangesState} width={FILES_PANEL_WIDTH} />
       </box>
 
       {/* Status bar */}
       <StatusBar
         shortcuts={[
-          { key: "Enter", action: "send" },
           { key: "s", action: "stop" },
           { key: "Ctrl+X M", action: "model" },
           { key: "ESC", action: "back" },

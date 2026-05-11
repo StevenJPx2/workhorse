@@ -56,7 +56,7 @@ export function AgentList(props: AgentListProps) {
   return (
     <box
       flexDirection="column"
-      flexGrow={1}
+      width="50%"
       backgroundColor={theme.colors.background}
       onMouseDown={() => ui.setFocusedComponent("agents")}
     >

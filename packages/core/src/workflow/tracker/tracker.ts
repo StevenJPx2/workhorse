@@ -105,6 +105,15 @@ export class Tracker {
   }
 
   /**
+   * Fetch all issues regardless of status.
+   *
+   * @returns Array of all issues
+   */
+  async fetchAll(): Promise<Issue[]> {
+    return this.db.issues.getAll();
+  }
+
+  /**
    * Delete an issue from the database.
    *
    * @param issueId - The internal ID of the issue to delete

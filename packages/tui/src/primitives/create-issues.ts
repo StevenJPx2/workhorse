@@ -3,7 +3,7 @@ import type { Issue } from "@jiratown/core";
 import { useJiratownContext } from "../context/jiratown.tsx";
 
 /**
- * Reactive primitive that fetches and tracks outstanding issues from the backlog.
+ * Reactive primitive that fetches and tracks all issues.
  * Automatically refreshes when issues are parsed, status changes, or agents are created.
  */
 export function createIssues(): Accessor<Issue[]> {
@@ -11,16 +11,16 @@ export function createIssues(): Accessor<Issue[]> {
   const [issues, setIssues] = createSignal<Issue[]>([]);
 
   onMount(() => {
-    // Initial fetch
-    tracker.fetchBacklog().then(setIssues);
+    // Initial fetch - get ALL issues, not just backlog
+    tracker.fetchAll().then(setIssues);
 
     // Refresh on changes
-    const refresh = () => tracker.fetchBacklog().then(setIssues);
+    const refresh = () => tracker.fetchAll().then(setIssues);
 
     hooks.on("issue.parsed", refresh);
     hooks.on("issue.status_changed", refresh);
     hooks.on("issue.deleted", refresh);
-    hooks.on("agent.create.post", refresh); // Remove from backlog when picked up
+    hooks.on("agent.create.post", refresh);
 
     onCleanup(() => {
       hooks.off("issue.parsed", refresh);

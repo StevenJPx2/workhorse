@@ -27,16 +27,45 @@ export function useOverviewBindings(options: UseOverviewBindingsOptions) {
     const keyName = key.name;
     const focused = ui.focusedComponent();
 
-    // Arrow keys cycle between components
-    // Left/Right: issues <-> agents <-> chat (horizontal feel)
-    // Up/Down: also cycle (for convenience)
-    if (keyName === "left" || keyName === "h" || keyName === "up" || keyName === "k") {
+    // Left/Right (or h/l): Switch between components
+    if (keyName === "left" || keyName === "h") {
       ui.focusPrev();
       return;
     }
 
-    if (keyName === "right" || keyName === "l" || keyName === "down" || keyName === "j") {
+    if (keyName === "right" || keyName === "l") {
       ui.focusNext();
+      return;
+    }
+
+    // Up/Down (or k/j): Navigate within the focused list
+    if (keyName === "up" || keyName === "k") {
+      if (focused === "issues") {
+        const maxIndex = options.issues().length - 1;
+        if (maxIndex >= 0) {
+          options.setIssueIndex((i) => Math.max(0, i - 1));
+        }
+      } else if (focused === "agents") {
+        const maxIndex = options.agents().length - 1;
+        if (maxIndex >= 0) {
+          options.setAgentIndex((i) => Math.max(0, i - 1));
+        }
+      }
+      return;
+    }
+
+    if (keyName === "down" || keyName === "j") {
+      if (focused === "issues") {
+        const maxIndex = options.issues().length - 1;
+        if (maxIndex >= 0) {
+          options.setIssueIndex((i) => Math.min(maxIndex, i + 1));
+        }
+      } else if (focused === "agents") {
+        const maxIndex = options.agents().length - 1;
+        if (maxIndex >= 0) {
+          options.setAgentIndex((i) => Math.min(maxIndex, i + 1));
+        }
+      }
       return;
     }
 

@@ -26,6 +26,8 @@ export interface EventHandlerContext {
   setState: (state: AgentState) => void;
   /** Get the current issue status from the database */
   getIssueStatus: () => IssueStatus;
+  /** Issue source (e.g., "jira", "github") */
+  source: string;
 }
 
 /** Handle events from the pi session. */
@@ -52,6 +54,13 @@ export function handleSessionEvent(event: AgentSessionEvent, ctx: EventHandlerCo
     }
 
     case "agent_end": {
+      // Emit idle event so steering rules can evaluate
+      ctx.hooks.emit("agent.idle", {
+        issueId: ctx.issueId,
+        status: ctx.getIssueStatus(),
+        source: ctx.source,
+      });
+
       updateL1Memory(ctx).catch((err) => {
         console.error("Failed to update L1 memory:", err);
       });
