@@ -14,6 +14,7 @@
     "jiratown/prefer-folder-barrel": "warn",
     "jiratown/no-index-imports": "warn",
     "jiratown/prefer-path-alias": "warn",
-    "jiratown/prefer-then-chain": "warn"
+    "jiratown/prefer-then-chain": "warn",
+    "jiratown/no-cascading-ternary": "warn"
   }
 }

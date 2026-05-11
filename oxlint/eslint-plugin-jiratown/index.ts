@@ -11,6 +11,7 @@ import noReexportOutsideBarrel from "./rules/no-reexport-outside-barrel";
 import preferFolderBarrel from "./rules/prefer-folder-barrel";
 import preferPathAlias from "./rules/prefer-path-alias";
 import preferThenChain from "./rules/prefer-then-chain";
+import noCascadingTernary from "./rules/no-cascading-ternary";
 
 const plugin = {
   meta: {
@@ -31,6 +32,7 @@ const plugin = {
     "prefer-folder-barrel": preferFolderBarrel,
     "prefer-path-alias": preferPathAlias,
     "prefer-then-chain": preferThenChain,
+    "no-cascading-ternary": noCascadingTernary,
   },
 };
 

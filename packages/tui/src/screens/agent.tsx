@@ -56,25 +56,22 @@ export function Agent() {
 
   const isChatFocused = () => ui.focusedComponent() === "chat";
 
-  const statusColor = (s: string) =>
-    s === "running" || s === "starting"
-      ? theme.colors.success
-      : s === "crashed"
-        ? theme.colors.warning
-        : s === "stopped" || s === "stopping"
-          ? theme.colors.error
-          : theme.colors.dim;
+  const statusColorMap: Record<string, string> = {
+    running: theme.colors.success,
+    starting: theme.colors.success,
+    crashed: theme.colors.warning,
+    stopped: theme.colors.error,
+    stopping: theme.colors.error,
+  };
+  const statusColor = (s: string) => statusColorMap[s] ?? theme.colors.dim;
 
-  const statusIcon = (s: string) =>
-    s === "running"
-      ? "●"
-      : s === "starting"
-        ? "◐"
-        : s === "crashed"
-          ? "!"
-          : s === "stopped"
-            ? "■"
-            : "○";
+  const statusIconMap: Record<string, string> = {
+    running: "●",
+    starting: "◐",
+    crashed: "!",
+    stopped: "■",
+  };
+  const statusIcon = (s: string) => statusIconMap[s] ?? "○";
 
   return (
     <box
