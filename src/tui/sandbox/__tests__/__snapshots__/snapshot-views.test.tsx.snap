@@ -46,7 +46,7 @@ exports[`TicketSidebar snapshots with tickets 1`] = `
 
 exports[`TicketPane snapshots default 1`] = `
 "                                                                      
- AM-456: Fix login timeout on slow networks                           
+ AM-456: Fix login timeout on slow networks                    ◆ Jira 
  ==========================================                           
                                                                       
  Status ▶ IMPLEMENTING            Agent opencode                      
@@ -96,7 +96,7 @@ exports[`Layout snapshots with sidebar and content 1`] = `
 │                                      │                                        
 │ Jiratown                             │                                        
 ╰──────────────────────────────────────╯                                        
- No notifications                   webapp | [:] commands | [?] help | [q] quit 
+ No notifications        webapp | [:] commands | [?] help | [⏎] open | [q] quit 
 "
 `;
 
@@ -124,7 +124,7 @@ exports[`Layout snapshots all-repos mode 1`] = `
 │                                      │                                        
 │ Jiratown                             │                                        
 ╰──────────────────────────────────────╯                                        
- No notifications                  unknown | [:] commands | [?] help | [q] quit 
+ No notifications       unknown | [:] commands | [?] help | [⏎] open | [q] quit 
 "
 `;
 

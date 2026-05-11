@@ -21,6 +21,8 @@ export interface TicketSidebarProps {
   onSelect: (index: number) => void;
   /** Callback when new ticket is requested */
   onNew: () => void;
+  /** Callback when Enter is pressed on a ticket (open with agent) */
+  onOpen: (index: number) => void;
   /** Whether keyboard navigation is disabled (e.g., modal open) */
   navigationDisabled?: () => boolean;
 }
@@ -34,6 +36,7 @@ export interface TicketSidebarProps {
  *   selectedIndex={selectedIndex()}
  *   onSelect={setSelectedIndex}
  *   onNew={() => openNewTicketModal()}
+ *   onOpen={(i) => openTicketWithAgent(i)}
  * />
  */
 export function TicketSidebar(props: TicketSidebarProps) {
@@ -46,6 +49,7 @@ export function TicketSidebar(props: TicketSidebarProps) {
     selectedIndex: () => props.selectedIndex,
     onSelect: props.onSelect,
     onNew: props.onNew,
+    onOpen: props.onOpen,
     disabled: () => props.navigationDisabled?.() ?? navigation.isLocked(),
   });
 

@@ -15,6 +15,7 @@ export const composedSpecs: FrameSpec[] = [
         width={28}
         onSelect={() => {}}
         onNew={() => {}}
+        onOpen={() => {}}
       />
     ),
   },
@@ -32,6 +33,7 @@ export const composedSpecs: FrameSpec[] = [
         width={28}
         onSelect={() => {}}
         onNew={() => {}}
+        onOpen={() => {}}
       />
     ),
   },

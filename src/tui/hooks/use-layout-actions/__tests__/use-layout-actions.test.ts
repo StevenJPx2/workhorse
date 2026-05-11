@@ -17,7 +17,7 @@ const mockGetAgentState = mock(() => undefined as string | undefined);
 const mockOpenModal = mock(() => {});
 const mockClearSessionCache = mock(() => {});
 
-mock.module("../../contexts/tickets-context.tsx", () => ({
+mock.module("../../../contexts/tickets-context.tsx", () => ({
   useTicketsContext: () => ({
     actions: {
       remove: mockRemoveTicket,
@@ -27,7 +27,7 @@ mock.module("../../contexts/tickets-context.tsx", () => ({
   }),
 }));
 
-mock.module("../../contexts/workflow-context.tsx", () => ({
+mock.module("../../../contexts/workflow-context.tsx", () => ({
   useWorkflowContext: () => ({
     getRunningAgents: mockGetRunningAgents,
     stopWork: mockStopWork,
@@ -37,13 +37,13 @@ mock.module("../../contexts/workflow-context.tsx", () => ({
   }),
 }));
 
-mock.module("../use-modal-system/index.ts", () => ({
+mock.module("../../use-modal-system/index.ts", () => ({
   useModalSystem: () => ({
     open: mockOpenModal,
   }),
 }));
 
-mock.module("../use-agent-summary/index.ts", () => ({
+mock.module("../../use-agent-summary/index.ts", () => ({
   clearSessionCache: mockClearSessionCache,
 }));
 
@@ -70,7 +70,7 @@ describe("useLayoutActions", () => {
 
   describe("initial state", () => {
     it("should return all action functions", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       const reloadTickets = mock(() => {});
       const onQuit = mock(() => Promise.resolve());
 
@@ -85,6 +85,7 @@ describe("useLayoutActions", () => {
         expect(typeof actions.escalate).toBe("function");
         expect(typeof actions.switchAgent).toBe("function");
         expect(typeof actions.toggleAgent).toBe("function");
+        expect(typeof actions.startAgent).toBe("function");
         expect(typeof actions.isAgentStarting).toBe("function");
         expect(typeof actions.getAgentState).toBe("function");
 
@@ -93,7 +94,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should start with isAgentStarting = false", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>(undefined);
@@ -111,7 +112,7 @@ describe("useLayoutActions", () => {
 
   describe("quit", () => {
     it("should call onQuit with no running agents", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       const onQuit = mock(() => Promise.resolve());
 
       await createRoot(async (dispose) => {
@@ -131,7 +132,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should stop running agents before quitting", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       const onQuit = mock(() => Promise.resolve());
 
       mockGetRunningAgents.mockReturnValue([
@@ -160,7 +161,7 @@ describe("useLayoutActions", () => {
 
   describe("addTicket", () => {
     it("should open the ticket-input modal", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>(undefined);
@@ -180,7 +181,7 @@ describe("useLayoutActions", () => {
 
   describe("closeTicket", () => {
     it("should remove the current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>("TICKET-123");
@@ -198,7 +199,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should do nothing when no current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>(undefined);
@@ -218,7 +219,7 @@ describe("useLayoutActions", () => {
 
   describe("openInJira", () => {
     it("should do nothing when no current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>(undefined);
@@ -234,7 +235,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should do nothing when ticket has no jira_url", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockCurrentTicket.mockReturnValue({ id: "T1", jira_url: null });
 
       createRoot((dispose) => {
@@ -251,7 +252,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should log jira url when ticket has jira_url", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockCurrentTicket.mockReturnValue({
         id: "T1",
         jira_url: "https://company.atlassian.net/browse/T-1",
@@ -273,7 +274,7 @@ describe("useLayoutActions", () => {
 
   describe("escalate", () => {
     it("should not throw when no current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>(undefined);
@@ -289,7 +290,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should not throw when current ticket is set", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
 
       createRoot((dispose) => {
         const [currentTicketId] = createSignal<string | undefined>("TICKET-456");
@@ -307,7 +308,7 @@ describe("useLayoutActions", () => {
 
   describe("switchAgent", () => {
     it("should switch agent from opencode to claude", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockCurrentTicket.mockReturnValue({ id: "T1", agent: "opencode" });
 
       createRoot((dispose) => {
@@ -326,7 +327,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should switch agent from claude to opencode", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockCurrentTicket.mockReturnValue({ id: "T1", agent: "claude" });
 
       createRoot((dispose) => {
@@ -345,7 +346,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should do nothing when no current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockCurrentTicket.mockReturnValue(null);
 
       createRoot((dispose) => {
@@ -364,103 +365,11 @@ describe("useLayoutActions", () => {
     });
   });
 
-  describe("toggleAgent", () => {
-    it("should do nothing when no current ticket", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
-      const reloadTickets = mock(() => {});
-
-      await createRoot(async (dispose) => {
-        const [currentTicketId] = createSignal<string | undefined>(undefined);
-        const actions = useLayoutActions({
-          currentTicketId,
-          reloadTickets,
-          onQuit: mock(() => Promise.resolve()),
-        });
-
-        await actions.toggleAgent();
-
-        expect(mockStopWork).not.toHaveBeenCalled();
-        expect(mockRestartAgent).not.toHaveBeenCalled();
-        dispose();
-      });
-    });
-
-    it("should stop agent when agent is running", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
-      mockIsAgentRunning.mockReturnValue(true);
-      const reloadTickets = mock(() => {});
-
-      await createRoot(async (dispose) => {
-        const [currentTicketId] = createSignal<string | undefined>("TICKET-1");
-        const actions = useLayoutActions({
-          currentTicketId,
-          reloadTickets,
-          onQuit: mock(() => Promise.resolve()),
-        });
-
-        await actions.toggleAgent();
-
-        expect(mockStopWork).toHaveBeenCalledWith("TICKET-1");
-        expect(reloadTickets).toHaveBeenCalled();
-        dispose();
-      });
-    });
-
-    it("should start agent when agent is not running", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
-      mockIsAgentRunning.mockReturnValue(false);
-      const reloadTickets = mock(() => {});
-
-      await createRoot(async (dispose) => {
-        const [currentTicketId] = createSignal<string | undefined>("TICKET-1");
-        const actions = useLayoutActions({
-          currentTicketId,
-          reloadTickets,
-          onQuit: mock(() => Promise.resolve()),
-        });
-
-        await actions.toggleAgent();
-
-        expect(mockClearSessionCache).toHaveBeenCalledWith("TICKET-1");
-        expect(mockRestartAgent).toHaveBeenCalledWith("TICKET-1");
-        expect(reloadTickets).toHaveBeenCalled();
-        dispose();
-      });
-    });
-
-    it("should set isAgentStarting during start and reset after", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
-      mockIsAgentRunning.mockReturnValue(false);
-
-      mockRestartAgent.mockImplementation(async () => {
-        // After restart succeeds, the agent state should be "running"
-        mockGetAgentState.mockReturnValue("running");
-        return true;
-      });
-
-      await createRoot(async (dispose) => {
-        const [currentTicketId] = createSignal<string | undefined>("TICKET-1");
-        const actions = useLayoutActions({
-          currentTicketId,
-          reloadTickets: mock(() => {}),
-          onQuit: mock(() => Promise.resolve()),
-        });
-
-        expect(actions.isAgentStarting()).toBe(false);
-        await actions.toggleAgent();
-        // isAgentStarting is now async - it clears after polling detects "running" state
-        // Wait a bit for the polling to detect the "running" state
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        expect(actions.isAgentStarting()).toBe(false);
-
-        dispose();
-      });
-    });
-  });
+  // toggleAgent and startAgent tests are in agent-control.test.ts
 
   describe("getAgentState", () => {
     it("should return workflow agent state normally", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockGetAgentState.mockReturnValue("running");
 
       createRoot((dispose) => {
@@ -477,7 +386,7 @@ describe("useLayoutActions", () => {
     });
 
     it("should return undefined when no state", async () => {
-      const { useLayoutActions } = await import("./use-layout-actions.ts");
+      const { useLayoutActions } = await import("../use-layout-actions.ts");
       mockGetAgentState.mockReturnValue(undefined);
 
       createRoot((dispose) => {

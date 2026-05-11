@@ -33,7 +33,7 @@ exports[`Tiny viewport layout in 20x5 1`] = `
 │                   
 │ Tickets           
 ╰───────────────────
- No       repo | [: 
+ No      repo | [:] 
 "
 `;
 
@@ -72,11 +72,11 @@ exports[`Overflow text card with long title and content 1`] = `
 
 exports[`Overflow text ticket pane with very long summary 1`] = `
 "                                                            
- LONGTICKET-99999: This is a very long ticket summary that  
- describes a complex issue involving authentication         
- timeouts when connecting to multiple microservices in      
- parallel across different availability zones with varying  
- network latencies                                          
+ LONGTICKET-99999: This is a very long ticket summary ◆     
+ that describes a complex issue involving             Jira  
+ authentication timeouts when connecting to multiple        
+ microservices in parallel across different                 
+ availability zones with varying network latencies          
  ========================================================== 
                                                             
  Status ▶ IMPLEMENTING            Agent opencode            
@@ -148,7 +148,7 @@ exports[`Missing data ticket pane with null summary 1`] = `
 
 exports[`Missing data ticket with empty string summary 1`] = `
 "                                                            
- AM-001:                                                    
+ AM-001:                                             ◆ Jira 
  ========                                                   
                                                             
  Status ▶ IMPLEMENTING            Agent opencode            
@@ -293,7 +293,7 @@ exports[`Special characters card with unicode content 1`] = `
 
 exports[`Special characters ticket with unicode summary 1`] = `
 "                                                            
- UNI-1: 修复登录超时问题 — résumé endpoint 🐛               
+ UNI-1: 修复登录超时问题 — résumé endpoint 🐛        ◆ Jira 
  ====================================                       
                                                             
  Status ▶ IMPLEMENTING            Agent opencode            

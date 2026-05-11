@@ -15,6 +15,7 @@ const shortcuts = [
   { key: "+/n", desc: "Add new ticket" },
   { key: "j/k", desc: "Navigate tickets" },
   { key: "1-9", desc: "Jump to ticket" },
+  { key: "Enter", desc: "Open ticket with agent" },
   { key: "x", desc: "Close current ticket" },
   { key: "o", desc: "Open in Jira" },
   { key: "e", desc: "Escalate / ask question" },

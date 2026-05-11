@@ -105,6 +105,7 @@ describe("Tiny viewport", () => {
           width={10}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       ),
       { width: 10, height: 5 },
@@ -207,6 +208,7 @@ describe("Overflow text", () => {
           width={20}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       ),
       { width: 24, height: 12 },
@@ -338,6 +340,7 @@ describe("Extreme quantities", () => {
           width={28}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       ),
       { width: 32, height: 15 },

@@ -56,7 +56,6 @@ export function Layout(props: LayoutProps) {
     reloadTickets: ticketActions.reload,
     onQuit: props.onQuit,
   });
-
   // Command actions for command palette
   const commandActions = {
     addTicket: layoutActions.addTicket,
@@ -137,6 +136,10 @@ export function Layout(props: LayoutProps) {
           width={SIDEBAR_WIDTH}
           onSelect={(i) => selection.select(i)}
           onNew={layoutActions.addTicket}
+          onOpen={(i) => {
+            selection.select(i);
+            void layoutActions.startAgent();
+          }}
         />
 
         {/* Main content - takes remaining space */}
@@ -167,7 +170,9 @@ export function Layout(props: LayoutProps) {
           hasBlocking={notifications.hasBlocking()}
           onViewAll={notificationListModal.open}
         />
-        <text fg={theme().text.secondary}>{rigDisplay()} | [:] commands | [?] help | [q] quit</text>
+        <text fg={theme().text.secondary}>
+          {rigDisplay()} | [:] commands | [?] help | [⏎] open | [q] quit
+        </text>
       </box>
 
       {/* Help Modal */}

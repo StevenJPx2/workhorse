@@ -15,21 +15,21 @@ exports[`Agent toggle keyboard integration should show toggle shortcut in help d
 │                   │ [+/n]   Add new ticket               │                    
 │                   │ [j/k]   Navigate tickets             │                    
 │                   │ [1-9]   Jump to ticket               │                    
+│                   │ [Enter] Open ticket with agent       │                    
 │                   │ [x]     Close current ticket         │                    
 │                   │ [o]     Open in Jira                 │                    
 │                   │ [e]     Escalate / ask question      │                    
 │                   │ [a]     Switch agent                 │                    
 │                   │ [s]     Start/stop agent             │                    
 │                   │ [t]     Toggle theme                 │                    
-│                   │ [?]     Toggle help                  │                    
-│                   │ Press anyukey to close               │                    
-│                   │                                      │                    
+│                   │ Press anyokeyetoeclose               │                    
+│                   │ [q]     Quit                         │                    
 │                   ╰──────────────────────────────────────╯                    
 │                                      │                                        
 │                                      │                                        
 │                                      │                                        
 │ Jiratown                             │                                        
 ╰──────────────────────────────────────╯                                        
- No notifications                test-repo | [:] commands | [?] help | [q] quit 
+ No notifications     test-repo | [:] commands | [?] help | [⏎] open | [q] quit 
 "
 `;

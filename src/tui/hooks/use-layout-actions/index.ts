@@ -10,3 +10,6 @@ export type { UseLayoutActionsOptions, UseLayoutActionsReturn } from "./types.ts
 
 // Main hook
 export { useLayoutActions } from "./use-layout-actions.ts";
+
+// Agent start helper
+export { doStartAgent, type StartAgentDeps } from "./start-agent.ts";

@@ -14,6 +14,8 @@ export interface UseTicketNavigationOptions {
   onSelect: (index: number) => void;
   /** Callback when new ticket is requested */
   onNew: () => void;
+  /** Callback when Enter is pressed on a ticket (open with agent) */
+  onOpen: (index: number) => void;
   /** Whether navigation is disabled (e.g., when modal is open) */
   disabled?: () => boolean;
 }
@@ -73,6 +75,12 @@ export function handleNavigationKey(
     return;
   }
 
+  // Open ticket with agent: Enter
+  if (key.name === "enter" || key.name === "return") {
+    options.onOpen(current);
+    return;
+  }
+
   // New ticket: n or +
   if (key.name === "n" || key.name === "+") {
     options.onNew();
@@ -86,6 +94,7 @@ export function handleNavigationKey(
  * - j/k or arrow keys for up/down navigation
  * - 1-9 for quick jump to specific ticket
  * - n/+ for new ticket
+ * - Enter/Return to open ticket with agent
  *
  * @example
  * useTicketNavigation({
@@ -93,6 +102,7 @@ export function handleNavigationKey(
  *   selectedIndex,
  *   onSelect: setSelectedIndex,
  *   onNew: () => openNewTicketModal(),
+ *   onOpen: (index) => openTicketWithAgent(index),
  * });
  */
 export function useTicketNavigation(options: UseTicketNavigationOptions): void {

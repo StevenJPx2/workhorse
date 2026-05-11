@@ -12,17 +12,20 @@ import {
 describe("handleNavigationKey", () => {
   let onSelect: ReturnType<typeof mock>;
   let onNew: ReturnType<typeof mock>;
+  let onOpen: ReturnType<typeof mock>;
   let options: UseTicketNavigationOptions;
   let context: NavigationContext;
 
   beforeEach(() => {
     onSelect = mock(() => {});
     onNew = mock(() => {});
+    onOpen = mock(() => {});
     options = {
       ticketCount: () => 5,
       selectedIndex: () => 0,
       onSelect,
       onNew,
+      onOpen,
     };
     context = {
       isInputMode: () => false,
@@ -45,6 +48,14 @@ describe("handleNavigationKey", () => {
 
       expect(onNew).not.toHaveBeenCalled();
     });
+
+    it("should not handle open when in input mode", () => {
+      context.isInputMode = () => true;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).not.toHaveBeenCalled();
+    });
   });
 
   describe("disabled state", () => {
@@ -62,6 +73,14 @@ describe("handleNavigationKey", () => {
       handleNavigationKey({ name: "n" }, options, context);
 
       expect(onNew).not.toHaveBeenCalled();
+    });
+
+    it("should not handle open when disabled", () => {
+      options.disabled = () => true;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).not.toHaveBeenCalled();
     });
 
     it("should handle keys when disabled returns false", () => {
@@ -225,12 +244,55 @@ describe("handleNavigationKey", () => {
     });
   });
 
+  describe("open ticket with agent (enter/return)", () => {
+    it("should call onOpen with current index on enter key", () => {
+      options.selectedIndex = () => 2;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).toHaveBeenCalledWith(2);
+    });
+
+    it("should call onOpen with current index on return key", () => {
+      options.selectedIndex = () => 3;
+
+      handleNavigationKey({ name: "return" }, options, context);
+
+      expect(onOpen).toHaveBeenCalledWith(3);
+    });
+
+    it("should not call onOpen when in input mode", () => {
+      context.isInputMode = () => true;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    it("should not call onOpen when disabled", () => {
+      options.disabled = () => true;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    it("should not call onOpen when no tickets exist", () => {
+      options.ticketCount = () => 0;
+
+      handleNavigationKey({ name: "enter" }, options, context);
+
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+  });
+
   describe("unhandled keys", () => {
     it("should ignore unrelated keys", () => {
       handleNavigationKey({ name: "x" }, options, context);
 
       expect(onSelect).not.toHaveBeenCalled();
       expect(onNew).not.toHaveBeenCalled();
+      expect(onOpen).not.toHaveBeenCalled();
     });
 
     it("should ignore escape key", () => {
@@ -238,13 +300,7 @@ describe("handleNavigationKey", () => {
 
       expect(onSelect).not.toHaveBeenCalled();
       expect(onNew).not.toHaveBeenCalled();
-    });
-
-    it("should ignore enter key", () => {
-      handleNavigationKey({ name: "enter" }, options, context);
-
-      expect(onSelect).not.toHaveBeenCalled();
-      expect(onNew).not.toHaveBeenCalled();
+      expect(onOpen).not.toHaveBeenCalled();
     });
   });
 });

@@ -34,6 +34,8 @@ export interface UseLayoutActionsReturn {
   switchAgent: () => void;
   /** Toggle agent running state for current ticket */
   toggleAgent: () => Promise<void>;
+  /** Start agent for current ticket if not already running */
+  startAgent: () => Promise<void>;
   /** Whether an agent is currently starting */
   isAgentStarting: Accessor<boolean>;
   /** Get agent state, accounting for starting state */

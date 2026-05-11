@@ -2,7 +2,7 @@
 
 exports[`Agent restart snapshots TicketPane shows agent not running state 1`] = `
 "                                                                                
- TEST-123: Test ticket for agent restart                                        
+ TEST-123: Test ticket for agent restart                                 ◆ Jira 
  =======================================                                        
                                                                                 
  Status ◐ PLANNING                Agent opencode                                
@@ -30,7 +30,7 @@ exports[`Agent restart snapshots TicketPane shows agent not running state 1`] = 
 
 exports[`Agent restart snapshots TicketPane shows agent running state 1`] = `
 "                                                                                
- TEST-123: Test ticket for agent restart                                        
+ TEST-123: Test ticket for agent restart                                 ◆ Jira 
  =======================================                                        
                                                                                 
  Status ◐ PLANNING                Agent opencode (● Running)                    
@@ -68,25 +68,25 @@ exports[`Agent restart snapshots Layout shows toggle agent in help dialog 1`] = 
 │                   │ [+/n]   Add new ticket               │                    
 │                   │ [j/k]   Navigate tickets             │                    
 │                   │ [1-9]   Jump to ticket               │                    
+│                   │ [Enter] Open ticket with agent       │                    
 │                   │ [x]     Close current ticket         │                    
 │                   │ [o]     Open in Jira                 │                    
 │                   │ [e]     Escalate / ask question      │                    
 │                   │ [a]     Switch agent                 │                    
 │                   │ [s]     Start/stop agent             │                    
 │                   │ [t]     Toggle theme                 │                    
-│                   │ [?]     Toggle help                  │                    
-│                   │ Press anyukey to close               │                    
-│                   │                                      │                    
+│                   │ Press anyokeyetoeclose               │                    
+│                   │ [q]     Quit                         │                    
 │                   ╰──────────────────────────────────────╯                    
 │ Jiratown                             │                                        
 ╰──────────────────────────────────────╯                                        
- No notifications                test-repo | [:] commands | [?] help | [q] quit 
+ No notifications     test-repo | [:] commands | [?] help | [⏎] open | [q] quit 
 "
 `;
 
 exports[`Agent toggle integration restart flow completes successfully: before-restart 1`] = `
 "                                                                                
- TEST-123: Test ticket for agent restart                                        
+ TEST-123: Test ticket for agent restart                                 ◆ Jira 
  =======================================                                        
                                                                                 
  Status ◐ PLANNING                Agent opencode                                
@@ -114,7 +114,7 @@ exports[`Agent toggle integration restart flow completes successfully: before-re
 
 exports[`Agent toggle integration restart flow completes successfully: after-restart 1`] = `
 "                                                                                
- TEST-123: Test ticket for agent restart                                        
+ TEST-123: Test ticket for agent restart                                 ◆ Jira 
  =======================================                                        
                                                                                 
  Status ◐ PLANNING                Agent opencode (● Running)                    

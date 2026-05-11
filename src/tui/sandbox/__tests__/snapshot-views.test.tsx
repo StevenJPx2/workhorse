@@ -18,6 +18,7 @@ describe("TicketSidebar snapshots", () => {
           width={28}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       ),
       { width: 32, height: 18 },
@@ -38,6 +39,7 @@ describe("TicketSidebar snapshots", () => {
           width={28}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       ),
       { width: 32, height: 18 },
@@ -103,6 +105,7 @@ describe("Theme consistency", () => {
             width={28}
             onSelect={() => {}}
             onNew={() => {}}
+            onOpen={() => {}}
           />
         ),
         { width: 32, height: 16, theme },

@@ -32,6 +32,7 @@ export const stressSpecs: FrameSpec[] = [
         width={10}
         onSelect={() => {}}
         onNew={() => {}}
+        onOpen={() => {}}
       />
     ),
   },
@@ -101,6 +102,7 @@ export const stressSpecs: FrameSpec[] = [
         width={20}
         onSelect={() => {}}
         onNew={() => {}}
+        onOpen={() => {}}
       />
     ),
   },
@@ -147,6 +149,7 @@ export const stressSpecs: FrameSpec[] = [
           width={28}
           onSelect={() => {}}
           onNew={() => {}}
+          onOpen={() => {}}
         />
       );
     },
