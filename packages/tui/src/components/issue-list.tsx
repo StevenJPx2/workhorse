@@ -1,11 +1,12 @@
 import type { Issue } from "@jiratown/core";
-import { For } from "solid-js";
+import { createSignal, For } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
 
 interface IssueListProps {
   onSelect: (issue: Issue) => void;
+  onDelete?: (issue: Issue) => void;
   selectedIndex?: number;
 }
 
@@ -50,17 +51,39 @@ export function IssueList(props: IssueListProps) {
           {(issue, index) => {
             // Only show selection highlight if this list is focused
             const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
+            const [isHovered, setIsHovered] = createSignal(false);
+            const showDelete = () => isSelected() || isHovered();
             return (
               <box
                 backgroundColor={isSelected() ? theme.colors.selection : undefined}
                 paddingLeft={2}
                 paddingRight={2}
+                onMouseOver={() => setIsHovered(true)}
+                onMouseOut={() => setIsHovered(false)}
+                justifyContent="space-between"
               >
-                <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
-                  {isSelected() ? "▸ " : "  "}
-                  <b>{issue.externalId || issue.id.slice(0, 8)}</b>
-                </text>
-                <text fg={theme.colors.dim}> {issue.title.slice(0, 20)}</text>
+                <box>
+                  <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                    {isSelected() ? "▸ " : "  "}
+                    <b>{issue.externalId || issue.id.slice(0, 8)}</b>
+                  </text>
+                  <text fg={theme.colors.dim}> {issue.title.slice(0, 20)}</text>
+                </box>
+                {showDelete() && (
+                  <box
+                    onMouseDown={() => {
+                      if (props.onDelete) {
+                        props.onDelete(issue);
+                      } else {
+                        ui.openDeleteModal(issue);
+                      }
+                    }}
+                  >
+                    <text fg={theme.colors.error}>
+                      <b>[x]</b>
+                    </text>
+                  </box>
+                )}
               </box>
             );
           }}

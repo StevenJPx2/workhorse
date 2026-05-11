@@ -134,11 +134,3 @@ export function getTheme(): Theme {
 export function setTheme(name: string): void {
   activeTheme = themes[name as ThemeName] ?? tokyonight;
 }
-
-/**
- * Legacy export for backwards compatibility.
- * Components should migrate to using `getTheme()` for dynamic theming.
- *
- * @deprecated Use `getTheme()` instead for dynamic theme support.
- */
-export const theme = tokyonight;

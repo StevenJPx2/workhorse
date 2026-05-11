@@ -21,7 +21,7 @@ import { createGitHubParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
 import { registerGitHubSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
-import { createGitHubTools } from "./tools.ts";
+import { createGitHubTools } from "./tools";
 
 /** Config schema for the GitHub plugin */
 export const GitHubConfigSchema = z.object({

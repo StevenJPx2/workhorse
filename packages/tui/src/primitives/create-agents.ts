@@ -34,18 +34,17 @@ export function createAgents(): {
     });
   });
 
-  // Memo that depends on version - re-computes when bumped
-  const agents = createMemo(() => {
-    version(); // Subscribe to version changes
-    return orchestrator.getAll();
-  });
-
-  // Helper to get state reactively (depends on version)
-  const getState = (issueId: string | null): AgentState | null => {
-    if (!issueId) return null;
-    version(); // Subscribe to version changes
-    return orchestrator.getAgent(issueId)?.state ?? null;
+  return {
+    // Memo that depends on version - re-computes when bumped
+    agents: createMemo(() => {
+      version(); // Subscribe to version changes
+      return orchestrator.getAll();
+    }),
+    // Helper to get state reactively (depends on version)
+    getState: (issueId: string | null): AgentState | null => {
+      if (!issueId) return null;
+      version(); // Subscribe to version changes
+      return orchestrator.getAgent(issueId)?.state ?? null;
+    },
   };
-
-  return { agents, getState };
 }

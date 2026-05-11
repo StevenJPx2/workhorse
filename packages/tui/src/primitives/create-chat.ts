@@ -21,8 +21,7 @@ export function createChat(issueId: Accessor<string | null>) {
 
   // Reset messages when issue changes
   createEffect(() => {
-    const id = issueId();
-    if (id) {
+    if (issueId()) {
       // TODO: Load history from L1 memory once getChatHistory is implemented
       // For now, start with empty messages
       // const history = memory.l1.getChatHistory(id);
@@ -67,6 +66,7 @@ export function createChat(issueId: Accessor<string | null>) {
   /**
    * Send a message to the agent.
    */
+  // oxlint-disable-next-line jiratown/no-single-use-variable
   const send = async (content: string) => {
     const id = issueId();
     if (!id) return;

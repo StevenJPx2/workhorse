@@ -85,12 +85,10 @@ export function savePluginConfig(configPath: string, newConfig: Partial<Jiratown
     mkdirSync(dir, { recursive: true });
   }
 
-  // Load existing config and merge
-  const existing = parseTomlFile(configPath);
-  const merged = mergeConfigs(DEFAULT_CONFIG, existing, newConfig);
-
-  // Only write the plugin section
-  writeTomlFile(configPath, { plugins: merged.plugins });
+  // Load existing config, merge, and write only the plugin section
+  writeTomlFile(configPath, {
+    plugins: mergeConfigs(DEFAULT_CONFIG, parseTomlFile(configPath), newConfig).plugins,
+  });
 }
 
 /**
@@ -102,11 +100,13 @@ export function getPluginsNeedingSetup(
   existingConfig: JiratownConfig,
   requirements: PluginConfigRequirement[] = PLUGIN_REQUIREMENTS,
 ): SetupPluginConfig[] {
-  const pluginsConfig = existingConfig.plugins;
   const needsSetup: SetupPluginConfig[] = [];
 
   for (const requirement of requirements) {
-    const pluginConfig = (pluginsConfig[requirement.name] ?? {}) as Record<string, unknown>;
+    const pluginConfig = (existingConfig.plugins[requirement.name] ?? {}) as Record<
+      string,
+      unknown
+    >;
     const missingRequired = requirement.fields.filter(
       (field) => field.required && !pluginConfig[field.key],
     );

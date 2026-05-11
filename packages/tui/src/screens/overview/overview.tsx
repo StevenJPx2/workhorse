@@ -18,19 +18,19 @@ export function Overview() {
   const { paths, tracker, orchestrator } = useJiratownContext();
   const [issueIndex, setIssueIndex] = createSignal(0);
   const [agentIndex, setAgentIndex] = createSignal(0);
-  const issues = createIssues();
   const { agents } = createAgents();
 
   // Derive selected issue ID from the currently highlighted agent
-  const selectedIssueId = createMemo(() => {
-    const agentList = agents();
-    const idx = agentIndex();
-    return agentList.length > 0 && idx >= 0 && idx < agentList.length
-      ? (agentList[idx]?.issueId ?? null)
-      : null;
-  });
+  // oxlint-disable-next-line jiratown/no-single-use-variable
+  const selectedIssueId = createMemo(() =>
+    agents().length > 0 && agentIndex() >= 0 && agentIndex() < agents().length
+      ? (agents()[agentIndex()]?.issueId ?? null)
+      : null,
+  );
 
   const { messages, send } = createChat(selectedIssueId);
+  // oxlint-disable-next-line jiratown/no-single-use-variable
+  const issues = createIssues();
 
   /** Handle chat input - send to agent or spawn new agent for issue */
   const handleSubmit = async (msg: string) => {
@@ -117,12 +117,10 @@ export function Overview() {
         paddingRight={2}
         paddingTop={1}
         paddingBottom={1}
-        {...({
-          onClick: () => {
-            ui.setFocusedComponent("chat");
-            ui.enterInputMode();
-          },
-        } as any)}
+        onMouseDown={() => {
+          ui.setFocusedComponent("chat");
+          ui.enterInputMode();
+        }}
       >
         {/* Show recent messages if any */}
         {messages().length > 0 && (
@@ -138,25 +136,39 @@ export function Overview() {
               ))}
           </box>
         )}
-        <box flexDirection="row">
-          <text fg={theme.colors.accent}>
-            {selectedIssueId() ? `[${selectedIssueId()}] ❯ ` : "❯ "}
-          </text>
-          <input
-            focused={ui.focusedComponent() === "chat"}
-            onSubmit={(value) => {
-              // value can be string or SubmitEvent - handle both
-              const msg = typeof value === "string" ? value.trim() : "";
-              if (msg) {
-                handleSubmit(msg);
-              }
-            }}
-            placeholder={
-              selectedIssueId()
-                ? `Message agent ${selectedIssueId()}...`
-                : "Type a task or issue key..."
-            }
-          />
+        <box flexDirection="row" width="100%" alignItems="stretch">
+          <box flexShrink={0}>
+            <text fg={theme.colors.accent}>
+              {selectedIssueId() ? `[${selectedIssueId()}] ❯ ` : "❯ "}
+            </text>
+          </box>
+          <box flexGrow={1} flexBasis={0}>
+            {/* Hide input when modal is open to prevent it from capturing Enter */}
+            {!ui.modal() && (
+              <input
+                width="100%"
+                focused={ui.focusedComponent() === "chat"}
+                onSubmit={(value) => {
+                  // value can be string or SubmitEvent - handle both
+                  const msg = typeof value === "string" ? value.trim() : "";
+                  if (msg) {
+                    handleSubmit(msg);
+                  } else {
+                    // Empty Enter: show spawn modal for selected issue
+                    const issue = issues()[issueIndex()];
+                    if (issue) {
+                      ui.openSpawnModal(issue);
+                    }
+                  }
+                }}
+                placeholder={
+                  selectedIssueId()
+                    ? `Message agent ${selectedIssueId()}...`
+                    : "Type a task or issue key..."
+                }
+              />
+            )}
+          </box>
         </box>
       </box>
 
@@ -166,6 +178,7 @@ export function Overview() {
           { key: "↑↓←→", action: "navigate" },
           { key: "Tab", action: "switch" },
           { key: "Enter", action: "select" },
+          { key: "Ctrl+X M", action: "model" },
           { key: "Ctrl+X H", action: "help" },
         ]}
       />

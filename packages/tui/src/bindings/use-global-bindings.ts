@@ -21,11 +21,8 @@ export function useGlobalBindings() {
   const renderer = useRenderer();
 
   useKeyboard((key) => {
-    const keyName = key.name;
-    const isCtrl = key.ctrl;
-
     // Ctrl+X enters command mode
-    if (isCtrl && keyName === "x") {
+    if (key.ctrl && key.name === "x") {
       setCommandMode(true);
       return;
     }
@@ -34,7 +31,7 @@ export function useGlobalBindings() {
     if (commandMode()) {
       setCommandMode(false); // Reset command mode
 
-      switch (keyName) {
+      switch (key.name) {
         case "q":
           renderer.destroy();
           return;
@@ -42,13 +39,16 @@ export function useGlobalBindings() {
         case "?":
           ui.setScreen("help");
           return;
+        case "m":
+          ui.openModelModal();
+          return;
       }
       // Unknown command key - just ignore
       return;
     }
 
     // Tab always works for focus switching (not in command mode)
-    if (keyName === "tab") {
+    if (key.name === "tab") {
       if (key.shift) {
         ui.focusPrev();
       } else {
@@ -58,7 +58,7 @@ export function useGlobalBindings() {
     }
 
     // ESC always works (even in input mode)
-    if (keyName === "escape") {
+    if (key.name === "escape") {
       if (ui.modal()) {
         ui.closeModal();
       } else if (ui.inputMode()) {

@@ -10,9 +10,16 @@ import type {
 } from "@jiratown/core";
 import { JiratownProvider } from "./context/jiratown.tsx";
 import { Overview, Agent, Help } from "./screens";
-import { SpawnModal, type SpawnConfig } from "./components/spawn-modal.tsx";
+import {
+  SpawnModal,
+  type SpawnConfig,
+  ModelSelectorModal,
+  DeleteConfirmModal,
+  ToastContainer,
+} from "./components";
 import { useGlobalBindings } from "./bindings";
 import { ui } from "./state/ui.ts";
+import { logError } from "./state/error-log.ts";
 
 interface AppProps {
   config: JiratownConfig;
@@ -32,15 +39,29 @@ export function App(props: AppProps) {
   useGlobalBindings();
 
   const handleSpawn = async (config: SpawnConfig) => {
-    await props.orchestrator.spawn({
-      issue: config.issue,
-      harness: config.harness as any,
-      baseBranch: config.baseBranch,
-      repoPath: props.paths.worktreesRoot.replace(/-worktrees$/, ""),
-    });
+    // Close modal immediately so user isn't stuck waiting
     ui.closeModal();
-    ui.enterAgentView(config.issue.externalId);
+
+    try {
+      await props.orchestrator
+        .spawn({
+          issue: config.issue,
+          harness: config.harness as any,
+          baseBranch: config.baseBranch,
+          repoPath: props.paths.worktreesRoot.replace(/-worktrees$/, ""),
+          model: ui.selectedModel() || props.config.agent.model || undefined,
+        })
+        .then((agent) => {
+          ui.enterAgentView(config.issue.externalId);
+          return agent.start();
+        });
+    } catch (err) {
+      ui.showError(`Spawn failed: ${logError(err, "handleSpawn")}`);
+    }
   };
+
+  // Get effective model: TUI selection > config
+  const currentModel = () => ui.selectedModel() || props.config.agent.model || "";
 
   return (
     <JiratownProvider
@@ -60,6 +81,33 @@ export function App(props: AppProps) {
             <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
           )}
         </Show>
+        <Show when={ui.modal() === "model"}>
+          <ModelSelectorModal
+            currentModel={currentModel()}
+            onSelect={(modelId) => {
+              ui.setSelectedModel(modelId);
+              ui.closeModal();
+            }}
+            onClose={ui.closeModal}
+          />
+        </Show>
+        <Show when={ui.modal() === "delete" && ui.deleteIssue()}>
+          {(issue: () => Issue) => (
+            <DeleteConfirmModal
+              issue={issue()}
+              onConfirm={async (issueToDelete) => {
+                try {
+                  // Type assertion needed due to TypeScript server cache issue
+                  await (props.tracker as any).deleteIssue(issueToDelete.id);
+                  ui.closeModal();
+                } catch (err) {
+                  console.error("Failed to delete issue:", err);
+                }
+              }}
+              onClose={ui.closeModal}
+            />
+          )}
+        </Show>
 
         {/* Main content */}
         <Switch>
@@ -73,6 +121,9 @@ export function App(props: AppProps) {
             <Help />
           </Match>
         </Switch>
+
+        {/* Toast notifications */}
+        <ToastContainer />
       </box>
     </JiratownProvider>
   );

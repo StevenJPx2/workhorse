@@ -4,4 +4,7 @@ export { BlockedBox } from "./blocked-box.tsx";
 export { IssueList } from "./issue-list.tsx";
 export { AgentList } from "./agent-list.tsx";
 export { StatusBar } from "./status-bar.tsx";
-export { SpawnModal, type SpawnConfig } from "./spawn-modal.tsx";
+export { SpawnModal, type SpawnConfig } from "./spawn-modal";
+export { ModelSelectorModal } from "./model-selector-modal.tsx";
+export { DeleteConfirmModal } from "./delete-confirm-modal.tsx";
+export { ToastContainer } from "./toast.tsx";

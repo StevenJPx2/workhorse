@@ -24,9 +24,11 @@ export default defineConfig({
       external: [
         // Node builtins
         /^node:/,
+        // Bun runtime
+        "bun",
+        /^bun:/,
         // External dependencies - don't bundle these
         "@libsql/client",
-        "keytar",
         "drizzle-orm",
         "mitt",
         "unctx",

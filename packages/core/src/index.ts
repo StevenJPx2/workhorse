@@ -49,10 +49,13 @@ export type {
   AgentState,
   CreateOptions,
   JSONSchema,
+  ModelInfo,
   OrchestratorTool,
   ToolExecutionContext,
   ToolResult,
 } from "#workflow/orchestrator";
+// Model registry exports for plugin authors
+export { ModelRegistry } from "#workflow/orchestrator";
 // Steering exports for plugin authors
 export { SteeringRule } from "#workflow/orchestrator";
 export type {

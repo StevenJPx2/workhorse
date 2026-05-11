@@ -23,7 +23,6 @@
 		"defu": "^6.1.7",
 		"drizzle-orm": "^1.0.0-beta.22",
 		"es-toolkit": "^1.46.1",
-		"keytar": "^7.9.0",
 		"mitt": "^3.0.1",
 		"retriv": "^0.13.2",
 		"smol-toml": "^1.6.1",

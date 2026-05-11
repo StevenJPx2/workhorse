@@ -21,11 +21,6 @@ export function AgentList(props: AgentListProps) {
   // Check if this component is focused
   const isFocused = () => ui.focusedComponent() === "agents";
 
-  // Handle click to focus this component
-  const handleClick = () => {
-    ui.setFocusedComponent("agents");
-  };
-
   const getStatusColor = (state: string) => {
     switch (state) {
       case "running":
@@ -63,7 +58,7 @@ export function AgentList(props: AgentListProps) {
       flexDirection="column"
       flexGrow={1}
       backgroundColor={theme.colors.background}
-      {...({ onClick: handleClick } as any)}
+      onMouseDown={() => ui.setFocusedComponent("agents")}
     >
       {/* Header - highlighted when focused */}
       <box
@@ -92,23 +87,25 @@ export function AgentList(props: AgentListProps) {
                 backgroundColor={isSelected() ? theme.colors.selection : undefined}
                 paddingLeft={2}
                 paddingRight={2}
-                flexDirection="row"
-                justifyContent="space-between"
+                flexDirection="column"
               >
-                <box>
+                <box flexDirection="row" justifyContent="space-between">
                   <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
                     {isSelected() ? "▸ " : "  "}
                     <b>{agent.issueId}</b>
                   </text>
-                </box>
-                <box>
                   <text fg={getStatusColor(state())}>
                     {getStatusIcon(state())} {state()}
                   </text>
-                  <Show when={state() === "crashed"}>
-                    <text fg={theme.colors.error}> !</text>
-                  </Show>
                 </box>
+                <Show when={agent.model}>
+                  <box paddingLeft={2}>
+                    <text fg={theme.colors.dim}>{agent.model}</text>
+                  </box>
+                </Show>
+                <Show when={state() === "crashed"}>
+                  <text fg={theme.colors.error}> !</text>
+                </Show>
               </box>
             );
           }}

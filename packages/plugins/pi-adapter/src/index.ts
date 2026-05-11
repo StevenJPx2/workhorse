@@ -11,6 +11,8 @@ import { definePlugin } from "@jiratown/core";
 import { PiAgentAdapter } from "./adapter.ts";
 
 export { PiAgentAdapter } from "./adapter.ts";
+export { PiAdapterModelRegistry } from "./registry.ts";
+export type { ModelInfo } from "@jiratown/core";
 
 export const piAdapterPlugin = definePlugin({
   manifest: {

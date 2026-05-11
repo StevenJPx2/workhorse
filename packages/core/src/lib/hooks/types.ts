@@ -3,9 +3,6 @@ import type { Issue, IssueStatus, Notification } from "#db";
 import type { AgentAdapter, CreateOptions } from "#workflow/orchestrator";
 import type { PromptBuildingContext } from "#workflow/tracker";
 
-// Re-export for convenience
-export type { PromptBuildingContext, PromptContextBlock } from "#workflow/tracker";
-
 type KnownEvents = {
   // Issues
   "issue.parsed": { issue: Issue; raw: unknown };

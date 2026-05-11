@@ -32,7 +32,9 @@ const { createSolidTransformPlugin } = await import(
   resolve(TUI, "node_modules/@opentui/solid/scripts/solid-plugin.ts")
 );
 
+// oxlint-disable-next-line jiratown/no-single-reference-function
 async function build(minify: boolean, sourcemap: boolean): Promise<void> {
+  // oxlint-disable-next-line jiratown/no-single-use-variable
   const start = performance.now();
   console.log("\n⚡ Building @jiratown/tui...\n");
 
@@ -59,8 +61,9 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   copyTreeSitterAssets();
   copyDrizzleMigrations();
 
-  const size = result.outputs[0] ? formatSize(result.outputs[0].size) : "?";
-  console.log(`✓ Built dist/jiratown.js (${size}) in ${formatDuration(performance.now() - start)}`);
+  console.log(
+    `✓ Built dist/jiratown.js (${result.outputs[0] ? formatSize(result.outputs[0].size) : "?"}) in ${formatDuration(performance.now() - start)}`,
+  );
   console.log(`  Run with: bun packages/tui/dist/jiratown.js\n`);
 }
 
@@ -144,18 +147,18 @@ function copyTreeSitterAssets(): void {
 function copyDrizzleMigrations(): void {
   const src = resolve(ROOT, "packages/core/drizzle");
   if (!existsSync(src)) return;
-  const dest = resolve(OUTDIR, "drizzle");
-  copyDirRecursive(src, dest);
+  copyDirRecursive(src, resolve(OUTDIR, "drizzle"));
   console.log("  ✓ Copied drizzle migrations");
-}
 
-function copyDirRecursive(src: string, dest: string): void {
-  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
-  for (const entry of readdirSync(src, { withFileTypes: true })) {
-    const srcPath = resolve(src, entry.name);
-    const destPath = resolve(dest, entry.name);
-    if (entry.isDirectory()) copyDirRecursive(srcPath, destPath);
-    else copyFileSync(srcPath, destPath);
+  // oxlint-disable-next-line jiratown/no-single-reference-function
+  function copyDirRecursive(srcDir: string, destDir: string): void {
+    if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+    for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+      const srcPath = resolve(srcDir, entry.name);
+      const destPath = resolve(destDir, entry.name);
+      if (entry.isDirectory()) copyDirRecursive(srcPath, destPath);
+      else copyFileSync(srcPath, destPath);
+    }
   }
 }
 

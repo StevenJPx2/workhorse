@@ -5,7 +5,7 @@
 import type { OrchestratorTool } from "@jiratown/core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { GitHubClient } from "../client.ts";
-import { createGitHubTools } from "../tools.ts";
+import { createGitHubTools } from "../tools";
 
 describe("createGitHubTools", () => {
   it("returns all three tools", () => {

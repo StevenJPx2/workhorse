@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import type { Issue } from "@jiratown/core";
 
 export type Screen = "overview" | "agent" | "help";
-export type Modal = "spawn" | null;
+export type Modal = "spawn" | "model" | "delete" | null;
 
 /**
  * Focus targets for tab navigation.
@@ -15,10 +15,25 @@ const [screen, setScreen] = createSignal<Screen>("overview");
 const [modal, setModal] = createSignal<Modal>(null);
 const [selectedAgentId, setSelectedAgentId] = createSignal<string | null>(null);
 const [spawnIssue, setSpawnIssue] = createSignal<Issue | null>(null);
+const [deleteIssue, setDeleteIssue] = createSignal<Issue | null>(null);
+
+// Model selection state (overrides config when set)
+const [selectedModel, setSelectedModel] = createSignal<string | null>(null);
 
 // Input and focus state
 const [inputMode, setInputMode] = createSignal(false);
 const [focusedComponent, setFocusedComponent] = createSignal<FocusTarget>("issues");
+
+// Toast notification state
+export type ToastType = "error" | "success" | "info" | "warning";
+export interface Toast {
+  id: number;
+  type: ToastType;
+  message: string;
+  timestamp: number;
+}
+const [toasts, setToasts] = createSignal<Toast[]>([]);
+let toastId = 0;
 
 // Focus order for tab navigation
 const FOCUS_ORDER: FocusTarget[] = ["issues", "agents", "chat"];
@@ -32,13 +47,17 @@ export const ui = {
   modal,
   selectedAgentId,
   spawnIssue,
+  deleteIssue,
   inputMode,
   focusedComponent,
+  selectedModel,
+  toasts,
 
   // Actions (write)
   setScreen,
   setInputMode,
   setFocusedComponent,
+  setSelectedModel,
 
   /**
    * Enter input mode (blocks global shortcuts).
@@ -59,9 +78,7 @@ export const ui = {
    * Automatically enters input mode when focusing chat.
    */
   focusNext: () => {
-    const current = focusedComponent();
-    const idx = FOCUS_ORDER.indexOf(current);
-    const next = FOCUS_ORDER[(idx + 1) % FOCUS_ORDER.length]!;
+    const next = FOCUS_ORDER[(FOCUS_ORDER.indexOf(focusedComponent()) + 1) % FOCUS_ORDER.length]!;
     setFocusedComponent(next);
     // Auto-toggle input mode based on what we're focusing
     setInputMode(next === "chat");
@@ -72,9 +89,10 @@ export const ui = {
    * Automatically enters input mode when focusing chat.
    */
   focusPrev: () => {
-    const current = focusedComponent();
-    const idx = FOCUS_ORDER.indexOf(current);
-    const prev = FOCUS_ORDER[(idx - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length]!;
+    const prev =
+      FOCUS_ORDER[
+        (FOCUS_ORDER.indexOf(focusedComponent()) - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length
+      ]!;
     setFocusedComponent(prev);
     // Auto-toggle input mode based on what we're focusing
     setInputMode(prev === "chat");
@@ -87,10 +105,12 @@ export const ui = {
 
   /**
    * Open the spawn modal for a specific issue.
+   * Exits input mode so the modal's keyboard handler can capture Enter.
    */
   openSpawnModal: (issue: Issue) => {
     setSpawnIssue(issue);
     setModal("spawn");
+    setInputMode(false);
   },
 
   /**
@@ -99,6 +119,22 @@ export const ui = {
   closeModal: () => {
     setModal(null);
     setSpawnIssue(null);
+    setDeleteIssue(null);
+  },
+
+  /**
+   * Open the delete confirmation modal for a specific issue.
+   */
+  openDeleteModal: (issue: Issue) => {
+    setDeleteIssue(issue);
+    setModal("delete");
+  },
+
+  /**
+   * Open the model selection modal.
+   */
+  openModelModal: () => {
+    setModal("model");
   },
 
   /**
@@ -116,4 +152,24 @@ export const ui = {
   backToOverview: () => {
     setScreen("overview");
   },
+
+  /** Show a toast notification. Auto-dismisses after duration (default 5s). */
+  toast: (type: ToastType, message: string, duration = 5000) => {
+    const id = ++toastId;
+    const toast: Toast = { id, type, message, timestamp: Date.now() };
+    setToasts((prev) => [...prev, toast]);
+    setTimeout(() => ui.dismissToast(id), duration);
+    return id;
+  },
+
+  /** Dismiss a toast by ID. */
+  dismissToast: (id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  },
+
+  /** Shorthand for error toast. */
+  showError: (message: string) => ui.toast("error", message, 8000),
+
+  /** Shorthand for success toast. */
+  showSuccess: (message: string) => ui.toast("success", message, 3000),
 };

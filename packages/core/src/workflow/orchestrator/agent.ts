@@ -9,23 +9,27 @@ import type { MemoryService } from "#services/memory";
 import { SteeringRule } from "#workflow/steering";
 import { PromptEngineer } from "#workflow/tracker";
 import type { HarnessOrchestrator } from "./orchestrator.ts";
-import type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./types/adapter.ts";
+import type { ModelRegistry } from "./registry.ts";
+import type {
+  AdapterInfo,
+  AgentHarness,
+  AgentState,
+  CreateOptions,
+  ModelInfo,
+  StopOptions,
+} from "./types/adapter.ts";
 import type { OrchestratorTool } from "./types/tools.ts";
 
-export type { AgentHarness, AgentState, CreateOptions, StopOptions };
-
-/** Metadata for a registered adapter (for UI display). */
-export interface AdapterInfo {
-  harness: string;
-  displayName: string;
-  icon: string;
-}
+export type { AdapterInfo, AgentHarness, AgentState, CreateOptions, ModelInfo, StopOptions };
 
 /** Base class for agent adapters. Subclasses override doStart/doStop/sendMessage/isRunning. */
-export class AgentAdapter {
+export abstract class AgentAdapter {
   readonly harness: AgentHarness = "base";
   static readonly displayName: string = "Base Agent";
   static readonly icon: string = "🤖";
+
+  /** Model registry for this adapter. Subclasses set this to their specific implementation. */
+  static registry: ModelRegistry;
   state: AgentState = "stopped";
   readonly issue: Issue;
   worktreePath: string = "";
@@ -59,7 +63,6 @@ export class AgentAdapter {
       });
     });
   }
-
   get tools(): OrchestratorTool[] {
     return this.orchestrator.getTools();
   }
@@ -76,14 +79,16 @@ export class AgentAdapter {
     return this.issue.externalId;
   }
 
-  /** Factory method. Does NOT call start(). */
+  /** Factory method - creates and initializes an adapter instance. */
   static async create(options: CreateOptions): Promise<AgentAdapter> {
-    const adapter = new AgentAdapter(options);
+    // Cast to any to allow instantiation of abstract class via concrete subclass
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const adapter = new (this as any)(options) as AgentAdapter;
     await adapter.initialize(options);
     return adapter;
   }
 
-  /** Initialize worktree and build prompt. Subclasses can override. */
+  /** Initialize worktree and build prompt. Called by create() after construction. */
   protected async initialize(options: CreateOptions): Promise<void> {
     this.hooks.emit("agent.create.pre", { issue: this.issue, options });
 
@@ -134,18 +139,14 @@ export class AgentAdapter {
     if (this.state === "running" || this.state === "starting") {
       throw new Error(`Agent for ${this.issueId} is already running`);
     }
-
     this.state = "starting";
     this.hooks.emit("agent.start.pre", { adapter: this });
-
     try {
       await this.doStart();
-
       this.state = "running";
       this.hooks.emit("agent.start.post", { adapter: this });
     } catch (error) {
       this.state = "crashed";
-
       throw error;
     }
   }
@@ -157,29 +158,23 @@ export class AgentAdapter {
 
   /** Send message to agent. Subclasses must override. */
   async sendMessage(_content: string): Promise<void> {
-    if (this.state !== "running") {
+    if (this.state !== "running")
       throw new Error(`Agent for ${this.issueId} is not running (state: ${this.state})`);
-    }
     throw new Error("Subclass must implement sendMessage()");
   }
 
   /** Stop the agent. Subclasses override doStop(). */
   async stop(options: StopOptions = {}): Promise<void> {
     if (this.state === "stopped" || this.state === "stopping") return;
-
     this.hooks.emit("agent.stop.pre", { adapter: this });
     this.state = "stopping";
-
     try {
       await this.doStop();
     } finally {
       this.state = "stopped";
       for (const rule of this.steering) rule.dispose();
-
-      if (options.removeWorktree && this.worktreePath) {
+      if (options.removeWorktree && this.worktreePath)
         await removeWorktree(this.repoPath, this.issueId, options.deleteBranch);
-      }
-
       this.hooks.emit("agent.stop.post", { adapter: this });
     }
   }
@@ -188,7 +183,6 @@ export class AgentAdapter {
   protected async doStop(): Promise<void> {
     throw new Error("Subclass must implement doStop()");
   }
-
   /** Check if agent is running. Subclasses must override. */
   isRunning(): boolean {
     throw new Error("Subclass must implement isRunning()");

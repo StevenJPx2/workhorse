@@ -22,10 +22,6 @@ export function StatusBar(props: StatusBarProps) {
   const theme = getTheme();
   const renderer = useRenderer();
 
-  const handleQuit = () => {
-    renderer.destroy();
-  };
-
   const handleShortcutClick = (shortcut: Shortcut) => {
     if (shortcut.onActivate) {
       shortcut.onActivate();
@@ -67,7 +63,7 @@ export function StatusBar(props: StatusBarProps) {
           )}
         </For>
       </box>
-      <box flexDirection="row" onMouseDown={handleQuit}>
+      <box flexDirection="row" onMouseDown={() => renderer.destroy()}>
         <text fg={theme.colors.accent}>
           <b>Ctrl+X Q</b>
         </text>

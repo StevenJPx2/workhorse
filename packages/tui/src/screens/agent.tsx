@@ -31,8 +31,7 @@ export function Agent() {
 
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
-  const issueIdAccessor = () => selectedId();
-  const { messages, send } = createChat(issueIdAccessor);
+  const { messages, send } = createChat(() => selectedId());
 
   const handleAgentSelect = (agent: AgentAdapter) => {
     ui.enterAgentView(agent.issueId);
@@ -100,10 +99,14 @@ export function Agent() {
               </text>
               <text fg={theme.colors.dim}>
                 {" — "}
-                {agent().issue.title.length > 40
-                  ? agent().issue.title.slice(0, 40) + "..."
+                {agent().issue.title.length > 30
+                  ? agent().issue.title.slice(0, 30) + "..."
                   : agent().issue.title}
               </text>
+              <Show when={agent().model}>
+                <text fg={theme.colors.dim}>{" | "}</text>
+                <text fg={theme.colors.info}>{agent().model}</text>
+              </Show>
             </box>
             <box flexShrink={0}>
               <text fg={getStatusColor(getState(selectedId()) ?? "stopped")}>
@@ -140,19 +143,27 @@ export function Agent() {
 
                 return (
                   <box
-                    {...({ onClick: () => handleAgentSelect(agent) } as any)}
+                    onMouseDown={() => handleAgentSelect(agent)}
                     backgroundColor={isSelected() ? theme.colors.selection : undefined}
                     paddingLeft={1}
                     paddingRight={1}
+                    flexDirection="column"
                   >
-                    <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
-                      {isSelected() ? "▸ " : "  "}
-                      {agent.issueId}
-                    </text>
-                    <text fg={getStatusColor(getState(agent.issueId) ?? "stopped")}>
-                      {" "}
-                      {getStatusIcon(getState(agent.issueId) ?? "stopped")}
-                    </text>
+                    <box flexDirection="row" justifyContent="space-between">
+                      <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                        {isSelected() ? "▸ " : "  "}
+                        <b>{agent.issueId}</b>
+                      </text>
+                      <text fg={getStatusColor(getState(agent.issueId) ?? "stopped")}>
+                        {" "}
+                        {getStatusIcon(getState(agent.issueId) ?? "stopped")}
+                      </text>
+                    </box>
+                    <Show when={agent.model}>
+                      <box paddingLeft={2}>
+                        <text fg={theme.colors.dim}>{agent.model}</text>
+                      </box>
+                    </Show>
                   </box>
                 );
               }}
@@ -172,6 +183,7 @@ export function Agent() {
         shortcuts={[
           { key: "Enter", action: "send" },
           { key: "s", action: "stop" },
+          { key: "Ctrl+X M", action: "model" },
           { key: "ESC", action: "back" },
         ]}
       />

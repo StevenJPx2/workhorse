@@ -22,6 +22,7 @@ export type {
   AgentHarness,
   AgentState,
   CreateOptions,
+  ModelInfo,
   StopOptions,
   SpawnOptions,
   JSONSchema,
@@ -29,3 +30,6 @@ export type {
   ToolExecutionContext,
   ToolResult,
 } from "./types";
+
+// Model registry types
+export { ModelRegistry } from "./types";

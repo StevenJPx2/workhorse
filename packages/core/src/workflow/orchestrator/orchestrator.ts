@@ -1,19 +1,4 @@
-/**
- * HarnessOrchestrator - Manages agent instances across multiple issues.
- * @module workflow/orchestrator/orchestrator
- *
- * The orchestrator is a registry/factory for agent adapters:
- * - Registers adapter classes, tools, and steering rules (plugins call these)
- * - Creates adapter instances via spawn()
- * - Tracks active agents for lookup
- * - Handles notification and steering reminder delivery to running agents
- *
- * Steering rules are global (registered here), but state (firedOnce, cooldowns)
- * is per-adapter via SteeringRule instances created by each adapter.
- *
- * Lifecycle control (start/stop/sendMessage) is owned by the adapter itself.
- * The orchestrator just spawns and tracks agents.
- */
+/** HarnessOrchestrator - Registry/factory for agent adapters. @module workflow/orchestrator/orchestrator */
 
 import type { Emitter } from "mitt";
 import type { JiratownConfig } from "#config";
@@ -25,7 +10,7 @@ import {
   type SteeringRuleConfigInput,
   SteeringRuleConfigSchema,
 } from "#workflow/steering";
-import type { AdapterInfo, AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
+import type { AdapterInfo, AgentAdapter, ModelInfo, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
  * Main orchestrator class for managing agent lifecycles.
@@ -70,6 +55,33 @@ export class HarnessOrchestrator {
     }));
   }
 
+  /** Get all models from a specific adapter. */
+  getModelsForAdapter(harness: string): ModelInfo[] {
+    return this.adapters.get(harness)?.registry.getAll() ?? [];
+  }
+
+  /** Get available (authenticated) models from a specific adapter. */
+  getAvailableModelsForAdapter(harness: string): ModelInfo[] {
+    return this.adapters.get(harness)?.registry.getAvailable() ?? [];
+  }
+
+  /** Get the preferred provider from a specific adapter. */
+  getPreferredProviderForAdapter(harness: string): string {
+    return this.adapters.get(harness)?.registry.getPreferredProvider() ?? "unknown";
+  }
+
+  /** Find a model in a specific adapter. */
+  findModelInAdapter(harness: string, provider: string, modelId: string): ModelInfo | undefined {
+    return this.adapters.get(harness)?.registry.find(provider, modelId);
+  }
+
+  /** Refresh models for all adapters. */
+  refreshAllModels(): void {
+    for (const adapter of this.adapters.values()) {
+      adapter.registry.refresh();
+    }
+  }
+
   /** Register a tool. Plugins call this during setup. */
   registerTool(tool: OrchestratorTool): void {
     if (this.tools.has(tool.name)) console.warn(`Tool "${tool.name}" already registered`);
@@ -106,12 +118,8 @@ export class HarnessOrchestrator {
       throw new Error(`No adapter registered for harness: ${harness}`);
     }
 
-    // Create adapter (handles worktree + prompt via AgentAdapter.create())
-    const adapter = await AdapterClass.create({
-      ...options,
-      orchestrator: this,
-    });
-
+    // Create adapter via factory (handles construction + initialization)
+    const adapter = await AdapterClass.create({ ...options, orchestrator: this });
     this.agents.set(issueId, adapter);
 
     return adapter;

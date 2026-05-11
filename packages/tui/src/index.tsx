@@ -5,6 +5,7 @@ import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
 import { createCliRenderer } from "@opentui/core";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
+import { parseCliArgs, showHelp, showModels } from "./cli.ts";
 import tuiPlugin from "./plugin.ts";
 import { Setup } from "./screens";
 import type { SetupPluginConfig } from "./screens";
@@ -15,6 +16,7 @@ import {
   setupValuesToConfig,
 } from "./setup";
 import { setTheme } from "./theme.ts";
+import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
 
 interface SetupWrapperProps {
   plugins: SetupPluginConfig[];
@@ -29,44 +31,20 @@ interface SetupWrapperProps {
 function SetupWrapper(props: SetupWrapperProps) {
   const renderer = useRenderer();
 
-  const handleComplete = (configs: Record<string, Record<string, string>>) => {
-    const newConfig = setupValuesToConfig(configs);
-    savePluginConfig(props.configPath, newConfig);
-    renderer.destroy();
-    props.onComplete();
-  };
-
-  const handleSkip = () => {
-    renderer.destroy();
-    props.onSkip();
-  };
-
-  return <Setup plugins={props.plugins} onComplete={handleComplete} onSkip={handleSkip} />;
-}
-
-/**
- * Run the setup wizard if required plugin configs are missing.
- * Returns true if setup was completed, false if user skipped.
- */
-async function runSetupIfNeeded(): Promise<boolean> {
-  const paths = resolveConfigPaths();
-  const existingConfig = loadExistingConfig(paths.globalConfig, paths.projectConfig);
-  const pluginsNeedingSetup = getPluginsNeedingSetup(existingConfig);
-
-  if (pluginsNeedingSetup.length === 0) {
-    return true; // No setup needed
-  }
-
-  return new Promise((resolve) => {
-    render(() => (
-      <SetupWrapper
-        plugins={pluginsNeedingSetup}
-        configPath={paths.globalConfig}
-        onComplete={() => resolve(true)}
-        onSkip={() => resolve(false)}
-      />
-    ));
-  });
+  return (
+    <Setup
+      plugins={props.plugins}
+      onComplete={(configs) => {
+        savePluginConfig(props.configPath, setupValuesToConfig(configs));
+        renderer.destroy();
+        props.onComplete();
+      }}
+      onSkip={() => {
+        renderer.destroy();
+        props.onSkip();
+      }}
+    />
+  );
 }
 
 /**
@@ -74,9 +52,47 @@ async function runSetupIfNeeded(): Promise<boolean> {
  * Shows setup wizard if required config is missing, then bootstraps the system.
  */
 export async function startTUI() {
+  // Install error logging early
+  installErrorHandler();
+  logInfo(`TUI starting, log file: ${getLogPath()}`);
+
+  // Parse CLI arguments
+  const args = parseCliArgs();
+
+  // Handle --help
+  if (args.help) {
+    showHelp();
+    process.exit(0);
+  }
+
+  // Handle --list-models (needs bootstrap to register adapters first)
+  if (args.listModels) {
+    const jiratown = await bootstrap({
+      plugins: [piAdapterPlugin], // Only need adapter plugins to list models
+    });
+    showModels(jiratown.orchestrator);
+    process.exit(0);
+  }
+
   // Check if setup is needed before bootstrapping
-  const setupComplete = await runSetupIfNeeded();
-  if (!setupComplete) {
+  const paths = resolveConfigPaths();
+  const pluginsNeedingSetup = getPluginsNeedingSetup(
+    loadExistingConfig(paths.globalConfig, paths.projectConfig),
+  );
+
+  if (
+    pluginsNeedingSetup.length > 0 &&
+    !(await new Promise<boolean>((resolve) => {
+      render(() => (
+        <SetupWrapper
+          plugins={pluginsNeedingSetup}
+          configPath={paths.globalConfig}
+          onComplete={() => resolve(true)}
+          onSkip={() => resolve(false)}
+        />
+      ));
+    }))
+  ) {
     console.log("Setup skipped. Please configure plugins manually in ~/.jiratown.toml");
     process.exit(1);
   }
@@ -89,13 +105,12 @@ export async function startTUI() {
       githubPlugin, // GitHub integration
       piAdapterPlugin, // Default agent harness
     ],
+    // Pass CLI model override (deep partial allows nested partial objects)
+    overrides: args.model ? { agent: { model: args.model } } : undefined,
   });
 
   // Initialize theme from config
   setTheme(jiratown.config.ui.theme);
-
-  // Create renderer
-  const renderer = await createCliRenderer();
 
   // Render the TUI
   await render(
@@ -109,7 +124,7 @@ export async function startTUI() {
         orchestrator={jiratown.orchestrator}
       />
     ),
-    renderer as any, // Type cast needed due to version resolution in monorepo
+    await createCliRenderer().then((r) => r as any), // Type cast needed due to version resolution in monorepo
   );
 
   // Cleanup on exit

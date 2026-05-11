@@ -1,30 +1,20 @@
-import { createSignal, createMemo, For } from "solid-js";
-import { useKeyboard } from "@opentui/solid";
-import type { AdapterInfo, Issue } from "@jiratown/core";
-import { getTheme } from "../theme.ts";
-import { useJiratownContext } from "../context/jiratown.tsx";
-
-interface SpawnModalProps {
-  issue: Issue;
-  onSpawn: (config: SpawnConfig) => void;
-  onClose: () => void;
-}
-
-export interface SpawnConfig {
-  issue: Issue;
-  harness: string;
-  baseBranch: string;
-}
+import { createSignal, createMemo } from "solid-js";
+import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import type { AdapterInfo } from "@jiratown/core";
+import { getTheme } from "../../theme.ts";
+import { useJiratownContext } from "../../context/jiratown.tsx";
+import { ui } from "../../state/ui.ts";
+import { HarnessList } from "./harness-list.tsx";
+import type { SpawnModalProps } from "./types.ts";
 
 /** Modal for configuring and spawning an agent for an issue. */
 export function SpawnModal(props: SpawnModalProps) {
   const theme = getTheme();
   const { orchestrator } = useJiratownContext();
+  const dimensions = useTerminalDimensions();
 
-  // Get registered harnesses from orchestrator
   const harnessOptions = createMemo<AdapterInfo[]>(() => {
     const adapters = orchestrator.getAdapterInfoList();
-    // If no adapters registered, show a placeholder
     return adapters.length > 0
       ? adapters
       : [{ harness: "none", displayName: "No adapters", icon: "⚠️" }];
@@ -34,36 +24,49 @@ export function SpawnModal(props: SpawnModalProps) {
   const [baseBranch, _setBaseBranch] = createSignal("main");
   const [focusedField, setFocusedField] = createSignal<"harness" | "branch">("harness");
 
+  const modalHeight = () => Math.min(20, Math.floor(dimensions().height * 0.8));
+  const harnessListHeight = () => Math.max(3, modalHeight() - 11);
+
+  const handleConfirm = () => {
+    const selectedHarness = harnessOptions()[harnessIndex()];
+    if (selectedHarness && selectedHarness.harness !== "none") {
+      props.onSpawn({
+        issue: props.issue,
+        harness: selectedHarness.harness,
+        baseBranch: baseBranch(),
+      });
+    } else {
+      props.onClose();
+    }
+  };
+
   useKeyboard((key) => {
+    if (ui.modal() !== "spawn") return;
     if (key.name === "return") {
-      const options = harnessOptions();
-      const selectedHarness = options[harnessIndex()];
-      if (selectedHarness && selectedHarness.harness !== "none") {
-        props.onSpawn({
-          issue: props.issue,
-          harness: selectedHarness.harness,
-          baseBranch: baseBranch(),
-        });
-      }
+      handleConfirm();
       return;
     }
     if (key.name === "tab") {
-      setFocusedField((prev) => (prev === "harness" ? "branch" : "harness"));
+      setFocusedField((p) => (p === "harness" ? "branch" : "harness"));
       return;
     }
     if (focusedField() === "harness") {
       if (key.name === "up" || key.name === "k") {
-        setHarnessIndex((prev) => Math.max(0, prev - 1));
+        setHarnessIndex((p) => Math.max(0, p - 1));
         return;
       }
       if (key.name === "down" || key.name === "j") {
-        setHarnessIndex((prev) => Math.min(harnessOptions().length - 1, prev + 1));
+        setHarnessIndex((p) => Math.min(harnessOptions().length - 1, p + 1));
       }
     }
   });
 
+  const isHarnessFocused = () => focusedField() === "harness";
+  const fieldLabel = (field: "harness" | "branch") => (focusedField() === field ? "▸ " : "  ");
+  const fieldColor = (field: "harness" | "branch") =>
+    focusedField() === field ? theme.colors.accent : theme.colors.dim;
+
   return (
-    // Full-screen overlay container - uses absolute positioning to cover parent
     <box
       position="absolute"
       top={0}
@@ -77,11 +80,11 @@ export function SpawnModal(props: SpawnModalProps) {
       <box
         flexDirection="column"
         width={50}
+        height={modalHeight()}
         backgroundColor={theme.colors.surface}
         borderStyle="rounded"
         borderColor={theme.colors.accent}
       >
-        {/* Header */}
         <box
           backgroundColor={theme.colors.selection}
           paddingLeft={2}
@@ -93,8 +96,6 @@ export function SpawnModal(props: SpawnModalProps) {
             <b>🚀 SPAWN AGENT</b>
           </text>
         </box>
-
-        {/* Issue info */}
         <box paddingLeft={2} paddingRight={2} paddingTop={1}>
           <text fg={theme.colors.dim}>Issue: </text>
           <text fg={theme.colors.info}>
@@ -104,40 +105,27 @@ export function SpawnModal(props: SpawnModalProps) {
         <box paddingLeft={2} paddingRight={2} paddingBottom={1}>
           <text fg={theme.colors.text}>{props.issue.title}</text>
         </box>
-
-        {/* Harness selection */}
         <box
-          backgroundColor={focusedField() === "harness" ? theme.colors.background : undefined}
+          backgroundColor={isHarnessFocused() ? theme.colors.background : undefined}
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
           paddingBottom={1}
         >
           <box marginBottom={1}>
-            <text fg={focusedField() === "harness" ? theme.colors.accent : theme.colors.dim}>
-              {focusedField() === "harness" ? "▸ " : "  "}
+            <text fg={fieldColor("harness")}>
+              {fieldLabel("harness")}
               <b>Agent Harness</b>
             </text>
           </box>
           <box flexDirection="column" paddingLeft={4}>
-            <For each={harnessOptions()}>
-              {(option, index) => (
-                <box
-                  backgroundColor={index() === harnessIndex() ? theme.colors.selection : undefined}
-                  paddingLeft={1}
-                  paddingRight={1}
-                >
-                  <text fg={index() === harnessIndex() ? theme.colors.success : theme.colors.dim}>
-                    {index() === harnessIndex() ? "● " : "○ "}
-                    {option.icon} {option.displayName}
-                  </text>
-                </box>
-              )}
-            </For>
+            <HarnessList
+              options={harnessOptions()}
+              selectedIndex={harnessIndex()}
+              height={harnessListHeight()}
+            />
           </box>
         </box>
-
-        {/* Base branch */}
         <box
           backgroundColor={focusedField() === "branch" ? theme.colors.background : undefined}
           paddingLeft={2}
@@ -146,8 +134,8 @@ export function SpawnModal(props: SpawnModalProps) {
           paddingBottom={1}
         >
           <box marginBottom={1}>
-            <text fg={focusedField() === "branch" ? theme.colors.accent : theme.colors.dim}>
-              {focusedField() === "branch" ? "▸ " : "  "}
+            <text fg={fieldColor("branch")}>
+              {fieldLabel("branch")}
               <b>Base Branch</b>
             </text>
           </box>
@@ -157,8 +145,6 @@ export function SpawnModal(props: SpawnModalProps) {
             </box>
           </box>
         </box>
-
-        {/* Actions */}
         <box
           backgroundColor={theme.colors.background}
           paddingLeft={2}

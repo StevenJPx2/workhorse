@@ -105,6 +105,21 @@ export class Tracker {
   }
 
   /**
+   * Delete an issue from the database.
+   *
+   * @param issueId - The internal ID of the issue to delete
+   * @emits issue.deleted - After successful deletion
+   */
+  async deleteIssue(issueId: string): Promise<void> {
+    const issue = await this.db.issues.getById(issueId);
+    if (!issue) {
+      throw new Error(`Issue not found: ${issueId}`);
+    }
+    await this.db.issues.delete(issueId);
+    this.hooks.emit("issue.deleted", { issue });
+  }
+
+  /**
    * Build a prompt for an issue.
    *
    * Delegates to the parser that handles this issue's source.

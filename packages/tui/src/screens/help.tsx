@@ -59,6 +59,7 @@ export function Help() {
         <Section title="Command Mode (Ctrl+X, then...)">
           <Shortcut keys="Ctrl+X Q" description="Quit application" />
           <Shortcut keys="Ctrl+X H" description="Show this help screen" />
+          <Shortcut keys="Ctrl+X M" description="Select AI model" />
         </Section>
 
         <Section title="Always Available">

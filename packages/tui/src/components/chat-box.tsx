@@ -20,18 +20,15 @@ export function ChatBox(props: ChatBoxProps) {
   // Check if this component is focused (driven by global state)
   const isFocused = () => ui.focusedComponent() === "chat";
 
-  // Handle click anywhere on the chat box to focus input
-  const handleClick = () => {
-    ui.setFocusedComponent("chat");
-    ui.enterInputMode();
-  };
-
   return (
     <box
       flexDirection="column"
       flexGrow={1}
       backgroundColor={theme.colors.background}
-      {...({ onClick: handleClick } as any)}
+      onMouseDown={() => {
+        ui.setFocusedComponent("chat");
+        ui.enterInputMode();
+      }}
     >
       {/* Chat messages */}
       <scrollbox flexGrow={1} paddingLeft={2} paddingRight={2} paddingTop={1}>
@@ -84,24 +81,32 @@ export function ChatBox(props: ChatBoxProps) {
 
       {/* Input area - highlighted when focused */}
       <box
+        flexDirection="row"
+        width="100%"
+        alignItems="stretch"
         backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
         paddingBottom={1}
       >
-        <text fg={theme.colors.accent}>❯ </text>
-        <input
-          focused={isFocused()}
-          onSubmit={(value) => {
-            // value can be string or SubmitEvent - handle both
-            const msg = typeof value === "string" ? value.trim() : "";
-            if (msg) {
-              props.onSend(msg);
-            }
-          }}
-          placeholder={props.placeholder ?? "Type a message..."}
-        />
+        <box flexShrink={0}>
+          <text fg={theme.colors.accent}>❯ </text>
+        </box>
+        <box flexGrow={1} flexBasis={0}>
+          <input
+            width="100%"
+            focused={isFocused()}
+            onSubmit={(value) => {
+              // value can be string or SubmitEvent - handle both
+              const msg = typeof value === "string" ? value.trim() : "";
+              if (msg) {
+                props.onSend(msg);
+              }
+            }}
+            placeholder={props.placeholder ?? "Type a message..."}
+          />
+        </box>
       </box>
     </box>
   );

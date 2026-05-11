@@ -61,39 +61,52 @@ function createMockIssue(externalId = "TEST-123"): Issue {
   };
 }
 
-/** Creates a mock adapter class that returns mock adapters */
+/** Creates a mock adapter class that returns mock adapters via static create() */
 function createMockAdapterClass() {
-  const MockAdapterClass = class {
-    static async create(options: { issue: Issue; repoPath: string }) {
-      const issue = options.issue;
-      return {
-        harness: "test" as const,
-        state: "stopped" as "stopped" | "starting" | "running" | "stopping" | "crashed",
-        issue,
-        worktreePath: "/test/worktree",
-        repoPath: "/test/repo",
-        systemPrompt: "",
-        initialMessage: "",
-        model: undefined,
-        issueId: issue.externalId,
-        async start() {
-          this.state = "running";
-        },
-        async sendMessage(_content: string) {
-          if (this.state !== "running") {
-            throw new Error(`Agent not running (state: ${this.state})`);
-          }
-        },
-        async stop() {
-          this.state = "stopped";
-        },
-        isRunning() {
-          return this.state === "running";
-        },
-      };
+  return class MockAdapter {
+    static displayName = "Test Adapter";
+    static icon = "🧪";
+    static registry = {
+      getAll: () => [],
+      getAvailable: () => [],
+      getPreferredProvider: () => "test",
+      find: () => undefined,
+      refresh: () => {},
+    };
+
+    harness = "test" as const;
+    state: "stopped" | "starting" | "running" | "stopping" | "crashed" = "stopped";
+    issue: Issue;
+    worktreePath = "/test/worktree";
+    repoPath: string;
+    systemPrompt = "";
+    initialMessage = "";
+    model: string | undefined;
+    issueId: string;
+
+    constructor(options: { issue: Issue; repoPath: string }) {
+      this.issue = options.issue;
+      this.repoPath = options.repoPath;
+      this.issueId = options.issue.externalId;
     }
-  };
-  return MockAdapterClass as unknown as typeof AgentAdapter;
+
+    static async create(options: { issue: Issue; repoPath: string }) {
+      return new MockAdapter(options);
+    }
+
+    async start() {
+      this.state = "running";
+    }
+    async sendMessage(_content: string) {
+      if (this.state !== "running") throw new Error(`Agent not running (state: ${this.state})`);
+    }
+    async stop() {
+      this.state = "stopped";
+    }
+    isRunning() {
+      return this.state === "running";
+    }
+  } as unknown as typeof AgentAdapter;
 }
 
 describe("HarnessOrchestrator", () => {

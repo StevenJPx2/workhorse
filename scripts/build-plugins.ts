@@ -27,11 +27,11 @@ interface BuildResult {
   error?: string;
 }
 
+// oxlint-disable-next-line jiratown/no-single-reference-function
 async function getPluginDirs(): Promise<string[]> {
-  const entries = await readdir(PLUGINS_DIR);
   const dirs: string[] = [];
 
-  for (const entry of entries) {
+  for (const entry of await readdir(PLUGINS_DIR)) {
     const fullPath = join(PLUGINS_DIR, entry);
     const stats = await stat(fullPath);
     if (stats.isDirectory() && !entry.startsWith(".")) {
@@ -48,10 +48,7 @@ async function buildPlugin(pluginName: string): Promise<BuildResult> {
 
   try {
     // Check if plugin has vite.config.ts
-    const configPath = join(pluginDir, "vite.config.ts");
-    const hasConfig = await Bun.file(configPath).exists();
-
-    if (!hasConfig) {
+    if (!(await Bun.file(join(pluginDir, "vite.config.ts")).exists())) {
       return {
         plugin: pluginName,
         success: false,
@@ -94,14 +91,12 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
+// oxlint-disable-next-line jiratown/no-single-reference-function
 function printResult(result: BuildResult): void {
-  const status = result.success ? "✓" : "✗";
-  const color = result.success ? "\x1b[32m" : "\x1b[31m";
   const reset = "\x1b[0m";
-  const dim = "\x1b[2m";
 
   console.log(
-    `${color}${status}${reset} @jiratown/plugin-${result.plugin} ${dim}(${formatDuration(result.duration)})${reset}`,
+    `${result.success ? "\x1b[32m" : "\x1b[31m"}${result.success ? "✓" : "✗"}${reset} @jiratown/plugin-${result.plugin} \x1b[2m(${formatDuration(result.duration)})${reset}`,
   );
 
   if (!result.success && result.error) {
@@ -109,6 +104,7 @@ function printResult(result: BuildResult): void {
   }
 }
 
+// oxlint-disable-next-line jiratown/no-single-reference-function
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     args: Bun.argv.slice(2),
@@ -149,29 +145,27 @@ Examples:
 
   console.log(`\nBuilding ${targetPlugins.length} plugin(s)...\n`);
 
+  // oxlint-disable-next-line jiratown/no-single-use-variable
   const start = performance.now();
-  let results: BuildResult[];
-
-  if (values.parallel) {
-    results = await Promise.all(targetPlugins.map(buildPlugin));
-  } else {
-    results = [];
-    for (const plugin of targetPlugins) {
-      results.push(await buildPlugin(plugin));
-    }
-  }
+  const results: BuildResult[] = values.parallel
+    ? await Promise.all(targetPlugins.map(buildPlugin))
+    : await (async () => {
+        const r: BuildResult[] = [];
+        for (const plugin of targetPlugins) {
+          r.push(await buildPlugin(plugin));
+        }
+        return r;
+      })();
 
   // Print results
   for (const result of results) {
     printResult(result);
   }
 
-  const totalDuration = performance.now() - start;
-  const successful = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
 
-  console.log(`\nBuild complete in ${formatDuration(totalDuration)}`);
-  console.log(`  ${successful} succeeded, ${failed} failed`);
+  console.log(`\nBuild complete in ${formatDuration(performance.now() - start)}`);
+  console.log(`  ${results.filter((r) => r.success).length} succeeded, ${failed} failed`);
 
   if (failed > 0) {
     process.exit(1);

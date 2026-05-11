@@ -20,6 +20,27 @@ export type AgentHarness = string;
 export type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed";
 
 /**
+ * Model information for UI display.
+ * Generic interface that all agent adapters should implement.
+ */
+export interface ModelInfo {
+  /** Provider name (e.g., "anthropic", "openai", "opencode") */
+  provider: string;
+  /** Model ID (e.g., "claude-sonnet-4-20250514") */
+  id: string;
+  /** Human-readable model name */
+  name: string;
+  /** Model description */
+  description: string;
+  /** Context window size in tokens */
+  contextWindow: number;
+  /** Whether this model supports reasoning/thinking */
+  reasoning: boolean;
+  /** Whether this is the default model for the provider */
+  isDefault: boolean;
+}
+
+/**
  * Options for creating an adapter via AgentAdapter.create().
  * Extends SpawnOptions with orchestrator reference.
  */
@@ -37,4 +58,11 @@ export interface StopOptions {
 
   /** Also delete the branch when removing worktree (default: false) */
   deleteBranch?: boolean;
+}
+
+/** Metadata for a registered adapter (for UI display). */
+export interface AdapterInfo {
+  harness: string;
+  displayName: string;
+  icon: string;
 }

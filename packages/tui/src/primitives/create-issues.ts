@@ -19,11 +19,13 @@ export function createIssues(): Accessor<Issue[]> {
 
     hooks.on("issue.parsed", refresh);
     hooks.on("issue.status_changed", refresh);
+    hooks.on("issue.deleted", refresh);
     hooks.on("agent.create.post", refresh); // Remove from backlog when picked up
 
     onCleanup(() => {
       hooks.off("issue.parsed", refresh);
       hooks.off("issue.status_changed", refresh);
+      hooks.off("issue.deleted", refresh);
       hooks.off("agent.create.post", refresh);
     });
   });
