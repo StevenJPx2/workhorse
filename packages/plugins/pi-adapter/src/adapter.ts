@@ -1,4 +1,9 @@
-/** Pi Coding Agent adapter. Uses @mariozechner/pi-coding-agent SDK directly. */
+/**
+ * Pi Coding Agent adapter.
+ *
+ * Uses @mariozechner/pi-coding-agent SDK directly with path restrictions
+ * to ensure agents can only read/write files within their worktree.
+ */
 
 import type { AgentState } from "@jiratown/core";
 
@@ -8,12 +13,20 @@ import {
   type AgentSessionEvent,
   AuthStorage,
   createAgentSession,
+  createReadTool,
+  createWriteTool,
+  createEditTool,
   DefaultResourceLoader,
   getAgentDir,
   ModelRegistry as PiModelRegistry,
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
+import {
+  createRestrictedReadOperations,
+  createRestrictedWriteOperations,
+  createRestrictedEditOperations,
+} from "./path-restriction.ts";
 import { PiAdapterModelRegistry } from "./registry.ts";
 
 /** Pi Coding Agent adapter. Extends AgentAdapter to wrap the pi SDK session. */
@@ -55,6 +68,9 @@ export class PiAgentAdapter extends AgentAdapter {
     });
     await loader.reload();
 
+    // Path restriction ensures agents can only read/write within their worktree
+    const pathRestriction = { rootDir: this.worktreePath };
+
     const { session } = await createAgentSession({
       cwd: this.worktreePath,
       resourceLoader: loader,
@@ -62,6 +78,18 @@ export class PiAgentAdapter extends AgentAdapter {
       authStorage,
       modelRegistry,
       model: this.model ? this.resolveModel(modelRegistry) : undefined,
+      // Override built-in tools with path-restricted versions
+      customTools: [
+        createReadTool(this.worktreePath, {
+          operations: createRestrictedReadOperations(pathRestriction),
+        }),
+        createWriteTool(this.worktreePath, {
+          operations: createRestrictedWriteOperations(pathRestriction),
+        }),
+        createEditTool(this.worktreePath, {
+          operations: createRestrictedEditOperations(pathRestriction),
+        }),
+      ],
     });
 
     this.session = session;

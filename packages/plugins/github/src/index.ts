@@ -19,6 +19,7 @@ import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
 import { createGitHubParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
+import { githubRenderer } from "./renderer.ts";
 import { registerGitHubSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
 import { createGitHubTools } from "./tools";
@@ -91,5 +92,11 @@ export const githubPlugin = definePlugin({
 
     // Register GitHub steering rules
     registerGitHubSteering(ctx);
+
+    // Register renderer with TUI (if TUI plugin is loaded)
+    ctx.hooks.emit("tui.register_renderer", {
+      id: "github",
+      renderer: githubRenderer,
+    });
   },
 });

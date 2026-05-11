@@ -73,4 +73,12 @@ export class NotificationController {
       .where(eq(notifications.sourceId, sourceId))
       .then((r) => r[0]);
   }
+
+  /**
+   * Delete all notifications for an issue.
+   * Used when deleting an issue to clean up related data.
+   */
+  async deleteByIssueId(issueId: string): Promise<void> {
+    await this.db.delete(notifications).where(eq(notifications.issueId, issueId));
+  }
 }

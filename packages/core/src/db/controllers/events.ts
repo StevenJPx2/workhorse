@@ -30,4 +30,12 @@ export class EventController {
       .where(eq(issueEvents.issueId, issueId))
       .orderBy(asc(issueEvents.createdAt));
   }
+
+  /**
+   * Delete all events for an issue.
+   * Used when deleting an issue to clean up related data.
+   */
+  async deleteByIssueId(issueId: string): Promise<void> {
+    await this.db.delete(issueEvents).where(eq(issueEvents.issueId, issueId));
+  }
 }

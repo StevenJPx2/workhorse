@@ -3,7 +3,7 @@ import { loadConfig, mergeConfigs, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
-import { hooks } from "#lib/hooks";
+import { deferredHooks, hooks } from "#lib/hooks";
 import { CORE_PLUGINS, type Plugin, PluginRegistry } from "#plugins";
 import { MemoryService } from "#services/memory";
 import { MonitorService } from "#services/monitor";
@@ -122,7 +122,13 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratow
       // Discover custom plugins from plugin directories
       await plugins.discoverCustomPlugins();
 
+      // Start buffering hook emissions during setup
+      deferredHooks.startBuffering();
+
       await plugins.setup();
+
+      // Flush buffered hooks now that all listeners are registered
+      deferredHooks.flush();
 
       return {
         config: Object.freeze(config),

@@ -7,6 +7,7 @@ import { For, Show, type Accessor } from "solid-js";
 import type { ActivityState } from "../state/activity-store.ts";
 import { ActivityItemRow } from "./activity-rows.tsx";
 import { getTheme } from "../theme.ts";
+import { ui } from "../state/ui.ts";
 
 interface ActivityFeedProps {
   state: Accessor<ActivityState>;
@@ -18,7 +19,7 @@ interface ActivityFeedProps {
 export function ActivityFeed(props: ActivityFeedProps) {
   return (
     <box flexDirection="column" flexGrow={1}>
-      <scrollbox flexGrow={1} stickyScroll stickyStart="bottom">
+      <scrollbox flexGrow={1} stickyScroll stickyStart="bottom" focused={!ui.modal()}>
         <box flexDirection="column" gap={1}>
           <For each={props.state().items}>{(item) => <ActivityItemRow item={item} />}</For>
           <Show when={props.state().isStreaming}>

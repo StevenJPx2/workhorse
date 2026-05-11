@@ -125,7 +125,7 @@ export async function startTUI() {
         orchestrator={jiratown.orchestrator}
       />
     ),
-    await createCliRenderer().then((r) => r as any), // Type cast needed due to version resolution in monorepo
+    await createCliRenderer(),
   );
 
   // Cleanup on exit

@@ -19,6 +19,7 @@ import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
+import { jiraRenderer } from "./renderer.ts";
 import { registerJiraSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
 import { createJiraTools } from "./tools.ts";
@@ -82,5 +83,11 @@ export const jiraPlugin = definePlugin({
 
     // Register Jira steering rules
     registerJiraSteering(ctx);
+
+    // Register renderer with TUI (if TUI plugin is loaded)
+    ctx.hooks.emit("tui.register_renderer", {
+      id: "jira",
+      renderer: jiraRenderer,
+    });
   },
 });

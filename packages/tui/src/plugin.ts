@@ -1,11 +1,18 @@
 import { definePlugin, useJiratown } from "@jiratown/core";
-import { registerRenderer, type RegisterRendererPayload } from "./renderers";
+import {
+  registerRenderer,
+  type RegisterRendererPayload,
+  type ActivityInput,
+  type RenderedActivity,
+} from "./renderers";
+import { agentRenderer } from "./renderers/agent.ts";
 
 /**
  * TUI plugin definition.
  *
- * This plugin registers the tui.register_renderer hook handler,
- * allowing other plugins (Jira, GitHub) to register notification renderers.
+ * This plugin:
+ * - Registers built-in renderer for agent notifications
+ * - Provides a hook for other plugins to register their renderers
  */
 export default definePlugin({
   manifest: {
@@ -16,10 +23,13 @@ export default definePlugin({
   setup() {
     const { hooks } = useJiratown();
 
-    // Register hook for other plugins to add notification renderers
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (hooks as any).on("tui.register_renderer", (payload: RegisterRendererPayload) => {
-      registerRenderer(payload.type, payload.renderer);
+    // Register built-in renderer for agent notifications
+    registerRenderer("agent", agentRenderer);
+
+    // Allow plugins to register their own renderers via hook
+    hooks.on("tui.register_renderer", (payload) => {
+      const { id, renderer, priority } = payload as RegisterRendererPayload;
+      registerRenderer(id, renderer as (input: ActivityInput) => RenderedActivity | null, priority);
     });
   },
 });

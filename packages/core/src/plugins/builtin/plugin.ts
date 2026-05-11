@@ -8,6 +8,7 @@
 import { definePlugin } from "../define.ts";
 import { createLocalParserOptions } from "./tools/parser.ts";
 import { acknowledgeTool, escalateTool, updateStatusTool } from "./tools/definitions.ts";
+import { jiratownToolRenderer } from "./renderers.ts";
 
 export const corePlugin = definePlugin({
   manifest: {
@@ -27,5 +28,11 @@ export const corePlugin = definePlugin({
 
     // Register local parser as fallback (should be last, always matches)
     ctx.tracker.registerParser(createLocalParserOptions());
+
+    // Register Jiratown tool renderers with TUI (if TUI plugin is loaded)
+    ctx.hooks.emit("tui.register_renderer", {
+      id: "jiratown-tools",
+      renderer: jiratownToolRenderer,
+    });
   },
 });

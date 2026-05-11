@@ -8,7 +8,7 @@ An AI-powered agent orchestrator that manages coding agents working on Jira and 
 |----------|--------|
 | Runtime | Bun |
 | Language | TypeScript (strict) |
-| Database | SQLite via `drizzle-orm` + `better-sqlite3` |
+| Database | SQLite via `@libsql/client` + `drizzle-orm` |
 | Testing | Vitest (97% line/function coverage, 95% branch) |
 | Linting | oxlint with custom rules |
 | Monorepo | Bun workspaces |
@@ -28,20 +28,23 @@ jiratown/
 │   │       │   ├── git/          # Git worktree operations
 │   │       │   └── hooks/        # Event system (mitt)
 │   │       ├── plugins/          # Plugin system & core tools
+│   │       │   └── builtin/     # Core plugin (acknowledge, update_status, escalate)
 │   │       ├── services/
-│   │       │   ├── memory/       # L1 (context.md) + L2 (semantic search)
+│   │       │   ├── memory/       # L1 (context.md) + L2 (semantic search) + notifications
 │   │       │   └── monitor/      # Polling framework
 │   │       └── workflow/
-│   │           ├── orchestrator/ # Agent lifecycle, adapters, tools
-│   │           ├── steering/     # Autonomous steering rules
-│   │           └── tracker/      # Issue parsing, prompt building
-│   └── plugins/           # External plugins
-│       ├── github/        # @jiratown/plugin-github
-│       ├── jira/          # @jiratown/plugin-jira
-│       └── pi-adapter/    # @jiratown/plugin-pi-adapter
+│   │           ├── orchestrator/ # Agent lifecycle, adapters, tools, model registry
+│   │           ├── steering/    # Autonomous steering rules
+│   │           └── tracker/     # Issue parsing, prompt building
+│   ├── plugins/           # External plugins
+│   │   ├── github/        # @jiratown/plugin-github — PR monitoring, tools, status sync
+│   │   ├── jira/          # @jiratown/plugin-jira — comment monitoring, tools, transitions
+│   │   └── pi-adapter/    # @jiratown/plugin-pi-adapter — Pi Coding Agent adapter
+│   ├── tui/               # @jiratown/tui — Terminal UI (OpenTUI + Solid.js)
+│   └── tui-worktrees/     # TUI worktree instances
 ├── oxlint/                # Custom lint rules
 ├── plan/                  # Build plan documentation
-└── scripts/
+└── docs/                  # Architecture and plugin guides
 ```
 
 ## Key Concepts
@@ -56,23 +59,26 @@ const jt = await bootstrap();
 await jt.shutdown();
 ```
 
-Components initialized:
-- **Config** — Loaded from TOML files (global → project cascade)
-- **Database** — SQLite with issues, events, notifications tables
-- **Hooks** — Event pub/sub via mitt
-- **Memory** — L1 + L2 memory service
-- **Monitors** — Polling framework
-- **Tracker** — Issue parsing + prompt building
-- **Orchestrator** — Agent lifecycle management
-- **Plugins** — Plugin registry with core plugins
+Components initialized (in order):
+1. **Hooks** — Global event emitter cleared and reset
+2. **Config** — Loaded from TOML files (global → project cascade), with optional overrides
+3. **Database** — SQLite with migrations, issues, events, notifications tables
+4. **MemoryService** — L1 (context.md) + L2 (retriv) + NotificationService
+5. **MonitorService** — Polling framework for external changes
+6. **Tracker** — Issue parsing + prompt building with memory enrichment
+7. **Orchestrator** — Agent lifecycle management with adapters and tools
+8. **Plugins** — Core plugins first, then provided plugins, then discovered custom plugins
 
 ### 2. Context System (`context/`)
 
-Uses `unctx` for async context propagation:
+Uses `unctx` + `AsyncLocalStorage` for async context propagation:
 
 ```typescript
 // Inside plugin setup or any code running in context
-const { db, hooks, memory, config } = useJiratown();
+const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } = useJiratown();
+
+// Safe access (returns undefined if not in context)
+const ctx = tryUseJiratown();
 
 // Running code with context
 runWithContext(context, async () => {
@@ -85,20 +91,26 @@ runWithContext(context, async () => {
 Plugins extend Jiratown via `definePlugin()`:
 
 ```typescript
-import { definePlugin } from "@jiratown/core";
+import { definePlugin, useJiratown } from "@jiratown/core";
 import { z } from "zod/v4";
 
 export default definePlugin({
   manifest: {
     name: "my-plugin",
     version: "1.0.0",
+    description: "My custom plugin",
+    capabilities: {
+      parsers: ["my-service"],
+      monitors: ["my-monitor"],
+      tools: ["my_action"],
+    },
   },
   configSchema: z.object({
     apiKey: z.string(),
   }),
   setup(config) {
-    const { hooks, db } = useJiratown();
-    // Register parsers, tools, monitors, steering rules
+    const { hooks, tracker, orchestrator, monitors } = useJiratown();
+    // Register parsers, tools, monitors, steering rules, prompt hooks
   },
   teardown() {
     // Cleanup
@@ -110,38 +122,54 @@ export default definePlugin({
 - **Integration plugins** — Connect to external services (Jira, GitHub)
 - **Adapter plugins** — Register agent harnesses (Pi, Claude Code, Opencode)
 
+**Plugin Capabilities:**
+| Capability | API | Description |
+|-----------|-----|-------------|
+| Issue Parsers | `ctx.tracker.registerParser()` | Parse ticket keys/URLs into issues |
+| Monitors | `ctx.monitors.registerMonitor()` | Poll external services for changes |
+| Tools | `ctx.orchestrator.registerTool()` | Add functions agents can invoke |
+| Adapters | `ctx.orchestrator.registerAdapter()` | Register agent harness implementations |
+| Steering | `ctx.orchestrator.registerSteeringRule()` | Add idle agent behavior rules |
+| Prompt Context | `ctx.hooks.on("prompt.building")` | Inject context into agent prompts |
+| TUI Renderers | `ctx.hooks.emit("tui.register_renderer")` | Register activity renderers |
+
 ### 4. HarnessOrchestrator (`workflow/orchestrator/`)
 
 Manages agent lifecycle with pluggable adapters:
 
 ```typescript
 // Register an adapter (in plugin setup)
-orchestrator.registerAdapter("pi", PiAgentAdapter);
+orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter);
 
 // Register tools for agents
 orchestrator.registerTool({
-  name: "acknowledge",
-  description: "Acknowledge a notification",
-  parameters: { /* JSON Schema */ },
-  execute: async (params, context) => { /* ... */ },
+  name: "my_action",
+  description: "Does something useful",
+  schema: { type: "object", properties: { ... }, required: [...] },
+  execute: async (args, ctx) => {
+    return { success: true, output: "Done" };
+  },
 });
 
 // Spawn an agent
-const agent = await orchestrator.spawn({
-  harness: "pi",
-  issue,
-  prompt,
-  worktreePath,
+const adapter = await orchestrator.spawn({
+  issue,                    // Issue from DB
+  repoPath: "/path/to/repo",
+  baseBranch: "main",
+  harness: "pi-coding-agent",
+  model: "anthropic/claude-sonnet-4",
 });
 ```
 
 **AgentAdapter** — Abstract class for harness implementations:
-- `initialize()` — Set up worktree, build prompt, subscribe to hooks
-- `start()` — Begin agent execution
-- `sendMessage()` — Send messages to running agent
-- `stop()` — Graceful shutdown, dispose steering rules
+- `create()` — Factory method: creates worktree, builds prompt, subscribes to hooks
+- `start()` → `doStart()` — Begin agent execution (subclass override)
+- `sendMessage()` — Send messages to running agent (subclass override)
+- `stop()` → `doStop()` — Graceful shutdown, dispose steering rules (subclass override)
 
 Each adapter subscribes to `notification.created` and `steering.reminder` hooks during initialization, handling its own message delivery rather than relying on the orchestrator.
+
+**Model Registry** — Each adapter provides a `ModelRegistry` implementation that lists available models and providers.
 
 ### 5. Tracker (`workflow/tracker/`)
 
@@ -149,63 +177,53 @@ Parses user input and builds prompts:
 
 ```typescript
 // Register a parser (in plugin setup)
-tracker.registerParser(createJiraParserOptions(client));
+tracker.registerParser({
+  source: "jira",
+  canParse: (input) => /^[A-Z]+-\d+$/.test(input),
+  parse: async (input) => fetchJiraIssue(input),
+});
 
 // Parse input
-const parsed = await tracker.parseInput("PROJ-123");
-// Returns: { source: "jira", key: "PROJ-123", issue: {...} }
+const issue = await tracker.parseInput("AM-123");
 
-// Build prompt with context
-const prompt = await tracker.buildPrompt(parsed, memory);
+// Build prompt for the issue
+const prompt = await tracker.buildPrompt(issue.id);
 ```
 
 **Components:**
+- **Tracker** — Entry point, manages parsers, coordinates prompt building
 - **IssueParser** — Parses ticket keys, URLs via plugin-registered parsers
-- **PromptEngineer** — Builds prompts with L1/L2 memory context
+- **PromptEngineer** — Builds prompts with L1/L2 memory context, notifications, and custom instructions
 
 ### 6. MemoryService (`services/memory/`)
 
-Two-tier memory system:
+Three-tier memory system:
 
 **L1 Store** — Per-worktree session memory (`context.md` files):
 ```typescript
-// Read current session memory
-const session = memory.l1.get(worktreePath);
-
-// Append to session
-await memory.l1.context(worktreePath).appendSession(entry);
+const ctx = memory.l1.get("AM-123");
+if (ctx) {
+  const session = await ctx.read();
+  await ctx.appendSession(entry);
+  await ctx.updatePatterns([...patterns]);
+}
 ```
 
-**L2 Store** — Semantic search via `retriv` (BM25 + vector):
+**L2 Store** — Semantic search via `retriv` (BM25 FTS5 + vector embeddings):
 ```typescript
-// Index a document
-await memory.l2.index({
-  id: "doc-1",
-  type: "issue",
-  content: "Issue description...",
-  metadata: { issueId: 123 },
-});
-
-// Search
-const results = await memory.l2.search("authentication bug", {
-  limit: 10,
-  types: ["issue", "comment"],
-});
+await memory.l2.index([{ id: "doc-1", content: "...", metadata: { type: "decision" } }]);
+const results = await memory.l2.search("authentication flow", { limit: 5 });
 ```
 
-**NotificationService** — Push-based notifications:
+**NotificationService** — Push-based agent inbox:
 ```typescript
-// Create notification
 await memory.notifications.create({
-  issueId: 123,
-  type: "pr_review",
-  title: "Review requested",
-  body: "...",
+  issueId, source: "jira", sourceId: "comment-456",
+  title: "New comment", body: "Please review",
   priority: "high",
 });
-
-// Get unread for issue
 const unread = await memory.notifications.getUnread(issueId);
+const inboxXml = memory.notifications.generateInbox(unread);
 ```
 
 ### 7. MonitorService (`services/monitor/`)
@@ -213,72 +231,72 @@ const unread = await memory.notifications.getUnread(issueId);
 Polling framework for background tasks:
 
 ```typescript
-// Register a monitor (in plugin setup)
+// Register a monitor (once at plugin setup)
 monitors.registerMonitor({
-  id: "github-pr",
-  issueId: 123,
+  id: "jira-comments",
+  type: "remote",
   interval: 30000,
-  poll: async (context) => {
-    // Check for updates
-    return { status: "ok", data: { reviews: [...] } };
+  poll: async (ctx) => {
+    const comments = await fetchNewComments(ctx.issueId);
+    return { hasChanges: comments.length > 0, data: comments };
   },
 });
 
-// Start monitoring
-monitors.startMonitor("github-pr", 123);
+// Start monitoring for a specific issue
+monitors.startMonitor("jira-comments", issueId);
 
 // Stop
-monitors.stopMonitor("github-pr", 123);
+monitors.stopMonitor("jira-comments", issueId);
+monitors.stopMonitors(issueId);
 ```
+
+Monitors self-stop after 5 consecutive errors. Error count resets on successful poll.
 
 ### 8. SteeringRule (`workflow/steering/`)
 
-Autonomous rules for agent behavior:
+Autonomous rules for agent behavior when idle:
 
 ```typescript
-// Register a steering rule (in plugin setup)
-orchestrator.registerSteeringRule(
-  new SteeringRule({
-    name: "idle-reminder",
-    condition: {
-      event: "agent:idle",
-      minInterval: 300000, // 5 min debounce
-    },
-    action: (event, issue) => {
-      // Send reminder to agent
-    },
-  })
-);
+orchestrator.registerSteeringRule({
+  id: "review-reminder",
+  name: "PR Review Reminder",
+  description: "Reminds agents to check for PR reviews when idle",
+  condition: {
+    status: ["in_review"],
+    hook: ["agent.idle"],
+    when: async (ctx) => ctx.notifications.some(n => n.source === "github"),
+  },
+  reminder: async (ctx) => `You have ${ctx.notifications.length} pending reviews.`,
+  once: false,
+});
 ```
 
-**Conditions:**
-- Event-based triggers (`agent:idle`, `pr:review_requested`, etc.)
-- Debouncing with `minInterval`
-- Issue-scoped or global
+Each `SteeringRule` is fully autonomous:
+- Subscribes to `agent.idle` and other hooks
+- Tracks hook history and tool history
+- Evaluates conditions (status, source, hook, custom `when()`)
+- Emits `steering.reminder` hook when conditions are met
+- Respects cooldown and once-only constraints
+- Never reminds when issue is `blocked`
 
 ### 9. Hooks (`lib/hooks/`)
 
-Event pub/sub via mitt:
+Event pub/sub via `mitt`:
 
 ```typescript
-// Subscribe
-hooks.on("agent:started", (payload) => {
-  console.log("Agent started:", payload.issueId);
-});
-
-// Emit
-hooks.emit("agent:started", { issueId: 123 });
-
-// One-time listener
-hooks.once("agent:stopped", handler);
+hooks.on("issue.status_changed", ({ issue, from, to }) => { /* ... */ });
+hooks.emit("notification.created", { notification, issueId });
+hooks.off("issue.status_changed", handler);
 ```
 
 **Key Events:**
-- `agent:started`, `agent:stopped`, `agent:idle`, `agent:message`
-- `issue:created`, `issue:updated`, `issue:status_changed`
-- `pr:opened`, `pr:merged`, `pr:review_requested`
-- `notification:created`, `notification:acknowledged`
-- `prompt:building` (for plugins to add context blocks)
+- Agent: `agent.create.pre`, `agent.create.post`, `agent.start.pre`, `agent.start.post`, `agent.stop.pre`, `agent.stop.post`, `agent.idle`, `agent.tool_call`
+- Issue: `issue.parsed`, `issue.status_changed`, `issue.deleted`
+- Prompt: `prompt.building`, `prompt.built`
+- Monitor: `monitor.registered`, `monitor.tick`, `monitor.error`
+- Notification: `notification.created`
+- Steering: `steering.reminder`
+- Plugin: `plugin.loaded`, `plugin.error`
 
 ## Data Flow
 
@@ -287,42 +305,39 @@ User Input (ticket key/URL)
     │
     ▼
 ┌─────────┐
-│ Tracker │ ← Plugin-registered parsers
+│ Tracker │ ← Plugin-registered parsers (Jira, GitHub, local)
 └────┬────┘
-     │ ParsedIssue
+     │ ParsedIssue → Issue (DB)
      ▼
 ┌──────────────┐
-│PromptEngineer│ ← L1/L2 memory context
+│PromptEngineer│ ← L1/L2 memory context + notifications + plugin context blocks
 └──────┬───────┘
-       │ Prompt
+       │ HybridPrompt { systemPrompt, initialMessage }
        ▼
 ┌─────────────────┐
-│HarnessOrchestrator│
+│HarnessOrchestrator│  registerAdapter(), registerTool(), registerSteeringRule()
 └────────┬────────┘
-         │ spawn()
+         │ spawn() → AgentAdapter.create() → initialize() → start()
          ▼
 ┌─────────────┐
-│ AgentAdapter │ ← Pi, Claude Code, etc.
+│ AgentAdapter │ ← Pi, Claude Code, etc. (each in its own worktree)
 └──────┬──────┘
        │
-       ▼
-   AI Agent
+       ├── Tool calls → OrchestratorTool.execute(args, ToolExecutionContext)
        │
-       ├─► Tool calls → OrchestratorTool implementations
+       ├── Hook events → SteeringRules evaluate → steering.reminder → sendMessage()
        │
-       ├─► Hooks emitted → SteeringRules evaluate
-       │
-       └─► MonitorService polls → Notifications pushed
+       └── MonitorService polls → notifications created → notification.created → sendMessage()
 ```
 
 ## Configuration
 
-TOML config with cascading merge (global → project):
+TOML config with cascading merge (defaults ← global ← project ← overrides):
 
 ```toml
 [agent]
-harness = "pi"              # "pi" | "claude-code" | "opencode"
-model = "sonnet-4"
+harness = "pi-agent"       # "pi-coding-agent" | "claude-code" | "opencode"
+model = "claude-sonnet-4"
 
 [behavior]
 auto_resume = true
@@ -333,14 +348,21 @@ custom = """
 Project-specific instructions.
 """
 
+[steering]
+enabled = true
+debounce_ms = 2000
+max_reminders = 3
+cooldown_ms = 30000
+
 [plugins]
-enabled = ["jira", "github"]
+disabled = []
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"
+poll_interval = 30000
 
 [plugins.github]
-auto_poll_reviews = true
+poll_interval = 30000
 ```
 
 **Config Locations:**
@@ -348,3 +370,90 @@ auto_poll_reviews = true
 - Project: `<repo>/.jiratown.toml`
 
 **Data Directory:** `~/.local/share/jiratown/` (respects `XDG_DATA_HOME`)
+
+## Plugins
+
+### @jiratown/plugin-jira
+
+Jira Cloud integration:
+- Issue parsing for ticket keys (`PROJ-123`) and URLs
+- Comment monitoring with deduplication
+- Status sync (Jiratown → Jira transitions)
+- Tools: `jira_add_comment`, `jira_transition_issue`, `jira_get_comments`
+- Cross-plugin sync with GitHub (PR → Jira comment)
+- Steering rules for comment response
+
+### @jiratown/plugin-github
+
+GitHub integration via `gh` CLI:
+- Issue/PR parsing for `owner/repo#45` and URLs
+- Unified PR monitor (reviews, comments, CI checks, mergeable state)
+- Status sync (Jiratown → GitHub labels)
+- Tools: `github_open_pr`, `github_add_comment`, `github_get_pr_status`
+- Steering rules for PR review and CI failure reminders
+
+### @jiratown/plugin-pi-adapter
+
+Pi Coding Agent adapter:
+- Wraps `@mariozechner/pi-coding-agent` SDK
+- Translates Jiratown tools to Pi extensions
+- Maps Pi session events to Jiratown hooks
+- Model registry with Pi's authentication
+- Streaming support (`session.steer()` for mid-stream injection)
+
+## Database Schema
+
+### issues
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | text (PK) | UUID |
+| external_id | text | External ID (e.g., "PROJ-123") |
+| source | text | Source system (e.g., "jira") |
+| title | text | Issue title |
+| description | text | Issue body |
+| status | text | Issue status |
+| issue_type | text | Type (task, bug, story, etc.) |
+| url | text | Link to external issue |
+| assignee | text | Assigned user |
+| labels | text (json) | Label array |
+| metadata | text (json) | Source-specific data |
+| worktree_path | text | Git worktree location |
+| created_at | text | Creation timestamp |
+| updated_at | text | Update timestamp |
+
+### notifications
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | text (PK) | UUID |
+| issue_id | text (FK) | Associated issue |
+| source | text | Source system |
+| source_id | text (unique) | Dedup key |
+| priority | text | blocking/high/normal/low |
+| status | text | unread/read/acknowledged |
+| title | text | Notification title |
+| body | text | Notification content |
+| metadata | text (json) | Additional data |
+| created_at | text | Creation timestamp |
+| read_at | text | Read timestamp |
+| acknowledged_at | text | Acknowledged timestamp |
+
+### issue_events
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | text (PK) | UUID |
+| issue_id | text (FK) | Associated issue |
+| type | text | Event type |
+| message | text | Event message |
+| metadata | text (json) | Additional data |
+| created_at | text | Creation timestamp |
+
+## Built-in Agent Tools
+
+| Tool | Description | Parameters |
+|------|-------------|-----------|
+| `jiratown_acknowledge` | Mark notification(s) as read | `notificationIds?: string[]` |
+| `jiratown_update_status` | Update issue status | `status: string` |
+| `jiratown_escalate` | Escalate to a human | `message: string`, `blocking?: boolean` |

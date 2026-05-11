@@ -4,8 +4,8 @@
  */
 
 import { createSignal } from "solid-js";
-import type { HookEmitter } from "@jiratown/core";
-import { type ActivityItem, categorizeToolCall } from "../primitives/activity-types.ts";
+import type { HookEmitter, Notification } from "@jiratown/core";
+import type { ActivityItem } from "../primitives/activity-types.ts";
 
 export interface ActivityState {
   items: ActivityItem[];
@@ -89,12 +89,12 @@ export function initActivityStore(hooks: HookEmitter) {
     );
   });
 
-  // Handle tool calls - flush text first, then add tool
+  // Handle tool calls - flush text first, then add tool (simplified variant)
   hooks.on(
     "agent.tool_call",
     ({ issueId, tool, args }: { issueId: string; tool: string; args: unknown }) => {
       flushText(issueId);
-      addItem(issueId, categorizeToolCall(tool, args, new Date()));
+      addItem(issueId, { type: "tool", tool, args, timestamp: new Date() });
     },
   );
 
@@ -110,6 +110,15 @@ export function initActivityStore(hooks: HookEmitter) {
     flushText(issueId);
     addItem(issueId, { type: "steering", reminder, timestamp: new Date() });
   });
+
+  // Handle notifications - add to activity feed
+  hooks.on(
+    "notification.created",
+    ({ notification, issueId }: { notification: Notification; issueId: string }) => {
+      flushText(issueId);
+      addItem(issueId, { type: "notification", notification, timestamp: new Date() });
+    },
+  );
 }
 
 /** Clear activity for an issue (e.g., when agent is removed) */

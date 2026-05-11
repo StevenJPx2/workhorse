@@ -7,6 +7,7 @@ type KnownEvents = {
   // Issues
   "issue.parsed": { issue: Issue; raw: unknown };
   "issue.status_changed": { issue: Issue; from: IssueStatus; to: IssueStatus };
+  "issue.deleted": { issue: Issue };
 
   // Prompts
   "prompt.building": { issueId: string; context: PromptBuildingContext };
@@ -45,6 +46,9 @@ type KnownEvents = {
   // Plugins
   "plugin.loaded": { name: string };
   "plugin.error": { name: string; error: Error };
+
+  // TUI events (registered by @jiratown/tui plugin)
+  "tui.register_renderer": { id: string; renderer: unknown; priority?: number };
 };
 
 export type HookEventName = keyof KnownEvents | (string & {});

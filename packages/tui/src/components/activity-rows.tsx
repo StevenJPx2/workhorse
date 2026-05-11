@@ -5,15 +5,7 @@
 import { Match, Switch } from "solid-js";
 import type { ActivityItem } from "../primitives/activity-types.ts";
 import { getTheme } from "../theme.ts";
-import {
-  ReadRow,
-  WriteRow,
-  BashRow,
-  GrepRow,
-  GlobRow,
-  JiratownRow,
-  OtherToolRow,
-} from "./activity-tool-rows.tsx";
+import { ActivityRow } from "./activity-row.tsx";
 
 /** Main dispatcher - renders the right row type for each activity item */
 export function ActivityItemRow(props: { item: ActivityItem }) {
@@ -22,26 +14,22 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
       <Match when={props.item.type === "text"}>
         <TextBubbleRow item={props.item as ActivityItem & { type: "text" }} />
       </Match>
-      <Match when={props.item.type === "tool_read"}>
-        <ReadRow item={props.item as ActivityItem & { type: "tool_read" }} />
+      <Match when={props.item.type === "tool"}>
+        <ActivityRow
+          input={{
+            kind: "tool",
+            tool: (props.item as ActivityItem & { type: "tool" }).tool,
+            args: (props.item as ActivityItem & { type: "tool" }).args,
+          }}
+        />
       </Match>
-      <Match when={props.item.type === "tool_write"}>
-        <WriteRow item={props.item as ActivityItem & { type: "tool_write" }} />
-      </Match>
-      <Match when={props.item.type === "tool_bash"}>
-        <BashRow item={props.item as ActivityItem & { type: "tool_bash" }} />
-      </Match>
-      <Match when={props.item.type === "tool_grep"}>
-        <GrepRow item={props.item as ActivityItem & { type: "tool_grep" }} />
-      </Match>
-      <Match when={props.item.type === "tool_glob"}>
-        <GlobRow item={props.item as ActivityItem & { type: "tool_glob" }} />
-      </Match>
-      <Match when={props.item.type === "tool_jiratown"}>
-        <JiratownRow item={props.item as ActivityItem & { type: "tool_jiratown" }} />
-      </Match>
-      <Match when={props.item.type === "tool_other"}>
-        <OtherToolRow item={props.item as ActivityItem & { type: "tool_other" }} />
+      <Match when={props.item.type === "notification"}>
+        <ActivityRow
+          input={{
+            kind: "notification",
+            notification: (props.item as ActivityItem & { type: "notification" }).notification,
+          }}
+        />
       </Match>
       <Match when={props.item.type === "steering"}>
         <SteeringRow item={props.item as ActivityItem & { type: "steering" }} />

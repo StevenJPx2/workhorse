@@ -52,7 +52,7 @@ export function App(props: AppProps) {
       await props.orchestrator
         .spawn({
           issue: config.issue,
-          harness: config.harness as any,
+          harness: config.harness,
           baseBranch: config.baseBranch,
           repoPath: props.paths.worktreesRoot.replace(/-worktrees$/, ""),
           model: ui.selectedModel() || props.config.agent.model || undefined,
@@ -104,8 +104,7 @@ export function App(props: AppProps) {
               issue={issue()}
               onConfirm={async (issueToDelete) => {
                 try {
-                  // Type assertion needed due to TypeScript server cache issue
-                  await (props.tracker as any).deleteIssue(issueToDelete.id);
+                  await props.tracker.deleteIssue(issueToDelete.id);
                   ui.closeModal();
                 } catch (err) {
                   console.error("Failed to delete issue:", err);

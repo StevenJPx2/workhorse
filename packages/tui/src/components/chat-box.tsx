@@ -30,8 +30,8 @@ export function ChatBox(props: ChatBoxProps) {
         ui.enterInputMode();
       }}
     >
-      {/* Chat messages */}
-      <scrollbox flexGrow={1} paddingLeft={2} paddingRight={2} paddingTop={1}>
+      {/* Chat messages - disable focus when modal is open */}
+      <scrollbox flexGrow={1} paddingLeft={2} paddingRight={2} paddingTop={1} focused={!ui.modal()}>
         <For each={props.messages()}>
           {(msg) => (
             <box flexDirection="column" marginBottom={1}>

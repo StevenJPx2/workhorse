@@ -48,8 +48,8 @@ export function IssueList(props: IssueListProps) {
         </text>
       </box>
 
-      {/* Issue list */}
-      <scrollbox flexGrow={1} stickyScroll stickyStart="top">
+      {/* Issue list - disable focus when modal is open to prevent scroll bleeding */}
+      <scrollbox flexGrow={1} stickyScroll stickyStart="top" focused={!ui.modal()}>
         <box flexDirection="column" paddingTop={1}>
           <For each={issues()}>
             {(issue, index) => {

@@ -97,3 +97,13 @@ export {
 // Config exports for plugin authors
 export { getCredential, storeCredential } from "#config";
 export { bootstrap, type BootstrapOptions, type Jiratown } from "./bootstrap.ts";
+// Path validation exports for harness authors
+export {
+  assertPathAllowed,
+  createPathValidator,
+  isPathAllowed,
+  type PathValidationOptions,
+  type PathValidationResult,
+  type PathValidator,
+  validatePath,
+} from "#lib/paths";

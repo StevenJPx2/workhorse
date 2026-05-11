@@ -1,6 +1,7 @@
 import type { JiratownConfig } from "#config";
 import type { Database, Issue } from "#db";
 import type { HookEmitter } from "#lib/hooks";
+import { removeWorktree } from "#lib/git";
 import type { MemoryService } from "#services/memory";
 import type { BuildPromptOptions } from "./engineer.ts";
 import { IssueParser, type IssueParserOptions } from "./parser.ts";
@@ -116,6 +117,10 @@ export class Tracker {
   /**
    * Delete an issue from the database.
    *
+   * Also cleans up:
+   * - Related notifications and events
+   * - Git worktree and branch (if issue has worktreePath)
+   *
    * @param issueId - The internal ID of the issue to delete
    * @emits issue.deleted - After successful deletion
    */
@@ -124,6 +129,23 @@ export class Tracker {
     if (!issue) {
       throw new Error(`Issue not found: ${issueId}`);
     }
+
+    // Clean up related data first (foreign key constraints)
+    await this.db.notifications.deleteByIssueId(issueId);
+    await this.db.events.deleteByIssueId(issueId);
+
+    // Clean up worktree and branch if they exist
+    if (issue.worktreePath) {
+      // Derive repo path from worktree path:
+      // worktreePath: /path/to/repo-worktrees/ISSUE-123
+      // repoPath: /path/to/repo
+      await removeWorktree(
+        issue.worktreePath.replace(/\/[^/]+$/, "").replace(/-worktrees$/, ""),
+        issue.externalId,
+        true,
+      );
+    }
+
     await this.db.issues.delete(issueId);
     this.hooks.emit("issue.deleted", { issue });
   }

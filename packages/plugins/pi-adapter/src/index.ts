@@ -9,6 +9,7 @@
 
 import { definePlugin } from "@jiratown/core";
 import { PiAgentAdapter } from "./adapter.ts";
+import { piToolRenderer } from "./renderers.ts";
 
 export { PiAgentAdapter } from "./adapter.ts";
 export { PiAdapterModelRegistry } from "./registry.ts";
@@ -25,5 +26,11 @@ export const piAdapterPlugin = definePlugin({
   },
   setup(ctx) {
     ctx.orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter);
+
+    // Register PI tool renderers with TUI (if TUI plugin is loaded)
+    ctx.hooks.emit("tui.register_renderer", {
+      id: "pi-tools",
+      renderer: piToolRenderer,
+    });
   },
 });

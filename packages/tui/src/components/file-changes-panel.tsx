@@ -6,6 +6,7 @@
 import { For, Show, type Accessor } from "solid-js";
 import type { FileChangesState } from "../primitives/create-file-changes.ts";
 import { getTheme } from "../theme.ts";
+import { ui } from "../state/ui.ts";
 
 interface FileChangesPanelProps {
   state: Accessor<FileChangesState>;
@@ -42,8 +43,8 @@ export function FileChangesPanel(props: FileChangesPanelProps) {
         </Show>
       </box>
 
-      {/* File list */}
-      <scrollbox flexGrow={1} stickyScroll>
+      {/* File list - disable focus when modal is open */}
+      <scrollbox flexGrow={1} stickyScroll focused={!ui.modal()}>
         <box flexDirection="column">
           <Show
             when={props.state().files.length > 0}
