@@ -2,13 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { Plugin } from "@jiratown/core";
 import { checkAllPluginsAuth, checkPluginAuth, getPluginsNeedingAuth } from "./auth";
 
-function createMockAuth(
-  authType: "oauth" | "external" | "none",
-  authenticated: boolean,
-): Plugin["auth"] {
-  if (authType === "none") return { type: "none" };
-  if (authType === "external") {
-    return {
+function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {
+  let auth: Plugin["auth"];
+  if (authType === "none") {
+    auth = { type: "none" };
+  } else if (authType === "external") {
+    auth = {
       type: "external",
       config: {
         authCommand: "test auth",
@@ -17,22 +16,21 @@ function createMockAuth(
       },
       isAuthenticated: vi.fn().mockResolvedValue(authenticated),
     };
+  } else {
+    auth = {
+      type: "oauth",
+      callbackPort: 9876,
+      createAuthorizationURL: vi.fn(),
+      validateAuthorizationCode: vi.fn(),
+      isAuthenticated: vi.fn().mockResolvedValue(authenticated),
+      saveTokens: vi.fn(),
+      clearTokens: vi.fn(),
+    };
   }
-  return {
-    type: "oauth",
-    callbackPort: 9876,
-    createAuthorizationURL: vi.fn(),
-    validateAuthorizationCode: vi.fn(),
-    isAuthenticated: vi.fn().mockResolvedValue(authenticated),
-    saveTokens: vi.fn(),
-    clearTokens: vi.fn(),
-  };
-}
 
-function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {
   return {
     manifest: { name: `test-${authType}`, version: "1.0.0", description: "Test plugin" },
-    auth: createMockAuth(authType, authenticated),
+    auth,
     [Symbol.for("jiratown.plugin")]: true,
   } as unknown as Plugin;
 }

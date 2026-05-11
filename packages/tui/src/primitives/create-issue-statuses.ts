@@ -23,31 +23,28 @@ export function createIssueStatuses(options: CreateIssueStatusesOptions) {
   // Map of issueId -> status
   const [statuses, setStatuses] = createSignal<Map<string, IssueStatus>>(new Map());
 
-  const fetchStatuses = async () => {
-    const ids = issueIds();
-    if (ids.length === 0) {
-      setStatuses(new Map());
-      return;
-    }
-
-    try {
-      const issues = await tracker.fetchAll();
-      const statusMap = new Map<string, IssueStatus>();
-      for (const issue of issues) {
-        if (ids.includes(issue.externalId)) {
-          statusMap.set(issue.externalId, issue.status);
-        }
-      }
-      setStatuses(statusMap);
-    } catch {
-      // Keep existing statuses on error
-    }
-  };
-
   // Fetch when issueIds change
   createEffect(() => {
     issueIds(); // Subscribe
-    void fetchStatuses();
+    void (async () => {
+      const ids = issueIds();
+      if (ids.length === 0) {
+        setStatuses(new Map());
+        return;
+      }
+
+      try {
+        const statusMap = new Map<string, IssueStatus>();
+        for (const issue of await tracker.fetchAll()) {
+          if (ids.includes(issue.externalId)) {
+            statusMap.set(issue.externalId, issue.status);
+          }
+        }
+        setStatuses(statusMap);
+      } catch {
+        // Keep existing statuses on error
+      }
+    })();
   });
 
   // Listen for status changes
@@ -73,6 +70,26 @@ export function createIssueStatuses(options: CreateIssueStatusesOptions) {
     /** Get status for a specific issue ID */
     getStatus: (issueId: string): IssueStatus | null => statuses().get(issueId) ?? null,
     /** Refresh all statuses */
-    refresh: fetchStatuses,
+    refresh: () => {
+      void (async () => {
+        const ids = issueIds();
+        if (ids.length === 0) {
+          setStatuses(new Map());
+          return;
+        }
+
+        try {
+          const statusMap = new Map<string, IssueStatus>();
+          for (const issue of await tracker.fetchAll()) {
+            if (ids.includes(issue.externalId)) {
+              statusMap.set(issue.externalId, issue.status);
+            }
+          }
+          setStatuses(statusMap);
+        } catch {
+          // Keep existing statuses on error
+        }
+      })();
+    },
   };
 }

@@ -63,87 +63,84 @@ export function startOAuthFlow(provider: OAuthProvider): {
   let server: ReturnType<typeof Bun.serve> | null = null;
   let resolvePromise: (result: OAuthResult) => void;
 
-  const waitForCallback = new Promise<OAuthResult>((resolve) => {
-    resolvePromise = resolve;
-
-    server = Bun.serve({
-      port,
-      async fetch(req) {
-        const url = new URL(req.url);
-
-        if (url.pathname !== CALLBACK_PATH) {
-          return new Response("Not found", { status: 404 });
-        }
-
-        const code = url.searchParams.get("code");
-        const returnedState = url.searchParams.get("state");
-        const error = url.searchParams.get("error");
-        const errorDescription = url.searchParams.get("error_description");
-
-        // Verify state
-        if (returnedState !== state) {
-          resolve({
-            success: false,
-            error: "State mismatch - possible CSRF attack",
-          });
-          server?.stop();
-          return new Response(errorHtml("State mismatch"), {
-            headers: { "Content-Type": "text/html" },
-          });
-        }
-
-        // Handle error response
-        if (error) {
-          resolve({
-            success: false,
-            error: errorDescription || error,
-          });
-          server?.stop();
-          return new Response(errorHtml(errorDescription || error), {
-            headers: { "Content-Type": "text/html" },
-          });
-        }
-
-        // Handle missing code
-        if (!code) {
-          resolve({
-            success: false,
-            error: "No authorization code received",
-          });
-          server?.stop();
-          return new Response(errorHtml("No authorization code"), {
-            headers: { "Content-Type": "text/html" },
-          });
-        }
-
-        // Exchange code for tokens using provider (Arctic)
-        try {
-          const tokens = await provider.validateAuthorizationCode(code);
-
-          // Save tokens
-          await provider.saveTokens(tokens);
-
-          resolve({ success: true, tokens });
-          server?.stop();
-          return new Response(successHtml(), {
-            headers: { "Content-Type": "text/html" },
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Token exchange failed";
-          resolve({ success: false, error: message });
-          server?.stop();
-          return new Response(errorHtml(message), {
-            headers: { "Content-Type": "text/html" },
-          });
-        }
-      },
-    });
-  });
-
   return {
     authUrl,
     state,
-    waitForCallback,
+    waitForCallback: new Promise<OAuthResult>((resolve) => {
+      resolvePromise = resolve;
+
+      server = Bun.serve({
+        port,
+        async fetch(req) {
+          const url = new URL(req.url);
+
+          if (url.pathname !== CALLBACK_PATH) {
+            return new Response("Not found", { status: 404 });
+          }
+
+          const code = url.searchParams.get("code");
+          const error = url.searchParams.get("error");
+          const errorDescription = url.searchParams.get("error_description");
+
+          // Verify state
+          if (url.searchParams.get("state") !== state) {
+            resolve({
+              success: false,
+              error: "State mismatch - possible CSRF attack",
+            });
+            server?.stop();
+            return new Response(errorHtml("State mismatch"), {
+              headers: { "Content-Type": "text/html" },
+            });
+          }
+
+          // Handle error response
+          if (error) {
+            resolve({
+              success: false,
+              error: errorDescription || error,
+            });
+            server?.stop();
+            return new Response(errorHtml(errorDescription || error), {
+              headers: { "Content-Type": "text/html" },
+            });
+          }
+
+          // Handle missing code
+          if (!code) {
+            resolve({
+              success: false,
+              error: "No authorization code received",
+            });
+            server?.stop();
+            return new Response(errorHtml("No authorization code"), {
+              headers: { "Content-Type": "text/html" },
+            });
+          }
+
+          // Exchange code for tokens using provider (Arctic)
+          try {
+            const tokens = await provider.validateAuthorizationCode(code);
+
+            // Save tokens
+            await provider.saveTokens(tokens);
+
+            resolve({ success: true, tokens });
+            server?.stop();
+            return new Response(successHtml(), {
+              headers: { "Content-Type": "text/html" },
+            });
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Token exchange failed";
+            resolve({ success: false, error: message });
+            server?.stop();
+            return new Response(errorHtml(message), {
+              headers: { "Content-Type": "text/html" },
+            });
+          }
+        },
+      });
+    }),
     cancel: () => {
       server?.stop();
       resolvePromise?.({ success: false, error: "Cancelled by user" });

@@ -51,7 +51,21 @@ export function createMonitors(options: CreateMonitorsOptions) {
     }
   };
 
-  const setupPolling = () => {
+  // Initial setup (synchronous when issueId is already set)
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  if (issueId()) {
+    fetchMonitors();
+    pollTimer = setInterval(fetchMonitors, pollInterval);
+  } else {
+    setState({ monitors: [], loading: false });
+  }
+
+  // React to issueId changes
+  createEffect(() => {
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -63,13 +77,7 @@ export function createMonitors(options: CreateMonitorsOptions) {
     } else {
       setState({ monitors: [], loading: false });
     }
-  };
-
-  // Initial setup (synchronous when issueId is already set)
-  setupPolling();
-
-  // React to issueId changes
-  createEffect(setupPolling);
+  });
 
   onCleanup(() => {
     if (pollTimer) {

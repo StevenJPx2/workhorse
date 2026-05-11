@@ -38,10 +38,9 @@ export async function checkPluginAuth(plugin: Plugin): Promise<AuthStatus> {
   }
 
   try {
-    const authenticated = await auth.isAuthenticated();
     return {
       pluginName: manifest.name,
-      authenticated,
+      authenticated: await auth.isAuthenticated(),
       provider: auth.type,
     };
   } catch (error) {

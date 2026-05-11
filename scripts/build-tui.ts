@@ -21,7 +21,6 @@ import {
 } from "node:fs";
 import { resolve, extname } from "node:path";
 import { parseArgs } from "node:util";
-
 const ROOT = resolve(import.meta.dir, "..");
 const TUI = resolve(ROOT, "packages/tui");
 const ENTRY = resolve(TUI, "src/index.tsx");
@@ -31,7 +30,6 @@ const BUNDLE = resolve(OUTDIR, "jiratown.js");
 const { createSolidTransformPlugin } = await import(
   resolve(TUI, "node_modules/@opentui/solid/scripts/solid-plugin.ts")
 );
-
 // oxlint-disable-next-line jiratown/no-single-reference-function
 async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   // oxlint-disable-next-line jiratown/no-single-use-variable
@@ -164,8 +162,11 @@ function copyDrizzleMigrations(): void {
 
 const formatDuration = (ms: number) =>
   ms < 1000 ? `${ms.toFixed(0)}ms` : `${(ms / 1000).toFixed(2)}s`;
-const formatSize = (b: number) =>
-  b < 1024 ? `${b}B` : b < 1048576 ? `${(b / 1024).toFixed(1)}KB` : `${(b / 1048576).toFixed(2)}MB`;
+const formatSize = (b: number) => {
+  if (b < 1024) return `${b}B`;
+  if (b < 1048576) return `${(b / 1024).toFixed(1)}KB`;
+  return `${(b / 1048576).toFixed(2)}MB`;
+};
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),

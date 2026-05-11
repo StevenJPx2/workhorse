@@ -54,7 +54,11 @@ const arrayUnionSchema = (zType: z.ZodType) =>
   z
     .union([zType, z.array(zType)])
     .optional()
-    .transform((val) => (val === undefined ? [] : Array.isArray(val) ? val : [val]));
+    .transform((val) => {
+      if (val === undefined) return [];
+      if (Array.isArray(val)) return val;
+      return [val];
+    });
 
 /** Zod schema for SteeringCondition - normalizes and sets defaults */
 export const SteeringConditionSchema = z.object({

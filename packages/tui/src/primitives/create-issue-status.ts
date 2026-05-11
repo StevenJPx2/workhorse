@@ -30,28 +30,29 @@ export function createIssueStatus(options: CreateIssueStatusOptions) {
     loading: false,
   });
 
-  const fetchStatus = async () => {
-    const id = issueId();
-    if (!id) {
-      setState({ status: null, loading: false });
-      return;
-    }
-
-    setState((prev) => ({ ...prev, loading: true }));
-
-    try {
-      const issues = await tracker.fetchAll();
-      const issue = issues.find((i: Issue) => i.externalId === id);
-      setState({ status: issue?.status ?? null, loading: false });
-    } catch {
-      setState({ status: null, loading: false });
-    }
-  };
-
   // Fetch on issueId change
   createEffect(() => {
     issueId(); // Subscribe
-    void fetchStatus();
+    void (async () => {
+      const id = issueId();
+      if (!id) {
+        setState({ status: null, loading: false });
+        return;
+      }
+
+      setState((prev) => ({ ...prev, loading: true }));
+
+      try {
+        setState({
+          status: await tracker
+            .fetchAll()
+            .then((r) => r.find((i: Issue) => i.externalId === id)?.status ?? null),
+          loading: false,
+        });
+      } catch {
+        setState({ status: null, loading: false });
+      }
+    })();
   });
 
   // Listen for status changes
@@ -73,5 +74,29 @@ export function createIssueStatus(options: CreateIssueStatusOptions) {
     });
   });
 
-  return { state, refresh: fetchStatus };
+  return {
+    state,
+    refresh: () => {
+      void (async () => {
+        const id = issueId();
+        if (!id) {
+          setState({ status: null, loading: false });
+          return;
+        }
+
+        setState((prev) => ({ ...prev, loading: true }));
+
+        try {
+          setState({
+            status: await tracker
+              .fetchAll()
+              .then((r) => r.find((i: Issue) => i.externalId === id)?.status ?? null),
+            loading: false,
+          });
+        } catch {
+          setState({ status: null, loading: false });
+        }
+      })();
+    },
+  };
 }
