@@ -47,7 +47,7 @@ export function AppContent(props: AppContentProps) {
       jiraCloudId={cloudId}
       onError={(err) => console.error("Workflow error:", err)}
     >
-      <TicketsProvider rig={rig} autoLoad={!loading()}>
+      <TicketsProvider rig={rig} autoLoad={true}>
         <EventLogProvider>
           <InnerContent
             showAll={props.showAll}

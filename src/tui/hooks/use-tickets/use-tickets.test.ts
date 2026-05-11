@@ -280,14 +280,17 @@ describe("useTickets", () => {
     it("should only load tickets for specified rig", () => {
       createRoot((dispose) => {
         const otherRig = "github.com/other/repo-" + Date.now();
+        const timestamp = Date.now();
         const { create: create1 } = useTickets({ rig: testRig });
         const { create: create2 } = useTickets({ rig: otherRig });
 
-        create1({ jiraKey: "TEST-013", rig: testRig });
-        create2({ jiraKey: "TEST-014", rig: otherRig });
+        const id1 = `TEST-013-${timestamp}`;
+        const id2 = `TEST-014-${timestamp}`;
+        create1({ jiraKey: id1, rig: testRig });
+        create2({ jiraKey: id2, rig: otherRig });
 
         // Query only for testRig
-        const { tickets, reload: _reload } = useTickets({
+        const { tickets } = useTickets({
           rig: testRig,
           autoLoad: true,
         });
@@ -296,7 +299,7 @@ describe("useTickets", () => {
         expect(tickets()[0].rig).toBe(testRig);
 
         // Cleanup other rig ticket
-        deleteTicket("TEST-014");
+        deleteTicket(id2);
 
         dispose();
       });
@@ -318,23 +321,24 @@ describe("useTickets", () => {
         create1({ jiraKey: id1, rig: testRig });
         create2({ jiraKey: id2, rig: otherRig });
 
-        // Use reactive rig option
+        // Use reactive rig option with autoLoad
         const { tickets, reload } = useTickets({
           rig: currentRig,
-          autoLoad: false,
+          autoLoad: true,
         });
 
-        // Initially rig is undefined, should load all tickets
-        reload();
+        // Initially rig is undefined (via accessor), autoLoad calls getAllTickets
         expect(tickets().length).toBeGreaterThanOrEqual(2);
 
-        // Update rig to testRig
+        // Update rig to testRig and reload — should filter to testRig tickets
+        // In the DOM runtime the createEffect handles this reactively,
+        // but in SSR tests we call reload() explicitly.
         setCurrentRig(testRig);
         reload();
         expect(tickets().length).toBe(1);
         expect(tickets()[0].rig).toBe(testRig);
 
-        // Update rig to otherRig
+        // Update rig to otherRig and reload
         setCurrentRig(otherRig);
         reload();
         expect(tickets().length).toBe(1);
@@ -342,6 +346,40 @@ describe("useTickets", () => {
 
         // Cleanup
         deleteTicket(id2);
+
+        dispose();
+      });
+    });
+
+    it("should reload with correct rig when rig accessor resolves", () => {
+      createRoot((dispose) => {
+        const timestamp = Date.now();
+        const rigA = "github.com/a/repo-resolve-" + timestamp;
+        const [currentRig, setCurrentRig] = createSignal<string | undefined>(undefined);
+
+        // Create a ticket in rigA
+        const { create } = useTickets({ rig: rigA, autoLoad: false });
+        const id = `TEST-RESOLVE-${timestamp}`;
+        create({ jiraKey: id, rig: rigA });
+
+        // Hook starts with undefined rig and autoLoad=true
+        const { tickets, reload } = useTickets({
+          rig: currentRig,
+          autoLoad: true,
+        });
+
+        // Initially loads all tickets (rig accessor returns undefined)
+        expect(tickets().length).toBeGreaterThanOrEqual(1);
+
+        // Now rig resolves (simulates detectRig completing)
+        // In the DOM runtime the createEffect handles this reactively,
+        // but in SSR tests we call reload() explicitly.
+        setCurrentRig(rigA);
+        reload();
+
+        // Tickets should now be filtered to just rigA
+        expect(tickets().length).toBe(1);
+        expect(tickets()[0].rig).toBe(rigA);
 
         dispose();
       });

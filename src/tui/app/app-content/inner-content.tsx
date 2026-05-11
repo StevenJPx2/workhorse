@@ -88,13 +88,6 @@ export function InnerContent(props: AppContentInnerProps) {
     );
   });
 
-  // Reload tickets when loading completes
-  createEffect(() => {
-    if (!props.loading) {
-      actions.reload();
-    }
-  });
-
   // Hook for Jira ticket pickup (assign + transition)
   const { onTicketPickup } = useJiraTicketPickup({ atlassian: props.atlassian });
 

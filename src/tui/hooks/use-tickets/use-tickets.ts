@@ -2,9 +2,10 @@
  * useTickets hook - Ticket CRUD operations
  *
  * Provides reactive ticket management with database persistence.
+ * Reactively reloads when the rig filter changes.
  */
 
-import { createSignal, onCleanup } from "solid-js";
+import { createSignal, createEffect, untrack, onCleanup } from "solid-js";
 import type { Ticket, TicketStatus } from "#types/ticket.ts";
 import {
   insertTicket,
@@ -147,10 +148,28 @@ export function useTickets(options: UseTicketsOptions = {}): UseTicketsReturn {
     return tickets().filter((t) => t.status === status);
   };
 
-  // Auto-load if requested
+  // Track the last rig value to detect changes
+  let lastRigValue: string | undefined = resolveRig(options.rig);
+
+  // Auto-load if requested (synchronous, works in all contexts)
   if (options.autoLoad) {
     reload();
+    lastRigValue = resolveRig(options.rig);
   }
+
+  // Reactive reload when rig changes — ensures tickets update when the
+  // rig filter resolves from undefined to an actual value on startup.
+  // This complements the synchronous autoLoad above: when the rig accessor
+  // later resolves to a different value (e.g. after detectRig completes),
+  // this effect re-runs and reloads with the correct filter.
+  createEffect(() => {
+    const rigValue = resolveRig(options.rig);
+    // Only reload when the rig actually changes
+    if (rigValue !== lastRigValue) {
+      lastRigValue = rigValue;
+      untrack(() => reload());
+    }
+  });
 
   // Set up polling if interval specified
   if (options.pollInterval && options.pollInterval > 0) {

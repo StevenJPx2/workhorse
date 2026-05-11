@@ -77,9 +77,13 @@ const TicketsContext = createContext<TicketsContextValue>();
 const DEFAULT_POLL_INTERVAL = 5000;
 
 export function TicketsProvider(props: TicketsProviderProps) {
-  // Initialize tickets hook with rig filter and polling
+  // Initialize tickets hook with rig filter and polling.
+  // Wrap props.rig in a lazy accessor so Solid.js doesn't evaluate it
+  // through the proxy at creation time (which would return undefined
+  // before rig detection completes). This preserves reactivity —
+  // when the rig signal updates, useTickets sees the new value.
   const ticketsHook = useTickets({
-    rig: props.rig,
+    rig: () => props.rig,
     autoLoad: props.autoLoad ?? false,
     pollInterval: DEFAULT_POLL_INTERVAL,
   });
