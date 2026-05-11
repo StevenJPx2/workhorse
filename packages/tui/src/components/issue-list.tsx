@@ -55,6 +55,7 @@ export function IssueList(props: IssueListProps) {
             const showDelete = () => isSelected() || isHovered();
             return (
               <box
+                flexDirection="row"
                 backgroundColor={isSelected() ? theme.colors.selection : undefined}
                 paddingLeft={2}
                 paddingRight={2}
@@ -62,15 +63,18 @@ export function IssueList(props: IssueListProps) {
                 onMouseOut={() => setIsHovered(false)}
                 justifyContent="space-between"
               >
-                <box>
+                <box flexDirection="row">
                   <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
                     {isSelected() ? "▸ " : "  "}
                     <b>{issue.externalId || issue.id.slice(0, 8)}</b>
                   </text>
-                  <text fg={theme.colors.dim}> {issue.title.slice(0, 20)}</text>
+                  <text fg={theme.colors.dim}>{` ${issue.title.slice(0, 20)}`}</text>
                 </box>
                 {showDelete() && (
                   <box
+                    backgroundColor={theme.colors.error}
+                    paddingLeft={1}
+                    paddingRight={1}
                     onMouseDown={() => {
                       if (props.onDelete) {
                         props.onDelete(issue);
@@ -79,8 +83,8 @@ export function IssueList(props: IssueListProps) {
                       }
                     }}
                   >
-                    <text fg={theme.colors.error}>
-                      <b>[x]</b>
+                    <text fg={theme.colors.background}>
+                      <b>x delete</b>
                     </text>
                   </box>
                 )}

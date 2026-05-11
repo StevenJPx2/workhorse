@@ -21,8 +21,8 @@ interface UseOverviewBindingsOptions {
 
 export function useOverviewBindings(options: UseOverviewBindingsOptions) {
   useKeyboard((key) => {
-    // Skip if in input mode or modal is open
-    if (ui.inputMode() || ui.modal()) return;
+    // Skip if in input mode, modal is open, or not on overview screen
+    if (ui.inputMode() || ui.modal() || ui.screen() !== "overview") return;
 
     const keyName = key.name;
     const focused = ui.focusedComponent();

@@ -154,23 +154,26 @@ export function SpawnModal(props: SpawnModalProps) {
           flexDirection="row"
           gap={3}
         >
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.success}>
               <b>Enter</b>
             </text>
-            <text fg={theme.colors.dim}> spawn</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>spawn</text>
           </box>
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.warning}>
-              <b>ESC</b>
+              <b>Esc</b>
             </text>
-            <text fg={theme.colors.dim}> cancel</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>cancel</text>
           </box>
-          <box>
+          <box flexDirection="row">
             <text fg={theme.colors.accent}>
               <b>Tab</b>
             </text>
-            <text fg={theme.colors.dim}> switch field</text>
+            <text>{"\u00A0"}</text>
+            <text fg={theme.colors.dim}>switch field</text>
           </box>
         </box>
       </box>

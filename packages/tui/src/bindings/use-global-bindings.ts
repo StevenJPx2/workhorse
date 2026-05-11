@@ -47,8 +47,8 @@ export function useGlobalBindings() {
       return;
     }
 
-    // Tab always works for focus switching (not in command mode)
-    if (key.name === "tab") {
+    // Tab for focus switching (but not when a modal is open)
+    if (key.name === "tab" && !ui.modal()) {
       if (key.shift) {
         ui.focusPrev();
       } else {

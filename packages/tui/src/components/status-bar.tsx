@@ -58,7 +58,8 @@ export function StatusBar(props: StatusBarProps) {
               <text fg={theme.colors.accent}>
                 <b>{shortcut.key}</b>
               </text>
-              <text fg={theme.colors.dim}> {shortcut.action}</text>
+              <text>{"\u00A0"}</text>
+              <text fg={theme.colors.dim}>{shortcut.action}</text>
             </box>
           )}
         </For>
@@ -67,7 +68,8 @@ export function StatusBar(props: StatusBarProps) {
         <text fg={theme.colors.accent}>
           <b>Ctrl+X Q</b>
         </text>
-        <text fg={theme.colors.dim}> quit</text>
+        <text>{"\u00A0"}</text>
+        <text fg={theme.colors.dim}>quit</text>
       </box>
     </box>
   );
