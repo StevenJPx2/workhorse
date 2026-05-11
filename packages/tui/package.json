@@ -16,6 +16,7 @@
     "build:prod": "bun ../../scripts/build-tui.ts --minify",
     "dev": "bun src/index.tsx",
     "preview": "bun dist/jiratown.js",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

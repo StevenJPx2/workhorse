@@ -4,8 +4,9 @@
  */
 
 import { Show } from "solid-js";
-import type { MonitorsState } from "../primitives/create-monitors";
+import { getMonitorDisplayInfo } from "../primitives/monitor-display";
 import { getTheme } from "../theme";
+import type { MonitorsState } from "../primitives/create-monitors";
 
 interface MonitorIndicatorProps {
   state: MonitorsState;
@@ -13,33 +14,31 @@ interface MonitorIndicatorProps {
 
 export function MonitorIndicator(props: MonitorIndicatorProps) {
   const theme = getTheme();
-  const count = () => props.state.monitors.length;
-  const hasErrors = () => props.state.monitors.some((m) => m.state === "error" || m.errorCount > 0);
-  const remoteCount = () => props.state.monitors.filter((m) => m.type === "remote").length;
-  const localCount = () => props.state.monitors.filter((m) => m.type === "local").length;
+  const info = () => getMonitorDisplayInfo(props.state);
 
   return (
-    <Show when={count() > 0}>
-      <box flexDirection="row" flexShrink={0}>
-        <text fg={hasErrors() ? theme.colors.error : theme.colors.success}>
-          {"●"}
-          {"\u00A0"}
-        </text>
-        <text fg={theme.colors.dim}>
-          {count()}
-          {"\u00A0"}
-          {count() === 1 ? "monitor" : "monitors"}
-        </text>
-        <Show when={remoteCount() > 0 && localCount() > 0}>
-          <text fg={theme.colors.dim}>
+    <Show when={info()}>
+      {(data: () => NonNullable<ReturnType<typeof getMonitorDisplayInfo>>) => (
+        <box flexDirection="row" flexShrink={0}>
+          <text fg={data().hasErrors ? theme.colors.error : theme.colors.success}>
+            {"●"}
             {"\u00A0"}
-            {"("}
-            {remoteCount() > 0 && `${remoteCount()}r`}
-            {localCount() > 0 && `${localCount()}l`}
-            {")"}
           </text>
-        </Show>
-      </box>
+          <text fg={theme.colors.dim}>
+            {data().count}
+            {"\u00A0"}
+            {data().count === 1 ? "monitor" : "monitors"}
+          </text>
+          <Show when={data().remoteCount > 0 && data().localCount > 0}>
+            <text fg={theme.colors.dim}>
+              {"\u00A0"}
+              {"("}
+              {`${data().remoteCount}r${data().localCount}l`}
+              {")"}
+            </text>
+          </Show>
+        </box>
+      )}
     </Show>
   );
 }
