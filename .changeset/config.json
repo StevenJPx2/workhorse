@@ -12,6 +12,7 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@jiratown/plugin-jira",
+    "@jiratown/plugin-playwright",
     "@jiratown/plugin-github",
     "@jiratown/plugin-pi-adapter",
     "eslint-plugin-jiratown"
