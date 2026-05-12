@@ -1,5 +1,5 @@
 import type { AgentAdapter } from "@jiratown/core";
-import { createMemo, Show } from "solid-js";
+import { createMemo, createSignal, Show } from "solid-js";
 import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
@@ -53,6 +53,7 @@ export function Agent() {
     worktreePath: () => selectedAgent()?.worktreePath ?? null,
   });
   const { send: sendMessage } = createChat(selectedId);
+  const [inputValue, setInputValue] = createSignal("");
 
   const isChatFocused = () => ui.focusedComponent() === "chat";
 
@@ -155,9 +156,14 @@ export function Agent() {
               <input
                 width="100%"
                 focused={isChatFocused()}
+                value={inputValue()}
+                onInput={(v) => setInputValue(v)}
                 onSubmit={(v) => {
                   const msg = typeof v === "string" ? v.trim() : "";
-                  if (msg) sendMessage(msg);
+                  if (msg) {
+                    sendMessage(msg);
+                    setInputValue("");
+                  }
                 }}
                 placeholder="Send a message..."
               />

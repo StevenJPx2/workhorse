@@ -111,6 +111,12 @@ export function initActivityStore(hooks: HookEmitter) {
     addItem(issueId, { type: "steering", reminder, timestamp: new Date() });
   });
 
+  // Handle user messages - add to activity feed
+  hooks.on("user.message", ({ issueId, content }: { issueId: string; content: string }) => {
+    flushText(issueId);
+    addItem(issueId, { type: "user_message", content, timestamp: new Date() });
+  });
+
   // Handle notifications - add to activity feed
   hooks.on(
     "notification.created",

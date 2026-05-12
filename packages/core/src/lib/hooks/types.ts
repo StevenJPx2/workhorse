@@ -30,6 +30,9 @@ type KnownEvents = {
   // Steering (idle steering system)
   "steering.reminder": { issueId: string; reminder: string };
 
+  // User interactions
+  "user.message": { issueId: string; content: string };
+
   // Notifications
   "notification.created": { notification: Notification; issueId: string };
 

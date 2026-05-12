@@ -86,6 +86,9 @@ export function createChat(issueId: Accessor<string | null>) {
       return;
     }
 
+    // Emit hook for activity feed (before adding to local messages)
+    hooks.emit("user.message", { issueId: id, content });
+
     // Add user message first (so it appears immediately)
     const msg: ChatMessage = {
       id: crypto.randomUUID(),

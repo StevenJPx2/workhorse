@@ -37,6 +37,9 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
       <Match when={props.item.type === "idle"}>
         <IdleRow timestamp={props.item.timestamp} />
       </Match>
+      <Match when={props.item.type === "user_message"}>
+        <UserMessageRow item={props.item as ActivityItem & { type: "user_message" }} />
+      </Match>
     </Switch>
   );
 }
@@ -77,6 +80,25 @@ function SteeringRow(props: { item: ActivityItem & { type: "steering" } }) {
         <text fg={theme.colors.text}>
           <i>{truncate(props.item.reminder, 80)}</i>
         </text>
+      </box>
+    </box>
+  );
+}
+
+/** User message bubble - aligned to the right */
+function UserMessageRow(props: { item: ActivityItem & { type: "user_message" } }) {
+  const theme = getTheme();
+
+  return (
+    <box flexDirection="column" marginBottom={1} alignItems="flex-end">
+      <box flexDirection="row" gap={1}>
+        <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>
+        <text fg={theme.colors.accent}>
+          <b>You</b>
+        </text>
+      </box>
+      <box backgroundColor={theme.colors.selection} paddingLeft={1} paddingRight={1}>
+        <text fg={theme.colors.info}>{props.item.content}</text>
       </box>
     </box>
   );
