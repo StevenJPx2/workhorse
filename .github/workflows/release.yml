@@ -62,25 +62,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Release
-        if: steps.changesets.outputs.published == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const publishedPackages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
-
-            for (const pkg of publishedPackages) {
-              const tagName = pkg.name === '@stevenjpx2/jiratown-tui' 
-                ? `v${pkg.version}` 
-                : `${pkg.name}@${pkg.version}`;
-              
-              await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tagName,
-                name: `${pkg.name}@${pkg.version}`,
-                body: `Release ${pkg.name}@${pkg.version}`,
-                draft: false,
-                prerelease: false,
-              });
-            }
