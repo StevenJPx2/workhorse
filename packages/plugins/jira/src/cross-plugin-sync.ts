@@ -14,6 +14,7 @@ import type { Database, JiratownContext } from "@jiratown/core";
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
 import "./hooks.ts";
+import { registerPRContribution } from "./pr-contribution.ts";
 
 /** Payload type for github:pr.merged event (mirrors GitHubPluginHooks) */
 interface PRMergedPayload {
@@ -39,6 +40,9 @@ export function registerCrossPluginSync(
   client: AtlassianClient,
   db: Database,
 ): void {
+  // Register PR contribution handler (Related Tickets section)
+  registerPRContribution(ctx, client, db);
+
   // Listen for GitHub PR merged events
   // Note: Using type assertion because HookEventMap uses Record<string, unknown> for custom hooks
   ctx.hooks.on("github:pr.merged", async (event: unknown) => {

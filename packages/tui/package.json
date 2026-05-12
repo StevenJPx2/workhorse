@@ -33,12 +33,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@jiratown/core": "workspace:*"
+    "@jiratown/core": "workspace:*",
+    "playwright": "^1.52.0"
   },
   "devDependencies": {
     "@jiratown/plugin-github": "workspace:*",
     "@jiratown/plugin-jira": "workspace:*",
     "@jiratown/plugin-pi-adapter": "workspace:*",
+    "@jiratown/plugin-playwright": "workspace:*",
     "@opentui/core": "0.2.1",
     "@opentui/solid": "0.2.1",
     "@types/bun": "latest",

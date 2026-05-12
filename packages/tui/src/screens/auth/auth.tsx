@@ -63,8 +63,19 @@ export function Auth(props: AuthScreenProps) {
   async function handleExternalAuth(plugin: PluginAuthRequirement) {
     if (plugin.auth.type !== "external") return;
     const auth = plugin.auth;
-    setFlowState({ phase: "authenticating", pluginName: plugin.name });
 
+    // Check immediately first - maybe user already authenticated
+    if (await auth.isAuthenticated()) {
+      setFlowState({ phase: "success", pluginName: plugin.name });
+      setAuthenticatedPlugins((prev) => new Set([...prev, plugin.name]));
+      setTimeout(() => checkCompletion(), 500);
+      return;
+    }
+
+    // Not authenticated - show waiting state with instructions
+    setFlowState({ phase: "waiting-cli", pluginName: plugin.name });
+
+    // Poll for authentication status
     const checkInterval = setInterval(async () => {
       if (await auth.isAuthenticated()) {
         clearInterval(checkInterval);

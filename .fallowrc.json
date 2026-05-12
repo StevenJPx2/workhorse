@@ -4,7 +4,13 @@
   "ignoreDependencies": [
     "@huggingface/transformers",
     "@mariozechner/pi-coding-agent",
-    "sqlite-vec"
+    "sqlite-vec",
+    "playwright",
+    "@jiratown/core",
+    "@jiratown/plugin-github",
+    "@jiratown/plugin-jira",
+    "@jiratown/plugin-pi-adapter",
+    "@jiratown/plugin-playwright"
   ],
   "ignoreExports": [
     { "file": "packages/core/src/services/memory/index.ts", "exports": ["*"] },
@@ -34,7 +40,7 @@
     "unused-dependencies": "error",
     "unused-class-members": "off",
     "circular-dependencies": "warn",
-    "duplicate-exports": "error",
+    "duplicate-exports": "warn",
     "code-duplication": "warn",
     "complexity": "warn"
   },

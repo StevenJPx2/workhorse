@@ -6,6 +6,7 @@
 
 import type { Database, OrchestratorTool } from "@jiratown/core";
 import type { GitHubClient } from "../client";
+import type { PROpeningContext } from "../hooks";
 import type { HooksEmitter, MonitorServiceLike } from "./types";
 
 /** Create the github_open_pr tool */
@@ -92,8 +93,39 @@ export function createOpenPRTool(
           return { success: false, error: `Failed to push branch: ${pushErr}` };
         }
 
-        // Create PR
-        const result = await client.createPR({ owner, repo, head, base, title, body, draft });
+        // Emit pr.opening hook to collect contributions from other plugins
+        const openingContext: PROpeningContext = {
+          issueId: ctx.issueId,
+          title,
+          body: body ?? "",
+          base,
+          head,
+          draft: draft ?? false,
+          worktreePath: ctx.worktreePath,
+          contributions: [],
+        };
+        hooks.emit("github:pr.opening", openingContext);
+
+        // Allow async handlers to complete (they push to contributions array)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Create PR with body built from contributions
+        const result = await client.createPR({
+          owner,
+          repo,
+          head,
+          base,
+          title,
+          body: [
+            body,
+            ...[...openingContext.contributions]
+              .sort((a, b) => (a.priority ?? 50) - (b.priority ?? 50))
+              .map((c) => `## ${c.section}\n\n${c.content}`),
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+          draft,
+        });
 
         // Update issue in DB - PR created means we're now awaiting review
         // Store PR info in metadata (prNumber, prUrl) for cross-plugin access

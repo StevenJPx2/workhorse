@@ -487,18 +487,97 @@ hooks.on("my-plugin:data_ready", ({ data }) => {
 });
 ```
 
-**Example: Jira ↔ GitHub cross-plugin sync**
+### Hook-Based PR Enhancement
 
-The Jira plugin listens for GitHub events to add comments on Jira issues:
+The `github:pr.opening` hook allows plugins to contribute sections to PR descriptions. This enables coordination without tight coupling between plugins.
+
+**How it works:**
+
+1. The `github_open_pr` tool emits `github:pr.opening` with a `contributions` array
+2. Plugins listen and push their content contributions
+3. After a short delay (100ms), contributions are sorted by priority and assembled into the PR body
+
+**PRContentContribution type:**
+
+```typescript
+interface PRContentContribution {
+  section: string;     // Section heading (e.g., "Related Tickets")
+  content: string;     // Markdown content
+  priority?: number;   // Lower = earlier in PR body (default: 50)
+}
+```
+
+**PROpeningContext type:**
+
+```typescript
+interface PROpeningContext {
+  issueId: string;
+  title: string;
+  body: string;
+  base: string;
+  head: string;
+  draft: boolean;
+  worktreePath: string;
+  contributions: PRContentContribution[];  // Push to this array
+}
+```
+
+**Example: Contributing a PR section**
+
+```typescript
+// In your plugin's setup
+ctx.hooks.on("github:pr.opening", async (event: unknown) => {
+  const openingCtx = event as PROpeningContext;
+  
+  // Fetch data for your section
+  const data = await fetchMyData(openingCtx.issueId);
+  
+  if (data) {
+    openingCtx.contributions.push({
+      section: "My Section",
+      content: formatMyContent(data),
+      priority: 30,  // Show between tickets (10) and screenshots (80)
+    });
+  }
+});
+```
+
+**Built-in PR contributions:**
+
+| Plugin | Section | Priority | Content |
+|--------|---------|----------|---------|
+| **Jira** | Related Tickets | 10 | Table of linked Jira issues |
+| **Playwright** | Screenshots | 80 | Images from `screenshot-*.png` files |
+
+**Example PR body structure:**
+
+```markdown
+## Summary
+Added dashboard feature with real-time updates
+
+## Related Tickets
+| Ticket | Summary | Status |
+| --- | --- | --- |
+| [PROJ-123](https://jira.example.com/browse/PROJ-123) | Add dashboard | In Progress |
+
+## Screenshots
+![screenshot-1.png](./screenshot-1.png)
+
+![screenshot-2.png](./screenshot-2.png)
+```
+
+### Post-Event Hooks
+
+The Jira plugin also listens for GitHub events to add comments on Jira issues:
 
 ```typescript
 // In jira plugin's cross-plugin-sync.ts
-hooks.on("github:pr.opened", async ({ issueId, prUrl }) => {
-  await client.addComment(issueId, `PR opened: ${prUrl}`);
+hooks.on("github:pr.created", async ({ issueId, pr }) => {
+  await client.addComment(issueId, `PR opened: ${pr.url}`);
 });
 
-hooks.on("github:pr.merged", async ({ issueId, prUrl }) => {
-  await client.addComment(issueId, `PR merged: ${prUrl}`);
+hooks.on("github:pr.merged", async ({ issueId, pr }) => {
+  await client.addComment(issueId, `PR merged: ${pr.url}`);
   await client.transitionIssue(issueId, "Done");
 });
 ```
@@ -632,5 +711,6 @@ Each module has its own README with detailed documentation:
 - `packages/core/src/workflow/tracker/README.md` — Tracker
 - `packages/plugins/github/README.md` — GitHub plugin
 - `packages/plugins/jira/README.md` — Jira plugin
+- `packages/plugins/playwright/README.md` — Playwright browser automation plugin
 - `packages/plugins/pi-adapter/README.md` — Pi adapter plugin
 - `packages/tui/README.md` — TUI

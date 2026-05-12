@@ -2,6 +2,7 @@ import { bootstrap, resolveConfigPaths } from "@jiratown/core";
 import { githubPlugin } from "@jiratown/plugin-github";
 import { jiraPlugin } from "@jiratown/plugin-jira";
 import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
+import { playwrightPlugin } from "@jiratown/plugin-playwright";
 import { createCliRenderer } from "@opentui/core";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
@@ -105,9 +106,12 @@ export async function startTUI() {
 
   // Check if setup is needed before bootstrapping
   const paths = resolveConfigPaths();
-  const pluginsNeedingSetup = getPluginsNeedingSetup(
-    loadExistingConfig(paths.globalConfig, paths.projectConfig),
-  );
+  const existingConfig = loadExistingConfig(paths.globalConfig, paths.projectConfig);
+
+  // Set theme early so setup/auth screens match the app theme
+  setTheme(existingConfig.ui.theme);
+
+  const pluginsNeedingSetup = getPluginsNeedingSetup(existingConfig);
 
   if (
     pluginsNeedingSetup.length > 0 &&
@@ -152,6 +156,7 @@ export async function startTUI() {
       tuiPlugin, // TUI plugin (renderer hooks)
       jiraPlugin, // Jira integration
       githubPlugin, // GitHub integration
+      playwrightPlugin, // Browser automation
       piAdapterPlugin, // Default agent harness
     ],
     // Pass CLI model override (deep partial allows nested partial objects)

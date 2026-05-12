@@ -27,6 +27,7 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
       if (props.flowState.phase === "success") return "✓";
       if (props.flowState.phase === "error") return "✗";
       if (props.flowState.phase === "waiting-browser") return "⏳";
+      if (props.flowState.phase === "waiting-cli") return "⏳";
       if (props.flowState.phase === "authenticating") return "…";
     }
     return props.plugin.auth.type === "oauth" ? "🌐" : "⌨";
@@ -88,9 +89,20 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
 
       {/* Current flow status */}
       <Show when={isCurrentPlugin()}>
-        <box paddingLeft={3} paddingTop={1}>
+        <box paddingLeft={3} paddingTop={1} flexDirection="column">
           <Show when={props.flowState.phase === "waiting-browser"}>
             <text fg={theme.colors.warning}>Waiting for browser authentication...</text>
+          </Show>
+          <Show when={props.flowState.phase === "waiting-cli"}>
+            <text fg={theme.colors.warning}>
+              Waiting for CLI authentication... (polling every 2s)
+            </text>
+            <box paddingTop={1}>
+              <text fg={theme.colors.dim}>
+                Run in another terminal:{" "}
+                {(props.plugin.auth as { config: { authCommand: string } }).config.authCommand}
+              </text>
+            </box>
           </Show>
           <Show when={props.flowState.phase === "authenticating"}>
             <text fg={theme.colors.info}>Authenticating...</text>

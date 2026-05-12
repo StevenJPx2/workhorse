@@ -21,7 +21,54 @@
  * }
  * ```
  */
+/**
+ * PR content contribution for the `github:pr.opening` hook.
+ * Plugins can add sections to the PR body by pushing to the contributions array.
+ */
+export interface PRContentContribution {
+  /** Section title (e.g., "Related Tickets", "Screenshots") */
+  section: string;
+  /** Section content in markdown */
+  content: string;
+  /** Priority for ordering (lower = earlier, default: 50) */
+  priority?: number;
+}
+
+/**
+ * Context passed to `github:pr.opening` handlers.
+ * Handlers can push to `contributions` to add sections to the PR body.
+ */
+export interface PROpeningContext {
+  issueId: string;
+  title: string;
+  body: string;
+  base: string;
+  head: string;
+  draft: boolean;
+  worktreePath: string;
+  /** Plugins push contributions here to add PR sections */
+  contributions: PRContentContribution[];
+}
+
 export interface GitHubPluginHooks {
+  /**
+   * Emitted before a PR is created, allowing plugins to contribute content.
+   * Handlers should push to `contributions` array to add PR sections.
+   *
+   * @example
+   * ```typescript
+   * ctx.hooks.on("github:pr.opening", async (event: unknown) => {
+   *   const ctx = event as PROpeningContext;
+   *   ctx.contributions.push({
+   *     section: "Related Tickets",
+   *     content: "- [PROJ-123](https://jira.example.com/browse/PROJ-123)",
+   *     priority: 10,
+   *   });
+   * });
+   * ```
+   */
+  "github:pr.opening": PROpeningContext;
+
   /** Emitted when a PR is created for an issue */
   "github:pr.created": {
     issueId: string;

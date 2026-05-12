@@ -8,6 +8,7 @@ export type AuthFlowState =
   | { phase: "idle" }
   | { phase: "authenticating"; pluginName: string }
   | { phase: "waiting-browser"; pluginName: string; authUrl: string }
+  | { phase: "waiting-cli"; pluginName: string }
   | { phase: "success"; pluginName: string }
   | { phase: "error"; pluginName: string; error: string };
 
