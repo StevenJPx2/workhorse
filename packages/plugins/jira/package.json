@@ -22,6 +22,7 @@
 	},
 	"dependencies": {
 		"@jiratown/core": "workspace:*",
+		"arctic": "^3.7.0",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

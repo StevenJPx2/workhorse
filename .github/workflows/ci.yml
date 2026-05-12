@@ -31,8 +31,15 @@ jobs:
         run: bun run build
         working-directory: oxlint/eslint-plugin-jiratown
 
-      - name: Build
+      - name: Build core
         run: bun run build
+        working-directory: packages/core
+
+      - name: Build plugins
+        run: bun run build:plugins
+
+      - name: Build TUI
+        run: bun run build:tui
 
       - name: Lint
         run: bun run lint
