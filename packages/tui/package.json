@@ -1,7 +1,20 @@
 {
   "name": "@jiratown/tui",
   "version": "0.1.0",
+  "description": "Terminal UI for Jiratown - AI-powered Jira issue resolver",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StevenJPx2/jiratown.git",
+    "directory": "packages/tui"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist"
+  ],
   "main": "./dist/jiratown.js",
   "bin": {
     "jiratown": "./dist/jiratown.js"
@@ -20,16 +33,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@jiratown/core": "workspace:*",
+    "@jiratown/core": "workspace:*"
+  },
+  "devDependencies": {
     "@jiratown/plugin-github": "workspace:*",
     "@jiratown/plugin-jira": "workspace:*",
     "@jiratown/plugin-pi-adapter": "workspace:*",
     "@opentui/core": "0.2.1",
     "@opentui/solid": "0.2.1",
-    "solid-js": "^1.9.0"
-  },
-  "devDependencies": {
     "@types/bun": "latest",
+    "solid-js": "^1.9.0",
     "typescript": "^5"
   }
 }

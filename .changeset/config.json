@@ -7,11 +7,10 @@
   "commit": false,
   "fixed": [],
   "linked": [],
-  "access": "public",
+  "access": "restricted",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@jiratown/core",
     "@jiratown/plugin-jira",
     "@jiratown/plugin-github",
     "@jiratown/plugin-pi-adapter",
