@@ -9,6 +9,7 @@ import * as keychain from "@jiratown/core";
 vi.mock("@jiratown/core", () => ({
   getCredential: vi.fn(),
   storeCredential: vi.fn(),
+  deleteCredential: vi.fn(),
   // Re-export other things that might be needed
   PluginSymbol: Symbol.for("jiratown.plugin"),
 }));

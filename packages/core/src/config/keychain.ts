@@ -1,17 +1,25 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 const SERVICE = "jiratown";
 
 /**
- * Bun shell type for executing commands.
+ * Execute the macOS security command.
+ * Returns { stdout, exitCode } - never throws for non-zero exit codes.
  */
-type BunShell = (typeof import("bun"))["$"];
-
-/**
- * Execute a callback with the Bun shell.
- * Dynamic import ensures compatibility in non-Bun environments.
- */
-async function withBunShell<T>(fn: ($: BunShell) => Promise<T>): Promise<T> {
-  const { $ } = await import("bun");
-  return await fn($);
+async function security(...args: string[]): Promise<{ stdout: string; exitCode: number }> {
+  try {
+    const { stdout } = await execFileAsync("security", args);
+    return { stdout, exitCode: 0 };
+  } catch (error) {
+    // execFile throws on non-zero exit codes
+    const execError = error as { code?: number; stdout?: string };
+    return {
+      stdout: execError.stdout ?? "",
+      exitCode: execError.code ?? 1,
+    };
+  }
 }
 
 /**
@@ -19,13 +27,16 @@ async function withBunShell<T>(fn: ($: BunShell) => Promise<T>): Promise<T> {
  * Uses macOS Keychain via the `security` command.
  */
 export async function storeCredential(service: string, key: string, value: string): Promise<void> {
-  await withBunShell(async ($) => {
-    // Delete existing entry first (ignore errors if it doesn't exist)
-    await $`security delete-generic-password -a ${`${SERVICE}:${service}:${key}`} -s ${SERVICE} 2>/dev/null`.nothrow();
+  const account = `${SERVICE}:${service}:${key}`;
 
-    // Add new entry
-    await $`security add-generic-password -a ${`${SERVICE}:${service}:${key}`} -s ${SERVICE} -w ${value}`;
-  });
+  // Delete existing entry first (ignore errors if it doesn't exist)
+  await security("delete-generic-password", "-a", account, "-s", SERVICE);
+
+  // Add new entry
+  const result = await security("add-generic-password", "-a", account, "-s", SERVICE, "-w", value);
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to store credential: ${result.stdout}`);
+  }
 }
 
 /**
@@ -33,23 +44,25 @@ export async function storeCredential(service: string, key: string, value: strin
  * Returns null if not found.
  */
 export async function getCredential(service: string, key: string): Promise<string | null> {
-  return await withBunShell(async ($) => {
-    const result =
-      await $`security find-generic-password -a ${`${SERVICE}:${service}:${key}`} -s ${SERVICE} -w 2>/dev/null`.nothrow();
+  const result = await security(
+    "find-generic-password",
+    "-a",
+    `${SERVICE}:${service}:${key}`,
+    "-s",
+    SERVICE,
+    "-w",
+  );
 
-    if (result.exitCode !== 0) {
-      return null;
-    }
+  if (result.exitCode !== 0) {
+    return null;
+  }
 
-    return result.stdout.toString().trim() || null;
-  });
+  return result.stdout.trim() || null;
 }
 
 /**
  * Delete a credential from the system keychain.
  */
 export async function deleteCredential(service: string, key: string): Promise<void> {
-  await withBunShell(async ($) => {
-    await $`security delete-generic-password -a ${`${SERVICE}:${service}:${key}`} -s ${SERVICE} 2>/dev/null`.nothrow();
-  });
+  await security("delete-generic-password", "-a", `${SERVICE}:${service}:${key}`, "-s", SERVICE);
 }
