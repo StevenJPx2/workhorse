@@ -1,7 +1,7 @@
 /**
  * Pi Coding Agent adapter.
  *
- * Uses @mariozechner/pi-coding-agent SDK directly with path restrictions
+ * Uses @earendil-works/pi-coding-agent SDK directly with path restrictions
  * to ensure agents can only read/write files within their worktree.
  */
 
@@ -16,17 +16,19 @@ import {
   createReadTool,
   createWriteTool,
   createEditTool,
+  createBashTool,
   DefaultResourceLoader,
   getAgentDir,
   ModelRegistry as PiModelRegistry,
   SessionManager,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 import {
   createRestrictedReadOperations,
   createRestrictedWriteOperations,
   createRestrictedEditOperations,
 } from "./path-restriction.ts";
+import { createRestrictedBashOperations } from "./bash-restriction.ts";
 import { PiAdapterModelRegistry } from "./registry.ts";
 
 /** Pi Coding Agent adapter. Extends AgentAdapter to wrap the pi SDK session. */
@@ -88,6 +90,13 @@ export class PiAgentAdapter extends AgentAdapter {
         }),
         createEditTool(this.worktreePath, {
           operations: createRestrictedEditOperations(pathRestriction),
+        }),
+        createBashTool(this.worktreePath, {
+          // Bash allows worktree + /tmp/ for temporary files
+          operations: createRestrictedBashOperations({
+            rootDir: this.worktreePath,
+            allowTmp: true,
+          }),
         }),
       ],
     });

@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { AtlassianClient } from "../client.ts";
-import { createJiraTools } from "../tools.ts";
+import { createJiraTools } from "../tools";
 
 /** Mock hooks emitter for testing */
 const mockHooks = {
@@ -13,6 +13,19 @@ const mockHooks = {
   off: vi.fn(),
   all: new Map(),
 } as unknown as Parameters<typeof createJiraTools>[1];
+
+/** Create mock database with Jira issue */
+function createMockDb(issueId: string, source: string = "jira") {
+  return {
+    issues: {
+      getById: vi.fn().mockReturnValue({
+        id: issueId,
+        externalId: issueId,
+        source,
+      }),
+    },
+  };
+}
 
 describe("createJiraTools", () => {
   it("returns all three tools", () => {
@@ -30,16 +43,17 @@ describe("jira_add_comment tool", () => {
     const mockClient = {
       addComment: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
-      { ticketKey: "AM-123", body: "LGTM" },
+      { body: "LGTM" },
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -53,16 +67,17 @@ describe("jira_add_comment tool", () => {
     const mockClient = {
       addComment: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
-      { ticketKey: "AM-123", body: "Thanks for the feedback!", replyToId: "10001" },
+      { body: "Thanks for the feedback!", replyToId: "10001" },
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -81,16 +96,17 @@ describe("jira_add_comment tool", () => {
     const mockClient = {
       addComment: vi.fn().mockRejectedValue(new Error("Network error")),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
 
     const result = await addCommentTool.execute(
-      { ticketKey: "AM-123", body: "LGTM" },
+      { body: "LGTM" },
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -98,6 +114,31 @@ describe("jira_add_comment tool", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("Network error");
+  });
+
+  it("returns error for non-Jira issues", async () => {
+    const mockClient = {
+      addComment: vi.fn(),
+    } as unknown as AtlassianClient;
+    const mockDb = createMockDb("owner/repo#123", "github");
+
+    const tools = createJiraTools(mockClient, mockHooks);
+    const addCommentTool = tools.find((t) => t.name === "jira_add_comment")!;
+
+    const result = await addCommentTool.execute(
+      { body: "LGTM" },
+      {
+        issueId: "owner/repo#123",
+        worktreePath: "/tmp",
+        db: mockDb as any,
+        hooks: {} as any,
+        memory: {} as any,
+      },
+    );
+
+    expect(mockClient.addComment).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("only works for Jira-sourced issues");
   });
 });
 
@@ -114,16 +155,17 @@ describe("jira_transition_issue tool", () => {
       ]),
       transitionIssue: vi.fn().mockResolvedValue(undefined),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
 
     const result = await transitionTool.execute(
-      { ticketKey: "AM-123", status: "Done" },
+      { status: "Done" },
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -148,16 +190,17 @@ describe("jira_transition_issue tool", () => {
         ]),
       transitionIssue: vi.fn(),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
 
     const result = await transitionTool.execute(
-      { ticketKey: "AM-123", status: "Blocked" },
+      { status: "Blocked" },
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -165,6 +208,31 @@ describe("jira_transition_issue tool", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain("No transition found");
+  });
+
+  it("returns error for non-Jira issues", async () => {
+    const mockClient = {
+      getTransitions: vi.fn(),
+    } as unknown as AtlassianClient;
+    const mockDb = createMockDb("owner/repo#123", "github");
+
+    const tools = createJiraTools(mockClient, mockHooks);
+    const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
+
+    const result = await transitionTool.execute(
+      { status: "Done" },
+      {
+        issueId: "owner/repo#123",
+        worktreePath: "/tmp",
+        db: mockDb as any,
+        hooks: {} as any,
+        memory: {} as any,
+      },
+    );
+
+    expect(mockClient.getTransitions).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("only works for Jira-sourced issues");
   });
 });
 
@@ -199,16 +267,17 @@ describe("jira_get_comments tool", () => {
         },
       }),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(
-      { ticketKey: "AM-123" },
+      {},
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -239,16 +308,17 @@ describe("jira_get_comments tool", () => {
         },
       }),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(
-      { ticketKey: "AM-123" },
+      {},
       {
         issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -263,16 +333,17 @@ describe("jira_get_comments tool", () => {
     const mockClient = {
       fetchIssue: vi.fn().mockRejectedValue(new Error("Issue not found")),
     } as unknown as AtlassianClient;
+    const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
     const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
 
     const result = await getCommentsTool.execute(
-      { ticketKey: "AM-999" },
+      {},
       {
-        issueId: "AM-999",
+        issueId: "AM-123",
         worktreePath: "/tmp",
-        db: {} as any,
+        db: mockDb as any,
         hooks: {} as any,
         memory: {} as any,
       },
@@ -280,5 +351,30 @@ describe("jira_get_comments tool", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("Issue not found");
+  });
+
+  it("returns error for non-Jira issues", async () => {
+    const mockClient = {
+      fetchIssue: vi.fn(),
+    } as unknown as AtlassianClient;
+    const mockDb = createMockDb("owner/repo#123", "github");
+
+    const tools = createJiraTools(mockClient, mockHooks);
+    const getCommentsTool = tools.find((t) => t.name === "jira_get_comments")!;
+
+    const result = await getCommentsTool.execute(
+      {},
+      {
+        issueId: "owner/repo#123",
+        worktreePath: "/tmp",
+        db: mockDb as any,
+        hooks: {} as any,
+        memory: {} as any,
+      },
+    );
+
+    expect(mockClient.fetchIssue).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("only works for Jira-sourced issues");
   });
 });

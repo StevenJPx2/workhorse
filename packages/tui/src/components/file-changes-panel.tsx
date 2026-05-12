@@ -43,8 +43,12 @@ export function FileChangesPanel(props: FileChangesPanelProps) {
         </Show>
       </box>
 
-      {/* File list - disable focus when modal is open */}
-      <scrollbox flexGrow={1} stickyScroll focused={!ui.modal()}>
+      {/* File list - disable focus when modal is open or chat is focused */}
+      <scrollbox
+        flexGrow={1}
+        stickyScroll
+        focused={!ui.modal() && ui.focusedComponent() !== "chat"}
+      >
         <box flexDirection="column">
           <Show
             when={props.state().files.length > 0}

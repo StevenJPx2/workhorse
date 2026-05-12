@@ -22,7 +22,7 @@ import { registerPromptHooks } from "./prompt.ts";
 import { jiraRenderer } from "./renderer.ts";
 import { registerJiraSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
-import { createJiraTools } from "./tools.ts";
+import { createJiraTools } from "./tools";
 
 /** Config schema for the Jira plugin */
 export const JiraConfigSchema = z.object({

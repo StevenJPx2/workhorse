@@ -19,7 +19,12 @@ interface ActivityFeedProps {
 export function ActivityFeed(props: ActivityFeedProps) {
   return (
     <box flexDirection="column" flexGrow={1}>
-      <scrollbox flexGrow={1} stickyScroll stickyStart="bottom" focused={!ui.modal()}>
+      <scrollbox
+        flexGrow={1}
+        stickyScroll
+        stickyStart="bottom"
+        focused={!ui.modal() && ui.focusedComponent() !== "chat"}
+      >
         <box flexDirection="column" gap={1}>
           <For each={props.state().items}>{(item) => <ActivityItemRow item={item} />}</For>
           <Show when={props.state().isStreaming}>

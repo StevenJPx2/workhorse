@@ -38,6 +38,10 @@ let toastId = 0;
 // Focus order for tab navigation
 const FOCUS_ORDER: FocusTarget[] = ["issues", "agents", "chat"];
 
+// Track which list (issues or agents) was last focused before entering chat
+// This determines whether chat input creates a new issue or messages an agent
+const [lastFocusedList, setLastFocusedList] = createSignal<"issues" | "agents">("issues");
+
 /**
  * Global UI state manager using Solid signals.
  */
@@ -52,6 +56,7 @@ export const ui = {
   focusedComponent,
   selectedModel,
   toasts,
+  lastFocusedList,
 
   // Actions (write)
   setScreen,
@@ -76,9 +81,17 @@ export const ui = {
   /**
    * Focus the next component in tab order.
    * Automatically enters input mode when focusing chat.
+   * Tracks which list was last focused before entering chat.
    */
   focusNext: () => {
-    const next = FOCUS_ORDER[(FOCUS_ORDER.indexOf(focusedComponent()) + 1) % FOCUS_ORDER.length]!;
+    const current = focusedComponent();
+    const next = FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) + 1) % FOCUS_ORDER.length]!;
+
+    // Track the list we're leaving if moving to chat
+    if (next === "chat" && (current === "issues" || current === "agents")) {
+      setLastFocusedList(current);
+    }
+
     setFocusedComponent(next);
     // Auto-toggle input mode based on what we're focusing
     setInputMode(next === "chat");
@@ -87,12 +100,18 @@ export const ui = {
   /**
    * Focus the previous component in tab order.
    * Automatically enters input mode when focusing chat.
+   * Tracks which list was last focused before entering chat.
    */
   focusPrev: () => {
+    const current = focusedComponent();
     const prev =
-      FOCUS_ORDER[
-        (FOCUS_ORDER.indexOf(focusedComponent()) - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length
-      ]!;
+      FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length]!;
+
+    // Track the list we're leaving if moving to chat
+    if (prev === "chat" && (current === "issues" || current === "agents")) {
+      setLastFocusedList(current);
+    }
+
     setFocusedComponent(prev);
     // Auto-toggle input mode based on what we're focusing
     setInputMode(prev === "chat");
@@ -144,6 +163,7 @@ export const ui = {
     setSelectedAgentId(agentId);
     setScreen("agent");
     setFocusedComponent("chat");
+    setInputMode(true);
   },
 
   /**

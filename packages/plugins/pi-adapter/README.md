@@ -1,6 +1,6 @@
 # @jiratown/plugin-pi-adapter
 
-Pi Coding Agent adapter plugin for Jiratown. Wraps `@mariozechner/pi-coding-agent` SDK as a Jiratown agent adapter.
+Pi Coding Agent adapter plugin for Jiratown. Wraps `@earendil-works/pi-coding-agent` SDK as a Jiratown agent adapter.
 
 ## Installation
 
@@ -10,7 +10,7 @@ bun add @jiratown/plugin-pi-adapter
 
 ## Prerequisites
 
-- **Pi Coding Agent** installed (`@mariozechner/pi-coding-agent`)
+- **Pi Coding Agent** installed (`@earendil-works/pi-coding-agent`)
 - **Authentication** via `pi /login` (OAuth credentials stored in `~/.pi/agent/auth.json`)
 
 ## Features

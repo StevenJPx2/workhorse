@@ -261,6 +261,105 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
     expect(mockMonitors.startMonitor).toHaveBeenCalledWith("github-pr", "issue-1");
   });
 
+  it("derives owner/repo from git remote for non-GitHub issues", async () => {
+    // Mock: git remote, git branch, git push
+    mockSpawn
+      .mockReturnValueOnce({
+        stdout: new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode("git@github.com:octocat/hello-world.git\n"),
+            );
+            controller.close();
+          },
+        }),
+        stderr: new ReadableStream({
+          start(c) {
+            c.close();
+          },
+        }),
+        exited: Promise.resolve(0),
+      })
+      .mockReturnValueOnce({
+        stdout: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("task/AM-123\n"));
+            controller.close();
+          },
+        }),
+        stderr: new ReadableStream({
+          start(c) {
+            c.close();
+          },
+        }),
+        exited: Promise.resolve(0),
+      })
+      .mockReturnValueOnce({
+        stdout: new ReadableStream({
+          start(c) {
+            c.close();
+          },
+        }),
+        stderr: new ReadableStream({
+          start(c) {
+            c.close();
+          },
+        }),
+        exited: Promise.resolve(0),
+      });
+
+    const mockClient = {
+      createPR: vi.fn().mockResolvedValue({
+        url: "https://github.com/octocat/hello-world/pull/42",
+        number: 42,
+      }),
+    } as unknown as GitHubClient;
+
+    const mockDb = {
+      issues: {
+        getById: vi.fn().mockReturnValue({
+          id: "issue-1",
+          source: "jira", // Jira issue, not GitHub
+          status: "implementing",
+          metadata: { cloudId: "company", priority: "High" }, // No owner/repo
+        }),
+        update: vi.fn(),
+      },
+    };
+
+    const mockHooks = { emit: vi.fn() };
+    const mockMonitors = { startMonitor: vi.fn() };
+
+    const tools = createGitHubTools(
+      mockClient,
+      mockDb as any,
+      mockHooks as any,
+      mockMonitors as any,
+    );
+    const tool = tools.find((t: OrchestratorTool) => t.name === "github_open_pr")!;
+
+    const result = await tool.execute(
+      { title: "AM-123: Implement feature", base: "main" },
+      {
+        issueId: "issue-1",
+        worktreePath: "/tmp/worktree",
+        db: mockDb as any,
+        hooks: mockHooks as any,
+        memory: {} as any,
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("#42");
+    // Verify createPR was called with owner/repo derived from git remote
+    expect(mockClient.createPR).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: "octocat",
+        repo: "hello-world",
+      }),
+    );
+  });
+
   it("returns error when issue not found", async () => {
     const mockDb = {
       issues: {
@@ -286,13 +385,29 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
     expect(result.error).toContain("not found");
   });
 
-  it("returns error when issue has no GitHub metadata", async () => {
+  it("returns error when owner/repo cannot be determined from metadata or git remote", async () => {
+    // Mock git remote to return a non-GitHub URL
+    mockSpawn.mockReturnValueOnce({
+      stdout: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("https://gitlab.com/org/repo.git\n"));
+          controller.close();
+        },
+      }),
+      stderr: new ReadableStream({
+        start(c) {
+          c.close();
+        },
+      }),
+      exited: Promise.resolve(0),
+    });
+
     const mockDb = {
       issues: {
         getById: vi.fn().mockReturnValue({
           id: "issue-1",
-          source: "github",
-          metadata: {}, // No owner/repo
+          source: "jira", // Non-GitHub source
+          metadata: { cloudId: "company" }, // Jira metadata, no owner/repo
         }),
       },
     };

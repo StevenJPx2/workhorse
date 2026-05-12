@@ -31,7 +31,7 @@ import type {
   WriteOperations,
   ReadOperations,
   EditOperations,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 
 /**
  * Creates write operations that validate paths before writing.

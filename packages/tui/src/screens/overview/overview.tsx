@@ -20,28 +20,40 @@ export function Overview() {
   const [agentIndex, setAgentIndex] = createSignal(0);
   const { agents } = createAgents();
 
-  // Derive selected issue ID from the currently highlighted agent
+  // Derive selected agent ID from the currently highlighted agent in the agents list
   // oxlint-disable-next-line jiratown/no-single-use-variable
-  const selectedIssueId = createMemo(() =>
+  const selectedAgentId = createMemo(() =>
     agents().length > 0 && agentIndex() >= 0 && agentIndex() < agents().length
       ? (agents()[agentIndex()]?.issueId ?? null)
       : null,
   );
 
-  const { messages, send } = createChat(selectedIssueId);
+  // Determine which context to use based on lastFocusedList
+  // If agents list was last focused, use selected agent ID; otherwise null (spawn mode)
+  // oxlint-disable-next-line jiratown/no-single-use-variable
+  const chatContextId = createMemo(() =>
+    ui.lastFocusedList() === "agents" ? selectedAgentId() : null,
+  );
+
+  const { messages, send } = createChat(chatContextId);
   // oxlint-disable-next-line jiratown/no-single-use-variable
   const issues = createIssues();
 
-  /** Handle chat input - send to agent or spawn new agent for issue */
+  /**
+   * Handle chat input submission.
+   * Behavior depends on which list was last focused:
+   * - If agents list was focused: message the selected agent
+   * - If issues list was focused: spawn a new agent for the issue
+   */
   const handleSubmit = async (msg: string) => {
-    const agentId = selectedIssueId();
-
-    if (agentId) {
+    // If we came from agents list and have a selected agent, message it
+    if (ui.lastFocusedList() === "agents" && selectedAgentId()) {
       send(msg);
-      ui.enterAgentView(agentId);
+      ui.enterAgentView(selectedAgentId()!);
       return;
     }
 
+    // Otherwise, parse input and spawn a new agent
     try {
       const issue = await tracker.parseInput(msg);
       await orchestrator
@@ -139,7 +151,7 @@ export function Overview() {
         <box flexDirection="row" width="100%" alignItems="stretch">
           <box flexShrink={0}>
             <text fg={theme.colors.accent}>
-              {selectedIssueId() ? `[${selectedIssueId()}] ❯ ` : "❯ "}
+              {chatContextId() ? `[${chatContextId()}] ❯ ` : "❯ "}
             </text>
           </box>
           <box flexGrow={1} flexBasis={0}>
@@ -162,8 +174,8 @@ export function Overview() {
                   }
                 }}
                 placeholder={
-                  selectedIssueId()
-                    ? `Message agent ${selectedIssueId()}...`
+                  chatContextId()
+                    ? `Message agent ${chatContextId()}...`
                     : "Type a task or issue key..."
                 }
               />

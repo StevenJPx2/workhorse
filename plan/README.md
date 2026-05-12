@@ -43,6 +43,9 @@ packages/core/src/
 | [13](./13-idle-steering.md) | Idle Steering & Plugin Hooks | Steps 9, 11, 12 | — | `workflow/orchestrator/steering/` |
 | [14](./14-cli.md) | CLI | Steps 0–13 | `commander`, `picocolors`, `ora` | `packages/cli/` |
 | [15](./15-tui.md) | TUI | Steps 0–14 | `ink`, `react`, `zustand` | `packages/tui/` |
+| [16](./16-consolidate-spawn-logic.md) | Consolidate Spawn Logic | Steps 9, 15 | — | `workflow/orchestrator/` |
+| [17](./17-steering-rule-class.md) | Steering Rule Class | Step 13 | — | `workflow/orchestrator/steering/` |
+| [18](./18-plugin-skills.md) | Plugin Skills | Steps 4, 8, 9 | — | `workflow/orchestrator/`, `plugins/*/skills/` |
 
 ## Key Decisions
 

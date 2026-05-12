@@ -8,7 +8,7 @@
  */
 
 import { type ModelInfo, ModelRegistry } from "@jiratown/core";
-import { AuthStorage, ModelRegistry as PiModelRegistry } from "@mariozechner/pi-coding-agent";
+import { AuthStorage, ModelRegistry as PiModelRegistry } from "@earendil-works/pi-coding-agent";
 
 type Model = ReturnType<PiModelRegistry["getAll"]>[number];
 

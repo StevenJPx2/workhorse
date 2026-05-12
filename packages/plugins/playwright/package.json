@@ -11,7 +11,9 @@
 			"import": "./dist/index.js"
 		}
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "vite build",
 		"test": "vitest run",
@@ -20,15 +22,15 @@
 	},
 	"dependencies": {
 		"@jiratown/core": "workspace:*",
-		"playwright": "^1.52.0",
-		"zod": "^4"
+		"playwright": "^1.60.0",
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"typescript": "^5",
-		"vite": "^8.0.10",
-		"vite-plugin-dts": "^4.5.4",
-		"vitest": "^4.1.4"
+		"typescript": "^6.0.3",
+		"vite": "^8.0.12",
+		"vite-plugin-dts": "^5.0.0",
+		"vitest": "^4.1.6"
 	},
 	"peerDependencies": {
 		"@jiratown/core": "workspace:*"

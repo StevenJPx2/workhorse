@@ -92,18 +92,20 @@ export function copyTreeSitterAssets(tuiDir: string, outdir: string): void {
 export function copyDrizzleMigrations(root: string, outdir: string): void {
   const src = resolve(root, "packages/core/drizzle");
   if (!existsSync(src)) return;
-  copyDirRecursive(src, resolve(outdir, "drizzle"));
-  console.log("  ✓ Copied drizzle migrations");
-}
 
-function copyDirRecursive(srcDir: string, destDir: string): void {
-  if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
-  for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
-    const srcPath = resolve(srcDir, entry.name);
-    const destPath = resolve(destDir, entry.name);
-    if (entry.isDirectory()) copyDirRecursive(srcPath, destPath);
-    else copyFileSync(srcPath, destPath);
-  }
+  // oxlint-disable-next-line no-single-reference-function -- recursive function
+  const copyDir = (srcDir: string, destDir: string): void => {
+    if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+    for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+      const srcPath = resolve(srcDir, entry.name);
+      const destPath = resolve(destDir, entry.name);
+      if (entry.isDirectory()) copyDir(srcPath, destPath);
+      else copyFileSync(srcPath, destPath);
+    }
+  };
+
+  copyDir(src, resolve(outdir, "drizzle"));
+  console.log("  ✓ Copied drizzle migrations");
 }
 
 export const formatDuration = (ms: number): string =>

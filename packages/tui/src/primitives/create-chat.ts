@@ -139,10 +139,8 @@ export function createChat(issueId: Accessor<string | null>) {
       return;
     }
 
-    // Send to agent (only if running)
-    try {
-      await adapter.sendMessage(content);
-    } catch (err) {
+    // Send to agent (fire-and-forget - responses stream via agent.output hook)
+    adapter.sendMessage(content).catch((err) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -152,7 +150,7 @@ export function createChat(issueId: Accessor<string | null>) {
           timestamp: new Date(),
         },
       ]);
-    }
+    });
   };
 
   return { messages, send };

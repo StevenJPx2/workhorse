@@ -27,7 +27,7 @@ export default defineConfig({
         // Workspace dependencies
         "@jiratown/core",
         // External dependencies
-        "@mariozechner/pi-coding-agent",
+        "@earendil-works/pi-coding-agent",
         "typebox",
       ],
     },

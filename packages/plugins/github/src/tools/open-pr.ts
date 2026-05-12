@@ -49,11 +49,40 @@ export function createOpenPRTool(
         }
 
         const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
-        const owner = metadata.owner as string | undefined;
-        const repo = metadata.repo as string | undefined;
+        let owner = metadata.owner as string | undefined;
+        let repo = metadata.repo as string | undefined;
+
+        // If owner/repo not in metadata, derive from git remote
+        if (!owner || !repo) {
+          const remoteProc = Bun.spawn(["git", "remote", "get-url", "origin"], {
+            cwd: ctx.worktreePath,
+            stdout: "pipe",
+            stderr: "pipe",
+          });
+          const [remoteOut, , remoteExit] = await Promise.all([
+            new Response(remoteProc.stdout).text(),
+            new Response(remoteProc.stderr).text(),
+            remoteProc.exited,
+          ]);
+
+          if (remoteExit === 0) {
+            const remoteUrl = remoteOut.trim();
+            // Parse GitHub URL: https://github.com/owner/repo.git or git@github.com:owner/repo.git
+            const match =
+              remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/) ??
+              remoteUrl.match(/github\.com[/:]([^/]+)\/([^/]+)$/);
+            if (match) {
+              owner = match[1];
+              repo = match[2];
+            }
+          }
+        }
 
         if (!owner || !repo) {
-          return { success: false, error: "Issue does not have GitHub owner/repo metadata" };
+          return {
+            success: false,
+            error: "Could not determine GitHub owner/repo from issue metadata or git remote",
+          };
         }
 
         // Get current branch name from worktree
