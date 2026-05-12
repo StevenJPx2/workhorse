@@ -12,6 +12,7 @@
     "build": "bun run --filter '*' build",
     "build:plugins": "bun scripts/build-plugins.ts",
     "build:tui": "bun scripts/build-tui.ts",
+    "build:tui:prod": "bun scripts/build-tui.ts --minify --no-sourcemap",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "oxlint . --ignore-pattern 'packages/tui-worktrees/**'",
     "lint:fix": "oxlint . --fix",

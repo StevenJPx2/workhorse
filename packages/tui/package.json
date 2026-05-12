@@ -14,7 +14,8 @@
     "access": "public"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.map"
   ],
   "main": "./dist/workhorse.js",
   "bin": {
@@ -27,7 +28,7 @@
   },
   "scripts": {
     "build": "bun ../../scripts/build-tui.ts",
-    "build:prod": "bun ../../scripts/build-tui.ts --minify",
+    "build:prod": "bun ../../scripts/build-tui.ts --minify --no-sourcemap",
     "dev": "bun src/index.tsx",
     "preview": "bun dist/workhorse.js",
     "test": "vitest run",

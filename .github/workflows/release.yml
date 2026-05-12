@@ -47,7 +47,7 @@ jobs:
         run: bun run build:plugins
 
       - name: Build TUI
-        run: bun run build:tui
+        run: bun run build:tui:prod
 
       - name: Create Release Pull Request or Publish
         id: changesets
@@ -59,7 +59,7 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload TUI binary to GitHub Release
@@ -69,7 +69,7 @@ jobs:
           script: |
             const fs = require('fs');
             const publishedPackages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
-            const tuiPkg = publishedPackages.find(p => p.name === 'workhorse');
+            const tuiPkg = publishedPackages.find(p => p.name === '@fdcn/workhorse');
             if (!tuiPkg) { console.log('TUI not published this run, skipping.'); return; }
 
             const tagName = `workhorse@${tuiPkg.version}`;

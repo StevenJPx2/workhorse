@@ -84,6 +84,7 @@ const { values } = parseArgs({
     help: { type: "boolean", short: "h" },
     minify: { type: "boolean", short: "m", default: false },
     sourcemap: { type: "boolean", short: "s", default: true },
+    "no-sourcemap": { type: "boolean", default: false },
   },
 });
 
@@ -103,7 +104,7 @@ Examples:
   process.exit(0);
 }
 
-build(values.minify ?? false, values.sourcemap ?? true).catch((e) => {
+build(values.minify ?? false, values["no-sourcemap"] ? false : (values.sourcemap ?? true)).catch((e) => {
   console.error("Build failed:", e);
   process.exit(1);
 });
