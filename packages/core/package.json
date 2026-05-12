@@ -1,6 +1,6 @@
 {
   "name": "workhorse-core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Core library for Workhorse - runtime-agnostic utilities including keychain credential management",
   "type": "module",
   "license": "MIT",
