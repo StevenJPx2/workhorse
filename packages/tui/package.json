@@ -1,6 +1,6 @@
 {
   "name": "@jiratown/tui",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Terminal UI for Jiratown - AI-powered Jira issue resolver",
   "type": "module",
   "license": "MIT",
