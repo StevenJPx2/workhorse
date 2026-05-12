@@ -1,8 +1,8 @@
 import { createSignal, createMemo, onMount } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
-import { PiAdapterModelRegistry } from "@jiratown/plugin-pi-adapter";
 import { getTheme } from "../../theme.ts";
 import { ui } from "../../state/ui.ts";
+import { useJiratownContext } from "../../context/jiratown.tsx";
 import { useModelSelectorKeyboard } from "./use-keyboard-nav.ts";
 
 interface ModelSelectorModalProps {
@@ -11,11 +11,10 @@ interface ModelSelectorModalProps {
   onClose: () => void;
 }
 
-const registry = PiAdapterModelRegistry.getInstance();
-
 /** Modal for selecting the AI model to use. */
 export function ModelSelectorModal(props: ModelSelectorModalProps) {
   const theme = getTheme();
+  const { orchestrator } = useJiratownContext();
   const dimensions = useTerminalDimensions();
 
   const [searchQuery, setSearchQuery] = createSignal("");
@@ -26,7 +25,7 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
     setTimeout(() => setIsSearchFocused(true), 0);
   });
 
-  const allModels = createMemo(() => registry.getAll());
+  const allModels = createMemo(() => orchestrator.getAllModels());
 
   const filteredModels = createMemo(() => {
     const query = searchQuery().toLowerCase().trim();
