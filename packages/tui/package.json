@@ -1,6 +1,6 @@
 {
   "name": "workhorse",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Terminal UI for Workhorse - AI-powered issue resolver",
   "type": "module",
   "license": "MIT",
