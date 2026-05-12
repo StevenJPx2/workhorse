@@ -4,11 +4,11 @@
  * @module plugins/builtin/tools/plugin
  */
 
-// oxlint-disable-next-line jiratown/prefer-path-alias -- Vite build doesn't resolve path aliases
+// oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
 import { createLocalParserOptions } from "./tools/parser.ts";
 import { acknowledgeTool, escalateTool, updateStatusTool } from "./tools/definitions.ts";
-import { jiratownToolRenderer } from "./renderers.ts";
+import { workhorseToolRenderer } from "./renderers.ts";
 
 export const corePlugin = definePlugin({
   manifest: {
@@ -32,7 +32,7 @@ export const corePlugin = definePlugin({
     // Register Jiratown tool renderers with TUI (if TUI plugin is loaded)
     ctx.hooks.emit("tui.register_renderer", {
       id: "jiratown-tools",
-      renderer: jiratownToolRenderer,
+      renderer: workhorseToolRenderer,
     });
   },
 });

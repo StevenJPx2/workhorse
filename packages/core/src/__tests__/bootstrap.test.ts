@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test helper
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test helper
 function writeTempToml(dir: string, content: string): void {
   writeFileSync(join(dir, ".jiratown.toml"), content, "utf-8");
 }

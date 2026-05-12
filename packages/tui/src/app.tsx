@@ -1,6 +1,6 @@
 import { Match, Switch, Show, onMount } from "solid-js";
 import type {
-  JiratownConfig,
+  WorkhorseConfig,
   ConfigPaths,
   HookEmitter,
   MemoryService,
@@ -8,8 +8,8 @@ import type {
   Tracker,
   HarnessOrchestrator,
   Issue,
-} from "@stevenjpx2/jiratown-core";
-import { JiratownProvider } from "./context/jiratown.tsx";
+} from "workhorse-core";
+import { WorkhorseProvider } from "./context/workhorse.tsx";
 import { Overview, Agent, Help } from "./screens";
 import {
   SpawnModal,
@@ -24,7 +24,7 @@ import { ui } from "./state/ui.ts";
 import { logError } from "./state/error-log.ts";
 
 interface AppProps {
-  config: JiratownConfig;
+  config: WorkhorseConfig;
   paths: ConfigPaths;
   hooks: HookEmitter;
   memory: MemoryService;
@@ -70,7 +70,7 @@ export function App(props: AppProps) {
   const currentModel = () => ui.selectedModel() || props.config.agent.model || "";
 
   return (
-    <JiratownProvider
+    <WorkhorseProvider
       value={{
         config: props.config,
         paths: props.paths,
@@ -131,6 +131,6 @@ export function App(props: AppProps) {
         {/* Toast notifications */}
         <ToastContainer />
       </box>
-    </JiratownProvider>
+    </WorkhorseProvider>
   );
 }

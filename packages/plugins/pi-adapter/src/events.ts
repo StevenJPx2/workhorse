@@ -16,7 +16,7 @@ import type {
   MemoryService,
   OrchestratorTool,
   ToolExecutionContext,
-} from "@stevenjpx2/jiratown-core";
+} from "workhorse-core";
 
 export interface EventHandlerContext {
   issueId: string;

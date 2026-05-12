@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/tools
  */
 
-import type { Database, OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { Database, OrchestratorTool } from "workhorse-core";
 import type { GitHubClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment";
 import { createGetPRStatusTool } from "./get-pr-status";

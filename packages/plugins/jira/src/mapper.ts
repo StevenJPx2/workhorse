@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-jira/mapper
  */
 
-import type { IssueSource, IssueType, ParsedIssue } from "@stevenjpx2/jiratown-core";
+import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
 import type { JiraComment, JiraIssue } from "./types.ts";
 
 /** Map a Jira issue to the generic ParsedIssue format */

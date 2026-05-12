@@ -6,7 +6,7 @@
  * @module @stevenjpx2/jiratown-plugin-playwright/prompt
  */
 
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 
 /** Context for prompt.building hook */
 interface PromptBuildingContext {
@@ -25,7 +25,7 @@ interface PromptBuildingContext {
  *
  * Adds Playwright workflow guidance to agent prompts.
  */
-export function registerPlaywrightPromptHooks(ctx: JiratownContext): void {
+export function registerPlaywrightPromptHooks(ctx: WorkhorseContext): void {
   // Add Playwright workflow guidance when building prompts
   ctx.hooks.on(
     "prompt.building",

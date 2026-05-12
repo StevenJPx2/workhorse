@@ -1,7 +1,7 @@
 /** HarnessOrchestrator - Registry/factory for agent adapters. @module workflow/orchestrator/orchestrator */
 
 import type { Emitter } from "mitt";
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { Database } from "#db/database";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
@@ -25,7 +25,7 @@ export class HarnessOrchestrator {
     readonly db: Database,
     readonly hooks: Emitter<HookEventMap>,
     readonly memory: MemoryService,
-    readonly config: Readonly<JiratownConfig>,
+    readonly config: Readonly<WorkhorseConfig>,
   ) {}
 
   /** Register an adapter class. Plugins call this during setup. */

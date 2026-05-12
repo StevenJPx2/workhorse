@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import type { Database, MonitorContext } from "@stevenjpx2/jiratown-core";
+import type { Database, MonitorContext } from "workhorse-core";
 import type { GitHubClient } from "../client.ts";
 import { createGitHubPRMonitor } from "../monitor.ts";
 

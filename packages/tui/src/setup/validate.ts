@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import {
-  type JiratownConfig,
+  type WorkhorseConfig,
   mergeConfigs,
   parseTomlFile,
   writeTomlFile,
   DEFAULT_CONFIG,
-} from "@stevenjpx2/jiratown-core";
+} from "workhorse-core";
 import type { SetupPluginConfig } from "../screens/setup";
 
 /**
@@ -67,7 +67,7 @@ export const PLUGIN_REQUIREMENTS: PluginConfigRequirement[] = [
 export function loadExistingConfig(
   globalConfigPath: string,
   projectConfigPath: string,
-): JiratownConfig {
+): WorkhorseConfig {
   return mergeConfigs(
     DEFAULT_CONFIG,
     parseTomlFile(globalConfigPath),
@@ -78,7 +78,7 @@ export function loadExistingConfig(
 /**
  * Save plugin config to a TOML file.
  */
-export function savePluginConfig(configPath: string, newConfig: Partial<JiratownConfig>): void {
+export function savePluginConfig(configPath: string, newConfig: Partial<WorkhorseConfig>): void {
   // Ensure directory exists
   const dir = dirname(configPath);
   if (!existsSync(dir)) {
@@ -97,7 +97,7 @@ export function savePluginConfig(configPath: string, newConfig: Partial<Jiratown
  * @returns Array of plugins that need configuration, or empty array if all good.
  */
 export function getPluginsNeedingSetup(
-  existingConfig: JiratownConfig,
+  existingConfig: WorkhorseConfig,
   requirements: PluginConfigRequirement[] = PLUGIN_REQUIREMENTS,
 ): SetupPluginConfig[] {
   const needsSetup: SetupPluginConfig[] = [];
@@ -131,7 +131,7 @@ export function getPluginsNeedingSetup(
  */
 export function setupValuesToConfig(
   values: Record<string, Record<string, string>>,
-): Partial<JiratownConfig> {
+): Partial<WorkhorseConfig> {
   const plugins: Record<string, unknown> = {};
 
   for (const [pluginName, fields] of Object.entries(values)) {

@@ -1,8 +1,8 @@
-describe("jiratownConfigSchema", () => {
+describe("workhorseConfigSchema", () => {
   it("validates a complete config", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code", model: "opus-4" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: { custom: "Be helpful" },
@@ -14,9 +14,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("allows any string as harness", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "custom-harness" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
@@ -28,9 +28,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("allows passthrough for plugin-specific keys", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "opencode" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
@@ -52,9 +52,9 @@ describe("jiratownConfigSchema", () => {
   // ── Failure cases ──────────────────────────────────────────────────────────
 
   it("rejects negative pollInterval", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: true, pollInterval: -1000 },
       prompt: {},
@@ -66,9 +66,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects zero pollInterval", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: true, pollInterval: 0 },
       prompt: {},
@@ -80,9 +80,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects non-integer pollInterval", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: true, pollInterval: 30000.5 },
       prompt: {},
@@ -94,9 +94,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects non-boolean autoResume", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: "yes", pollInterval: 30000 },
       prompt: {},
@@ -108,9 +108,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects non-array plugins.disabled", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
@@ -122,9 +122,9 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects invalid steering config values", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
+    const { workhorseConfigSchema } = await import("../schema.ts");
 
-    const result = jiratownConfigSchema.safeParse({
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "claude-code" },
       behavior: { autoResume: true, pollInterval: 30000 },
       prompt: {},
@@ -137,8 +137,8 @@ describe("jiratownConfigSchema", () => {
   });
 
   it("rejects unknown harness names", async () => {
-    const { jiratownConfigSchema } = await import("../schema.ts");
-    const result = jiratownConfigSchema.safeParse({
+    const { workhorseConfigSchema } = await import("../schema.ts");
+    const result = workhorseConfigSchema.safeParse({
       agent: { harness: "unknown-harness-xyz" },
     });
     expect(result.success).toBe(false);

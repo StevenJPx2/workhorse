@@ -1,6 +1,6 @@
 import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
-import type { AgentAdapter, AgentState } from "@stevenjpx2/jiratown-core";
-import { useJiratownContext } from "../context/jiratown.tsx";
+import type { AgentAdapter, AgentState } from "workhorse-core";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 
 /**
  * Reactive primitive that tracks all agents and their states.
@@ -10,7 +10,7 @@ export function createAgents(): {
   agents: Accessor<AgentAdapter[]>;
   getState: (issueId: string | null) => AgentState | null;
 } {
-  const { orchestrator, hooks } = useJiratownContext();
+  const { orchestrator, hooks } = useWorkhorseContext();
 
   // Version counter to force re-computation on state changes
   const [version, setVersion] = createSignal(0);

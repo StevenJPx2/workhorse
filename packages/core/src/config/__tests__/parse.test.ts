@@ -141,7 +141,7 @@ describe("edge cases and error handling", () => {
 
   it.fails("TODO: parseTomlFile should validate against schema", async () => {
     // Currently parseTomlFile just parses TOML without schema validation.
-    // Future enhancement: validate against jiratownConfigSchema and throw
+    // Future enhancement: validate against workhorseConfigSchema and throw
     // meaningful errors for invalid configurations.
     const { parseTomlFile } = await import("../parse.ts");
     const filePath = join(tmpDir, "invalid-schema.toml");

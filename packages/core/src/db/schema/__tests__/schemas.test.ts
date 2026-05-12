@@ -12,7 +12,7 @@ import {
   NotificationStatusSchema,
 } from "../index.ts";
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 function makeIssue(overrides?: Partial<Issue>): Issue {
   return {
     id: "abc-123",
@@ -33,7 +33,7 @@ function makeIssue(overrides?: Partial<Issue>): Issue {
   };
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 function makeNotification(overrides?: Partial<Notification>): Notification {
   return {
     id: "notif-1",
@@ -52,7 +52,7 @@ function makeNotification(overrides?: Partial<Notification>): Notification {
   };
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 function makeEvent(overrides?: Partial<IssueEvent>): IssueEvent {
   return {
     id: "evt-1",

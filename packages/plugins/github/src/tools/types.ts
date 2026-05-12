@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/tools/types
  */
 
-import type { HookEventMap } from "@stevenjpx2/jiratown-core";
+import type { HookEventMap } from "workhorse-core";
 
 /** Monitor service interface (subset we need) */
 export interface MonitorServiceLike {

@@ -9,7 +9,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/parser
  */
 
-import type { IssueParserOptions } from "@stevenjpx2/jiratown-core";
+import type { IssueParserOptions } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 import { mapGitHubToIssue } from "./mapper.ts";
 import type { GitHubRef } from "./types.ts";

@@ -1,10 +1,10 @@
-import type { AgentAdapter } from "@stevenjpx2/jiratown-core";
+import type { AgentAdapter } from "workhorse-core";
 import { createMemo, For, Show } from "solid-js";
 import { createAgents } from "../primitives/create-agents.ts";
 import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
 import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
-import { JiratownStatus } from "./jiratown-status.tsx";
+import { WorkhorseStatus } from "./workhorse-status.tsx";
 
 interface AgentListProps {
   onSelect: (agent: AgentAdapter) => void;
@@ -106,7 +106,7 @@ export function AgentList(props: AgentListProps) {
                   </text>
                 </box>
                 <box paddingLeft={2} flexDirection="row">
-                  <JiratownStatus status={getStatus(agent.issue.externalId)} compact />
+                  <WorkhorseStatus status={getStatus(agent.issue.externalId)} compact />
                   <Show when={agent.model}>
                     <text fg={theme.colors.dim}>
                       {" · "}

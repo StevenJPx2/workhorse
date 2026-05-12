@@ -6,11 +6,11 @@
  * @module @stevenjpx2/jiratown-plugin-jira/prompt
  */
 
-import type { JiratownContext, PromptContextBlock } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Register prompt enrichment hooks */
-export function registerPromptHooks(ctx: JiratownContext, client: AtlassianClient): void {
+export function registerPromptHooks(ctx: WorkhorseContext, client: AtlassianClient): void {
   ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
     const issue = await ctx.db.issues.getById(issueId);
     if (!issue || issue.source !== "jira") return;

@@ -1,7 +1,7 @@
-import type { AgentAdapter, Issue } from "@stevenjpx2/jiratown-core";
+import type { AgentAdapter, Issue } from "workhorse-core";
 import { createMemo, createSignal } from "solid-js";
 import { AgentList, IssueList, StatusBar } from "../../components";
-import { useJiratownContext } from "../../context/jiratown.tsx";
+import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { createChat } from "../../primitives";
 import { createAgents } from "../../primitives/create-agents.ts";
 import { createIssues } from "../../primitives/create-issues.ts";
@@ -15,13 +15,13 @@ import { useOverviewBindings } from "./use-overview-bindings.ts";
  */
 export function Overview() {
   const theme = getTheme();
-  const { paths, tracker, orchestrator } = useJiratownContext();
+  const { paths, tracker, orchestrator } = useWorkhorseContext();
   const [issueIndex, setIssueIndex] = createSignal(0);
   const [agentIndex, setAgentIndex] = createSignal(0);
   const { agents } = createAgents();
 
   // Derive selected agent ID from the currently highlighted agent in the agents list
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const selectedAgentId = createMemo(() =>
     agents().length > 0 && agentIndex() >= 0 && agentIndex() < agents().length
       ? (agents()[agentIndex()]?.issueId ?? null)
@@ -30,13 +30,13 @@ export function Overview() {
 
   // Determine which context to use based on lastFocusedList
   // If agents list was last focused, use selected agent ID; otherwise null (spawn mode)
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const chatContextId = createMemo(() =>
     ui.lastFocusedList() === "agents" ? selectedAgentId() : null,
   );
 
   const { messages, send } = createChat(chatContextId);
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const issues = createIssues();
 
   /**

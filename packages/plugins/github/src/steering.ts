@@ -4,12 +4,12 @@
  * Provides idle-agent reminders for GitHub-specific workflows.
  */
 
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 
 /**
  * Register GitHub-specific steering rules.
  */
-export function registerGitHubSteering(ctx: JiratownContext): void {
+export function registerGitHubSteering(ctx: WorkhorseContext): void {
   // Remind to create PR after implementation
   ctx.orchestrator.registerSteeringRule({
     id: "github:create-pr",

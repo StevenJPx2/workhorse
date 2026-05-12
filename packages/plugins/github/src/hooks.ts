@@ -16,7 +16,7 @@
  *
  * @example
  * ```typescript
- * declare module "@stevenjpx2/jiratown-core" {
+ * declare module "workhorse-core" {
  *   interface HookEventMap extends GitHubPluginHooks {}
  * }
  * ```

@@ -4,11 +4,11 @@
  * @module @stevenjpx2/jiratown-plugin-jira/sync
  */
 
-import type { IssueStatus, JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { IssueStatus, WorkhorseContext } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Register status sync hook */
-export function registerStatusSync(ctx: JiratownContext, client: AtlassianClient): void {
+export function registerStatusSync(ctx: WorkhorseContext, client: AtlassianClient): void {
   const statusMapping: Record<IssueStatus, string> = {
     pending: "To Do",
     queued: "To Do",

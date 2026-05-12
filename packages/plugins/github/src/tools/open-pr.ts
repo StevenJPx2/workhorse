@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/tools/open-pr
  */
 
-import type { Database, OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { Database, OrchestratorTool } from "workhorse-core";
 import type { GitHubClient } from "../client";
 import type { PROpeningContext } from "../hooks";
 import type { HooksEmitter, MonitorServiceLike } from "./types";

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
-import type { Database, JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { Database, WorkhorseContext } from "workhorse-core";
 import type { AtlassianClient } from "../client.ts";
 import { registerCrossPluginSync } from "../cross-plugin-sync.ts";
 
@@ -37,7 +37,7 @@ function createMockEmitter() {
 
 describe("registerCrossPluginSync", () => {
   let hooks: ReturnType<typeof createMockEmitter>;
-  let mockCtx: JiratownContext;
+  let mockCtx: WorkhorseContext;
   let mockClient: AtlassianClient;
   let mockDb: Database;
 
@@ -76,7 +76,7 @@ describe("registerCrossPluginSync", () => {
     mockCtx = {
       hooks,
       db: mockDb,
-    } as unknown as JiratownContext;
+    } as unknown as WorkhorseContext;
   });
 
   it("registers listener for github:pr.merged event", () => {

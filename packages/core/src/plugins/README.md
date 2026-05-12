@@ -20,7 +20,7 @@ export default definePlugin({
     },
   },
   setup(ctx) {
-    // ctx is the JiratownContext with hooks, config, paths
+    // ctx is the WorkhorseContext with hooks, config, paths
     ctx.hooks.on("issue.parsed", ({ issue }) => {
       console.log("Parsed:", issue.title);
     });

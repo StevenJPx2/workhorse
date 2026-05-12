@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@stevenjpx2/jiratown-core";
+import { definePlugin } from "workhorse-core";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter, jiraAuthProvider } from "./auth.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";

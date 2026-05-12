@@ -6,7 +6,7 @@
  * @module @stevenjpx2/jiratown-plugin-jira/parser
  */
 
-import type { IssueParserOptions } from "@stevenjpx2/jiratown-core";
+import type { IssueParserOptions } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraToIssue } from "./mapper.ts";
 

@@ -8,7 +8,7 @@
  */
 
 import { readdir } from "node:fs/promises";
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 import type { PlaywrightSessionManager } from "./session-manager.ts";
 
 /** Payload type for github:pr.opening event (mirrors PROpeningContext) */
@@ -34,7 +34,7 @@ interface PROpeningPayload {
  * Playwright-specific content (screenshots) to PRs.
  */
 export function registerPlaywrightCrossPluginSync(
-  ctx: JiratownContext,
+  ctx: WorkhorseContext,
   _sessionManager: PlaywrightSessionManager,
 ): void {
   // Listen for PR opening to contribute "Screenshots" section

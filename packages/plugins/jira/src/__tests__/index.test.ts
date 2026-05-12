@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { jiraPlugin, JiraConfigSchema } from "../index.ts";
-import { PluginSymbol } from "@stevenjpx2/jiratown-core";
+import { PluginSymbol } from "workhorse-core";
 
 describe("jiraPlugin", () => {
   it("is a valid Jiratown plugin", () => {

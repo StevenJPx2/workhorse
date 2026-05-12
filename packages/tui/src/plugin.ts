@@ -1,4 +1,4 @@
-import { definePlugin, useJiratown } from "@stevenjpx2/jiratown-core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 import {
   registerRenderer,
   type RegisterRendererPayload,
@@ -21,7 +21,7 @@ export default definePlugin({
     description: "Terminal UI for Jiratown",
   },
   setup() {
-    const { hooks } = useJiratown();
+    const { hooks } = useWorkhorse();
 
     // Register built-in renderer for agent notifications
     registerRenderer("agent", agentRenderer);

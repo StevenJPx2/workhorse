@@ -6,7 +6,7 @@
  * @module @stevenjpx2/jiratown-plugin-jira/pr-contribution
  */
 
-import type { Database, JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { Database, WorkhorseContext } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Payload type for github:pr.opening event (mirrors PROpeningContext) */
@@ -30,7 +30,7 @@ interface PROpeningPayload {
  * Adds "Related Tickets" section to PRs with linked Jira issues.
  */
 export function registerPRContribution(
-  ctx: JiratownContext,
+  ctx: WorkhorseContext,
   client: AtlassianClient,
   db: Database,
 ): void {

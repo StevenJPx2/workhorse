@@ -10,7 +10,7 @@
  * @module @stevenjpx2/jiratown-plugin-jira/cross-plugin-sync
  */
 
-import type { Database, JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { Database, WorkhorseContext } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
 import "./hooks.ts";
@@ -36,7 +36,7 @@ interface PRMergedPayload {
  * Jira actions for workflow automation.
  */
 export function registerCrossPluginSync(
-  ctx: JiratownContext,
+  ctx: WorkhorseContext,
   client: AtlassianClient,
   db: Database,
 ): void {

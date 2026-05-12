@@ -3,5 +3,5 @@ export { deleteCredential, getCredential, storeCredential } from "./keychain.ts"
 export { loadConfig } from "./load.ts";
 export { configToToml, mergeConfigs, parseTomlFile, writeTomlFile } from "./parse.ts";
 export { resolveConfigPaths } from "./resolve.ts";
-export { jiratownConfigSchema } from "./schema.ts";
-export type { AgentHarness, ConfigPaths, DeepPartial, JiratownConfig } from "./types.ts";
+export { workhorseConfigSchema } from "./schema.ts";
+export type { AgentHarness, ConfigPaths, DeepPartial, WorkhorseConfig } from "./types.ts";

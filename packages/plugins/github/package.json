@@ -1,5 +1,5 @@
 {
-	"name": "@stevenjpx2/jiratown-plugin-github",
+	"name": "workhorse-plugin-github",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
@@ -21,7 +21,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@stevenjpx2/jiratown-core": "workspace:*",
+		"workhorse-core": "workspace:*",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
@@ -32,6 +32,6 @@
 		"vitest": "^4.1.6"
 	},
 	"peerDependencies": {
-		"@stevenjpx2/jiratown-core": "workspace:*"
+		"workhorse-core": "workspace:*"
 	}
 }

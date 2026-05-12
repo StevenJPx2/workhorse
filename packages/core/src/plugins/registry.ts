@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { useJiratown } from "#context";
+import { useWorkhorse } from "#context";
 import { type Plugin, PluginSymbol } from "./types.ts";
 
 /**
@@ -36,7 +36,7 @@ export class PluginRegistry {
    * Discover and load custom plugins from plugin directories.
    */
   async discoverCustomPlugins(): Promise<void> {
-    const { paths } = useJiratown();
+    const { paths } = useWorkhorse();
 
     await Promise.all([
       this.discover(join(dirname(paths.globalConfig), "plugins")),
@@ -81,7 +81,7 @@ export class PluginRegistry {
    */
   register(plugin: Plugin): void {
     const name = plugin.manifest.name;
-    const { config, hooks } = useJiratown();
+    const { config, hooks } = useWorkhorse();
 
     // Skip if plugin is disabled
     if (config.plugins.disabled?.includes(name)) {

@@ -10,13 +10,8 @@
 
 import { createRoot, createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import type {
-  AgentAdapter,
-  HookEmitter,
-  HarnessOrchestrator,
-  MemoryService,
-} from "@stevenjpx2/jiratown-core";
-import type { JiratownContextValue } from "../context/jiratown";
+import type { AgentAdapter, HookEmitter, HarnessOrchestrator, MemoryService } from "workhorse-core";
+import type { WorkhorseContextValue } from "../context/workhorse";
 
 /** Creates a mock hook emitter with working on/off/emit */
 function createMockHooks(): HookEmitter {
@@ -64,7 +59,7 @@ function createMockContext(
   hooks: HookEmitter,
   adapter?: AgentAdapter,
   issueId?: string,
-): JiratownContextValue {
+): WorkhorseContextValue {
   const orchestrator = {
     getAgent: vi.fn().mockImplementation((id: string) => {
       if (adapter && id === issueId) return adapter;
@@ -76,10 +71,10 @@ function createMockContext(
     hooks,
     orchestrator,
     memory: {} as MemoryService,
-    config: {} as JiratownContextValue["config"],
-    paths: {} as JiratownContextValue["paths"],
-    monitors: {} as JiratownContextValue["monitors"],
-    tracker: {} as JiratownContextValue["tracker"],
+    config: {} as WorkhorseContextValue["config"],
+    paths: {} as WorkhorseContextValue["paths"],
+    monitors: {} as WorkhorseContextValue["monitors"],
+    tracker: {} as WorkhorseContextValue["tracker"],
   };
 }
 
@@ -89,7 +84,7 @@ function createMockContext(
  */
 function createChatWithContext(
   issueId: () => string | null,
-  ctx: Pick<JiratownContextValue, "hooks" | "orchestrator">,
+  ctx: Pick<WorkhorseContextValue, "hooks" | "orchestrator">,
 ) {
   const [messages, setMessages] = createSignal<
     Array<{ id: string; role: "user" | "agent"; content: string; timestamp: Date }>

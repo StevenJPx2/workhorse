@@ -1,6 +1,6 @@
-import type { JiratownConfig } from "./types.ts";
+import type { WorkhorseConfig } from "./types.ts";
 
-export const DEFAULT_CONFIG: JiratownConfig = {
+export const DEFAULT_CONFIG: WorkhorseConfig = {
   agent: {
     harness: "pi-agent",
   },

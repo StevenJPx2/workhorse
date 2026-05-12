@@ -7,7 +7,7 @@
  * @module @stevenjpx2/jiratown-plugin-pi-adapter/registry
  */
 
-import { type ModelInfo, ModelRegistry } from "@stevenjpx2/jiratown-core";
+import { type ModelInfo, ModelRegistry } from "workhorse-core";
 import { AuthStorage, ModelRegistry as PiModelRegistry } from "@earendil-works/pi-coding-agent";
 
 type Model = ReturnType<PiModelRegistry["getAll"]>[number];

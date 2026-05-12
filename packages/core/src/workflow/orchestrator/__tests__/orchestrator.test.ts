@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { Issue } from "#db";
 import type { Database } from "#db/database";
 import type { HookEmitter } from "#lib/hooks";
@@ -36,7 +36,7 @@ function createMockDeps() {
     prompt: { custom: undefined },
     repo: { baseBranch: "main" },
     steering: { debounceMs: 1000, cooldownMs: 5000, maxReminders: 3 },
-  } as unknown as JiratownConfig;
+  } as unknown as WorkhorseConfig;
 
   return { db, hooks, memory, config };
 }

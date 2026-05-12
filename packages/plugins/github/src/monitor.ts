@@ -8,7 +8,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/monitor
  */
 
-import type { Database, MonitorOptions } from "@stevenjpx2/jiratown-core";
+import type { Database, MonitorOptions } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 // Import hooks types to enable module augmentation
 import "./hooks.ts";

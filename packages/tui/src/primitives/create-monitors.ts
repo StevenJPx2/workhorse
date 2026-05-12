@@ -4,7 +4,7 @@
  */
 
 import { createSignal, onCleanup, createEffect, type Accessor } from "solid-js";
-import type { MonitorStatus, MonitorService } from "@stevenjpx2/jiratown-core";
+import type { MonitorStatus, MonitorService } from "workhorse-core";
 
 export interface MonitorsState {
   monitors: MonitorStatus[];

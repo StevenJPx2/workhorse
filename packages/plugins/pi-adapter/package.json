@@ -1,5 +1,5 @@
 {
-  "name": "@stevenjpx2/jiratown-plugin-pi-adapter",
+  "name": "workhorse-plugin-pi-adapter",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@stevenjpx2/jiratown-core": "workspace:*",
+    "workhorse-core": "workspace:*",
     "@earendil-works/pi-coding-agent": "^0.74.0",
     "typebox": "^1.1.38"
   },

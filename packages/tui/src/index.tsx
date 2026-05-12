@@ -1,8 +1,8 @@
-import { bootstrap, resolveConfigPaths } from "@stevenjpx2/jiratown-core";
-import { githubPlugin } from "@stevenjpx2/jiratown-plugin-github";
-import { jiraPlugin } from "@stevenjpx2/jiratown-plugin-jira";
-import { piAdapterPlugin } from "@stevenjpx2/jiratown-plugin-pi-adapter";
-import { playwrightPlugin } from "@stevenjpx2/jiratown-plugin-playwright";
+import { bootstrap, resolveConfigPaths } from "workhorse-core";
+import { githubPlugin } from "workhorse-plugin-github";
+import { jiraPlugin } from "workhorse-plugin-jira";
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
+import { playwrightPlugin } from "workhorse-plugin-playwright";
 import { createCliRenderer } from "@opentui/core";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
@@ -97,10 +97,10 @@ export async function startTUI() {
 
   // Handle --list-models (needs bootstrap to register adapters first)
   if (args.listModels) {
-    const jiratown = await bootstrap({
+    const workhorse = await bootstrap({
       plugins: [piAdapterPlugin], // Only need adapter plugins to list models
     });
-    showModels(jiratown.orchestrator);
+    showModels(workhorse.orchestrator);
     process.exit(0);
   }
 
@@ -126,7 +126,7 @@ export async function startTUI() {
       ));
     }))
   ) {
-    console.log("Setup skipped. Please configure plugins manually in ~/.jiratown.toml");
+    console.log("Setup skipped. Please configure plugins manually in ~/.workhorse.toml");
     process.exit(1);
   }
 
@@ -150,8 +150,8 @@ export async function startTUI() {
     process.exit(1);
   }
 
-  // Bootstrap Jiratown with all plugins
-  const jiratown = await bootstrap({
+  // Bootstrap Workhorse with all plugins
+  const workhorse = await bootstrap({
     plugins: [
       tuiPlugin, // TUI plugin (renderer hooks)
       jiraPlugin, // Jira integration
@@ -164,19 +164,19 @@ export async function startTUI() {
   });
 
   // Initialize theme from config
-  setTheme(jiratown.config.ui.theme);
+  setTheme(workhorse.config.ui.theme);
 
   // Render the TUI
   await render(
     () => (
       <App
-        config={jiratown.config}
-        paths={jiratown.paths}
-        hooks={jiratown.hooks}
-        memory={jiratown.memory}
-        monitors={jiratown.monitors}
-        tracker={jiratown.tracker}
-        orchestrator={jiratown.orchestrator}
+        config={workhorse.config}
+        paths={workhorse.paths}
+        hooks={workhorse.hooks}
+        memory={workhorse.memory}
+        monitors={workhorse.monitors}
+        tracker={workhorse.tracker}
+        orchestrator={workhorse.orchestrator}
       />
     ),
     await createCliRenderer(),
@@ -184,7 +184,7 @@ export async function startTUI() {
 
   // Cleanup on exit
   process.on("SIGINT", async () => {
-    await jiratown.shutdown();
+    await workhorse.shutdown();
     process.exit(0);
   });
 }

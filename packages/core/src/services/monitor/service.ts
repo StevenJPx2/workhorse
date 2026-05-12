@@ -1,4 +1,4 @@
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { Monitor } from "./monitor.ts";
@@ -22,7 +22,7 @@ export class MonitorService {
   constructor(
     private readonly hooks: HookEmitter,
     private readonly memory: MemoryService,
-    private readonly config: Readonly<JiratownConfig>,
+    private readonly config: Readonly<WorkhorseConfig>,
   ) {}
 
   /**

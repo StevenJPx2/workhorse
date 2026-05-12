@@ -5,7 +5,7 @@
 
 import { createSignal, For, onCleanup } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
-import { startOAuthFlow, type OAuthProvider } from "@stevenjpx2/jiratown-core";
+import { startOAuthFlow, type OAuthProvider } from "workhorse-core";
 import { getTheme } from "../../theme.ts";
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
 import type { AuthFlowState, AuthScreenProps } from "./types.ts";

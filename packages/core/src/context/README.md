@@ -5,14 +5,14 @@ Async-safe dependency injection via `unctx` + `AsyncLocalStorage`.
 ## Usage
 
 ```typescript
-import { useJiratown, runWithContext } from "#context";
+import { useWorkhorse, runWithContext } from "#context";
 
 // Inside plugin setup or any code running in context:
-const { config, hooks } = useJiratown();
+const { config, hooks } = useWorkhorse();
 
 // To run code within context:
 runWithContext({ config, hooks }, async () => {
-  // useJiratown() works here
+  // useWorkhorse() works here
 });
 ```
 
@@ -20,16 +20,16 @@ runWithContext({ config, hooks }, async () => {
 
 | Function          | Description                                      |
 |-------------------|--------------------------------------------------|
-| `useJiratown()`   | Get context (throws if not in context)           |
-| `tryUseJiratown()`| Get context or `undefined`                       |
+| `useWorkhorse()`   | Get context (throws if not in context)           |
+| `tryUseWorkhorse()`| Get context or `undefined`                       |
 | `runWithContext()`| Execute function with context                    |
 | `setContext()`    | Set singleton context (testing only)             |
 | `unsetContext()`  | Clear singleton context (testing only)           |
 
-## JiratownContext
+## WorkhorseContext
 
 ```typescript
-interface JiratownContext {
+interface WorkhorseContext {
   readonly config: Config;
   readonly hooks: Emitter<HookEventMap>;
 }

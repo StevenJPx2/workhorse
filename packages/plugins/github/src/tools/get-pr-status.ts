@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/tools/get-pr-status
  */
 
-import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { OrchestratorTool } from "workhorse-core";
 import type { GitHubClient } from "../client";
 import type { PRStatusSummary } from "../types";
 

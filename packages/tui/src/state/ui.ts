@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import type { Issue } from "@stevenjpx2/jiratown-core";
+import type { Issue } from "workhorse-core";
 
 export type Screen = "overview" | "agent" | "help";
 export type Modal = "spawn" | "model" | "delete" | null;

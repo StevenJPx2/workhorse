@@ -1,11 +1,11 @@
 import z from "zod";
 
 /**
- * Zod schema for validating JiratownConfig.
+ * Zod schema for validating WorkhorseConfig.
  *
  * Use this to validate config files or programmatically created configs.
  */
-export const jiratownConfigSchema = z.object({
+export const workhorseConfigSchema = z.object({
   agent: z.object({
     harness: z.string().default("pi-agent"),
     model: z.string().optional(),

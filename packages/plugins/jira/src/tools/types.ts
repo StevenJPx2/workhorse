@@ -4,6 +4,6 @@
  * @module @stevenjpx2/jiratown-plugin-jira/tools/types
  */
 
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 
-export type Hooks = JiratownContext["hooks"];
+export type Hooks = WorkhorseContext["hooks"];

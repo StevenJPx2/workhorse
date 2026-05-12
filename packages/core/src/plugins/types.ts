@@ -1,5 +1,5 @@
 import z from "zod";
-import type { JiratownContext } from "#context";
+import type { WorkhorseContext } from "#context";
 import type { AuthProvider } from "../auth/types.ts";
 
 /**
@@ -56,7 +56,7 @@ export type PluginOptions<TConfig = void> = {
        * No config schema provided.
        * Setup function receives the Jiratown context.
        */
-      setup: (ctx: JiratownContext) => void | Promise<void>;
+      setup: (ctx: WorkhorseContext) => void | Promise<void>;
     }
   | {
       /**
@@ -69,14 +69,14 @@ export type PluginOptions<TConfig = void> = {
        * Config schema provided.
        * Setup function receives the Jiratown context and validated config.
        */
-      setup: (ctx: JiratownContext, config: TConfig) => void | Promise<void>;
+      setup: (ctx: WorkhorseContext, config: TConfig) => void | Promise<void>;
     }
 );
 
 /**
  * Unique symbol to identify Jiratown plugins.
  */
-export const PluginSymbol = Symbol.for("jiratown.plugin");
+export const PluginSymbol = Symbol.for("workhorse.plugin");
 
 /**
  * Plugin interface — the wrapped plugin object.

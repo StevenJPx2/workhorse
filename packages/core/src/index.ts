@@ -1,7 +1,7 @@
-// @stevenjpx2/jiratown-core — main entry point
+// workhorse-core — main entry point
 
 export * from "#config";
-export { type JiratownContext, runWithContext, tryUseJiratown, useJiratown } from "#context";
+export { type WorkhorseContext, runWithContext, tryUseWorkhorse, useWorkhorse } from "#context";
 export type {
   Issue,
   IssueEvent,

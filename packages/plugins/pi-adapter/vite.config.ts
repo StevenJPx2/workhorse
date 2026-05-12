@@ -25,7 +25,7 @@ export default defineConfig({
         // Node builtins
         /^node:/,
         // Workspace dependencies
-        "@stevenjpx2/jiratown-core",
+        "workhorse-core",
         // External dependencies
         "@earendil-works/pi-coding-agent",
         "typebox",

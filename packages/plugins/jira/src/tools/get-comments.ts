@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-jira/tools/get-comments
  */
 
-import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { OrchestratorTool } from "workhorse-core";
 import type { AtlassianClient } from "../client.ts";
 
 /** Tool: Get all comments from a Jira issue */

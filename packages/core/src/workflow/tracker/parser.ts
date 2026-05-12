@@ -1,4 +1,4 @@
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { Issue } from "#db";
 import type { MemoryService } from "#services/memory";
 import { type BuildPromptOptions, PromptEngineer } from "./engineer.ts";
@@ -41,7 +41,7 @@ export class IssueParser {
     readonly parse: (input: string) => Promise<ParsedIssue>,
 
     private readonly memory: MemoryService,
-    private readonly config: Readonly<JiratownConfig>,
+    private readonly config: Readonly<WorkhorseConfig>,
   ) {}
 
   /**
@@ -51,7 +51,7 @@ export class IssueParser {
   static from(
     options: IssueParserOptions,
     memory: MemoryService,
-    config: Readonly<JiratownConfig>,
+    config: Readonly<WorkhorseConfig>,
   ): IssueParser {
     return new IssueParser(options.source, options.canParse, options.parse, memory, config);
   }

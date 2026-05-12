@@ -4,7 +4,7 @@
  */
 
 import { createSignal } from "solid-js";
-import type { HookEmitter, Notification } from "@stevenjpx2/jiratown-core";
+import type { HookEmitter, Notification } from "workhorse-core";
 import type { ActivityItem } from "../primitives/activity-types.ts";
 
 export interface ActivityState {

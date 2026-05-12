@@ -4,7 +4,7 @@
  * Handles GitHub notifications in the unified activity renderer system.
  */
 
-import type { Notification } from "@stevenjpx2/jiratown-core";
+import type { Notification } from "workhorse-core";
 
 /**
  * Activity input type for the unified renderer system.

@@ -4,14 +4,14 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCredentials, saveCredentials, createCredentialGetter } from "../auth.ts";
-import * as keychain from "@stevenjpx2/jiratown-core";
+import * as keychain from "workhorse-core";
 
-vi.mock("@stevenjpx2/jiratown-core", () => ({
+vi.mock("workhorse-core", () => ({
   getCredential: vi.fn(),
   storeCredential: vi.fn(),
   deleteCredential: vi.fn(),
   // Re-export other things that might be needed
-  PluginSymbol: Symbol.for("jiratown.plugin"),
+  PluginSymbol: Symbol.for("workhorse.plugin"),
 }));
 
 beforeEach(() => {

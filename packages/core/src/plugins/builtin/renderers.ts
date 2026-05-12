@@ -29,7 +29,7 @@ interface RenderedActivity {
  * Handles core Jiratown tools (update_status, escalate, acknowledge).
  * Returns null for other inputs.
  */
-export function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
+export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
   if (!input.tool.startsWith("jiratown_")) return null;
 

@@ -4,8 +4,8 @@
  */
 
 import { createSignal, onMount, onCleanup, createEffect, type Accessor } from "solid-js";
-import type { IssueStatus, Issue } from "@stevenjpx2/jiratown-core";
-import { useJiratownContext } from "../context/jiratown.tsx";
+import type { IssueStatus, Issue } from "workhorse-core";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 
 export interface IssueStatusState {
   status: IssueStatus | null;
@@ -23,7 +23,7 @@ export interface CreateIssueStatusOptions {
  */
 export function createIssueStatus(options: CreateIssueStatusOptions) {
   const { issueId } = options;
-  const { tracker, hooks } = useJiratownContext();
+  const { tracker, hooks } = useWorkhorseContext();
 
   const [state, setState] = createSignal<IssueStatusState>({
     status: null,

@@ -6,7 +6,7 @@
  *
  * Uses Arctic for OAuth providers.
  *
- * @module @stevenjpx2/jiratown-core/auth
+ * @module workhorse-core/auth
  */
 
 /**

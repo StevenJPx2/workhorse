@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
@@ -20,7 +20,7 @@ const createMockMemory = () => ({
   },
 });
 
-const mockConfig: JiratownConfig = {
+const mockConfig: WorkhorseConfig = {
   agent: { harness: "claude-code" as const },
   behavior: { autoResume: true, pollInterval: 30000 },
   prompt: { custom: undefined },
@@ -337,7 +337,7 @@ describe("Tracker", () => {
     });
 
     it("includes custom instructions from config", async () => {
-      const customConfig: JiratownConfig = { ...mockConfig, prompt: { custom: "Best practices" } };
+      const customConfig: WorkhorseConfig = { ...mockConfig, prompt: { custom: "Best practices" } };
       const customTracker = new Tracker(
         db,
         hooks,

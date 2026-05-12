@@ -7,7 +7,7 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { EventController, IssueController, NotificationController } from "./controllers";
 import * as schema from "./schema";
 
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 function resolveMigrationsFolder(): string {
   const thisDir = dirname(fileURLToPath(import.meta.url));
   for (const dir of [

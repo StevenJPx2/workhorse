@@ -112,7 +112,7 @@ cloud_id = "company.atlassian.net"
 ## TypeScript Interface
 
 ```typescript
-interface JiratownConfig {
+interface WorkhorseConfig {
   agent: {
     harness: "opencode" | "claude-code";
     model?: string;
@@ -162,9 +162,9 @@ config.behavior.pollInterval  // 5000
 Config is validated with Zod. Invalid configs throw with helpful error messages:
 
 ```typescript
-import { jiratownConfigSchema } from "#config";
+import { workhorseConfigSchema } from "#config";
 
-const result = jiratownConfigSchema.safeParse(data);
+const result = workhorseConfigSchema.safeParse(data);
 if (!result.success) {
   console.error(result.error.issues);
 }
@@ -186,7 +186,7 @@ if (!result.success) {
 
 | Type/Schema | Description |
 |-------------|-------------|
-| `JiratownConfig` | Config interface |
+| `WorkhorseConfig` | Config interface |
 | `ConfigPaths` | Paths interface |
-| `jiratownConfigSchema` | Zod validation schema |
+| `workhorseConfigSchema` | Zod validation schema |
 | `defaultConfig` | Default config values |

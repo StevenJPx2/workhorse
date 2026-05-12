@@ -1,8 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createContext } from "unctx";
-import type { JiratownContext } from "./types.ts";
+import type { WorkhorseContext } from "./types.ts";
 
-const ctx = createContext<JiratownContext>({
+const ctx = createContext<WorkhorseContext>({
   asyncContext: true,
   AsyncLocalStorage,
 });
@@ -12,12 +12,12 @@ const ctx = createContext<JiratownContext>({
  *
  * @throws If called outside of a Jiratown context scope
  */
-export const useJiratown = ctx.use;
+export const useWorkhorse = ctx.use;
 
 /**
  * Get the current Jiratown context, or undefined if not in context.
  */
-export const tryUseJiratown = ctx.tryUse;
+export const tryUseWorkhorse = ctx.tryUse;
 
 /**
  * Run a function within a Jiratown context.
@@ -38,4 +38,4 @@ export const setContext = ctx.set;
 // fallow-ignore-next-line unused-exports
 export const unsetContext = ctx.unset;
 
-export type { JiratownContext } from "./types.ts";
+export type { WorkhorseContext } from "./types.ts";

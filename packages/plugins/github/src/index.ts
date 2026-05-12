@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@stevenjpx2/jiratown-core";
+import { definePlugin } from "workhorse-core";
 import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";

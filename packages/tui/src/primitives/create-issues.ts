@@ -1,13 +1,13 @@
 import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
-import type { Issue } from "@stevenjpx2/jiratown-core";
-import { useJiratownContext } from "../context/jiratown.tsx";
+import type { Issue } from "workhorse-core";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 
 /**
  * Reactive primitive that fetches and tracks all issues.
  * Automatically refreshes when issues are parsed, status changes, or agents are created.
  */
 export function createIssues(): Accessor<Issue[]> {
-  const { hooks, tracker } = useJiratownContext();
+  const { hooks, tracker } = useWorkhorseContext();
   const [issues, setIssues] = createSignal<Issue[]>([]);
 
   onMount(() => {

@@ -15,7 +15,7 @@ import noCascadingTernary from "./rules/no-cascading-ternary";
 
 const plugin = {
   meta: {
-    name: "eslint-plugin-jiratown",
+    name: "eslint-plugin-workhorse",
     version: "1.0.0",
   },
   rules: {

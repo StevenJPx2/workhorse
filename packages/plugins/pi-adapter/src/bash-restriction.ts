@@ -6,11 +6,7 @@
 
 import { tmpdir } from "node:os";
 import { resolve, normalize } from "node:path";
-import {
-  assertPathAllowed,
-  isPathAllowed,
-  type PathValidationOptions,
-} from "@stevenjpx2/jiratown-core";
+import { assertPathAllowed, isPathAllowed, type PathValidationOptions } from "workhorse-core";
 import {
   createLocalBashOperations,
   type BashOperations,

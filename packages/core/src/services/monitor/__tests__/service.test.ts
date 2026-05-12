@@ -1,6 +1,6 @@
 import mitt from "mitt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { MonitorService } from "../service.ts";
@@ -10,13 +10,13 @@ describe("MonitorService", () => {
   let service: MonitorService;
   let hooks: ReturnType<typeof mitt<HookEventMap>>;
   let memory: MemoryService;
-  let config: JiratownConfig;
+  let config: WorkhorseConfig;
 
   beforeEach(() => {
     vi.useFakeTimers();
     hooks = mitt<HookEventMap>();
     memory = {} as MemoryService;
-    config = { behavior: { pollInterval: 1000 } } as JiratownConfig;
+    config = { behavior: { pollInterval: 1000 } } as WorkhorseConfig;
     service = new MonitorService(hooks, memory, config);
   });
 

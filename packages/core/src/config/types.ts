@@ -1,10 +1,10 @@
 import type { z } from "zod";
-import type { jiratownConfigSchema } from "./schema.ts";
+import type { workhorseConfigSchema } from "./schema.ts";
 
 export type AgentHarness = string;
 
 /** Jiratown configuration derived from the Zod schema */
-export type JiratownConfig = z.infer<typeof jiratownConfigSchema>;
+export type WorkhorseConfig = z.infer<typeof workhorseConfigSchema>;
 
 /** Deep partial type - makes all nested properties optional */
 export type DeepPartial<T> = T extends object

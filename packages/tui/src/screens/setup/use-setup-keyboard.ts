@@ -41,9 +41,9 @@ export function useSetupKeyboard(options: UseSetupKeyboardOptions) {
     onSkip,
   } = options;
 
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const currentPlugin = () => plugins[currentPluginIndex()];
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const currentField = () => currentPlugin()?.fields[currentFieldIndex()];
 
   const hasRequiredMissing = () => {

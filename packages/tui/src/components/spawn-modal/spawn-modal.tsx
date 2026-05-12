@@ -1,8 +1,8 @@
 import { createSignal, createMemo } from "solid-js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
-import type { AdapterInfo } from "@stevenjpx2/jiratown-core";
+import type { AdapterInfo } from "workhorse-core";
 import { getTheme } from "../../theme.ts";
-import { useJiratownContext } from "../../context/jiratown.tsx";
+import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { ui } from "../../state/ui.ts";
 import { HarnessList } from "./harness-list.tsx";
 import type { SpawnModalProps } from "./types.ts";
@@ -10,7 +10,7 @@ import type { SpawnModalProps } from "./types.ts";
 /** Modal for configuring and spawning an agent for an issue. */
 export function SpawnModal(props: SpawnModalProps) {
   const theme = getTheme();
-  const { orchestrator } = useJiratownContext();
+  const { orchestrator } = useWorkhorseContext();
   const dimensions = useTerminalDimensions();
 
   const harnessOptions = createMemo<AdapterInfo[]>(() => {

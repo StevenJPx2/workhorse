@@ -6,7 +6,7 @@
 
 import type { Issue, IssueEvent, Notification } from "#db";
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 export function makeIssueInput(
   overrides?: Partial<Omit<Issue, "id" | "createdAt" | "updatedAt">>,
 ): Omit<Issue, "id" | "createdAt" | "updatedAt"> {
@@ -26,7 +26,7 @@ export function makeIssueInput(
   };
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 export function makeEventInput(
   overrides?: Partial<Omit<IssueEvent, "id" | "createdAt">>,
 ): Omit<IssueEvent, "id" | "createdAt"> {
@@ -39,7 +39,7 @@ export function makeEventInput(
   };
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function -- test factory
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 export function makeNotificationInput(
   overrides?: Partial<
     Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status">

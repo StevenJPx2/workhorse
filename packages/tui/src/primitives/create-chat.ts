@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onMount, onCleanup, type Accessor } from "solid-js";
-import { useJiratownContext } from "../context/jiratown.tsx";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 
 /**
  * A message in the chat stream.
@@ -16,7 +16,7 @@ export interface ChatMessage {
  * Loads history from L1 memory and streams new agent output.
  */
 export function createChat(issueId: Accessor<string | null>) {
-  const { hooks, memory: _memory, orchestrator } = useJiratownContext();
+  const { hooks, memory: _memory, orchestrator } = useWorkhorseContext();
   const [messages, setMessages] = createSignal<ChatMessage[]>([]);
 
   // Reset messages when issue changes
@@ -66,7 +66,7 @@ export function createChat(issueId: Accessor<string | null>) {
   /**
    * Send a message to the agent.
    */
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const send = async (content: string) => {
     const id = issueId();
     if (!id) return;

@@ -1,20 +1,20 @@
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
-  "jsPlugins": ["./oxlint/eslint-plugin-jiratown"],
+  "jsPlugins": ["./oxlint/eslint-plugin-workhorse"],
   "ignorePatterns": ["oxlint/**", "dist/**", "node_modules/**", "packages/tui-worktrees/**"],
   "rules": {
-    "jiratown/max-lines-per-file": ["error", 200],
-    "jiratown/enforce-kebab-case-filenames": "warn",
-    "jiratown/enforce-colocated-exports": "warn",
-    "jiratown/enforce-test-colocation": "warn",
-    "jiratown/no-single-reference-function": "warn",
-    "jiratown/no-single-use-variable": "warn",
-    "jiratown/no-section-comments": "warn",
-    "jiratown/no-reexport-outside-barrel": "warn",
-    "jiratown/prefer-folder-barrel": "warn",
-    "jiratown/no-index-imports": "warn",
-    "jiratown/prefer-path-alias": "warn",
-    "jiratown/prefer-then-chain": "warn",
-    "jiratown/no-cascading-ternary": "warn"
+    "workhorse/max-lines-per-file": ["error", 200],
+    "workhorse/enforce-kebab-case-filenames": "warn",
+    "workhorse/enforce-colocated-exports": "warn",
+    "workhorse/enforce-test-colocation": "warn",
+    "workhorse/no-single-reference-function": "warn",
+    "workhorse/no-single-use-variable": "warn",
+    "workhorse/no-section-comments": "warn",
+    "workhorse/no-reexport-outside-barrel": "warn",
+    "workhorse/prefer-folder-barrel": "warn",
+    "workhorse/no-index-imports": "warn",
+    "workhorse/prefer-path-alias": "warn",
+    "workhorse/prefer-then-chain": "warn",
+    "workhorse/no-cascading-ternary": "warn"
   }
 }

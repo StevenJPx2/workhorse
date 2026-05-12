@@ -7,13 +7,13 @@
  * @module @stevenjpx2/jiratown-plugin-pi-adapter
  */
 
-import { definePlugin } from "@stevenjpx2/jiratown-core";
+import { definePlugin } from "workhorse-core";
 import { PiAgentAdapter } from "./adapter.ts";
 import { piToolRenderer } from "./renderers.ts";
 
 export { PiAgentAdapter } from "./adapter.ts";
 export { PiAdapterModelRegistry } from "./registry.ts";
-export type { ModelInfo } from "@stevenjpx2/jiratown-core";
+export type { ModelInfo } from "workhorse-core";
 
 // Re-export bash restrictions
 export {

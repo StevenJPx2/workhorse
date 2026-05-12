@@ -1,5 +1,5 @@
 {
-  "name": "jiratown",
+  "name": "workhorse-monorepo",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -31,6 +31,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
+    "@huggingface/transformers": "^4.2.0",
     "@types/bun": "latest",
     "@vitest/coverage-v8": "^4.1.6",
     "fallow": "^2.71.1",

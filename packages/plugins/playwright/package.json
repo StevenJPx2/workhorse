@@ -1,5 +1,5 @@
 {
-	"name": "@stevenjpx2/jiratown-plugin-playwright",
+	"name": "workhorse-plugin-playwright",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -21,7 +21,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@stevenjpx2/jiratown-core": "workspace:*",
+		"workhorse-core": "workspace:*",
 		"playwright": "^1.60.0",
 		"zod": "^4.4.3"
 	},
@@ -33,6 +33,6 @@
 		"vitest": "^4.1.6"
 	},
 	"peerDependencies": {
-		"@stevenjpx2/jiratown-core": "workspace:*"
+		"workhorse-core": "workspace:*"
 	}
 }

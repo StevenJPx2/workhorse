@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@stevenjpx2/jiratown-core";
+import { definePlugin } from "workhorse-core";
 import { registerPlaywrightCrossPluginSync } from "./cross-plugin-sync.ts";
 import { registerPlaywrightPromptHooks } from "./prompt.ts";
 import { playwrightRenderer } from "./renderer.ts";

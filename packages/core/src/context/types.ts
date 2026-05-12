@@ -1,4 +1,4 @@
-import type { ConfigPaths, JiratownConfig } from "#config";
+import type { ConfigPaths, WorkhorseConfig } from "#config";
 import type { Database } from "#db";
 import type { hooks } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
@@ -9,8 +9,8 @@ import type { Tracker } from "#workflow/tracker";
 /**
  * The Jiratown context available everywhere within the app lifecycle.
  */
-export interface JiratownContext {
-  readonly config: JiratownConfig;
+export interface WorkhorseContext {
+  readonly config: WorkhorseConfig;
   readonly paths: ConfigPaths;
   readonly hooks: typeof hooks;
   /** Database access */

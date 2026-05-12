@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-playwright/tools
  */
 
-import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { OrchestratorTool } from "workhorse-core";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { createClickTool } from "./click.ts";
 import { createCloseSessionTool } from "./close-session.ts";

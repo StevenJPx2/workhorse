@@ -1,16 +1,17 @@
 {
-	"name": "@stevenjpx2/jiratown-core",
+	"name": "workhorse-core",
 	"version": "0.1.0",
-	"description": "Core library for Jiratown - runtime-agnostic utilities including keychain credential management",
+	"description": "Core library for Workhorse - runtime-agnostic utilities including keychain credential management",
 	"type": "module",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/StevenJPx2/jiratown.git",
+		"url": "https://github.com/StevenJPx2/workhorse.git",
 		"directory": "packages/core"
 	},
 	"publishConfig": {
-		"registry": "https://npm.pkg.github.com"
+		"registry": "https://registry.npmjs.org",
+		"access": "public"
 	},
 	"files": [
 		"dist"

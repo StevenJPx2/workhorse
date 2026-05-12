@@ -10,7 +10,7 @@ describe("definePlugin", () => {
 
     expect(plugin.manifest.name).toBe("test-plugin");
     expect(plugin.manifest.version).toBe("1.0.0");
-    expect(Symbol.for("jiratown.plugin") in plugin).toBe(true);
+    expect(Symbol.for("workhorse.plugin") in plugin).toBe(true);
   });
 
   it("rejects invalid manifest with empty name", () => {

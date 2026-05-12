@@ -6,7 +6,7 @@
  * @module @stevenjpx2/jiratown-plugin-playwright/renderer
  */
 
-import type { Notification } from "@stevenjpx2/jiratown-core";
+import type { Notification } from "workhorse-core";
 
 /**
  * Activity input type for the unified renderer system.

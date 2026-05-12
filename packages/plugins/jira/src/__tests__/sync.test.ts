@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AtlassianClient } from "../client.ts";
 import { registerStatusSync } from "../sync.ts";
-import type { Issue } from "@stevenjpx2/jiratown-core";
+import type { Issue } from "workhorse-core";
 
 describe("registerStatusSync", () => {
   it("ignores non-jira issues", async () => {

@@ -27,7 +27,7 @@ interface BuildResult {
   error?: string;
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 async function getPluginDirs(): Promise<string[]> {
   const dirs: string[] = [];
 
@@ -91,12 +91,12 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 function printResult(result: BuildResult): void {
   const reset = "\x1b[0m";
 
   console.log(
-    `${result.success ? "\x1b[32m" : "\x1b[31m"}${result.success ? "✓" : "✗"}${reset} @stevenjpx2/jiratown-plugin-${result.plugin} \x1b[2m(${formatDuration(result.duration)})${reset}`,
+    `${result.success ? "\x1b[32m" : "\x1b[31m"}${result.success ? "✓" : "✗"}${reset} workhorse-plugin-${result.plugin} \x1b[2m(${formatDuration(result.duration)})${reset}`,
   );
 
   if (!result.success && result.error) {
@@ -104,7 +104,7 @@ function printResult(result: BuildResult): void {
   }
 }
 
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     args: Bun.argv.slice(2),
@@ -145,7 +145,7 @@ Examples:
 
   console.log(`\nBuilding ${targetPlugins.length} plugin(s)...\n`);
 
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const start = performance.now();
   const results: BuildResult[] = values.parallel
     ? await Promise.all(targetPlugins.map(buildPlugin))

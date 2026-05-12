@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/monitor-notifications
  */
 
-import type { MonitorContext } from "@stevenjpx2/jiratown-core";
+import type { MonitorContext } from "workhorse-core";
 import type { GitHubComment, GitHubReview } from "./types.ts";
 
 /** Priority mapping for review states */

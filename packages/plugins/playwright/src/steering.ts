@@ -6,12 +6,12 @@
  * @module @stevenjpx2/jiratown-plugin-playwright/steering
  */
 
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 
 /**
  * Register Playwright-specific steering rules.
  */
-export function registerPlaywrightSteering(ctx: JiratownContext): void {
+export function registerPlaywrightSteering(ctx: WorkhorseContext): void {
   // Remind to take final screenshots before creating PR
   ctx.orchestrator.registerSteeringRule({
     id: "playwright:screenshot-before-pr",

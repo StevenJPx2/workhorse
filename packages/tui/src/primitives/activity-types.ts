@@ -6,7 +6,7 @@
  * plugin-based renderer registry.
  */
 
-import type { Notification } from "@stevenjpx2/jiratown-core";
+import type { Notification } from "workhorse-core";
 
 /** Activity item types */
 export type ActivityItem =

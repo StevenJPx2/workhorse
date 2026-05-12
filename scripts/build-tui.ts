@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 /**
- * Build script for Jiratown TUI.
+ * Build script for Workhorse TUI.
  *
  * Bundles the TUI into a single JS file. The bundle still requires the monorepo's
  * node_modules for native deps (@opentui/core, keytar, @libsql, etc.).
  *
  * For development: bun run dev (from packages/tui/)
- * Run bundle: bun packages/tui/dist/jiratown.js
+ * Run bundle: bun packages/tui/dist/workhorse.js
  *
  * @module scripts/build-tui
  */
@@ -26,17 +26,17 @@ const ROOT = resolve(import.meta.dir, "..");
 const TUI = resolve(ROOT, "packages/tui");
 const ENTRY = resolve(TUI, "src/index.tsx");
 const OUTDIR = resolve(TUI, "dist");
-const BUNDLE = resolve(OUTDIR, "jiratown.js");
+const BUNDLE = resolve(OUTDIR, "workhorse.js");
 
 const { createSolidTransformPlugin } = await import(
   resolve(TUI, "node_modules/@opentui/solid/scripts/solid-plugin.ts")
 );
 
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 async function build(minify: boolean, sourcemap: boolean): Promise<void> {
-  // oxlint-disable-next-line jiratown/no-single-use-variable
+  // oxlint-disable-next-line workhorse/no-single-use-variable
   const start = performance.now();
-  console.log("\n⚡ Building jiratown...\n");
+  console.log("\n⚡ Building workhorse...\n");
 
   if (!existsSync(OUTDIR)) mkdirSync(OUTDIR, { recursive: true });
 
@@ -53,7 +53,7 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
       "playwright",
       "playwright-core",
     ],
-    naming: { entry: "jiratown.js" },
+    naming: { entry: "workhorse.js" },
   });
 
   if (!result.success) {
@@ -73,9 +73,9 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   await import("node:fs/promises").then((fs) => fs.chmod(BUNDLE, 0o755));
 
   console.log(
-    `✓ Built dist/jiratown.js (${result.outputs[0] ? formatSize(result.outputs[0].size) : "?"}) in ${formatDuration(performance.now() - start)}`,
+    `✓ Built dist/workhorse.js (${result.outputs[0] ? formatSize(result.outputs[0].size) : "?"}) in ${formatDuration(performance.now() - start)}`,
   );
-  console.log(`  Run with: bun packages/tui/dist/jiratown.js\n`);
+  console.log(`  Run with: bun packages/tui/dist/workhorse.js\n`);
 }
 
 const { values } = parseArgs({

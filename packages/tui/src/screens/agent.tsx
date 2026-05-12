@@ -1,11 +1,11 @@
-import type { AgentAdapter } from "@stevenjpx2/jiratown-core";
+import type { AgentAdapter } from "workhorse-core";
 import { createMemo, createSignal, Show } from "solid-js";
 import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
-import { JiratownStatus } from "../components/jiratown-status.tsx";
-import { useJiratownContext } from "../context/jiratown.tsx";
+import { WorkhorseStatus } from "../components/workhorse-status.tsx";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { createAgents, createChat, createIssueStatus } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
@@ -32,7 +32,7 @@ const FILES_PANEL_WIDTH = 32;
  * └─────────────────────────────────────────────────────────────┘
  */
 export function Agent() {
-  const { monitors } = useJiratownContext();
+  const { monitors } = useWorkhorseContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
@@ -107,7 +107,7 @@ export function Agent() {
               </Show>
             </box>
             <box flexDirection="row" flexShrink={0}>
-              <JiratownStatus status={issueStatusState().status} />
+              <WorkhorseStatus status={issueStatusState().status} />
               <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
               <MonitorIndicator state={monitorState()} />
               <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>

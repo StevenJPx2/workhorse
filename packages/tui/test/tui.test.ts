@@ -365,7 +365,7 @@ if (filter === "--help" || filter === "-h") {
 }
 
 // Filter tests by group name or pattern
-// oxlint-disable-next-line jiratown/no-single-use-variable
+// oxlint-disable-next-line workhorse/no-single-use-variable
 const filteredTests = (() => {
   if (!filter) return tests;
   if (GROUPS.includes(filter as TestGroup)) {

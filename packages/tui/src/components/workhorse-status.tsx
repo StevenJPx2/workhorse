@@ -1,20 +1,20 @@
 /**
- * Component to display the Jiratown workflow status (planning, implementing, etc.)
+ * Component to display the Workhorse workflow status (planning, implementing, etc.)
  */
 
 import { Show } from "solid-js";
-import type { IssueStatus } from "@stevenjpx2/jiratown-core";
+import type { IssueStatus } from "workhorse-core";
 import { getTheme } from "../theme.ts";
 
-interface JiratownStatusProps {
+interface WorkhorseStatusProps {
   status: IssueStatus | null;
   compact?: boolean;
 }
 
 /**
- * Displays the Jiratown workflow status with icon and color.
+ * Displays the Workhorse workflow status with icon and color.
  */
-export function JiratownStatus(props: JiratownStatusProps) {
+export function WorkhorseStatus(props: WorkhorseStatusProps) {
   const theme = getTheme();
 
   const getStatusColor = (status: IssueStatus | null): string => {

@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/sync
  */
 
-import type { IssueStatus, JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { IssueStatus, WorkhorseContext } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 
 /** Status to label mapping */
@@ -23,7 +23,7 @@ const STATUS_LABELS: Partial<Record<IssueStatus, { add?: string; remove?: string
 };
 
 /** Register status sync hook */
-export function registerStatusSync(ctx: JiratownContext, client: GitHubClient): void {
+export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void {
   ctx.hooks.on("issue.status_changed", async ({ issue, to }) => {
     if (issue.source !== "github") return;
 

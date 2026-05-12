@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-playwright/tools/get-element
  */
 
-import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { OrchestratorTool } from "workhorse-core";
 import { getElement } from "../session-operations.ts";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 

@@ -6,7 +6,7 @@
  * - External CLI delegation
  * - Auth status checking
  *
- * @module @stevenjpx2/jiratown-core/auth
+ * @module workhorse-core/auth
  */
 
 export type {

@@ -1,4 +1,4 @@
-import type { ConfigPaths, DeepPartial, JiratownConfig } from "#config";
+import type { ConfigPaths, DeepPartial, WorkhorseConfig } from "#config";
 import { loadConfig, mergeConfigs, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
@@ -21,12 +21,12 @@ export interface BootstrapOptions {
   plugins?: Plugin[];
 
   /** Config overrides (merged on top of loaded config) */
-  overrides?: DeepPartial<JiratownConfig>;
+  overrides?: DeepPartial<WorkhorseConfig>;
 }
 
 export interface Jiratown {
   /** Loaded configuration (readonly) */
-  readonly config: Readonly<JiratownConfig>;
+  readonly config: Readonly<WorkhorseConfig>;
 
   /** Resolved paths for config and data files */
   readonly paths: Readonly<ConfigPaths>;

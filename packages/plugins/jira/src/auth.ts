@@ -14,7 +14,7 @@ import {
   storeCredential,
   type OAuthProvider,
   type OAuthTokens,
-} from "@stevenjpx2/jiratown-core";
+} from "workhorse-core";
 import type { JiraCredentials } from "./types.ts";
 
 const SERVICE = "jira";

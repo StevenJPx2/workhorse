@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Plugin } from "@stevenjpx2/jiratown-core";
+import type { Plugin } from "workhorse-core";
 import { checkAllPluginsAuth, checkPluginAuth, getPluginsNeedingAuth } from "./auth";
 
 function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {
@@ -31,7 +31,7 @@ function mockPlugin(authType: "oauth" | "external" | "none", authenticated: bool
   return {
     manifest: { name: `test-${authType}`, version: "1.0.0", description: "Test plugin" },
     auth,
-    [Symbol.for("jiratown.plugin")]: true,
+    [Symbol.for("workhorse.plugin")]: true,
   } as unknown as Plugin;
 }
 

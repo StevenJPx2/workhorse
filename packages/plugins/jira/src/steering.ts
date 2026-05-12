@@ -4,12 +4,12 @@
  * Provides idle-agent reminders for Jira-specific workflows.
  */
 
-import type { JiratownContext } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext } from "workhorse-core";
 
 /**
  * Register Jira-specific steering rules.
  */
-export function registerJiraSteering(ctx: JiratownContext): void {
+export function registerJiraSteering(ctx: WorkhorseContext): void {
   // Remind to update Jira after implementation
   ctx.orchestrator.registerSteeringRule({
     id: "jira:update-after-implementation",

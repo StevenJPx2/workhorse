@@ -1,4 +1,4 @@
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 
@@ -23,7 +23,7 @@ export interface MonitorContext {
   /** Memory service for accessing session memory and notifications */
   memory: MemoryService;
   /** Application configuration */
-  config: Readonly<JiratownConfig>;
+  config: Readonly<WorkhorseConfig>;
 }
 
 /**

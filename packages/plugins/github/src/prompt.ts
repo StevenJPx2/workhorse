@@ -6,12 +6,12 @@
  * @module @stevenjpx2/jiratown-plugin-github/prompt
  */
 
-import type { JiratownContext, PromptContextBlock } from "@stevenjpx2/jiratown-core";
+import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";
 
 /** Register prompt enrichment hooks */
-export function registerPromptHooks(ctx: JiratownContext, client: GitHubClient): void {
+export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient): void {
   ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
     const issue = await ctx.db.issues.getById(issueId);
     if (!issue || issue.source !== "github") return;

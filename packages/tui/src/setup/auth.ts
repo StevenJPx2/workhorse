@@ -6,7 +6,7 @@
  * @module jiratown/setup/auth
  */
 
-import type { Plugin, AuthProvider, AuthStatus } from "@stevenjpx2/jiratown-core";
+import type { Plugin, AuthProvider, AuthStatus } from "workhorse-core";
 
 /**
  * Plugin with auth requirements for TUI display.

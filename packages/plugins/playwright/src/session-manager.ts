@@ -1,5 +1,5 @@
 /** Playwright Session Manager - manages persistent browser sessions per issue. */
-import type { HookEmitter } from "@stevenjpx2/jiratown-core";
+import type { HookEmitter } from "workhorse-core";
 import {
   addInitScript,
   closeBrowser,

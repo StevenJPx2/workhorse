@@ -7,7 +7,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/auth
  */
 
-import type { ExternalProvider } from "@stevenjpx2/jiratown-core";
+import type { ExternalProvider } from "workhorse-core";
 import { gh } from "./gh-cli.ts";
 
 /**

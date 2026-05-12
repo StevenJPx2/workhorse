@@ -90,7 +90,7 @@ export async function createWorktree(
  * Get worktree info for a specific issue.
  * Used by createWorktree and removeWorktree.
  */
-// oxlint-disable-next-line jiratown/no-single-reference-function
+// oxlint-disable-next-line workhorse/no-single-reference-function
 async function getWorktree(repoPath: string, issueId: string): Promise<WorktreeInfo | null> {
   const result = await execGit(["git", "worktree", "list", "--porcelain"], repoPath);
   return (

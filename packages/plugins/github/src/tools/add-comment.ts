@@ -4,7 +4,7 @@
  * @module @stevenjpx2/jiratown-plugin-github/tools/add-comment
  */
 
-import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
+import type { OrchestratorTool } from "workhorse-core";
 import type { GitHubClient } from "../client";
 
 /** Create the github_add_comment tool */

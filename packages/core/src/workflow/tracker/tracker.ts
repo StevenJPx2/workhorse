@@ -1,4 +1,4 @@
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { Database, Issue } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import { removeWorktree } from "#lib/git";
@@ -37,7 +37,7 @@ export class Tracker {
     private readonly db: Database,
     private readonly hooks: HookEmitter,
     private readonly memory: MemoryService,
-    private readonly config: Readonly<JiratownConfig>,
+    private readonly config: Readonly<WorkhorseConfig>,
   ) {}
 
   /**

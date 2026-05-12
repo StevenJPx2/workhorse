@@ -1,12 +1,12 @@
 {
-  "name": "jiratown",
+  "name": "workhorse",
   "version": "0.1.0",
-  "description": "Terminal UI for Jiratown - AI-powered Jira issue resolver",
+  "description": "Terminal UI for Workhorse - AI-powered issue resolver",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/StevenJPx2/jiratown.git",
+    "url": "https://github.com/StevenJPx2/workhorse.git",
     "directory": "packages/tui"
   },
   "publishConfig": {
@@ -16,12 +16,12 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/jiratown.js",
+  "main": "./dist/workhorse.js",
   "bin": {
-    "jiratown": "./dist/jiratown.js"
+    "workhorse": "./dist/workhorse.js"
   },
   "exports": {
-    ".": "./dist/jiratown.js",
+    ".": "./dist/workhorse.js",
     "./plugin": "./src/plugin.ts",
     "./renderers": "./src/renderers/index.ts"
   },
@@ -29,19 +29,19 @@
     "build": "bun ../../scripts/build-tui.ts",
     "build:prod": "bun ../../scripts/build-tui.ts --minify",
     "dev": "bun src/index.tsx",
-    "preview": "bun dist/jiratown.js",
+    "preview": "bun dist/workhorse.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@stevenjpx2/jiratown-core": "workspace:*",
+    "workhorse-core": "workspace:*",
     "playwright": "^1.60.0"
   },
   "devDependencies": {
-    "@stevenjpx2/jiratown-plugin-github": "workspace:*",
-    "@stevenjpx2/jiratown-plugin-jira": "workspace:*",
-    "@stevenjpx2/jiratown-plugin-pi-adapter": "workspace:*",
-    "@stevenjpx2/jiratown-plugin-playwright": "workspace:*",
+    "workhorse-plugin-github": "workspace:*",
+    "workhorse-plugin-jira": "workspace:*",
+    "workhorse-plugin-pi-adapter": "workspace:*",
+    "workhorse-plugin-playwright": "workspace:*",
     "@opentui/core": "0.2.1",
     "@opentui/solid": "0.2.1",
     "@types/bun": "latest",

@@ -1,4 +1,4 @@
-import type { Notification } from "@stevenjpx2/jiratown-core";
+import type { Notification } from "workhorse-core";
 
 /**
  * Discriminated union for activity inputs.

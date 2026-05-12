@@ -1,4 +1,4 @@
-import { useJiratown } from "#context";
+import { useWorkhorse } from "#context";
 import { type Plugin, PluginManifestSchema, type PluginOptions, PluginSymbol } from "./types.ts";
 
 /**
@@ -47,7 +47,7 @@ export function definePlugin<TConfig = void>(options: PluginOptions<TConfig>): P
     manifest,
     auth: options.auth,
     setup: async () => {
-      const ctx = useJiratown();
+      const ctx = useWorkhorse();
 
       try {
         if (!options.configSchema) {
