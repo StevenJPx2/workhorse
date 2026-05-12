@@ -2,19 +2,19 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "StevenJPx2/jiratown" }
+    { "repo": "StevenJPx2/workhorse" }
   ],
   "commit": false,
   "fixed": [],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@stevenjpx2/jiratown-plugin-jira",
-    "@stevenjpx2/jiratown-plugin-playwright",
-    "@stevenjpx2/jiratown-plugin-github",
-    "@stevenjpx2/jiratown-plugin-pi-adapter",
-    "eslint-plugin-jiratown"
+    "workhorse-plugin-jira",
+    "workhorse-plugin-playwright",
+    "workhorse-plugin-github",
+    "workhorse-plugin-pi-adapter",
+    "eslint-plugin-workhorse"
   ]
 }
