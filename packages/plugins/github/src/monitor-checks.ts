@@ -1,7 +1,7 @@
 /**
  * Check run processing for PR monitor.
  *
- * @module @jiratown/plugin-github/monitor-checks
+ * @module @stevenjpx2/jiratown-plugin-github/monitor-checks
  */
 
 import type { GitHubCheckRun } from "./types.ts";

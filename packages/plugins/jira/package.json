@@ -1,5 +1,5 @@
 {
-	"name": "@jiratown/plugin-jira",
+	"name": "@stevenjpx2/jiratown-plugin-jira",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
@@ -21,7 +21,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@jiratown/core": "workspace:*",
+		"@stevenjpx2/jiratown-core": "workspace:*",
 		"arctic": "^3.7.0",
 		"zod": "^4.4.3"
 	},
@@ -33,6 +33,6 @@
 		"vitest": "^4.1.6"
 	},
 	"peerDependencies": {
-		"@jiratown/core": "workspace:*"
+		"@stevenjpx2/jiratown-core": "workspace:*"
 	}
 }

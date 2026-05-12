@@ -1,10 +1,10 @@
 /**
  * Shared types for GitHub tools.
  *
- * @module @jiratown/plugin-github/tools/types
+ * @module @stevenjpx2/jiratown-plugin-github/tools/types
  */
 
-import type { HookEventMap } from "@jiratown/core";
+import type { HookEventMap } from "@stevenjpx2/jiratown-core";
 
 /** Monitor service interface (subset we need) */
 export interface MonitorServiceLike {

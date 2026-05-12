@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
-import type { Issue } from "@jiratown/core";
+import type { Issue } from "@stevenjpx2/jiratown-core";
 import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
 

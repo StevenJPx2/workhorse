@@ -3,7 +3,7 @@
  */
 
 import { Show } from "solid-js";
-import type { IssueStatus } from "@jiratown/core";
+import type { IssueStatus } from "@stevenjpx2/jiratown-core";
 import { getTheme } from "../theme.ts";
 
 interface JiratownStatusProps {

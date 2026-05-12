@@ -3,10 +3,10 @@
  *
  * Checks which plugins need authentication before the TUI can start.
  *
- * @module @jiratown/tui/setup/auth
+ * @module @stevenjpx2/jiratown-tui/setup/auth
  */
 
-import type { Plugin, AuthProvider, AuthStatus } from "@jiratown/core";
+import type { Plugin, AuthProvider, AuthStatus } from "@stevenjpx2/jiratown-core";
 
 /**
  * Plugin with auth requirements for TUI display.

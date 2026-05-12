@@ -1,4 +1,4 @@
-import type { AgentAdapter } from "@jiratown/core";
+import type { AgentAdapter } from "@stevenjpx2/jiratown-core";
 import { createMemo, For, Show } from "solid-js";
 import { createAgents } from "../primitives/create-agents.ts";
 import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";

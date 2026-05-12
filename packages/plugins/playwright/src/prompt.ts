@@ -3,10 +3,10 @@
  *
  * Adds Playwright-specific context blocks to agent prompts.
  *
- * @module @jiratown/plugin-playwright/prompt
+ * @module @stevenjpx2/jiratown-plugin-playwright/prompt
  */
 
-import type { JiratownContext } from "@jiratown/core";
+import type { JiratownContext } from "@stevenjpx2/jiratown-core";
 
 /** Context for prompt.building hook */
 interface PromptBuildingContext {

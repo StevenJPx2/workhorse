@@ -1,7 +1,7 @@
 /**
  * Path restriction utilities for Pi SDK tools.
  *
- * Wraps Pi SDK tool operations with path validation from @jiratown/core
+ * Wraps Pi SDK tool operations with path validation from @stevenjpx2/jiratown-core
  * to ensure agents cannot read or write files outside their worktree.
  *
  * ## Standard for Agent Harnesses
@@ -16,7 +16,7 @@
  * - Writing to system directories
  * - Modifying files in other worktrees or the main repository
  *
- * @module @jiratown/plugin-pi-adapter/path-restriction
+ * @module @stevenjpx2/jiratown-plugin-pi-adapter/path-restriction
  */
 
 import {
@@ -26,7 +26,7 @@ import {
   writeFile as fsWriteFile,
 } from "node:fs/promises";
 import { constants } from "node:fs";
-import { assertPathAllowed, type PathValidationOptions } from "@jiratown/core";
+import { assertPathAllowed, type PathValidationOptions } from "@stevenjpx2/jiratown-core";
 import type {
   WriteOperations,
   ReadOperations,

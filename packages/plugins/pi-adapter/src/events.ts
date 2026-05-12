@@ -1,7 +1,7 @@
 /**
  * Pi session event handling.
  *
- * @module @jiratown/plugin-pi-adapter/events
+ * @module @stevenjpx2/jiratown-plugin-pi-adapter/events
  */
 
 import type {
@@ -16,7 +16,7 @@ import type {
   MemoryService,
   OrchestratorTool,
   ToolExecutionContext,
-} from "@jiratown/core";
+} from "@stevenjpx2/jiratown-core";
 
 export interface EventHandlerContext {
   issueId: string;

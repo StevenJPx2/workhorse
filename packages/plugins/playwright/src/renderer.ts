@@ -3,10 +3,10 @@
  *
  * Handles Playwright tool calls in the unified activity renderer system.
  *
- * @module @jiratown/plugin-playwright/renderer
+ * @module @stevenjpx2/jiratown-plugin-playwright/renderer
  */
 
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "@stevenjpx2/jiratown-core";
 
 /**
  * Activity input type for the unified renderer system.

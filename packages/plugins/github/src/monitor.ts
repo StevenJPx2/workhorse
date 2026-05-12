@@ -5,10 +5,10 @@
  * Creates notifications with appropriate priorities.
  * Emits plugin hooks for cross-plugin coordination.
  *
- * @module @jiratown/plugin-github/monitor
+ * @module @stevenjpx2/jiratown-plugin-github/monitor
  */
 
-import type { Database, MonitorOptions } from "@jiratown/core";
+import type { Database, MonitorOptions } from "@stevenjpx2/jiratown-core";
 import type { GitHubClient } from "./client.ts";
 // Import hooks types to enable module augmentation
 import "./hooks.ts";

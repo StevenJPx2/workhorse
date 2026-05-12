@@ -31,7 +31,7 @@
       },
     },
     "packages/core": {
-      "name": "@jiratown/core",
+      "name": "@stevenjpx2/jiratown-core",
       "version": "0.0.1",
       "dependencies": {
         "@libsql/client": "^0.17.3",
@@ -57,10 +57,10 @@
       },
     },
     "packages/plugins/github": {
-      "name": "@jiratown/plugin-github",
+      "name": "@stevenjpx2/jiratown-plugin-github",
       "version": "0.0.1",
       "dependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -71,14 +71,14 @@
         "vitest": "^4.1.6",
       },
       "peerDependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
       },
     },
     "packages/plugins/jira": {
-      "name": "@jiratown/plugin-jira",
+      "name": "@stevenjpx2/jiratown-plugin-jira",
       "version": "0.0.1",
       "dependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
         "arctic": "^3.7.0",
         "zod": "^4.4.3",
       },
@@ -90,15 +90,15 @@
         "vitest": "^4.1.6",
       },
       "peerDependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
       },
     },
     "packages/plugins/pi-adapter": {
-      "name": "@jiratown/plugin-pi-adapter",
+      "name": "@stevenjpx2/jiratown-plugin-pi-adapter",
       "version": "0.1.0",
       "dependencies": {
         "@earendil-works/pi-coding-agent": "^0.74.0",
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
         "typebox": "^1.1.38",
       },
       "devDependencies": {
@@ -110,10 +110,10 @@
       },
     },
     "packages/plugins/playwright": {
-      "name": "@jiratown/plugin-playwright",
+      "name": "@stevenjpx2/jiratown-plugin-playwright",
       "version": "0.1.0",
       "dependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
         "playwright": "^1.60.0",
         "zod": "^4.4.3",
       },
@@ -125,26 +125,26 @@
         "vitest": "^4.1.6",
       },
       "peerDependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
       },
     },
     "packages/tui": {
-      "name": "@jiratown/tui",
-      "version": "0.1.0",
+      "name": "@stevenjpx2/jiratown-tui",
+      "version": "0.0.1",
       "bin": {
         "jiratown": "./dist/jiratown.js",
       },
       "dependencies": {
-        "@jiratown/core": "workspace:*",
+        "@stevenjpx2/jiratown-core": "workspace:*",
         "playwright": "^1.60.0",
       },
       "devDependencies": {
-        "@jiratown/plugin-github": "workspace:*",
-        "@jiratown/plugin-jira": "workspace:*",
-        "@jiratown/plugin-pi-adapter": "workspace:*",
-        "@jiratown/plugin-playwright": "workspace:*",
         "@opentui/core": "0.2.1",
         "@opentui/solid": "0.2.1",
+        "@stevenjpx2/jiratown-plugin-github": "workspace:*",
+        "@stevenjpx2/jiratown-plugin-jira": "workspace:*",
+        "@stevenjpx2/jiratown-plugin-pi-adapter": "workspace:*",
+        "@stevenjpx2/jiratown-plugin-playwright": "workspace:*",
         "@types/bun": "latest",
         "solid-js": "^1.9.12",
         "typescript": "^6.0.3",
@@ -499,18 +499,6 @@
     "@img/sharp-win32-x64": ["@img/sharp-win32-x64@0.34.5", "", { "os": "win32", "cpu": "x64" }, "sha512-+29YMsqY2/9eFEiW93eqWnuLcWcufowXewwSNIT6UwZdUUCrM3oFjMWH/Z6/TMmb4hlFenmfAVbpWeup2jryCw=="],
 
     "@inquirer/external-editor": ["@inquirer/external-editor@1.0.3", "", { "dependencies": { "chardet": "^2.1.1", "iconv-lite": "^0.7.0" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA=="],
-
-    "@jiratown/core": ["@jiratown/core@workspace:packages/core"],
-
-    "@jiratown/plugin-github": ["@jiratown/plugin-github@workspace:packages/plugins/github"],
-
-    "@jiratown/plugin-jira": ["@jiratown/plugin-jira@workspace:packages/plugins/jira"],
-
-    "@jiratown/plugin-pi-adapter": ["@jiratown/plugin-pi-adapter@workspace:packages/plugins/pi-adapter"],
-
-    "@jiratown/plugin-playwright": ["@jiratown/plugin-playwright@workspace:packages/plugins/playwright"],
-
-    "@jiratown/tui": ["@jiratown/tui@workspace:packages/tui"],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 
@@ -907,6 +895,18 @@
     "@smithy/uuid": ["@smithy/uuid@1.1.2", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-O/IEdcCUKkubz60tFbGA7ceITTAJsty+lBjNoorP4Z6XRqaFb/OjQjZODophEcuq68nKm6/0r+6/lLQ+XVpk8g=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
+
+    "@stevenjpx2/jiratown-core": ["@stevenjpx2/jiratown-core@workspace:packages/core"],
+
+    "@stevenjpx2/jiratown-plugin-github": ["@stevenjpx2/jiratown-plugin-github@workspace:packages/plugins/github"],
+
+    "@stevenjpx2/jiratown-plugin-jira": ["@stevenjpx2/jiratown-plugin-jira@workspace:packages/plugins/jira"],
+
+    "@stevenjpx2/jiratown-plugin-pi-adapter": ["@stevenjpx2/jiratown-plugin-pi-adapter@workspace:packages/plugins/pi-adapter"],
+
+    "@stevenjpx2/jiratown-plugin-playwright": ["@stevenjpx2/jiratown-plugin-playwright@workspace:packages/plugins/playwright"],
+
+    "@stevenjpx2/jiratown-tui": ["@stevenjpx2/jiratown-tui@workspace:packages/tui"],
 
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 

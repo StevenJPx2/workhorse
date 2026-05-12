@@ -6,10 +6,10 @@
  * - Issue URLs: `https://github.com/owner/repo/issues/45`
  * - PR URLs: `https://github.com/owner/repo/pull/45`
  *
- * @module @jiratown/plugin-github/parser
+ * @module @stevenjpx2/jiratown-plugin-github/parser
  */
 
-import type { IssueParserOptions } from "@jiratown/core";
+import type { IssueParserOptions } from "@stevenjpx2/jiratown-core";
 import type { GitHubClient } from "./client.ts";
 import { mapGitHubToIssue } from "./mapper.ts";
 import type { GitHubRef } from "./types.ts";

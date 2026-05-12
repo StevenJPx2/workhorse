@@ -1,4 +1,4 @@
-import type { AgentAdapter } from "@jiratown/core";
+import type { AgentAdapter } from "@stevenjpx2/jiratown-core";
 import { createMemo, createSignal, Show } from "solid-js";
 import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";

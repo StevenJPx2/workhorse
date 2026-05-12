@@ -6,7 +6,7 @@ import {
   parseTomlFile,
   writeTomlFile,
   DEFAULT_CONFIG,
-} from "@jiratown/core";
+} from "@stevenjpx2/jiratown-core";
 import type { SetupPluginConfig } from "../screens/setup";
 
 /**

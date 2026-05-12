@@ -5,7 +5,7 @@
  */
 
 import { parseArgs } from "node:util";
-import type { HarnessOrchestrator, ModelInfo } from "@jiratown/core";
+import type { HarnessOrchestrator, ModelInfo } from "@stevenjpx2/jiratown-core";
 
 /** CLI argument definitions. */
 const CLI_OPTIONS = {

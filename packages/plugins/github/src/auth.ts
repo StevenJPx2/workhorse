@@ -4,10 +4,10 @@
  * Delegates to the `gh` CLI for authentication.
  * Users must run `gh auth login` before using the plugin.
  *
- * @module @jiratown/plugin-github/auth
+ * @module @stevenjpx2/jiratown-plugin-github/auth
  */
 
-import type { ExternalProvider } from "@jiratown/core";
+import type { ExternalProvider } from "@stevenjpx2/jiratown-core";
 import { gh } from "./gh-cli.ts";
 
 /**

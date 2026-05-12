@@ -7,10 +7,10 @@
  * Example: When a GitHub PR is merged, transition the Jira issue to "In QA"
  * and assign it to the reporter for verification.
  *
- * @module @jiratown/plugin-jira/cross-plugin-sync
+ * @module @stevenjpx2/jiratown-plugin-jira/cross-plugin-sync
  */
 
-import type { Database, JiratownContext } from "@jiratown/core";
+import type { Database, JiratownContext } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
 import "./hooks.ts";

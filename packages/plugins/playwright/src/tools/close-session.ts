@@ -1,10 +1,10 @@
 /**
  * Playwright Close Session Tool
  *
- * @module @jiratown/plugin-playwright/tools/close-session
+ * @module @stevenjpx2/jiratown-plugin-playwright/tools/close-session
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 
 /** Create the playwright_close_session tool */

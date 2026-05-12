@@ -1,4 +1,4 @@
-import type { AgentAdapter, Issue } from "@jiratown/core";
+import type { AgentAdapter, Issue } from "@stevenjpx2/jiratown-core";
 import { createMemo, createSignal } from "solid-js";
 import { AgentList, IssueList, StatusBar } from "../../components";
 import { useJiratownContext } from "../../context/jiratown.tsx";

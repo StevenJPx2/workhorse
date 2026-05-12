@@ -3,7 +3,7 @@
  *
  * Handles OAuth 2.0 3LO flow for Atlassian, storing tokens in the system keychain.
  *
- * @module @jiratown/plugin-jira/auth
+ * @module @stevenjpx2/jiratown-plugin-jira/auth
  */
 
 import { Atlassian, generateState, OAuth2RequestError, ArcticFetchError } from "arctic";
@@ -14,7 +14,7 @@ import {
   storeCredential,
   type OAuthProvider,
   type OAuthTokens,
-} from "@jiratown/core";
+} from "@stevenjpx2/jiratown-core";
 import type { JiraCredentials } from "./types.ts";
 
 const SERVICE = "jira";

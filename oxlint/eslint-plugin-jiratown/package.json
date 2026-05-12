@@ -1,6 +1,7 @@
 {
   "name": "eslint-plugin-jiratown",
   "version": "1.0.0",
+  "private": true,
   "description": "Custom lint rules for Jiratown project conventions",
   "type": "module",
   "main": "index.js",

@@ -25,7 +25,7 @@ export default defineConfig({
         // Node builtins
         /^node:/,
         // Workspace dependencies
-        "@jiratown/core",
+        "@stevenjpx2/jiratown-core",
         // External dependencies
         "zod",
         "zod/v4",

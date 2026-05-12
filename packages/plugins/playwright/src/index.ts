@@ -10,11 +10,11 @@
  *
  * **External deps:** Node.js with Playwright installed (`npx playwright install`)
  *
- * @module @jiratown/plugin-playwright
+ * @module @stevenjpx2/jiratown-plugin-playwright
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@jiratown/core";
+import { definePlugin } from "@stevenjpx2/jiratown-core";
 import { registerPlaywrightCrossPluginSync } from "./cross-plugin-sync.ts";
 import { registerPlaywrightPromptHooks } from "./prompt.ts";
 import { playwrightRenderer } from "./renderer.ts";

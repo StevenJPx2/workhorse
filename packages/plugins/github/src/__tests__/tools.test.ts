@@ -2,7 +2,7 @@
  * Tests for GitHub tools.
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools";

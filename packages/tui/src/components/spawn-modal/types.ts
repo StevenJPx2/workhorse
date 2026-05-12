@@ -1,4 +1,4 @@
-import type { Issue } from "@jiratown/core";
+import type { Issue } from "@stevenjpx2/jiratown-core";
 
 export interface SpawnModalProps {
   issue: Issue;

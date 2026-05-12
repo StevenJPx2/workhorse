@@ -1,4 +1,4 @@
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useJiratown } from "@stevenjpx2/jiratown-core";
 import {
   registerRenderer,
   type RegisterRendererPayload,

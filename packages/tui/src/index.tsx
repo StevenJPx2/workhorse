@@ -1,8 +1,8 @@
-import { bootstrap, resolveConfigPaths } from "@jiratown/core";
-import { githubPlugin } from "@jiratown/plugin-github";
-import { jiraPlugin } from "@jiratown/plugin-jira";
-import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
-import { playwrightPlugin } from "@jiratown/plugin-playwright";
+import { bootstrap, resolveConfigPaths } from "@stevenjpx2/jiratown-core";
+import { githubPlugin } from "@stevenjpx2/jiratown-plugin-github";
+import { jiraPlugin } from "@stevenjpx2/jiratown-plugin-jira";
+import { piAdapterPlugin } from "@stevenjpx2/jiratown-plugin-pi-adapter";
+import { playwrightPlugin } from "@stevenjpx2/jiratown-plugin-playwright";
 import { createCliRenderer } from "@opentui/core";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";

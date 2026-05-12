@@ -3,10 +3,10 @@
  *
  * Listens to `github:pr.opening` and adds a table of related Jira tickets.
  *
- * @module @jiratown/plugin-jira/pr-contribution
+ * @module @stevenjpx2/jiratown-plugin-jira/pr-contribution
  */
 
-import type { Database, JiratownContext } from "@jiratown/core";
+import type { Database, JiratownContext } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Payload type for github:pr.opening event (mirrors PROpeningContext) */

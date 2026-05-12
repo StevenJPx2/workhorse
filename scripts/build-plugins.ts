@@ -96,7 +96,7 @@ function printResult(result: BuildResult): void {
   const reset = "\x1b[0m";
 
   console.log(
-    `${result.success ? "\x1b[32m" : "\x1b[31m"}${result.success ? "✓" : "✗"}${reset} @jiratown/plugin-${result.plugin} \x1b[2m(${formatDuration(result.duration)})${reset}`,
+    `${result.success ? "\x1b[32m" : "\x1b[31m"}${result.success ? "✓" : "✗"}${reset} @stevenjpx2/jiratown-plugin-${result.plugin} \x1b[2m(${formatDuration(result.duration)})${reset}`,
   );
 
   if (!result.success && result.error) {

@@ -1,10 +1,10 @@
 /**
  * Playwright Get Page Content Tool
  *
- * @module @jiratown/plugin-playwright/tools/get-page-content
+ * @module @stevenjpx2/jiratown-plugin-playwright/tools/get-page-content
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import { getContent } from "../session-operations.ts";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 

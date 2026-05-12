@@ -1,10 +1,10 @@
 /**
  * GitHub Add Comment tool.
  *
- * @module @jiratown/plugin-github/tools/add-comment
+ * @module @stevenjpx2/jiratown-plugin-github/tools/add-comment
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import type { GitHubClient } from "../client";
 
 /** Create the github_add_comment tool */

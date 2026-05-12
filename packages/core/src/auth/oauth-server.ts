@@ -4,7 +4,7 @@
  * Spins up a temporary HTTP server to receive OAuth callbacks.
  * Token exchange is handled by Arctic providers.
  *
- * @module @jiratown/core/auth
+ * @module @stevenjpx2/jiratown-core/auth
  */
 
 import type { OAuthProvider, OAuthTokens } from "./types.ts";

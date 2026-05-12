@@ -11,10 +11,10 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@jiratown/plugin-jira",
-    "@jiratown/plugin-playwright",
-    "@jiratown/plugin-github",
-    "@jiratown/plugin-pi-adapter",
+    "@stevenjpx2/jiratown-plugin-jira",
+    "@stevenjpx2/jiratown-plugin-playwright",
+    "@stevenjpx2/jiratown-plugin-github",
+    "@stevenjpx2/jiratown-plugin-pi-adapter",
     "eslint-plugin-jiratown"
   ]
 }

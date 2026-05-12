@@ -3,7 +3,7 @@
  *
  * All operations use `gh api` for consistency. Requires `gh auth login` to be run first.
  *
- * @module @jiratown/plugin-github/client
+ * @module @stevenjpx2/jiratown-plugin-github/client
  */
 
 import { api, gh } from "./gh-cli";

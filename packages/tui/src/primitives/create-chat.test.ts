@@ -10,7 +10,12 @@
 
 import { createRoot, createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import type { AgentAdapter, HookEmitter, HarnessOrchestrator, MemoryService } from "@jiratown/core";
+import type {
+  AgentAdapter,
+  HookEmitter,
+  HarnessOrchestrator,
+  MemoryService,
+} from "@stevenjpx2/jiratown-core";
 import type { JiratownContextValue } from "../context/jiratown";
 
 /** Creates a mock hook emitter with working on/off/emit */

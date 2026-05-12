@@ -8,11 +8,11 @@
  * - Status sync (Jiratown status → Jira transitions)
  * - Jira tools (add_comment, transition_issue)
  *
- * @module @jiratown/plugin-jira
+ * @module @stevenjpx2/jiratown-plugin-jira
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@jiratown/core";
+import { definePlugin } from "@stevenjpx2/jiratown-core";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter, jiraAuthProvider } from "./auth.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";

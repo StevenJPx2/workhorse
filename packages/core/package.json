@@ -1,6 +1,6 @@
 {
-	"name": "@jiratown/core",
-	"version": "0.1.0",
+	"name": "@stevenjpx2/jiratown-core",
+	"version": "0.0.1",
 	"description": "Core library for Jiratown - runtime-agnostic utilities including keychain credential management",
 	"type": "module",
 	"license": "MIT",

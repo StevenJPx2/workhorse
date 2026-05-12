@@ -4,10 +4,10 @@
  * Wraps the Pi SDK's ModelRegistry to provide a consistent interface
  * for the jiratown orchestrator.
  *
- * @module @jiratown/plugin-pi-adapter/registry
+ * @module @stevenjpx2/jiratown-plugin-pi-adapter/registry
  */
 
-import { type ModelInfo, ModelRegistry } from "@jiratown/core";
+import { type ModelInfo, ModelRegistry } from "@stevenjpx2/jiratown-core";
 import { AuthStorage, ModelRegistry as PiModelRegistry } from "@earendil-works/pi-coding-agent";
 
 type Model = ReturnType<PiModelRegistry["getAll"]>[number];

@@ -1,10 +1,10 @@
 /**
  * Jira tools registered with the orchestrator.
  *
- * @module @jiratown/plugin-jira/tools
+ * @module @stevenjpx2/jiratown-plugin-jira/tools
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment.ts";
 import { createGetCommentsTool } from "./get-comments.ts";

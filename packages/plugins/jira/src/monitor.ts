@@ -3,10 +3,10 @@
  *
  * Polls for new comments on Jira issues and creates notifications.
  *
- * @module @jiratown/plugin-jira/monitor
+ * @module @stevenjpx2/jiratown-plugin-jira/monitor
  */
 
-import type { Database, MonitorOptions } from "@jiratown/core";
+import type { Database, MonitorOptions } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraComment } from "./mapper.ts";
 

@@ -1,10 +1,10 @@
 /**
  * Jira Transition Issue tool.
  *
- * @module @jiratown/plugin-jira/tools/transition
+ * @module @stevenjpx2/jiratown-plugin-jira/tools/transition
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "../client.ts";
 import type { Hooks } from "./types.ts";
 

@@ -1,10 +1,10 @@
 /**
  * Mapper for converting GitHub API responses to Jiratown's generic ParsedIssue.
  *
- * @module @jiratown/plugin-github/mapper
+ * @module @stevenjpx2/jiratown-plugin-github/mapper
  */
 
-import type { IssueSource, IssueType, ParsedIssue } from "@jiratown/core";
+import type { IssueSource, IssueType, ParsedIssue } from "@stevenjpx2/jiratown-core";
 import type { GitHubIssue } from "./types.ts";
 
 /** Map a GitHub issue to the generic ParsedIssue format */

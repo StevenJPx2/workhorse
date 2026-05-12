@@ -3,10 +3,10 @@
  *
  * Hooks `prompt.building` to add PR state and workflow context blocks.
  *
- * @module @jiratown/plugin-github/prompt
+ * @module @stevenjpx2/jiratown-plugin-github/prompt
  */
 
-import type { JiratownContext, PromptContextBlock } from "@jiratown/core";
+import type { JiratownContext, PromptContextBlock } from "@stevenjpx2/jiratown-core";
 import type { GitHubClient } from "./client.ts";
 import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";
 

@@ -4,9 +4,9 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCredentials, saveCredentials, createCredentialGetter } from "../auth.ts";
-import * as keychain from "@jiratown/core";
+import * as keychain from "@stevenjpx2/jiratown-core";
 
-vi.mock("@jiratown/core", () => ({
+vi.mock("@stevenjpx2/jiratown-core", () => ({
   getCredential: vi.fn(),
   storeCredential: vi.fn(),
   deleteCredential: vi.fn(),

@@ -5,9 +5,9 @@
  * to ensure agents can only read/write files within their worktree.
  */
 
-import type { AgentState } from "@jiratown/core";
+import type { AgentState } from "@stevenjpx2/jiratown-core";
 
-import { AgentAdapter } from "@jiratown/core";
+import { AgentAdapter } from "@stevenjpx2/jiratown-core";
 import {
   type AgentSession,
   type AgentSessionEvent,

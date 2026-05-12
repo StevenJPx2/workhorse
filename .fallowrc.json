@@ -6,11 +6,11 @@
     "@mariozechner/pi-coding-agent",
     "sqlite-vec",
     "playwright",
-    "@jiratown/core",
-    "@jiratown/plugin-github",
-    "@jiratown/plugin-jira",
-    "@jiratown/plugin-pi-adapter",
-    "@jiratown/plugin-playwright"
+    "@stevenjpx2/jiratown-core",
+    "@stevenjpx2/jiratown-plugin-github",
+    "@stevenjpx2/jiratown-plugin-jira",
+    "@stevenjpx2/jiratown-plugin-pi-adapter",
+    "@stevenjpx2/jiratown-plugin-playwright"
   ],
   "ignoreExports": [
     { "file": "packages/core/src/services/memory/index.ts", "exports": ["*"] },

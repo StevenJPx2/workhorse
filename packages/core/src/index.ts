@@ -1,4 +1,4 @@
-// @jiratown/core — main entry point
+// @stevenjpx2/jiratown-core — main entry point
 
 export * from "#config";
 export { type JiratownContext, runWithContext, tryUseJiratown, useJiratown } from "#context";

@@ -1,9 +1,9 @@
 /**
  * Shared types for Jira tools.
  *
- * @module @jiratown/plugin-jira/tools/types
+ * @module @stevenjpx2/jiratown-plugin-jira/tools/types
  */
 
-import type { JiratownContext } from "@jiratown/core";
+import type { JiratownContext } from "@stevenjpx2/jiratown-core";
 
 export type Hooks = JiratownContext["hooks"];

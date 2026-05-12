@@ -1,7 +1,7 @@
 /**
  * HTML templates for OAuth callback pages.
  *
- * @module @jiratown/core/auth/oauth-html
+ * @module @stevenjpx2/jiratown-core/auth/oauth-html
  */
 
 /**

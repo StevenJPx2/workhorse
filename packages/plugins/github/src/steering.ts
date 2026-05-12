@@ -4,7 +4,7 @@
  * Provides idle-agent reminders for GitHub-specific workflows.
  */
 
-import type { JiratownContext } from "@jiratown/core";
+import type { JiratownContext } from "@stevenjpx2/jiratown-core";
 
 /**
  * Register GitHub-specific steering rules.
@@ -18,9 +18,7 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
     condition: {
       status: "implementing",
       when: (steerCtx) => {
-        return !steerCtx.toolHistory.some(
-          (t: { name: string }) => t.name === "github_open_pr",
-        );
+        return !steerCtx.toolHistory.some((t: { name: string }) => t.name === "github_open_pr");
       },
     },
     reminder: `You've made code changes but haven't created a PR yet. When ready:
@@ -64,12 +62,7 @@ export function registerGitHubSteering(ctx: JiratownContext): void {
       status: "in_review",
       when: (steerCtx) =>
         steerCtx.notifications.some(
-          (n: {
-            source: string;
-            title: string;
-            priority: string;
-            status: string;
-          }) =>
+          (n: { source: string; title: string; priority: string; status: string }) =>
             n.source === "github" &&
             n.title.startsWith("PR Review: changes requested") &&
             n.priority === "high" &&

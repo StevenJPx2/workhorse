@@ -4,7 +4,7 @@
  */
 
 import { createSignal, onMount, onCleanup, createEffect, type Accessor } from "solid-js";
-import type { IssueStatus, Issue } from "@jiratown/core";
+import type { IssueStatus, Issue } from "@stevenjpx2/jiratown-core";
 import { useJiratownContext } from "../context/jiratown.tsx";
 
 export interface CreateIssueStatusesOptions {

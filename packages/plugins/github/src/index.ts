@@ -10,11 +10,11 @@
  *
  * **External deps:** `gh` CLI (authenticated via `gh auth login`)
  *
- * @module @jiratown/plugin-github
+ * @module @stevenjpx2/jiratown-plugin-github
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "@jiratown/core";
+import { definePlugin } from "@stevenjpx2/jiratown-core";
 import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";

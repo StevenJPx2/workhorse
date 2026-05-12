@@ -1,10 +1,10 @@
 /**
  * GitHub Get PR Status tool.
  *
- * @module @jiratown/plugin-github/tools/get-pr-status
+ * @module @stevenjpx2/jiratown-plugin-github/tools/get-pr-status
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import type { GitHubClient } from "../client";
 import type { PRStatusSummary } from "../types";
 

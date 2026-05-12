@@ -1,6 +1,6 @@
 import { createRoot, createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MonitorService } from "@jiratown/core";
+import type { MonitorService } from "@stevenjpx2/jiratown-core";
 import { createMonitors } from "./create-monitors";
 
 function mockMonitorService(

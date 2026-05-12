@@ -76,7 +76,7 @@ describe("no-reexport-outside-barrel", () => {
   describe("reports re-exports in non-barrel files", () => {
     it("reports named re-export in non-index file", () => {
       const reports = runRule("/project/src/models.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports).toHaveLength(1);
       expect(reports[0]!.messageId).toBe("noReexport");
@@ -107,14 +107,14 @@ describe("no-reexport-outside-barrel", () => {
 
     it("includes source in error message", () => {
       const reports = runRule("/project/src/models.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
-      expect(reports[0]!.data?.source).toBe("@jiratown/core");
+      expect(reports[0]!.data?.source).toBe("@stevenjpx2/jiratown-core");
     });
 
     it("includes filename in error message", () => {
       const reports = runRule("/project/src/models.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports[0]!.data?.filename).toBe("models.ts");
     });
@@ -145,14 +145,14 @@ describe("no-reexport-outside-barrel", () => {
   describe("skips special files", () => {
     it("skips test files", () => {
       const reports = runRule("/project/src/models.test.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports).toHaveLength(0);
     });
 
     it("skips spec files", () => {
       const reports = runRule("/project/src/models.spec.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports).toHaveLength(0);
     });
@@ -171,7 +171,7 @@ describe("no-reexport-outside-barrel", () => {
 
     it("skips non-TypeScript files", () => {
       const reports = runRule("/project/src/models.js", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports).toHaveLength(0);
     });
@@ -198,19 +198,19 @@ describe("no-reexport-outside-barrel", () => {
   describe("auto-fix", () => {
     it("provides a fixer that removes the re-export", () => {
       const reports = runRule("/project/src/models.ts", [
-        { type: "named", source: "@jiratown/core" },
+        { type: "named", source: "@stevenjpx2/jiratown-core" },
       ]);
       expect(reports[0]!.fix).toBeDefined();
     });
 
     it("fixer removes the line", () => {
-      const sourceText = 'export type { Foo } from "@jiratown/core";\n\nconst x = 1;';
+      const sourceText = 'export type { Foo } from "@stevenjpx2/jiratown-core";\n\nconst x = 1;';
       const context = createContext("/project/src/models.ts", sourceText);
       const visitor = rule.create(context);
 
       if (visitor.ExportNamedDeclaration) {
         visitor.ExportNamedDeclaration({
-          source: { value: "@jiratown/core" },
+          source: { value: "@stevenjpx2/jiratown-core" },
           specifiers: [{ exported: { name: "Foo" } }],
           exportKind: "type",
           range: [0, 42], // Length of the export statement
@@ -230,7 +230,12 @@ describe("no-reexport-outside-barrel", () => {
     it("catches the models.ts re-export pattern", () => {
       // This is the exact pattern from packages/plugins/pi-adapter/src/models.ts:15
       const reports = runRule("/project/packages/plugins/pi-adapter/src/models.ts", [
-        { type: "named", source: "@jiratown/core", specifiers: ["ModelInfo"], isType: true },
+        {
+          type: "named",
+          source: "@stevenjpx2/jiratown-core",
+          specifiers: ["ModelInfo"],
+          isType: true,
+        },
       ]);
       expect(reports).toHaveLength(1);
     });

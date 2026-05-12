@@ -1,7 +1,7 @@
 /**
  * Low-level `gh` CLI wrapper utilities.
  *
- * @module @jiratown/plugin-github/gh-cli
+ * @module @stevenjpx2/jiratown-plugin-github/gh-cli
  */
 
 /** Run a gh CLI command and return stdout */

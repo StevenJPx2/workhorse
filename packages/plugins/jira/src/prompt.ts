@@ -3,10 +3,10 @@
  *
  * Hooks `prompt.building` to add Jira state and workflow context blocks.
  *
- * @module @jiratown/plugin-jira/prompt
+ * @module @stevenjpx2/jiratown-plugin-jira/prompt
  */
 
-import type { JiratownContext, PromptContextBlock } from "@jiratown/core";
+import type { JiratownContext, PromptContextBlock } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "./client.ts";
 
 /** Register prompt enrichment hooks */

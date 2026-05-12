@@ -4,7 +4,7 @@
  * Handles agent-generated notifications (escalations, status updates).
  */
 
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "@stevenjpx2/jiratown-core";
 import type { ActivityInput, RenderedActivity } from "./types.ts";
 
 /**

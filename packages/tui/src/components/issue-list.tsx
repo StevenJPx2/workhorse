@@ -1,4 +1,4 @@
-import type { Issue } from "@jiratown/core";
+import type { Issue } from "@stevenjpx2/jiratown-core";
 import { For, Show } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
 import { ui } from "../state/ui.ts";

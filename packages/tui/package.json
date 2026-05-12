@@ -1,6 +1,6 @@
 {
-  "name": "@jiratown/tui",
-  "version": "0.1.0",
+  "name": "@stevenjpx2/jiratown-tui",
+  "version": "0.0.1",
   "description": "Terminal UI for Jiratown - AI-powered Jira issue resolver",
   "type": "module",
   "license": "MIT",
@@ -33,14 +33,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@jiratown/core": "workspace:*",
+    "@stevenjpx2/jiratown-core": "workspace:*",
     "playwright": "^1.60.0"
   },
   "devDependencies": {
-    "@jiratown/plugin-github": "workspace:*",
-    "@jiratown/plugin-jira": "workspace:*",
-    "@jiratown/plugin-pi-adapter": "workspace:*",
-    "@jiratown/plugin-playwright": "workspace:*",
+    "@stevenjpx2/jiratown-plugin-github": "workspace:*",
+    "@stevenjpx2/jiratown-plugin-jira": "workspace:*",
+    "@stevenjpx2/jiratown-plugin-pi-adapter": "workspace:*",
+    "@stevenjpx2/jiratown-plugin-playwright": "workspace:*",
     "@opentui/core": "0.2.1",
     "@opentui/solid": "0.2.1",
     "@types/bun": "latest",

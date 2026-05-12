@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Plugin } from "@jiratown/core";
+import type { Plugin } from "@stevenjpx2/jiratown-core";
 import { checkAllPluginsAuth, checkPluginAuth, getPluginsNeedingAuth } from "./auth";
 
 function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {

@@ -4,7 +4,7 @@
  * Provides high-level operations (screenshot, click, fill, etc.) that work
  * with the session manager to interact with persistent browser connections.
  *
- * @module @jiratown/plugin-playwright/session-operations
+ * @module @stevenjpx2/jiratown-plugin-playwright/session-operations
  */
 
 import {
@@ -33,14 +33,12 @@ export async function screenshot(
       type: options.format === "jpeg" ? "jpeg" : "png",
       quality: options.quality,
     });
-    manager
-      .getHooks()
-      .emit("playwright:screenshot.taken", {
-        issueId,
-        sessionId: state.session.id,
-        path: outputPath,
-        options,
-      });
+    manager.getHooks().emit("playwright:screenshot.taken", {
+      issueId,
+      sessionId: state.session.id,
+      path: outputPath,
+      options,
+    });
     return { success: true, path: outputPath };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) };

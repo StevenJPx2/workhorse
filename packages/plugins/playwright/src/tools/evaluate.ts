@@ -1,10 +1,10 @@
 /**
  * Playwright Evaluate Tool
  *
- * @module @jiratown/plugin-playwright/tools/evaluate
+ * @module @stevenjpx2/jiratown-plugin-playwright/tools/evaluate
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import { evaluate } from "../session-operations.ts";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 

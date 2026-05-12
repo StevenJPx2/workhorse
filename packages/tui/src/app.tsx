@@ -8,7 +8,7 @@ import type {
   Tracker,
   HarnessOrchestrator,
   Issue,
-} from "@jiratown/core";
+} from "@stevenjpx2/jiratown-core";
 import { JiratownProvider } from "./context/jiratown.tsx";
 import { Overview, Agent, Help } from "./screens";
 import {

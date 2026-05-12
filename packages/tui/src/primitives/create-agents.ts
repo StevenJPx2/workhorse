@@ -1,5 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
-import type { AgentAdapter, AgentState } from "@jiratown/core";
+import type { AgentAdapter, AgentState } from "@stevenjpx2/jiratown-core";
 import { useJiratownContext } from "../context/jiratown.tsx";
 
 /**

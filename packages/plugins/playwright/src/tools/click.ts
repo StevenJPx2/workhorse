@@ -1,10 +1,10 @@
 /**
  * Playwright Click Tool
  *
- * @module @jiratown/plugin-playwright/tools/click
+ * @module @stevenjpx2/jiratown-plugin-playwright/tools/click
  */
 
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import { click } from "../session-operations.ts";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 

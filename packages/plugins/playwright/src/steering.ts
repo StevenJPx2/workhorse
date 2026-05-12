@@ -3,10 +3,10 @@
  *
  * Provides idle-agent reminders for Playwright-specific workflows.
  *
- * @module @jiratown/plugin-playwright/steering
+ * @module @stevenjpx2/jiratown-plugin-playwright/steering
  */
 
-import type { JiratownContext } from "@jiratown/core";
+import type { JiratownContext } from "@stevenjpx2/jiratown-core";
 
 /**
  * Register Playwright-specific steering rules.

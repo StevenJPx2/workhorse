@@ -1,5 +1,5 @@
 import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
-import type { Issue } from "@jiratown/core";
+import type { Issue } from "@stevenjpx2/jiratown-core";
 import { useJiratownContext } from "../context/jiratown.tsx";
 
 /**

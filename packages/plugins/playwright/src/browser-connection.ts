@@ -4,7 +4,7 @@
  * Manages long-lived Playwright browser connections that persist across operations.
  * Each session maintains a single browser instance with a reusable page context.
  *
- * @module @jiratown/plugin-playwright/browser-connection
+ * @module @stevenjpx2/jiratown-plugin-playwright/browser-connection
  */
 
 import type {

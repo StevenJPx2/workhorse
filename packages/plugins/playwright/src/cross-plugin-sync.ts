@@ -4,11 +4,11 @@
  * Listens for GitHub plugin hooks and contributes Playwright-specific content.
  * - Adds "Screenshots" section to PRs with final screenshots
  *
- * @module @jiratown/plugin-playwright/cross-plugin-sync
+ * @module @stevenjpx2/jiratown-plugin-playwright/cross-plugin-sync
  */
 
 import { readdir } from "node:fs/promises";
-import type { JiratownContext } from "@jiratown/core";
+import type { JiratownContext } from "@stevenjpx2/jiratown-core";
 import type { PlaywrightSessionManager } from "./session-manager.ts";
 
 /** Payload type for github:pr.opening event (mirrors PROpeningContext) */

@@ -1,11 +1,11 @@
 /**
  * Playwright Screenshot Tool
  *
- * @module @jiratown/plugin-playwright/tools/screenshot
+ * @module @stevenjpx2/jiratown-plugin-playwright/tools/screenshot
  */
 
 import { join } from "node:path";
-import type { OrchestratorTool } from "@jiratown/core";
+import type { OrchestratorTool } from "@stevenjpx2/jiratown-core";
 import { screenshot } from "../session-operations.ts";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 

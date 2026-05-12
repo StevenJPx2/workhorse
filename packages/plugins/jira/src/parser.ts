@@ -3,10 +3,10 @@
  *
  * Matches Jira ticket keys (e.g., AM-123, PROJ-456) and Jira URLs.
  *
- * @module @jiratown/plugin-jira/parser
+ * @module @stevenjpx2/jiratown-plugin-jira/parser
  */
 
-import type { IssueParserOptions } from "@jiratown/core";
+import type { IssueParserOptions } from "@stevenjpx2/jiratown-core";
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraToIssue } from "./mapper.ts";
 

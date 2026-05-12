@@ -36,7 +36,7 @@ const { createSolidTransformPlugin } = await import(
 async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   // oxlint-disable-next-line jiratown/no-single-use-variable
   const start = performance.now();
-  console.log("\n⚡ Building @jiratown/tui...\n");
+  console.log("\n⚡ Building @stevenjpx2/jiratown-tui...\n");
 
   if (!existsSync(OUTDIR)) mkdirSync(OUTDIR, { recursive: true });
 

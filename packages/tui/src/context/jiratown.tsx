@@ -7,7 +7,7 @@ import type {
   MonitorService,
   Tracker,
   HarnessOrchestrator,
-} from "@jiratown/core";
+} from "@stevenjpx2/jiratown-core";
 
 /**
  * Context value for the Jiratown TUI.

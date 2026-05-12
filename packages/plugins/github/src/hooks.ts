@@ -6,7 +6,7 @@
  *
  * Hook naming convention: `{plugin}:{entity}.{event}`
  *
- * @module @jiratown/plugin-github/hooks
+ * @module @stevenjpx2/jiratown-plugin-github/hooks
  */
 
 /**
@@ -16,7 +16,7 @@
  *
  * @example
  * ```typescript
- * declare module "@jiratown/core" {
+ * declare module "@stevenjpx2/jiratown-core" {
  *   interface HookEventMap extends GitHubPluginHooks {}
  * }
  * ```
