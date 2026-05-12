@@ -1,5 +1,5 @@
 {
-  "name": "workhorse",
+  "name": "@fdcn/workhorse",
   "version": "0.1.0",
   "description": "Terminal UI for Workhorse - AI-powered issue resolver",
   "type": "module",
