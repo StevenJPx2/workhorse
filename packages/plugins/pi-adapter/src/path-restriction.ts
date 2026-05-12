@@ -16,7 +16,7 @@
  * - Writing to system directories
  * - Modifying files in other worktrees or the main repository
  *
- * @module @stevenjpx2/jiratown-plugin-pi-adapter/path-restriction
+ * @module workhorse-plugin-pi-adapter/path-restriction
  */
 
 import {

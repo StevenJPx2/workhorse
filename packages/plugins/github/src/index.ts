@@ -10,7 +10,7 @@
  *
  * **External deps:** `gh` CLI (authenticated via `gh auth login`)
  *
- * @module @stevenjpx2/jiratown-plugin-github
+ * @module workhorse-plugin-github
  */
 
 import { z } from "zod/v4";

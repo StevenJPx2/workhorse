@@ -1,7 +1,7 @@
 /**
  * Playwright Screenshot Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/screenshot
+ * @module workhorse-plugin-playwright/tools/screenshot
  */
 
 import { join } from "node:path";

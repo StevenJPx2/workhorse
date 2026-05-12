@@ -1,26 +1,26 @@
-# @jiratown/plugin-pi-adapter
+# workhorse-plugin-pi-adapter
 
-Pi Coding Agent adapter plugin for Jiratown. Wraps `@earendil-works/pi-coding-agent` SDK as a Jiratown agent adapter.
+Pi Coding Agent adapter plugin for Workhorse. Wraps `@anthropic-ai/claude-code` SDK as a Workhorse agent adapter.
 
 ## Installation
 
 ```bash
-bun add @jiratown/plugin-pi-adapter
+bun add workhorse-plugin-pi-adapter
 ```
 
 ## Prerequisites
 
-- **Pi Coding Agent** installed (`@earendil-works/pi-coding-agent`)
+- **Pi Coding Agent** installed (`@anthropic-ai/claude-code`)
 - **Authentication** via `pi /login` (OAuth credentials stored in `~/.pi/agent/auth.json`)
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| **Agent Adapter** | Full Pi SDK integration as a Jiratown AgentAdapter |
+| **Agent Adapter** | Full Pi SDK integration as a Workhorse AgentAdapter |
 | **Model Registry** | Exposes Pi's available models (with auth check) |
-| **Tool Extensions** | Translates Jiratown tools to Pi Extension API |
-| **Event Handling** | Maps Pi session events to Jiratown hooks |
+| **Tool Extensions** | Translates Workhorse tools to Pi Extension API |
+| **Event Handling** | Maps Pi session events to Workhorse hooks |
 | **Streaming Support** | Send messages during streaming via `session.steer()` |
 
 ## Usage
@@ -28,9 +28,9 @@ bun add @jiratown/plugin-pi-adapter
 ### Register the Plugin
 
 ```typescript
-import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 
-const jt = await bootstrap({
+const wh = await bootstrap({
   plugins: [piAdapterPlugin],
 });
 ```
@@ -73,7 +73,7 @@ model: undefined
 │  │ Pi SDK      │  │ Extensions   │  │ Event       │  │
 │  │ Session     │  │ (Tools)      │  │ Handler     │  │
 │  │             │  │              │  │             │  │
-│  │ create()   │  │ Jiratown     │  │ agent.idle  │  │
+│  │ create()   │  │ Workhorse    │  │ agent.idle  │  │
 │  │ prompt()    │  │ tools →      │  │ status      │  │
 │  │ steer()     │  │ Pi extension │  │ changes     │  │
 │  │ dispose()   │  │              │  │             │  │
@@ -91,7 +91,7 @@ model: undefined
    ├── Create PiModelRegistry from auth
    ├── Create DefaultResourceLoader
    │   ├── Set systemPromptOverride → agent's system prompt
-   │   └── Add extensionFactories → Jiratown tools as Pi extensions
+   │   └── Add extensionFactories → Workhorse tools as Pi extensions
    ├── Create AgentSession
    └── Subscribe to session events → handleSessionEvent()
 
@@ -106,12 +106,12 @@ model: undefined
 
 ### Tool Translation
 
-Jiratown tools (`OrchestratorTool[]`) are translated to Pi extensions:
+Workhorse tools (`OrchestratorTool[]`) are translated to Pi extensions:
 
 ```typescript
-// Jiratown tool → Pi extension
+// Workhorse tool → Pi extension
 {
-  name: "jiratown_acknowledge",
+  name: "workhorse_acknowledge",
   description: "Mark notification(s) as read...",
   schema: { type: "object", properties: {...} },
   execute: async (args, ctx) => {...}
@@ -124,9 +124,9 @@ The extension handler receives tool call arguments and delegates to the original
 
 ### Event Mapping
 
-Pi session events are mapped to Jiratown hooks:
+Pi session events are mapped to Workhorse hooks:
 
-| Pi Event | Jiratown Action |
+| Pi Event | Workhorse Action |
 |----------|----------------|
 | Agent becomes idle | Emit `agent.idle` hook |
 | Agent tool call | Emit `agent.tool_call` hook |
@@ -138,7 +138,7 @@ Pi session events are mapped to Jiratown hooks:
 The `PiAdapterModelRegistry` wraps Pi's `ModelRegistry` to provide model discovery:
 
 ```typescript
-import { PiAdapterModelRegistry } from "@jiratown/plugin-pi-adapter";
+import { PiAdapterModelRegistry } from "workhorse-plugin-pi-adapter";
 
 const registry = PiAdapterModelRegistry.getInstance();
 
@@ -160,7 +160,7 @@ registry.refresh();
 
 ## Types
 
-The plugin re-exports `ModelInfo` from `@jiratown/core` and provides:
+The plugin re-exports `ModelInfo` from `workhorse-core` and provides:
 
 | Export | Description |
 |--------|-------------|
@@ -173,7 +173,7 @@ The plugin re-exports `ModelInfo` from `@jiratown/core` and provides:
 |------|---------|
 | `index.ts` | Plugin definition — registers adapter and TUI renderer |
 | `adapter.ts` | PiAgentAdapter — extends AgentAdapter with Pi SDK integration |
-| `events.ts` | Pi session event handler → Jiratown hook mapping |
+| `events.ts` | Pi session event handler → Workhorse hook mapping |
 | `registry.ts` | PiAdapterModelRegistry — wraps Pi's model registry |
 | `renderers.ts` | TUI tool call renderer for Pi-specific display |
 

@@ -3,7 +3,7 @@
  *
  * Hooks `prompt.building` to add Jira state and workflow context blocks.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/prompt
+ * @module workhorse-plugin-jira/prompt
  */
 
 import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";

@@ -4,7 +4,7 @@
  * Delegates to the `gh` CLI for authentication.
  * Users must run `gh auth login` before using the plugin.
  *
- * @module @stevenjpx2/jiratown-plugin-github/auth
+ * @module workhorse-plugin-github/auth
  */
 
 import type { ExternalProvider } from "workhorse-core";

@@ -3,7 +3,7 @@
  *
  * Polls for new comments on Jira issues and creates notifications.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/monitor
+ * @module workhorse-plugin-jira/monitor
  */
 
 import type { Database, MonitorOptions } from "workhorse-core";

@@ -1,7 +1,7 @@
 /**
  * Jira Add Comment tool.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/tools/add-comment
+ * @module workhorse-plugin-jira/tools/add-comment
  */
 
 import type { OrchestratorTool } from "workhorse-core";

@@ -3,7 +3,7 @@
  *
  * Handles Playwright tool calls in the unified activity renderer system.
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/renderer
+ * @module workhorse-plugin-playwright/renderer
  */
 
 import type { Notification } from "workhorse-core";

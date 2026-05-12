@@ -6,7 +6,7 @@
  * - Issue URLs: `https://github.com/owner/repo/issues/45`
  * - PR URLs: `https://github.com/owner/repo/pull/45`
  *
- * @module @stevenjpx2/jiratown-plugin-github/parser
+ * @module workhorse-plugin-github/parser
  */
 
 import type { IssueParserOptions } from "workhorse-core";

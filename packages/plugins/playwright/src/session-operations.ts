@@ -4,7 +4,7 @@
  * Provides high-level operations (screenshot, click, fill, etc.) that work
  * with the session manager to interact with persistent browser connections.
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/session-operations
+ * @module workhorse-plugin-playwright/session-operations
  */
 
 import {

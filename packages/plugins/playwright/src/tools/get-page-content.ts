@@ -1,7 +1,7 @@
 /**
  * Playwright Get Page Content Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/get-page-content
+ * @module workhorse-plugin-playwright/tools/get-page-content
  */
 
 import type { OrchestratorTool } from "workhorse-core";

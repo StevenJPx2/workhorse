@@ -1,7 +1,7 @@
 /**
  * GitHub Add Comment tool.
  *
- * @module @stevenjpx2/jiratown-plugin-github/tools/add-comment
+ * @module workhorse-plugin-github/tools/add-comment
  */
 
 import type { OrchestratorTool } from "workhorse-core";

@@ -3,7 +3,7 @@
  *
  * Listens to `github:pr.opening` and adds a table of related Jira tickets.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/pr-contribution
+ * @module workhorse-plugin-jira/pr-contribution
  */
 
 import type { Database, WorkhorseContext } from "workhorse-core";

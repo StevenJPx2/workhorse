@@ -3,7 +3,7 @@
  *
  * Hooks `prompt.building` to add PR state and workflow context blocks.
  *
- * @module @stevenjpx2/jiratown-plugin-github/prompt
+ * @module workhorse-plugin-github/prompt
  */
 
 import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";

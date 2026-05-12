@@ -1,7 +1,7 @@
 /**
  * Playwright Get Element Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/get-element
+ * @module workhorse-plugin-playwright/tools/get-element
  */
 
 import type { OrchestratorTool } from "workhorse-core";

@@ -1,7 +1,7 @@
 /**
  * GitHub status sync — updates PR labels when issue.status_changed fires.
  *
- * @module @stevenjpx2/jiratown-plugin-github/sync
+ * @module workhorse-plugin-github/sync
  */
 
 import type { IssueStatus, WorkhorseContext } from "workhorse-core";

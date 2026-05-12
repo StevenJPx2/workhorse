@@ -1,4 +1,4 @@
-# Jiratown Architecture
+# Workhorse Architecture
 
 An AI-powered agent orchestrator that manages coding agents working on Jira and GitHub issues.
 
@@ -16,13 +16,13 @@ An AI-powered agent orchestrator that manages coding agents working on Jira and 
 ## Project Structure
 
 ```
-jiratown/
+workhorse/
 ├── packages/
-│   ├── core/              # @jiratown/core — main library
+│   ├── core/              # @workhorse/core — main library
 │   │   └── src/
-│   │       ├── bootstrap.ts      # Main entry — creates Jiratown instance
+│   │       ├── bootstrap.ts      # Main entry — creates Workhorse instance
 │   │       ├── config/           # TOML config loading & validation
-│   │       ├── context/          # Async context (useJiratown)
+│   │       ├── context/          # Async context (useWorkhorse)
 │   │       ├── db/               # SQLite schema, controllers
 │   │       ├── lib/
 │   │       │   ├── git/          # Git worktree operations
@@ -37,10 +37,10 @@ jiratown/
 │   │           ├── steering/    # Autonomous steering rules
 │   │           └── tracker/     # Issue parsing, prompt building
 │   ├── plugins/           # External plugins
-│   │   ├── github/        # @jiratown/plugin-github — PR monitoring, tools, status sync
-│   │   ├── jira/          # @jiratown/plugin-jira — comment monitoring, tools, transitions
-│   │   └── pi-adapter/    # @jiratown/plugin-pi-adapter — Pi Coding Agent adapter
-│   ├── tui/               # @jiratown/tui — Terminal UI (OpenTUI + Solid.js)
+│   │   ├── github/        # @workhorse/plugin-github — PR monitoring, tools, status sync
+│   │   ├── jira/          # @workhorse/plugin-jira — comment monitoring, tools, transitions
+│   │   └── pi-adapter/    # @workhorse/plugin-pi-adapter — Pi Coding Agent adapter
+│   ├── tui/               # @workhorse/tui — Terminal UI (OpenTUI + Solid.js)
 │   └── tui-worktrees/     # TUI worktree instances
 ├── oxlint/                # Custom lint rules
 ├── plan/                  # Build plan documentation
@@ -51,7 +51,7 @@ jiratown/
 
 ### 1. Bootstrap (`bootstrap.ts`)
 
-Creates a `Jiratown` instance — the main entry point:
+Creates a `Workhorse` instance — the main entry point:
 
 ```typescript
 const jt = await bootstrap();
@@ -75,14 +75,14 @@ Uses `unctx` + `AsyncLocalStorage` for async context propagation:
 
 ```typescript
 // Inside plugin setup or any code running in context
-const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } = useJiratown();
+const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } = useWorkhorse();
 
 // Safe access (returns undefined if not in context)
 const ctx = tryUseJiratown();
 
 // Running code with context
 runWithContext(context, async () => {
-  // useJiratown() works here
+  // useWorkhorse() works here
 });
 ```
 
@@ -91,7 +91,7 @@ runWithContext(context, async () => {
 Plugins extend Jiratown via `definePlugin()`:
 
 ```typescript
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "@workhorse/core";
 import { z } from "zod/v4";
 
 export default definePlugin({
@@ -109,7 +109,7 @@ export default definePlugin({
     apiKey: z.string(),
   }),
   setup(config) {
-    const { hooks, tracker, orchestrator, monitors } = useJiratown();
+    const { hooks, tracker, orchestrator, monitors } = useWorkhorse();
     // Register parsers, tools, monitors, steering rules, prompt hooks
   },
   teardown() {
@@ -366,37 +366,37 @@ poll_interval = 30000
 ```
 
 **Config Locations:**
-- Global: `~/.jiratown.toml`, `~/.config/jiratown.toml`, or `~/.config/jiratown/config.toml`
-- Project: `<repo>/.jiratown.toml`
+- Global: `~/.workhorse.toml`, `~/.config/jiratown.toml`, or `~/.config/workhorse/config.toml`
+- Project: `<repo>/.workhorse.toml`
 
-**Data Directory:** `~/.local/share/jiratown/` (respects `XDG_DATA_HOME`)
+**Data Directory:** `~/.local/share/workhorse/` (respects `XDG_DATA_HOME`)
 
 ## Plugins
 
-### @jiratown/plugin-jira
+### @workhorse/plugin-jira
 
 Jira Cloud integration:
 - Issue parsing for ticket keys (`PROJ-123`) and URLs
 - Comment monitoring with deduplication
-- Status sync (Jiratown → Jira transitions)
+- Status sync (Workhorse → Jira transitions)
 - Tools: `jira_add_comment`, `jira_transition_issue`, `jira_get_comments`
 - Cross-plugin sync with GitHub (PR → Jira comment)
 - Steering rules for comment response
 
-### @jiratown/plugin-github
+### @workhorse/plugin-github
 
 GitHub integration via `gh` CLI:
 - Issue/PR parsing for `owner/repo#45` and URLs
 - Unified PR monitor (reviews, comments, CI checks, mergeable state)
-- Status sync (Jiratown → GitHub labels)
+- Status sync (Workhorse → GitHub labels)
 - Tools: `github_open_pr`, `github_add_comment`, `github_get_pr_status`
 - Steering rules for PR review and CI failure reminders
 
-### @jiratown/plugin-pi-adapter
+### @workhorse/plugin-pi-adapter
 
 Pi Coding Agent adapter:
 - Wraps `@mariozechner/pi-coding-agent` SDK
-- Translates Jiratown tools to Pi extensions
+- Translates Workhorse tools to Pi extensions
 - Maps Pi session events to Jiratown hooks
 - Model registry with Pi's authentication
 - Streaming support (`session.steer()` for mid-stream injection)
@@ -454,6 +454,6 @@ Pi Coding Agent adapter:
 
 | Tool | Description | Parameters |
 |------|-------------|-----------|
-| `jiratown_acknowledge` | Mark notification(s) as read | `notificationIds?: string[]` |
-| `jiratown_update_status` | Update issue status | `status: string` |
-| `jiratown_escalate` | Escalate to a human | `message: string`, `blocking?: boolean` |
+| `workhorse_acknowledge` | Mark notification(s) as read | `notificationIds?: string[]` |
+| `workhorse_update_status` | Update issue status | `status: string` |
+| `workhorse_escalate` | Escalate to a human | `message: string`, `blocking?: boolean` |

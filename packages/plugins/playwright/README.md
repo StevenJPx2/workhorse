@@ -1,11 +1,11 @@
-# @jiratown/plugin-playwright
+# workhorse-plugin-playwright
 
-Browser automation plugin for Jiratown using Playwright. Provides headless browser control for testing, screenshot capture, and web interaction during issue implementation.
+Browser automation plugin for Workhorse using Playwright. Provides headless browser control for testing, screenshot capture, and web interaction during issue implementation.
 
 ## Installation
 
 ```bash
-bun add @jiratown/plugin-playwright
+bun add workhorse-plugin-playwright
 ```
 
 ## Prerequisites
@@ -29,7 +29,7 @@ bun add @jiratown/plugin-playwright
 ## Configuration
 
 ```toml
-# ~/.jiratown.toml or .jiratown.toml
+# ~/.workhorse.toml or .workhorse.toml
 
 [plugins.playwright]
 browser_type = "chromium"    # Browser engine: chromium, firefox, webkit (default: chromium)
@@ -44,9 +44,9 @@ headless = true              # Run in headless mode (default: true)
 ### Register the Plugin
 
 ```typescript
-import { playwrightPlugin } from "@jiratown/plugin-playwright";
+import { playwrightPlugin } from "workhorse-plugin-playwright";
 
-const jt = await bootstrap({
+const wh = await bootstrap({
   plugins: [playwrightPlugin],
 });
 ```
@@ -303,7 +303,7 @@ The `playwright:page.loading` hook fires **before** a page navigates, allowing p
 - Overriding `Date.now()` or other functions
 
 ```typescript
-import type { PageLoadingContext } from "@jiratown/plugin-playwright";
+import type { PageLoadingContext } from "workhorse-plugin-playwright";
 
 ctx.hooks.on("playwright:page.loading", (event: unknown) => {
   const loadingCtx = event as PageLoadingContext;
@@ -370,7 +370,7 @@ ctx.hooks.on("playwright:page.navigated", (event: unknown) => {
 ### Custom Session Management
 
 ```typescript
-import { PlaywrightSessionManager } from "@jiratown/plugin-playwright";
+import { PlaywrightSessionManager } from "workhorse-plugin-playwright";
 
 // Access the session manager for advanced operations
 const session = await sessionManager.getOrCreateSession(issueId, {

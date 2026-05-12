@@ -1,7 +1,7 @@
 /**
  * Jira Transition Issue tool.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/tools/transition
+ * @module workhorse-plugin-jira/tools/transition
  */
 
 import type { OrchestratorTool } from "workhorse-core";

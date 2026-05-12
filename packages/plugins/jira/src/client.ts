@@ -3,7 +3,7 @@
  *
  * Uses direct fetch calls (via Bun) with Bearer token auth.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/client
+ * @module workhorse-plugin-jira/client
  */
 
 import type { JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";

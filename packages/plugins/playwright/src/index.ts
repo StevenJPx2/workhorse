@@ -10,7 +10,7 @@
  *
  * **External deps:** Node.js with Playwright installed (`npx playwright install`)
  *
- * @module @stevenjpx2/jiratown-plugin-playwright
+ * @module workhorse-plugin-playwright
  */
 
 import { z } from "zod/v4";

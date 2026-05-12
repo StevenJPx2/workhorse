@@ -1,7 +1,7 @@
 /**
  * Jira Get Comments tool.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/tools/get-comments
+ * @module workhorse-plugin-jira/tools/get-comments
  */
 
 import type { OrchestratorTool } from "workhorse-core";

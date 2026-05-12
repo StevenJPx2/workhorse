@@ -1,11 +1,11 @@
-# Jiratown Plugin Guide
+# Workhorse Plugin Guide
 
-Plugins extend Jiratown's functionality. This guide covers everything you need to create a plugin.
+Plugins extend Workhorse's functionality. This guide covers everything you need to create a plugin.
 
 ## Basic Plugin
 
 ```typescript
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 
 export default definePlugin({
   manifest: {
@@ -14,7 +14,7 @@ export default definePlugin({
     description: "My custom plugin",
   },
   setup() {
-    const { hooks } = useJiratown();
+    const { hooks } = useWorkhorse();
     console.log("Plugin initialized");
   },
   teardown() {
@@ -26,7 +26,7 @@ export default definePlugin({
 ## Plugin with Config Schema
 
 ```typescript
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 import { z } from "zod/v4";
 
 export const MyConfigSchema = z.object({
@@ -63,7 +63,7 @@ timeout = 10000
 
 ## Accessing Services
 
-Use `useJiratown()` inside `setup()` to access services:
+Use `useWorkhorse()` inside `setup()` to access services:
 
 ```typescript
 setup(config) {
@@ -76,7 +76,7 @@ setup(config) {
     orchestrator,  // HarnessOrchestrator
     config: appConfig, // Full app config
     paths,         // Config paths
-  } = useJiratown();
+  } = useWorkhorse();
 }
 ```
 
@@ -88,7 +88,7 @@ Parse custom issue formats (URLs, keys). Parsers are tried in registration order
 
 ```typescript
 setup(config) {
-  const { tracker } = useJiratown();
+  const { tracker } = useWorkhorse();
 
   tracker.registerParser({
     source: "my-service",
@@ -128,7 +128,7 @@ Inject context blocks into agent prompts via the `prompt.building` hook:
 
 ```typescript
 setup(config) {
-  const { hooks } = useJiratown();
+  const { hooks } = useWorkhorse();
 
   hooks.on("prompt.building", ({ issueId, context }) => {
     context.contextBlocks.push({
@@ -147,7 +147,7 @@ Poll external services for changes. Two-phase API: register once at setup, then 
 
 ```typescript
 setup(config) {
-  const { monitors, hooks } = useJiratown();
+  const { monitors, hooks } = useWorkhorse();
 
   // Register monitor definition (once)
   monitors.registerMonitor({
@@ -190,10 +190,10 @@ Monitors self-stop after 5 consecutive errors.
 Add functions that agents can invoke during execution:
 
 ```typescript
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "@jiratown/core";
+import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
 
 setup(config) {
-  const { orchestrator } = useJiratown();
+  const { orchestrator } = useWorkhorse();
 
   const myTool: OrchestratorTool = {
     name: "my_service_action",
@@ -231,8 +231,8 @@ setup(config) {
 Add support for a new AI harness by extending `AgentAdapter`:
 
 ```typescript
-import { AgentAdapter, definePlugin } from "@jiratown/core";
-import type { AgentState } from "@jiratown/core";
+import { AgentAdapter, definePlugin } from "workhorse-core";
+import type { AgentState } from "workhorse-core";
 
 class MyHarnessAdapter extends AgentAdapter {
   override readonly harness = "my-harness";
@@ -271,7 +271,7 @@ export default definePlugin({
     capabilities: { adapters: ["my-harness"] },
   },
   setup() {
-    const { orchestrator } = useJiratown();
+    const { orchestrator } = useWorkhorse();
     orchestrator.registerAdapter("my-harness", MyHarnessAdapter);
   },
 });
@@ -297,7 +297,7 @@ Add autonomous behavior rules for idle agents:
 
 ```typescript
 setup(config) {
-  const { orchestrator } = useJiratown();
+  const { orchestrator } = useWorkhorse();
 
   // Simple static reminder
   orchestrator.registerSteeringRule({
@@ -353,7 +353,7 @@ Push notifications to agent inboxes. Notifications are included in the agent's s
 
 ```typescript
 setup(config) {
-  const { memory, hooks } = useJiratown();
+  const { memory, hooks } = useWorkhorse();
 
   // Create with deduplication (by sourceId)
   await memory.notifications.create({
@@ -384,7 +384,7 @@ Register activity renderers for the TUI:
 
 ```typescript
 setup(config) {
-  const { hooks } = useJiratown();
+  const { hooks } = useWorkhorse();
 
   hooks.emit("tui.register_renderer", {
     id: "my-plugin",
@@ -410,7 +410,7 @@ React to system events:
 
 ```typescript
 setup(config) {
-  const { hooks } = useJiratown();
+  const { hooks } = useWorkhorse();
 
   // Agent lifecycle
   hooks.on("agent.create.post", ({ adapter }) => { /* ... */ });
@@ -460,7 +460,7 @@ setup(config) {
 
 ```typescript
 setup(config) {
-  const { hooks } = useJiratown();
+  const { hooks } = useWorkhorse();
 
   hooks.on("some:event", async (payload) => {
     try {
@@ -585,7 +585,7 @@ hooks.on("github:pr.merged", async ({ issueId, pr }) => {
 ## Example: Full Plugin
 
 ```typescript
-import { definePlugin, useJiratown, type OrchestratorTool, type ToolResult } from "@jiratown/core";
+import { definePlugin, useWorkhorse, type OrchestratorTool, type ToolResult } from "workhorse-core";
 import { z } from "zod/v4";
 
 export const SlackConfigSchema = z.object({
@@ -608,7 +608,7 @@ export default definePlugin({
   configSchema: SlackConfigSchema,
 
   setup(config) {
-    const { hooks, orchestrator } = useJiratown();
+    const { hooks, orchestrator } = useWorkhorse();
 
     // Notify on PR merge
     if (config.notifyOnPrMerge) {
@@ -673,20 +673,20 @@ async function sendSlackMessage(webhookUrl: string, payload: object) {
 ## Adding a New Plugin Package
 
 1. Create directory under `packages/plugins/<name>/`
-2. Add `package.json` with proper naming (`@jiratown/plugin-<name>`)
+2. Add `package.json` with proper naming (`workhorse-plugin-<name>`)
 3. Create `src/index.ts` with `definePlugin()`
 4. Add to workspace in root `package.json` (already includes `packages/plugins/*`)
 5. Register in application after bootstrap:
 
 ```typescript
-import myPlugin from "@jiratown/plugin-my-plugin";
+import myPlugin from "workhorse-plugin-my-plugin";
 
 const jt = await bootstrap({
   plugins: [myPlugin],
 });
 ```
 
-6. Add plugin config to `.jiratown.toml`:
+6. Add plugin config to `.workhorse.toml`:
 
 ```toml
 [plugins.my-plugin]

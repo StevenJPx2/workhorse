@@ -8,7 +8,7 @@
  * - Status sync (Jiratown status → Jira transitions)
  * - Jira tools (add_comment, transition_issue)
  *
- * @module @stevenjpx2/jiratown-plugin-jira
+ * @module workhorse-plugin-jira
  */
 
 import { z } from "zod/v4";

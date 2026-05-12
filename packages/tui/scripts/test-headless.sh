@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Headless Terminal Testing Script for Jiratown TUI
+# Headless Terminal Testing Script for Workhorse TUI
 # 
 # Uses `ht` (headless-terminal) to run automated UI tests.
 # Install: brew install montanaflynn/tap/ht
@@ -18,8 +18,8 @@
 set -e
 
 HT="/opt/homebrew/bin/ht"
-SESSION="jt-test"
-TUI_CMD="bun packages/tui/dist/jiratown.js"
+SESSION="wh-test"
+TUI_CMD="bun packages/tui/dist/workhorse.js"
 COLS=120
 ROWS=40
 
@@ -72,10 +72,10 @@ test_overview() {
   local output=$(view_plain)
   
   # Check for expected elements
-  if echo "$output" | grep -q "JIRATOWN"; then
-    log_pass "Header 'JIRATOWN' found"
+  if echo "$output" | grep -q "WORKHORSE"; then
+    log_pass "Header 'WORKHORSE' found"
   else
-    log_fail "Header 'JIRATOWN' not found"
+    log_fail "Header 'WORKHORSE' not found"
     echo "$output"
     return 1
   fi
@@ -237,7 +237,7 @@ test_full_flow() {
 main() {
   local test="${1:-full}"
   
-  log_info "Jiratown TUI Headless Tests"
+  log_info "Workhorse TUI Headless Tests"
   log_info "Using ht at: $HT"
   
   # Check ht is installed

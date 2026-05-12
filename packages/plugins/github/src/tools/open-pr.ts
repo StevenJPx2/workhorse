@@ -1,7 +1,7 @@
 /**
  * GitHub Open PR tool.
  *
- * @module @stevenjpx2/jiratown-plugin-github/tools/open-pr
+ * @module workhorse-plugin-github/tools/open-pr
  */
 
 import type { Database, OrchestratorTool } from "workhorse-core";

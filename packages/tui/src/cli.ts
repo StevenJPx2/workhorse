@@ -1,5 +1,5 @@
 /**
- * CLI argument parsing and handlers for Jiratown TUI.
+ * CLI argument parsing and handlers for Workhorse TUI.
  *
  * @module cli
  */
@@ -53,9 +53,9 @@ export function parseCliArgs(): CliArgs {
 /** Show help message. */
 export function showHelp(): void {
   console.log(`
-Jiratown TUI - AI-powered Jira issue resolver
+Workhorse TUI - AI-powered issue management
 
-Usage: jiratown [options]
+Usage: workhorse [options]
 
 Options:
   -m, --model <model>   Model to use (e.g., claude-sonnet-4, claude-opus-4-6)
@@ -67,12 +67,12 @@ Environment Variables:
   ANTHROPIC_API_KEY     API key for Anthropic provider
 
 Config File:
-  ~/.jiratown.toml      Global configuration
-  .jiratown.toml        Project-specific configuration
+  ~/.workhorse.toml      Global configuration
+  .workhorse.toml        Project-specific configuration
 
 Example:
-  jiratown --model claude-sonnet-4
-  OPENCODE_API_KEY=xxx jiratown
+  workhorse --model claude-sonnet-4
+  OPENCODE_API_KEY=xxx workhorse
 `);
 }
 

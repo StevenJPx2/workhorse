@@ -1,11 +1,11 @@
-# @jiratown/plugin-github
+# workhorse-plugin-github
 
-GitHub integration plugin for Jiratown. Provides issue parsing, PR monitoring, status sync, tools, steering, and prompt enrichment.
+GitHub integration plugin for Workhorse. Provides issue parsing, PR monitoring, status sync, tools, steering, and prompt enrichment.
 
 ## Installation
 
 ```bash
-bun add @jiratown/plugin-github
+bun add workhorse-plugin-github
 ```
 
 ## Prerequisites
@@ -17,10 +17,10 @@ bun add @jiratown/plugin-github
 
 | Feature | Description |
 |---------|-------------|
-| **Issue Parsing** | Parse `owner/repo#45` and GitHub URLs into Jiratown issues |
+| **Issue Parsing** | Parse `owner/repo#45` and GitHub URLs into Workhorse issues |
 | **PR Monitor** | Unified monitor for PR reviews, comments, CI checks, and mergeable state |
 | **Prompt Enrichment** | Inject GitHub issue/PR state into agent system prompts |
-| **Status Sync** | Sync Jiratown issue status → GitHub PR labels |
+| **Status Sync** | Sync Workhorse issue status → GitHub PR labels |
 | **Tools** | `github_open_pr`, `github_add_comment`, `github_get_pr_status` |
 | **Steering** | Idle agent reminders for PR reviews and CI failures |
 | **Cross-plugin Sync** | React to Jira status changes (when both plugins are loaded) |
@@ -28,7 +28,7 @@ bun add @jiratown/plugin-github
 ## Configuration
 
 ```toml
-# ~/.jiratown.toml or .jiratown.toml
+# ~/.workhorse.toml or .workhorse.toml
 
 [plugins.github]
 poll_interval = 30000    # PR monitor poll interval in ms (default: 30000)
@@ -39,9 +39,9 @@ poll_interval = 30000    # PR monitor poll interval in ms (default: 30000)
 ### Register the Plugin
 
 ```typescript
-import { githubPlugin } from "@jiratown/plugin-github";
+import { githubPlugin } from "workhorse-plugin-github";
 
-const jt = await bootstrap({
+const wh = await bootstrap({
   plugins: [githubPlugin],
 });
 ```
@@ -144,14 +144,14 @@ The plugin adds context blocks to agent prompts via the `prompt.building` hook:
 
 ### Status Sync
 
-Jiratown issue status changes are synced to GitHub PR labels:
+Workhorse issue status changes are synced to GitHub PR labels:
 
-| Jiratown Status | GitHub Label |
+| Workhorse Status | GitHub Label |
 |-----------------|-------------|
-| `implementing` | `jiratown:implementing` |
-| `in_review` | `jiratown:in-review` |
-| `blocked` | `jiratown:blocked` |
-| `done` | `jiratown:done` |
+| `implementing` | `workhorse:implementing` |
+| `in_review` | `workhorse:in-review` |
+| `blocked` | `workhorse:blocked` |
+| `done` | `workhorse:done` |
 
 ### Steering Rules
 
@@ -243,12 +243,12 @@ interface PRStatusSummary {
 | `client.ts` | GitHubClient — `gh` CLI wrapper for API access |
 | `gh-cli.ts` | Low-level `gh` command execution helpers |
 | `parser.ts` | GitHub reference parsing (owner/repo#num, URLs) |
-| `mapper.ts` | GitHubIssue/PR → Jiratown issue mapping |
+| `mapper.ts` | GitHubIssue/PR → Workhorse issue mapping |
 | `monitor.ts` | PR monitor factory (creates MonitorOptions) |
 | `monitor-notifications.ts` | PR notification detection (new reviews, comments) |
 | `monitor-checks.ts` | CI check state tracking |
 | `prompt.ts` | Prompt enrichment via `prompt.building` hook |
-| `sync.ts` | Status sync (Jiratown → GitHub labels) |
+| `sync.ts` | Status sync (Workhorse → GitHub labels) |
 | `steering.ts` | Steering rules for PR reviews and CI failures |
 | `tools/index.ts` | Tool registration factory |
 | `tools/open-pr.ts` | `github_open_pr` tool implementation |

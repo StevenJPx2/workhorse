@@ -1,7 +1,7 @@
 /**
  * Playwright Evaluate Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/evaluate
+ * @module workhorse-plugin-playwright/tools/evaluate
  */
 
 import type { OrchestratorTool } from "workhorse-core";

@@ -5,7 +5,7 @@
  * Creates notifications with appropriate priorities.
  * Emits plugin hooks for cross-plugin coordination.
  *
- * @module @stevenjpx2/jiratown-plugin-github/monitor
+ * @module workhorse-plugin-github/monitor
  */
 
 import type { Database, MonitorOptions } from "workhorse-core";

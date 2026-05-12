@@ -1,7 +1,7 @@
 /**
  * Playwright tools registered with the orchestrator.
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools
+ * @module workhorse-plugin-playwright/tools
  */
 
 import type { OrchestratorTool } from "workhorse-core";

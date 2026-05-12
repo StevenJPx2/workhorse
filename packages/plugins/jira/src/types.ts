@@ -1,7 +1,7 @@
 /**
  * Jira domain types for the Jira plugin.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/types
+ * @module workhorse-plugin-jira/types
  */
 
 /** Jira issue as returned by the REST API */

@@ -4,7 +4,7 @@
  * Standalone plugin package that wraps @earendil-works/pi-coding-agent
  * for use with Jiratown's orchestrator.
  *
- * @module @stevenjpx2/jiratown-plugin-pi-adapter
+ * @module workhorse-plugin-pi-adapter
  */
 
 import { definePlugin } from "workhorse-core";

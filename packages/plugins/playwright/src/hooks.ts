@@ -6,7 +6,7 @@
  *
  * Hook naming convention: `{plugin}:{entity}.{event}`
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/hooks
+ * @module workhorse-plugin-playwright/hooks
  */
 
 import type { BrowserType, ScreenshotOptions, Viewport } from "./types.ts";

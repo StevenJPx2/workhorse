@@ -3,7 +3,7 @@
  *
  * Adds Playwright-specific context blocks to agent prompts.
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/prompt
+ * @module workhorse-plugin-playwright/prompt
  */
 
 import type { WorkhorseContext } from "workhorse-core";

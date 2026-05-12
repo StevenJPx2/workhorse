@@ -1,27 +1,27 @@
-# @jiratown/plugin-jira
+# workhorse-plugin-jira
 
-Jira Cloud integration plugin for Jiratown. Provides issue parsing, comment monitoring, status sync, tools, steering, and prompt enrichment.
+Jira Cloud integration plugin for Workhorse. Provides issue parsing, comment monitoring, status sync, tools, steering, and prompt enrichment.
 
 ## Installation
 
 ```bash
-bun add @jiratown/plugin-jira
+bun add workhorse-plugin-jira
 ```
 
 ## Prerequisites
 
 - **Jira Cloud** account with API access
-- **OAuth credentials** stored in system keychain (via `jiratown setup` or manual keychain entry)
+- **OAuth credentials** stored in system keychain (via `workhorse setup` or manual keychain entry)
 - Cloud ID for your Jira instance (e.g., `company.atlassian.net`)
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| **Issue Parsing** | Parse Jira ticket keys (`PROJ-123`) and URLs into Jiratown issues |
+| **Issue Parsing** | Parse Jira ticket keys (`PROJ-123`) and URLs into Workhorse issues |
 | **Comment Monitor** | Poll for new comments and update notifications |
 | **Prompt Enrichment** | Inject Jira issue state into agent system prompts |
-| **Status Sync** | Sync Jiratown issue status → Jira workflow transitions |
+| **Status Sync** | Sync Workhorse issue status → Jira workflow transitions |
 | **Tools** | `jira_add_comment`, `jira_transition_issue`, `jira_get_comments` |
 | **Steering** | Idle agent reminders for unread comments |
 | **Cross-plugin Sync** | React to GitHub PR events (when both plugins are loaded) |
@@ -29,7 +29,7 @@ bun add @jiratown/plugin-jira
 ## Configuration
 
 ```toml
-# ~/.jiratown.toml or .jiratown.toml
+# ~/.workhorse.toml or .workhorse.toml
 
 [plugins.jira]
 cloud_id = "company.atlassian.net"    # Required — your Jira Cloud ID
@@ -41,9 +41,9 @@ poll_interval = 30000                  # Comment poll interval in ms (default: 3
 ### Register the Plugin
 
 ```typescript
-import { jiraPlugin } from "@jiratown/plugin-jira";
+import { jiraPlugin } from "workhorse-plugin-jira";
 
-const jt = await bootstrap({
+const wh = await bootstrap({
   plugins: [jiraPlugin],
 });
 ```
@@ -54,11 +54,11 @@ The plugin uses OAuth credentials stored in the system keychain:
 
 ```typescript
 // Credentials are retrieved via keychain at runtime
-// Store them via `jiratown setup` or manually:
-import { storeCredential } from "@jiratown/core";
+// Store them via `workhorse setup` or manually:
+import { storeCredential } from "workhorse-core";
 
-await storeCredential("jiratown", "jira_access_token", "your-token");
-await storeCredential("jiratown", "jira_refresh_token", "your-refresh-token");
+await storeCredential("workhorse", "jira_access_token", "your-token");
+await storeCredential("workhorse", "jira_refresh_token", "your-refresh-token");
 ```
 
 ### Issue Parsing
@@ -136,9 +136,9 @@ The plugin adds context blocks to agent prompts via the `prompt.building` hook:
 
 ### Status Sync
 
-Jiratown issue status changes are synced to Jira workflow transitions:
+Workhorse issue status changes are synced to Jira workflow transitions:
 
-| Jiratown Status | Jira Transition (typical) |
+| Workhorse Status | Jira Transition (typical) |
 |-----------------|--------------------------|
 | `planning` | → "In Progress" |
 | `implementing` | → "In Progress" |
@@ -168,7 +168,7 @@ The plugin registers steering rules for idle agents:
 The `AtlassianClient` provides direct Jira REST API access:
 
 ```typescript
-import { AtlassianClient } from "@jiratown/plugin-jira";
+import { AtlassianClient } from "workhorse-plugin-jira";
 
 const client = new AtlassianClient("company.atlassian.net", credentialGetter);
 
@@ -256,10 +256,10 @@ interface JiraCredentials {
 | `client.ts` | AtlassianClient — Jira Cloud REST API wrapper |
 | `auth.ts` | Credential retrieval from system keychain |
 | `parser.ts` | Jira ticket key/URL parsing |
-| `mapper.ts` | JiraIssue → Jiratown issue mapping |
+| `mapper.ts` | JiraIssue → Workhorse issue mapping |
 | `monitor.ts` | Comment monitor factory |
 | `prompt.ts` | Prompt enrichment via `prompt.building` hook |
-| `sync.ts` | Status sync (Jiratown → Jira transitions) |
+| `sync.ts` | Status sync (Workhorse → Jira transitions) |
 | `cross-plugin-sync.ts` | Reactions to GitHub plugin events |
 | `steering.ts` | Steering rules for comment responses |
 | `tools.ts` | Tool definitions and implementations |

@@ -6,7 +6,7 @@
  *
  * Hook naming convention: `{plugin}:{entity}.{event}`
  *
- * @module @stevenjpx2/jiratown-plugin-github/hooks
+ * @module workhorse-plugin-github/hooks
  */
 
 /**

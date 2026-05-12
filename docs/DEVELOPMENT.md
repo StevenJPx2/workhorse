@@ -1,4 +1,4 @@
-# Jiratown Development Guide
+# Workhorse Development Guide
 
 ## Quick Start
 
@@ -6,7 +6,7 @@
 bun install                    # Install dependencies
 bun run check                  # Full audit: lint → typecheck → test → fallow
 bun run test                   # Run all tests
-bun run --filter @jiratown/core test   # Test single package
+bun run --filter workhorse-core test   # Test single package
 ```
 
 ## Commands
@@ -26,8 +26,8 @@ bun run --filter @jiratown/core test   # Test single package
 ### Package-specific
 
 ```bash
-bun run --filter @jiratown/core test        # Test core package
-bun run --filter @jiratown/plugin-jira test # Test jira plugin
+bun run --filter workhorse-core test        # Test core package
+bun run --filter workhorse-plugin-jira test # Test jira plugin
 cd packages/core && bunx drizzle-kit generate  # Generate DB migrations
 ```
 
@@ -35,7 +35,7 @@ cd packages/core && bunx drizzle-kit generate  # Generate DB migrations
 
 | Rule | Limit | Enforced by |
 |------|-------|-------------|
-| Max file lines | 200 | oxlint `jiratown/max-lines-per-file` |
+| Max file lines | 200 | oxlint `workhorse/max-lines-per-file` |
 | Coverage (lines, functions) | 97% | vitest.config.ts |
 | Coverage (branches) | 95% | vitest.config.ts |
 | Filenames | kebab-case | oxlint |
@@ -109,9 +109,9 @@ describe("MyFeature", () => {
 
 ```bash
 bun run test                              # All packages
-bun run --filter @jiratown/core test      # Single package
-bun run --filter @jiratown/core test:watch # Watch mode
-bun run --filter @jiratown/core test:coverage # With coverage
+bun run --filter workhorse-core test      # Single package
+bun run --filter workhorse-core test:watch # Watch mode
+bun run --filter workhorse-core test:coverage # With coverage
 ```
 
 ## Database
@@ -143,11 +143,11 @@ Migrations are in `packages/core/drizzle/`.
 ## Adding a New Plugin
 
 1. Create directory under `packages/plugins/<name>/`
-2. Add `package.json` with proper naming (`@jiratown/plugin-<name>`)
+2. Add `package.json` with proper naming (`workhorse-plugin-<name>`)
 3. Create `src/index.ts` with `definePlugin()`:
 
 ```typescript
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 import { z } from "zod/v4";
 
 export const MyConfigSchema = z.object({
@@ -164,7 +164,7 @@ export default definePlugin({
   },
   configSchema: MyConfigSchema,
   setup(config) {
-    const { hooks, tracker, orchestrator, monitors } = useJiratown();
+    const { hooks, tracker, orchestrator, monitors } = useWorkhorse();
     
     // Register parsers, tools, monitors, steering rules
   },
@@ -178,7 +178,7 @@ export default definePlugin({
 5. Register in application after bootstrap:
 
 ```typescript
-import myPlugin from "@jiratown/plugin-my-plugin";
+import myPlugin from "workhorse-plugin-my-plugin";
 
 const jt = await bootstrap();
 jt.plugins.register(myPlugin);

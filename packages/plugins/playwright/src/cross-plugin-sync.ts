@@ -4,7 +4,7 @@
  * Listens for GitHub plugin hooks and contributes Playwright-specific content.
  * - Adds "Screenshots" section to PRs with final screenshots
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/cross-plugin-sync
+ * @module workhorse-plugin-playwright/cross-plugin-sync
  */
 
 import { readdir } from "node:fs/promises";

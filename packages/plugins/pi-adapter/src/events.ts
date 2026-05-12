@@ -1,7 +1,7 @@
 /**
  * Pi session event handling.
  *
- * @module @stevenjpx2/jiratown-plugin-pi-adapter/events
+ * @module workhorse-plugin-pi-adapter/events
  */
 
 import type {

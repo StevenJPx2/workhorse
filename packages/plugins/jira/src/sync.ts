@@ -1,7 +1,7 @@
 /**
  * Jira status sync — transitions Jira tickets when issue.status_changed fires.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/sync
+ * @module workhorse-plugin-jira/sync
  */
 
 import type { IssueStatus, WorkhorseContext } from "workhorse-core";

@@ -3,7 +3,7 @@
  *
  * Handles OAuth 2.0 3LO flow for Atlassian, storing tokens in the system keychain.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/auth
+ * @module workhorse-plugin-jira/auth
  */
 
 import { Atlassian, generateState, OAuth2RequestError, ArcticFetchError } from "arctic";

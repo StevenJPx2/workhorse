@@ -1,7 +1,7 @@
 /**
  * Playwright Navigate Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/navigate
+ * @module workhorse-plugin-playwright/tools/navigate
  */
 
 import type { OrchestratorTool } from "workhorse-core";

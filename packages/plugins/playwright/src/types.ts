@@ -1,7 +1,7 @@
 /**
  * Playwright Plugin Types
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/types
+ * @module workhorse-plugin-playwright/types
  */
 
 /** Browser type supported by Playwright */

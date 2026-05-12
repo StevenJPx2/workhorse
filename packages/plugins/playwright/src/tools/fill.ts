@@ -1,7 +1,7 @@
 /**
  * Playwright Fill Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/fill
+ * @module workhorse-plugin-playwright/tools/fill
  */
 
 import type { OrchestratorTool } from "workhorse-core";

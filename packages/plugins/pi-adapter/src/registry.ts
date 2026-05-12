@@ -4,7 +4,7 @@
  * Wraps the Pi SDK's ModelRegistry to provide a consistent interface
  * for the jiratown orchestrator.
  *
- * @module @stevenjpx2/jiratown-plugin-pi-adapter/registry
+ * @module workhorse-plugin-pi-adapter/registry
  */
 
 import { type ModelInfo, ModelRegistry } from "workhorse-core";

@@ -1,7 +1,7 @@
 /**
  * Notification helpers for GitHub PR monitor.
  *
- * @module @stevenjpx2/jiratown-plugin-github/monitor-notifications
+ * @module workhorse-plugin-github/monitor-notifications
  */
 
 import type { MonitorContext } from "workhorse-core";

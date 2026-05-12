@@ -1,7 +1,7 @@
 /**
  * Playwright Close Session Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/close-session
+ * @module workhorse-plugin-playwright/tools/close-session
  */
 
 import type { OrchestratorTool } from "workhorse-core";

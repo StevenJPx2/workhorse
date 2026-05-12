@@ -1,7 +1,7 @@
 /**
  * GitHub tools registered with the orchestrator.
  *
- * @module @stevenjpx2/jiratown-plugin-github/tools
+ * @module workhorse-plugin-github/tools
  */
 
 import type { Database, OrchestratorTool } from "workhorse-core";

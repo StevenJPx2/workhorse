@@ -1,7 +1,7 @@
 /**
  * Jira tools registered with the orchestrator.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/tools
+ * @module workhorse-plugin-jira/tools
  */
 
 import type { OrchestratorTool } from "workhorse-core";

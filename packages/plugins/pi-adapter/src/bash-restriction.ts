@@ -1,7 +1,7 @@
 /**
  * Bash tool path restriction utilities for Pi SDK.
  * Ensures agents cannot execute commands outside their worktree or /tmp/.
- * @module @stevenjpx2/jiratown-plugin-pi-adapter/bash-restriction
+ * @module workhorse-plugin-pi-adapter/bash-restriction
  */
 
 import { tmpdir } from "node:os";

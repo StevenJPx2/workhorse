@@ -3,7 +3,7 @@
  *
  * Provides idle-agent reminders for Playwright-specific workflows.
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/steering
+ * @module workhorse-plugin-playwright/steering
  */
 
 import type { WorkhorseContext } from "workhorse-core";

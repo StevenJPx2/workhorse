@@ -3,7 +3,7 @@
  *
  * Matches Jira ticket keys (e.g., AM-123, PROJ-456) and Jira URLs.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/parser
+ * @module workhorse-plugin-jira/parser
  */
 
 import type { IssueParserOptions } from "workhorse-core";

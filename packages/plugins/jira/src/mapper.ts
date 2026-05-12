@@ -1,7 +1,7 @@
 /**
  * Mapper for converting Jira API responses to Jiratown's generic ParsedIssue.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/mapper
+ * @module workhorse-plugin-jira/mapper
  */
 
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";

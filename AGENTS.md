@@ -1,26 +1,26 @@
 # AGENTS.md
 
-Jiratown is an agent orchestrator managing coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for current status.
+Workhorse is an agent orchestrator managing coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for current status.
 
 ## Quick Reference
 
 ```bash
 bun install                    # Install dependencies
 bun run check                  # Full audit: lint → typecheck → test → fallow (run before commits)
-bun run --filter @jiratown/core test   # Test single package
+bun run --filter workhorse-core test   # Test single package
 ```
 
 ## Project Structure
 
 ```
-packages/core/     # Main package (@jiratown/core) — bootstrap, config, plugins, services
+packages/core/     # Main package (workhorse-core) — bootstrap, config, plugins, services
 packages/plugins/  # External plugins (github, jira, pi-adapter)
-oxlint/            # Custom lint rules (eslint-plugin-jiratown)
+oxlint/            # Custom lint rules (eslint-plugin-workhorse)
 plan/              # Build plan docs — read XX-module.md for context on each module
 ```
 
 **Entry points**:
-- `packages/core/src/bootstrap.ts` — Creates `Jiratown` instance
+- `packages/core/src/bootstrap.ts` — Creates `Workhorse` instance
 - `packages/core/src/index.ts` — Public API exports
 
 ## Import Rules (enforced by oxlint)
@@ -57,7 +57,7 @@ import { something } from "./types/index.ts";
 
 | Rule | Limit | Enforced by |
 |------|-------|-------------|
-| Max file lines | 200 | oxlint `jiratown/max-lines-per-file` |
+| Max file lines | 200 | oxlint `workhorse/max-lines-per-file` |
 | Coverage (lines, functions) | 97% | vitest.config.ts |
 | Coverage (branches) | 95% | vitest.config.ts |
 | Filenames | kebab-case | oxlint |
@@ -79,8 +79,8 @@ cd packages/core && bunx drizzle-kit generate  # Generate migrations
 
 ## Architecture Notes
 
-- **bootstrap()** creates `Jiratown` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
-- **Context system**: Use `useJiratown()` inside plugin setup to access services
+- **bootstrap()** creates `Workhorse` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
+- **Context system**: Use `useWorkhorse()` inside plugin setup to access services
 - **Plugins**: Define with `definePlugin({ manifest, setup, teardown })` — see `MIGRATION.md` for full architecture
 - **Hooks**: Event-based pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
 - **Services**: MemoryService (L1 context.md + L2 semantic search), MonitorService (polling framework)

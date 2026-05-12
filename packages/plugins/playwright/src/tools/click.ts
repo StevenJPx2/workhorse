@@ -1,7 +1,7 @@
 /**
  * Playwright Click Tool
  *
- * @module @stevenjpx2/jiratown-plugin-playwright/tools/click
+ * @module workhorse-plugin-playwright/tools/click
  */
 
 import type { OrchestratorTool } from "workhorse-core";

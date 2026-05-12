@@ -7,7 +7,7 @@
  * Example: When a GitHub PR is merged, transition the Jira issue to "In QA"
  * and assign it to the reporter for verification.
  *
- * @module @stevenjpx2/jiratown-plugin-jira/cross-plugin-sync
+ * @module workhorse-plugin-jira/cross-plugin-sync
  */
 
 import type { Database, WorkhorseContext } from "workhorse-core";

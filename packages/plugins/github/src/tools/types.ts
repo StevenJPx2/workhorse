@@ -1,7 +1,7 @@
 /**
  * Shared types for GitHub tools.
  *
- * @module @stevenjpx2/jiratown-plugin-github/tools/types
+ * @module workhorse-plugin-github/tools/types
  */
 
 import type { HookEventMap } from "workhorse-core";
