@@ -1,4 +1,4 @@
-# Jiratown
+# Workhorse
 
 An AI-powered agent orchestrator that manages coding agents working on Jira and GitHub issues.
 
@@ -12,25 +12,25 @@ bun install
 
 ## Configuration
 
-Jiratown uses TOML configuration files with cascading merge (global → project).
+Workhorse uses TOML configuration files with cascading merge (global → project).
 
 ### Config File Locations
 
 **Global** (first found wins):
-1. `~/.jiratown.toml`
-2. `~/.config/jiratown.toml`
-3. `~/.config/jiratown/config.toml`
+1. `~/.workhorse.toml`
+2. `~/.config/workhorse.toml`
+3. `~/.config/workhorse/config.toml`
 
-**Project**: `<repo>/.jiratown.toml`
+**Project**: `<repo>/.workhorse.toml`
 
 Project config overrides global. Missing keys fall back to defaults.
 
 ### Data Directory
 
 Application data (database, logs, cache) lives in:
-- `~/.local/share/jiratown/`
+- `~/.local/share/workhorse/`
 
-Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/jiratown/`
+Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/workhorse/`
 
 ### Example Config
 
@@ -65,10 +65,10 @@ auto_poll_reviews = true
 
 ```
 packages/
-├── core/              # @jiratown/core — main library
+├── core/              # workhorse-core — main library
 │   └── src/
 │       ├── config/        # Config loading & validation
-│       ├── context/       # Async context (useJiratown)
+│       ├── context/       # Async context (useWorkhorse)
 │       ├── db/            # SQLite via drizzle-orm
 │       ├── lib/hooks/     # Event system (mitt)
 │       ├── plugins/       # Plugin system & registry
@@ -80,9 +80,9 @@ packages/
 │           ├── steering/      # Idle reminders, autonomous rules
 │           └── tracker/       # Issue parsing, prompt engineering
 └── plugins/           # External plugins
-    ├── github/        # @jiratown/plugin-github
-    ├── jira/          # @jiratown/plugin-jira
-    └── pi-adapter/    # @jiratown/plugin-pi-adapter
+    ├── github/        # workhorse-plugin-github
+    ├── jira/          # workhorse-plugin-jira
+    └── pi-adapter/    # workhorse-plugin-pi-adapter
 ```
 
 ### Key Concepts
@@ -95,10 +95,10 @@ packages/
 
 ## Plugins
 
-Plugins extend Jiratown's functionality. Define a plugin with optional config validation:
+Plugins extend Workhorse's functionality. Define a plugin with optional config validation:
 
 ```typescript
-import { definePlugin } from "@jiratown/core";
+import { definePlugin } from "workhorse-core";
 import { z } from "zod/v4";
 
 export default definePlugin({
@@ -112,7 +112,7 @@ export default definePlugin({
     timeout: z.number().default(5000),
   }),
   setup(config) {
-    // Access services via useJiratown()
+    // Access services via useWorkhorse()
     console.log("Plugin initialized with:", config.apiKey);
   },
   teardown() {

@@ -1,6 +1,6 @@
-# @jiratown/tui
+# workhorse
 
-Terminal User Interface for Jiratown - an AI-powered issue management system.
+Terminal User Interface for Workhorse - an AI-powered issue management system.
 
 Built with [@opentui/solid](https://github.com/example/opentui) for terminal rendering.
 
@@ -11,7 +11,7 @@ Built with [@opentui/solid](https://github.com/example/opentui) for terminal ren
 bun run build
 
 # Run the TUI
-bun packages/tui/dist/jiratown.js
+bun packages/tui/dist/workhorse.js
 
 # Or run in dev mode
 bun packages/tui/src/index.tsx
@@ -46,32 +46,32 @@ brew install montanaflynn/tap/ht
 
 ```bash
 # Start a headless session
-ht run --name jt --size 120x40 bun packages/tui/dist/jiratown.js
+ht run --name wh --size 120x40 bun packages/tui/dist/workhorse.js
 
 # View the current screen (plain text)
-ht view jt --format plain
+ht view wh --format plain
 
 # View with ANSI colors
-ht view jt --format ansi
+ht view wh --format ansi
 
 # Take a screenshot
-ht view jt --format png > screenshot.png
+ht view wh --format png > screenshot.png
 
 # Send keystrokes
-ht send jt "<CR>"              # Enter
-ht send jt "<Esc>"             # Escape
-ht send jt "<Tab>"             # Tab
-ht send jt "<Up>"              # Arrow up
-ht send jt "<Down>"            # Arrow down
-ht send jt "<C-x>h"            # Ctrl+X then h
-ht send jt "hello world<CR>"   # Type text then Enter
+ht send wh "<CR>"              # Enter
+ht send wh "<Esc>"             # Escape
+ht send wh "<Tab>"             # Tab
+ht send wh "<Up>"              # Arrow up
+ht send wh "<Down>"            # Arrow down
+ht send wh "<C-x>h"            # Ctrl+X then h
+ht send wh "hello world<CR>"   # Type text then Enter
 
 # Wait for idle after sending keys
-ht send jt "<CR>" --wait-idle 500ms
+ht send wh "<CR>" --wait-idle 500ms
 
 # Stop the session
-ht stop jt
-ht remove jt
+ht stop wh
+ht remove wh
 ```
 
 #### Key Notation (vim-style)

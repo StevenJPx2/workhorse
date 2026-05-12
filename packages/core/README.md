@@ -1,43 +1,43 @@
-# @jiratown/core
+# workhorse-core
 
-Core library for Jiratown — an AI-powered agent orchestrator for Jira and GitHub issues. Provides config management, plugin system, database, memory, monitoring, agent orchestration, and steering.
+Core library for Workhorse — an AI-powered agent orchestrator for Jira and GitHub issues. Provides config management, plugin system, database, memory, monitoring, agent orchestration, and steering.
 
 ## Installation
 
 ```bash
-bun add @jiratown/core
+bun add workhorse-core
 ```
 
 ## Quick Start
 
 ```typescript
-import { bootstrap } from "@jiratown/core";
+import { bootstrap } from "workhorse-core";
 
-const jt = await bootstrap({ repoRoot: process.cwd() });
+const wh = await bootstrap({ repoRoot: process.cwd() });
 
 // Access services
-jt.config;         // Loaded configuration
-jt.paths;          // Resolved file paths
-jt.db;             // SQLite database
-jt.memory;         // L1 + L2 memory + notifications
-jt.monitors;       // Polling framework
-jt.hooks;          // Event pub/sub
-jt.tracker;        // Issue parsing + prompt building
-jt.orchestrator;   // Agent lifecycle management
-jt.plugins;        // Plugin registry
+wh.config;         // Loaded configuration
+wh.paths;          // Resolved file paths
+wh.db;             // SQLite database
+wh.memory;         // L1 + L2 memory + notifications
+wh.monitors;       // Polling framework
+wh.hooks;          // Event pub/sub
+wh.tracker;        // Issue parsing + prompt building
+wh.orchestrator;   // Agent lifecycle management
+wh.plugins;        // Plugin registry
 
 // Shutdown
-await jt.shutdown();
+await wh.shutdown();
 ```
 
 ## Bootstrap
 
-`bootstrap()` initializes a complete Jiratown instance with all services:
+`bootstrap()` initializes a complete Workhorse instance with all services:
 
 ```typescript
-import { bootstrap, type BootstrapOptions, type Jiratown } from "@jiratown/core";
+import { bootstrap, type BootstrapOptions, type Workhorse } from "workhorse-core";
 
-const jt: Jiratown = await bootstrap({
+const wh: Workhorse = await bootstrap({
   repoRoot: "/path/to/repo",       // Project root (default: cwd)
   plugins: [jiraPlugin, githubPlugin],  // Additional plugins
   overrides: {                      // Config overrides
@@ -46,11 +46,11 @@ const jt: Jiratown = await bootstrap({
 });
 ```
 
-### Jiratown Interface
+### Workhorse Interface
 
 ```typescript
-interface Jiratown {
-  readonly config: Readonly<JiratownConfig>;
+interface Workhorse {
+  readonly config: Readonly<WorkhorseConfig>;
   readonly paths: Readonly<ConfigPaths>;
   readonly db: Database;
   readonly memory: MemoryService;
@@ -76,34 +76,34 @@ hooks.all.clear()        →  Clear all event listeners
 
 ## Context System
 
-Access the Jiratown instance from anywhere using async context:
+Access the Workhorse instance from anywhere using async context:
 
 ```typescript
-import { useJiratown, tryUseJiratown } from "@jiratown/core";
+import { useWorkhorse, tryUseWorkhorse } from "workhorse-core";
 
 // Inside plugin setup or any code running in context:
 function myFunction() {
-  const { config, hooks, db, memory, monitors, tracker, orchestrator, paths } = useJiratown();
+  const { config, hooks, db, memory, monitors, tracker, orchestrator, paths } = useWorkhorse();
 }
 
 // Safe access (returns undefined if not in context)
-const ctx = tryUseJiratown();
+const ctx = tryUseWorkhorse();
 ```
 
 ### Running Code with Context
 
 ```typescript
-import { runWithContext } from "@jiratown/core";
+import { runWithContext } from "workhorse-core";
 
 await runWithContext(context, async () => {
-  // useJiratown() works here
+  // useWorkhorse() works here
 });
 ```
 
 ### Testing Helpers
 
 ```typescript
-import { setContext, unsetContext } from "@jiratown/core";
+import { setContext, unsetContext } from "workhorse-core";
 
 // Set singleton context for testing
 setContext({ config, hooks });
@@ -117,18 +117,18 @@ unsetContext();
 ### File Locations
 
 **Global** (first found wins):
-1. `~/.jiratown.toml`
-2. `~/.config/jiratown.toml`
-3. `~/.config/jiratown/config.toml`
+1. `~/.workhorse.toml`
+2. `~/.config/workhorse.toml`
+3. `~/.config/workhorse/config.toml`
 
-**Project**: `<repo>/.jiratown.toml`
+**Project**: `<repo>/.workhorse.toml`
 
-**Data directory**: `~/.local/share/jiratown/` (respects `XDG_DATA_HOME`)
+**Data directory**: `~/.local/share/workhorse/` (respects `XDG_DATA_HOME`)
 
 ### Config Loading
 
 ```typescript
-import { resolveConfigPaths, loadConfig, mergeConfigs } from "@jiratown/core";
+import { resolveConfigPaths, loadConfig, mergeConfigs } from "workhorse-core";
 
 // Resolve paths
 const paths = resolveConfigPaths("/path/to/repo");
@@ -143,7 +143,7 @@ const merged = mergeConfigs(baseConfig, overrideConfig);
 ### TOML Operations
 
 ```typescript
-import { parseTomlFile, writeTomlFile, configToToml } from "@jiratown/core";
+import { parseTomlFile, writeTomlFile, configToToml } from "workhorse-core";
 
 // Read
 const data = parseTomlFile("/path/to/config.toml");
@@ -158,11 +158,11 @@ const toml = configToToml({ agent: { harness: "opencode" } });
 ### Credential Storage
 
 ```typescript
-import { storeCredential, getCredential, deleteCredential } from "@jiratown/core";
+import { storeCredential, getCredential, deleteCredential } from "workhorse-core";
 
-await storeCredential("jiratown", "github_token", "ghp_xxx");
-const token = await getCredential("jiratown", "github_token");
-await deleteCredential("jiratown", "github_token");
+await storeCredential("workhorse", "github_token", "ghp_xxx");
+const token = await getCredential("workhorse", "github_token");
+await deleteCredential("workhorse", "github_token");
 ```
 
 ### Config Schema
@@ -205,7 +205,7 @@ poll_interval = 30000
 ### TypeScript Interface
 
 ```typescript
-interface JiratownConfig {
+interface WorkhorseConfig {
   agent: {
     harness: string;
     model?: string;
@@ -262,7 +262,7 @@ config.behavior.pollInterval  // 5000
 ### Define a Plugin
 
 ```typescript
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 import { z } from "zod/v4";
 
 // Plugin without config
@@ -272,7 +272,7 @@ export const simplePlugin = definePlugin({
     version: "1.0.0",
   },
   setup() {
-    const { hooks } = useJiratown();
+    const { hooks } = useWorkhorse();
     hooks.on("issue.parsed", ({ issue }) => console.log("Parsed:", issue.title));
   },
 });
@@ -300,7 +300,7 @@ export const configuredPlugin = definePlugin({
 ### Plugin Registry
 
 ```typescript
-import { PluginRegistry } from "@jiratown/core";
+import { PluginRegistry } from "workhorse-core";
 
 const registry = new PluginRegistry();
 
@@ -327,11 +327,11 @@ registry.list();                // Plugin[]
 Plugins are loaded from:
 1. `CORE_PLUGINS` — Always registered first (builtin-tools)
 2. `bootstrap({ plugins })` — Provided at initialization
-3. Plugin directories — `~/.jiratown/plugins/` and `.jiratown/plugins/`
+3. Plugin directories — `~/.workhorse/plugins/` and `.workhorse/plugins/`
 
 ### Plugin Capabilities
 
-Plugins can extend Jiratown by:
+Plugins can extend Workhorse by:
 
 | Capability | Method | Description |
 |-----------|--------|-------------|
@@ -364,7 +364,7 @@ When a plugin's setup fails:
 Event-based pub/sub via `mitt`:
 
 ```typescript
-import { hooks } from "@jiratown/core";
+import { hooks } from "workhorse-core";
 
 // Subscribe
 hooks.on("issue.parsed", ({ issue }) => console.log("Parsed:", issue.title));
@@ -409,9 +409,9 @@ hooks.once("agent.started", handler);
 SQLite via `@libsql/client` + `drizzle-orm`:
 
 ```typescript
-import { Database } from "@jiratown/core";
+import { Database } from "workhorse-core";
 
-const db = await Database.create(":memory:");  // or "/path/to/jiratown.db"
+const db = await Database.create(":memory:");  // or "/path/to/workhorse.db"
 
 // Issues
 const issue = await db.issues.insert({ externalId: "PROJ-123", source: "jira", ... });
@@ -606,14 +606,14 @@ The core plugin registers three tools available to all agents:
 
 | Tool | Description |
 |------|-------------|
-| `jiratown_acknowledge` | Mark notification(s) as read |
-| `jiratown_update_status` | Update the current issue's status |
-| `jiratown_escalate` | Escalate to a human when blocked |
+| `workhorse_acknowledge` | Mark notification(s) as read |
+| `workhorse_update_status` | Update the current issue's status |
+| `workhorse_escalate` | Escalate to a human when blocked |
 
 ## Git Worktree Operations
 
 ```typescript
-import { createWorktree, removeWorktree } from "@jiratown/core";
+import { createWorktree, removeWorktree } from "workhorse-core";
 
 const worktree = await createWorktree("/path/to/repo", "PROJ-123", "task", "main");
 console.log(worktree.path);    // "/path/to/repo-worktrees/PROJ-123"
@@ -653,7 +653,7 @@ Detailed documentation for each internal module:
 | `storeCredential(service, key, value)` | Store in system keychain |
 | `getCredential(service, key)` | Retrieve from keychain |
 | `deleteCredential(service, key)` | Remove from keychain |
-| `jiratownConfigSchema` | Zod schema for config validation |
+| `workhorseConfigSchema` | Zod schema for config validation |
 | `defaultConfig` | Default config values |
 
 ### Plugin Module
@@ -669,8 +669,8 @@ Detailed documentation for each internal module:
 
 | Export | Description |
 |--------|-------------|
-| `useJiratown()` | Get current Jiratown context (throws if not in context) |
-| `tryUseJiratown()` | Get context or `undefined` |
+| `useWorkhorse()` | Get current Workhorse context (throws if not in context) |
+| `tryUseWorkhorse()` | Get context or `undefined` |
 | `runWithContext(ctx, fn)` | Execute function with context |
 | `setContext(ctx)` | Set singleton context (testing only) |
 | `unsetContext()` | Clear singleton context (testing only) |
@@ -742,9 +742,9 @@ Detailed documentation for each internal module:
 
 | Export | Description |
 |--------|-------------|
-| `bootstrap(options)` | Initialize Jiratown instance |
+| `bootstrap(options)` | Initialize Workhorse instance |
 | `BootstrapOptions` | Bootstrap configuration |
-| `Jiratown` | Initialized instance interface |
+| `Workhorse` | Initialized instance interface |
 
 ## License
 
