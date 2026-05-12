@@ -37,7 +37,7 @@ jobs:
 
       - name: Build oxlint plugin
         run: bun run build
-        working-directory: oxlint/eslint-plugin-jiratown
+        working-directory: oxlint/eslint-plugin-workhorse
 
       - name: Build core
         run: bun run build
@@ -69,10 +69,10 @@ jobs:
           script: |
             const fs = require('fs');
             const publishedPackages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
-            const tuiPkg = publishedPackages.find(p => p.name === 'jiratown');
+            const tuiPkg = publishedPackages.find(p => p.name === 'workhorse');
             if (!tuiPkg) { console.log('TUI not published this run, skipping.'); return; }
 
-            const tagName = `jiratown@${tuiPkg.version}`;
+            const tagName = `workhorse@${tuiPkg.version}`;
 
             const { data: release } = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
@@ -84,8 +84,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.id,
-              name: 'jiratown.js',
-              data: fs.readFileSync('packages/tui/dist/jiratown.js'),
+              name: 'workhorse.js',
+              data: fs.readFileSync('packages/tui/dist/workhorse.js'),
             });
 
             const installInstructions = [
@@ -93,12 +93,12 @@ jobs:
               ``,
               `\`\`\`sh`,
               `# With bun`,
-              `bun install -g jiratown`,
+              `bun install -g workhorse`,
               `\`\`\``,
               ``,
-              `Or download \`jiratown.js\` from the assets below and place it in your PATH:`,
+              `Or download \`workhorse.js\` from the assets below and place it in your PATH:`,
               `\`\`\`sh`,
-              `chmod +x jiratown.js && mv jiratown.js $(bun pm bin -g)/jiratown`,
+              `chmod +x workhorse.js && mv workhorse.js $(bun pm bin -g)/workhorse`,
               `\`\`\``,
             ].join('\n');
 
