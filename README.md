@@ -197,6 +197,19 @@ cloud_id = "yourcompany.atlassian.net"  # Required
 
 For detailed API documentation, see [src/hooks/use-atlassian/README.md](./src/hooks/use-atlassian/README.md).
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Documentation Index](./docs/INDEX.md)** - Complete index of all documentation
+- **[Quick Start](./docs/QUICK-START.md)** - Get up and running quickly
+- **[Packages](./docs/PACKAGES.md)** - Comprehensive package documentation
+- **[API Reference](./docs/API-REFERENCE.md)** - Complete API documentation
+- **[Plugin Development](./docs/PLUGIN-DEVELOPMENT.md)** - Create custom plugins
+- **[Steering Guide](./docs/STEERING-GUIDE.md)** - Autonomous agent guidance
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Diagnose and fix common issues
+- **[Architecture](./ARCHITECTURE.md)** - System architecture and code flow
+
 ## License
 
 MIT
