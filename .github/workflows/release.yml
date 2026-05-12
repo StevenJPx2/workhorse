@@ -30,8 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@stevenjpx2"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
@@ -61,4 +60,52 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Upload TUI binary to GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const publishedPackages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
+            const tuiPkg = publishedPackages.find(p => p.name === 'jiratown');
+            if (!tuiPkg) { console.log('TUI not published this run, skipping.'); return; }
+
+            const tagName = `jiratown@${tuiPkg.version}`;
+
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tagName,
+            });
+
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: 'jiratown.js',
+              data: fs.readFileSync('packages/tui/dist/jiratown.js'),
+            });
+
+            const installInstructions = [
+              `## Install`,
+              ``,
+              `\`\`\`sh`,
+              `# With bun`,
+              `bun install -g jiratown`,
+              `\`\`\``,
+              ``,
+              `Or download \`jiratown.js\` from the assets below and place it in your PATH:`,
+              `\`\`\`sh`,
+              `chmod +x jiratown.js && mv jiratown.js $(bun pm bin -g)/jiratown`,
+              `\`\`\``,
+            ].join('\n');
+
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: `${release.body ?? ''}\n\n${installInstructions}`,
+            });
 

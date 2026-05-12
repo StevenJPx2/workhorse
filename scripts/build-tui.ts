@@ -36,7 +36,7 @@ const { createSolidTransformPlugin } = await import(
 async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   // oxlint-disable-next-line jiratown/no-single-use-variable
   const start = performance.now();
-  console.log("\n⚡ Building @stevenjpx2/jiratown-tui...\n");
+  console.log("\n⚡ Building jiratown...\n");
 
   if (!existsSync(OUTDIR)) mkdirSync(OUTDIR, { recursive: true });
 
@@ -64,6 +64,13 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   patchDynamicImports(ROOT, BUNDLE);
   copyTreeSitterAssets(TUI, OUTDIR);
   copyDrizzleMigrations(ROOT, OUTDIR);
+
+  // Prepend shebang so the bundle is directly executable
+  const existing = await Bun.file(BUNDLE).text();
+  if (!existing.startsWith("#!/usr/bin/env bun")) {
+    await Bun.write(BUNDLE, `#!/usr/bin/env bun\n${existing}`);
+  }
+  await import("node:fs/promises").then((fs) => fs.chmod(BUNDLE, 0o755));
 
   console.log(
     `✓ Built dist/jiratown.js (${result.outputs[0] ? formatSize(result.outputs[0].size) : "?"}) in ${formatDuration(performance.now() - start)}`,

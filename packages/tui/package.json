@@ -1,5 +1,5 @@
 {
-  "name": "@stevenjpx2/jiratown-tui",
+  "name": "jiratown",
   "version": "0.1.0",
   "description": "Terminal UI for Jiratown - AI-powered Jira issue resolver",
   "type": "module",
@@ -10,7 +10,8 @@
     "directory": "packages/tui"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "files": [
     "dist"

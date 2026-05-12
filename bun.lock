@@ -32,7 +32,7 @@
     },
     "packages/core": {
       "name": "@stevenjpx2/jiratown-core",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@libsql/client": "^0.17.3",
         "arctic": "^3.7.0",
@@ -129,8 +129,8 @@
       },
     },
     "packages/tui": {
-      "name": "@stevenjpx2/jiratown-tui",
-      "version": "0.0.1",
+      "name": "jiratown",
+      "version": "0.1.0",
       "bin": {
         "jiratown": "./dist/jiratown.js",
       },
@@ -906,8 +906,6 @@
 
     "@stevenjpx2/jiratown-plugin-playwright": ["@stevenjpx2/jiratown-plugin-playwright@workspace:packages/plugins/playwright"],
 
-    "@stevenjpx2/jiratown-tui": ["@stevenjpx2/jiratown-tui@workspace:packages/tui"],
-
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 
     "@tokenizer/token": ["@tokenizer/token@0.3.0", "", {}, "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="],
@@ -1323,6 +1321,8 @@
     "istanbul-lib-report": ["istanbul-lib-report@3.0.1", "", { "dependencies": { "istanbul-lib-coverage": "^3.0.0", "make-dir": "^4.0.0", "supports-color": "^7.1.0" } }, "sha512-GCfE1mtsHGOELCU8e/Z7YWzpmybrx/+dSTfLrvY8qRmaY6zXTKWn6WQIjaAFw069icm6GVMNkgu0NzI4iPZUNw=="],
 
     "istanbul-reports": ["istanbul-reports@3.2.0", "", { "dependencies": { "html-escaper": "^2.0.0", "istanbul-lib-report": "^3.0.0" } }, "sha512-HGYWWS/ehqTV3xN10i23tkPkpH46MLCIMFNCaaKNavAXTF1RkqxawEPtnjnGZ6XKSInBKkiOA5BKS+aZiY3AvA=="],
+
+    "jiratown": ["jiratown@workspace:packages/tui"],
 
     "jiti": ["jiti@2.6.1", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ=="],
 
