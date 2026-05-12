@@ -1,3 +1,0 @@
- s:Save   c:Cancel   d:Delete                     
-                                                  
-                                                  

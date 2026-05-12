@@ -1,201 +1,157 @@
 # Jiratown
 
-A terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets simultaneously.
+An AI-powered agent orchestrator that manages coding agents working on Jira and GitHub issues.
 
-Built with [OpenTUI](https://github.com/anomalyco/opentui) + [Solid.js](https://solidjs.com).
-
-## Features
-
-- **Multi-ticket dashboard**: Work on multiple Jira tickets simultaneously in separate tabs
-- **Multi-agent support**: Use OpenCode or Claude Code for each ticket
-- **Real-time progress**: Stream agent activity and see live updates
-- **Jira sync**: Automatic comments, status transitions, and PR links
-- **Non-blocking notifications**: Know when agents are blocked without interrupting your flow
-- **Context-aware**: Auto-detects repo from git remote, shows only that repo's tickets
-
-## Prerequisites
-
-- [Bun](https://bun.sh) v1.3+
-- [OpenCode](https://opencode.ai) and/or [Claude Code](https://claude.ai/code)
+![Architecture](./architecture.png)
 
 ## Installation
 
 ```bash
-# Coming soon
-bun install -g jiratown
-```
-
-## Quick Start
-
-```bash
-# First-time setup
-jiratown setup
-
-# Start dashboard in a repo (shows only that repo's tickets)
-cd /path/to/your-project
-jiratown
-
-# Start dashboard with all tickets across all repos
-jiratown --all
-
-# Quick add a ticket
-jiratown add AM-123
-```
-
-## Usage
-
-### Adding a Ticket
-
-Press `+` or `n` to open the new ticket modal. Enter a Jira ticket key (e.g., `AM-123`) or paste a full Jira URL.
-
-### Keyboard Shortcuts
-
-| Key       | Action                            |
-| --------- | --------------------------------- |
-| `+` / `n` | Add new ticket                    |
-| `Tab`     | Switch between tickets            |
-| `e`       | Escalate (post questions to Jira) |
-| `a`       | Switch agent (OpenCode ↔ Claude)  |
-| `j`       | Open ticket in Jira               |
-| `p`       | View PR in browser                |
-| `g`       | Open PR on GitHub                 |
-| `x`       | Close ticket tab                  |
-| `r`       | Resume blocked agent              |
-| `c`       | Reply only to PR comment          |
-| `A`       | Address all PR review comments    |
-| `?`       | Help                              |
-| `q`       | Quit                              |
-
-### Configuration
-
-Global configuration is stored in `~/.jiratown/config.toml`:
-
-```toml
-[jira]
-cloud_id = "yourcompany.atlassian.net"
-
-[defaults]
-agent = "opencode" # or "claude"
-```
-
-Projects can optionally override settings with a `.jiratown.toml` in the git root:
-
-```toml
-# .jiratown.toml (project-specific, optional)
-[jira]
-cloud_id = "differentcompany.atlassian.net" # Different Jira instance
-
-[defaults]
-agent = "claude" # This project prefers Claude
-```
-
-Project config merges with global config, with project values taking precedence.
-
-### Rig Detection
-
-Jiratown automatically detects the current repository from your git remote URL. No manual configuration needed - just run `jiratown` in any git repository and it will:
-
-1. Detect the git remote (e.g., `github.com/user/repo`)
-2. Filter tickets to show only those for the current repo
-3. Associate new tickets with the current repo
-
-## How It Works
-
-1. **Run in a git repo** → Jiratown auto-detects the repo from git remote
-2. **You enter a Jira ticket** → Jiratown fetches ticket details via Atlassian MCP
-3. **Spawns an agent** → OpenCode or Claude Code in an isolated git worktree
-4. **Streams progress** → Real-time updates as the agent works
-5. **Syncs to Jira** → Comments, status changes, PR links
-6. **Creates PR** → Agent pushes changes and opens a pull request via GitHub MCP
-7. **Handles reviews** → Agent drafts replies to reviewer comments, you approve/edit
-8. **Iterates on feedback** → Agent addresses change requests in combined commits
-9. **Completes** → PR merged, Jira ticket transitioned to Done
-
-## PR Review Workflow
-
-When your agent creates a PR and reviewers request changes:
-
-1. **Review comments appear** → Jiratown polls for new PR reviews via GitHub MCP
-2. **Agent drafts replies** → Each comment gets an auto-generated response
-3. **You review & edit** → Approve, modify, or add guidance to the draft
-4. **Choose action**:
-   - **Reply Only** (`c`) → Post the comment without code changes
-   - **Reply + Address** (`A`) → Agent implements fixes, pushes a single commit, and replies with commit reference
-5. **Re-request review** → Automatically request re-review after changes
-
-```
-┌─ Comment 1 ─────────────────────────────────────────────┐
-│ @reviewer1: "Consider using exponential backoff"        │
-│                                                         │
-│ Draft Reply:                                            │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Good suggestion! I'll update the retry logic.       │ │
-│ └─────────────────────────────────────────────────────┘ │
-│                                                         │
-│ Your input (optional):                                  │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Use base 2, max 30s cap                             │ │
-│ └─────────────────────────────────────────────────────┘ │
-│                                                         │
-│ [c] Reply Only    [a] Reply + Address with Changes      │
-└─────────────────────────────────────────────────────────┘
-```
-
-## Development
-
-```bash
-# Clone the repo
-git clone https://github.com/StevenJPx2/jiratown
-cd jiratown
-
-# Install dependencies
 bun install
+```
 
-# Run in development
-bun run dev
+## Configuration
 
-# Build
-bun run build
+Jiratown uses TOML configuration files with cascading merge (global → project).
+
+### Config File Locations
+
+**Global** (first found wins):
+1. `~/.jiratown.toml`
+2. `~/.config/jiratown.toml`
+3. `~/.config/jiratown/config.toml`
+
+**Project**: `<repo>/.jiratown.toml`
+
+Project config overrides global. Missing keys fall back to defaults.
+
+### Data Directory
+
+Application data (database, logs, cache) lives in:
+- `~/.local/share/jiratown/`
+
+Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/jiratown/`
+
+### Example Config
+
+```toml
+[agent]
+harness = "opencode"           # "opencode" | "claude-code" | "pi"
+model = "sonnet-4"
+
+[behavior]
+auto_resume = true
+poll_interval = 30000          # ms
+
+[prompt]
+custom = """
+Project-specific instructions appended to every agent prompt.
+"""
+
+[ui]
+theme = "tokyonight"
+
+[plugins]
+enabled = ["jira", "github"]
+
+[plugins.jira]
+cloud_id = "company.atlassian.net"
+
+[plugins.github]
+auto_poll_reviews = true
 ```
 
 ## Architecture
 
-See [PLAN.md](./PLAN.md) for detailed architecture documentation.
-
-## API Integration
-
-### Atlassian MCP (Jira)
-
-Jiratown uses the [Atlassian Model Context Protocol (MCP)](https://mcp.atlassian.com) to interact with Jira. The MCP provides type-safe access to Jira issues without requiring manual API authentication setup.
-
-#### Configuration
-
-Your Jira cloud ID must be configured in `~/.jiratown/config.toml`:
-
-```toml
-[jira]
-cloud_id = "yourcompany.atlassian.net"  # Required
+```
+packages/
+├── core/              # @jiratown/core — main library
+│   └── src/
+│       ├── config/        # Config loading & validation
+│       ├── context/       # Async context (useJiratown)
+│       ├── db/            # SQLite via drizzle-orm
+│       ├── lib/hooks/     # Event system (mitt)
+│       ├── plugins/       # Plugin system & registry
+│       ├── services/
+│       │   ├── memory/    # L1 (context.md) + L2 (retriv hybrid search)
+│       │   └── monitor/   # Polling framework
+│       └── workflow/
+│           ├── orchestrator/  # Agent lifecycle, adapters, tools
+│           ├── steering/      # Idle reminders, autonomous rules
+│           └── tracker/       # Issue parsing, prompt engineering
+└── plugins/           # External plugins
+    ├── github/        # @jiratown/plugin-github
+    ├── jira/          # @jiratown/plugin-jira
+    └── pi-adapter/    # @jiratown/plugin-pi-adapter
 ```
 
-#### Troubleshooting
+### Key Concepts
 
-**"Jira cloud ID is not configured"**
+- **Tracker** — Parses user input (ticket keys, URLs) via plugin-registered parsers, engineers prompts with context from MemoryService
+- **HarnessOrchestrator** — Manages agent lifecycle via pluggable adapters registered by plugins
+- **MemoryService** — L1 (per-worktree `context.md`) + L2 (semantic search via retriv) + notifications
+- **MonitorService** — Polling framework for health checks and plugin-registered monitors
+- **Plugins** — Hook into tracker, orchestrator, and services via `definePlugin()`. Agent harnesses (Pi, Claude Code, Opencode) are also plugins that register their adapters.
 
-- Run `jiratown setup` to configure your Jira instance
-- Or manually edit `~/.jiratown/config.toml`
+## Plugins
 
-**"Failed to parse Jira response"**
+Plugins extend Jiratown's functionality. Define a plugin with optional config validation:
 
-- Check that the issue key exists (e.g., `AM-123`)
-- Verify your cloud ID is correct
-- Ensure the MCP server is reachable
+```typescript
+import { definePlugin } from "@jiratown/core";
+import { z } from "zod/v4";
 
-**Connection issues**
+export default definePlugin({
+  manifest: {
+    name: "my-plugin",
+    version: "1.0.0",
+    description: "My custom plugin",
+  },
+  configSchema: z.object({
+    apiKey: z.string(),
+    timeout: z.number().default(5000),
+  }),
+  setup(config) {
+    // Access services via useJiratown()
+    console.log("Plugin initialized with:", config.apiKey);
+  },
+  teardown() {
+    console.log("Plugin cleaned up");
+  },
+});
+```
 
-- The MCP client uses `npx mcp-remote` - ensure you have internet access
-- Check that `npx` is available in your PATH
+Plugin config is defined in the main config file under `[plugins.<name>]`:
 
-For detailed API documentation, see [src/hooks/use-atlassian/README.md](./src/hooks/use-atlassian/README.md).
+```toml
+[plugins.my-plugin]
+api_key = "secret"
+timeout = 10000
+```
+
+### Plugin Types
+
+- **Integration plugins** — Connect to external services (Jira, GitHub)
+- **Adapter plugins** — Register agent harness adapters (Pi, Claude Code, Opencode)
+
+## Development
+
+```bash
+bun run check              # lint → typecheck → test → fallow
+bun run test               # vitest across all packages
+bun run typecheck          # tsc across all packages
+bun run lint               # oxlint with custom rules
+```
+
+See [AGENTS.md](./AGENTS.md) for detailed coding conventions and contribution guidelines.
+
+## Documentation
+
+- [Architecture Overview](./docs/ARCHITECTURE.md) — Key concepts, data flow, configuration
+- [Development Guide](./docs/DEVELOPMENT.md) — Commands, code constraints, testing
+- [Plugin Guide](./docs/PLUGIN-GUIDE.md) — How to create plugins
+- [Build Plan](./plan/README.md) — Module layout and build order
+- [Progress](./plan/PROGRESS.md) — Current rewrite status
 
 ## License
 

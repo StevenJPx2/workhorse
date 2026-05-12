@@ -1,20 +1,20 @@
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
-  "jsPlugins": ["./plugins/eslint-plugin-jiratown"],
-  "ignorePatterns": [
-    "plugins/**",
-    "dist/**",
-    "node_modules/**",
-    "src/core/index.ts",
-    "src/tui/hooks/use-notifications/use-notifications.ts",
-    "src/tui/hooks/use-notifications/use-notifications.test.ts",
-    "src/tui/hooks/use-agent-stream/__tests__/use-agent-stream.test.ts"
-  ],
+  "jsPlugins": ["./oxlint/eslint-plugin-jiratown"],
+  "ignorePatterns": ["oxlint/**", "dist/**", "node_modules/**", "packages/tui-worktrees/**"],
   "rules": {
     "jiratown/max-lines-per-file": ["error", 200],
     "jiratown/enforce-kebab-case-filenames": "warn",
     "jiratown/enforce-colocated-exports": "warn",
-    "jiratown/prefer-composables-over-props": "warn",
-    "jiratown/enforce-test-colocation": "warn"
+    "jiratown/enforce-test-colocation": "warn",
+    "jiratown/no-single-reference-function": "warn",
+    "jiratown/no-single-use-variable": "warn",
+    "jiratown/no-section-comments": "warn",
+    "jiratown/no-reexport-outside-barrel": "warn",
+    "jiratown/prefer-folder-barrel": "warn",
+    "jiratown/no-index-imports": "warn",
+    "jiratown/prefer-path-alias": "warn",
+    "jiratown/prefer-then-chain": "warn",
+    "jiratown/no-cascading-ternary": "warn"
   }
 }

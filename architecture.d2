@@ -1,0 +1,92 @@
+title: Jiratown Architecture {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 29
+    bold: true
+    underline: true
+  }
+}
+
+tracker: Tracker {
+  parser: Issue Parser
+  engineer: Prompt Engineer
+
+  parser -> engineer
+}
+
+workflow: Workflow {
+  orchestrator: HarnessOrchestrator {
+    adapters: Agent Adapters
+    tools: Tools Registry
+    steering: Steering Rules
+  }
+
+  services: Services {
+    style: {
+      stroke-dash: 3
+    }
+    monitor: MonitorService {
+      remote: Remote Polling
+      local: Local Monitoring
+    }
+    memory: MemoryService {
+      l1: L1 - context.md
+      l2: L2 - retriv (hybrid search)
+      notifications: Notifications
+    }
+  }
+
+  orchestrator -> services.monitor: health checks
+  orchestrator <-> services.memory: state
+  orchestrator.steering -> orchestrator.adapters: idle reminders
+}
+
+# External harnesses (spawned by adapter plugins)
+pi: Pi Coding Agent
+claude: Claude Code
+opencode: Opencode
+
+# Plugin system
+plugins: Plugins {
+  style: {
+    stroke-dash: 3
+  }
+}
+
+# Integration plugins
+github: GitHub Plugin
+jira: Jira Plugin
+
+# Adapter plugins (register harness adapters)
+pi-adapter: Pi Adapter Plugin
+claude-adapter: Claude Adapter Plugin
+opencode-adapter: Opencode Adapter Plugin
+
+# Flow connections
+tracker -> workflow.orchestrator: parsed issue
+tracker.engineer <- workflow.services.memory: context
+
+# Adapter plugins spawn their respective harnesses
+pi-adapter -> pi: spawns
+claude-adapter -> claude: spawns
+opencode-adapter -> opencode: spawns
+
+# All plugins hook into core
+jira -> plugins
+github -> plugins
+pi-adapter -> plugins
+claude-adapter -> plugins
+opencode-adapter -> plugins
+
+plugins -> tracker: register parsers {
+  style.stroke-dash: 3
+}
+
+plugins -> workflow.orchestrator: register adapters/tools {
+  style.stroke-dash: 3
+}
+
+plugins -> workflow.services: register monitors {
+  style.stroke-dash: 3
+}

@@ -1,3 +1,0 @@
-  This is an extremely long   
-  button label that should    
-  overflow                    

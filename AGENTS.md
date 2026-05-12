@@ -1,126 +1,86 @@
-# Agent Instructions for Jiratown
+# AGENTS.md
 
-## Project Overview
+Jiratown is an agent orchestrator managing coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for current status.
 
-Jiratown is a terminal UI dashboard for orchestrating multiple AI coding agents working on Jira tickets. See PLAN.md for full architecture.
-
-## Tech Stack
-
-- **Runtime**: Bun
-- **Language**: TypeScript
-- **UI**: OpenTUI + Solid.js (`@opentui/solid`)
-- **Database**: SQLite (`better-sqlite3`)
-- **Config**: TOML
-- **CLI**: Commander
-
-## Key Commands
+## Quick Reference
 
 ```bash
-# Install dependencies
-bun install
-
-# Run in development
-bun run dev
-
-# Build for production
-bun run build
-
-# Run tests
-bun test
-
-# Lint code (oxlint + custom Jiratown rules)
-bun run lint
-
-# Lint and auto-fix
-bun run lint:fix
-
-# Format code (oxfmt)
-bun run format
-
-# Format and auto-fix
-bun run format:fix
-
-# Check test coverage (must be >= 97%)
-bun run coverage
-
-# Full check (lint + coverage)
-bun run check
+bun install                    # Install dependencies
+bun run check                  # Full audit: lint → typecheck → test → fallow (run before commits)
+bun run --filter @jiratown/core test   # Test single package
 ```
 
-## Pre-Commit Hooks
+## Project Structure
 
-Pre-commit hooks run automatically via `simple-git-hooks` + `lint-staged`:
+```
+packages/core/     # Main package (@jiratown/core) — bootstrap, config, plugins, services
+packages/plugins/  # External plugins (github, jira, pi-adapter)
+oxlint/            # Custom lint rules (eslint-plugin-jiratown)
+plan/              # Build plan docs — read XX-module.md for context on each module
+```
 
-- **oxfmt** — auto-format staged `.ts`/`.tsx` files
-- **oxlint** — lint staged `.ts`/`.tsx` files with project rules
+**Entry points**:
+- `packages/core/src/bootstrap.ts` — Creates `Jiratown` instance
+- `packages/core/src/index.ts` — Public API exports
 
-To set up hooks after cloning: `bun run prepare`
+## Import Rules (enforced by oxlint)
 
-## Code Style
+**Use path aliases** — defined in `packages/core/tsconfig.json`:
+```typescript
+// ✅ Good
+import { SteeringRule } from "#workflow/steering";
+import { HookEmitter } from "#lib/hooks";
 
-- Use TypeScript strict mode
-- Prefer `const` over `let`
-- Use Solid.js patterns (createSignal, createEffect, etc.)
-- OpenTUI components use snake_case (`<tab_select>`, `<scroll_box>`)
-- File names use kebab-case (`ticket-pane.tsx`)
+// ❌ Bad — deep relative paths
+import { SteeringRule } from "../../workflow/steering/rule";
+```
 
-## Code Quality
+**Import from module index only** — never reach into internals:
+```typescript
+// ✅ Good
+import { SteeringRule, type SteeringRuleConfig } from "#workflow/steering";
 
-See [CODE_QUALITY.md](./CODE_QUALITY.md) for architectural principles and patterns.
+// ❌ Bad
+import { SteeringRule } from "#workflow/steering/rule";
+```
 
-## Code Enforcement Rules
+**No explicit `/index.ts`** on subpaths:
+```typescript
+// ✅ Good
+import { something } from "./types";
 
-### Max 200 Lines Per File
+// ❌ Bad
+import { something } from "./types/index.ts";
+```
 
-- **Strict limit**: No file should exceed 200 lines of code
-- If a file grows beyond this, split it into multiple files in a colocated folder
+## Code Constraints
 
-### Kebab-Case File Names
+| Rule | Limit | Enforced by |
+|------|-------|-------------|
+| Max file lines | 200 | oxlint `jiratown/max-lines-per-file` |
+| Coverage (lines, functions) | 97% | vitest.config.ts |
+| Coverage (branches) | 95% | vitest.config.ts |
+| Filenames | kebab-case | oxlint |
+| Test location | Colocated (`foo.ts` + `foo.test.ts`) | oxlint |
 
-- All file names must use kebab-case: `ticket-sidebar.tsx`, `use-sidebar-resize.ts`
-- No PascalCase or camelCase file names
+**Every test file must have at least one `it.fails("TODO: ...")`** documenting planned behavior.
 
-### Colocated Folder Structure
+## Database
 
-- Related files must be grouped in folders with an `index.ts` for exports
-- Example structure:
-  ```
-  ticket-sidebar/
-  ├── index.ts              # Re-exports all public APIs
-  ├── ticket-sidebar.tsx    # Main component
-  ├── ticket-item.tsx       # Sub-component
-  ├── sidebar-header.tsx    # Sub-component
-  └── use-ticket-navigation.ts  # Related hook
-  ```
-- The `index.ts` should export all public components and hooks
-- Keep implementation details private (don't export everything)
+SQLite via drizzle-orm. Schema in `packages/core/src/db/schema/`.
 
-### Test Colocation Boundaries
+```bash
+cd packages/core && bunx drizzle-kit generate  # Generate migrations
+```
 
-- Test files use `.test.ts` suffix, colocated with source files
-- When a folder has >2 source files and test ratio exceeds 40%, move tests to `__tests__/`
-- This keeps folders clean while maintaining discoverability
+## Pre-commit
 
-### Test-Driven Development (TDD)
+`simple-git-hooks` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files automatically.
 
-- **97% code coverage required** across all files
-- Write tests before or alongside implementation
-- Test files are colocated with source files using `.test.ts` suffix
-- Run `bun run coverage` to verify coverage meets the 97% threshold
-- The coverage check is included in `bun run check` and will fail if below threshold
-- Every new function, component, and hook must have corresponding tests
+## Architecture Notes
 
-## Important Files
-
-- `PLAN.md` - Full architecture and implementation plan
-- `CONTEXT.md` - External dependency documentation
-- `src/lib/db.ts` - SQLite schema and queries
-- `src/lib/atlassian.ts` - MCP client for Jira
-
-## Testing
-
-Run tests with `bun test`. Test files should be colocated with source files using `.test.ts` suffix.
-
-## Current Phase
-
-Check PLAN.md for the current implementation phase and task checklist.
+- **bootstrap()** creates `Jiratown` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
+- **Context system**: Use `useJiratown()` inside plugin setup to access services
+- **Plugins**: Define with `definePlugin({ manifest, setup, teardown })` — see `MIGRATION.md` for full architecture
+- **Hooks**: Event-based pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
+- **Services**: MemoryService (L1 context.md + L2 semantic search), MonitorService (polling framework)

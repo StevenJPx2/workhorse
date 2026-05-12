@@ -1,40 +1,39 @@
-# Dependencies
-node_modules/
+# dependencies (bun install)
+node_modules
 
-# Build output
-dist/
-build/
-*.tsbuildinfo
+# output
+out
+dist
+*.tgz
+oxlint/eslint-plugin-jiratown/index.js
+*.bun-build
 
-# Bun
-bun.lockb
+# code coverage
+coverage
+*.lcov
 
-# Environment
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
 .env
+.env.development.local
+.env.test.local
+.env.production.local
 .env.local
-.env.*.local
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+.fallow
 
-# OS
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
 .DS_Store
-Thumbs.db
-
-# Test
-coverage/
-
-# Sandbox frame dumps (regenerated on demand)
-src/sandbox/frames/
-
-# Logs
-*.log
-logs/
-
-# Local dev database (the real one is in ~/.jiratown/)
-*.db
-*.db-journal
+/oxlint/eslint-plugin-jiratown/index.js
+/packages/tui-worktrees

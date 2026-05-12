@@ -1,0 +1,56 @@
+import { sql } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-orm/zod";
+import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import z from "zod";
+import { dateText } from "./custom-types.ts";
+
+/** Zod schema for validating issue status */
+export const IssueStatusSchema = z.union([
+  z.enum(["pending", "queued", "planning", "implementing", "blocked", "in_review", "done"]),
+  z.string<string & {}>(),
+]);
+
+/** Valid issue statuses */
+export type IssueStatus = z.infer<typeof IssueStatusSchema>;
+
+/**
+ * Issues table - tracks issues from external sources (Jira, GitHub, etc.)
+ */
+export const issues = sqliteTable(
+  "issues",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    externalId: text("external_id").notNull().default(""),
+    source: text("source").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    status: text("status").notNull().default("pending").$type<IssueStatus>(),
+    issueType: text("issue_type").notNull().default("task"),
+    url: text("url"),
+    assignee: text("assignee"),
+    labels: text("labels", { mode: "json" }).$type<string[]>(),
+    metadata: text("metadata", { mode: "json" })
+      .notNull()
+      .$type<Record<string, unknown>>()
+      .default({}),
+    worktreePath: text("worktree_path"),
+    createdAt: dateText("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: dateText("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [uniqueIndex("issues_external_source_idx").on(table.externalId, table.source)],
+);
+
+/** Issue type derived from schema */
+export type Issue = typeof issues.$inferSelect;
+
+/** Insert type - nullable fields are optional, auto-filled with null */
+export type InsertIssue = typeof issues.$inferInsert;
+
+/** Zod schema for validating Issue objects (generated from Drizzle table) */
+export const IssueSchema = createSelectSchema(issues);

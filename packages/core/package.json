@@ -1,0 +1,58 @@
+{
+	"name": "@jiratown/core",
+	"version": "0.0.1",
+	"description": "Core library for Jiratown - runtime-agnostic utilities including keychain credential management",
+	"type": "module",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/StevenJPx2/jiratown.git",
+		"directory": "packages/core"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com"
+	},
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=18"
+	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "vite build",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@libsql/client": "^0.17.3",
+		"arctic": "^3.7.0",
+		"defu": "^6.1.7",
+		"drizzle-orm": "^1.0.0-rc.2-e38a2ba",
+		"es-toolkit": "^1.46.1",
+		"mitt": "^3.0.1",
+		"retriv": "^0.13.2",
+		"smol-toml": "^1.6.1",
+		"string-ts": "^2.3.1",
+		"unctx": "^2.5.0",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@vitest/coverage-v8": "^4.1.6",
+		"drizzle-kit": "^1.0.0-rc.2-e38a2ba",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.12",
+		"vite-plugin-dts": "^5.0.0",
+		"vitest": "^4.1.6"
+	}
+}
