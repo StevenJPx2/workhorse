@@ -1,5 +1,5 @@
 /**
- * Global keybindings for the Jiratown TUI.
+ * Global keybindings for the Workhorse TUI.
  *
  * Uses Ctrl+X as command prefix to avoid conflicts with text input.
  * Example: Ctrl+X then Q to quit, Ctrl+X then H for help.

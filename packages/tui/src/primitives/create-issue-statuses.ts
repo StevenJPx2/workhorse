@@ -1,5 +1,5 @@
 /**
- * Reactive primitive that tracks Jiratown statuses for multiple issues.
+ * Reactive primitive that tracks Workhorse statuses for multiple issues.
  * Used by AgentList to show status for all agents.
  */
 

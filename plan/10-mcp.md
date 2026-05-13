@@ -12,7 +12,7 @@
 
 # Step 10: MCP
 
-Agent's interface back to Jiratown via stdio. 3 core tools (source-agnostic). Plugins contribute additional tools via hooks. Lives inside `workflow/harness/` because it's a harness-specific concern — each harness type configures and launches the MCP server as part of its provisioning.
+Agent's interface back to Workhorse via stdio. 3 core tools (source-agnostic). Plugins contribute additional tools via hooks. Lives inside `workflow/harness/` because it's a harness-specific concern — each harness type configures and launches the MCP server as part of its provisioning.
 
 Notifications are **push-based** — the agent never polls for them. Pending notifications are bundled into the initial prompt (step 8), and new ones are delivered in real-time via `sendMessage` (step 9). The agent just needs to acknowledge them.
 
@@ -23,7 +23,7 @@ Location: `packages/core/src/workflow/harness/mcp/`
 ## Server Factory
 
 ```typescript
-function createJiratownServer(options: {
+function createWorkhorseServer(options: {
   db: Database
   memory: MemoryService
   hooks: Hooks

@@ -1,7 +1,7 @@
 /**
- * Jiratown tool renderers for TUI display.
+ * Workhorse tool renderers for TUI display.
  *
- * Handles rendering of core Jiratown tools: update_status, escalate, acknowledge.
+ * Handles rendering of core Workhorse tools: update_status, escalate, acknowledge.
  */
 
 /**
@@ -25,8 +25,8 @@ interface RenderedActivity {
 }
 
 /**
- * Jiratown tool renderer for TUI display.
- * Handles core Jiratown tools (update_status, escalate, acknowledge).
+ * Workhorse tool renderer for TUI display.
+ * Handles core Workhorse tools (update_status, escalate, acknowledge).
  * Returns null for other inputs.
  */
 export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | null {

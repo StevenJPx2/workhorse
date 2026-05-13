@@ -36,7 +36,7 @@ describe("bootstrap", () => {
     rmSync(tmpDataDir, { recursive: true, force: true });
   });
 
-  it("returns Jiratown instance with config and hooks", async () => {
+  it("returns Workhorse instance with config and hooks", async () => {
     const { bootstrap } = await import("../bootstrap.ts");
     const jt = await bootstrap({ repoRoot: tmpDir });
 

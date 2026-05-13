@@ -141,9 +141,9 @@ export class PromptEngineer {
   /** Render tools section for system prompt. */
   private renderToolsSection(tools: OrchestratorTool[]): string {
     const lines = [
-      "## Jiratown Tools",
+      "## Workhorse Tools",
       "",
-      "The following tools are available for interacting with Jiratown:",
+      "The following tools are available for interacting with Workhorse:",
       "",
     ];
     for (const tool of tools) lines.push(`### ${tool.name}`, tool.description, "");

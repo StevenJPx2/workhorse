@@ -1,5 +1,5 @@
 /**
- * Playwright Plugin — Jiratown plugin for browser automation.
+ * Playwright Plugin — Workhorse plugin for browser automation.
  *
  * Provides:
  * - Browser session management (one session per issue)
@@ -62,7 +62,7 @@ export const playwrightPlugin = definePlugin({
   manifest: {
     name: "playwright",
     version: "1.0.0",
-    description: "Browser automation for Jiratown using Playwright",
+    description: "Browser automation for Workhorse using Playwright",
     capabilities: {
       tools: [
         "playwright_navigate",

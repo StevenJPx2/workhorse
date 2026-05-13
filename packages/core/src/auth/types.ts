@@ -31,7 +31,7 @@ export interface ExternalAuthConfig {
 }
 
 /**
- * Auth provider types supported by Jiratown.
+ * Auth provider types supported by Workhorse.
  */
 export type AuthProviderType = "oauth" | "external" | "none";
 

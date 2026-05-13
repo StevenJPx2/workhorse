@@ -55,7 +55,7 @@ auto_poll_reviews = true
 ## Interface
 
 ```typescript
-interface JiratownConfig {
+interface WorkhorseConfig {
   agent: { harness: AgentHarness; model?: string }
   behavior: { autoResume: boolean; pollInterval: number }
   prompt: { custom?: string }
@@ -79,7 +79,7 @@ Pure functions for config resolution and loading:
 function resolveConfigPaths(repoRoot?: string): ConfigPaths
 
 // Load and merge configs: defaults ← global ← project
-function loadConfig(paths: ConfigPaths): JiratownConfig
+function loadConfig(paths: ConfigPaths): WorkhorseConfig
 ```
 
 Additional helpers for plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`, `writeTomlFile`.
@@ -94,7 +94,7 @@ function getCredential(service: string, key: string): Promise<string | null>
 function deleteCredential(service: string, key: string): Promise<void>
 ```
 
-Service name: `"jiratown"`. Keys: `"github_token"`, `"jira_token"`, etc.
+Service name: `"workhorse"`. Keys: `"github_token"`, `"jira_token"`, etc.
 
 ## Validation
 

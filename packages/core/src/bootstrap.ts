@@ -11,7 +11,7 @@ import { HarnessOrchestrator } from "#workflow/orchestrator";
 import { Tracker } from "#workflow/tracker";
 
 /**
- * Options for bootstrapping a Jiratown instance.
+ * Options for bootstrapping a Workhorse instance.
  */
 export interface BootstrapOptions {
   /** Project root directory (defaults to cwd) */
@@ -24,7 +24,7 @@ export interface BootstrapOptions {
   overrides?: DeepPartial<WorkhorseConfig>;
 }
 
-export interface Jiratown {
+export interface Workhorse {
   /** Loaded configuration (readonly) */
   readonly config: Readonly<WorkhorseConfig>;
 
@@ -57,10 +57,10 @@ export interface Jiratown {
 }
 
 /**
- * Initialize a Jiratown instance with config, database, and plugins.
+ * Initialize a Workhorse instance with config, database, and plugins.
  *
  * @param options - Bootstrap options (repoRoot, plugins)
- * @returns Fully initialized Jiratown instance
+ * @returns Fully initialized Workhorse instance
  *
  * @example
  * ```typescript
@@ -72,7 +72,7 @@ export interface Jiratown {
  * await jt.shutdown();
  * ```
  */
-export async function bootstrap(options: BootstrapOptions = {}): Promise<Jiratown> {
+export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhorse> {
   const { repoRoot, plugins: extraPlugins = [], overrides } = options;
 
   hooks.all.clear();

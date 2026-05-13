@@ -4,7 +4,7 @@ import { basename, dirname, join } from "node:path";
 import type { ConfigPaths } from "./types.ts";
 
 /**
- * Resolve all config and data paths for Jiratown.
+ * Resolve all config and data paths for Workhorse.
  *
  * Config file search order (first found wins):
  * 1. ~/.workhorse.toml
@@ -19,7 +19,10 @@ import type { ConfigPaths } from "./types.ts";
 export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
-  const globalDir = join(process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share"), "workhorse");
+  const globalDir = join(
+    process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share"),
+    "workhorse",
+  );
 
   return {
     globalDir,

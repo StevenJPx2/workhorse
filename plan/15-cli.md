@@ -1,6 +1,6 @@
 # Step 15: CLI
 
-Command-line interface for Jiratown. Thin wrapper over core APIs — no business logic, just argument parsing and output formatting.
+Command-line interface for Workhorse. Thin wrapper over core APIs — no business logic, just argument parsing and output formatting.
 
 **Location:** `packages/cli/` (standalone package: `@fdcn/workhorse`)
 

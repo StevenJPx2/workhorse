@@ -7,7 +7,7 @@ import type { HarnessOrchestrator } from "#workflow/orchestrator";
 import type { Tracker } from "#workflow/tracker";
 
 /**
- * The Jiratown context available everywhere within the app lifecycle.
+ * The Workhorse context available everywhere within the app lifecycle.
  */
 export interface WorkhorseContext {
   readonly config: WorkhorseConfig;

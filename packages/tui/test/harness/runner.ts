@@ -15,7 +15,7 @@ import { captureSnapshot, captureWithKeys } from "./capture.ts";
  * const results = await runTests([
  *   {
  *     name: "shows header",
- *     assert: (text) => text.includes("Jiratown") || "Missing Jiratown header",
+ *     assert: (text) => text.includes("Workhorse") || "Missing Workhorse header",
  *   },
  *   {
  *     name: "can navigate with Tab",

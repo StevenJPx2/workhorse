@@ -8,19 +8,19 @@ const ctx = createContext<WorkhorseContext>({
 });
 
 /**
- * Get the current Jiratown context.
+ * Get the current Workhorse context.
  *
- * @throws If called outside of a Jiratown context scope
+ * @throws If called outside of a Workhorse context scope
  */
 export const useWorkhorse = ctx.use;
 
 /**
- * Get the current Jiratown context, or undefined if not in context.
+ * Get the current Workhorse context, or undefined if not in context.
  */
 export const tryUseWorkhorse = ctx.tryUse;
 
 /**
- * Run a function within a Jiratown context.
+ * Run a function within a Workhorse context.
  */
 export const runWithContext = ctx.call;
 

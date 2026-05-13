@@ -30,8 +30,8 @@ const tests: GroupedTestCase[] = [
   // ═══════════════════════════════════════════════════════════════════════════
   {
     group: "render",
-    name: "renders JIRATOWN header",
-    assert: (text) => text.includes("JIRATOWN") || "Missing 'JIRATOWN' header",
+    name: "renders WORKHORSE header",
+    assert: (text) => text.includes("WORKHORSE") || "Missing 'WORKHORSE' header",
   },
   {
     group: "render",
@@ -283,7 +283,7 @@ const tests: GroupedTestCase[] = [
         return text.includes("ISSUES") || "Didn't close modal";
       }
       // May still be on agent screen if ESC timing was off, or back to overview
-      return text.includes("JIRATOWN") || text.includes("ACTIVITY") || "Not on overview or agent";
+      return text.includes("WORKHORSE") || text.includes("ACTIVITY") || "Not on overview or agent";
     },
   },
   {

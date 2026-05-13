@@ -95,7 +95,7 @@ export interface ToolFactoryContext {
   memory: MemoryService;
 }
 
-/** Create pi extension factory from Jiratown tools. */
+/** Create pi extension factory from Workhorse tools. */
 export function createExtensionFromTools(
   tools: OrchestratorTool[],
   ctx: ToolFactoryContext,

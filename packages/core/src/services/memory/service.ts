@@ -5,7 +5,7 @@ import { L2Store } from "./l2.ts";
 import { NotificationService } from "./notifications.ts";
 
 /**
- * MemoryService - Two-tier memory system for Jiratown agents.
+ * MemoryService - Two-tier memory system for Workhorse agents.
  *
  * Facade providing access to:
  * - `l1`: Session memory (context.md per worktree) - fast, append-only, markdown-based

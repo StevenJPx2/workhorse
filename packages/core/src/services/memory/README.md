@@ -1,6 +1,6 @@
 # Memory Service
 
-Two-tier memory system for Jiratown agents, combining fast session-level context with long-term semantic search.
+Two-tier memory system for Workhorse agents, combining fast session-level context with long-term semantic search.
 
 ## Overview
 

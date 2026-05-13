@@ -5,7 +5,7 @@ import { Monitor } from "./monitor.ts";
 import type { MonitorOptions, MonitorStatus } from "./types.ts";
 
 /**
- * Polling framework for Jiratown. Core provides infrastructure, plugins bring the "what" to monitor.
+ * Polling framework for Workhorse. Core provides infrastructure, plugins bring the "what" to monitor.
  *
  * Two-phase API:
  * 1. registerMonitor(options) - Plugin registers a monitor definition (once at startup)

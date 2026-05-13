@@ -1,5 +1,5 @@
 /**
- * Authentication module for Jiratown plugins.
+ * Authentication module for Workhorse plugins.
  *
  * Provides types and utilities for plugin authentication:
  * - OAuth 2.0 flow with local callback server (using Arctic)

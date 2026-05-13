@@ -49,7 +49,7 @@ interface PromptContext {
 class Tracker {
   private parsers: IssueParser[] = []
 
-  constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<JiratownConfig>)
+  constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<WorkhorseConfig>)
 
   registerParser(parser: IssueParser): void
   async parseInput(input: string): Promise<Issue>
@@ -67,7 +67,7 @@ class Tracker {
 
 ```typescript
 class PromptEngineer {
-  constructor(config: Readonly<JiratownConfig>)
+  constructor(config: Readonly<WorkhorseConfig>)
 
   buildPrompt(ctx: PromptContext): string
   buildSystemPrompt(ctx: PromptContext): string

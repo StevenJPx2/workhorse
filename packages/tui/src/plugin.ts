@@ -18,7 +18,7 @@ export default definePlugin({
   manifest: {
     name: "tui",
     version: "0.1.0",
-    description: "Terminal UI for Jiratown",
+    description: "Terminal UI for Workhorse",
   },
   setup() {
     const { hooks } = useWorkhorse();

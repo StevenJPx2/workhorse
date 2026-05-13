@@ -4,14 +4,14 @@ import { useWorkhorse } from "#context";
 import { type Plugin, PluginSymbol } from "./types.ts";
 
 /**
- * Check if a value is a valid Jiratown plugin.
+ * Check if a value is a valid Workhorse plugin.
  */
 export function isPlugin(value: unknown): value is Plugin {
   return typeof value === "object" && value !== null && PluginSymbol in value;
 }
 
 /**
- * Registry for managing Jiratown plugins.
+ * Registry for managing Workhorse plugins.
  *
  * All plugins passed to bootstrap() are enabled by default.
  * Use config.plugins.disabled array to opt-out of specific plugins.

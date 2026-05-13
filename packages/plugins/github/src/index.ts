@@ -1,11 +1,11 @@
 /**
- * GitHub Plugin — Jiratown plugin for GitHub integration.
+ * GitHub Plugin — Workhorse plugin for GitHub integration.
  *
  * Provides:
  * - Issue parsing for GitHub refs (owner/repo#45) and URLs
  * - Unified PR monitor (reviews, comments, checks, mergeable state)
  * - Prompt enrichment (GitHub issue state + PR state + workflow instructions)
- * - Status sync (Jiratown status → GitHub PR labels)
+ * - Status sync (Workhorse status → GitHub PR labels)
  * - GitHub tools (open_pr, add_comment, get_pr_status)
  *
  * **External deps:** `gh` CLI (authenticated via `gh auth login`)
@@ -55,7 +55,7 @@ export const githubPlugin = definePlugin({
   manifest: {
     name: "github",
     version: "1.0.0",
-    description: "GitHub integration for Jiratown",
+    description: "GitHub integration for Workhorse",
     capabilities: {
       parsers: ["github"],
       monitors: ["github-pr"],

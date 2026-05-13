@@ -114,7 +114,7 @@ export {
   type OAuthFlowResult,
   type OAuthResult,
 } from "./auth";
-export { bootstrap, type BootstrapOptions, type Jiratown } from "./bootstrap.ts";
+export { bootstrap, type BootstrapOptions, type Workhorse } from "./bootstrap.ts";
 // Path validation exports for harness authors
 export {
   assertPathAllowed,

@@ -64,7 +64,7 @@ echo ""
 
 # Note: Without config, we'll see the Setup screen first
 # Test for Setup screen elements (first-run experience)
-check "Jiratown header" "Jiratown"
+check "Workhorse header" "Workhorse"
 check "Setup screen shown" "Setup"
 check "Jira plugin config" "jira"
 check "Box borders rendered" "┌"

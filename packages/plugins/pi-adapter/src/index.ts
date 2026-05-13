@@ -2,7 +2,7 @@
  * Pi Coding Agent adapter plugin.
  *
  * Standalone plugin package that wraps @earendil-works/pi-coding-agent
- * for use with Jiratown's orchestrator.
+ * for use with Workhorse's orchestrator.
  *
  * @module workhorse-plugin-pi-adapter
  */

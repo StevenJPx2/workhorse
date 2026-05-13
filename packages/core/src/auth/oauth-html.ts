@@ -40,7 +40,7 @@ export function successHtml(): string {
   <div class="container">
     <div class="icon">✓</div>
     <h1>Authentication Successful!</h1>
-    <p>You can close this window and return to Jiratown.</p>
+    <p>You can close this window and return to Workhorse.</p>
   </div>
 </body>
 </html>`;

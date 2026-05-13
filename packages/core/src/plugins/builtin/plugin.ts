@@ -1,5 +1,5 @@
 /**
- * Core plugin - registers built-in Jiratown tools and local parser.
+ * Core plugin - registers built-in Workhorse tools and local parser.
  *
  * @module plugins/builtin/tools/plugin
  */
@@ -14,7 +14,7 @@ export const corePlugin = definePlugin({
   manifest: {
     name: "builtin-tools",
     version: "1.0.0",
-    description: "Core Jiratown agent tools and local issue parser",
+    description: "Core Workhorse agent tools and local issue parser",
     capabilities: {
       tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"],
       parsers: ["local"],
@@ -29,7 +29,7 @@ export const corePlugin = definePlugin({
     // Register local parser as fallback (should be last, always matches)
     ctx.tracker.registerParser(createLocalParserOptions());
 
-    // Register Jiratown tool renderers with TUI (if TUI plugin is loaded)
+    // Register Workhorse tool renderers with TUI (if TUI plugin is loaded)
     ctx.hooks.emit("tui.register_renderer", {
       id: "workhorse-tools",
       renderer: workhorseToolRenderer,

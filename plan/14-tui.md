@@ -1,6 +1,6 @@
 # Step 14: TUI
 
-Terminal user interface for Jiratown. Simple overview with a chat box, issue backlog, and running agents. Built with OpenTUI + Solid.js for fine-grained reactivity and native performance.
+Terminal user interface for Workhorse. Simple overview with a chat box, issue backlog, and running agents. Built with OpenTUI + Solid.js for fine-grained reactivity and native performance.
 
 **Location:** `packages/tui/` (package: `@fdcn/workhorse`)
 
@@ -23,7 +23,7 @@ packages/tui/                    # Standalone TUI application
 ```
 
 **Why this structure:**
-- TUI is the main entry point that bootstraps Jiratown
+- TUI is the main entry point that bootstraps Workhorse
 - It registers its own plugin so other plugins (Jira, GitHub) can register notification renderers
 - The plugin is loaded alongside other plugins during bootstrap
 
@@ -107,7 +107,7 @@ import githubPlugin from "workhorse-plugin-github";
 import piAdapterPlugin from "workhorse-plugin-pi-adapter";
 
 export async function startTUI() {
-  // Bootstrap Jiratown with all plugins
+  // Bootstrap Workhorse with all plugins
   const workhorse = await bootstrap({
     plugins: [
       tuiPlugin,        // TUI plugin (renderer hooks)
@@ -277,7 +277,7 @@ Simple layout: large chat box on top, issues and agents side-by-side below.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Jiratown                                                        │
+│ Workhorse                                                        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Welcome! Select an issue to spawn an agent, or click on a     │
@@ -1254,7 +1254,7 @@ export const ui = {
 };
 ```
 
-## Context (Jiratown Provider)
+## Context (Workhorse Provider)
 
 ```tsx
 // context/workhorse.tsx
@@ -1416,7 +1416,7 @@ export function Overview() {
       {/* Header */}
       <box borderStyle="single" padding={1}>
         <text>
-          <b>Jiratown</b>
+          <b>Workhorse</b>
         </text>
       </box>
 
@@ -1874,7 +1874,7 @@ describe("Overview Screen (E2E)", () => {
   it("shows welcome message on start", async () => {
     const snapshot = await ht.takeSnapshot();
     
-    expect(snapshot.text).toContain("Jiratown");
+    expect(snapshot.text).toContain("Workhorse");
     expect(snapshot.text).toContain("Welcome!");
     expect(snapshot.text).toContain("ISSUES");
     expect(snapshot.text).toContain("AGENTS");

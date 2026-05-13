@@ -7,7 +7,7 @@ import { jiraPlugin, JiraConfigSchema } from "../index.ts";
 import { PluginSymbol } from "workhorse-core";
 
 describe("jiraPlugin", () => {
-  it("is a valid Jiratown plugin", () => {
+  it("is a valid Workhorse plugin", () => {
     expect(jiraPlugin[PluginSymbol]).toBe(true);
   });
 
@@ -54,7 +54,7 @@ describe("JiraConfigSchema", () => {
 });
 
 describe("plugin setup", () => {
-  it.fails("TODO: integrates with Jiratown context", async () => {
+  it.fails("TODO: integrates with Workhorse context", async () => {
     throw new Error("Not yet implemented");
   });
 });

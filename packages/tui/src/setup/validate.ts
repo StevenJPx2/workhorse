@@ -24,7 +24,7 @@ export interface PluginConfigRequirement {
 }
 
 /**
- * Default plugin requirements for Jiratown.
+ * Default plugin requirements for Workhorse.
  * These define which plugins need configuration and what fields they require.
  */
 export const PLUGIN_REQUIREMENTS: PluginConfigRequirement[] = [

@@ -2,10 +2,10 @@ import { useWorkhorse } from "#context";
 import { type Plugin, PluginManifestSchema, type PluginOptions, PluginSymbol } from "./types.ts";
 
 /**
- * Define a Jiratown plugin.
+ * Define a Workhorse plugin.
  *
  * The returned plugin wraps setup and teardown to:
- * - Inject the Jiratown context as the first argument
+ * - Inject the Workhorse context as the first argument
  * - Validate config against configSchema (if provided) and pass as second argument
  * - Emit plugin.error hook on setup failure before re-throwing
  *

@@ -370,7 +370,7 @@ export class AgentAdapter {
     this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
 
     // Detect resume and build prompt (engineer is per-issue, no issue param needed)
-    const isResume = existsSync(join(worktree.path, ".jiratown", "session"));
+    const isResume = existsSync(join(worktree.path, ".workhorse", "session"));
     const { systemPrompt, initialMessage } =
       await this.engineer.buildHybridPrompt({
         isResume,
@@ -478,7 +478,7 @@ The orchestrator becomes a simple registry/factory. It no longer owns lifecycle 
 ```typescript
 // orchestrator.ts
 import type { Emitter } from "mitt";
-import type { JiratownConfig } from "#config";
+import type { WorkhorseConfig } from "#config";
 import type { Database } from "#db/database";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
@@ -508,7 +508,7 @@ export class HarnessOrchestrator {
     readonly db: Database,
     readonly hooks: Emitter<HookEventMap>,
     readonly memory: MemoryService,
-    readonly config: Readonly<JiratownConfig>,
+    readonly config: Readonly<WorkhorseConfig>,
   ) {
     // Push notifications to running agents
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
@@ -829,7 +829,7 @@ import { bootstrap } from "workhorse-core";
 import { PiAgentAdapter } from "workhorse-plugin-pi-adapter";
 
 async function main() {
-  // 1. Bootstrap the Jiratown instance
+  // 1. Bootstrap the Workhorse instance
   const jt = await bootstrap("/path/to/repo");
 
   // 2. Register the adapter (typically done by a plugin during setup)

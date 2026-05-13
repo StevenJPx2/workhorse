@@ -13,7 +13,7 @@ const rule = {
   meta: {
     docs: {
       description:
-        "Enforce kebab-case file naming convention. Jiratown convention: all files must use kebab-case (e.g., my-module.ts).",
+        "Enforce kebab-case file naming convention. Workhorse convention: all files must use kebab-case (e.g., my-module.ts).",
     },
   },
 

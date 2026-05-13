@@ -1,11 +1,11 @@
 /**
- * Jira Plugin — Jiratown plugin for Jira Cloud integration.
+ * Jira Plugin — Workhorse plugin for Jira Cloud integration.
  *
  * Provides:
  * - Issue parsing for Jira ticket keys and URLs
  * - Comment poller monitor
  * - Prompt enrichment (Jira state + workflow instructions)
- * - Status sync (Jiratown status → Jira transitions)
+ * - Status sync (Workhorse status → Jira transitions)
  * - Jira tools (add_comment, transition_issue)
  *
  * @module workhorse-plugin-jira
@@ -42,7 +42,7 @@ export const jiraPlugin = definePlugin({
   manifest: {
     name: "jira",
     version: "1.0.0",
-    description: "Jira Cloud integration for Jiratown",
+    description: "Jira Cloud integration for Workhorse",
     capabilities: {
       parsers: ["jira"],
       monitors: ["jira-comments"],

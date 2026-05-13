@@ -54,7 +54,7 @@ export type PluginOptions<TConfig = void> = {
 
       /**
        * No config schema provided.
-       * Setup function receives the Jiratown context.
+       * Setup function receives the Workhorse context.
        */
       setup: (ctx: WorkhorseContext) => void | Promise<void>;
     }
@@ -67,14 +67,14 @@ export type PluginOptions<TConfig = void> = {
 
       /**
        * Config schema provided.
-       * Setup function receives the Jiratown context and validated config.
+       * Setup function receives the Workhorse context and validated config.
        */
       setup: (ctx: WorkhorseContext, config: TConfig) => void | Promise<void>;
     }
 );
 
 /**
- * Unique symbol to identify Jiratown plugins.
+ * Unique symbol to identify Workhorse plugins.
  */
 export const PluginSymbol = Symbol.for("workhorse.plugin");
 

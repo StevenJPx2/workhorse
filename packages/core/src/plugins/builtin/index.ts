@@ -1,5 +1,5 @@
 /**
- * Built-in Jiratown plugins.
+ * Built-in Workhorse plugins.
  *
  * @module plugins/builtin
  */

@@ -1,8 +1,8 @@
-# Jiratown: Pipeline → Architecture Migration Reference
+# Workhorse: Pipeline → Architecture Migration Reference
 
 ## Overview
 
-This document maps the existing Jiratown pipeline (on `main`) into the new architecture defined in `architecture.d2`. It serves as the canonical reference for the rewrite.
+This document maps the existing Workhorse pipeline (on `main`) into the new architecture defined in `architecture.d2`. It serves as the canonical reference for the rewrite.
 
 ---
 
@@ -12,7 +12,7 @@ This document maps the existing Jiratown pipeline (on `main`) into the new archi
 - **Workflow**: Harness + Services (MemoryService, MonitorService)
 - **Harness**: Wraps Claude Code or Opencode, generates native plugin config for whichever harness is used
 - **Agent Plugin**: The config surface defined in the Harness — maps to Claude Code's `plugin.json` / Opencode's JS/TS plugin modules
-- **Plugins**: Developer-defined extensions (Jira, GitHub, etc.) that hook into every part of Jiratown via dashed-line hook access
+- **Plugins**: Developer-defined extensions (Jira, GitHub, etc.) that hook into every part of Workhorse via dashed-line hook access
 - **TUI**: Just the interface layer to this underlying system — can be a modal, chatbox, whatever
 
 ---
@@ -30,20 +30,20 @@ This document maps the existing Jiratown pipeline (on `main`) into the new archi
 
 ## 2. Workflow → Harness → Agent Plugin
 
-The Agent Plugin is what Jiratown defines in the Harness. Each agent harness has its own native plugin system:
+The Agent Plugin is what Workhorse defines in the Harness. Each agent harness has its own native plugin system:
 
 - **Claude Code**: `plugin.json` + `hooks.json` + `.mcp.json` + `skills/` + `agents/` + `monitors/` etc.
 - **Opencode**: JS/TS plugin modules with event hooks, `tool()` definitions, etc.
 
 | Agent Plugin Slot | Current Code                                                                                                                      | What Changes                                                                                                                                                                                                                                                                                                       |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **MCP**           | `createJiratownServer()` in `src/core/mcp-server/` + `generateMcpConfig()` writing `.opencode/opencode.json`                      | The harness generates the native MCP config for whichever agent harness. The 5 Jiratown tools (`get_notifications`, `acknowledge`, `update_status`, `escalate`, `open_pr`) become the core MCP server (now lives inside `harness/mcp/`). Jira/GitHub MCP connections move to their respective plugins.                                               |
+| **MCP**           | `createWorkhorseServer()` in `src/core/mcp-server/` + `generateMcpConfig()` writing `.opencode/opencode.json`                      | The harness generates the native MCP config for whichever agent harness. The 5 Workhorse tools (`get_notifications`, `acknowledge`, `update_status`, `escalate`, `open_pr`) become the core MCP server (now lives inside `harness/mcp/`). Jira/GitHub MCP connections move to their respective plugins.                                               |
 | **Tools**         | The 5 tool handlers in `src/core/mcp-server/tools/`                                                                               | Core tools stay. Plugin-contributed tools get registered via hooks.                                                                                                                                                                                                                                                |
 | **Skills**        | System prompt instructions (hardcoded in `system-prompt/`)                                                                        | Become actual skill files — `SKILL.md` for Claude Code, or JS modules for Opencode.                                                                                                                                                                                                                                |
 | **Commands**      | N/A — no formal command system existed                                                                                            | Formalized as agent commands (slash commands, etc.).                                                                                                                                                                                                                                                               |
 | **Hooks**         | `sendMessageToAgent()` via tmux `sendKeys()` for notification injection was the closest thing — but it was inline, not hook-based | **New** — the plugin hook system. This is the big addition. Autonomous notification delivery to the agent (currently `injectSystemInbox()` via tmux) becomes a hook that fires on notification events. Plugins and core services can register hooks to push messages to the agent at the right lifecycle moments.  |
 | **LSPs**          | Doesn't exist yet                                                                                                                 | **New** — can be contributed by plugins.                                                                                                                                                                                                                                                                           |
-| **Models**        | No model selection existed — the agent harness picked its own model                                                               | **New** — Refers to the actual LLM model (e.g. `opus-4-6`, `glm-5-1`, `sonnet-4`), not the coding harness. Jiratown plugins or config can now specify which model the agent should use. This is passed through to the native agent harness config (Claude Code's model setting, Opencode's provider/model config). |
+| **Models**        | No model selection existed — the agent harness picked its own model                                                               | **New** — Refers to the actual LLM model (e.g. `opus-4-6`, `glm-5-1`, `sonnet-4`), not the coding harness. Workhorse plugins or config can now specify which model the agent should use. This is passed through to the native agent harness config (Claude Code's model setting, Opencode's provider/model config). |
 | **Agents**        | Not applicable (single agent per ticket)                                                                                          | Could enable sub-agent definitions.                                                                                                                                                                                                                                                                                |
 | **Monitors**      | The pollers are outside the agent currently                                                                                       | Move into the agent plugin format (Claude Code `monitors.json`, Opencode events).                                                                                                                                                                                                                                  |
 | **Dependencies**  | Not applicable                                                                                                                    | Plugin dependency resolution.                                                                                                                                                                                                                                                                                      |
@@ -78,14 +78,14 @@ The Agent Plugin is what Jiratown defines in the Harness. Each agent harness has
 
 ## 5. Plugins (Developer-Defined, Hook-Based)
 
-Plugins are defined by the developer **beforehand**. They have access to every part of Jiratown via hooks — that's what the dashed lines in the architecture diagram represent.
+Plugins are defined by the developer **beforehand**. They have access to every part of Workhorse via hooks — that's what the dashed lines in the architecture diagram represent.
 
 | Plugin            | Current Code                                                                              | What Changes                                                                                                                                                                                                                                             |
 | ----------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Jira Plugin**   | `src/core/jira/` (client, poller, fetch context, sync) — deeply integrated into core      | Extracted from core. Hooks into: Tracker (registers Jira ticket key/URL parser), MonitorService (registers Jira comment poller), MemoryService (provides Jira context for prompts), Harness (contributes Atlassian MCP server config).        |
 | **GitHub Plugin** | `src/core/github/` (client, poller, PR context, formatters) — deeply integrated into core | Same extraction. Hooks into: **Tracker** (registers GitHub issue ID/URL parser — new capability!), MonitorService (PR review/comment poller), MemoryService (PR context), Harness (contributes GitHub MCP config), and MCP tools (`open_pr`). |
 
-**Key shift**: Jira and GitHub are currently **baked into core** — `launchTicketAgent()` directly calls `fetchPRContext()`, the system prompt has hardcoded Jira/GitHub instructions, pollers are created inline. In the new architecture, they become **plugins that register themselves via hooks**. Core Jiratown has no knowledge of Jira or GitHub — it just knows about issues, monitors, memory, and agents.
+**Key shift**: Jira and GitHub are currently **baked into core** — `launchTicketAgent()` directly calls `fetchPRContext()`, the system prompt has hardcoded Jira/GitHub instructions, pollers are created inline. In the new architecture, they become **plugins that register themselves via hooks**. Core Workhorse has no knowledge of Jira or GitHub — it just knows about issues, monitors, memory, and agents.
 
 ---
 
@@ -170,7 +170,7 @@ AFTER (new architecture):
 
 ### MCP Server
 
-- `src/core/mcp-server/server.ts` — The Jiratown MCP server agents connect to
+- `src/core/mcp-server/server.ts` — The Workhorse MCP server agents connect to
 - `src/core/mcp-server/tools/` — 5 tool handlers (get_notifications, acknowledge, update_status, escalate, open_pr)
 
 ### Database

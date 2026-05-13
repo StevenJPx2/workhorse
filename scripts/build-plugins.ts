@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Build script for Jiratown plugins.
+ * Build script for Workhorse plugins.
  *
  * Builds all plugins in packages/plugins/* using Vite library mode.
  * Each plugin outputs ES module with TypeScript declarations.

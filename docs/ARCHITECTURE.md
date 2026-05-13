@@ -78,7 +78,7 @@ Uses `unctx` + `AsyncLocalStorage` for async context propagation:
 const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } = useWorkhorse();
 
 // Safe access (returns undefined if not in context)
-const ctx = tryUseJiratown();
+const ctx = tryUseWorkhorse();
 
 // Running code with context
 runWithContext(context, async () => {
@@ -88,7 +88,7 @@ runWithContext(context, async () => {
 
 ### 3. Plugin System (`plugins/`)
 
-Plugins extend Jiratown via `definePlugin()`:
+Plugins extend Workhorse via `definePlugin()`:
 
 ```typescript
 import { definePlugin, useWorkhorse } from "@workhorse/core";
@@ -397,7 +397,7 @@ GitHub integration via `gh` CLI:
 Pi Coding Agent adapter:
 - Wraps `@mariozechner/pi-coding-agent` SDK
 - Translates Workhorse tools to Pi extensions
-- Maps Pi session events to Jiratown hooks
+- Maps Pi session events to Workhorse hooks
 - Model registry with Pi's authentication
 - Streaming support (`session.steer()` for mid-stream injection)
 

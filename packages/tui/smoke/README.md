@@ -28,7 +28,7 @@ The smoke test:
 
 Without a config file, the TUI shows the Setup screen. The test verifies:
 
-- **Jiratown header** - The app title is visible
+- **Workhorse header** - The app title is visible
 - **Setup screen shown** - The setup wizard appears
 - **Jira plugin config** - Plugin configuration is displayed
 - **Box borders rendered** - UI borders render correctly (┌)

@@ -3,7 +3,7 @@ import type { workhorseConfigSchema } from "./schema.ts";
 
 export type AgentHarness = string;
 
-/** Jiratown configuration derived from the Zod schema */
+/** Workhorse configuration derived from the Zod schema */
 export type WorkhorseConfig = z.infer<typeof workhorseConfigSchema>;
 
 /** Deep partial type - makes all nested properties optional */

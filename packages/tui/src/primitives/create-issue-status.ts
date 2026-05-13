@@ -1,5 +1,5 @@
 /**
- * Reactive primitive that tracks the Jiratown status for an issue.
+ * Reactive primitive that tracks the Workhorse status for an issue.
  * Listens to issue.status_changed hook for real-time updates.
  */
 

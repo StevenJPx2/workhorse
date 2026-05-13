@@ -25,7 +25,7 @@ interface MonitorContext {
   issueId: string
   hooks: Hooks
   memory: MemoryService
-  config: Readonly<JiratownConfig>
+  config: Readonly<WorkhorseConfig>
 }
 
 interface MonitorStatus {

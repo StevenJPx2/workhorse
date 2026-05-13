@@ -1,6 +1,6 @@
 # Step 9: Orchestrator
 
-Agent-agnostic orchestrator. Takes Jiratown's internal representation, manages worktrees and agent lifecycles. Adapters are pluggable — registered via plugins.
+Agent-agnostic orchestrator. Takes Workhorse's internal representation, manages worktrees and agent lifecycles. Adapters are pluggable — registered via plugins.
 
 Location: `packages/core/src/workflow/orchestrator/`
 
@@ -20,7 +20,7 @@ packages/core/src/
 ├── plugins/
 │   └── builtin/
 │       └── tools/
-│           └── plugin.ts         # corePlugin (Jiratown agent tools)
+│           └── plugin.ts         # corePlugin (Workhorse agent tools)
 │
 └── workflow/
     └── orchestrator/
@@ -128,7 +128,7 @@ class HarnessOrchestrator {
     private db: Database,
     private hooks: Emitter<HookEventMap>,
     private memory: MemoryService,
-    private config: Readonly<JiratownConfig>
+    private config: Readonly<WorkhorseConfig>
   )
 
   // Adapter registration — plugins call this during setup
@@ -279,7 +279,7 @@ export class PiAgentAdapter extends AgentAdapter {
     })
     this.session = session
 
-    // Bridge pi events → Jiratown hooks
+    // Bridge pi events → Workhorse hooks
     this.subscribeToEvents()
 
     this.state = "running"
@@ -378,7 +378,7 @@ export default definePlugin({
 
 ## Core Tools Plugin
 
-Core Jiratown tools are registered via a builtin plugin, keeping the orchestrator tool-agnostic:
+Core Workhorse tools are registered via a builtin plugin, keeping the orchestrator tool-agnostic:
 
 ```typescript
 // plugins/builtin/plugin.ts
@@ -386,7 +386,7 @@ export const corePlugin = definePlugin({
   manifest: {
     name: "builtin-tools",
     version: "1.0.0",
-    description: "Core Jiratown agent tools",
+    description: "Core Workhorse agent tools",
     capabilities: { tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"] },
   },
   setup(ctx) {

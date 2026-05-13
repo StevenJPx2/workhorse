@@ -96,9 +96,9 @@ When a plugin's setup fails:
 2. Error is re-thrown (fail fast behavior)
 3. Registry stops setting up further plugins
 
-## Extending Jiratown
+## Extending Workhorse
 
-Plugins can hook into every part of Jiratown. Here are the common extension points:
+Plugins can hook into every part of Workhorse. Here are the common extension points:
 
 ### Issue Parser
 

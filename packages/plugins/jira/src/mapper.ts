@@ -1,5 +1,5 @@
 /**
- * Mapper for converting Jira API responses to Jiratown's generic ParsedIssue.
+ * Mapper for converting Jira API responses to Workhorse's generic ParsedIssue.
  *
  * @module workhorse-plugin-jira/mapper
  */

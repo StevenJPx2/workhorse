@@ -302,7 +302,7 @@ export const githubPlugin = definePlugin({
   manifest: {
     name: "github",
     version: "1.0.0",
-    description: "GitHub integration for Jiratown",
+    description: "GitHub integration for Workhorse",
     capabilities: {
       parsers: ["github"],
       monitors: ["github-pr"],

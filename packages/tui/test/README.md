@@ -1,6 +1,6 @@
 # TUI Testing with Headless Terminal
 
-This directory contains the testing infrastructure for the Jiratown TUI using [ht](https://github.com/andyk/ht) (headless terminal).
+This directory contains the testing infrastructure for the Workhorse TUI using [ht](https://github.com/andyk/ht) (headless terminal).
 
 ## Prerequisites
 
@@ -113,7 +113,7 @@ import { runTests, printResults } from "./harness.ts";
 const results = await runTests([
   {
     name: "shows header",
-    assert: (text) => text.includes("Jiratown") || "Missing header",
+    assert: (text) => text.includes("Workhorse") || "Missing header",
   },
   {
     name: "Tab navigates sections",
@@ -157,7 +157,7 @@ printResults(results);
 {
   name: "works in small terminal",
   options: { cols: 80, rows: 24 },
-  assert: (text) => text.includes("Jiratown"),
+  assert: (text) => text.includes("Workhorse"),
 }
 ```
 

@@ -2,7 +2,7 @@ const rule = {
   meta: {
     docs: {
       description:
-        "Enforce maximum line count per file. Jiratown convention: files must not exceed 200 lines.",
+        "Enforce maximum line count per file. Workhorse convention: files must not exceed 200 lines.",
     },
     schema: [
       {

@@ -47,7 +47,7 @@ const ctx = createContext<WorkhorseContext>({
 })
 
 export const useWorkhorse = ctx.use      // Get context (throws if not set)
-export const tryUseJiratown = ctx.tryUse // Get context (returns undefined)
+export const tryUseWorkhorse = ctx.tryUse // Get context (returns undefined)
 export const runWithContext = ctx.call   // Run fn within context
 export const setContext = ctx.set        // Set singleton (for tests)
 export const unsetContext = ctx.unset    // Clear singleton
@@ -166,7 +166,7 @@ export default definePlugin({
 
 ```typescript
 // bootstrap.ts
-async function bootstrap(repoRoot?: string): Promise<Jiratown> {
+async function bootstrap(repoRoot?: string): Promise<Workhorse> {
   hooks.all.clear()
   
   const config = new Config(repoRoot)

@@ -1,5 +1,5 @@
 /**
- * Headless Terminal Testing Harness for Jiratown TUI
+ * Headless Terminal Testing Harness for Workhorse TUI
  *
  * Uses `ht` (https://github.com/andyk/ht) to run the TUI in a headless terminal
  * and capture snapshots for testing.

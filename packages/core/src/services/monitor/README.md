@@ -1,6 +1,6 @@
 # monitor
 
-Polling framework for Jiratown. Core provides the infrastructure, plugins bring the "what" to monitor.
+Polling framework for Workhorse. Core provides the infrastructure, plugins bring the "what" to monitor.
 
 ## Overview
 

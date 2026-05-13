@@ -600,7 +600,7 @@ export default definePlugin({
   manifest: {
     name: "slack",
     version: "1.0.0",
-    description: "Slack notifications for Jiratown events",
+    description: "Slack notifications for Workhorse events",
     capabilities: {
       tools: ["send_slack_message"],
     },

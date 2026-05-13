@@ -1,4 +1,4 @@
-# Jiratown Rewrite — Build Plan
+# Workhorse Rewrite — Build Plan
 
 Stateful modules are classes. Stateless logic is plain functions. Dependencies only flow downward.
 
@@ -56,7 +56,7 @@ packages/core/src/
 | Cache | L1 ralph-style context.md + L2 retriv (BM25 + vector), `all-MiniLM-L6-v2` |
 | Hooks | `mitt` (~200b) — raw, no wrapper, sync fire-and-forget, let errors throw |
 | Notifications | Push-based, not poll-based. Initial prompt bundles pending. New ones pushed via hook → `sendMessage`. |
-| Plugins | Jiratown-native manifest, translated by Harness to native harness format |
+| Plugins | Workhorse-native manifest, translated by Harness to native harness format |
 | Monorepo | Bun workspaces, `packages/core` + `packages/plugins/*` |
 | Testing | Bun test, unit tests first |
 

@@ -98,7 +98,7 @@ export function Overview() {
       >
         <box>
           <text fg={theme.colors.accent}>
-            <b>⚡ JIRATOWN</b>
+            <b>⚡ WORKHORSE</b>
           </text>
         </box>
         <box>

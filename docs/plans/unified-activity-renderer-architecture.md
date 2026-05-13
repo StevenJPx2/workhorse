@@ -164,7 +164,7 @@ ctx.hooks.emit("tui.register_renderer", {
 });
 ```
 
-### Core Builtin Plugin (Jiratown Tools)
+### Core Builtin Plugin (Workhorse Tools)
 
 ```typescript
 // packages/core/src/plugins/builtin/index.ts
@@ -366,7 +366,7 @@ export type ActivityItem =
 | Package | File | Change |
 |---------|------|--------|
 | core | `src/lib/hooks/types.ts` | Add `tui.register_renderer` hook type |
-| core | `src/plugins/builtin/renderers.ts` | NEW: Jiratown tool renderer |
+| core | `src/plugins/builtin/renderers.ts` | NEW: Workhorse tool renderer |
 | core | `src/plugins/builtin/index.ts` | Emit renderer registration |
 | jira | `src/index.ts` | Move renderer here, emit registration |
 | github | `src/index.ts` | Move renderer here, emit registration |
@@ -400,6 +400,6 @@ export type ActivityItem =
 2. Add hook listener to TUI plugin
 3. Move Jira/GitHub notification renderers to their plugins (already done)
 4. Add PI tool renderers to pi-adapter plugin
-5. Add Jiratown tool renderers to core builtin plugin
+5. Add Workhorse tool renderers to core builtin plugin
 6. Update activity store to emit unified ActivityInput
 7. Delete old hardcoded components

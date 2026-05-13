@@ -77,7 +77,7 @@ function AuthWrapper(props: AuthWrapperProps) {
 }
 
 /**
- * Start the Jiratown TUI.
+ * Start the Workhorse TUI.
  * Shows setup wizard if required config is missing, then authenticates plugins,
  * then bootstraps the system.
  */

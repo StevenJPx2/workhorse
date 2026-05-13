@@ -318,7 +318,7 @@ describe("PromptEngineer", () => {
 
       const result = await engineer.buildHybridPrompt({ tools });
 
-      expect(result.systemPrompt).toContain("## Jiratown Tools");
+      expect(result.systemPrompt).toContain("## Workhorse Tools");
       expect(result.systemPrompt).toContain("### update_status");
       expect(result.systemPrompt).toContain("Updates the issue status");
       expect(result.systemPrompt).toContain("### add_comment");

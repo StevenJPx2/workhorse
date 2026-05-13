@@ -1,5 +1,5 @@
 /**
- * Mapper for converting GitHub API responses to Jiratown's generic ParsedIssue.
+ * Mapper for converting GitHub API responses to Workhorse's generic ParsedIssue.
  *
  * @module workhorse-plugin-github/mapper
  */

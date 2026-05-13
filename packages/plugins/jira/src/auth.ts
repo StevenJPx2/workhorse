@@ -84,7 +84,7 @@ export function createCredentialGetter(): () => Promise<JiraCredentials> {
   };
 }
 
-// Atlassian OAuth 2.0 3LO provider for Jiratown
+// Atlassian OAuth 2.0 3LO provider for Workhorse
 export function createJiraAuthProvider(
   callbackPort = DEFAULT_CALLBACK_PORT,
 ): OAuthProvider | undefined {
