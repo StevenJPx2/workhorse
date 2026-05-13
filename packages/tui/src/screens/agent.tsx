@@ -41,7 +41,8 @@ export function Agent() {
 
   const { state: monitorState } = createMonitors({
     monitors,
-    issueId: () => selectedAgent()?.issue.externalId ?? null,
+    // Monitors are keyed by internal issue.id (UUID), not externalId
+    issueId: () => selectedAgent()?.issue.id ?? null,
   });
 
   const { state: issueStatusState } = createIssueStatus({
