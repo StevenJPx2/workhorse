@@ -16,7 +16,7 @@ interface IssueListProps {
  * Click to focus, Tab to navigate between components.
  */
 export function IssueList(props: IssueListProps) {
-  const issues = createIssues();
+  const issues = createIssues({ repository: "auto" });
   const theme = getTheme();
 
   // Check if this component is focused

@@ -169,7 +169,7 @@ await deleteCredential("workhorse", "github_token");
 
 ```toml
 [agent]
-harness = "pi-agent"            # Agent adapter to use
+harness = "pi-coding-agent"     # Agent adapter to use
 model = "claude-sonnet-4"       # Model override (optional)
 
 [behavior]

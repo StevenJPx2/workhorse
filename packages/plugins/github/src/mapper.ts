@@ -23,6 +23,7 @@ export function mapGitHubToIssue(gh: GitHubIssue): ParsedIssue {
   return {
     externalId: `${gh.owner}/${gh.repo}#${gh.number}`,
     source: "github" as IssueSource,
+    // repository is set by Tracker.parseInput() based on current git repo context
     title: gh.title,
     description: gh.body ?? "",
     issueType,

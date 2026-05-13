@@ -7,7 +7,7 @@ import z from "zod";
  */
 export const workhorseConfigSchema = z.object({
   agent: z.object({
-    harness: z.string().default("pi-agent"),
+    harness: z.string().default("pi-coding-agent"),
     model: z.string().optional(),
   }),
   behavior: z.object({

@@ -2,7 +2,7 @@ import type { WorkhorseConfig } from "./types.ts";
 
 export const DEFAULT_CONFIG: WorkhorseConfig = {
   agent: {
-    harness: "pi-agent",
+    harness: "pi-coding-agent",
   },
   behavior: {
     autoResume: true,

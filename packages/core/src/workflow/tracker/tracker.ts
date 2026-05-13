@@ -65,9 +65,11 @@ export class Tracker {
    * 4. Insert or return existing issue
    * 5. Emit "issue.parsed" hook
    *
+   * @param input - User input to parse
+   * @param options - Optional parsing options (e.g., repository context)
    * @throws Error if no parser can handle the input
    */
-  async parseInput(input: string): Promise<Issue> {
+  async parseInput(input: string, options?: { repository?: string }): Promise<Issue> {
     const trimmed = input.trim();
 
     // Find matching parser
@@ -78,6 +80,11 @@ export class Tracker {
 
     // Parse the input
     const parsed = await parser.parse(trimmed);
+
+    // Apply repository context if provided and not already set by parser
+    if (options?.repository && !parsed.repository) {
+      parsed.repository = options.repository;
+    }
 
     // Check for existing issue
     const existing = await this.db.issues.getByExternalId(parsed.externalId, parsed.source);
@@ -112,6 +119,16 @@ export class Tracker {
    */
   async fetchAll(): Promise<Issue[]> {
     return this.db.issues.getAll();
+  }
+
+  /**
+   * Fetch issues by repository identifier.
+   *
+   * @param repository - Repository identifier (e.g., "owner/repo" for GitHub, "PROJ" for Jira)
+   * @returns Array of issues for the specified repository
+   */
+  async fetchByRepository(repository: string): Promise<Issue[]> {
+    return this.db.issues.getByRepository(repository);
   }
 
   /**
@@ -150,35 +167,16 @@ export class Tracker {
     this.hooks.emit("issue.deleted", { issue });
   }
 
-  /**
-   * Build a prompt for an issue.
-   *
-   * Delegates to the parser that handles this issue's source.
-   *
-   * @throws Error if issue not found or no parser for source
-   */
+  /** Build a prompt for an issue. Delegates to the parser for this issue's source. */
   async buildPrompt(issueId: string, options: BuildPromptOptions = {}): Promise<string> {
-    // Fetch issue
     const issue = await this.db.issues.getById(issueId);
-    if (!issue) {
-      throw new Error(`Issue not found: ${issueId}`);
-    }
+    if (!issue) throw new Error(`Issue not found: ${issueId}`);
 
-    // Find parser for this issue's source
     const parser = this.parsers.find((p) => p.source === issue.source);
-    if (!parser) {
-      throw new Error(`No parser found for source: "${issue.source}"`);
-    }
+    if (!parser) throw new Error(`No parser found for source: "${issue.source}"`);
 
-    // Delegate prompt building to the parser
     const prompt = await parser.buildPrompt(issue, options);
-
-    // Emit completion hook
-    this.hooks.emit("prompt.built", {
-      issueId: issue.id,
-      prompt,
-    });
-
+    this.hooks.emit("prompt.built", { issueId: issue.id, prompt });
     return prompt;
   }
 }

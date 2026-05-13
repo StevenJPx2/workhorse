@@ -1,11 +1,23 @@
 # workhorse-core
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix default harness name mismatch causing "No adapter registered" error
+
+  The default harness in config was set to `"pi-agent"` but the pi-adapter plugin registers as `"pi-coding-agent"`. This caused errors when spawning agents from the chat box input (which uses the default harness) while the spawn modal worked correctly (it explicitly passes the registered harness name).
+
+  Updated the default harness name to `"pi-coding-agent"` in:
+  - Default config (`DEFAULT_CONFIG.agent.harness`)
+  - Zod schema default
+  - Documentation
+
 ## 0.1.0
 
 ### Minor Changes
 
 - [`9822fa3`](https://github.com/StevenJPx2/workhorse/commit/9822fa3f93306fe34acd4c1eac170545ff1e4335) Thanks [@StevenJPx2](https://github.com/StevenJPx2)! - Rename project from jiratown to workhorse
-
   - All packages renamed to unscoped `workhorse-*` names
   - Public API types renamed: `JiratownConfig` → `WorkhorseConfig`, `JiratownContext` → `WorkhorseContext`, etc.
   - CLI binary renamed from `jiratown` to `workhorse`

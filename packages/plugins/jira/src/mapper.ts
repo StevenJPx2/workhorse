@@ -14,6 +14,7 @@ export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
   return {
     externalId: jira.key,
     source: "jira" as IssueSource,
+    // repository is set by Tracker.parseInput() based on current git repo context
     title: fields.summary ?? jira.key,
     description: extractDescription(fields.description),
     issueType: (fields.issuetype?.name?.toLowerCase() ?? "task") as IssueType,

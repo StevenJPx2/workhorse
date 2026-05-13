@@ -14,7 +14,8 @@
 import { z } from "zod/v4";
 import { definePlugin } from "workhorse-core";
 import { AtlassianClient } from "./client.ts";
-import { createCredentialGetter, jiraAuthProvider } from "./auth.ts";
+import { createCredentialGetter } from "./credentials.ts";
+import { jiraAuthProvider } from "./auth.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
@@ -24,9 +25,8 @@ import { registerJiraSteering } from "./steering.ts";
 import { registerStatusSync } from "./sync.ts";
 import { createJiraTools } from "./tools";
 
-/** Config schema for the Jira plugin */
+/** Config schema for the Jira plugin (site URL is now stored in credentials) */
 export const JiraConfigSchema = z.object({
-  cloudId: z.string().min(1),
   pollInterval: z.number().int().positive().default(30_000),
 });
 
@@ -37,6 +37,10 @@ export type { JiraCredentials } from "./types.ts";
 
 // Export plugin hook types for cross-plugin coordination
 export type { JiraPluginHooks } from "./hooks.ts";
+
+// Export auth utilities for TUI
+export { jiraAuthProvider } from "./auth.ts";
+export { isJiraAuthenticated } from "./credentials.ts";
 
 export const jiraPlugin = definePlugin({
   manifest: {
@@ -49,13 +53,12 @@ export const jiraPlugin = definePlugin({
       tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
     },
   },
-  // OAuth 2.0 3LO auth provider for Atlassian
-  // Requires ATLASSIAN_CLIENT_ID env var; undefined if not configured
+  // API Token auth provider - user provides email + API token via setup wizard
   auth: jiraAuthProvider,
   configSchema: JiraConfigSchema,
   setup(ctx, config) {
     // Create Jira REST API client with credentials from keychain
-    const client = new AtlassianClient(config.cloudId, createCredentialGetter());
+    const client = new AtlassianClient(createCredentialGetter());
 
     // Register issue parser for Jira keys and URLs
     ctx.tracker.registerParser(createJiraParserOptions(client));

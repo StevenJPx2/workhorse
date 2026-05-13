@@ -54,6 +54,11 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
       // Playwright has native deps that can't be bundled - must be installed at runtime
       "playwright",
       "playwright-core",
+      // retriv + dependencies have native bindings (onnxruntime, libsql, transformers)
+      "retriv",
+      "@libsql/client",
+      "@huggingface/transformers",
+      "onnxruntime-node",
     ],
     naming: { entry: "workhorse.js" },
   });

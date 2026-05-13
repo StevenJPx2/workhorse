@@ -98,6 +98,8 @@ export {
 export { deleteCredential, getCredential, storeCredential } from "#config";
 // Auth exports for plugin authors
 export type {
+  ApiTokenAuthField,
+  ApiTokenProvider,
   AuthProvider,
   AuthProviderType,
   AuthStatus,

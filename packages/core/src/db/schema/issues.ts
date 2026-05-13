@@ -24,6 +24,8 @@ export const issues = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     externalId: text("external_id").notNull().default(""),
     source: text("source").notNull(),
+    /** Repository identifier (e.g., "owner/repo" for GitHub, "PROJ" for Jira) */
+    repository: text("repository"),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
     status: text("status").notNull().default("pending").$type<IssueStatus>(),

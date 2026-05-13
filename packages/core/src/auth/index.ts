@@ -10,6 +10,8 @@
  */
 
 export type {
+  ApiTokenAuthField,
+  ApiTokenProvider,
   AuthProvider,
   AuthProviderType,
   AuthStatus,

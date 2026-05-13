@@ -50,6 +50,14 @@ export class IssueController {
   }
 
   /**
+   * Get issues by repository identifier
+   * @param repository - Repository identifier (e.g., "owner/repo" for GitHub, "PROJ" for Jira)
+   */
+  async getByRepository(repository: string): Promise<Issue[]> {
+    return this.db.select().from(issues).where(eq(issues.repository, repository));
+  }
+
+  /**
    * Get issues by status(es)
    */
   async getByStatus(...statuses: IssueStatus[]): Promise<Issue[]> {

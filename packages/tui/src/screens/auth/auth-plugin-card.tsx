@@ -28,9 +28,12 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
       if (props.flowState.phase === "error") return "✗";
       if (props.flowState.phase === "waiting-browser") return "⏳";
       if (props.flowState.phase === "waiting-cli") return "⏳";
+      if (props.flowState.phase === "apitoken-form") return "📝";
       if (props.flowState.phase === "authenticating") return "…";
     }
-    return props.plugin.auth.type === "oauth" ? "🌐" : "⌨";
+    if (props.plugin.auth.type === "oauth") return "🌐";
+    if (props.plugin.auth.type === "apitoken") return "🔑";
+    return "⌨";
   };
 
   const getStatusColor = () => {
@@ -41,9 +44,19 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
     return props.isSelected ? theme.colors.accent : theme.colors.dim;
   };
 
+  const getAuthTypeLabel = () => {
+    if (props.plugin.auth.type === "oauth") return "OAuth 2.0";
+    if (props.plugin.auth.type === "apitoken") return "API Token";
+    if (props.plugin.auth.type === "external") return "External CLI";
+    return "Unknown";
+  };
+
   const getInstructions = () => {
     if (props.plugin.auth.type === "oauth") {
       return "Press Enter to open browser and sign in";
+    }
+    if (props.plugin.auth.type === "apitoken") {
+      return "Press Enter to configure API token credentials";
     }
     if (props.plugin.auth.type === "external") {
       return props.plugin.auth.config.instructions;
@@ -75,8 +88,7 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
       {/* Auth type indicator */}
       <box paddingLeft={3} paddingTop={1}>
         <text fg={theme.colors.dim}>
-          {props.plugin.auth.type === "oauth" ? "OAuth 2.0" : "External CLI"}{" "}
-          {props.plugin.status.error && `(${props.plugin.status.error})`}
+          {getAuthTypeLabel()} {props.plugin.status.error && `(${props.plugin.status.error})`}
         </text>
       </box>
 

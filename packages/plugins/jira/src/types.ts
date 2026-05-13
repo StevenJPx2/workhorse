@@ -64,9 +64,12 @@ export interface JiraTransition {
   };
 }
 
-/** Auth credentials for Jira REST API */
+/** Auth credentials for Jira REST API (API Token auth) */
 export interface JiraCredentials {
-  accessToken: string;
-  refreshToken?: string;
-  expiresAt?: Date;
+  /** User's Atlassian account email */
+  email: string;
+  /** API token from https://id.atlassian.com/manage-profile/security/api-tokens */
+  apiToken: string;
+  /** Atlassian site URL (e.g., "yoursite.atlassian.net") */
+  siteUrl: string;
 }

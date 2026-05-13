@@ -33,7 +33,7 @@ export interface ExternalAuthConfig {
 /**
  * Auth provider types supported by Workhorse.
  */
-export type AuthProviderType = "oauth" | "external" | "none";
+export type AuthProviderType = "oauth" | "external" | "apitoken" | "none";
 
 /**
  * OAuth auth provider - TUI handles the full OAuth flow using Arctic.
@@ -80,6 +80,35 @@ export interface ExternalProvider {
 }
 
 /**
+ * API Token auth field definition for setup wizard.
+ */
+export interface ApiTokenAuthField {
+  key: string;
+  label: string;
+  description: string;
+  required: boolean;
+  /** If true, mask input (for API tokens, passwords) */
+  secret?: boolean;
+  placeholder?: string;
+}
+
+/**
+ * API Token auth provider - user provides credentials via setup wizard.
+ * Used for services that use API tokens (like Jira, Linear, etc.)
+ */
+export interface ApiTokenProvider {
+  type: "apitoken";
+  /** Check if already authenticated */
+  isAuthenticated: () => Promise<boolean>;
+  /** Get fields to display in setup wizard */
+  getFields: () => ApiTokenAuthField[];
+  /** Configure auth with user-provided values */
+  configure: (values: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
+  /** Clear stored credentials */
+  clearTokens: () => Promise<void>;
+}
+
+/**
  * No auth required.
  */
 export interface NoAuthProvider {
@@ -89,7 +118,7 @@ export interface NoAuthProvider {
 /**
  * Union of all auth provider types.
  */
-export type AuthProvider = OAuthProvider | ExternalProvider | NoAuthProvider;
+export type AuthProvider = OAuthProvider | ExternalProvider | ApiTokenProvider | NoAuthProvider;
 
 /**
  * Auth status for a plugin.

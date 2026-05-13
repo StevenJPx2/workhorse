@@ -48,6 +48,8 @@ export interface ParsedIssue {
   externalId: string;
   /** Source system */
   source: IssueSource;
+  /** Repository identifier (e.g., "owner/repo" for GitHub, "PROJ" for Jira) */
+  repository?: string;
   /** Issue title */
   title: string;
   /** Issue description/body */

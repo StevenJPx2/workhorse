@@ -17,7 +17,7 @@ export interface BootstrapOptions {
   /** Project root directory (defaults to cwd) */
   repoRoot?: string;
 
-  /** Additional plugins to register after core plugins */
+  /** Additional plugins to register (before core plugins, so their parsers take priority) */
   plugins?: Plugin[];
 
   /** Config overrides (merged on top of loaded config) */
@@ -109,18 +109,19 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
     async () => {
       const plugins = new PluginRegistry();
 
-      // Core plugins always registered first
-      for (const plugin of CORE_PLUGINS) {
-        plugins.register(plugin);
-      }
-
-      // Register additional plugins provided via options
+      // Register additional plugins provided via options first
+      // (they may have parsers that should take priority over fallbacks)
       for (const plugin of extraPlugins) {
         plugins.register(plugin);
       }
 
       // Discover custom plugins from plugin directories
       await plugins.discoverCustomPlugins();
+
+      // Core plugins registered last (local parser is a fallback that always matches)
+      for (const plugin of CORE_PLUGINS) {
+        plugins.register(plugin);
+      }
 
       // Start buffering hook emissions during setup
       deferredHooks.startBuffering();

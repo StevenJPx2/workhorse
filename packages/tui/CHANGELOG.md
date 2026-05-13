@@ -1,5 +1,11 @@
 # @fdcn/workhorse
 
+## 0.1.5
+
+### Patch Changes
+
+- Bump version to include workhorse-core fix for default harness name
+
 ## 0.1.1
 
 ### Patch Changes

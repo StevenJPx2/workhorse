@@ -1,7 +1,7 @@
 /**
  * AtlassianClient - Jira Cloud REST API client.
  *
- * Uses direct fetch calls (via Bun) with Bearer token auth.
+ * Uses direct fetch calls (via Bun) with Basic Auth (email:apiToken).
  *
  * @module workhorse-plugin-jira/client
  */
@@ -9,19 +9,26 @@
 import type { JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
 
 export class AtlassianClient {
-  private readonly baseUrl: string;
+  private readonly getCredentials: () => Promise<JiraCredentials>;
 
-  constructor(
-    cloudId: string,
-    private readonly getCredentials: () => Promise<JiraCredentials>,
-  ) {
-    this.baseUrl = `https://${cloudId}.atlassian.net/rest/api/3`;
+  constructor(getCredentials: () => Promise<JiraCredentials>) {
+    this.getCredentials = getCredentials;
   }
 
-  /** Build request headers with current access token */
+  /** Get the base URL from credentials */
+  private async getBaseUrl(): Promise<string> {
+    const creds = await this.getCredentials();
+    // Normalize siteUrl - ensure it has https:// and ends with the API path
+    const siteUrl = creds.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    return `https://${siteUrl}/rest/api/3`;
+  }
+
+  /** Build request headers with Basic Auth (email:apiToken) */
   private async headers(): Promise<Record<string, string>> {
+    const creds = await this.getCredentials();
+    const basicAuth = Buffer.from(`${creds.email}:${creds.apiToken}`).toString("base64");
     return {
-      Authorization: `Bearer ${await this.getCredentials().then((r) => r.accessToken)}`,
+      Authorization: `Basic ${basicAuth}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     };
@@ -29,7 +36,8 @@ export class AtlassianClient {
 
   /** GET helper */
   private async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const baseUrl = await this.getBaseUrl();
+    const response = await fetch(`${baseUrl}${path}`, {
       method: "GET",
       headers: await this.headers(),
     });
@@ -43,7 +51,8 @@ export class AtlassianClient {
 
   /** POST helper */
   private async post<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const baseUrl = await this.getBaseUrl();
+    const response = await fetch(`${baseUrl}${path}`, {
       method: "POST",
       headers: await this.headers(),
       body: JSON.stringify(body),
@@ -58,7 +67,8 @@ export class AtlassianClient {
 
   /** PUT helper */
   private async put(path: string, body: unknown): Promise<void> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const baseUrl = await this.getBaseUrl();
+    const response = await fetch(`${baseUrl}${path}`, {
       method: "PUT",
       headers: await this.headers(),
       body: JSON.stringify(body),
@@ -105,18 +115,8 @@ export class AtlassianClient {
     await this.put(`/issue/${encodeURIComponent(ticketKey)}`, { fields });
   }
 
-  /** Get current user profile */
+  /** Get current user profile (using Jira's myself endpoint with Basic Auth) */
   async getCurrentUser(): Promise<{ accountId: string; displayName: string }> {
-    const response = await fetch("https://api.atlassian.com/me", {
-      headers: {
-        Authorization: `Bearer ${await this.getCredentials().then((r) => r.accessToken)}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Atlassian API error: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json() as Promise<{ accountId: string; displayName: string }>;
+    return this.get<{ accountId: string; displayName: string }>("/myself");
   }
 }

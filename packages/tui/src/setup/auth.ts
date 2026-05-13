@@ -105,5 +105,9 @@ export function formatAuthInstructions(requirement: PluginAuthRequirement): stri
     return auth.config.instructions;
   }
 
+  if (auth.type === "apitoken") {
+    return `${name} requires API token authentication. Press Enter to configure.`;
+  }
+
   return `${name} requires authentication.`;
 }

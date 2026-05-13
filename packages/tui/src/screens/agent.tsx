@@ -1,5 +1,5 @@
-import type { AgentAdapter } from "workhorse-core";
 import { createMemo, createSignal, Show } from "solid-js";
+import type { AgentAdapter } from "workhorse-core";
 import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
@@ -122,7 +122,7 @@ export function Agent() {
       </Show>
 
       {/* Main content: sidebar + activity (center) + files (right) */}
-      <box flexDirection="row" flexGrow={1} paddingY={2}>
+      <box flexDirection="row" flexGrow={1} paddingBottom={1}>
         <AgentSidebar
           agents={agents}
           selectedId={selectedId}
