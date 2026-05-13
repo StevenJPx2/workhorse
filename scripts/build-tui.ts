@@ -11,7 +11,7 @@
  * @module scripts/build-tui
  */
 
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -38,7 +38,9 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   const start = performance.now();
   console.log("\n⚡ Building workhorse...\n");
 
-  if (!existsSync(OUTDIR)) mkdirSync(OUTDIR, { recursive: true });
+  // Clean dist before each build to prevent stale files accumulating
+  if (existsSync(OUTDIR)) rmSync(OUTDIR, { recursive: true, force: true });
+  mkdirSync(OUTDIR, { recursive: true });
 
   const result = await Bun.build({
     entrypoints: [ENTRY],

@@ -14,8 +14,7 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "!dist/**/*.map"
+    "dist"
   ],
   "main": "./dist/workhorse.js",
   "bin": {
