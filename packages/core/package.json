@@ -37,6 +37,7 @@
     "defu": "^6.1.7",
     "drizzle-orm": "^1.0.0-rc.2-e38a2ba",
     "es-toolkit": "^1.46.1",
+    "hookable": "^6.1.1",
     "mitt": "^3.0.1",
     "retriv": "^0.13.2",
     "smol-toml": "^1.6.1",

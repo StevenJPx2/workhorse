@@ -6,6 +6,7 @@
 import { createSignal } from "solid-js";
 import type { HookEmitter, Notification } from "workhorse-core";
 import type { ActivityItem } from "../primitives/activity-types.ts";
+import { showError } from "./ui-toast.ts";
 
 export interface ActivityState {
   items: ActivityItem[];
@@ -123,6 +124,23 @@ export function initActivityStore(hooks: HookEmitter) {
     ({ notification, issueId }: { notification: Notification; issueId: string }) => {
       flushText(issueId);
       addItem(issueId, { type: "notification", notification, timestamp: new Date() });
+    },
+  );
+
+  // Handle monitor errors - show as toast
+  hooks.on(
+    "monitor.error",
+    ({
+      id,
+      error,
+      errorCount,
+    }: {
+      id: string;
+      issueId: string;
+      error: Error;
+      errorCount: number;
+    }) => {
+      showError(`Monitor "${id}" error (${errorCount}/5): ${error.message}`);
     },
   );
 }

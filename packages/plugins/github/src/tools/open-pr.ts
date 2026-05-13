@@ -115,7 +115,14 @@ export function createOpenPRTool(
 
         // Update issue in DB - PR created means we're now awaiting review
         // Use issue.id (internal UUID) for database operations
-        const updatedMetadata = { ...metadata, prNumber: result.number, prUrl: result.url };
+        // Include owner/repo so GitHub monitor can poll (especially for non-GitHub issues like Jira)
+        const updatedMetadata = {
+          ...metadata,
+          owner,
+          repo,
+          prNumber: result.number,
+          prUrl: result.url,
+        };
         await db.issues.update(issue.id, {
           status: "in_review",
           metadata: updatedMetadata,

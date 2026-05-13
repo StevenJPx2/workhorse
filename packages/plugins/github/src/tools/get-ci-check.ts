@@ -77,46 +77,50 @@ export function createGetCICheckTool(client: GitHubClient): OrchestratorTool {
         );
 
         if (!matchingCheck) {
-          const result: CICheckResult = {
-            found: false,
-            name: checkName,
-            status: null,
-            conclusion: null,
-            url: null,
-            startedAt: null,
-            completedAt: null,
-            durationSeconds: null,
-            availableChecks: checkRuns.map((c) => c.name),
-          };
-
           return {
             success: true,
-            output: JSON.stringify(result, null, 2),
+            output: JSON.stringify(
+              {
+                found: false,
+                name: checkName,
+                status: null,
+                conclusion: null,
+                url: null,
+                startedAt: null,
+                completedAt: null,
+                durationSeconds: null,
+                availableChecks: checkRuns.map((c) => c.name),
+              } satisfies CICheckResult,
+              null,
+              2,
+            ),
           };
         }
-
-        // Calculate duration if completed
-        let durationSeconds: number | null = null;
-        if (matchingCheck.started_at && matchingCheck.completed_at) {
-          const startTime = new Date(matchingCheck.started_at).getTime();
-          const endTime = new Date(matchingCheck.completed_at).getTime();
-          durationSeconds = Math.round((endTime - startTime) / 1000);
-        }
-
-        const result: CICheckResult = {
-          found: true,
-          name: matchingCheck.name,
-          status: matchingCheck.status,
-          conclusion: matchingCheck.conclusion,
-          url: matchingCheck.html_url,
-          startedAt: matchingCheck.started_at,
-          completedAt: matchingCheck.completed_at,
-          durationSeconds,
-        };
 
         return {
           success: true,
-          output: JSON.stringify(result, null, 2),
+          output: JSON.stringify(
+            {
+              found: true,
+              name: matchingCheck.name,
+              status: matchingCheck.status,
+              conclusion: matchingCheck.conclusion,
+              url: matchingCheck.html_url,
+              startedAt: matchingCheck.started_at,
+              completedAt: matchingCheck.completed_at,
+              // Calculate duration if completed
+              durationSeconds:
+                matchingCheck.started_at && matchingCheck.completed_at
+                  ? Math.round(
+                      (new Date(matchingCheck.completed_at).getTime() -
+                        new Date(matchingCheck.started_at).getTime()) /
+                        1000,
+                    )
+                  : null,
+            } satisfies CICheckResult,
+            null,
+            2,
+          ),
         };
       } catch (error) {
         return {

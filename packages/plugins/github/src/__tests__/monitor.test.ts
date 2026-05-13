@@ -22,7 +22,7 @@ describe("createGitHubPRMonitor", () => {
   function createMockDb(issue: Record<string, unknown> | null = null): Database {
     return {
       issues: {
-        getByExternalId: vi.fn().mockReturnValue(issue),
+        getById: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     } as unknown as Database;
@@ -34,6 +34,8 @@ describe("createGitHubPRMonitor", () => {
         number: 42,
         title: "Test PR",
         state: "open",
+        head: { ref: "feature-branch", sha: "abc123def456" },
+        base: { ref: "main" },
         mergeable: true,
         mergeable_state: "clean",
         merged: false,

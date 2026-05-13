@@ -83,11 +83,10 @@ export const githubPlugin = definePlugin({
     // Register unified PR monitor (reviews, comments, checks, mergeable)
     ctx.monitors.registerMonitor(createGitHubPRMonitor(client, config.pollInterval, ctx.db));
 
-    // Start monitor when agent spawns on a GitHub issue with PR
-    ctx.hooks.on("agent.create.post", async ({ adapter }) => {
-      const issue = await ctx.db.issues.getByExternalId(adapter.issueId, "github");
-      if (issue && (issue.metadata as Record<string, unknown> | null)?.prNumber) {
-        ctx.monitors.startMonitor("github-pr", issue.id);
+    // Start monitor when agent spawns on an issue with PR metadata
+    ctx.hooks.on("agent.create.post", ({ adapter }) => {
+      if (((adapter.issue.metadata ?? {}) as Record<string, unknown>).prNumber) {
+        ctx.monitors.startMonitor("github-pr", adapter.issue.id);
       }
     });
 

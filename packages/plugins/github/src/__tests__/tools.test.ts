@@ -8,13 +8,15 @@ import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools";
 
 describe("createGitHubTools", () => {
-  it("returns all three tools", () => {
+  it("returns all five tools", () => {
     const mockClient = {} as GitHubClient;
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    expect(tools).toHaveLength(3);
+    expect(tools).toHaveLength(5);
     expect(tools[0]!.name).toBe("github_open_pr");
     expect(tools[1]!.name).toBe("github_add_comment");
     expect(tools[2]!.name).toBe("github_get_pr_status");
+    expect(tools[3]!.name).toBe("github_get_ci_check");
+    expect(tools[4]!.name).toBe("github_get_pr_reviews");
   });
 });
 
@@ -225,7 +227,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "github",
           status: "implementing",
@@ -329,7 +331,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "jira", // Jira issue, not GitHub
           status: "implementing",
@@ -375,7 +377,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
   it("returns error when issue not found", async () => {
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue(null),
+        getByExternalId: vi.fn().mockReturnValue(null),
       },
     };
 
@@ -416,7 +418,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "jira", // Non-GitHub source
           metadata: { cloudId: "company" }, // Jira metadata, no owner/repo

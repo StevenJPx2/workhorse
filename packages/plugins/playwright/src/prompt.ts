@@ -6,19 +6,7 @@
  * @module workhorse-plugin-playwright/prompt
  */
 
-import type { WorkhorseContext } from "workhorse-core";
-
-/** Context for prompt.building hook */
-interface PromptBuildingContext {
-  issueId: string;
-  contextBlocks: Array<{
-    id: string;
-    title: string;
-    content: string;
-    priority?: number;
-  }>;
-  metadata: Record<string, unknown>;
-}
+import type { WorkhorseContext, PromptBuildingContext } from "workhorse-core";
 
 /**
  * Register Playwright prompt hooks.
@@ -27,14 +15,13 @@ interface PromptBuildingContext {
  */
 export function registerPlaywrightPromptHooks(ctx: WorkhorseContext): void {
   // Add Playwright workflow guidance when building prompts
-  ctx.hooks.on(
-    "prompt.building",
-    ({ context }: { issueId: string; context: PromptBuildingContext }) => {
-      // Add a context block with Playwright best practices
-      context.contextBlocks.push({
-        id: "playwright-workflow",
-        title: "Browser Testing Workflow",
-        content: `## Playwright Integration
+  // Hook receives PromptBuildingContext directly (issueId is internal UUID)
+  ctx.hooks.on("prompt.building", (buildingCtx: PromptBuildingContext) => {
+    // Add a context block with Playwright best practices
+    buildingCtx.contextBlocks.push({
+      id: "playwright-workflow",
+      title: "Browser Testing Workflow",
+      content: `## Playwright Integration
 
 When your implementation involves UI changes:
 
@@ -43,8 +30,7 @@ When your implementation involves UI changes:
 3. **Screenshots are auto-attached** — Any screenshots taken will be automatically included in the PR
 
 Tip: Use descriptive filenames like \`screenshot-final-state.png\` for clarity.`,
-        priority: 70, // Show in the middle/later part of the prompt
-      });
-    },
-  );
+      priority: 70, // Show in the middle/later part of the prompt
+    });
+  });
 }

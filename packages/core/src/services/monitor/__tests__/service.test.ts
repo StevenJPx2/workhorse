@@ -1,20 +1,20 @@
-import mitt from "mitt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkhorseConfig } from "#config";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
+import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
 import { MonitorService } from "../service.ts";
 import type { MonitorContext, MonitorOptions, MonitorResult } from "../types.ts";
 
 describe("MonitorService", () => {
   let service: MonitorService;
-  let hooks: ReturnType<typeof mitt<HookEventMap>>;
+  let hooks: HookEmitter;
   let memory: MemoryService;
   let config: WorkhorseConfig;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    hooks = mitt<HookEventMap>();
+    hooks = createMockHooks();
     memory = {} as MemoryService;
     config = { behavior: { pollInterval: 1000 } } as WorkhorseConfig;
     service = new MonitorService(hooks, memory, config);

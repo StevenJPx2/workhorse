@@ -1,6 +1,5 @@
-import mitt from "mitt";
 import { describe, expect, it } from "vitest";
-import type { HookEventMap } from "#lib/hooks";
+import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
 import { createAgentHealthMonitor } from "../health.ts";
 import type { MonitorContext } from "../types.ts";
 
@@ -8,7 +7,7 @@ describe("createAgentHealthMonitor", () => {
   function createMockContext(overrides: Partial<MonitorContext> = {}): MonitorContext {
     return {
       issueId: "AM-123",
-      hooks: mitt<HookEventMap>(),
+      hooks: createMockHooks(),
       memory: {} as MonitorContext["memory"],
       config: {
         behavior: { pollInterval: 5000, autoResume: true },

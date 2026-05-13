@@ -51,6 +51,7 @@ export abstract class AgentAdapter {
       this.issue,
       this.memory,
       this.orchestrator.config.prompt.custom,
+      this.hooks,
     );
 
     this.steering = this.orchestrator.getSteeringRules().map((config) => {
@@ -59,7 +60,8 @@ export abstract class AgentAdapter {
         hooks: this.hooks,
         issue: this.issue,
         steeringConfig: this.orchestrator.config.steering,
-        getNotifications: () => this.memory.notifications.getUnread(this.issue.externalId),
+        // Notifications are stored with internal issue.id (UUID)
+        getNotifications: () => this.memory.notifications.getUnread(this.issue.id),
       });
     });
   }
@@ -116,10 +118,11 @@ export abstract class AgentAdapter {
     this.initialMessage = initialMessage;
 
     // Push notifications to agent
+    // Note: issueId in hook payload is external ID (consistent with TUI activity store keying)
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
       if (this.issueId !== issueId || this.state !== "running") return;
       await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch((err) =>
-        console.error(`Failed to push notification to agent ${issueId}:`, err),
+        console.error(`Failed to push notification to agent ${this.issueId}:`, err),
       );
     });
 

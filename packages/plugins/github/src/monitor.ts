@@ -8,7 +8,7 @@
  * @module workhorse-plugin-github/monitor
  */
 
-import type { Database, MonitorOptions } from "workhorse-core";
+import { type Database, isWorkhorseGenerated, type MonitorOptions } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 // Import hooks types to enable module augmentation
 import "./hooks.ts";
@@ -34,8 +34,8 @@ export function createGitHubPRMonitor(
     type: "remote",
     interval,
     poll: async (ctx) => {
-      // Note: ctx.issueId is the externalId, not the internal UUID
-      const issue = await db.issues.getByExternalId(ctx.issueId);
+      // ctx.issueId is the internal UUID (monitors are started with issue.id)
+      const issue = await db.issues.getById(ctx.issueId);
       if (!issue) {
         return { hasChanges: false };
       }
@@ -64,16 +64,16 @@ export function createGitHubPRMonitor(
       const changes: Record<string, unknown> = {};
       const meta = { prNumber, owner, repo };
 
-      // Fetch PR data
-      const [pr, reviews, comments, checkRuns] = await Promise.all([
-        client.fetchPR(owner, repo, prNumber),
+      // Fetch PR data first to get the head SHA
+      const pr = await client.fetchPR(owner, repo, prNumber);
+      const headSha = pr.head?.sha;
+
+      // Fetch reviews, comments, and check runs in parallel
+      const [reviews, comments, checkRuns] = await Promise.all([
         client.getPRReviews(owner, repo, prNumber),
         client.getPRComments(owner, repo, prNumber),
-        client.getCheckRuns(
-          owner,
-          repo,
-          (metadata.prUrl as string | undefined)?.match(/\/([a-f0-9]+)$/)?.[1] ?? "HEAD",
-        ),
+        // Use the PR's head SHA for check runs, skip if not available
+        headSha ? client.getCheckRuns(owner, repo, headSha) : Promise.resolve([]),
       ]);
 
       // Process new reviews
@@ -81,7 +81,7 @@ export function createGitHubPRMonitor(
       if (newReviews.length > 0) {
         hasChanges = true;
         changes.newReviews = newReviews.length;
-        createReviewNotifications(ctx, newReviews, meta);
+        await createReviewNotifications(ctx, newReviews, meta);
         newReviews.forEach((review) => {
           ctx.hooks.emit("github:review.submitted", {
             issueId: issue.id,
@@ -94,12 +94,14 @@ export function createGitHubPRMonitor(
         });
       }
 
-      // Process new comments
-      const newComments = comments.filter((c) => !state.lastSeenCommentIds.includes(c.id));
+      // Process new comments (filter out bot-generated comments)
+      const newComments = comments.filter(
+        (c) => !state.lastSeenCommentIds.includes(c.id) && !isWorkhorseGenerated(c.body),
+      );
       if (newComments.length > 0) {
         hasChanges = true;
         changes.newComments = newComments.length;
-        createCommentNotifications(ctx, newComments, meta);
+        await createCommentNotifications(ctx, newComments, meta);
       }
 
       // Process check status changes

@@ -1,9 +1,8 @@
 /** HarnessOrchestrator - Registry/factory for agent adapters. @module workflow/orchestrator/orchestrator */
 
-import type { Emitter } from "mitt";
 import type { WorkhorseConfig } from "#config";
 import type { Database } from "#db/database";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import {
   type SteeringRuleConfig,
@@ -23,7 +22,7 @@ export class HarnessOrchestrator {
 
   constructor(
     readonly db: Database,
-    readonly hooks: Emitter<HookEventMap>,
+    readonly hooks: HookEmitter,
     readonly memory: MemoryService,
     readonly config: Readonly<WorkhorseConfig>,
   ) {}

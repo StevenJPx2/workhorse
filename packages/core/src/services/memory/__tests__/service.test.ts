@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import mitt from "mitt";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Database } from "#db";
-import type { HookEventMap } from "#lib/hooks";
+import type { HookEmitter } from "#lib/hooks";
+import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
 import { MemoryService } from "../service.ts";
 
 const TEST_DIR = join(import.meta.dirname, ".test-service");
@@ -14,7 +14,7 @@ const WORKTREE_PATH = join(WORKTREES_ROOT, "AM-123");
 
 describe("MemoryService", () => {
   let db: Database;
-  let hooks: ReturnType<typeof mitt<HookEventMap>>;
+  let hooks: HookEmitter;
   let service: MemoryService | null = null;
 
   beforeEach(async () => {
@@ -25,7 +25,7 @@ describe("MemoryService", () => {
     mkdirSync(WORKTREE_PATH, { recursive: true });
 
     db = await Database.create(DB_PATH);
-    hooks = mitt<HookEventMap>();
+    hooks = createMockHooks();
   });
 
   afterEach(async () => {
@@ -221,7 +221,7 @@ describe("MemoryService", () => {
       expect(notification.status).toBe("unread");
     });
 
-    it("emits notification.created hook", async () => {
+    it("emits notification.created hook with external ID", async () => {
       const handler = vi.fn();
       hooks.on("notification.created", handler);
 
@@ -233,9 +233,10 @@ describe("MemoryService", () => {
       });
 
       expect(handler).toHaveBeenCalledTimes(1);
+      // Hook emits with external ID (AM-123) for consistency with other agent.* hooks
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
-          issueId,
+          issueId: "AM-123",
           notification: expect.objectContaining({
             title: "Test notification",
           }),

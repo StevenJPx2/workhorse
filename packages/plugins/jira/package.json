@@ -21,8 +21,9 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"workhorse-core": "workspace:*",
 		"arctic": "^3.7.0",
+		"marklassian": "^1.2.1",
+		"workhorse-core": "workspace:*",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

@@ -14,7 +14,9 @@ export function createAgents(): {
 
   // Version counter to force re-computation on state changes
   const [version, setVersion] = createSignal(0);
-  const bump = () => setVersion((v) => v + 1);
+  const bump = () => {
+    setVersion((v) => v + 1);
+  };
 
   onMount(() => {
     hooks.on("agent.create.post", bump);
