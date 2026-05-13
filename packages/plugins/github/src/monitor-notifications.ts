@@ -24,13 +24,13 @@ export interface PRMeta {
 }
 
 /** Create notifications for new reviews */
-export function createReviewNotifications(
+export async function createReviewNotifications(
   ctx: Pick<MonitorContext, "issueId" | "memory">,
   reviews: GitHubReview[],
   meta: PRMeta,
-): void {
+): Promise<void> {
   for (const review of reviews) {
-    ctx.memory.notifications.create({
+    await ctx.memory.notifications.create({
       issueId: ctx.issueId,
       source: "github",
       sourceId: `github-review-${review.id}`,
@@ -50,14 +50,14 @@ export function createReviewNotifications(
 }
 
 /** Create notifications for new comments */
-export function createCommentNotifications(
+export async function createCommentNotifications(
   ctx: Pick<MonitorContext, "issueId" | "memory">,
   comments: GitHubComment[],
   meta: PRMeta,
-): void {
+): Promise<void> {
   for (const comment of comments) {
     const isReviewComment = comment.path !== undefined;
-    ctx.memory.notifications.create({
+    await ctx.memory.notifications.create({
       issueId: ctx.issueId,
       source: "github",
       sourceId: `github-comment-${comment.id}`,

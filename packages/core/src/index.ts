@@ -128,4 +128,9 @@ export {
   validatePath,
 } from "#lib/paths";
 // Metadata footer for agent-generated content
-export { METADATA_FOOTER, withWorkhorseFooter } from "#lib/metadata-footer";
+export {
+  isWorkhorseGenerated,
+  METADATA_FOOTER,
+  withWorkhorseFooter,
+  WORKHORSE_MARKER,
+} from "#lib/metadata-footer";

@@ -12,37 +12,46 @@ import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";
 
 /** Register prompt enrichment hooks */
 export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient): void {
-  ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
-    const issue = await ctx.db.issues.getById(issueId);
-    if (!issue || issue.source !== "github") return;
+  // Hook receives PromptBuildingContext directly (issueId is internal UUID)
+  ctx.hooks.on("prompt.building", async (buildingCtx) => {
+    const issue = await ctx.db.issues.getById(buildingCtx.issueId);
+    if (!issue) return;
 
     const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
     const owner = metadata.owner as string | undefined;
     const repo = metadata.repo as string | undefined;
+    const prNumber = metadata.prNumber as number | undefined;
+    const isGitHubIssue = issue.source === "github";
 
+    // For non-GitHub issues, only proceed if there's PR metadata (from github_open_pr)
+    if (!isGitHubIssue && !prNumber) return;
+
+    // Need owner/repo to fetch anything from GitHub
     if (!owner || !repo) return;
 
-    const prNumber = metadata.prNumber as number | undefined;
-
     try {
-      // Fetch GitHub issue data and add context block
-      context.contextBlocks.push(
-        buildGitHubIssueBlock(await client.fetchIssue(owner, repo, metadata.number as number)),
-      );
-
-      // If there's a PR, fetch and add PR context
-      if (prNumber) {
-        const [pr, reviews, checkRuns] = await Promise.all([
-          client.fetchPR(owner, repo, prNumber),
-          client.getPRReviews(owner, repo, prNumber),
-          client.getCheckRuns(owner, repo, "HEAD").catch(() => []),
-        ]);
-
-        context.contextBlocks.push(buildPRStateBlock(pr, reviews, checkRuns));
+      // For GitHub-sourced issues, fetch and add issue context
+      if (isGitHubIssue && typeof metadata.number === "number") {
+        buildingCtx.contextBlocks.push(
+          buildGitHubIssueBlock(await client.fetchIssue(owner, repo, metadata.number)),
+        );
       }
 
-      // Always add workflow instructions
-      context.contextBlocks.push(buildGitHubWorkflowBlock(prNumber !== undefined));
+      // If there's a PR (GitHub or Jira issue with open PR), fetch and add PR context
+      if (prNumber) {
+        const pr = await client.fetchPR(owner, repo, prNumber);
+        const headSha = pr.head?.sha;
+
+        const [reviews, checkRuns] = await Promise.all([
+          client.getPRReviews(owner, repo, prNumber),
+          headSha ? client.getCheckRuns(owner, repo, headSha).catch(() => []) : Promise.resolve([]),
+        ]);
+
+        buildingCtx.contextBlocks.push(buildPRStateBlock(pr, reviews, checkRuns));
+      }
+
+      // Add workflow instructions
+      buildingCtx.contextBlocks.push(buildGitHubWorkflowBlock(prNumber !== undefined));
     } catch {
       // Silently skip if GitHub API fails
     }
@@ -124,18 +133,20 @@ function buildPRStateBlock(
 function buildGitHubWorkflowBlock(hasPR: boolean): PromptContextBlock {
   return {
     id: "github-workflow",
-    title: "GitHub Workflow Instructions",
+    title: "GitHub Workflow",
     priority: 50,
-    content: [
-      "You have access to GitHub tools:",
-      "",
-      ...[
-        hasPR ? null : "- `github_open_pr(title, body, base)` — Create a PR for this branch",
-        "- `github_add_comment(owner, repo, number, body)` — Add a comment",
-        "- `github_get_pr_status(owner, repo, number)` — Check PR status",
-      ].filter(Boolean),
-      "",
-      "Check notifications for review feedback and CI status updates.",
-    ].join("\n"),
+    content: hasPR
+      ? [
+          "A PR already exists for this issue. Use the `github_*` tools to:",
+          "- Check CI status and fix any failing checks",
+          "- Review and respond to PR feedback",
+          "- Check notifications for review comments and status updates",
+        ].join("\n")
+      : [
+          "When your implementation is ready:",
+          "1. Run tests to verify the fix",
+          "2. Create a PR with `github_open_pr`",
+          "3. Monitor CI checks and address any failures",
+        ].join("\n"),
   };
 }

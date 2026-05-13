@@ -55,8 +55,8 @@ export function createIssues(options?: CreateIssuesOptions): Accessor<Issue[]> {
     // Initial fetch
     fetchIssues().then(setIssues);
 
-    // Refresh on changes
-    const refresh = () => fetchIssues().then(setIssues);
+    // Refresh on changes (async, but we don't await - fire and forget)
+    const refresh = async () => setIssues(await fetchIssues());
 
     hooks.on("issue.parsed", refresh);
     hooks.on("issue.status_changed", refresh);

@@ -6,6 +6,7 @@
  * @module workhorse-plugin-jira/client
  */
 
+import { markdownToAdf } from "marklassian";
 import type { JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
 
 export class AtlassianClient {
@@ -81,15 +82,11 @@ export class AtlassianClient {
   }
 
   /** Add a comment to an issue, optionally as a reply to another comment.
-   *  The body is plain text; it is wrapped into Atlassian Document Format (ADF)
+   *  The body is markdown; it is converted to Atlassian Document Format (ADF)
    *  automatically because Jira REST API v3 requires ADF for comment bodies. */
   async addComment(ticketKey: string, body: string, replyToId?: string): Promise<void> {
     const payload: Record<string, unknown> = {
-      body: {
-        version: 1,
-        type: "doc",
-        content: [{ type: "paragraph", content: [{ type: "text", text: body }] }],
-      },
+      body: markdownToAdf(body),
     };
     if (replyToId) {
       payload.properties = [{ key: "sd.public.comment", value: { internal: false } }];

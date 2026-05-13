@@ -113,6 +113,11 @@ export class GitHubClient {
     return [...issueComments, ...reviewComments];
   }
 
+  /** Get only conversation comments on a PR (not code review comments) */
+  async getIssueComments(owner: string, repo: string, number: number): Promise<GitHubComment[]> {
+    return api<GitHubComment[]>(`/repos/${owner}/${repo}/issues/${number}/comments`);
+  }
+
   /** Get comments for a specific review */
   async getReviewComments(
     owner: string,

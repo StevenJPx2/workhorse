@@ -24,10 +24,10 @@ export function createJiraCommentMonitor(
     type: "remote",
     interval,
     poll: async (ctx) => {
-      // Note: ctx.issueId is the externalId, not the internal UUID
+      // ctx.issueId is the internal UUID (monitors are started with issue.id)
       // Only poll for Jira-sourced issues (comments only make sense for Jira tickets)
-      const issue = await db.issues.getByExternalId(ctx.issueId, "jira");
-      if (!issue) {
+      const issue = await db.issues.getById(ctx.issueId);
+      if (!issue || issue.source !== "jira") {
         return { hasChanges: false };
       }
 

@@ -1,15 +1,19 @@
 /**
- * Workhorse tool renderers for TUI display.
+ * Workhorse tool and notification renderers for TUI display.
  *
- * Handles rendering of core Workhorse tools: update_status, escalate, acknowledge.
+ * Handles rendering of:
+ * - Core Workhorse tools: update_status, escalate, acknowledge
+ * - Notifications from various sources (jira, github, agent)
  */
+
+import type { Notification } from "#db";
 
 /**
  * Activity input type for the unified renderer system.
  * Matches TUI's ActivityInput discriminated union.
  */
 type ActivityInput =
-  | { kind: "notification"; notification: unknown }
+  | { kind: "notification"; notification: Notification }
   | { kind: "tool"; tool: string; args: unknown };
 
 /**
@@ -70,6 +74,78 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
 
   // Unknown workhorse_ tool - use default
   return null;
+}
+
+/**
+ * Notification renderer for TUI display.
+ * Generic renderer that works with any notification source.
+ */
+export function notificationRenderer(input: ActivityInput): RenderedActivity | null {
+  if (input.kind !== "notification") return null;
+
+  const { notification } = input;
+
+  // Determine icon and color based on priority
+  const { icon, color } = getNotificationStyle(notification.priority);
+
+  return {
+    icon,
+    title: notification.title,
+    subtitle: buildSubtitle(
+      notification.source,
+      (notification.metadata ?? {}) as Record<string, unknown>,
+    ),
+    body: notification.body,
+    style: notification.priority === "blocking" ? "box" : "inline",
+    color,
+  };
+}
+
+/** Build subtitle from metadata - extracts common fields generically */
+function buildSubtitle(source: string, metadata: Record<string, unknown>): string | undefined {
+  const parts: string[] = [];
+
+  // Add source
+  parts.push(source);
+
+  // Extract common metadata fields that might exist
+  const author = metadata.author ?? metadata.user ?? metadata.from;
+  if (typeof author === "string") {
+    parts.push(author);
+  }
+
+  // Extract any reference/key field
+  const ref =
+    metadata.key ??
+    metadata.ref ??
+    metadata.issueKey ??
+    metadata.prNumber ??
+    metadata.ticketId ??
+    metadata.id;
+  if (ref !== undefined && ref !== null) {
+    parts.push(String(ref));
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+/** Get icon and color for notification based on priority */
+function getNotificationStyle(priority: string): {
+  icon: string;
+  color: "info" | "success" | "warning" | "error" | "dim" | "accent";
+} {
+  switch (priority) {
+    case "blocking":
+      return { icon: "🚫", color: "error" };
+    case "high":
+      return { icon: "❗", color: "warning" };
+    case "normal":
+      return { icon: "📬", color: "info" };
+    case "low":
+      return { icon: "📭", color: "dim" };
+    default:
+      return { icon: "📬", color: "dim" };
+  }
 }
 
 /** Get color for issue status */

@@ -25,8 +25,8 @@ describe("createJiraCommentMonitor", () => {
 
     const mockDb = {
       issues: {
-        // getByExternalId with source="jira" returns null for non-jira issues
-        getByExternalId: vi.fn().mockReturnValue(null),
+        // getById returns null for non-existent issues
+        getById: vi.fn().mockReturnValue(null),
       },
     };
 
@@ -85,7 +85,7 @@ describe("createJiraCommentMonitor", () => {
     const mockNotifications = { create: vi.fn() };
     const mockDb = {
       issues: {
-        getByExternalId: vi.fn().mockReturnValue(issue),
+        getById: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     };
@@ -153,7 +153,7 @@ describe("createJiraCommentMonitor", () => {
     const mockNotifications = { create: vi.fn() };
     const mockDb = {
       issues: {
-        getByExternalId: vi.fn().mockReturnValue(issue),
+        getById: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     };

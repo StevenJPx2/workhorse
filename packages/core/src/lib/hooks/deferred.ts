@@ -9,38 +9,38 @@
  * that plugin B wants to listen to, but B's setup() hasn't run yet.
  */
 
-import type { Emitter } from "mitt";
-import type { HookEventMap } from "./types.ts";
+import type { Hookable, HookKeys } from "hookable";
+import type { HookCallbacks, HookPayload } from "./types.ts";
 
 /** Hook types that should be deferred during plugin setup */
-const DEFERRED_HOOKS = new Set<keyof HookEventMap>(["tui.register_renderer"]);
+const DEFERRED_HOOKS = new Set<keyof HookCallbacks>(["tui.register_renderer"]);
 
-interface BufferedEvent {
-  type: keyof HookEventMap;
-  payload: HookEventMap[keyof HookEventMap];
+interface BufferedEvent<K extends keyof HookCallbacks = keyof HookCallbacks> {
+  type: K;
+  payload: HookPayload<K>;
 }
 
 /**
- * Create a deferred hook system that wraps a mitt instance.
+ * Create a deferred hook system that wraps a hookable instance.
  *
- * @param emitter - The underlying mitt emitter
+ * @param hooks - The underlying hookable instance
  * @returns Object with startBuffering/flush to control buffering
  */
-export function createDeferredHooks(emitter: Emitter<HookEventMap>) {
+export function createDeferredHooks(hooks: Hookable<HookCallbacks>) {
   const buffer: BufferedEvent[] = [];
   let isBuffering = false;
 
-  // Store original emit
-  const originalEmit = emitter.emit.bind(emitter);
+  // Store original callHook
+  const originalCallHook = hooks.callHook.bind(hooks);
 
-  // Override emit to intercept deferred hooks
-  emitter.emit = (<K extends keyof HookEventMap>(type: K, payload: HookEventMap[K]) => {
+  // Override callHook to intercept deferred hooks
+  hooks.callHook = (<K extends keyof HookCallbacks>(type: K, payload: HookPayload<K>) => {
     if (isBuffering && DEFERRED_HOOKS.has(type)) {
-      buffer.push({ type, payload });
-    } else {
-      originalEmit(type, payload);
+      buffer.push({ type, payload } as BufferedEvent);
+      return;
     }
-  }) as typeof emitter.emit;
+    return originalCallHook(type as HookKeys<HookCallbacks>, payload as any);
+  }) as typeof hooks.callHook;
 
   /**
    * Start buffering deferred hook emissions.
@@ -55,10 +55,10 @@ export function createDeferredHooks(emitter: Emitter<HookEventMap>) {
    * Stop buffering and replay all buffered events.
    * Call this after all plugins have completed setup.
    */
-  function flush() {
+  async function flush() {
     isBuffering = false;
     for (const { type, payload } of buffer) {
-      originalEmit(type, payload);
+      await originalCallHook(type as HookKeys<HookCallbacks>, payload as any);
     }
     buffer.length = 0;
   }

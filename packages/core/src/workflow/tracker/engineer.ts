@@ -1,4 +1,5 @@
 import type { Issue } from "#db";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService, SearchResult, SessionMemory } from "#services/memory";
 import type { OrchestratorTool } from "#workflow/orchestrator";
 import {
@@ -9,7 +10,7 @@ import {
   renderSearchResults,
   sortContextBlocks,
 } from "./render.ts";
-import type { PromptContextBlock } from "./types.ts";
+import type { PromptBuildingContext, PromptContextBlock } from "./types.ts";
 
 /** Options for building a prompt. */
 export interface BuildPromptOptions {
@@ -42,6 +43,9 @@ export class PromptEngineer {
 
     /** Custom instructions from config */
     private readonly customInstructions?: string,
+
+    /** Hook emitter for prompt.building event */
+    private readonly hooks?: HookEmitter,
   ) {}
 
   /**
@@ -103,9 +107,28 @@ export class PromptEngineer {
       contextBlocks.push({
         id: "system-inbox",
         title: "Pending Notifications",
-        content: this.memory.notifications.generateInbox(notifications),
+        content: `**IMPORTANT**: You have pending notifications that require your attention. Review each notification and respond appropriately:
+- For comments/questions: Address the question or request directly
+- For review feedback: Make the requested changes
+- For CI failures: Investigate and fix the issue
+- For blocking notifications: Stop current work and address immediately
+
+After addressing a notification, acknowledge it by incorporating its feedback into your work.
+
+${this.memory.notifications.generateInbox(notifications)}`,
         priority: -100, // High priority - show early
       });
+    }
+
+    // Emit prompt.building hook to let plugins contribute context blocks
+    // Uses internal issue.id (UUID) for consistency with other hooks
+    // IMPORTANT: Use callHook (not emit) to await async handlers
+    if (this.hooks) {
+      await this.hooks.callHook("prompt.building", {
+        issueId: this.issue.id,
+        contextBlocks,
+        metadata: {},
+      } satisfies PromptBuildingContext);
     }
 
     return {

@@ -125,3 +125,44 @@ export interface PRStatusSummary {
   deletions: number;
   changedFiles: number;
 }
+
+/** A single inline comment from a review */
+export interface ReviewComment {
+  path: string;
+  line: number | null;
+  diffHunk: string | null;
+  body: string;
+}
+
+/** A detailed review with its inline comments */
+export interface DetailedReview {
+  id: number;
+  author: string;
+  state: GitHubReview["state"];
+  body: string;
+  submittedAt: string;
+  comments: ReviewComment[];
+}
+
+/** A general PR conversation comment (not part of a review) */
+export interface ConversationComment {
+  id: number;
+  author: string;
+  body: string;
+  createdAt: string;
+}
+
+/** Result returned by the github_get_pr_reviews tool */
+export interface PRReviewsResult {
+  totalReviews: number;
+  totalConversationComments: number;
+  summary: {
+    approved: number;
+    changesRequested: number;
+    commented: number;
+    dismissed: number;
+    pending: number;
+  };
+  reviews: DetailedReview[];
+  conversationComments: ConversationComment[];
+}

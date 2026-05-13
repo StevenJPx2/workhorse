@@ -71,10 +71,13 @@ export class NotificationService {
       metadata: input.metadata ?? null,
     });
 
-    // Emit hook
+    // Emit hook with external ID (consistent with other agent.* hooks)
+    // Look up issue to get external ID for hook (input.issueId is internal UUID)
     this.hooks.emit("notification.created", {
       notification,
-      issueId: input.issueId,
+      issueId: await this.db.issues
+        .getById(input.issueId)
+        .then((issue) => issue?.externalId ?? input.issueId),
     });
 
     return notification;

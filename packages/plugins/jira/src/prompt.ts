@@ -11,12 +11,13 @@ import type { AtlassianClient } from "./client.ts";
 
 /** Register prompt enrichment hooks */
 export function registerPromptHooks(ctx: WorkhorseContext, client: AtlassianClient): void {
-  ctx.hooks.on("prompt.building", async ({ issueId, context }) => {
-    const issue = await ctx.db.issues.getById(issueId);
+  // Hook receives PromptBuildingContext directly (issueId is internal UUID)
+  ctx.hooks.on("prompt.building", async (buildingCtx) => {
+    const issue = await ctx.db.issues.getById(buildingCtx.issueId);
     if (!issue || issue.source !== "jira") return;
 
     try {
-      context.contextBlocks.push(
+      buildingCtx.contextBlocks.push(
         ...buildJiraContextBlocks(await client.fetchIssue(issue.externalId)),
       );
     } catch {
@@ -61,20 +62,26 @@ function buildJiraContextBlocks(jiraIssue: {
       .join("\n\n");
   }
 
+  // Add recent comments if any
+  if (commentsContent.length > 0) {
+    contextBlocks.push({
+      id: "jira-comments",
+      title: "Recent Jira Comments",
+      priority: 15,
+      content: commentsContent,
+    });
+  }
+
   contextBlocks.push({
     id: "jira-workflow",
-    title: "Jira Workflow Instructions",
+    title: "Jira Workflow",
     priority: 50,
     content: [
-      "You have access to Jira tools via the orchestrator:",
-      "",
-      "- `jira_add_comment(ticketKey, body)` — Add a comment to the Jira issue",
-      "- `jira_transition_issue(ticketKey, status)` — Transition the issue to a new status",
-      "",
-      commentsContent.length > 0 ? `## Recent Comments\n\n${commentsContent}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n"),
+      "Use `jira_*` tools to communicate progress:",
+      "- Add comments for status updates or questions",
+      "- Transition issue status when implementation phases complete",
+      "- Check notifications for team feedback",
+    ].join("\n"),
   });
 
   return contextBlocks;

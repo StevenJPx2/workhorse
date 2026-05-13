@@ -8,7 +8,7 @@
 import { definePlugin } from "../define.ts";
 import { createLocalParserOptions } from "./tools/parser.ts";
 import { acknowledgeTool, escalateTool, updateStatusTool } from "./tools/definitions.ts";
-import { workhorseToolRenderer } from "./renderers.ts";
+import { notificationRenderer, workhorseToolRenderer } from "./renderers.ts";
 
 export const corePlugin = definePlugin({
   manifest: {
@@ -33,6 +33,12 @@ export const corePlugin = definePlugin({
     ctx.hooks.emit("tui.register_renderer", {
       id: "workhorse-tools",
       renderer: workhorseToolRenderer,
+    });
+
+    // Register notification renderer with TUI
+    ctx.hooks.emit("tui.register_renderer", {
+      id: "workhorse-notifications",
+      renderer: notificationRenderer,
     });
   },
 });

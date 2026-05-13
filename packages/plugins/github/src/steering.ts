@@ -86,9 +86,8 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
         if (status === "planning" || status === "implementing") return false;
 
         // Check if a PR was actually created (metadata set by open-pr tool on success)
-        const metadata = steerCtx.issue.metadata as Record<string, unknown> | undefined;
-        const hasPR = metadata?.prNumber != null || metadata?.prUrl != null;
-        return !hasPR;
+        const meta = steerCtx.issue.metadata as Record<string, unknown> | undefined;
+        return !(meta?.prNumber != null || meta?.prUrl != null);
       },
     },
     reminder: `You're past the implementation phase but haven't created a PR yet. Create one with \`github_open_pr\` to submit your changes for review.`,

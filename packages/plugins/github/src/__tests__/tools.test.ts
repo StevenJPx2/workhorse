@@ -227,7 +227,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "github",
           status: "implementing",
@@ -331,7 +331,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "jira", // Jira issue, not GitHub
           status: "implementing",
@@ -377,7 +377,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
   it("returns error when issue not found", async () => {
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue(null),
+        getByExternalId: vi.fn().mockReturnValue(null),
       },
     };
 
@@ -418,7 +418,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           source: "jira", // Non-GitHub source
           metadata: { cloudId: "company" }, // Jira metadata, no owner/repo
