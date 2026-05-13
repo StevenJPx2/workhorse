@@ -1,144 +1,104 @@
 /**
- * Tests for Jira status sync.
+ * Tests for Jira status sync — verifies correct hook emissions.
  */
 
 import { describe, expect, it, vi } from "vitest";
-import type { AtlassianClient } from "../client.ts";
 import { registerStatusSync } from "../sync.ts";
 import type { Issue } from "workhorse-core";
 
 describe("registerStatusSync", () => {
-  it("ignores non-jira issues", async () => {
-    const mockClient = {
-      getTransitions: vi.fn(),
-      transitionIssue: vi.fn(),
-    } as unknown as AtlassianClient;
-
+  it("ignores non-jira issues", () => {
     const hooks = { on: vi.fn(), emit: vi.fn() } as any;
-    const ctx = { db: {} as any, hooks } as any;
+    const ctx = { hooks } as any;
 
-    registerStatusSync(ctx, mockClient);
+    registerStatusSync(ctx);
 
-    // Get the registered handler
     const handler = hooks.on.mock.calls.find(
       ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
     )![1];
 
-    await handler({
+    handler({
       issue: { source: "github", externalId: "123" } as Issue,
       from: "pending",
       to: "implementing",
     });
 
-    expect(mockClient.getTransitions).not.toHaveBeenCalled();
+    expect(hooks.emit).not.toHaveBeenCalled();
   });
 
-  it("transitions jira issue on status change", async () => {
-    const mockClient = {
-      getTransitions: vi.fn().mockResolvedValue([
-        { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
-        { id: "41", name: "Done", to: { name: "Done", id: "6" } },
-      ]),
-      transitionIssue: vi.fn().mockResolvedValue(undefined),
-    } as unknown as AtlassianClient;
-
+  it("emits jira:transition.requested on status change", () => {
     const hooks = { on: vi.fn(), emit: vi.fn() } as any;
-    const ctx = { db: {} as any, hooks } as any;
+    const ctx = { hooks } as any;
 
-    registerStatusSync(ctx, mockClient);
+    registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
       ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
     )![1];
 
-    await handler({
+    handler({
       issue: { source: "jira", externalId: "AM-123" } as Issue,
       from: "pending",
       to: "done",
     });
 
-    expect(mockClient.getTransitions).toHaveBeenCalledWith("AM-123");
-    expect(mockClient.transitionIssue).toHaveBeenCalledWith("AM-123", "41");
-    expect(hooks.emit).toHaveBeenCalledWith("jira:issue.transitioned", {
+    expect(hooks.emit).toHaveBeenCalledWith("jira:transition.requested", {
       issueId: "AM-123",
-      from: "To Do",
-      to: "Done",
+      targetStatus: "Done",
+      fromStatus: "To Do",
     });
   });
 
-  it("assigns ticket to current user when transitioning to planning", async () => {
-    const mockClient = {
-      getTransitions: vi
-        .fn()
-        .mockResolvedValue([
-          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
-        ]),
-      transitionIssue: vi.fn().mockResolvedValue(undefined),
-      getCurrentUser: vi.fn().mockResolvedValue({
-        accountId: "user-123",
-        displayName: "Test User",
-      }),
-      editIssue: vi.fn().mockResolvedValue(undefined),
-    } as unknown as AtlassianClient;
-
+  it("emits jira:assign.requested when transitioning to planning", () => {
     const hooks = { on: vi.fn(), emit: vi.fn() } as any;
-    const ctx = { db: {} as any, hooks } as any;
+    const ctx = { hooks } as any;
 
-    registerStatusSync(ctx, mockClient);
+    registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
       ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
     )![1];
 
-    await handler({
+    handler({
       issue: { source: "jira", externalId: "AM-123" } as Issue,
       from: "queued",
       to: "planning",
     });
 
-    expect(mockClient.transitionIssue).toHaveBeenCalledWith("AM-123", "31");
-    expect(mockClient.getCurrentUser).toHaveBeenCalled();
-    expect(mockClient.editIssue).toHaveBeenCalledWith("AM-123", {
-      assignee: { accountId: "user-123" },
-    });
-    expect(hooks.emit).toHaveBeenCalledWith("jira:issue.assigned", {
+    // Should emit both transition and assign requests
+    expect(hooks.emit).toHaveBeenCalledWith("jira:transition.requested", {
       issueId: "AM-123",
-      from: undefined,
-      to: "user-123",
+      targetStatus: "In Progress",
+      fromStatus: "To Do",
+    });
+    expect(hooks.emit).toHaveBeenCalledWith("jira:assign.requested", {
+      issueId: "AM-123",
+      assignee: "self",
     });
   });
 
-  it("handles missing transition gracefully", async () => {
-    const mockClient = {
-      getTransitions: vi
-        .fn()
-        .mockResolvedValue([
-          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
-        ]),
-      transitionIssue: vi.fn(),
-    } as unknown as AtlassianClient;
-
-    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("does not emit assign request for non-planning status changes", () => {
     const hooks = { on: vi.fn(), emit: vi.fn() } as any;
-    const ctx = { db: {} as any, hooks } as any;
+    const ctx = { hooks } as any;
 
-    registerStatusSync(ctx, mockClient);
+    registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
       ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
     )![1];
 
-    await handler({
+    handler({
       issue: { source: "jira", externalId: "AM-123" } as Issue,
-      from: "pending",
-      to: "done",
+      from: "planning",
+      to: "implementing",
     });
 
-    expect(mockClient.transitionIssue).not.toHaveBeenCalled();
-    expect(consoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('No transition found for status "done"'),
-    );
-
-    consoleWarn.mockRestore();
+    // Should only emit transition, not assign
+    expect(hooks.emit).toHaveBeenCalledTimes(1);
+    expect(hooks.emit).toHaveBeenCalledWith("jira:transition.requested", {
+      issueId: "AM-123",
+      targetStatus: "In Progress",
+      fromStatus: "In Progress",
+    });
   });
 });

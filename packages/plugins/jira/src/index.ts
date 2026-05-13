@@ -18,6 +18,7 @@ import { jiraAuthProvider } from "./auth.ts";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter } from "./credentials.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
+import { registerHookConsumers } from "./hook-consumers.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
@@ -73,8 +74,11 @@ export const jiraPlugin = definePlugin({
     // Register prompt enrichment
     registerPromptHooks(ctx, client);
 
-    // Register status sync
-    registerStatusSync(ctx, client);
+    // Register hook consumers (handles jira:transition.requested, jira:assign.requested)
+    registerHookConsumers(ctx, client);
+
+    // Register status sync (emits jira:transition.requested, jira:assign.requested)
+    registerStatusSync(ctx);
 
     // Register cross-plugin sync (reacts to GitHub plugin events)
     registerCrossPluginSync(ctx, client, ctx.db);
