@@ -29,6 +29,9 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient)
     // Need owner/repo to fetch anything from GitHub
     if (!owner || !repo) return;
 
+    // Always add repo context when we have owner/repo
+    buildingCtx.contextBlocks.push(buildRepoContextBlock(owner, repo));
+
     try {
       // For GitHub-sourced issues, fetch and add issue context
       if (isGitHubIssue && typeof metadata.number === "number") {
@@ -126,6 +129,16 @@ function buildPRStateBlock(
       `**CI Status:** ${checkStatus}`,
       `**+${pr.additions} -${pr.deletions}** across ${pr.changed_files} files`,
     ].join("\n"),
+  };
+}
+
+/** Build repository context block */
+function buildRepoContextBlock(owner: string, repo: string): PromptContextBlock {
+  return {
+    id: "github-repo",
+    title: "GitHub Repository",
+    priority: 5,
+    content: `**Repository:** ${owner}/${repo}\n**URL:** https://github.com/${owner}/${repo}`,
   };
 }
 
