@@ -44,6 +44,9 @@ export type {
   PRStatusSummary,
 } from "./types.ts";
 
+export type { CICheckResult } from "./tools/get-ci-check.ts";
+export type { DetailedReview, PRReviewsResult, ReviewComment } from "./tools/get-pr-reviews.ts";
+
 // Export plugin hook types for cross-plugin coordination
 export type { GitHubPluginHooks } from "./hooks.ts";
 
@@ -59,7 +62,13 @@ export const githubPlugin = definePlugin({
     capabilities: {
       parsers: ["github"],
       monitors: ["github-pr"],
-      tools: ["github_open_pr", "github_add_comment", "github_get_pr_status"],
+      tools: [
+        "github_open_pr",
+        "github_add_comment",
+        "github_get_pr_status",
+        "github_get_ci_check",
+        "github_get_pr_reviews",
+      ],
     },
   },
   // External auth provider - delegates to `gh` CLI

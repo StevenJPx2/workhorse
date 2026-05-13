@@ -113,6 +113,18 @@ export class GitHubClient {
     return [...issueComments, ...reviewComments];
   }
 
+  /** Get comments for a specific review */
+  async getReviewComments(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    reviewId: number,
+  ): Promise<GitHubComment[]> {
+    return api<GitHubComment[]>(
+      `/repos/${owner}/${repo}/pulls/${prNumber}/reviews/${reviewId}/comments`,
+    );
+  }
+
   /** Get check runs for a commit ref */
   async getCheckRuns(owner: string, repo: string, ref: string): Promise<GitHubCheckRun[]> {
     return await api<{ check_runs: GitHubCheckRun[] }>(

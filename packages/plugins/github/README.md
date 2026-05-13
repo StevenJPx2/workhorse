@@ -21,7 +21,7 @@ bun add workhorse-plugin-github
 | **PR Monitor** | Unified monitor for PR reviews, comments, CI checks, and mergeable state |
 | **Prompt Enrichment** | Inject GitHub issue/PR state into agent system prompts |
 | **Status Sync** | Sync Workhorse issue status → GitHub PR labels |
-| **Tools** | `github_open_pr`, `github_add_comment`, `github_get_pr_status` |
+| **Tools** | `github_open_pr`, `github_add_comment`, `github_get_pr_status`, `github_get_ci_check`, `github_get_pr_reviews` |
 | **Steering** | Idle agent reminders for PR reviews and CI failures |
 | **Cross-plugin Sync** | React to Jira status changes (when both plugins are loaded) |
 
@@ -131,6 +131,87 @@ Get a comprehensive PR status summary:
 //   additions: 45,
 //   deletions: 12,
 //   changedFiles: 3
+// }
+```
+
+#### github_get_ci_check
+
+Get the status of a specific CI check by name:
+
+```typescript
+{
+  owner: "octocat",
+  repo: "hello-world",
+  checkName: "build",    // Case-insensitive, supports partial match
+  ref: "HEAD"            // Optional: commit SHA, branch, or "HEAD" (default)
+}
+
+// Returns CICheckResult:
+// {
+//   found: true,
+//   name: "build",
+//   status: "completed",
+//   conclusion: "success",
+//   url: "https://github.com/octocat/hello-world/runs/123456",
+//   startedAt: "2024-01-15T10:00:00Z",
+//   completedAt: "2024-01-15T10:05:30Z",
+//   durationSeconds: 330
+// }
+
+// If check not found, returns available checks:
+// {
+//   found: false,
+//   name: "nonexistent",
+//   status: null,
+//   conclusion: null,
+//   url: null,
+//   startedAt: null,
+//   completedAt: null,
+//   durationSeconds: null,
+//   availableChecks: ["build", "test", "lint", "typecheck"]
+// }
+```
+
+#### github_get_pr_reviews
+
+Get detailed PR reviews including inline code comments:
+
+```typescript
+{
+  owner: "octocat",
+  repo: "hello-world",
+  number: 42,
+  state: "changes_requested",  // Optional: filter by state (default: "all")
+  includeComments: true        // Optional: include inline comments (default: true)
+}
+
+// Returns PRReviewsResult:
+// {
+//   totalReviews: 3,
+//   summary: {
+//     approved: 1,
+//     changesRequested: 1,
+//     commented: 1,
+//     dismissed: 0,
+//     pending: 0
+//   },
+//   reviews: [
+//     {
+//       id: 12345,
+//       author: "reviewer1",
+//       state: "CHANGES_REQUESTED",
+//       body: "Please address the following issues:",
+//       submittedAt: "2024-01-15T14:30:00Z",
+//       comments: [
+//         {
+//           path: "src/utils.ts",
+//           line: 42,
+//           diffHunk: "@@ -40,6 +40,8 @@ function processData() {",
+//           body: "This should handle the null case"
+//         }
+//       ]
+//     }
+//   ]
 // }
 ```
 
@@ -254,6 +335,8 @@ interface PRStatusSummary {
 | `tools/open-pr.ts` | `github_open_pr` tool implementation |
 | `tools/add-comment.ts` | `github_add_comment` tool implementation |
 | `tools/get-pr-status.ts` | `github_get_pr_status` tool implementation |
+| `tools/get-ci-check.ts` | `github_get_ci_check` tool implementation |
+| `tools/get-pr-reviews.ts` | `github_get_pr_reviews` tool implementation |
 | `tools/types.ts` | Tool-specific types |
 | `renderer.ts` | TUI activity renderer |
 | `hooks.ts` | Plugin-specific hook type definitions |

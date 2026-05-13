@@ -33,6 +33,12 @@ export interface EventHandlerContext {
 /** Handle events from the pi session. */
 export function handleSessionEvent(event: AgentSessionEvent, ctx: EventHandlerContext): void {
   switch (event.type) {
+    case "agent_start": {
+      // Agent has started processing - set state to running
+      ctx.setState("running");
+      break;
+    }
+
     case "message_update": {
       const delta = event.assistantMessageEvent;
       if (delta.type === "text_delta" && delta.delta) {
