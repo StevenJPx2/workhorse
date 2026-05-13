@@ -59,6 +59,53 @@ describe("registerStatusSync", () => {
 
     expect(mockClient.getTransitions).toHaveBeenCalledWith("AM-123");
     expect(mockClient.transitionIssue).toHaveBeenCalledWith("AM-123", "41");
+    expect(hooks.emit).toHaveBeenCalledWith("jira:issue.transitioned", {
+      issueId: "AM-123",
+      from: "To Do",
+      to: "Done",
+    });
+  });
+
+  it("assigns ticket to current user when transitioning to planning", async () => {
+    const mockClient = {
+      getTransitions: vi
+        .fn()
+        .mockResolvedValue([
+          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
+        ]),
+      transitionIssue: vi.fn().mockResolvedValue(undefined),
+      getCurrentUser: vi.fn().mockResolvedValue({
+        accountId: "user-123",
+        displayName: "Test User",
+      }),
+      editIssue: vi.fn().mockResolvedValue(undefined),
+    } as unknown as AtlassianClient;
+
+    const hooks = { on: vi.fn(), emit: vi.fn() } as any;
+    const ctx = { db: {} as any, hooks } as any;
+
+    registerStatusSync(ctx, mockClient);
+
+    const handler = hooks.on.mock.calls.find(
+      ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
+    )![1];
+
+    await handler({
+      issue: { source: "jira", externalId: "AM-123" } as Issue,
+      from: "queued",
+      to: "planning",
+    });
+
+    expect(mockClient.transitionIssue).toHaveBeenCalledWith("AM-123", "31");
+    expect(mockClient.getCurrentUser).toHaveBeenCalled();
+    expect(mockClient.editIssue).toHaveBeenCalledWith("AM-123", {
+      assignee: { accountId: "user-123" },
+    });
+    expect(hooks.emit).toHaveBeenCalledWith("jira:issue.assigned", {
+      issueId: "AM-123",
+      from: undefined,
+      to: "user-123",
+    });
   });
 
   it("handles missing transition gracefully", async () => {

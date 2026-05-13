@@ -13,9 +13,10 @@
 
 import { z } from "zod/v4";
 import { definePlugin } from "workhorse-core";
+import { registerAgentHooks } from "./agent-hooks.ts";
+import { jiraAuthProvider } from "./auth.ts";
 import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter } from "./credentials.ts";
-import { jiraAuthProvider } from "./auth.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
@@ -66,12 +67,8 @@ export const jiraPlugin = definePlugin({
     // Register comment monitor (started per-issue when agent spawns)
     ctx.monitors.registerMonitor(createJiraCommentMonitor(client, config.pollInterval, ctx.db));
 
-    ctx.hooks.on("agent.create.post", async ({ adapter }) => {
-      const issue = await ctx.db.issues.getByExternalId(adapter.issueId, "jira");
-      if (issue) {
-        ctx.monitors.startMonitor("jira-comments", issue.id);
-      }
-    });
+    // Register agent lifecycle hooks (starts comment monitor on agent create)
+    registerAgentHooks(ctx);
 
     // Register prompt enrichment
     registerPromptHooks(ctx, client);
