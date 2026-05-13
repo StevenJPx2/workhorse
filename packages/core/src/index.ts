@@ -129,3 +129,6 @@ export {
 } from "#lib/paths";
 // Metadata footer for agent-generated content
 export { METADATA_FOOTER, withWorkhorseFooter } from "#lib/metadata-footer";
+
+// Test domain change — dummy export
+export const WORKHORSE_VERSION = "0.1.0";
