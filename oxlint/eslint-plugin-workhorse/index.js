@@ -3,7 +3,7 @@
 var rule = {
   meta: {
     docs: {
-      description: "Enforce maximum line count per file. Jiratown convention: files must not exceed 200 lines."
+      description: "Enforce maximum line count per file. Workhorse convention: files must not exceed 200 lines."
     },
     schema: [
       {
@@ -43,7 +43,7 @@ var ALLOWED_SPECIAL_FILES = new Set(["index.ts", "index.tsx", "index.js", "index
 var rule2 = {
   meta: {
     docs: {
-      description: "Enforce kebab-case file naming convention. Jiratown convention: all files must use kebab-case (e.g., my-module.ts)."
+      description: "Enforce kebab-case file naming convention. Workhorse convention: all files must use kebab-case (e.g., my-module.ts)."
     }
   },
   create(context) {
