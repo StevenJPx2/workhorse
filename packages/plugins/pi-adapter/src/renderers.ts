@@ -75,7 +75,7 @@ export function piToolRenderer(input: ActivityInput): RenderedActivity | null {
   if (tool.includes("bash")) {
     return {
       icon: "$",
-      title: getString(args.description) || truncate(getString(args.command) || "", 50),
+      title: getString(args.description) || getString(args.command) || "",
       style: "inline",
       color: "accent",
     };

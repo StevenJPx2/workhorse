@@ -98,9 +98,36 @@ export function createChat(issueId: Accessor<string | null>) {
     };
     setMessages((prev) => [...prev, msg]);
 
+    // Helper to send message once agent is ready
+    const doSend = () => {
+      adapter.sendMessage(content).catch((err) => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "agent",
+            content: `⚠️ Failed to send message: ${err instanceof Error ? err.message : String(err)}`,
+            timestamp: new Date(),
+          },
+        ]);
+      });
+    };
+
+    // If agent is starting, wait for it to be ready then send
+    if (adapter.state === "starting") {
+      const onStarted = ({ adapter: a }: { adapter: typeof adapter }) => {
+        if (a.issueId === id) {
+          hooks.off("agent.start.post", onStarted);
+          doSend();
+        }
+      };
+      hooks.on("agent.start.post", onStarted);
+      return;
+    }
+
     // Check if agent is running
-    if (adapter.state !== "running" && adapter.state !== "starting") {
-      // Agent not running - start it in the background
+    if (adapter.state !== "running") {
+      // Agent not running - start it and send message when ready
       setMessages((prev) => [
         ...prev,
         {
@@ -111,8 +138,17 @@ export function createChat(issueId: Accessor<string | null>) {
         },
       ]);
 
-      // Start agent in background - don't block
+      const onStarted = ({ adapter: a }: { adapter: typeof adapter }) => {
+        if (a.issueId === id) {
+          hooks.off("agent.start.post", onStarted);
+          doSend();
+        }
+      };
+      hooks.on("agent.start.post", onStarted);
+
+      // Start agent in background
       adapter.start().catch((err) => {
+        hooks.off("agent.start.post", onStarted);
         setMessages((prev) => [
           ...prev,
           {
@@ -124,25 +160,10 @@ export function createChat(issueId: Accessor<string | null>) {
         ]);
       });
 
-      // Don't send message yet - agent is starting
       return;
     }
 
-    // If agent is starting, queue the message
-    if (adapter.state === "starting") {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "agent",
-          content: "⏳ Agent is still starting... Please wait.",
-          timestamp: new Date(),
-        },
-      ]);
-      return;
-    }
-
-    // Send to agent (fire-and-forget - responses stream via agent.output hook)
+    // Agent is running - send immediately (fire-and-forget - responses stream via agent.output hook)
     adapter.sendMessage(content).catch((err) => {
       setMessages((prev) => [
         ...prev,

@@ -122,7 +122,7 @@ export function Agent() {
       </Show>
 
       {/* Main content: sidebar + activity (center) + files (right) */}
-      <box flexDirection="row" flexGrow={1} paddingBottom={1}>
+      <box flexDirection="row" flexGrow={1}>
         <AgentSidebar
           agents={agents}
           selectedId={selectedId}
@@ -132,7 +132,7 @@ export function Agent() {
         <box width={1} backgroundColor={theme.colors.surface} />
 
         {/* Activity feed + chat input */}
-        <box flexDirection="column" flexGrow={1}>
+        <box flexDirection="column" flexGrow={1} marginBottom={1}>
           {" "}
           <box backgroundColor={theme.colors.surface} paddingX={1} zIndex={2}>
             <text fg={theme.colors.info}>
