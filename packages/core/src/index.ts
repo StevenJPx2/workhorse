@@ -129,3 +129,6 @@ export {
 } from "#lib/paths";
 // Metadata footer for agent-generated content
 export { METADATA_FOOTER, withWorkhorseFooter } from "#lib/metadata-footer";
+
+// Dummy change — testing PR comment notifications
+export const WORKHORSE_BUILD_DATE = "2026-05-13";
