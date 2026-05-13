@@ -55,7 +55,7 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
           issueId: ticketKey,
           comment: {
             id: `comment-${Date.now()}`,
-            author: "jiratown-agent",
+            author: "workhorse-agent",
             body,
           },
         });

@@ -16,7 +16,7 @@ export const corePlugin = definePlugin({
     version: "1.0.0",
     description: "Core Jiratown agent tools and local issue parser",
     capabilities: {
-      tools: ["jiratown_acknowledge", "jiratown_update_status", "jiratown_escalate"],
+      tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"],
       parsers: ["local"],
     },
   },
@@ -31,7 +31,7 @@ export const corePlugin = definePlugin({
 
     // Register Jiratown tool renderers with TUI (if TUI plugin is loaded)
     ctx.hooks.emit("tui.register_renderer", {
-      id: "jiratown-tools",
+      id: "workhorse-tools",
       renderer: workhorseToolRenderer,
     });
   },

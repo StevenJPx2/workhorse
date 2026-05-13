@@ -50,7 +50,7 @@ type KnownEvents = {
   "plugin.loaded": { name: string };
   "plugin.error": { name: string; error: Error };
 
-  // TUI events (registered by jiratown plugin)
+  // TUI events (registered by workhorse plugin)
   "tui.register_renderer": { id: string; renderer: unknown; priority?: number };
 };
 

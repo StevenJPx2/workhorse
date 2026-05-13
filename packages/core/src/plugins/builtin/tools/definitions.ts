@@ -8,7 +8,7 @@ import type { OrchestratorTool } from "#workflow/orchestrator";
 import { acknowledgeToolImpl, escalateToolImpl, updateStatusToolImpl } from "./implementations.ts";
 
 export const acknowledgeTool: OrchestratorTool = {
-  name: "jiratown_acknowledge",
+  name: "workhorse_acknowledge",
   description:
     "Mark notification(s) as read. Call this after processing system inbox messages. " +
     "If notificationIds is omitted, all unread notifications for the current issue are acknowledged.",
@@ -27,7 +27,7 @@ export const acknowledgeTool: OrchestratorTool = {
 };
 
 export const updateStatusTool: OrchestratorTool = {
-  name: "jiratown_update_status",
+  name: "workhorse_update_status",
   description:
     "Update the current issue's status. Use this to reflect progress: " +
     "'planning' when analyzing requirements, 'implementing' when coding, " +
@@ -47,7 +47,7 @@ export const updateStatusTool: OrchestratorTool = {
 };
 
 export const escalateTool: OrchestratorTool = {
-  name: "jiratown_escalate",
+  name: "workhorse_escalate",
   description:
     "Escalate to a human when blocked or need clarification. " +
     "Set blocking=true if you cannot proceed without a response. " +

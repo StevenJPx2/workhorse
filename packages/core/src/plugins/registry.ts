@@ -17,8 +17,8 @@ export function isPlugin(value: unknown): value is Plugin {
  * Use config.plugins.disabled array to opt-out of specific plugins.
  *
  * Custom plugins can be auto-discovered from:
- * - ~/.jiratown/plugins/
- * - .jiratown/plugins/
+ * - ~/.workhorse/plugins/
+ * - .workhorse/plugins/
  *
  * @example
  * ```typescript

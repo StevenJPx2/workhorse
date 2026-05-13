@@ -7,7 +7,7 @@ import type { HookEventMap } from "#lib/hooks";
 import { MemoryService } from "../service.ts";
 
 const TEST_DIR = join(import.meta.dirname, ".test-service");
-const DB_PATH = join(TEST_DIR, "jiratown.db");
+const DB_PATH = join(TEST_DIR, "workhorse.db");
 const MEMORY_DB_PATH = join(TEST_DIR, "memory.db");
 const WORKTREES_ROOT = join(TEST_DIR, "worktrees");
 const WORKTREE_PATH = join(WORKTREES_ROOT, "AM-123");

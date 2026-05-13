@@ -6,7 +6,7 @@ describe("parseTomlFile", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-parse-test-"));
+    tmpDir = mkdtempSync(join(tmpdir(), "workhorse-parse-test-"));
   });
 
   afterEach(() => {
@@ -79,7 +79,7 @@ describe("writeTomlFile", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-write-test-"));
+    tmpDir = mkdtempSync(join(tmpdir(), "workhorse-write-test-"));
   });
 
   afterEach(() => {
@@ -104,7 +104,7 @@ describe("edge cases and error handling", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-edge-test-"));
+    tmpDir = mkdtempSync(join(tmpdir(), "workhorse-edge-test-"));
   });
 
   afterEach(() => {

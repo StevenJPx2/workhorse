@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const SERVICE = "jiratown";
+const SERVICE = "workhorse";
 
 /**
  * Execute the macOS security command.

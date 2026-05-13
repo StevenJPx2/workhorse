@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 // oxlint-disable-next-line workhorse/no-single-reference-function -- test helper
 function writeTempToml(dir: string, content: string): void {
-  writeFileSync(join(dir, ".jiratown.toml"), content, "utf-8");
+  writeFileSync(join(dir, ".workhorse.toml"), content, "utf-8");
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -17,10 +17,10 @@ describe("bootstrap", () => {
   let originalXdgData: string | undefined;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-bootstrap-"));
-    // Create a temp XDG_DATA_HOME with jiratown directory for the database
-    tmpDataDir = mkdtempSync(join(tmpdir(), "jiratown-data-"));
-    mkdirSync(join(tmpDataDir, "jiratown"), { recursive: true });
+    tmpDir = mkdtempSync(join(tmpdir(), "workhorse-bootstrap-"));
+    // Create a temp XDG_DATA_HOME with workhorse directory for the database
+    tmpDataDir = mkdtempSync(join(tmpdir(), "workhorse-data-"));
+    mkdirSync(join(tmpDataDir, "workhorse"), { recursive: true });
     originalXdgData = process.env["XDG_DATA_HOME"];
     // Override XDG_DATA_HOME so resolveConfigPaths() uses the temp directory
     process.env["XDG_DATA_HOME"] = tmpDataDir;

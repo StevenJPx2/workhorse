@@ -14,7 +14,7 @@ describe("loadConfig", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "jiratown-config-test-"));
+    tmpDir = mkdtempSync(join(tmpdir(), "workhorse-config-test-"));
   });
 
   afterEach(() => {
@@ -29,7 +29,7 @@ describe("loadConfig", () => {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "global.toml"),
       projectConfig: join(tmpDir, "project.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };
@@ -46,7 +46,7 @@ describe("loadConfig", () => {
 
     writeTempToml(
       tmpDir,
-      ".jiratown.toml",
+      ".workhorse.toml",
       `
 [agent]
 harness = "claude-code"
@@ -64,8 +64,8 @@ theme = "gruvbox"
     const paths = {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: join(tmpDir, ".jiratown.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      projectConfig: join(tmpDir, ".workhorse.toml"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };
@@ -87,7 +87,7 @@ theme = "gruvbox"
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
       projectConfig: join(tmpDir, "nonexistent-project.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };
@@ -102,7 +102,7 @@ theme = "gruvbox"
 
     writeTempToml(
       tmpDir,
-      ".jiratown.toml",
+      ".workhorse.toml",
       `
 [plugins]
 disabled = []
@@ -115,8 +115,8 @@ cloud_id = "company.atlassian.net"
     const paths = {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: join(tmpDir, ".jiratown.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      projectConfig: join(tmpDir, ".workhorse.toml"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };
@@ -135,7 +135,7 @@ cloud_id = "company.atlassian.net"
 
     writeTempToml(
       tmpDir,
-      ".jiratown.toml",
+      ".workhorse.toml",
       `
 [agent]
 harness = "custom"
@@ -145,8 +145,8 @@ harness = "custom"
     const paths = {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: join(tmpDir, ".jiratown.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      projectConfig: join(tmpDir, ".workhorse.toml"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };
@@ -166,7 +166,7 @@ harness = "custom"
 
     writeTempToml(
       tmpDir,
-      ".jiratown.toml",
+      ".workhorse.toml",
       `
 [behavior]
 poll_interval = -5000
@@ -177,8 +177,8 @@ auto_resume = "not-a-boolean"
     const paths = {
       globalDir: tmpDir,
       globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: join(tmpDir, ".jiratown.toml"),
-      database: join(tmpDir, "jiratown.db"),
+      projectConfig: join(tmpDir, ".workhorse.toml"),
+      database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
     };

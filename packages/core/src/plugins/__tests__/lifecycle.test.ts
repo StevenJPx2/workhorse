@@ -14,11 +14,11 @@ function createTestRegistry(): PluginRegistry {
 
 // Mock paths for tests
 const mockPaths: ConfigPaths = {
-  globalDir: "/tmp/jiratown",
-  globalConfig: "/tmp/jiratown/config.toml",
-  projectConfig: "/tmp/project/.jiratown.toml",
-  database: "/tmp/jiratown/jiratown.db",
-  memoryDatabase: "/tmp/jiratown/memory.db",
+  globalDir: "/tmp/workhorse",
+  globalConfig: "/tmp/workhorse/config.toml",
+  projectConfig: "/tmp/project/.workhorse.toml",
+  database: "/tmp/workhorse/workhorse.db",
+  memoryDatabase: "/tmp/workhorse/memory.db",
   worktreesRoot: "/tmp/project-worktrees",
 };
 

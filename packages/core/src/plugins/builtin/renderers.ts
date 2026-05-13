@@ -31,12 +31,12 @@ interface RenderedActivity {
  */
 export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
-  if (!input.tool.startsWith("jiratown_")) return null;
+  if (!input.tool.startsWith("workhorse_")) return null;
 
   const args = (input.args ?? {}) as Record<string, unknown>;
 
   // Status update
-  if (input.tool === "jiratown_update_status") {
+  if (input.tool === "workhorse_update_status") {
     const status = String(args.status ?? "?");
     return {
       icon: "⚡",
@@ -47,7 +47,7 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
   }
 
   // Escalation
-  if (input.tool === "jiratown_escalate") {
+  if (input.tool === "workhorse_escalate") {
     const isBlocking = args.blocking === true;
     return {
       icon: "🚨",
@@ -59,7 +59,7 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
   }
 
   // Acknowledge
-  if (input.tool === "jiratown_acknowledge") {
+  if (input.tool === "workhorse_acknowledge") {
     return {
       icon: "✓",
       title: "acknowledged notifications",
@@ -68,7 +68,7 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
     };
   }
 
-  // Unknown jiratown_ tool - use default
+  // Unknown workhorse_ tool - use default
   return null;
 }
 

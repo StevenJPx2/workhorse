@@ -56,11 +56,11 @@ describe("validatePath", () => {
   describe("with additional allowed directories", () => {
     const options = {
       rootDir,
-      additionalAllowedDirs: ["/tmp/jiratown-cache", "/var/cache"],
+      additionalAllowedDirs: ["/tmp/workhorse-cache", "/var/cache"],
     };
 
     it("allows paths in additional directories", () => {
-      const result = validatePath("/tmp/jiratown-cache/data.json", options);
+      const result = validatePath("/tmp/workhorse-cache/data.json", options);
       expect(result.valid).toBe(true);
     });
 

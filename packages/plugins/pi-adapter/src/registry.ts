@@ -2,7 +2,7 @@
  * Pi Coding Agent Model Registry implementation.
  *
  * Wraps the Pi SDK's ModelRegistry to provide a consistent interface
- * for the jiratown orchestrator.
+ * for the workhorse orchestrator.
  *
  * @module workhorse-plugin-pi-adapter/registry
  */
@@ -39,7 +39,7 @@ function toModelInfo(model: Model, isDefault: boolean): ModelInfo {
 
 /**
  * Model registry implementation for the Pi Coding Agent.
- * Wraps the Pi SDK's ModelRegistry to provide jiratown-compatible model access.
+ * Wraps the Pi SDK's ModelRegistry to provide workhorse-compatible model access.
  */
 export class PiAdapterModelRegistry extends ModelRegistry {
   private static instance: PiAdapterModelRegistry | null = null;

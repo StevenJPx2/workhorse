@@ -50,7 +50,7 @@ export class PiAgentAdapter extends AgentAdapter {
     }
 
     // Reuse Pi's auth storage (~/.pi/agent/auth.json) for OAuth credentials
-    // Users can run `pi /login` to authenticate before using jiratown
+    // Users can run `pi /login` to authenticate before using workhorse
     const authStorage = AuthStorage.create();
     const modelRegistry = PiModelRegistry.create(authStorage);
 

@@ -3,7 +3,7 @@
  *
  * Checks which plugins need authentication before the TUI can start.
  *
- * @module jiratown/setup/auth
+ * @module workhorse/setup/auth
  */
 
 import type { Plugin, AuthProvider, AuthStatus } from "workhorse-core";

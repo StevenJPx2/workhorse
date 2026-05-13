@@ -8,7 +8,7 @@ SQLite database via @libsql/client + drizzle-orm.
 import { Database } from "#db";
 
 // Create database (async factory - libsql is async)
-const db = await Database.create(":memory:");  // or "/path/to/jiratown.db"
+const db = await Database.create(":memory:");  // or "/path/to/workhorse.db"
 
 // Issues (all methods are async)
 const issue = await db.issues.insert({ externalId: "PROJ-123", ... });

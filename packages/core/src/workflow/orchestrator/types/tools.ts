@@ -66,7 +66,7 @@ export interface ToolResult {
  * Tool descriptions are rendered in the system prompt so agents know what's available.
  */
 export interface OrchestratorTool {
-  /** Tool name (e.g., "jiratown_acknowledge") */
+  /** Tool name (e.g., "workhorse_acknowledge") */
   name: string;
 
   /** Tool description (shown to agent in system prompt) */

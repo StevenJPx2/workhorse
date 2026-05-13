@@ -83,7 +83,7 @@ memory.l1.refresh();
 
 #### Context File Format
 
-The `context.md` file (located at `<worktree>/.jiratown/context.md`) is a Markdown document with these sections:
+The `context.md` file (located at `<worktree>/.workhorse/context.md`) is a Markdown document with these sections:
 
 ```markdown
 # AM-123: Add priority field to tasks
@@ -208,7 +208,7 @@ await memory.notifications.acknowledge([id1, id2, id3]);
 ```
   created ──► unread ──► read ──► acknowledged
                            │
-                           └──► (agent reads via jiratown_acknowledge tool)
+                           └──► (agent reads via workhorse_acknowledge tool)
 ```
 
 - **unread** — Fresh notification, included in agent's system inbox

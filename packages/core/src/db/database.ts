@@ -26,7 +26,7 @@ function resolveMigrationsFolder(): string {
  * @example
  * ```typescript
  * const db = await Database.create(":memory:"); // for tests
- * const db = await Database.create("/path/to/jiratown.db"); // for production
+ * const db = await Database.create("/path/to/workhorse.db"); // for production
  *
  * // Issues
  * const issue = db.issues.insert({ ... });

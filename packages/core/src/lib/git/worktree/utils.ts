@@ -93,7 +93,7 @@ export function parseWorktreeList(output: string): WorktreeInfo[] {
     }
 
     // Only include worktrees matching our pattern
-    // Use lastIndexOf to handle nested paths like ...@stevenjpx2/jiratown-worktrees/rewrite-worktrees/ISSUE
+    // Use lastIndexOf to handle nested paths like ...@stevenjpx2/workhorse-worktrees/rewrite-worktrees/ISSUE
     const markerIdx = path.lastIndexOf(marker);
     if (path && markerIdx !== -1) {
       const issueId = path.slice(markerIdx + marker.length);

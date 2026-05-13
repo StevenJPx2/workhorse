@@ -20,11 +20,11 @@ function createSamplePlugin(name: string, version = "1.0.0"): Plugin {
 
 // Mock paths for tests
 const mockPaths: ConfigPaths = {
-  globalDir: "/tmp/jiratown",
-  globalConfig: "/tmp/jiratown/config.toml",
-  projectConfig: "/tmp/project/.jiratown.toml",
-  database: "/tmp/jiratown/jiratown.db",
-  memoryDatabase: "/tmp/jiratown/memory.db",
+  globalDir: "/tmp/workhorse",
+  globalConfig: "/tmp/workhorse/config.toml",
+  projectConfig: "/tmp/project/.workhorse.toml",
+  database: "/tmp/workhorse/workhorse.db",
+  memoryDatabase: "/tmp/workhorse/memory.db",
   worktreesRoot: "/tmp/project-worktrees",
 };
 
@@ -205,7 +205,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
       globalConfig: join(FIXTURES_DIR, "config.toml"),
-      projectConfig: "/tmp/no-plugins/.jiratown.toml",
+      projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
     setContext({
@@ -235,7 +235,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
       globalConfig: join(FIXTURES_DIR, "config.toml"),
-      projectConfig: "/tmp/no-plugins/.jiratown.toml",
+      projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
     setContext({
@@ -265,7 +265,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
       globalConfig: join(FIXTURES_DIR, "config.toml"),
-      projectConfig: "/tmp/no-plugins/.jiratown.toml",
+      projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
     setContext({
@@ -297,7 +297,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     setContext(createMockContext({ plugins: { disabled: [] } }));
 
     const registry = new PluginRegistry();
-    // Should not throw even though /tmp/jiratown/plugins doesn't exist
+    // Should not throw even though /tmp/workhorse/plugins doesn't exist
     await registry.discoverCustomPlugins();
     expect(registry.list()).toHaveLength(0);
   });
@@ -307,7 +307,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
       globalConfig: join(FIXTURES_DIR, "config.toml"),
-      projectConfig: "/tmp/no-plugins/.jiratown.toml",
+      projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
     setContext({

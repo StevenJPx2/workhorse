@@ -35,7 +35,7 @@ export type ActivityRenderer = (input: ActivityInput) => RenderedActivity | null
  * Payload for the tui.register_renderer hook.
  */
 export interface RegisterRendererPayload {
-  /** Unique renderer ID (e.g., "jira", "pi-tools", "jiratown") */
+  /** Unique renderer ID (e.g., "jira", "pi-tools", "workhorse") */
   id: string;
   /** The renderer function */
   renderer: ActivityRenderer;

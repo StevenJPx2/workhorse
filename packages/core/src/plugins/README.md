@@ -53,7 +53,7 @@ export default definePlugin({
 Config is read from `config.plugins.<plugin-name>`:
 
 ```toml
-# ~/.jiratown.toml
+# ~/.workhorse.toml
 [plugins.jira]
 cloud_id = "company.atlassian.net"
 timeout = 10000
@@ -63,8 +63,8 @@ timeout = 10000
 
 Plugins are loaded from:
 1. `config.plugins.enabled` — npm packages by name
-2. `~/.jiratown/plugins/` — global directory
-3. `.jiratown/plugins/` — project directory
+2. `~/.workhorse/plugins/` — global directory
+3. `.workhorse/plugins/` — project directory
 
 ## Registry API
 
@@ -166,7 +166,7 @@ Register tools that agents can invoke:
 import type { OrchestratorTool } from "#workflow/orchestrator";
 
 const myTool: OrchestratorTool = {
-  name: "jiratown_custom_action",
+  name: "workhorse_custom_action",
   description: "Does something useful",
   schema: { type: "object", properties: { param: { type: "string" } }, required: ["param"] },
   execute: async (args, toolCtx) => {

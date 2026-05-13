@@ -12,10 +12,10 @@ The git module provides operations for creating and removing git worktrees — o
 Main Repo (/path/to/repo)
 └── worktrees root (/path/to/repo-worktrees/)
     ├── PROJ-123/         ← Worktree for issue PROJ-123
-    │   └── .jiratown/
+    │   └── .workhorse/
     │       └── context.md
     ├── PROJ-456/         ← Worktree for issue PROJ-456
-    │   └── .jiratown/
+    │   └── .workhorse/
     │       └── context.md
     └── LOCAL-abc/        ← Worktree for local issue
 ```

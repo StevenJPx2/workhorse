@@ -13,13 +13,13 @@ The config module provides:
 ## File Locations
 
 **Global config** (first found wins):
-1. `~/.jiratown.toml`
-2. `~/.config/jiratown.toml`
-3. `~/.config/jiratown/config.toml`
+1. `~/.workhorse.toml`
+2. `~/.config/workhorse.toml`
+3. `~/.config/workhorse/config.toml`
 
-**Project config**: `<repo>/.jiratown.toml`
+**Project config**: `<repo>/.workhorse.toml`
 
-**Data directory**: `~/.local/share/jiratown/` (respects `XDG_DATA_HOME`)
+**Data directory**: `~/.local/share/workhorse/` (respects `XDG_DATA_HOME`)
 
 ## Usage
 
@@ -30,9 +30,9 @@ import { resolveConfigPaths } from "#config";
 
 const paths = resolveConfigPaths("/path/to/repo");
 // {
-//   globalConfig: "/home/user/.config/jiratown/config.toml",
-//   projectConfig: "/path/to/repo/.jiratown.toml",
-//   dataDir: "/home/user/.local/share/jiratown"
+//   globalConfig: "/home/user/.config/workhorse/config.toml",
+//   projectConfig: "/path/to/repo/.workhorse.toml",
+//   dataDir: "/home/user/.local/share/workhorse"
 // }
 ```
 
@@ -78,9 +78,9 @@ const merged = mergeConfigs(
 ```typescript
 import { storeCredential, getCredential, deleteCredential } from "#config";
 
-await storeCredential("jiratown", "github_token", "ghp_xxx");
-const token = await getCredential("jiratown", "github_token");
-await deleteCredential("jiratown", "github_token");
+await storeCredential("workhorse", "github_token", "ghp_xxx");
+const token = await getCredential("workhorse", "github_token");
+await deleteCredential("workhorse", "github_token");
 ```
 
 ## Config Shape

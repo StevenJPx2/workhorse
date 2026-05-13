@@ -106,7 +106,9 @@ Examples:
   process.exit(0);
 }
 
-build(values.minify ?? false, values["no-sourcemap"] ? false : (values.sourcemap ?? true)).catch((e) => {
-  console.error("Build failed:", e);
-  process.exit(1);
-});
+build(values.minify ?? false, values["no-sourcemap"] ? false : (values.sourcemap ?? true)).catch(
+  (e) => {
+    console.error("Build failed:", e);
+    process.exit(1);
+  },
+);

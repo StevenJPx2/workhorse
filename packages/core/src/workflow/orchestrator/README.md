@@ -40,7 +40,7 @@ The orchestrator module manages the complete lifecycle of AI coding agents:
 Plugins register adapter classes during setup. Each adapter must extend `AgentAdapter`:
 
 ```typescript
-import { AgentAdapter, definePlugin } from "@jiratown/core";
+import { AgentAdapter, definePlugin } from "workhorse-core";
 
 class MyAdapter extends AgentAdapter {
   override readonly harness = "my-harness";
@@ -66,7 +66,7 @@ export default definePlugin({
 Tools are functions that agents can invoke. They have a JSON Schema for parameters:
 
 ```typescript
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "@jiratown/core";
+import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
 
 const myTool: OrchestratorTool = {
   name: "my_action",
@@ -228,7 +228,7 @@ Each adapter class defines:
 
 The core plugin (`builtin-tools`) registers three tools available to all agents:
 
-### jiratown_acknowledge
+### workhorse_acknowledge
 
 Marks notification(s) as read after the agent processes them.
 
@@ -240,7 +240,7 @@ Marks notification(s) as read after the agent processes them.
 {}
 ```
 
-### jiratown_update_status
+### workhorse_update_status
 
 Updates the current issue's status to reflect progress.
 
@@ -248,7 +248,7 @@ Updates the current issue's status to reflect progress.
 { status: "implementing" }  // Valid: pending, queued, planning, implementing, blocked, in_review, done
 ```
 
-### jiratown_escalate
+### workhorse_escalate
 
 Escalates to a human when blocked or needing clarification.
 

@@ -11,7 +11,7 @@ export interface LogEntry {
 }
 
 // Log file path
-const LOG_DIR = join(homedir(), ".local", "share", "jiratown", "logs");
+const LOG_DIR = join(homedir(), ".local", "share", "workhorse", "logs");
 const LOG_FILE = join(LOG_DIR, "tui.log");
 
 /** Write a log entry to file */

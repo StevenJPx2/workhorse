@@ -22,7 +22,7 @@ This prevents agents from:
 ### Basic Validation
 
 ```typescript
-import { validatePath, isPathAllowed, assertPathAllowed } from "@jiratown/core";
+import { validatePath, isPathAllowed, assertPathAllowed } from "workhorse-core";
 
 const options = { rootDir: "/path/to/worktree" };
 
@@ -47,7 +47,7 @@ await fs.writeFile(safePath, content);
 ### Path Validator Factory
 
 ```typescript
-import { createPathValidator } from "@jiratown/core";
+import { createPathValidator } from "workhorse-core";
 
 // Create a validator bound to the worktree
 const validator = createPathValidator({ rootDir: ctx.worktreePath });
@@ -64,15 +64,15 @@ if (validator.isAllowed(filePath)) {
 Some tools may need access to directories outside the worktree (e.g., temp directories):
 
 ```typescript
-import { validatePath } from "@jiratown/core";
+import { validatePath } from "workhorse-core";
 
 const options = {
   rootDir: "/path/to/worktree",
-  additionalAllowedDirs: ["/tmp/jiratown-cache"],
+  additionalAllowedDirs: ["/tmp/workhorse-cache"],
 };
 
-// Now paths in /tmp/jiratown-cache are also allowed
-validatePath("/tmp/jiratown-cache/data.json", options); // valid: true
+// Now paths in /tmp/workhorse-cache are also allowed
+validatePath("/tmp/workhorse-cache/data.json", options); // valid: true
 ```
 
 ## Implementing in Adapters
@@ -117,7 +117,7 @@ const { session } = await createAgentSession({
 For other adapters, wrap tool implementations with path validation:
 
 ```typescript
-import { assertPathAllowed } from "@jiratown/core";
+import { assertPathAllowed } from "workhorse-core";
 
 class MyAdapter extends AgentAdapter {
   private createTools() {

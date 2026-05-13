@@ -366,7 +366,7 @@ poll_interval = 30000
 ```
 
 **Config Locations:**
-- Global: `~/.workhorse.toml`, `~/.config/jiratown.toml`, or `~/.config/workhorse/config.toml`
+- Global: `~/.workhorse.toml`, `~/.config/workhorse.toml`, or `~/.config/workhorse/config.toml`
 - Project: `<repo>/.workhorse.toml`
 
 **Data Directory:** `~/.local/share/workhorse/` (respects `XDG_DATA_HOME`)

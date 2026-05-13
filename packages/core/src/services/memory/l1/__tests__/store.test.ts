@@ -74,7 +74,7 @@ describe("L1Store", () => {
     mkdirSync(join(worktreeB, ".jiratown"), { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Issue A\n\n## Patterns\n\n## Sessions\n");
     writeFileSync(
-      join(worktreeB, ".jiratown/context.md"),
+      join(worktreeB, ".workhorse/context.md"),
       "# AM-456: Issue B\n\n## Patterns\n\n## Sessions\n",
     );
 
@@ -122,7 +122,7 @@ describe("L1Store", () => {
     const invalidWorktree = join(WORKTREES_ROOT, "invalid-title");
     mkdirSync(join(invalidWorktree, ".jiratown"), { recursive: true });
     writeFileSync(
-      join(invalidWorktree, ".jiratown/context.md"),
+      join(invalidWorktree, ".workhorse/context.md"),
       "# No Issue ID Here\n\n## Patterns\n\n## Sessions\n",
     );
 

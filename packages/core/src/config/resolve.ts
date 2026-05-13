@@ -7,11 +7,11 @@ import type { ConfigPaths } from "./types.ts";
  * Resolve all config and data paths for Jiratown.
  *
  * Config file search order (first found wins):
- * 1. ~/.jiratown.toml
- * 2. ~/.config/jiratown.toml
- * 3. ~/.config/jiratown/config.toml
+ * 1. ~/.workhorse.toml
+ * 2. ~/.config/workhorse.toml
+ * 3. ~/.config/workhorse/config.toml
  *
- * Data directory: ~/.local/share/jiratown/
+ * Data directory: ~/.local/share/workhorse/
  * Respects XDG_CONFIG_HOME and XDG_DATA_HOME environment variables.
  *
  * Worktrees root: ../repo-worktrees/ (sibling to repo)
@@ -19,18 +19,18 @@ import type { ConfigPaths } from "./types.ts";
 export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
-  const globalDir = join(process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share"), "jiratown");
+  const globalDir = join(process.env["XDG_DATA_HOME"] ?? join(home, ".local", "share"), "workhorse");
 
   return {
     globalDir,
     globalConfig:
       [
-        join(home, ".jiratown.toml"),
-        join(xdgConfig, "jiratown.toml"),
-        join(xdgConfig, "jiratown", "config.toml"),
-      ].find((path) => existsSync(path)) ?? join(home, ".jiratown.toml"),
-    projectConfig: join(repoRoot, ".jiratown.toml"),
-    database: join(globalDir, "jiratown.db"),
+        join(home, ".workhorse.toml"),
+        join(xdgConfig, "workhorse.toml"),
+        join(xdgConfig, "workhorse", "config.toml"),
+      ].find((path) => existsSync(path)) ?? join(home, ".workhorse.toml"),
+    projectConfig: join(repoRoot, ".workhorse.toml"),
+    database: join(globalDir, "workhorse.db"),
     memoryDatabase: join(globalDir, "memory.db"),
     worktreesRoot: join(dirname(repoRoot), `${basename(repoRoot)}-worktrees`),
   };

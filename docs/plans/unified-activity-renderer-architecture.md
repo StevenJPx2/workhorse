@@ -11,7 +11,7 @@ Create a single, extensible renderer system that handles all activity types (not
 ### Activity Input (Discriminated Union)
 
 ```typescript
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "workhorse-core";
 
 export type ActivityInput =
   | { kind: "notification"; notification: Notification }
@@ -47,7 +47,7 @@ Returning `null` means "I don't handle this input, try the next renderer."
 ```typescript
 // In core HookEventMap
 "tui.register_renderer": {
-  id: string;                    // Unique renderer ID (e.g., "jira", "pi-tools", "jiratown")
+  id: string;                    // Unique renderer ID (e.g., "jira", "pi-tools", "workhorse")
   renderer: unknown;             // ActivityRenderer function
   priority?: number;             // Higher = checked first (default: 0)
 }
@@ -175,7 +175,7 @@ function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
   
   const args = (input.args ?? {}) as Record<string, unknown>;
   
-  if (input.tool === "jiratown_update_status") {
+  if (input.tool === "workhorse_update_status") {
     return {
       icon: "⚡",
       title: `status → ${args.status}`,
@@ -184,7 +184,7 @@ function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
     };
   }
   
-  if (input.tool === "jiratown_escalate") {
+  if (input.tool === "workhorse_escalate") {
     return {
       icon: "🚨",
       title: args.blocking ? "BLOCKED" : "escalate",
@@ -194,7 +194,7 @@ function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
     };
   }
   
-  if (input.tool === "jiratown_acknowledge") {
+  if (input.tool === "workhorse_acknowledge") {
     return {
       icon: "✓",
       title: "acknowledged notifications",
@@ -208,7 +208,7 @@ function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
 
 // In setup():
 ctx.hooks.emit("tui.register_renderer", {
-  id: "jiratown-tools",
+  id: "workhorse-tools",
   renderer: jiratownToolRenderer,
 });
 ```
@@ -349,7 +349,7 @@ export function ActivityRow(props: { input: ActivityInput }) {
 ```typescript
 // packages/tui/src/primitives/activity-types.ts
 
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "workhorse-core";
 
 export type ActivityItem =
   | { type: "text"; content: string; timestamp: Date }

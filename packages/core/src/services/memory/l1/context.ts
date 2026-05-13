@@ -7,7 +7,7 @@ import { parseSessionMemory } from "./parse.ts";
 import { serializeSessionMemory } from "./serialize.ts";
 
 /** Path to context.md within a worktree */
-export const CONTEXT_FILE = ".jiratown/context.md";
+export const CONTEXT_FILE = ".workhorse/context.md";
 
 /**
  * Handle for CRUD operations on a specific worktree's context.md.

@@ -7,9 +7,9 @@ describe("resolveConfigPaths", () => {
 
     const paths = resolveConfigPaths("/some/repo");
 
-    expect(paths.projectConfig).toBe("/some/repo/.jiratown.toml");
-    expect(paths.globalDir).toContain("jiratown");
-    expect(paths.database).toContain("jiratown.db");
+    expect(paths.projectConfig).toBe("/some/repo/.workhorse.toml");
+    expect(paths.globalDir).toContain("workhorse");
+    expect(paths.database).toContain("workhorse.db");
     expect(paths.memoryDatabase).toContain("memory.db");
   });
 
@@ -18,7 +18,7 @@ describe("resolveConfigPaths", () => {
 
     const paths = resolveConfigPaths();
 
-    expect(paths.projectConfig).toBe(join(process.cwd(), ".jiratown.toml"));
+    expect(paths.projectConfig).toBe(join(process.cwd(), ".workhorse.toml"));
   });
 
   it("respects XDG_DATA_HOME", async () => {
@@ -30,8 +30,8 @@ describe("resolveConfigPaths", () => {
       const { resolveConfigPaths } = await import("../resolve.ts");
       const paths = resolveConfigPaths();
 
-      expect(paths.globalDir).toBe("/custom/data/jiratown");
-      expect(paths.database).toBe("/custom/data/jiratown/jiratown.db");
+      expect(paths.globalDir).toBe("/custom/data/workhorse");
+      expect(paths.database).toBe("/custom/data/workhorse/workhorse.db");
     } finally {
       if (originalXdgData) {
         process.env["XDG_DATA_HOME"] = originalXdgData;
@@ -51,7 +51,7 @@ describe("resolveConfigPaths", () => {
       const { resolveConfigPaths } = await import("../resolve.ts");
       const paths = resolveConfigPaths();
 
-      expect(paths.globalDir).toBe(join(homedir(), ".local", "share", "jiratown"));
+      expect(paths.globalDir).toBe(join(homedir(), ".local", "share", "workhorse"));
     } finally {
       if (originalXdgData) process.env["XDG_DATA_HOME"] = originalXdgData;
       if (originalXdgConfig) process.env["XDG_CONFIG_HOME"] = originalXdgConfig;
@@ -69,7 +69,7 @@ describe("resolveConfigPaths", () => {
     const { resolveConfigPaths } = await import("../resolve.ts");
     const paths = resolveConfigPaths("/my/project/");
 
-    expect(paths.projectConfig).toBe("/my/project/.jiratown.toml");
+    expect(paths.projectConfig).toBe("/my/project/.workhorse.toml");
   });
 
   it.fails("TODO: resolveConfigPaths should validate repoRoot exists", async () => {
