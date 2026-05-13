@@ -15,7 +15,7 @@ export function SetupHeader() {
     >
       <box>
         <text fg={theme.colors.accent}>
-          <b>⚡ JIRATOWN SETUP</b>
+          <b>⚡ WORKHORSE SETUP</b>
         </text>
       </box>
       <box>
