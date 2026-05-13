@@ -22,7 +22,7 @@ describe("createGitHubPRMonitor", () => {
   function createMockDb(issue: Record<string, unknown> | null = null): Database {
     return {
       issues: {
-        getById: vi.fn().mockReturnValue(issue),
+        getByExternalId: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     } as unknown as Database;
@@ -49,8 +49,8 @@ describe("createGitHubPRMonitor", () => {
     } as unknown as GitHubClient;
   }
 
-  it("returns hasChanges: false for non-GitHub issues", async () => {
-    const db = createMockDb({ id: "issue-1", source: "jira" });
+  it("returns hasChanges: false when issue not found", async () => {
+    const db = createMockDb(null);
     const client = createMockClient();
     const monitor = createGitHubPRMonitor(client, 30000, db);
     const ctx = createMockContext();

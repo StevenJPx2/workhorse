@@ -15,13 +15,15 @@ const mockHooks = {
 } as unknown as Parameters<typeof createJiraTools>[1];
 
 /** Create mock database with Jira issue */
-function createMockDb(issueId: string, source: string = "jira") {
+function createMockDb(externalId: string, source: string = "jira") {
   return {
     issues: {
-      getById: vi.fn().mockReturnValue({
-        id: issueId,
-        externalId: issueId,
-        source,
+      // getByExternalId(externalId, source) - only returns issue if both match
+      getByExternalId: vi.fn().mockImplementation((extId: string, src: string) => {
+        if (extId === externalId && src === source) {
+          return { id: "uuid-123", externalId, source };
+        }
+        return undefined;
       }),
     },
   };
@@ -65,7 +67,7 @@ describe("jira_add_comment tool", () => {
       undefined,
     );
     // Also verify the footer is appended
-    const callArgs = vi.mocked(mockClient.addComment).mock.calls[0]!;
+    const callArgs = (mockClient.addComment as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(callArgs[1]).toContain("Posted by [Workhorse]");
     expect(result.success).toBe(true);
   });

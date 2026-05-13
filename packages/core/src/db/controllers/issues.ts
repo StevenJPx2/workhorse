@@ -32,13 +32,18 @@ export class IssueController {
   }
 
   /**
-   * Get an issue by its external ID and source
+   * Get an issue by its external ID, optionally filtered by source.
+   * If source is omitted, returns the first issue matching the externalId.
    */
-  async getByExternalId(externalId: string, source: string): Promise<Issue | undefined> {
+  async getByExternalId(externalId: string, source?: string): Promise<Issue | undefined> {
     return await this.db
       .select()
       .from(issues)
-      .where(and(eq(issues.externalId, externalId), eq(issues.source, source)))
+      .where(
+        source
+          ? and(eq(issues.externalId, externalId), eq(issues.source, source))
+          : eq(issues.externalId, externalId),
+      )
       .then((r) => r[0]);
   }
 

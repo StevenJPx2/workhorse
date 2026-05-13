@@ -133,13 +133,13 @@ export function Agent() {
 
         {/* Activity feed + chat input */}
         <box flexDirection="column" flexGrow={1}>
-          <box backgroundColor={theme.colors.surface} paddingX={1}>
+          {" "}
+          <box backgroundColor={theme.colors.surface} paddingX={1} zIndex={2}>
             <text fg={theme.colors.info}>
               <b>⚡ ACTIVITY</b>
             </text>
           </box>
           <ActivityFeed state={activityState} />
-
           {/* Chat input */}
           <box
             flexDirection="row"

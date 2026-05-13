@@ -32,8 +32,9 @@ export function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orc
       };
       try {
         // Check if current issue is from Jira
-        const issue = await ctx.db.issues.getById(ctx.issueId);
-        if (!issue || issue.source !== "jira") {
+        // Note: ctx.issueId is the externalId (e.g., "ADEPT-37943"), not the internal UUID
+        const issue = await ctx.db.issues.getByExternalId(ctx.issueId, "jira");
+        if (!issue) {
           return {
             success: false,
             error: "This tool only works for Jira-sourced issues",

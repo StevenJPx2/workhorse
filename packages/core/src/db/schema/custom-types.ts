@@ -33,3 +33,19 @@ export const nullableDateText = customType<{
     return value ? new Date(value.replace(" ", "T") + "Z") : null;
   },
 });
+
+/**
+ * Custom JSON column that stores as TEXT but returns as Record<string, unknown> and parses json
+ */
+export const customJsonb = <TData>(name: string) =>
+  customType<{ data: TData; driverData: string }>({
+    dataType() {
+      return "jsonb";
+    },
+    toDriver(value: TData): string {
+      return JSON.stringify(value);
+    },
+    fromDriver(value: string): TData {
+      return JSON.parse(value);
+    },
+  })(name);

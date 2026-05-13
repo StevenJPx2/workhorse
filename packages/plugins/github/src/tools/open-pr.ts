@@ -44,7 +44,8 @@ export function createOpenPRTool(
       };
 
       try {
-        const issue = await db.issues.getById(ctx.issueId);
+        // Note: ctx.issueId is the externalId, not the internal UUID
+        const issue = await db.issues.getByExternalId(ctx.issueId);
         if (!issue) {
           return { success: false, error: "Issue not found" };
         }
@@ -113,20 +114,18 @@ export function createOpenPRTool(
         });
 
         // Update issue in DB - PR created means we're now awaiting review
-        db.issues.update(ctx.issueId, {
+        // Use issue.id (internal UUID) for database operations
+        await db.issues.update(issue.id, {
           status: "in_review",
           metadata: { ...metadata, prNumber: result.number, prUrl: result.url },
         });
 
-        // Emit status changed hook
-        const updatedIssue = await db.issues.getById(ctx.issueId);
-        if (updatedIssue) {
-          hooks.emit("issue.status_changed", {
-            issue: updatedIssue,
-            from: issue.status,
-            to: "in_review",
-          });
-        }
+        // Emit status changed hook (re-fetch to get updated fields)
+        hooks.emit("issue.status_changed", {
+          issue: { ...issue, status: "in_review" as const },
+          from: issue.status,
+          to: "in_review",
+        });
 
         // Emit PR created hook for cross-plugin coordination
         hooks.emit("github:pr.created", {

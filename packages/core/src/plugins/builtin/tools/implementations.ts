@@ -20,9 +20,8 @@ export const acknowledgeToolImpl = async (
     if (!notificationIds || notificationIds.length === 0) {
       // Mark all unread notifications for this issue as read
       // issueId in ToolExecutionContext is the externalId, so find by that
-      const issue = await ctx.db.issues
-        .getAll()
-        .then((r) => r.find((i) => i.externalId === ctx.issueId));
+      const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
+
       if (issue) {
         const notifications = await ctx.db.notifications.getUnread(issue.id);
         for (const notification of notifications) {
@@ -33,6 +32,7 @@ export const acknowledgeToolImpl = async (
           output: `Acknowledged ${notifications.length} notification(s)`,
         };
       }
+
       return { success: true, output: "No notifications to acknowledge" };
     }
 
@@ -83,9 +83,7 @@ export const updateStatusToolImpl = async (
     }
 
     // Find issue by external ID
-    const issue = await ctx.db.issues
-      .getAll()
-      .then((r) => r.find((i) => i.externalId === ctx.issueId));
+    const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
 
     if (!issue) {
       return {
@@ -130,9 +128,7 @@ export const escalateToolImpl = async (
     };
 
     // Find issue
-    const issue = await ctx.db.issues
-      .getAll()
-      .then((r) => r.find((i) => i.externalId === ctx.issueId));
+    const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
 
     if (!issue) {
       return {

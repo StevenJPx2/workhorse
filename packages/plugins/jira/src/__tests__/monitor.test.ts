@@ -18,14 +18,15 @@ describe("createJiraCommentMonitor", () => {
     expect(monitor.interval).toBe(30_000);
   });
 
-  it("returns no changes for non-jira issues", async () => {
+  it("returns no changes when issue not found (non-jira or missing)", async () => {
     const mockClient = {
       fetchIssue: vi.fn(),
     } as unknown as AtlassianClient;
 
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue({ source: "github" } as Issue),
+        // getByExternalId with source="jira" returns null for non-jira issues
+        getByExternalId: vi.fn().mockReturnValue(null),
       },
     };
 
@@ -84,7 +85,7 @@ describe("createJiraCommentMonitor", () => {
     const mockNotifications = { create: vi.fn() };
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue(issue),
+        getByExternalId: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     };
@@ -152,7 +153,7 @@ describe("createJiraCommentMonitor", () => {
     const mockNotifications = { create: vi.fn() };
     const mockDb = {
       issues: {
-        getById: vi.fn().mockReturnValue(issue),
+        getByExternalId: vi.fn().mockReturnValue(issue),
         update: vi.fn(),
       },
     };

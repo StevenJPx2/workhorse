@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-orm/zod";
 import z from "zod";
-import { dateText, nullableDateText } from "./custom-types.ts";
+import { customJsonb, dateText, nullableDateText } from "./custom-types.ts";
 import { issues } from "./issues.ts";
 
 /** Valid notification priorities */
@@ -27,7 +27,7 @@ export const notifications = sqliteTable("notifications", {
   status: text("status").notNull().default("unread").$type<NotificationStatus>(),
   title: text("title").notNull(),
   body: text("body").notNull(),
-  metadata: text("metadata", { mode: "json" }).$type<Record<string, unknown>>(),
+  metadata: customJsonb("metadata"),
   createdAt: dateText("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
