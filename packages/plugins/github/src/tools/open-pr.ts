@@ -115,14 +115,15 @@ export function createOpenPRTool(
 
         // Update issue in DB - PR created means we're now awaiting review
         // Use issue.id (internal UUID) for database operations
+        const updatedMetadata = { ...metadata, prNumber: result.number, prUrl: result.url };
         await db.issues.update(issue.id, {
           status: "in_review",
-          metadata: { ...metadata, prNumber: result.number, prUrl: result.url },
+          metadata: updatedMetadata,
         });
 
-        // Emit status changed hook (re-fetch to get updated fields)
+        // Emit status changed hook with updated issue (including new metadata)
         hooks.emit("issue.status_changed", {
-          issue: { ...issue, status: "in_review" as const },
+          issue: { ...issue, status: "in_review" as const, metadata: updatedMetadata },
           from: issue.status,
           to: "in_review",
         });
@@ -133,8 +134,8 @@ export function createOpenPRTool(
           pr: { number: result.number, url: result.url, title },
         });
 
-        // Start PR monitor for this issue
-        monitors.startMonitor("github-pr", ctx.issueId);
+        // Start PR monitor for this issue (use internal ID, not externalId)
+        monitors.startMonitor("github-pr", issue.id);
 
         return { success: true, output: `Created PR #${result.number}: ${result.url}` };
       } catch (error) {
