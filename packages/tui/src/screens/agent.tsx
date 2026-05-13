@@ -1,78 +1,75 @@
 import { createMemo, createSignal, Show } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
-import { MonitorIndicator, StatusBar } from "../components";
+import { MonitorIndicator, StatusBar, NotificationsBar, BlockedView } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
 import { WorkhorseStatus } from "../components/workhorse-status.tsx";
 import { useWorkhorseContext } from "../context/workhorse.tsx";
-import { createAgents, createChat, createIssueStatus } from "../primitives";
+import { createAgents, createChat, createIssueStatus, createNotifications } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { createMonitors } from "../primitives/create-monitors.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
+import {
+  getBlockingMessage,
+  createHandleResume,
+  handleHandoff,
+  handleViewInJira,
+  handleViewNotificationInJira,
+  createHandleCancel,
+  statusColor,
+  statusIcon,
+  useBlockedShortcuts,
+  AGENT_BASE_SHORTCUTS,
+  AGENT_BLOCKED_SHORTCUTS,
+  FILES_PANEL_WIDTH,
+} from "./agent-helpers.ts";
 
-const FILES_PANEL_WIDTH = 32;
-
-/**
- * Agent dashboard screen - shows activity feed with file changes sidebar.
- *
- * Layout:
- * ┌─────────────────────────────────────────────────────────────┐
- * │ AM-456 — Fix login bug                           ● running │
- * ├──────────┬────────────────────────────────┬─────────────────┤
- * │ ● AGENTS │  ⚡ ACTIVITY                   │ 📁 FILES  +42 -8│
- * │ ▸ AM-456 │  ● thinking...                 │ src/app.ts +12-3│
- * │   PROJ-1 │  ✏️ Edited src/app.ts          │ lib/util.ts +5  │
- * │          │  📄 Created test.ts            │                 │
- * │          │  [text output bubble]          │                 │
- * ├──────────┴────────────────────────────────┴─────────────────┤
- * │ Enter send  s stop  ESC back                         q quit │
- * └─────────────────────────────────────────────────────────────┘
- */
 export function Agent() {
-  const { monitors } = useWorkhorseContext();
+  const { monitors, tracker, hooks, memory } = useWorkhorseContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
-
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
   const { state: monitorState } = createMonitors({
     monitors,
     issueId: () => selectedAgent()?.issue.externalId ?? null,
   });
-
   const { state: issueStatusState } = createIssueStatus({
     issueId: () => selectedAgent()?.issue.externalId ?? null,
   });
-
   const { state: activityState } = createActivity({ issueId: selectedId });
   const { state: fileChangesState } = createFileChanges({
     worktreePath: () => selectedAgent()?.worktreePath ?? null,
   });
   const { send: sendMessage } = createChat(selectedId);
+  const {
+    state: notificationsState,
+    acknowledge,
+    acknowledgeAll,
+  } = createNotifications({
+    issueId: () => selectedAgent()?.issue.externalId ?? null,
+  });
+
+  const isBlocked = () => issueStatusState().status === "blocked" && selectedAgent() !== undefined;
   const [inputValue, setInputValue] = createSignal("");
-
   const isChatFocused = () => ui.focusedComponent() === "chat";
-
-  const statusColorMap: Record<string, string> = {
-    running: theme.colors.success,
-    starting: theme.colors.success,
-    crashed: theme.colors.warning,
-    stopped: theme.colors.error,
-    stopping: theme.colors.error,
-  };
-  const statusColor = (s: string) => statusColorMap[s] ?? theme.colors.dim;
-
-  const statusIconMap: Record<string, string> = {
-    running: "●",
-    starting: "◐",
-    crashed: "!",
-    stopped: "■",
-  };
-  const statusIcon = (s: string) => statusIconMap[s] ?? "○";
+  const blockingMessage = () => getBlockingMessage(notificationsState().notifications);
+  // ─── Action handlers ────────────────────────────────────────────────
+  const handleResume = createHandleResume(memory, hooks);
+  const onHandoff = handleHandoff;
+  const onViewInJira = () => handleViewInJira(selectedAgent());
+  const handleCancel = createHandleCancel(tracker);
+  // Blocked-state keyboard shortcuts (r, h, v, c)
+  useBlockedShortcuts(isBlocked, {
+    handleResume: () => handleResume(selectedAgent()?.issue.externalId),
+    onHandoff,
+    onViewInJira,
+    handleCancel: () => handleCancel(selectedAgent()),
+  });
 
   return (
     <box
@@ -81,7 +78,7 @@ export function Agent() {
       height="100%"
       backgroundColor={theme.colors.background}
     >
-      {/* Header with agent info */}
+      {/* Header */}
       <Show when={selectedAgent()}>
         {(agent: () => AgentAdapter) => (
           <box
@@ -121,7 +118,7 @@ export function Agent() {
         )}
       </Show>
 
-      {/* Main content: sidebar + activity (center) + files (right) */}
+      {/* Main content: sidebar + center + files */}
       <box flexDirection="row" flexGrow={1} paddingBottom={1}>
         <AgentSidebar
           agents={agents}
@@ -131,8 +128,26 @@ export function Agent() {
         />
         <box width={1} backgroundColor={theme.colors.surface} />
 
-        {/* Activity feed + chat input */}
+        {/* Center: Notifications → BlockedView → Activity → Chat */}
         <box flexDirection="column" flexGrow={1}>
+          <NotificationsBar
+            state={notificationsState()}
+            onAcknowledge={acknowledge}
+            onAcknowledgeAll={acknowledgeAll}
+            onViewInJira={(n) => handleViewNotificationInJira(n, selectedAgent())}
+          />
+
+          <Show when={isBlocked()}>
+            <BlockedView
+              message={blockingMessage()}
+              issueUrl={selectedAgent()?.issue.url}
+              onResume={() => handleResume(selectedAgent()?.issue.externalId)}
+              onHandoff={onHandoff}
+              onViewInJira={onViewInJira}
+              onCancel={() => handleCancel(selectedAgent())}
+            />
+          </Show>
+
           <box backgroundColor={theme.colors.surface} paddingX={1}>
             <text fg={theme.colors.info}>
               <b>⚡ ACTIVITY</b>
@@ -140,48 +155,43 @@ export function Agent() {
           </box>
           <ActivityFeed state={activityState} />
 
-          {/* Chat input */}
-          <box
-            flexDirection="row"
-            backgroundColor={isChatFocused() ? theme.colors.selection : theme.colors.surface}
-            paddingX={1}
-            paddingY={1}
-            onMouseDown={() => {
-              ui.setFocusedComponent("chat");
-              ui.enterInputMode();
-            }}
-          >
-            <text fg={theme.colors.accent}>❯{"\u00A0"}</text>
-            <box flexGrow={1}>
-              <input
-                width="100%"
-                focused={isChatFocused()}
-                value={inputValue()}
-                onInput={(v) => setInputValue(v)}
-                onSubmit={(v) => {
-                  const msg = typeof v === "string" ? v.trim() : "";
-                  if (msg) {
-                    sendMessage(msg);
-                    setInputValue("");
-                  }
-                }}
-                placeholder="Send a message..."
-              />
+          <Show when={!isBlocked()}>
+            <box
+              flexDirection="row"
+              backgroundColor={isChatFocused() ? theme.colors.selection : theme.colors.surface}
+              paddingX={1}
+              paddingY={1}
+              onMouseDown={() => {
+                ui.setFocusedComponent("chat");
+                ui.enterInputMode();
+              }}
+            >
+              <text fg={theme.colors.accent}>❯{"\u00A0"}</text>
+              <box flexGrow={1}>
+                <input
+                  width="100%"
+                  focused={isChatFocused()}
+                  value={inputValue()}
+                  onInput={(v) => setInputValue(v)}
+                  onSubmit={(v) => {
+                    const msg = typeof v === "string" ? v.trim() : "";
+                    if (msg) {
+                      sendMessage(msg);
+                      setInputValue("");
+                    }
+                  }}
+                  placeholder="Send a message..."
+                />
+              </box>
             </box>
-          </box>
+          </Show>
         </box>
 
         <box width={1} backgroundColor={theme.colors.surface} />
         <FileChangesPanel state={fileChangesState} width={FILES_PANEL_WIDTH} />
       </box>
 
-      <StatusBar
-        shortcuts={[
-          { key: "s", action: "stop" },
-          { key: "Ctrl+X M", action: "model" },
-          { key: "ESC", action: "back" },
-        ]}
-      />
+      <StatusBar shortcuts={isBlocked() ? AGENT_BLOCKED_SHORTCUTS : AGENT_BASE_SHORTCUTS} />
     </box>
   );
 }
