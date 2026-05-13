@@ -8,13 +8,15 @@ import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools";
 
 describe("createGitHubTools", () => {
-  it("returns all three tools", () => {
+  it("returns all five tools", () => {
     const mockClient = {} as GitHubClient;
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
-    expect(tools).toHaveLength(3);
+    expect(tools).toHaveLength(5);
     expect(tools[0]!.name).toBe("github_open_pr");
     expect(tools[1]!.name).toBe("github_add_comment");
     expect(tools[2]!.name).toBe("github_get_pr_status");
+    expect(tools[3]!.name).toBe("github_get_ci_check");
+    expect(tools[4]!.name).toBe("github_get_pr_reviews");
   });
 });
 
