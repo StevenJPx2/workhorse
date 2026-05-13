@@ -19,6 +19,7 @@
 			"#lib/hooks/*": ["./src/lib/hooks/*.ts"],
 			"#lib/paths": ["./src/lib/paths/index.ts"],
 			"#lib/paths/*": ["./src/lib/paths/*.ts"],
+			"#lib/metadata-footer": ["./src/lib/metadata-footer.ts"],
 			"#plugins": ["./src/plugins/index.ts"],
 			"#plugins/*": ["./src/plugins/*.ts"],
 			"#services/memory": ["./src/services/memory/index.ts"],

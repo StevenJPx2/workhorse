@@ -11,6 +11,13 @@ const originalFetch = globalThis.fetch;
 // Mock fetch function
 const mockFetch = vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
 
+// Create a credential getter that returns test credentials
+const createTestCredentialGetter = () => async () => ({
+  email: "test@example.com",
+  apiToken: "api-token-123",
+  siteUrl: "test.atlassian.net",
+});
+
 describe("AtlassianClient", () => {
   beforeEach(() => {
     globalThis.fetch = mockFetch as unknown as typeof fetch;
@@ -22,9 +29,7 @@ describe("AtlassianClient", () => {
   });
 
   it("fetches an issue successfully", async () => {
-    const client = new AtlassianClient("test", async () => ({
-      accessToken: "token123",
-    }));
+    const client = new AtlassianClient(createTestCredentialGetter());
 
     const mockIssue = {
       key: "AM-123",
@@ -44,16 +49,15 @@ describe("AtlassianClient", () => {
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
-          Authorization: "Bearer token123",
+          // Basic auth: base64(email:apiToken)
+          Authorization: `Basic ${Buffer.from("test@example.com:api-token-123").toString("base64")}`,
         }),
       }),
     );
   });
 
   it("throws on API error", async () => {
-    const client = new AtlassianClient("test", async () => ({
-      accessToken: "token123",
-    }));
+    const client = new AtlassianClient(createTestCredentialGetter());
 
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -65,9 +69,7 @@ describe("AtlassianClient", () => {
   });
 
   it("adds a comment successfully", async () => {
-    const client = new AtlassianClient("test", async () => ({
-      accessToken: "token123",
-    }));
+    const client = new AtlassianClient(createTestCredentialGetter());
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -80,15 +82,20 @@ describe("AtlassianClient", () => {
       "https://test.atlassian.net/rest/api/3/issue/AM-123/comment",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ body: "LGTM" }),
+        // Comment body should be in ADF format
+        body: JSON.stringify({
+          body: {
+            version: 1,
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "LGTM" }] }],
+          },
+        }),
       }),
     );
   });
 
   it("gets transitions for an issue", async () => {
-    const client = new AtlassianClient("test", async () => ({
-      accessToken: "token123",
-    }));
+    const client = new AtlassianClient(createTestCredentialGetter());
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -106,9 +113,7 @@ describe("AtlassianClient", () => {
   });
 
   it("transitions an issue", async () => {
-    const client = new AtlassianClient("test", async () => ({
-      accessToken: "token123",
-    }));
+    const client = new AtlassianClient(createTestCredentialGetter());
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -124,9 +129,5 @@ describe("AtlassianClient", () => {
         body: JSON.stringify({ transition: { id: "31" } }),
       }),
     );
-  });
-
-  it.fails("TODO: refreshes expired access tokens automatically", async () => {
-    throw new Error("Not yet implemented");
   });
 });

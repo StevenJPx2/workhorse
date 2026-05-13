@@ -4,7 +4,7 @@
  * @module workhorse-plugin-github/tools/add-comment
  */
 
-import type { OrchestratorTool } from "workhorse-core";
+import { type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 import type { GitHubClient } from "../client";
 
 /** Create the github_add_comment tool */
@@ -33,7 +33,7 @@ export function createAddCommentTool(client: GitHubClient): OrchestratorTool {
       };
 
       try {
-        await client.addComment(owner, repo, number, body);
+        await client.addComment(owner, repo, number, withWorkhorseFooter(body));
         return { success: true, output: `Comment added to ${owner}/${repo}#${number}` };
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };

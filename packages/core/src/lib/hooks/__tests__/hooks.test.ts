@@ -12,6 +12,7 @@ describe("hooks", () => {
         id: "1",
         externalId: "JIRA-1",
         source: "jira",
+        repository: null,
         title: "Test",
         description: "",
         status: "pending",

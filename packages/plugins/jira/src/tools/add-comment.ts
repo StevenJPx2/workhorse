@@ -4,7 +4,7 @@
  * @module workhorse-plugin-jira/tools/add-comment
  */
 
-import type { OrchestratorTool } from "workhorse-core";
+import { type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 import type { AtlassianClient } from "../client.ts";
 import type { Hooks } from "./types.ts";
 
@@ -47,7 +47,7 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
         }
 
         const ticketKey = issue.externalId;
-        await client.addComment(ticketKey, body, replyToId);
+        await client.addComment(ticketKey, withWorkhorseFooter(body), replyToId);
 
         // Emit hook for cross-plugin coordination
         // Note: We don't have the comment ID from addComment response, so we use a timestamp-based ID

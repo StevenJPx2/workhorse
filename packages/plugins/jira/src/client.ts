@@ -80,13 +80,19 @@ export class AtlassianClient {
     return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`);
   }
 
-  /** Add a comment to an issue, optionally as a reply to another comment */
+  /** Add a comment to an issue, optionally as a reply to another comment.
+   *  The body is plain text; it is wrapped into Atlassian Document Format (ADF)
+   *  automatically because Jira REST API v3 requires ADF for comment bodies. */
   async addComment(ticketKey: string, body: string, replyToId?: string): Promise<void> {
-    const payload: Record<string, unknown> = { body };
+    const payload: Record<string, unknown> = {
+      body: {
+        version: 1,
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: body }] }],
+      },
+    };
     if (replyToId) {
-      // Jira REST API v3 uses jsdPublic for comment properties including parent
       payload.properties = [{ key: "sd.public.comment", value: { internal: false } }];
-      // For threaded replies, we need to use the comment property
       payload.parentId = replyToId;
     }
     await this.post(`/issue/${encodeURIComponent(ticketKey)}/comment`, payload);

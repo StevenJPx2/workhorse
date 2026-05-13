@@ -38,7 +38,19 @@ describe("github_add_comment tool", () => {
       },
     );
 
-    expect(mockClient.addComment).toHaveBeenCalledWith("octocat", "hello-world", 42, "LGTM!");
+    expect(mockClient.addComment).toHaveBeenCalledWith(
+      "octocat",
+      "hello-world",
+      42,
+      expect.stringContaining("LGTM!"),
+    );
+    // Also verify the footer is appended
+    expect(mockClient.addComment).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.stringContaining("Posted by [Workhorse]"),
+    );
     expect(result.success).toBe(true);
     expect(result.output).toContain("Comment added");
   });

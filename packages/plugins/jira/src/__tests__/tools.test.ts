@@ -59,7 +59,14 @@ describe("jira_add_comment tool", () => {
       },
     );
 
-    expect(mockClient.addComment).toHaveBeenCalledWith("AM-123", "LGTM", undefined);
+    expect(mockClient.addComment).toHaveBeenCalledWith(
+      "AM-123",
+      expect.stringContaining("LGTM"),
+      undefined,
+    );
+    // Also verify the footer is appended
+    const callArgs = vi.mocked(mockClient.addComment).mock.calls[0]!;
+    expect(callArgs[1]).toContain("Posted by [Workhorse]");
     expect(result.success).toBe(true);
   });
 
@@ -85,8 +92,14 @@ describe("jira_add_comment tool", () => {
 
     expect(mockClient.addComment).toHaveBeenCalledWith(
       "AM-123",
-      "Thanks for the feedback!",
+      expect.stringContaining("Thanks for the feedback!"),
       "10001",
+    );
+    // Also verify the footer is appended
+    expect(mockClient.addComment).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining("Posted by [Workhorse]"),
+      expect.anything(),
     );
     expect(result.success).toBe(true);
     expect(result.output).toContain("reply to comment 10001");

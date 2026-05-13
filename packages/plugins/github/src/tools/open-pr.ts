@@ -4,9 +4,10 @@
  * @module workhorse-plugin-github/tools/open-pr
  */
 
-import type { Database, OrchestratorTool } from "workhorse-core";
+import { type Database, type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 import type { GitHubClient } from "../client";
 import type { PROpeningContext } from "../hooks";
+import { getCurrentBranch, getOwnerRepoFromRemote, pushBranch } from "./git-helpers";
 import type { HooksEmitter, MonitorServiceLike } from "./types";
 
 /** Create the github_open_pr tool */
@@ -54,72 +55,25 @@ export function createOpenPRTool(
 
         // If owner/repo not in metadata, derive from git remote
         if (!owner || !repo) {
-          const remoteProc = Bun.spawn(["git", "remote", "get-url", "origin"], {
-            cwd: ctx.worktreePath,
-            stdout: "pipe",
-            stderr: "pipe",
-          });
-          const [remoteOut, , remoteExit] = await Promise.all([
-            new Response(remoteProc.stdout).text(),
-            new Response(remoteProc.stderr).text(),
-            remoteProc.exited,
-          ]);
-
-          if (remoteExit === 0) {
-            const remoteUrl = remoteOut.trim();
-            // Parse GitHub URL: https://github.com/owner/repo.git or git@github.com:owner/repo.git
-            const match =
-              remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/) ??
-              remoteUrl.match(/github\.com[/:]([^/]+)\/([^/]+)$/);
-            if (match) {
-              owner = match[1];
-              repo = match[2];
-            }
+          const remoteResult = await getOwnerRepoFromRemote(ctx.worktreePath);
+          if (!remoteResult.ok) {
+            return { success: false, error: remoteResult.error };
           }
-        }
-
-        if (!owner || !repo) {
-          return {
-            success: false,
-            error: "Could not determine GitHub owner/repo from issue metadata or git remote",
-          };
+          owner = remoteResult.value.owner;
+          repo = remoteResult.value.repo;
         }
 
         // Get current branch name from worktree
-        const branchProc = Bun.spawn(["git", "branch", "--show-current"], {
-          cwd: ctx.worktreePath,
-          stdout: "pipe",
-          stderr: "pipe",
-        });
-        const [branchOut, branchErr, branchExit] = await Promise.all([
-          new Response(branchProc.stdout).text(),
-          new Response(branchProc.stderr).text(),
-          branchProc.exited,
-        ]);
-
-        if (branchExit !== 0) {
-          return {
-            success: false,
-            error: `Failed to get current branch: ${branchErr || branchOut}`,
-          };
+        const branchResult = await getCurrentBranch(ctx.worktreePath);
+        if (!branchResult.ok) {
+          return { success: false, error: branchResult.error };
         }
-
-        const head = branchOut.trim();
+        const head = branchResult.value;
 
         // Push branch to remote first
-        const pushProc = Bun.spawn(["git", "push", "-u", "origin", head], {
-          cwd: ctx.worktreePath,
-          stdout: "pipe",
-          stderr: "pipe",
-        });
-        const [, pushErr, pushExit] = await Promise.all([
-          new Response(pushProc.stdout).text(),
-          new Response(pushProc.stderr).text(),
-          pushProc.exited,
-        ]);
-
-        if (pushExit !== 0 && !pushErr.includes("Everything up-to-date")) {
-          return { success: false, error: `Failed to push branch: ${pushErr}` };
+        const pushResult = await pushBranch(ctx.worktreePath, head);
+        if (!pushResult.ok) {
+          return { success: false, error: pushResult.error };
         }
 
         // Emit pr.opening hook to collect contributions from other plugins
@@ -138,33 +92,30 @@ export function createOpenPRTool(
         // Allow async handlers to complete (they push to contributions array)
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Create PR with body built from contributions
+        // Create PR with body built from user body + plugin contributions
         const result = await client.createPR({
           owner,
           repo,
           head,
           base,
           title,
-          body: [
-            body,
-            ...[...openingContext.contributions]
-              .sort((a, b) => (a.priority ?? 50) - (b.priority ?? 50))
-              .map((c) => `## ${c.section}\n\n${c.content}`),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
+          body: withWorkhorseFooter(
+            [
+              body,
+              ...[...openingContext.contributions]
+                .sort((a, b) => (a.priority ?? 50) - (b.priority ?? 50))
+                .map((c) => `## ${c.section}\n\n${c.content}`),
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          ),
           draft,
         });
 
         // Update issue in DB - PR created means we're now awaiting review
-        // Store PR info in metadata (prNumber, prUrl) for cross-plugin access
         db.issues.update(ctx.issueId, {
           status: "in_review",
-          metadata: {
-            ...metadata,
-            prNumber: result.number,
-            prUrl: result.url,
-          },
+          metadata: { ...metadata, prNumber: result.number, prUrl: result.url },
         });
 
         // Emit status changed hook
@@ -180,11 +131,7 @@ export function createOpenPRTool(
         // Emit PR created hook for cross-plugin coordination
         hooks.emit("github:pr.created", {
           issueId: ctx.issueId,
-          pr: {
-            number: result.number,
-            url: result.url,
-            title,
-          },
+          pr: { number: result.number, url: result.url, title },
         });
 
         // Start PR monitor for this issue

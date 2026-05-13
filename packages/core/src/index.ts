@@ -127,3 +127,5 @@ export {
   type PathValidator,
   validatePath,
 } from "#lib/paths";
+// Metadata footer for agent-generated content
+export { METADATA_FOOTER, withWorkhorseFooter } from "#lib/metadata-footer";

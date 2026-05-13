@@ -18,7 +18,7 @@ export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
     title: fields.summary ?? jira.key,
     description: extractDescription(fields.description),
     issueType: (fields.issuetype?.name?.toLowerCase() ?? "task") as IssueType,
-    url: jira.self.replace("/rest/api/3/issue/", "/browse/").replace(/\?.*$/, ""),
+    url: `https://${new URL(jira.self).hostname}/browse/${jira.key}`,
     assignee: fields.assignee?.displayName ?? undefined,
     labels: fields.labels ?? [],
     metadata: {
@@ -32,12 +32,12 @@ export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
   };
 }
 
-/** Map a single Jira comment */
+/** Map a single Jira comment — body is ADF in REST v3, extracted to plain text */
 export function mapJiraComment(comment: JiraComment): Record<string, unknown> {
   return {
     id: comment.id,
     author: comment.author.displayName,
-    body: comment.body,
+    body: extractDescription(comment.body),
     created: comment.created,
     updated: comment.updated,
   };

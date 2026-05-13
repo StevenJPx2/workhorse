@@ -19,6 +19,7 @@ const createMockIssue = (overrides: Partial<Issue> = {}): Issue => ({
   id: "test-uuid",
   externalId: "AM-123",
   source: "test-source",
+  repository: null,
   title: "Test Issue Title",
   description: "Test issue description",
   status: "pending",

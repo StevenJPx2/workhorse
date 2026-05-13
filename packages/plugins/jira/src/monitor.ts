@@ -46,12 +46,13 @@ export function createJiraCommentMonitor(
 
       // Create notifications for new comments
       for (const comment of newComments) {
+        const mapped = mapJiraComment(comment);
         ctx.memory.notifications.create({
           issueId: ctx.issueId,
           source: "jira",
           sourceId: `jira-comment-${comment.id}`,
           title: `New comment from ${comment.author.displayName}`,
-          body: comment.body,
+          body: mapped.body as string,
           priority: "normal",
           metadata: {
             commentId: comment.id,

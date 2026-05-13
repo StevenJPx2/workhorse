@@ -49,6 +49,7 @@ export const baseIssue: Issue = {
   id: "uuid-1",
   externalId: "AM-123",
   source: "test-source",
+  repository: null,
   title: "Test issue",
   description: "",
   status: "implementing" as IssueStatus,

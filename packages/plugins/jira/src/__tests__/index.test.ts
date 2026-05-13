@@ -45,9 +45,9 @@ describe("JiraConfigSchema", () => {
     }
   });
 
-  it("rejects empty cloudId", () => {
+  it("rejects invalid pollInterval", () => {
     const result = JiraConfigSchema.safeParse({
-      cloudId: "",
+      pollInterval: -1,
     });
     expect(result.success).toBe(false);
   });

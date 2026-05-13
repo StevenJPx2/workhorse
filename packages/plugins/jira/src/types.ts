@@ -47,7 +47,8 @@ export interface JiraComment {
     displayName: string;
     accountId: string;
   };
-  body: string;
+  /** Comment body — ADF object when using REST API v3 */
+  body: unknown;
   created: string;
   updated: string;
   /** Parent comment ID if this is a reply */

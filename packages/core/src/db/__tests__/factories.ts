@@ -13,6 +13,7 @@ export function makeIssueInput(
   return {
     externalId: "AM-123",
     source: "jira",
+    repository: null,
     title: "Fix login bug",
     description: "Users cannot log in",
     status: "pending",

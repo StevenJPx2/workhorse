@@ -44,7 +44,7 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
       backgroundColor={theme.colors.background}
     >
       {/* Header */}
-      <box paddingLeft={2} paddingTop={1} paddingBottom={1} backgroundColor={theme.colors.headerBg}>
+      <box paddingLeft={2} paddingTop={1} paddingBottom={1} backgroundColor={theme.colors.surface}>
         <text fg={theme.colors.warning}>
           <b>⚠️ {props.pluginName} OAuth Not Configured</b>
         </text>
@@ -65,15 +65,15 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
         </box>
 
         <box flexDirection="column" paddingBottom={2}>
-          <text fg={theme.colors.textMuted}>To enable {props.pluginName} integration:</text>
+          <text fg={theme.colors.dim}>To enable {props.pluginName} integration:</text>
           <box paddingLeft={2} paddingTop={1} flexDirection="column">
-            <text fg={theme.colors.textMuted}>
+            <text fg={theme.colors.dim}>
               1. Create an OAuth 2.0 app in your Atlassian Developer Console
             </text>
-            <text fg={theme.colors.textMuted}>
+            <text fg={theme.colors.dim}>
               2. Set the environment variables in your shell or .env file
             </text>
-            <text fg={theme.colors.textMuted}>3. Restart Workhorse</text>
+            <text fg={theme.colors.dim}>3. Restart Workhorse</text>
           </box>
         </box>
 
@@ -89,11 +89,11 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
         paddingLeft={2}
         paddingTop={1}
         paddingBottom={1}
-        borderTop
+        border
         borderStyle="single"
         borderColor={theme.colors.border}
       >
-        <text fg={theme.colors.textMuted}>
+        <text fg={theme.colors.dim}>
           <b>[C]</b>ontinue without {props.pluginName} • <b>[Q]</b>uit to configure
         </text>
       </box>

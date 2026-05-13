@@ -47,6 +47,7 @@ function createMockIssue(externalId = "TEST-123"): Issue {
     id: crypto.randomUUID(),
     externalId,
     source: "test",
+    repository: null,
     issueType: "task",
     title: "Test Issue",
     description: "Test description",
