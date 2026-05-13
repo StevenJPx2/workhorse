@@ -108,7 +108,7 @@ export abstract class AgentAdapter {
     await this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
 
     const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
-      isResume: existsSync(join(this.worktreePath, ".jiratown", "session")),
+      isResume: existsSync(join(this.worktreePath, ".workhorse", "session")),
       tools: this.tools,
     });
 

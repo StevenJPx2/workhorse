@@ -2,7 +2,7 @@
 
 All Jira functionality in a self-contained plugin. Core has zero Jira knowledge.
 
-Location: `packages/plugins/jira/` (standalone package: `@jiratown/plugin-jira`)
+Location: `packages/plugins/jira/` (standalone package: `workhorse-plugin-jira`)
 
 ## What It Registers
 
@@ -91,7 +91,7 @@ Flow:
 6. On API calls, uses `Authorization: Bearer <accessToken>` header
 7. Auto-refreshes via `arctic` when expired
 
-Config (non-sensitive, in `~/.jiratown.toml`):
+Config (non-sensitive, in `~/.workhorse.toml`):
 ```toml
 [plugins.jira]
 cloud_id = "company.atlassian.net"
@@ -99,10 +99,10 @@ poll_interval = 30000
 ```
 
 Credentials (stored in system keychain via `keychain.ts`):
-- `jiratown:jira:client_id` — Atlassian OAuth client ID
-- `jiratown:jira:client_secret` — Atlassian OAuth client secret
-- `jiratown:jira:access_token` — OAuth access token
-- `jiratown:jira:refresh_token` — OAuth refresh token
+- `workhorse:jira:client_id` — Atlassian OAuth client ID
+- `workhorse:jira:client_secret` — Atlassian OAuth client secret
+- `workhorse:jira:access_token` — OAuth access token
+- `workhorse:jira:refresh_token` — OAuth refresh token
 
 On first setup, the plugin checks the keychain. If credentials are missing, it prompts the user to run an auth command (or auto-starts the OAuth flow if configured to do so).
 

@@ -169,9 +169,9 @@ ctx.hooks.emit("tui.register_renderer", {
 ```typescript
 // packages/core/src/plugins/builtin/index.ts
 
-function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
+function workhorseToolRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
-  if (!input.tool.startsWith("jiratown_")) return null;
+  if (!input.tool.startsWith("workhorse_")) return null;
   
   const args = (input.args ?? {}) as Record<string, unknown>;
   
@@ -209,7 +209,7 @@ function jiratownToolRenderer(input: ActivityInput): RenderedActivity | null {
 // In setup():
 ctx.hooks.emit("tui.register_renderer", {
   id: "workhorse-tools",
-  renderer: jiratownToolRenderer,
+  renderer: workhorseToolRenderer,
 });
 ```
 

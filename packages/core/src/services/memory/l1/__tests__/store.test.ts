@@ -7,8 +7,8 @@ import { L1Store } from "../store.ts";
 const TEST_DIR = join(import.meta.dirname, ".test-store");
 const WORKTREES_ROOT = join(TEST_DIR, "worktrees");
 const WORKTREE_A = join(WORKTREES_ROOT, "AM-123");
-const JIRATOWN_DIR = join(WORKTREE_A, ".jiratown");
-const CONTEXT_FILE = join(JIRATOWN_DIR, "context.md");
+const WORKHORSE_DIR = join(WORKTREE_A, ".workhorse");
+const CONTEXT_FILE = join(WORKHORSE_DIR, "context.md");
 
 describe("L1Store", () => {
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe("L1Store", () => {
 
   it("scans worktrees root and finds existing contexts", async () => {
     // Create a context.md file first
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
 
     const store = new L1Store(WORKTREES_ROOT);
@@ -60,7 +60,7 @@ describe("L1Store", () => {
     expect(store.all().size).toBe(0);
 
     // Create context.md after store construction
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
 
     store.refresh();
@@ -70,8 +70,8 @@ describe("L1Store", () => {
   it("all returns map of all contexts", async () => {
     // Create two worktrees
     const worktreeB = join(WORKTREES_ROOT, "AM-456");
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
-    mkdirSync(join(worktreeB, ".jiratown"), { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
+    mkdirSync(join(worktreeB, ".workhorse"), { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Issue A\n\n## Patterns\n\n## Sessions\n");
     writeFileSync(
       join(worktreeB, ".workhorse/context.md"),
@@ -91,7 +91,7 @@ describe("L1Store", () => {
     writeFileSync(join(WORKTREES_ROOT, "random-file.txt"), "not a worktree");
 
     // Also create a valid worktree
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
 
     const store = new L1Store(WORKTREES_ROOT);
@@ -107,7 +107,7 @@ describe("L1Store", () => {
     mkdirSync(emptyWorktree, { recursive: true });
 
     // Also create a valid worktree
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
 
     const store = new L1Store(WORKTREES_ROOT);
@@ -120,14 +120,14 @@ describe("L1Store", () => {
   it("skips context.md without valid issue ID in title", () => {
     // Create context.md without issue ID in title
     const invalidWorktree = join(WORKTREES_ROOT, "invalid-title");
-    mkdirSync(join(invalidWorktree, ".jiratown"), { recursive: true });
+    mkdirSync(join(invalidWorktree, ".workhorse"), { recursive: true });
     writeFileSync(
       join(invalidWorktree, ".workhorse/context.md"),
       "# No Issue ID Here\n\n## Patterns\n\n## Sessions\n",
     );
 
     // Also create a valid worktree
-    mkdirSync(JIRATOWN_DIR, { recursive: true });
+    mkdirSync(WORKHORSE_DIR, { recursive: true });
     writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
 
     const store = new L1Store(WORKTREES_ROOT);

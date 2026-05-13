@@ -56,7 +56,7 @@ The Agent Plugin is what Jiratown defines in the Harness. Each agent harness has
 
 | New Component              | Current Code                                                              | What Changes                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **L1 — context.md**        | `session-memory.ts` reading/writing `.jiratown/context.md` per worktree   | Same concept, but accessed through the MemoryService API instead of direct file I/O. The Prompt Engineer reads from MemoryService, not from files directly.                                                                                                                                                                                                                 |
+| **L1 — context.md**        | `session-memory.ts` reading/writing `.workhorse/context.md` per worktree   | Same concept, but accessed through the MemoryService API instead of direct file I/O. The Prompt Engineer reads from MemoryService, not from files directly.                                                                                                                                                                                                                 |
 | **L2 — retriv**            | Doesn't exist — every resume re-fetches from Jira/GitHub APIs             | **New** — Powered by [retriv](https://github.com/skilld-dev/retriv). Hybrid search (BM25 keyword + vector semantic via RRF fusion) over all indexed content: cached API reads, past session memories, key decisions, codebase context. SQLite + sqlite-vec locally, with `all-MiniLM-L6-v2` via transformersJs for embeddings (~30MB, no API key). AST-aware chunking for TS/JS code, camelCase tokenization, metadata filtering. |
 | **System Events**          | `ticket_events` table + `insertTicketEvent()`                             | Stays, but becomes part of MemoryService's event bus. Other services subscribe to events instead of polling SQLite.                                                                                                                                                                                                                                                         |
 | **System Notifications**   | `notification-store.ts`, `system-instruction.ts`, `generateSystemInbox()` | The notification system moves under MemoryService. Notifications are a type of system event. The `<system_inbox>` injection pattern stays.                                                                                                                                                                                                                                  |
@@ -100,7 +100,7 @@ Plugins are defined by the developer **beforehand**. They have access to every p
 | 5   | **Agent Execution**: Agent works via MCP tools                                   | **Harness** → Agent Plugin (MCP, Tools, Skills)                         |
 | 6   | **Monitoring**: Background pollers for health, Jira, GitHub                      | **MonitorService** (framework) + **Plugins** (register what to monitor)      |
 | 7   | **Notification Pipeline**: External events → SQLite → `<system_inbox>` injection | **MemoryService** (System Events + System Notifications)                     |
-| 8   | **Status Tracking**: Agent reports via `jiratown_update_status`                  | **MemoryService** (System Events) + core MCP tools                           |
+| 8   | **Status Tracking**: Agent reports via `workhorse_update_status`                  | **MemoryService** (System Events) + core MCP tools                           |
 | 9   | **PR Workflow**: Agent creates PR → GitHub poller starts → reviews → agent       | **GitHub Plugin** hooks into MonitorService + MemoryService                  |
 | 10  | **Completion**: Agent calls done → ticket marked complete                        | **MemoryService** (event) → Tracker or Plugins react via hooks         |
 
@@ -147,7 +147,7 @@ AFTER (new architecture):
 
 ### Memory / Session
 
-- `src/core/session/session-memory.ts` — `.jiratown/context.md` read/write (→ L1 cache)
+- `src/core/session/session-memory.ts` — `.workhorse/context.md` read/write (→ L1 cache)
 - `src/core/session/worktree/` — Git worktree management
 - `src/core/session/tmux/` — Tmux session management
 

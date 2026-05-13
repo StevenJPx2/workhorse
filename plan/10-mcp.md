@@ -4,7 +4,7 @@
 >
 > Each adapter plugin (e.g., Pi, Claude Code, Opencode) translates `OrchestratorTool[]` into its harness-native tool format. For Pi, that means `ExtensionAPI.registerTool()`. For Claude Code, a future adapter would generate `.mcp.json`. For Opencode, it would generate its JS/TS plugin modules.
 >
-> **Core tools** (`jiratown_acknowledge`, `jiratown_update_status`, `jiratown_escalate`) live in `packages/core/src/plugins/builtin/tools/definitions.ts`.
+> **Core tools** (`workhorse_acknowledge`, `workhorse_update_status`, `workhorse_escalate`) live in `packages/core/src/plugins/builtin/tools/definitions.ts`.
 >
 > See `plan/PROGRESS.md` for the updated status.
 
@@ -33,13 +33,13 @@ function createJiratownServer(options: {
 
 ## Core Tools
 
-### `jiratown_acknowledge`
+### `workhorse_acknowledge`
 Input: `{ notificationIds: string[] }`. Marks notifications acknowledged.
 
-### `jiratown_update_status`
+### `workhorse_update_status`
 Input: `{ status: IssueStatus, message?: string }`. Updates DB, logs event, emits `issue.status_changed` hook (plugins listen: Jira transitions ticket, GitHub updates labels, etc.).
 
-### `jiratown_escalate`
+### `workhorse_escalate`
 Input: `{ reason: string, blocking: boolean, question?: string }`. Creates escalation notification (`priority: "blocking"` or `"high"`), emits `notification.created`.
 
 ## Plugin-Contributed Tools
@@ -49,7 +49,7 @@ Registered via `mcp.tools.registering` hook:
 ```typescript
 ctx.hooks.on("mcp.tools.registering", ({ tools }) => {
   tools.push({
-    name: "jiratown_open_pr",
+    name: "workhorse_open_pr",
     description: "Create a pull request",
     inputSchema: z.object({ title: z.string(), body: z.string(), baseBranch: z.string().optional() }),
     handler: async (input) => { /* ... */ },

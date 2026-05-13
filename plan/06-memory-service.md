@@ -66,7 +66,7 @@ interface MemorySearchOptions {
 
 ## L1: context.md (ralph-style append-only)
 
-File at `<worktree>/.jiratown/context.md`. Append-only — each agent session appends an entry. Patterns section at top is the only rewritable part.
+File at `<worktree>/.workhorse/context.md`. Append-only — each agent session appends an entry. Patterns section at top is the only rewritable part.
 
 ```markdown
 # AM-123: Add priority field to tasks
@@ -110,13 +110,13 @@ interface SessionEntry {
 
 ```typescript
 const retriv = createRetriv({
-  driver: sqlite({ path: "~/.jiratown/memory.db", embeddings: transformersJs({ model: "Xenova/all-MiniLM-L6-v2" }) }),
+  driver: sqlite({ path: "~/.workhorse/memory.db", embeddings: transformersJs({ model: "Xenova/all-MiniLM-L6-v2" }) }),
   chunking: autoChunker(),
   categories: doc => doc.metadata?.type || "other",
 })
 ```
 
-Separate SQLite DB (`memory.db`) from operational `jiratown.db`.
+Separate SQLite DB (`memory.db`) from operational `workhorse.db`.
 
 ## System Inbox
 

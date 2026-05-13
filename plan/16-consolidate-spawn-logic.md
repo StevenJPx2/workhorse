@@ -71,7 +71,7 @@ All 288 tests passing.
 Currently, `spawn.ts` handles:
 
 1. Worktree creation (`createWorktree`)
-2. Resume detection (`existsSync(.jiratown/session)`)
+2. Resume detection (`existsSync(.workhorse/session)`)
 3. Prompt building (`engineer.buildHybridPrompt`)
 4. Tool collection (`getTools()`)
 5. Adapter instantiation
@@ -669,7 +669,7 @@ import {
   AgentAdapter,
   type CreateOptions,
   type StopOptions,
-} from "@jiratown/core";
+} from "workhorse-core";
 import {
   type AgentSession,
   createAgentSession,
@@ -825,8 +825,8 @@ export class PiAgentAdapter extends AgentAdapter {
 The orchestrator returns an adapter, and the application controls the adapter directly:
 
 ```typescript
-import { bootstrap } from "@jiratown/core";
-import { PiAgentAdapter } from "@jiratown/plugin-pi-adapter";
+import { bootstrap } from "workhorse-core";
+import { PiAgentAdapter } from "workhorse-plugin-pi-adapter";
 
 async function main() {
   // 1. Bootstrap the Jiratown instance

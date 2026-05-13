@@ -2,7 +2,7 @@
 
 Command-line interface for Jiratown. Thin wrapper over core APIs — no business logic, just argument parsing and output formatting.
 
-**Location:** `packages/cli/` (standalone package: `@jiratown/cli`)
+**Location:** `packages/cli/` (standalone package: `@fdcn/workhorse`)
 
 **External deps:** `citty`, `@clack/prompts`
 
@@ -11,14 +11,14 @@ Command-line interface for Jiratown. Thin wrapper over core APIs — no business
 
 ## Default Behavior
 
-Running `jiratown` with no arguments opens the TUI:
+Running `workhorse` with no arguments opens the TUI:
 
 ```bash
-jiratown          # Opens the TUI (interactive mode)
-jiratown spawn    # Subcommand mode (non-interactive)
+workhorse          # Opens the TUI (interactive mode)
+workhorse spawn    # Subcommand mode (non-interactive)
 ```
 
-The CLI delegates to `@jiratown/tui` for the interactive experience. Subcommands (`spawn`, `stop`, `list`, etc.) run non-interactively with clack-formatted output.
+The CLI delegates to `@fdcn/workhorse` for the interactive experience. Subcommands (`spawn`, `stop`, `list`, etc.) run non-interactively with clack-formatted output.
 
 ## File Structure
 
@@ -26,21 +26,21 @@ The CLI delegates to `@jiratown/tui` for the interactive experience. Subcommands
 packages/cli/
 ├── package.json
 ├── bin/
-│   └── jiratown.ts           # Entry point, #!/usr/bin/env bun
+│   └── workhorse.ts           # Entry point, #!/usr/bin/env bun
 └── src/
     ├── index.ts              # CLI setup, command registration
     ├── commands/
-    │   ├── spawn.ts          # jiratown spawn <issue>
-    │   ├── stop.ts           # jiratown stop <issue>
-    │   ├── list.ts           # jiratown list
-    │   ├── status.ts         # jiratown status <issue>
-    │   ├── send.ts           # jiratown send <issue> <message>
-    │   ├── config.ts         # jiratown config [key] [value]
-    │   ├── auth.ts           # jiratown auth <provider>
-    │   └── plugin.ts         # jiratown plugin list|enable|disable
+    │   ├── spawn.ts          # workhorse spawn <issue>
+    │   ├── stop.ts           # workhorse stop <issue>
+    │   ├── list.ts           # workhorse list
+    │   ├── status.ts         # workhorse status <issue>
+    │   ├── send.ts           # workhorse send <issue> <message>
+    │   ├── config.ts         # workhorse config [key] [value]
+    │   ├── auth.ts           # workhorse auth <provider>
+    │   └── plugin.ts         # workhorse plugin list|enable|disable
     ├── output/
     │   └── formatters.ts     # Table, JSON formatters (clack handles the rest)
-    ├── context.ts            # CLI-specific bootstrap (creates JiratownContext)
+    ├── context.ts            # CLI-specific bootstrap (creates WorkhorseContext)
     └── __tests__/
         ├── spawn.test.ts
         ├── stop.test.ts
@@ -52,14 +52,14 @@ packages/cli/
 
 ## Commands
 
-### `jiratown spawn <issue>`
+### `workhorse spawn <issue>`
 
 Start an agent on an issue. The issue can be any supported format (Jira key, GitHub ref, URL).
 
 ```bash
-jiratown spawn AM-123
-jiratown spawn owner/repo#45
-jiratown spawn https://github.com/owner/repo/issues/123
+workhorse spawn AM-123
+workhorse spawn owner/repo#45
+workhorse spawn https://github.com/owner/repo/issues/123
 ```
 
 **Options:**
@@ -94,7 +94,7 @@ export const spawnCommand = defineCommand({
     json: { type: "boolean", description: "Output JSON" },
   },
   async run({ args }) {
-    p.intro("jiratown spawn");
+    p.intro("workhorse spawn");
 
     const ctx = await createContext();
     const s = p.spinner();
@@ -140,13 +140,13 @@ export const spawnCommand = defineCommand({
 });
 ```
 
-### `jiratown stop <issue>`
+### `workhorse stop <issue>`
 
 Stop an agent.
 
 ```bash
-jiratown stop AM-123
-jiratown stop --all
+workhorse stop AM-123
+workhorse stop --all
 ```
 
 **Options:**
@@ -154,14 +154,14 @@ jiratown stop --all
 - `--remove-worktree` — Also delete the worktree
 - `--force` — Don't wait for graceful shutdown
 
-### `jiratown list`
+### `workhorse list`
 
 List all running agents.
 
 ```bash
-jiratown list
-jiratown list --json
-jiratown list --status running
+workhorse list
+workhorse list --json
+workhorse list --status running
 ```
 
 **Options:**
@@ -171,17 +171,17 @@ jiratown list --status running
 **Output:**
 ```
 ISSUE           HARNESS           STATUS    WORKTREE
-AM-123          pi-coding-agent   running   ../jiratown-worktrees/AM-123
-PROJ-456        claude-code       stopped   ../jiratown-worktrees/PROJ-456
-owner/repo#45   pi-coding-agent   running   ../jiratown-worktrees/owner-repo-45
+AM-123          pi-coding-agent   running   ../workhorse-worktrees/AM-123
+PROJ-456        claude-code       stopped   ../workhorse-worktrees/PROJ-456
+owner/repo#45   pi-coding-agent   running   ../workhorse-worktrees/owner-repo-45
 ```
 
-### `jiratown status <issue>`
+### `workhorse status <issue>`
 
 Get detailed status of an agent.
 
 ```bash
-jiratown status AM-123
+workhorse status AM-123
 ```
 
 **Output:**
@@ -190,7 +190,7 @@ Issue:        AM-123 — Fix the login bug
 Status:       running
 Harness:      pi-coding-agent
 Model:        claude-sonnet-4-20250514
-Worktree:     ../jiratown-worktrees/AM-123
+Worktree:     ../workhorse-worktrees/AM-123
 Branch:       fix/AM-123
 Started:      2025-01-15 10:30:00 (2h 15m ago)
 
@@ -199,55 +199,55 @@ Notifications: 2 pending
   • [NORMAL] New comment from @alice
 
 Recent Activity:
-  10:32  Tool: jiratown_acknowledge
+  10:32  Tool: workhorse_acknowledge
   10:35  Tool: github_open_pr
   10:40  Tool: jira_transition_issue
 ```
 
-### `jiratown send <issue> <message>`
+### `workhorse send <issue> <message>`
 
 Send a message to a running agent (steer or prompt).
 
 ```bash
-jiratown send AM-123 "Focus on the unit tests first"
-jiratown send AM-123 --file ./instructions.md
+workhorse send AM-123 "Focus on the unit tests first"
+workhorse send AM-123 --file ./instructions.md
 ```
 
 **Options:**
 - `--file <path>` — Read message from file
 - `--steer` — Force steer mode (interrupt streaming)
 
-### `jiratown config`
+### `workhorse config`
 
 View or modify configuration.
 
 ```bash
-jiratown config                          # Show all config
-jiratown config agent.harness            # Show specific key
-jiratown config agent.harness claude-code # Set value
-jiratown config --edit                   # Open in $EDITOR
-jiratown config --path                   # Print config file path
+workhorse config                          # Show all config
+workhorse config agent.harness            # Show specific key
+workhorse config agent.harness claude-code # Set value
+workhorse config --edit                   # Open in $EDITOR
+workhorse config --path                   # Print config file path
 ```
 
-### `jiratown auth <provider>`
+### `workhorse auth <provider>`
 
 Authenticate with a provider.
 
 ```bash
-jiratown auth jira      # Start Jira OAuth flow
-jiratown auth github    # Verify gh CLI auth
-jiratown auth --status  # Show auth status for all providers
+workhorse auth jira      # Start Jira OAuth flow
+workhorse auth github    # Verify gh CLI auth
+workhorse auth --status  # Show auth status for all providers
 ```
 
-### `jiratown plugin`
+### `workhorse plugin`
 
 Manage plugins.
 
 ```bash
-jiratown plugin list              # List all plugins
-jiratown plugin enable <name>     # Enable a plugin
-jiratown plugin disable <name>    # Disable a plugin
-jiratown plugin install <package> # Install from npm (future)
+workhorse plugin list              # List all plugins
+workhorse plugin enable <name>     # Enable a plugin
+workhorse plugin disable <name>    # Disable a plugin
+workhorse plugin install <package> # Install from npm (future)
 ```
 
 ## Output Formatting
@@ -260,7 +260,7 @@ Clack provides most output utilities out of the box. We only need a custom `form
 import * as p from "@clack/prompts";
 
 // Session boundaries
-p.intro("jiratown spawn");
+p.intro("workhorse spawn");
 p.outro("Done!");
 
 // Semantic logging
@@ -297,14 +297,14 @@ Table formatting is the only thing Clack doesn't provide — we'll implement a s
 
 ```typescript
 // context.ts
-import { bootstrap, type JiratownContext } from "@jiratown/core";
-import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter";
-import { jiraPlugin } from "@jiratown/plugin-jira";
-import { githubPlugin } from "@jiratown/plugin-github";
+import { bootstrap, type WorkhorseContext } from "workhorse-core";
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
+import { jiraPlugin } from "workhorse-plugin-jira";
+import { githubPlugin } from "workhorse-plugin-github";
 
-let ctx: JiratownContext | null = null;
+let ctx: WorkhorseContext | null = null;
 
-export async function createContext(): Promise<JiratownContext> {
+export async function createContext(): Promise<WorkhorseContext> {
   if (ctx) return ctx;
 
   ctx = await bootstrap({
@@ -335,11 +335,11 @@ All commands support:
 ## Entry Point
 
 ```typescript
-// bin/jiratown.ts
+// bin/workhorse.ts
 #!/usr/bin/env bun
 import { defineCommand, runMain } from "citty";
 import { version } from "../package.json";
-import { startTUI } from "@jiratown/tui";
+import { startTUI } from "@fdcn/workhorse";
 import {
   spawnCommand,
   stopCommand,
@@ -354,7 +354,7 @@ import { destroyContext } from "../src/context.ts";
 
 const main = defineCommand({
   meta: {
-    name: "jiratown",
+    name: "workhorse",
     version,
     description: "AI agent orchestration for issue tracking",
   },
@@ -392,18 +392,18 @@ runMain(main);
 
 ```json
 {
-  "name": "@jiratown/cli",
+  "name": "@fdcn/workhorse",
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "jiratown": "./bin/jiratown.ts"
+    "workhorse": "./bin/workhorse.ts"
   },
   "dependencies": {
-    "@jiratown/core": "workspace:*",
-    "@jiratown/tui": "workspace:*",
-    "@jiratown/plugin-pi-adapter": "workspace:*",
-    "@jiratown/plugin-jira": "workspace:*",
-    "@jiratown/plugin-github": "workspace:*",
+    "workhorse-core": "workspace:*",
+    "@fdcn/workhorse": "workspace:*",
+    "workhorse-plugin-pi-adapter": "workspace:*",
+    "workhorse-plugin-jira": "workspace:*",
+    "workhorse-plugin-github": "workspace:*",
     "@clack/prompts": "^0.10.0",
     "citty": "^0.1.6"
   },
@@ -417,11 +417,11 @@ runMain(main);
 
 ```typescript
 import * as p from "@clack/prompts";
-import { JiratownError } from "@jiratown/core";
+import { WorkhorseError } from "workhorse-core";
 
 // Consistent error output using Clack
 function handleError(err: unknown): never {
-  if (err instanceof JiratownError) {
+  if (err instanceof WorkhorseError) {
     p.log.error(err.message);
     if (err.hint) {
       p.note(err.hint, "Hint");
@@ -448,8 +448,8 @@ function handleError(err: unknown): never {
 
 ## Future Commands
 
-- `jiratown logs <issue>` — Stream or tail agent logs
-- `jiratown resume <issue>` — Resume a stopped agent
-- `jiratown worktree list` — List all worktrees
-- `jiratown worktree clean` — Clean up orphaned worktrees
-- `jiratown init` — Initialize Jiratown in a project
+- `workhorse logs <issue>` — Stream or tail agent logs
+- `workhorse resume <issue>` — Resume a stopped agent
+- `workhorse worktree list` — List all worktrees
+- `workhorse worktree clean` — Clean up orphaned worktrees
+- `workhorse init` — Initialize Workhorse in a project

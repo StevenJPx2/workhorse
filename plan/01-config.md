@@ -7,20 +7,20 @@ Location: `packages/core/src/config/`
 ## Config Files
 
 **Global** (first found wins):
-1. `~/.jiratown.toml`
-2. `~/.config/jiratown.toml`
-3. `~/.config/jiratown/config.toml`
+1. `~/.workhorse.toml`
+2. `~/.config/workhorse.toml`
+3. `~/.config/workhorse/config.toml`
 
-**Project**: `<repo>/.jiratown.toml`
+**Project**: `<repo>/.workhorse.toml`
 
 Project overrides global. Missing keys fall back to defaults.
 
 ## Data Directory
 
 Application data (database, logs, cache) lives in:
-- `~/.local/share/jiratown/`
+- `~/.local/share/workhorse/`
 
-Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/jiratown/`
+Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/workhorse/`
 
 ## Shape
 

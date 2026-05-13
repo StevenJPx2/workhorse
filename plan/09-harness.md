@@ -36,7 +36,7 @@ packages/core/src/
             └── spawn.ts          # SpawnOptions, StopOptions
 
 packages/plugins/
-└── pi-adapter/                   # @jiratown/plugin-pi-adapter (standalone package)
+└── pi-adapter/                   # workhorse-plugin-pi-adapter (standalone package)
     ├── package.json
     └── src/
         ├── index.ts              # Plugin definition
@@ -152,7 +152,7 @@ class HarnessOrchestrator {
 
 1. Emit `orchestrator.spawn.pre` hook (plugins can modify options or abort)
 2. Create git worktree via `lib/git/worktree.ts` (or reuse existing)
-3. Detect resume: check if `.jiratown/session/` exists in worktree
+3. Detect resume: check if `.workhorse/session/` exists in worktree
 4. Get all registered tools via `this.getTools()`
 5. Build hybrid prompt via `PromptEngineer.buildHybridPrompt()` with `{ resume, tools }`
 6. Look up adapter class: `const AdapterClass = this.adapters.get(harness)`
@@ -200,7 +200,7 @@ Plugins register adapter classes via `ctx.orchestrator.registerAdapter()`:
 
 ```typescript
 // packages/plugins/pi-adapter/src/index.ts
-import { definePlugin } from "@jiratown/core"
+import { definePlugin } from "workhorse-core"
 import { PiAgentAdapter } from "./adapter.ts"
 
 export const piAdapterPlugin = definePlugin({
@@ -351,8 +351,8 @@ export class PiAgentAdapter extends AgentAdapter {
 ## Example: Third-Party Adapter Plugin
 
 ```typescript
-// @jiratown/opencode-adapter (hypothetical npm package)
-import { definePlugin, type AdapterContext, type AgentAdapter, type AgentState } from "@jiratown/core"
+// workhorse-opencode-adapter (hypothetical npm package)
+import { definePlugin, type AdapterContext, type AgentAdapter, type AgentState } from "workhorse-core"
 import { OpencodeSDK } from "opencode-sdk"
 
 class OpencodeAdapter extends AgentAdapter {
@@ -387,7 +387,7 @@ export const corePlugin = definePlugin({
     name: "builtin-tools",
     version: "1.0.0",
     description: "Core Jiratown agent tools",
-    capabilities: { tools: ["jiratown_acknowledge", "jiratown_update_status", "jiratown_escalate"] },
+    capabilities: { tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"] },
   },
   setup(ctx) {
     ctx.orchestrator.registerTool(acknowledgeTool)
@@ -402,14 +402,14 @@ export const corePlugin = definePlugin({
 Core only registers the corePlugin (tools). Adapter plugins are external packages:
 
 ```typescript
-// bootstrap.ts (inside @jiratown/core)
+// bootstrap.ts (inside workhorse-core)
 for (const plugin of CORE_PLUGINS) {  // Only corePlugin
   plugins.register(plugin)
 }
 await plugins.setup()
 
 // Application code registers adapter plugins
-import { piAdapterPlugin } from "@jiratown/plugin-pi-adapter"
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter"
 jt.plugins.register(piAdapterPlugin)
 await jt.plugins.setup()
 ```

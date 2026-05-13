@@ -6,8 +6,8 @@ import { L1Context } from "../context.ts";
 const TEST_DIR = join(import.meta.dirname, ".test-context");
 const WORKTREES_ROOT = join(TEST_DIR, "worktrees");
 const WORKTREE_A = join(WORKTREES_ROOT, "AM-123");
-const JIRATOWN_DIR = join(WORKTREE_A, ".jiratown");
-const CONTEXT_FILE = join(JIRATOWN_DIR, "context.md");
+const WORKHORSE_DIR = join(WORKTREE_A, ".workhorse");
+const CONTEXT_FILE = join(WORKHORSE_DIR, "context.md");
 
 describe("L1Context", () => {
   let ctx: L1Context;
@@ -32,7 +32,7 @@ describe("L1Context", () => {
     });
 
     it("returns true when file exists", () => {
-      mkdirSync(JIRATOWN_DIR, { recursive: true });
+      mkdirSync(WORKHORSE_DIR, { recursive: true });
       writeFileSync(CONTEXT_FILE, "# Test");
       expect(ctx.exists()).toBe(true);
     });

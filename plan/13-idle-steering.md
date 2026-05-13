@@ -77,7 +77,7 @@ Plugins listen via `ctx.hooks.on()`:
 
 ```typescript
 // packages/plugins/jira/src/sync.ts
-export function registerCrossPluginSync(ctx: JiratownContext): void {
+export function registerCrossPluginSync(ctx: WorkhorseContext): void {
   // When GitHub PR is merged, transition Jira to "In QA" and assign to reporter
   ctx.hooks.on("github:pr.merged", async ({ issueId, pr }) => {
     const issue = ctx.db.issues.getByExternalId(issueId);
@@ -170,7 +170,7 @@ The core `HookEventMap` can be augmented by plugins via module augmentation:
 
 ```typescript
 // packages/plugins/github/src/index.ts
-declare module "@jiratown/core" {
+declare module "workhorse-core" {
   interface HookEventMap extends GitHubPluginHooks {}
 }
 ```
@@ -517,9 +517,9 @@ interface PluginContext {
 
 ```typescript
 // packages/plugins/jira/src/steering.ts
-import type { JiratownContext, SteeringRule } from "@jiratown/core";
+import type { WorkhorseContext, SteeringRule } from "workhorse-core";
 
-export function registerJiraSteering(ctx: JiratownContext): void {
+export function registerJiraSteering(ctx: WorkhorseContext): void {
   // Remind to update Jira after implementation
   ctx.orchestrator.registerSteeringRule({
     id: "jira:update-after-implementation",
@@ -590,9 +590,9 @@ export function registerJiraSteering(ctx: JiratownContext): void {
 
 ```typescript
 // packages/plugins/github/src/steering.ts
-import type { JiratownContext, SteeringRule } from "@jiratown/core";
+import type { WorkhorseContext, SteeringRule } from "workhorse-core";
 
-export function registerGitHubSteering(ctx: JiratownContext): void {
+export function registerGitHubSteering(ctx: WorkhorseContext): void {
   // Remind to create PR after implementation
   ctx.orchestrator.registerSteeringRule({
     id: "github:create-pr",
@@ -680,7 +680,7 @@ Core can also register basic steering rules:
 
 ```typescript
 // plugins/builtin/steering.ts
-export function registerCoreSteering(ctx: JiratownContext): void {
+export function registerCoreSteering(ctx: WorkhorseContext): void {
   // Generic "what's next" reminder
   ctx.orchestrator.registerSteeringRule({
     id: "core:whats-next",
@@ -691,7 +691,7 @@ export function registerCoreSteering(ctx: JiratownContext): void {
     },
     reminder: `Task update:
 - If you've completed your current task, update the issue status
-- If you're blocked, use \`jiratown_escalate\` to ask for help
+- If you're blocked, use \`workhorse_escalate\` to ask for help
 - If you need more context, check the notification inbox`,
     priority: -10, // Low priority, acts as fallback
   });

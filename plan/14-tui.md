@@ -2,7 +2,7 @@
 
 Terminal user interface for Jiratown. Simple overview with a chat box, issue backlog, and running agents. Built with OpenTUI + Solid.js for fine-grained reactivity and native performance.
 
-**Location:** `packages/tui/` (package: `@jiratown/tui`)
+**Location:** `packages/tui/` (package: `@fdcn/workhorse`)
 
 **External deps:** `solid-js`, `@opentui/solid`
 
@@ -19,7 +19,7 @@ packages/tui/                    # Standalone TUI application
 │   ├── plugin.ts                # Plugin definition for hook registration
 │   ├── tui.tsx                  # TUI renderer
 │   └── ...
-└── package.json                 # @jiratown/tui
+└── package.json                 # @fdcn/workhorse
 ```
 
 **Why this structure:**
@@ -75,7 +75,7 @@ The TUI is a standalone application that also registers a plugin (`tui`). This a
 
 ```typescript
 // src/plugin.ts - TUI plugin definition
-import { definePlugin, useJiratown } from "@jiratown/core";
+import { definePlugin, useWorkhorse } from "workhorse-core";
 import { registerRenderer } from "./renderers";
 
 export default definePlugin({
@@ -84,7 +84,7 @@ export default definePlugin({
     version: "0.1.0",
   },
   setup() {
-    const { hooks } = useJiratown();
+    const { hooks } = useWorkhorse();
     
     // Register hook for other plugins to add notification renderers
     hooks.on("tui.register_renderer", ({ type, renderer }) => {
@@ -98,17 +98,17 @@ export default definePlugin({
 
 ```typescript
 // src/index.ts - Main entry point
-import { bootstrap } from "@jiratown/core";
+import { bootstrap } from "workhorse-core";
 import { render } from "@opentui/solid";
 import { App } from "./app.tsx";
 import tuiPlugin from "./plugin.ts";
-import jiraPlugin from "@jiratown/plugin-jira";
-import githubPlugin from "@jiratown/plugin-github";
-import piAdapterPlugin from "@jiratown/plugin-pi-adapter";
+import jiraPlugin from "workhorse-plugin-jira";
+import githubPlugin from "workhorse-plugin-github";
+import piAdapterPlugin from "workhorse-plugin-pi-adapter";
 
 export async function startTUI() {
   // Bootstrap Jiratown with all plugins
-  const jiratown = await bootstrap({
+  const workhorse = await bootstrap({
     plugins: [
       tuiPlugin,        // TUI plugin (renderer hooks)
       jiraPlugin,       // Jira integration
@@ -120,17 +120,17 @@ export async function startTUI() {
   // Now render the TUI (after all plugins have registered renderers)
   render(() => (
     <App
-      orchestrator={jiratown.orchestrator}
-      hooks={jiratown.hooks}
-      memory={jiratown.memory}
-      tracker={jiratown.tracker}
-      config={jiratown.config}
+      orchestrator={workhorse.orchestrator}
+      hooks={workhorse.hooks}
+      memory={workhorse.memory}
+      tracker={workhorse.tracker}
+      config={workhorse.config}
     />
   ));
 
   // Cleanup on exit
   process.on("SIGINT", async () => {
-    await jiratown.shutdown();
+    await workhorse.shutdown();
     process.exit(0);
   });
 }
@@ -143,10 +143,10 @@ if (import.meta.main) {
 
 ### Notification Renderer Hook
 
-Plugins like `@jiratown/plugin-jira` and `@jiratown/plugin-github` can register custom renderers:
+Plugins like `workhorse-plugin-jira` and `workhorse-plugin-github` can register custom renderers:
 
 ```typescript
-// In @jiratown/plugin-jira setup
+// In workhorse-plugin-jira setup
 hooks.emit("tui.register_renderer", {
   type: "jira_comment",
   renderer: (notification) => ({
@@ -170,7 +170,7 @@ hooks.emit("tui.register_renderer", {
 ```
 
 ```typescript
-// In @jiratown/plugin-github setup
+// In workhorse-plugin-github setup
 hooks.emit("tui.register_renderer", {
   type: "pr_comment",
   renderer: (notification) => ({
@@ -237,7 +237,7 @@ packages/tui/                   # Standalone application + plugin
     ├── plugin.ts               # TUI plugin definition
     ├── app.tsx                 # Root component
     ├── context/
-    │   └── jiratown.tsx        # JiratownContext provider for Solid
+    │   └── workhorse.tsx        # WorkhorseContext provider for Solid
     ├── state/
     │   └── ui.ts               # UI state with Solid signals
     ├── renderers/
@@ -596,7 +596,7 @@ Types for the notification renderer system:
 
 ```typescript
 // renderers/types.ts
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "workhorse-core";
 
 export interface RenderedNotification {
   icon: string;
@@ -637,7 +637,7 @@ Renders a notification in the chat using plugin-registered renderers:
 import { Show } from "solid-js";
 import { getRenderer } from "../renderers/types.ts";
 import { theme } from "../theme.ts";
-import type { Notification } from "@jiratown/core";
+import type { Notification } from "workhorse-core";
 
 interface NotificationBoxProps {
   notification: Notification;
@@ -717,7 +717,7 @@ Unassigned issues that can be picked up:
 import { For } from "solid-js";
 import { createIssues } from "../primitives/create-issues.ts";
 import { theme } from "../theme.ts";
-import type { ParsedIssue } from "@jiratown/core";
+import type { ParsedIssue } from "workhorse-core";
 
 interface IssueListProps {
   onSelect: (issue: ParsedIssue) => void;
@@ -758,7 +758,7 @@ Running agents (click to enter agent dashboard):
 ```tsx
 // components/agent-list.tsx
 import { For } from "solid-js";
-import type { AgentAdapter } from "@jiratown/core";
+import type { AgentAdapter } from "workhorse-core";
 import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
 
@@ -815,7 +815,7 @@ Sidebar for agent dashboard showing all agents:
 ```tsx
 // components/agent-sidebar.tsx
 import { For } from "solid-js";
-import type { AgentAdapter } from "@jiratown/core";
+import type { AgentAdapter } from "workhorse-core";
 import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
 
@@ -910,7 +910,7 @@ Modal shown when clicking an issue to spawn an agent:
 import { createSignal } from "solid-js";
 import { Portal, useRenderer } from "@opentui/solid";
 import { theme } from "../theme.ts";
-import type { ParsedIssue } from "@jiratown/core";
+import type { ParsedIssue } from "workhorse-core";
 
 interface SpawnModalProps {
   issue: ParsedIssue;
@@ -1029,11 +1029,11 @@ Fetches outstanding issues from configured Jira/GitHub sources:
 ```typescript
 // primitives/create-issues.ts
 import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
-import type { ParsedIssue } from "@jiratown/core";
-import { useJiratown } from "../context/jiratown.tsx";
+import type { ParsedIssue } from "workhorse-core";
+import { useWorkhorse } from "../context/workhorse.tsx";
 
 export function createIssues(): Accessor<ParsedIssue[]> {
-  const { hooks, tracker } = useJiratown();
+  const { hooks, tracker } = useWorkhorse();
   const [issues, setIssues] = createSignal<ParsedIssue[]>([]);
 
   onMount(() => {
@@ -1063,11 +1063,11 @@ export function createIssues(): Accessor<ParsedIssue[]> {
 ```typescript
 // primitives/create-agents.ts
 import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
-import type { AgentAdapter } from "@jiratown/core";
-import { useJiratown } from "../context/jiratown.tsx";
+import type { AgentAdapter } from "workhorse-core";
+import { useWorkhorse } from "../context/workhorse.tsx";
 
 export function createAgents(): Accessor<AgentAdapter[]> {
-  const { orchestrator, hooks } = useJiratown();
+  const { orchestrator, hooks } = useWorkhorse();
   const [agents, setAgents] = createSignal<AgentAdapter[]>(orchestrator.getAll());
 
   onMount(() => {
@@ -1095,7 +1095,7 @@ Chat state for the selected issue/agent:
 ```typescript
 // primitives/create-chat.ts
 import { createSignal, createEffect, onMount, onCleanup, type Accessor } from "solid-js";
-import { useJiratown } from "../context/jiratown.tsx";
+import { useWorkhorse } from "../context/workhorse.tsx";
 
 export interface ChatMessage {
   id: string;
@@ -1105,7 +1105,7 @@ export interface ChatMessage {
 }
 
 export function createChat(issueId: Accessor<string | null>) {
-  const { hooks, memory, orchestrator } = useJiratown();
+  const { hooks, memory, orchestrator } = useWorkhorse();
   const [messages, setMessages] = createSignal<ChatMessage[]>([]);
 
   // Reset messages when issue changes
@@ -1216,7 +1216,7 @@ Using Solid signals instead of Zustand — no external state library needed:
 ```typescript
 // state/ui.ts
 import { createSignal } from "solid-js";
-import type { ParsedIssue } from "@jiratown/core";
+import type { ParsedIssue } from "workhorse-core";
 
 export type Screen = "overview" | "agent" | "help";
 export type Modal = "spawn" | null;
@@ -1257,11 +1257,11 @@ export const ui = {
 ## Context (Jiratown Provider)
 
 ```tsx
-// context/jiratown.tsx
+// context/workhorse.tsx
 import { createContext, useContext, type JSX } from "solid-js";
-import type { Orchestrator, Hooks, Memory, Tracker, Config } from "@jiratown/core";
+import type { Orchestrator, Hooks, Memory, Tracker, Config } from "workhorse-core";
 
-interface JiratownContextValue {
+interface WorkhorseContextValue {
   orchestrator: Orchestrator;
   hooks: Hooks;
   memory: Memory;
@@ -1269,19 +1269,19 @@ interface JiratownContextValue {
   config: Config;
 }
 
-const JiratownContext = createContext<JiratownContextValue>();
+const WorkhorseContext = createContext<WorkhorseContextValue>();
 
-export function useJiratown(): JiratownContextValue {
-  const ctx = useContext(JiratownContext);
-  if (!ctx) throw new Error("useJiratown must be used within JiratownProvider");
+export function useWorkhorse(): WorkhorseContextValue {
+  const ctx = useContext(WorkhorseContext);
+  if (!ctx) throw new Error("useWorkhorse must be used within WorkhorseProvider");
   return ctx;
 }
 
-interface JiratownProviderProps extends JiratownContextValue {
+interface WorkhorseProviderProps extends WorkhorseContextValue {
   children: JSX.Element;
 }
 
-export function JiratownProvider(props: JiratownProviderProps) {
+export function WorkhorseProvider(props: WorkhorseProviderProps) {
   const value = {
     orchestrator: props.orchestrator,
     hooks: props.hooks,
@@ -1291,9 +1291,9 @@ export function JiratownProvider(props: JiratownProviderProps) {
   };
 
   return (
-    <JiratownContext.Provider value={value}>
+    <WorkhorseContext.Provider value={value}>
       {props.children}
-    </JiratownContext.Provider>
+    </WorkhorseContext.Provider>
   );
 }
 ```
@@ -1304,14 +1304,14 @@ export function JiratownProvider(props: JiratownProviderProps) {
 // app.tsx
 import { Match, Switch, Show } from "solid-js";
 import { useRenderer } from "@opentui/solid";
-import { JiratownProvider } from "./context/jiratown.tsx";
+import { WorkhorseProvider } from "./context/workhorse.tsx";
 import { Overview } from "./screens/overview.tsx";
 import { Agent } from "./screens/agent.tsx";
 import { Help } from "./screens/help.tsx";
 import { SpawnModal } from "./components/spawn-modal.tsx";
 import { ui } from "./state/ui.ts";
 import { createKeyboardHandler } from "./primitives/create-keyboard.ts";
-import type { Orchestrator, Hooks, Memory, Tracker, Config } from "@jiratown/core";
+import type { Orchestrator, Hooks, Memory, Tracker, Config } from "workhorse-core";
 
 interface AppProps {
   orchestrator: Orchestrator;
@@ -1337,7 +1337,7 @@ export function App(props: AppProps) {
   });
 
   return (
-    <JiratownProvider
+    <WorkhorseProvider
       orchestrator={props.orchestrator}
       hooks={props.hooks}
       memory={props.memory}
@@ -1369,7 +1369,7 @@ export function App(props: AppProps) {
           />
         </Show>
       </box>
-    </JiratownProvider>
+    </WorkhorseProvider>
   );
 }
 ```
@@ -1387,7 +1387,7 @@ import { ChatBox } from "../components/chat-box.tsx";
 import { StatusBar } from "../components/status-bar.tsx";
 import { ui } from "../state/ui.ts";
 import { theme } from "../theme.ts";
-import type { ParsedIssue, AgentAdapter } from "@jiratown/core";
+import type { ParsedIssue, AgentAdapter } from "workhorse-core";
 
 export function Overview() {
   const [messages] = createSignal([
@@ -1453,7 +1453,7 @@ import { ui } from "../state/ui.ts";
 import { createChat } from "../primitives/create-chat.ts";
 import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
-import type { AgentAdapter } from "@jiratown/core";
+import type { AgentAdapter } from "workhorse-core";
 
 export function Agent() {
   const agents = createAgents();
@@ -1537,12 +1537,12 @@ preload = ["@opentui/solid/preload"]
 
 ```json
 {
-  "name": "@jiratown/tui",
+  "name": "@fdcn/workhorse",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
   "bin": {
-    "jiratown": "./src/index.ts"
+    "workhorse": "./src/index.ts"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -1550,10 +1550,10 @@ preload = ["@opentui/solid/preload"]
     "./renderers": "./src/renderers/index.ts"
   },
   "dependencies": {
-    "@jiratown/core": "workspace:*",
-    "@jiratown/plugin-jira": "workspace:*",
-    "@jiratown/plugin-github": "workspace:*",
-    "@jiratown/plugin-pi-adapter": "workspace:*",
+    "workhorse-core": "workspace:*",
+    "workhorse-plugin-jira": "workspace:*",
+    "workhorse-plugin-github": "workspace:*",
+    "workhorse-plugin-pi-adapter": "workspace:*",
     "solid-js": "^1.9.0",
     "@opentui/solid": "^0.1.0"
   },
@@ -1564,7 +1564,7 @@ preload = ["@opentui/solid/preload"]
 ```
 
 The TUI package:
-- **`@jiratown/tui`** - standalone application package
+- **`@fdcn/workhorse`** - standalone application package
 - **`startTUI()`** - exported function to launch the TUI (used by CLI)
 - **Exports `./plugin`** - so other packages can import the TUI plugin if needed
 - **Imports plugins directly** - Jira, GitHub, and pi-adapter plugins are bundled
@@ -1861,7 +1861,7 @@ describe("Overview Screen (E2E)", () => {
   let ht: HeadlessTerminal;
   
   beforeEach(async () => {
-    ht = await HeadlessTerminal.start(["bun", "run", "bin/jiratown-tui.ts"], {
+    ht = await HeadlessTerminal.start(["bun", "run", "bin/workhorse-tui.ts"], {
       cols: 80,
       rows: 24,
     });
@@ -1930,7 +1930,7 @@ describe("Agent Chat (E2E)", () => {
   let ht: HeadlessTerminal;
   
   beforeEach(async () => {
-    ht = await HeadlessTerminal.start(["bun", "run", "bin/jiratown-tui.ts"], {
+    ht = await HeadlessTerminal.start(["bun", "run", "bin/workhorse-tui.ts"], {
       cols: 80,
       rows: 24,
     });
@@ -2012,7 +2012,7 @@ HT_LIVE_PREVIEW=1 bun run test --filter e2e
     sudo mv ht /usr/local/bin/
 
 - name: Run TUI E2E tests
-  run: bun run --filter @jiratown/plugin-tui test
+  run: bun run --filter @fdcn/workhorse test
 ```
 
 ## Future Enhancements

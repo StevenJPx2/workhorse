@@ -1,10 +1,10 @@
 # Step 12: GitHub Plugin
 
-All GitHub functionality in a self-contained plugin. Provides GitHub issue parsing and the `jiratown_open_pr` tool. PR monitoring and status sync.
+All GitHub functionality in a self-contained plugin. Provides GitHub issue parsing and the `workhorse_open_pr` tool. PR monitoring and status sync.
 
 **External deps:** `gh` CLI (authenticated via `gh auth login`)
 
-**Location:** `packages/plugins/github/` (standalone package: `@jiratown/plugin-github`)
+**Location:** `packages/plugins/github/` (standalone package: `workhorse-plugin-github`)
 
 ## What It Registers
 
@@ -193,7 +193,7 @@ Hooks `issue.status_changed`. For GitHub issues with PRs:
 
 ```typescript
 // sync.ts
-export function registerStatusSync(ctx: JiratownContext, client: GitHubClient): void
+export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void
 ```
 
 ## Domain Types (colocated)
@@ -284,7 +284,7 @@ No separate OAuth flow needed — delegates to gh CLI.
 ```typescript
 // index.ts
 import { z } from "zod/v4";
-import { definePlugin } from "@jiratown/core";
+import { definePlugin } from "workhorse-core";
 import { GitHubClient } from "./client.ts";
 import { createGitHubParserOptions } from "./parser.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";

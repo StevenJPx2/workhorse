@@ -6,7 +6,7 @@ Bun workspace monorepo with `packages/core`. Tooling, deps, linting, structure.
 
 ```json
 {
-  "name": "jiratown",
+  "name": "workhorse",
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
@@ -43,7 +43,7 @@ Bun workspace monorepo with `packages/core`. Tooling, deps, linting, structure.
 
 ```json
 {
-  "name": "@jiratown/core",
+  "name": "workhorse-core",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -71,18 +71,18 @@ Carry over from old repo. oxlint for linting, oxfmt for formatting, pre-commit h
 ```json
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
-  "jsPlugins": ["./oxlint/eslint-plugin-jiratown"],
+  "jsPlugins": ["./oxlint/eslint-plugin-workhorse"],
   "ignorePatterns": ["oxlint/**", "dist/**", "node_modules/**"],
   "rules": {
-    "jiratown/max-lines-per-file": ["error", 200],
-    "jiratown/enforce-kebab-case-filenames": "warn",
-    "jiratown/enforce-colocated-exports": "warn",
-    "jiratown/enforce-test-colocation": "warn"
+    "workhorse/max-lines-per-file": ["error", 200],
+    "workhorse/enforce-kebab-case-filenames": "warn",
+    "workhorse/enforce-colocated-exports": "warn",
+    "workhorse/enforce-test-colocation": "warn"
   }
 }
 ```
 
-### Custom rules (`oxlint/eslint-plugin-jiratown/`)
+### Custom rules (`oxlint/eslint-plugin-workhorse/`)
 
 Port from old repo, drop `prefer-composables-over-props` (TUI-only).
 
@@ -94,7 +94,7 @@ Port from old repo, drop `prefer-composables-over-props` (TUI-only).
 | `enforce-test-colocation` | warn | When folder test ratio >40%, tests must move to `__tests__/` |
 | `no-single-reference-function` | warn | Non-exported functions used in exactly one place should be inlined |
 
-Standalone package at `oxlint/eslint-plugin-jiratown/` with its own `package.json` and `tsconfig.json`. Built via `bun build index.ts --outdir . --target bun`.
+Standalone package at `oxlint/eslint-plugin-workhorse/` with its own `package.json` and `tsconfig.json`. Built via `bun build index.ts --outdir . --target bun`.
 
 ## `tsconfig.json`
 
@@ -125,7 +125,7 @@ packages/core/src/
 1. Convert root to workspace root
 2. Create `packages/core/` with package.json + tsconfig
 3. Create directory structure (empty `index.ts` files)
-4. Port `oxlint/eslint-plugin-jiratown/` from old repo (drop `prefer-composables-over-props`)
+4. Port `oxlint/eslint-plugin-workhorse/` from old repo (drop `prefer-composables-over-props`)
 5. Create `.oxlintrc.json` at root
 6. Remove `bun init` placeholder `index.ts` from root
 7. Keep docs at root (`MIGRATION.md`, `CLAUDE.md`, `architecture.*`, `plan/`)

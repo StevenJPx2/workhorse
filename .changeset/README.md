@@ -24,5 +24,5 @@ Merging that PR will:
 
 1. Update package versions
 2. Update CHANGELOG.md files
-3. Publish `@jiratown/tui` to npm
+3. Publish `@fdcn/workhorse` to npm
 4. Create a GitHub release

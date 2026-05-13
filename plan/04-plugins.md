@@ -1,6 +1,6 @@
 # Step 4: Plugins
 
-Plugin system with `unctx` for context management. No prop drilling — use `useJiratown()` anywhere.
+Plugin system with `unctx` for context management. No prop drilling — use `useWorkhorse()` anywhere.
 
 Location: `packages/core/src/plugins/` and `packages/core/src/context/`
 
@@ -15,8 +15,8 @@ unctx
 ```
 packages/core/src/
   context/
-    index.ts       # useJiratown, runWithContext, setContext, unsetContext
-    types.ts       # JiratownContext
+    index.ts       # useWorkhorse, runWithContext, setContext, unsetContext
+    types.ts       # WorkhorseContext
   plugins/
     index.ts       # public exports
     types.ts       # PluginManifest, PluginOptions, Plugin, PluginSymbol
@@ -31,7 +31,7 @@ Uses `unctx` with native `AsyncLocalStorage` for async-safe context.
 
 ```typescript
 // context/types.ts
-interface JiratownContext {
+interface WorkhorseContext {
   readonly config: Config
   readonly hooks: typeof hooks
   // Extended in later steps: db, memory, monitor, tracker
@@ -41,12 +41,12 @@ interface JiratownContext {
 import { createContext } from "unctx"
 import { AsyncLocalStorage } from "node:async_hooks"
 
-const ctx = createContext<JiratownContext>({
+const ctx = createContext<WorkhorseContext>({
   asyncContext: true,
   AsyncLocalStorage,
 })
 
-export const useJiratown = ctx.use      // Get context (throws if not set)
+export const useWorkhorse = ctx.use      // Get context (throws if not set)
 export const tryUseJiratown = ctx.tryUse // Get context (returns undefined)
 export const runWithContext = ctx.call   // Run fn within context
 export const setContext = ctx.set        // Set singleton (for tests)
@@ -74,7 +74,7 @@ interface PluginOptions {
   teardown?: () => void | Promise<void>
 }
 
-const PluginSymbol = Symbol.for("jiratown.plugin")
+const PluginSymbol = Symbol.for("workhorse.plugin")
 
 interface Plugin extends PluginOptions {
   [PluginSymbol]: true
@@ -90,7 +90,7 @@ function definePlugin(options: PluginOptions): Plugin {
   return {
     ...options,
     manifest,
-    [Symbol.for("jiratown.plugin")]: true,
+    [Symbol.for("workhorse.plugin")]: true,
   } as Plugin
 }
 ```
@@ -103,7 +103,7 @@ function isPlugin(value: unknown): value is Plugin {
   return (
     typeof value === "object" &&
     value !== null &&
-    Symbol.for("jiratown.plugin") in value
+    Symbol.for("workhorse.plugin") in value
   )
 }
 ```
@@ -133,7 +133,7 @@ class PluginRegistry {
 ### Loading Strategy
 
 1. **Explicitly enabled** — `config.plugins.enabled` array (npm packages or paths)
-2. **Auto-discovery** — Scan `~/.jiratown/plugins/` (global) and `.jiratown/plugins/` (project)
+2. **Auto-discovery** — Scan `~/.workhorse/plugins/` (global) and `.workhorse/plugins/` (project)
 
 Duplicates are skipped (first wins).
 
@@ -151,7 +151,7 @@ export default definePlugin({
     },
   },
   setup() {
-    const { hooks } = useJiratown()
+    const { hooks } = useWorkhorse()
     hooks.on("issue.parsed", ({ issue }) => {
       console.log("Parsed:", issue.title)
     })
@@ -208,8 +208,8 @@ async function bootstrap(repoRoot?: string): Promise<Jiratown> {
 | Context growth | Full object upfront — services created before context is set |
 | Context extension | Core services only — plugins use hooks, not context injection |
 | Plugin definition | `definePlugin()` factory → branded object with symbol |
-| Setup signature | No args — use `useJiratown()` inside |
+| Setup signature | No args — use `useWorkhorse()` inside |
 | Loading strategy | Config `plugins.enabled` + auto-discovery |
-| Discovery dirs | `~/.jiratown/plugins/` (global) + `.jiratown/plugins/` (project) |
+| Discovery dirs | `~/.workhorse/plugins/` (global) + `.workhorse/plugins/` (project) |
 | Capabilities | Informational metadata only — actual registration via hooks |
 | Async support | Native `AsyncLocalStorage` only (Node.js/Bun) |
