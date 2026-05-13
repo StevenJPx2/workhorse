@@ -19,8 +19,7 @@ export function handleOAuth(plugin: PluginAuthRequirement, opts: AuthHandlersOpt
   if (plugin.auth.type !== "oauth") return;
   opts.setFlowState({ phase: "authenticating", pluginName: plugin.name });
 
-  const auth = plugin.auth as OAuthProvider;
-  const { authUrl, waitForCallback, cancel } = startOAuthFlow(auth);
+  const { authUrl, waitForCallback, cancel } = startOAuthFlow(plugin.auth as OAuthProvider);
   opts.setCancelOAuth(cancel);
   opts.setFlowState({
     phase: "waiting-browser",

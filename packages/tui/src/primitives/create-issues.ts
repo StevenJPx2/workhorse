@@ -27,9 +27,7 @@ export function createIssues(options?: CreateIssuesOptions): Accessor<Issue[]> {
   onMount(async () => {
     // If auto mode, detect repository from git remote
     if (options?.repository === "auto") {
-      const repoPath = paths.worktreesRoot.replace(/-worktrees$/, "");
-      const detected = await getRepoIdentifier(repoPath);
-      setDetectedRepo(detected);
+      setDetectedRepo(await getRepoIdentifier(paths.worktreesRoot.replace(/-worktrees$/, "")));
     }
 
     // Fetch function - handles filtering logic

@@ -84,11 +84,6 @@ export async function configureJiraAuth(
   // Normalize siteUrl - remove protocol if present
   siteUrl = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
-  // Also normalize the raw siteUrl if it's not an env var reference
-  const normalizedRawSiteUrl = rawSiteUrl.startsWith("$")
-    ? rawSiteUrl
-    : rawSiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-
   // Test the credentials by making a simple API call
   try {
     const response = await fetch(`https://${siteUrl}/rest/api/3/myself`, {
@@ -109,7 +104,9 @@ export async function configureJiraAuth(
     await saveCredentials({
       email: rawEmail,
       apiToken: rawApiToken,
-      siteUrl: normalizedRawSiteUrl,
+      siteUrl: rawSiteUrl.startsWith("$")
+        ? rawSiteUrl
+        : rawSiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""),
     });
     return { success: true };
   } catch (error) {

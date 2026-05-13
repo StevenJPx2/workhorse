@@ -21,8 +21,6 @@ export interface AuthContentProps {
 }
 
 export function AuthContent(props: AuthContentProps) {
-  const theme = getTheme();
-
   return (
     <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
       <Show
@@ -40,7 +38,7 @@ export function AuthContent(props: AuthContentProps) {
             </For>
             {props.remainingPlugins.length === 0 && (
               <box paddingTop={2}>
-                <text fg={theme.colors.success}>
+                <text fg={getTheme().colors.success}>
                   <b>✓ All plugins authenticated!</b>
                 </text>
               </box>

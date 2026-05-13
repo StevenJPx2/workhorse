@@ -45,30 +45,6 @@ export function Overview() {
   // oxlint-disable-next-line workhorse/no-single-use-variable
   const issues = createIssues({ repository: "auto" });
 
-  const handleSubmit = async (msg: string) => {
-    if (ui.lastFocusedList() === "agents" && selectedAgentId()) {
-      send(msg);
-      ui.enterAgentView(selectedAgentId()!);
-      return;
-    }
-    try {
-      const issue = await tracker.parseInput(msg, { repository: currentRepo() });
-      await orchestrator
-        .spawn({ issue, repoPath: paths.worktreesRoot.replace(/-worktrees$/, "") })
-        .then((a) => a.start());
-      ui.enterAgentView(issue.externalId);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("credentials not found") || message.includes("authenticate")) {
-        ui.showError(
-          `${message}\n\nRestart workhorse to authenticate, or set up credentials manually.`,
-        );
-      } else {
-        ui.showError(message);
-      }
-    }
-  };
-
   useOverviewBindings({
     issues,
     agents,
@@ -102,7 +78,29 @@ export function Overview() {
       <OverviewInput
         messages={messages}
         chatContextId={chatContextId}
-        onSubmit={handleSubmit}
+        onSubmit={async (msg: string) => {
+          if (ui.lastFocusedList() === "agents" && selectedAgentId()) {
+            send(msg);
+            ui.enterAgentView(selectedAgentId()!);
+            return;
+          }
+          try {
+            const issue = await tracker.parseInput(msg, { repository: currentRepo() });
+            await orchestrator
+              .spawn({ issue, repoPath: paths.worktreesRoot.replace(/-worktrees$/, "") })
+              .then((a) => a.start());
+            ui.enterAgentView(issue.externalId);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            if (message.includes("credentials not found") || message.includes("authenticate")) {
+              ui.showError(
+                `${message}\n\nRestart workhorse to authenticate, or set up credentials manually.`,
+              );
+            } else {
+              ui.showError(message);
+            }
+          }
+        }}
         onEmptySubmit={() => {
           const issue = issues()[issueIndex()];
           if (issue) ui.openSpawnModal(issue);

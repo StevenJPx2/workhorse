@@ -52,7 +52,7 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
     return {
       icon: "🚨",
       title: isBlocking ? "BLOCKED" : "escalate",
-      body: truncate(String(args.message ?? ""), 60),
+      body: String(args.message ?? ""),
       style: "box",
       color: isBlocking ? "error" : "warning",
     };
@@ -89,9 +89,4 @@ function getStatusColor(
     default:
       return "dim";
   }
-}
-
-/** Truncate string to max length */
-function truncate(str: string, max: number): string {
-  return str.length <= max ? str : str.slice(0, max - 3) + "...";
 }

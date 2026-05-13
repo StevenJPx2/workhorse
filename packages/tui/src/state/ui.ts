@@ -1,6 +1,16 @@
 import { createSignal } from "solid-js";
 import type { Issue } from "workhorse-core";
+import {
+  toast,
+  dismissToast,
+  showError,
+  showSuccess,
+  toasts,
+  type Toast,
+  type ToastType,
+} from "./ui-toast.ts";
 
+export type { Toast, ToastType };
 export type Screen = "overview" | "agent" | "help";
 export type Modal = "spawn" | "model" | "delete" | null;
 
@@ -23,17 +33,6 @@ const [selectedModel, setSelectedModel] = createSignal<string | null>(null);
 // Input and focus state
 const [inputMode, setInputMode] = createSignal(false);
 const [focusedComponent, setFocusedComponent] = createSignal<FocusTarget>("issues");
-
-// Toast notification state
-export type ToastType = "error" | "success" | "info" | "warning";
-export interface Toast {
-  id: number;
-  type: ToastType;
-  message: string;
-  timestamp: number;
-}
-const [toasts, setToasts] = createSignal<Toast[]>([]);
-let toastId = 0;
 
 // Focus order for tab navigation
 const FOCUS_ORDER: FocusTarget[] = ["issues", "agents", "chat"];
@@ -173,23 +172,16 @@ export const ui = {
     setScreen("overview");
   },
 
-  /** Show a toast notification. Auto-dismisses after duration (default 5s). */
-  toast: (type: ToastType, message: string, duration = 5000) => {
-    const id = ++toastId;
-    const toast: Toast = { id, type, message, timestamp: Date.now() };
-    setToasts((prev) => [...prev, toast]);
-    setTimeout(() => ui.dismissToast(id), duration);
-    return id;
+  /**
+   * Reset the chat context to default (issues mode).
+   * Called when user presses Escape to clear agent chat context.
+   */
+  resetChatContext: () => {
+    setLastFocusedList("issues");
   },
 
-  /** Dismiss a toast by ID. */
-  dismissToast: (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  },
-
-  /** Shorthand for error toast. */
-  showError: (message: string) => ui.toast("error", message, 8000),
-
-  /** Shorthand for success toast. */
-  showSuccess: (message: string) => ui.toast("success", message, 3000),
+  toast,
+  dismissToast,
+  showError,
+  showSuccess,
 };

@@ -15,7 +15,6 @@ import {
 } from "./auth-handlers.ts";
 
 export function Auth(props: AuthScreenProps) {
-  const theme = getTheme();
   const renderer = useRenderer();
   const [selectedIndex, setSelectedIndex] = createSignal(0);
   const [flowState, setFlowState] = createSignal<AuthFlowState>({ phase: "idle" });
@@ -112,7 +111,7 @@ export function Auth(props: AuthScreenProps) {
       flexDirection="column"
       width="100%"
       height="100%"
-      backgroundColor={theme.colors.background}
+      backgroundColor={getTheme().colors.background}
     >
       <AuthHeader />
       <AuthContent

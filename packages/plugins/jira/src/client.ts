@@ -17,18 +17,17 @@ export class AtlassianClient {
 
   /** Get the base URL from credentials */
   private async getBaseUrl(): Promise<string> {
-    const creds = await this.getCredentials();
-    // Normalize siteUrl - ensure it has https:// and ends with the API path
-    const siteUrl = creds.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    return `https://${siteUrl}/rest/api/3`;
+    return this.getCredentials().then(
+      (creds) =>
+        `https://${creds.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}/rest/api/3`,
+    );
   }
 
   /** Build request headers with Basic Auth (email:apiToken) */
   private async headers(): Promise<Record<string, string>> {
-    const creds = await this.getCredentials();
-    const basicAuth = Buffer.from(`${creds.email}:${creds.apiToken}`).toString("base64");
+    const { email, apiToken } = await this.getCredentials();
     return {
-      Authorization: `Basic ${basicAuth}`,
+      Authorization: `Basic ${Buffer.from(`${email}:${apiToken}`).toString("base64")}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     };
@@ -36,8 +35,7 @@ export class AtlassianClient {
 
   /** GET helper */
   private async get<T>(path: string): Promise<T> {
-    const baseUrl = await this.getBaseUrl();
-    const response = await fetch(`${baseUrl}${path}`, {
+    const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "GET",
       headers: await this.headers(),
     });
@@ -51,8 +49,7 @@ export class AtlassianClient {
 
   /** POST helper */
   private async post<T>(path: string, body: unknown): Promise<T> {
-    const baseUrl = await this.getBaseUrl();
-    const response = await fetch(`${baseUrl}${path}`, {
+    const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "POST",
       headers: await this.headers(),
       body: JSON.stringify(body),
@@ -67,8 +64,7 @@ export class AtlassianClient {
 
   /** PUT helper */
   private async put(path: string, body: unknown): Promise<void> {
-    const baseUrl = await this.getBaseUrl();
-    const response = await fetch(`${baseUrl}${path}`, {
+    const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "PUT",
       headers: await this.headers(),
       body: JSON.stringify(body),

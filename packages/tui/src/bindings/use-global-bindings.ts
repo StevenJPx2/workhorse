@@ -65,6 +65,8 @@ export function useGlobalBindings() {
         // Exit input mode first, return to navigation
         ui.exitInputMode();
         ui.setFocusedComponent("issues");
+        // Reset chat context so the input box goes back to normal mode
+        ui.resetChatContext();
       } else if (ui.screen() !== "overview") {
         ui.backToOverview();
       }
