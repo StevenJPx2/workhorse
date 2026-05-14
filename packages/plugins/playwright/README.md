@@ -1,388 +1,289 @@
 # workhorse-plugin-playwright
 
-Browser automation plugin for Workhorse using Playwright. Provides headless browser control for testing, screenshot capture, and web interaction during issue implementation.
+Browser automation for Workhorse — enables agents to capture screenshots, verify UI, and test web applications.
 
-## Installation
+## What This Plugin Does
 
-```bash
-bun add workhorse-plugin-playwright
+This plugin provides Playwright-powered browser automation, allowing agents to:
+
+- **Navigate and interact** with web pages
+- **Capture screenshots** for PR documentation
+- **Verify UI changes** during development
+- **Debug visual issues** by inspecting page state
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Playwright Plugin                             │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              PlaywrightSessionManager                     │   │
+│  │  - One browser session per issue                          │   │
+│  │  - Lazy creation, auto-cleanup                            │   │
+│  │  - Manages page lifecycle                                 │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                        Tools                             │    │
+│  │  navigate │ screenshot │ click │ fill │ get_element     │    │
+│  │  get_page_content │ evaluate │ close_session             │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                   Steering Rules                         │    │
+│  │  screenshot-before-pr: Remind to capture evidence        │    │
+│  └─────────────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────────────────┤
+│  Hooks Emitted: session.started/closed, page.*, screenshot.*   │
+│  Hooks Listened: agent.stop.post, prompt.building, pr.opening  │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+                      ┌─────────────────┐
+                      │  workhorse-core │
+                      └─────────────────┘
 ```
 
-## Prerequisites
-
-- **Playwright** must be installed with at least one browser: `npx playwright install chromium`
-- Node.js 18+ (Playwright requirement)
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Session Management** | One browser session per issue, auto-cleanup on agent stop |
-| **Navigation** | Load URLs, wait for network idle, track page state |
-| **Screenshots** | Full page or element capture, PNG/JPEG support |
-| **DOM Interaction** | Click, fill forms, query elements by selector |
-| **JavaScript Evaluation** | Execute arbitrary JS in page context |
-| **Cross-Plugin Sync** | Auto-adds Screenshots section to GitHub PRs |
-| **Steering** | Idle agent reminders to capture screenshots before PR |
-| **Prompt Enrichment** | Browser testing workflow guidance in agent prompts |
-
-## Configuration
-
-```toml
-# ~/.workhorse.toml or .workhorse.toml
-
-[plugins.playwright]
-browser_type = "chromium"    # Browser engine: chromium, firefox, webkit (default: chromium)
-viewport_width = 1280        # Default viewport width (default: 1280)
-viewport_height = 720        # Default viewport height (default: 720)
-timeout = 30000              # Navigation timeout in ms (default: 30000)
-headless = true              # Run in headless mode (default: true)
-```
-
-## Usage
-
-### Register the Plugin
-
-```typescript
-import { playwrightPlugin } from "workhorse-plugin-playwright";
-
-const wh = await bootstrap({
-  plugins: [playwrightPlugin],
-});
-```
+## What It Registers
 
 ### Tools
 
-#### playwright_navigate
-
-Navigate to a URL and wait for the page to load:
-
-```typescript
-{
-  url: "https://example.com/dashboard",
-  issueId: "issue-uuid",
-  waitUntil: "networkidle"  // Optional: load, domcontentloaded, networkidle
-}
-```
-
-Returns page title and final URL after any redirects.
-
-#### playwright_screenshot
-
-Capture a screenshot of the current page or a specific element:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  fullPage: true,           // Capture full scrollable page
-  selector: "#main-content", // Optional: capture specific element
-  format: "png"             // png or jpeg
-}
-```
-
-Returns the screenshot file path (saved in worktree directory).
-
-#### playwright_click
-
-Click an element on the page:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  selector: "button[type=submit]",
-  button: "left"           // Optional: left, right, middle
-}
-```
-
-#### playwright_fill
-
-Fill a form input with text:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  selector: "input[name=email]",
-  value: "test@example.com"
-}
-```
-
-#### playwright_get_element
-
-Query an element and get its properties:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  selector: ".error-message"
-}
-
-// Returns:
-// {
-//   exists: true,
-//   tagName: "div",
-//   textContent: "Invalid email address",
-//   attributes: { class: "error-message", role: "alert" },
-//   isVisible: true
-// }
-```
-
-#### playwright_get_page_content
-
-Get the current page's content and state:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  includeHtml: false       // Optional: include full HTML
-}
-
-// Returns:
-// {
-//   url: "https://example.com/dashboard",
-//   title: "Dashboard | Example",
-//   consoleErrors: [...],
-//   networkErrors: [...]
-// }
-```
-
-#### playwright_evaluate
-
-Execute JavaScript in the page context:
-
-```typescript
-{
-  issueId: "issue-uuid",
-  script: "return document.querySelectorAll('.item').length"
-}
-
-// Returns the evaluated result (must be JSON-serializable)
-```
-
-#### playwright_close_session
-
-Manually close a browser session:
-
-```typescript
-{
-  issueId: "issue-uuid"
-}
-```
-
-Note: Sessions are automatically closed when agents stop.
-
-### Session Lifecycle
-
-1. **First tool call** — Browser session created automatically
-2. **Subsequent calls** — Reuse existing session for the issue
-3. **Agent stop** — Session automatically cleaned up via `agent.stop.post` hook
-4. **Manual close** — Use `playwright_close_session` for early cleanup
-
-### Cross-Plugin Sync
-
-When both Playwright and GitHub plugins are loaded:
-
-- **Screenshots in PRs** — When `github_open_pr` is called, Playwright contributes a "Screenshots" section listing any `screenshot-*.png` files in the worktree
-
-Example PR body:
-```markdown
-## Summary
-Added dashboard feature
-
-## Screenshots
-![screenshot-1.png](./screenshot-1.png)
-
-![screenshot-2.png](./screenshot-2.png)
-```
+| Tool | Description |
+|------|-------------|
+| `playwright_navigate` | Navigate to URL (creates session if needed) |
+| `playwright_screenshot` | Capture screenshot of page or element |
+| `playwright_click` | Click element by selector |
+| `playwright_fill` | Fill form field |
+| `playwright_get_element` | Get element info (text, attributes) |
+| `playwright_get_page_content` | Get page HTML or text content |
+| `playwright_evaluate` | Run JavaScript on page |
+| `playwright_close_session` | Close browser session |
 
 ### Steering Rules
 
-The plugin registers a steering rule that fires when an agent is implementing and has used Playwright tools:
+| Rule | Condition | Reminder |
+|------|-----------|----------|
+| `playwright:screenshot-before-pr` | Has UI changes, no screenshots taken | "Capture screenshots before creating PR" |
 
-- **Screenshot Reminder** — Reminds agents to capture final screenshots before creating a PR
+### TUI Renderer: `playwright`
 
-### Prompt Enrichment
+Renders browser activities:
 
-The plugin adds workflow guidance to agent prompts via `prompt.building`:
+- Navigation → globe icon + URL
+- Screenshot → camera icon + filename
+- Click/fill → cursor icon + selector
+- Console errors → warning icon + message
 
-- **Browser Testing Workflow** — Step-by-step guidance for using Playwright tools effectively
+## Session Management
 
-## Types
-
-### BrowserSession
+One browser session per issue, lazily created:
 
 ```typescript
-interface BrowserSession {
-  id: string;
-  issueId: string;
-  browser: Browser;
-  context: BrowserContext;
-  page: Page;
-  browserType: BrowserType;
-  viewport: Viewport;
-  createdAt: Date;
+class PlaywrightSessionManager {
+  private sessions = new Map<string, SessionState>();
+
+  async getOrCreateSession(issueId: string): Promise<BrowserSession> {
+    const existing = this.sessions.get(issueId);
+    if (existing?.session.isActive) {
+      return existing.session;
+    }
+
+    // Launch browser
+    const browser = await chromium.launch({
+      headless: config.headless,
+    });
+
+    const page = await browser.newPage({
+      viewport: {
+        width: config.viewportWidth,
+        height: config.viewportHeight,
+      },
+    });
+
+    const session = new BrowserSession(browser, page);
+    this.sessions.set(issueId, { session, createdAt: Date.now() });
+
+    hooks.emit("playwright:session.started", { issueId });
+    return session;
+  }
+
+  async closeSession(issueId: string): Promise<void> {
+    const state = this.sessions.get(issueId);
+    if (state) {
+      await state.session.close();
+      this.sessions.delete(issueId);
+      hooks.emit("playwright:session.closed", { issueId });
+    }
+  }
 }
 ```
 
-### BrowserType
+**Auto-cleanup on agent stop:**
 
 ```typescript
-type BrowserType = "chromium" | "firefox" | "webkit";
-```
-
-### Viewport
-
-```typescript
-interface Viewport {
-  width: number;
-  height: number;
-}
-```
-
-### ScreenshotOptions
-
-```typescript
-interface ScreenshotOptions {
-  fullPage?: boolean;
-  selector?: string;
-  format?: "png" | "jpeg";
-  quality?: number;        // For JPEG only
-}
-```
-
-### PageInfo
-
-```typescript
-interface PageInfo {
-  url: string;
-  title: string;
-  consoleMessages: ConsoleMessage[];
-  networkRequests: NetworkRequest[];
-}
-```
-
-### ElementInfo
-
-```typescript
-interface ElementInfo {
-  exists: boolean;
-  tagName?: string;
-  textContent?: string;
-  attributes?: Record<string, string>;
-  isVisible?: boolean;
-  boundingBox?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-}
+hooks.on("agent.stop.post", async ({ adapter }) => {
+  await sessionManager.closeSession(adapter.issue.id);
+});
 ```
 
 ## Hooks
 
-The plugin emits these hooks for cross-plugin coordination:
+### Emitted
 
 | Hook | Payload | When |
 |------|---------|------|
-| `playwright:session.started` | `{ issueId, sessionId, browserType }` | Browser session created |
-| `playwright:session.closed` | `{ issueId, sessionId }` | Browser session closed |
-| `playwright:page.loading` | `PageLoadingContext` | **Before** page navigation (inject init scripts) |
-| `playwright:page.navigated` | `{ issueId, sessionId, url, title }` | Page navigation completed |
-| `playwright:screenshot.taken` | `{ issueId, sessionId, path, options }` | Screenshot captured |
-| `playwright:console.error` | `{ issueId, sessionId, messages }` | Page console has errors |
-| `playwright:network.failed` | `{ issueId, sessionId, url, error }` | Network request failed |
-| `playwright:viewport.changed` | `{ issueId, sessionId, viewport }` | Viewport size changed |
+| `playwright:session.started` | `{ issueId }` | Browser launched |
+| `playwright:session.closed` | `{ issueId }` | Browser closed |
+| `playwright:page.loading` | `{ issueId, url, initScripts: [] }` | Before navigation (inject scripts) |
+| `playwright:page.navigated` | `{ issueId, url, title }` | After navigation |
+| `playwright:screenshot.taken` | `{ issueId, path, selector? }` | Screenshot captured |
+| `playwright:console.error` | `{ issueId, message }` | Page console error |
+| `playwright:network.failed` | `{ issueId, url, error }` | Network request failed |
+| `playwright:viewport.changed` | `{ issueId, width, height }` | Viewport resized |
 
-### Injecting Init Scripts (page.loading hook)
+### Listened
 
-The `playwright:page.loading` hook fires **before** a page navigates, allowing plugins to inject JavaScript that runs before any page scripts. This is useful for:
+| Hook | Action |
+|------|--------|
+| `agent.stop.post` | Close browser session |
+| `prompt.building` | Add Playwright workflow guidance |
+| `github:pr.opening` | Add Screenshots section to PR |
 
-- Mocking APIs or browser globals
-- Setting up test fixtures
-- Intercepting network requests
-- Overriding `Date.now()` or other functions
+## Cross-Plugin Integration
+
+### Init Script Injection
+
+Other plugins can inject scripts before navigation:
 
 ```typescript
-import type { PageLoadingContext } from "workhorse-plugin-playwright";
+// Plugin emits before navigating
+hooks.emit("playwright:page.loading", {
+  issueId,
+  url: "https://app.example.com",
+  initScripts: [],  // Mutable array
+});
 
-ctx.hooks.on("playwright:page.loading", (event: unknown) => {
-  const loadingCtx = event as PageLoadingContext;
-  
-  // Inject a script that runs before the page loads
-  loadingCtx.initScripts.push(`
-    // Mock the fetch API
-    window.__originalFetch = window.fetch;
-    window.fetch = async (url, options) => {
-      console.log('Intercepted fetch:', url);
-      return window.__originalFetch(url, options);
+// Test plugin could inject mocks
+hooks.on("playwright:page.loading", (event) => {
+  event.initScripts.push(`
+    window.__MOCK_API__ = true;
+    window.fetch = async (url) => {
+      if (url.includes('/api/user')) {
+        return { json: () => ({ name: 'Test User' }) };
+      }
     };
-    
-    // Set a test flag
-    window.__TEST_MODE__ = true;
   `);
 });
 ```
 
-**PageLoadingContext type:**
+### Screenshot Contribution to PRs
 
 ```typescript
-interface PageLoadingContext {
-  issueId: string;
-  sessionId: string;
-  url: string;
-  browserType: BrowserType;
-  initScripts: string[];  // Push scripts here to inject them
-}
-```
+hooks.on("github:pr.opening", async (event) => {
+  const screenshots = await findScreenshots(event.worktreePath);
 
-Scripts are injected via Playwright's `page.addInitScript()` API, which runs the script in the page context before any other scripts execute.
-
-### Listening to Other Hooks
-
-```typescript
-ctx.hooks.on("playwright:page.navigated", (event: unknown) => {
-  const { issueId, url, title } = event as {
-    issueId: string;
-    url: string;
-    title: string;
-  };
-  console.log(`Page navigated: ${title} (${url})`);
+  if (screenshots.length > 0) {
+    event.contributions.push({
+      section: "Screenshots",
+      content: screenshots.map(file =>
+        `![${basename(file)}](./${file})`
+      ).join("\n\n"),
+      priority: 80,  // After code changes, before footer
+    });
+  }
 });
 ```
 
-## Files
+## Configuration
 
-| File | Purpose |
-|------|---------|
-| `index.ts` | Plugin definition and setup |
-| `session-manager.ts` | Browser session lifecycle management |
-| `browser-operations.ts` | Core Playwright operations (navigate, screenshot, etc.) |
-| `tools/` | Tool implementations for each browser action |
-| `cross-plugin-sync.ts` | GitHub PR screenshot contribution |
-| `steering.ts` | Screenshot reminder steering rule |
-| `prompt.ts` | Browser testing workflow prompt enrichment |
-| `renderer.ts` | TUI activity renderer for Playwright tools |
-| `hooks.ts` | Plugin hook type definitions |
-| `types.ts` | Domain types (BrowserSession, Viewport, etc.) |
+```toml
+[plugins.playwright]
+browserType = "chromium"  # "chromium" | "firefox" | "webkit"
+viewportWidth = 1280
+viewportHeight = 720
+timeout = 30000           # Navigation/action timeout (ms)
+headless = true           # Run without visible browser
+```
 
-## Advanced Usage
+## Usage Examples
 
-### Custom Session Management
+### Agent Captures Screenshot
 
 ```typescript
-import { PlaywrightSessionManager } from "workhorse-plugin-playwright";
-
-// Access the session manager for advanced operations
-const session = await sessionManager.getOrCreateSession(issueId, {
-  headless: false,  // Debug with visible browser
+// Agent navigates and screenshots
+await tools.playwright_navigate({ url: "http://localhost:3000/login" });
+await tools.playwright_fill({ selector: "#email", value: "test@example.com" });
+await tools.playwright_fill({ selector: "#password", value: "password123" });
+await tools.playwright_click({ selector: "button[type=submit]" });
+await tools.playwright_screenshot({
+  path: "screenshots/login-success.png",
+  fullPage: false,
 });
 
-// Direct Playwright access
-await session.page.evaluate(() => {
-  // Custom page operations
+// Screenshot saved to worktree
+// When PR created, Screenshots section auto-added
+```
+
+### Debugging Console Errors
+
+```typescript
+// Plugin monitors console
+page.on("console", (msg) => {
+  if (msg.type() === "error") {
+    hooks.emit("playwright:console.error", {
+      issueId,
+      message: msg.text(),
+      location: msg.location(),
+    });
+
+    // Creates notification for agent
+    memory.notifications.add({
+      issueId,
+      type: "browser_error",
+      priority: "medium",
+      message: `Console error: ${msg.text()}`,
+    });
+  }
 });
 ```
 
-## License
+### Page Content Extraction
 
-MIT
+```typescript
+// Agent extracts page data
+const content = await tools.playwright_get_page_content({
+  format: "text",  // or "html"
+});
+
+// Agent evaluates JavaScript
+const data = await tools.playwright_evaluate({
+  script: `
+    return Array.from(document.querySelectorAll('.user-row'))
+      .map(row => ({
+        name: row.querySelector('.name').textContent,
+        email: row.querySelector('.email').textContent,
+      }));
+  `,
+});
+```
+
+## Dependencies on Core
+
+| Import | Usage |
+|--------|-------|
+| `definePlugin` | Plugin definition |
+| `OrchestratorTool` | Tool interface |
+| `SteeringRuleConfigInput` | Steering rule definition |
+| `WorkhorseContext` | Service access |
+| `PromptContextBlock` | Prompt enrichment |
+| `MemoryService` | Notifications for browser events |
+
+## Why This Architecture
+
+1. **Session per issue** — Browser state isolated, no cross-contamination
+2. **Lazy creation** — No browser overhead until agent needs it
+3. **Auto-cleanup** — Sessions closed when agents stop, no leaks
+4. **Init script hooks** — Testing plugins can inject mocks without coupling
+5. **PR integration** — Screenshots automatically included in PRs
+6. **Event visibility** — Console/network errors surfaced to agent

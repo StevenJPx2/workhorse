@@ -1,751 +1,543 @@
 # workhorse-core
 
-Core library for Workhorse — an AI-powered agent orchestrator for Jira and GitHub issues. Provides config management, plugin system, database, memory, monitoring, agent orchestration, and steering.
+The foundation of Workhorse — an autonomous AI agent orchestration framework for software development.
 
-## Installation
+## What This Package Does
 
-```bash
-bun add workhorse-core
+This package provides everything needed to orchestrate AI coding agents working on external issues (Jira, GitHub). It handles:
+
+- **Plugin architecture** for extensibility without coupling
+- **Two-tier memory system** for fast session context + semantic search
+- **Event-driven hooks** for loose module coupling
+- **Agent lifecycle management** through harness adapters
+- **Issue tracking abstraction** across different sources
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          bootstrap()                             │
+│  Creates Workhorse instance with all services wired together     │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+         ▼                     ▼                     ▼
+    ┌─────────┐          ┌──────────┐          ┌─────────┐
+    │ Config  │          │ Database │          │  Hooks  │
+    │  TOML   │          │  SQLite  │          │  Events │
+    └─────────┘          └────┬─────┘          └────┬────┘
+                              │                     │
+              ┌───────────────┼─────────────────────┤
+              │               │                     │
+              ▼               ▼                     ▼
+      ┌───────────────┐ ┌───────────────┐ ┌─────────────────┐
+      │ MemoryService │ │MonitorService │ │    Plugins      │
+      │  L1 + L2 +    │ │   Polling     │ │ Parser/Adapter  │
+      │ Notifications │ │   Framework   │ │   Registration  │
+      └───────┬───────┘ └───────────────┘ └────────┬────────┘
+              │                                    │
+              └────────────┬───────────────────────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+         ▼                 ▼                 ▼
+    ┌─────────┐      ┌──────────┐     ┌──────────────────┐
+    │ Tracker │      │ Steering │     │   Orchestrator   │
+    │ Parsers │      │  Rules   │     │ Adapters + Tools │
+    │ Prompts │      └────┬─────┘     └────────┬─────────┘
+    └────┬────┘           │                    │
+         │                └────────┬───────────┘
+         │                         │
+         └─────────────────────────┼──────────────────────┐
+                                   │                      │
+                                   ▼                      ▼
+                            ┌─────────────┐        ┌─────────────┐
+                            │AgentAdapter │        │AgentAdapter │
+                            │  (issue 1)  │        │  (issue 2)  │
+                            └─────────────┘        └─────────────┘
 ```
 
-## Quick Start
+## Modules
+
+### Context System (`src/context/`)
+
+**Problem:** Dependency injection without prop drilling.
+
+Uses `unctx` + `AsyncLocalStorage` to provide services throughout the call tree:
 
 ```typescript
-import { bootstrap } from "workhorse-core";
+// In any code within context scope:
+const { db, hooks, tracker } = useWorkhorse();
 
-const wh = await bootstrap({ repoRoot: process.cwd() });
-
-// Access services
-wh.config;         // Loaded configuration
-wh.paths;          // Resolved file paths
-wh.db;             // SQLite database
-wh.memory;         // L1 + L2 memory + notifications
-wh.monitors;       // Polling framework
-wh.hooks;          // Event pub/sub
-wh.tracker;        // Issue parsing + prompt building
-wh.orchestrator;   // Agent lifecycle management
-wh.plugins;        // Plugin registry
-
-// Shutdown
-await wh.shutdown();
-```
-
-## Bootstrap
-
-`bootstrap()` initializes a complete Workhorse instance with all services:
-
-```typescript
-import { bootstrap, type BootstrapOptions, type Workhorse } from "workhorse-core";
-
-const wh: Workhorse = await bootstrap({
-  repoRoot: "/path/to/repo",       // Project root (default: cwd)
-  plugins: [jiraPlugin, githubPlugin],  // Additional plugins
-  overrides: {                      // Config overrides
-    agent: { model: "claude-sonnet-4" },
-  },
-});
-```
-
-### Workhorse Interface
-
-```typescript
-interface Workhorse {
-  readonly config: Readonly<WorkhorseConfig>;
-  readonly paths: Readonly<ConfigPaths>;
-  readonly db: Database;
-  readonly memory: MemoryService;
-  readonly monitors: MonitorService;
-  readonly hooks: HookEmitter;
-  readonly tracker: Tracker;
-  readonly orchestrator: HarnessOrchestrator;
-  readonly plugins: PluginRegistry;
-  shutdown(): Promise<void>;
-}
-```
-
-### Shutdown Order
-
-```
-orchestrator.shutdown()  →  Stop all agents
-monitors.shutdown()      →  Stop all monitors
-plugins.teardown()       →  Teardown plugins in reverse order
-memory.shutdown()        →  Close L2 store
-db.close()               →  Close database
-hooks.all.clear()        →  Clear all event listeners
-```
-
-## Context System
-
-Access the Workhorse instance from anywhere using async context:
-
-```typescript
-import { useWorkhorse, tryUseWorkhorse } from "workhorse-core";
-
-// Inside plugin setup or any code running in context:
-function myFunction() {
-  const { config, hooks, db, memory, monitors, tracker, orchestrator, paths } = useWorkhorse();
-}
-
-// Safe access (returns undefined if not in context)
+// Safe access (undefined outside scope):
 const ctx = tryUseWorkhorse();
 ```
 
-### Running Code with Context
+**Why it exists:** Plugins need access to services during `setup()` without receiving them as parameters. AsyncLocalStorage scopes access to the current execution context.
+
+**Used by:** Every other module, all plugins.
+
+### Config (`src/config/`)
+
+**Problem:** Manage configuration from multiple sources with validation.
+
+```
+Hierarchy (later overrides earlier):
+1. ~/.workhorse.toml (or ~/.config/workhorse/config.toml)
+2. .workhorse.toml in repo root
+3. Runtime overrides via bootstrap()
+```
+
+Includes keychain integration for secure credential storage:
 
 ```typescript
-import { runWithContext } from "workhorse-core";
-
-await runWithContext(context, async () => {
-  // useWorkhorse() works here
-});
+await storeCredential("jira", { accessToken: "..." });
+const creds = await getCredential("jira");
 ```
 
-### Testing Helpers
+**Used by:** Bootstrap, plugins (via `ctx.config`).
+
+### Database (`src/db/`)
+
+**Problem:** Persist issues, events, and notifications with type safety.
+
+```
+Database
+├── IssueController    → issues table
+├── EventController    → issue_events table
+└── NotificationController → notifications table
+```
+
+Uses **Drizzle ORM** with libsql (Bun-compatible SQLite). Schemas define both database structure and Zod validators:
 
 ```typescript
-import { setContext, unsetContext } from "workhorse-core";
-
-// Set singleton context for testing
-setContext({ config, hooks });
-
-// Clear after test
-unsetContext();
-```
-
-## Configuration
-
-### File Locations
-
-**Global** (first found wins):
-1. `~/.workhorse.toml`
-2. `~/.config/workhorse.toml`
-3. `~/.config/workhorse/config.toml`
-
-**Project**: `<repo>/.workhorse.toml`
-
-**Data directory**: `~/.local/share/workhorse/` (respects `XDG_DATA_HOME`)
-
-### Config Loading
-
-```typescript
-import { resolveConfigPaths, loadConfig, mergeConfigs } from "workhorse-core";
-
-// Resolve paths
-const paths = resolveConfigPaths("/path/to/repo");
-
-// Load and merge (defaults ← global ← project)
-const config = loadConfig(paths);
-
-// Deep merge configs (last wins)
-const merged = mergeConfigs(baseConfig, overrideConfig);
-```
-
-### TOML Operations
-
-```typescript
-import { parseTomlFile, writeTomlFile, configToToml } from "workhorse-core";
-
-// Read
-const data = parseTomlFile("/path/to/config.toml");
-
-// Write
-writeTomlFile("/path/to/config.toml", { agent: { harness: "opencode" } });
-
-// Convert to string
-const toml = configToToml({ agent: { harness: "opencode" } });
-```
-
-### Credential Storage
-
-```typescript
-import { storeCredential, getCredential, deleteCredential } from "workhorse-core";
-
-await storeCredential("workhorse", "github_token", "ghp_xxx");
-const token = await getCredential("workhorse", "github_token");
-await deleteCredential("workhorse", "github_token");
-```
-
-### Config Schema
-
-```toml
-[agent]
-harness = "pi-coding-agent"     # Agent adapter to use
-model = "claude-sonnet-4"       # Model override (optional)
-
-[behavior]
-auto_resume = true              # Auto-resume agents on restart
-poll_interval = 30000           # Default monitor interval (ms)
-
-[prompt]
-custom = """                    # Custom instructions for agents (optional)
-Project-specific instructions.
-"""
-
-[ui]
-theme = "tokyonight"            # TUI theme
-
-[steering]
-enabled = true                  # Enable steering rules
-debounce_ms = 2000             # Idle debounce before evaluation
-max_reminders = 3              # Max reminders per rule
-cooldown_ms = 30000            # Min time between reminders
-
-[plugins]
-disabled = []                   # Plugins to disable
-
-# Plugin-specific config (under [plugins.<name>])
-[plugins.jira]
-cloud_id = "company.atlassian.net"
-poll_interval = 30000
-
-[plugins.github]
-poll_interval = 30000
-```
-
-### TypeScript Interface
-
-```typescript
-interface WorkhorseConfig {
-  agent: {
-    harness: string;
-    model?: string;
-  };
-  behavior: {
-    autoResume: boolean;
-    pollInterval: number;
-  };
-  prompt: {
-    custom?: string;
-  };
-  ui: {
-    theme: string;
-  };
-  steering: {
-    enabled: boolean;
-    debounceMs: number;
-    maxReminders: number;
-    cooldownMs: number;
-  };
-  plugins: {
-    disabled: string[];
-    [pluginName: string]: unknown;
-  };
-}
-
-interface ConfigPaths {
-  globalDir: string;
-  globalConfig: string;
-  projectConfig: string;
-  database: string;
-  memoryDatabase: string;
-  worktreesRoot: string;
-}
-```
-
-### Case Conversion
-
-TOML uses `snake_case`, TypeScript uses `camelCase`. The loader converts automatically:
-
-```toml
-[behavior]
-auto_resume = true
-poll_interval = 5000
-```
-
-```typescript
-config.behavior.autoResume    // true
-config.behavior.pollInterval  // 5000
-```
-
-## Plugin System
-
-### Define a Plugin
-
-```typescript
-import { definePlugin, useWorkhorse } from "workhorse-core";
-import { z } from "zod/v4";
-
-// Plugin without config
-export const simplePlugin = definePlugin({
-  manifest: {
-    name: "simple",
-    version: "1.0.0",
-  },
-  setup() {
-    const { hooks } = useWorkhorse();
-    hooks.on("issue.parsed", ({ issue }) => console.log("Parsed:", issue.title));
-  },
+// Insert a new issue
+await db.issues.insert({
+  externalId: "PROJ-123",
+  source: "jira",
+  status: "queued",
+  metadata: { title: "Fix bug" }
 });
 
-// Plugin with typed config
-export const configuredPlugin = definePlugin({
+// Query with type safety
+const pending = await db.issues.findByStatus("pending");
+```
+
+**Used by:** MemoryService, Tracker, AgentAdapter, plugins.
+
+### Hooks (`src/lib/hooks/`)
+
+**Problem:** Decoupled event-driven communication.
+
+Wraps `hookable` with a simpler API:
+
+```typescript
+// Subscribe (returns unsubscribe function)
+const unsub = hooks.on("issue.parsed", ({ issue }) => {
+  console.log("Issue:", issue.externalId);
+});
+
+// Fire-and-forget
+hooks.emit("agent.idle", { adapter });
+
+// Await all handlers
+await hooks.callHook("prompt.building", { contextBlocks });
+```
+
+**Core events:**
+
+| Category | Events |
+|----------|--------|
+| Issues | `issue.parsed`, `issue.status_changed`, `issue.deleted` |
+| Prompts | `prompt.building`, `prompt.built` |
+| Agent | `agent.create.pre/post`, `agent.start.pre/post`, `agent.stop.pre/post`, `agent.idle`, `agent.output` |
+| Steering | `steering.reminder` |
+| Notifications | `notification.created` |
+| Monitors | `monitor.registered`, `monitor.tick`, `monitor.error` |
+| Plugins | `plugin.loaded`, `plugin.error` |
+| TUI | `tui.register_renderer` |
+
+**Deferred hooks pattern:** During plugin setup, certain hooks are buffered and replayed after all plugins have subscribed. This solves the ordering problem where Plugin A emits during setup but Plugin B hasn't subscribed yet.
+
+**Used by:** All modules, all plugins.
+
+### Plugin System (`src/plugins/`)
+
+**Problem:** Extensibility without coupling.
+
+```typescript
+export default definePlugin({
   manifest: {
-    name: "configured",
+    name: "my-plugin",
     version: "1.0.0",
+    capabilities: {
+      parsers: ["my-source"],
+      monitors: ["my-monitor"],
+      tools: ["my-tool"],
+    },
   },
+
+  // Optional: validated config from [plugins.my-plugin] section
   configSchema: z.object({
-    apiUrl: z.string().url(),
-    timeout: z.number().default(5000),
+    apiKey: z.string(),
   }),
-  setup(config) {
-    // config is typed as { apiUrl: string; timeout: number }
-    console.log(`Connecting to ${config.apiUrl}`);
+
+  setup(ctx, config) {
+    // Register extensions
+    ctx.tracker.registerParser({ ... });
+    ctx.orchestrator.registerTool({ ... });
+    ctx.monitors.registerMonitor({ ... });
+
+    // React to events
+    ctx.hooks.on("issue.parsed", handler);
   },
+
   teardown() {
-    console.log("Cleanup");
+    // Cleanup
   },
 });
 ```
 
-### Plugin Registry
+**Plugin discovery order:**
+1. User-provided plugins (`bootstrap({ plugins })`)
+2. Custom plugins from `~/.workhorse/plugins/` and `.workhorse/plugins/`
+3. Core plugins (built-in tools, local parser)
+
+User plugins register first, so their parsers take precedence.
+
+**Used by:** Bootstrap, all external plugins.
+
+### Workflow Orchestrator (`src/workflow/orchestrator/`)
+
+**Problem:** Manage agent lifecycles across different AI harnesses.
 
 ```typescript
-import { PluginRegistry } from "workhorse-core";
+// Plugin registers an adapter class
+orchestrator.registerAdapter("my-harness", MyAdapter);
 
-const registry = new PluginRegistry();
+// Spawn agent for an issue
+const adapter = await orchestrator.spawn({
+  issueId: "issue-123",
+  harness: "my-harness",
+  model: "claude-sonnet-4",
+});
 
-// Register plugins
-registry.register(myPlugin);
-
-// Discover plugins from config and plugin directories
-await registry.discoverCustomPlugins();
-
-// Setup all plugins (validates config, calls setup functions)
-await registry.setup();
-
-// Teardown all plugins (in reverse order)
-await registry.teardown();
-
-// Query
-registry.has("my-plugin");      // boolean
-registry.get("my-plugin");      // Plugin | undefined
-registry.list();                // Plugin[]
+// Agent lifecycle
+await adapter.start();
+adapter.sendMessage("Please implement the login form");
+await adapter.stop();
 ```
 
-### Plugin Discovery
-
-Plugins are loaded from:
-1. `CORE_PLUGINS` — Always registered first (builtin-tools)
-2. `bootstrap({ plugins })` — Provided at initialization
-3. Plugin directories — `~/.workhorse/plugins/` and `.workhorse/plugins/`
-
-### Plugin Capabilities
-
-Plugins can extend Workhorse by:
-
-| Capability | Method | Description |
-|-----------|--------|-------------|
-| Issue Parsers | `ctx.tracker.registerParser()` | Parse ticket keys/URLs into issues |
-| Monitors | `ctx.monitors.registerMonitor()` | Poll external services for changes |
-| Tools | `ctx.orchestrator.registerTool()` | Add functions agents can invoke |
-| Adapters | `ctx.orchestrator.registerAdapter()` | Register agent harness implementations |
-| Steering | `ctx.orchestrator.registerSteeringRule()` | Add idle agent behavior rules |
-| Prompt Context | `ctx.hooks.on("prompt.building")` | Inject context into agent prompts |
-| Status Sync | `ctx.hooks.on("issue.status_changed")` | Sync status to external systems |
-| Notifications | `ctx.memory.notifications.create()` | Push notifications to agent inbox |
-| TUI Rendering | `ctx.hooks.emit("tui.register_renderer")` | Register activity renderers |
-
-### Plugin Lifecycle
-
-1. **Registration** — `plugins.register(plugin)` adds to registry, emits `plugin.loaded`
-2. **Setup** — `plugins.setup()` validates config and calls each plugin's `setup()`
-3. **Runtime** — Plugin hooks and tools are active
-4. **Teardown** — `plugins.teardown()` calls `teardown()` in reverse registration order
-
-### Error Handling
-
-When a plugin's setup fails:
-1. `plugin.error` hook is emitted with `{ name, error }`
-2. Error is re-thrown (fail fast behavior)
-3. Registry stops setting up further plugins
-
-## Hooks
-
-Event-based pub/sub via `mitt`:
+**AgentAdapter** is the abstract base class:
 
 ```typescript
-import { hooks } from "workhorse-core";
+abstract class AgentAdapter {
+  // Identity
+  abstract readonly harness: string;
+  static displayName: string;
+  static icon: string;
+  static registry: ModelRegistry;
 
-// Subscribe
-hooks.on("issue.parsed", ({ issue }) => console.log("Parsed:", issue.title));
+  // Lifecycle
+  async initialize(): Promise<void>;  // Setup worktree + build prompt
+  async start(): Promise<void>;       // Begin agent execution
+  async sendMessage(content: string): Promise<void>;
+  async stop(): Promise<void>;        // Terminate
 
-// Emit
-hooks.emit("issue.status_changed", { issue, from: "todo", to: "in_progress" });
-
-// Unsubscribe
-hooks.off("issue.parsed", handler);
-
-// One-time listener
-hooks.once("agent.started", handler);
-```
-
-### Built-in Events
-
-| Event | Payload | When |
-|-------|---------|------|
-| `issue.parsed` | `{ issue, raw }` | Input parsed into an issue |
-| `issue.status_changed` | `{ issue, from, to }` | Issue status updated |
-| `issue.deleted` | `{ issue }` | Issue deleted from database |
-| `prompt.building` | `{ issueId, context }` | Prompt being built (plugins add context) |
-| `prompt.built` | `{ issueId, prompt }` | Prompt finished building |
-| `agent.create.pre` | `{ issue, options }` | Before adapter initialization |
-| `agent.create.post` | `{ adapter }` | After adapter initialized |
-| `agent.start.pre` | `{ adapter }` | Before agent starts |
-| `agent.start.post` | `{ adapter }` | Agent started successfully |
-| `agent.stop.pre` | `{ adapter }` | Before agent stops |
-| `agent.stop.post` | `{ adapter }` | Agent stopped |
-| `agent.idle` | `{ issueId }` | Agent becomes idle |
-| `agent.tool_call` | `{ tool, args }` | Agent calls a tool |
-| `notification.created` | `{ notification, issueId }` | Notification created |
-| `monitor.registered` | `{ name, type }` | Monitor definition registered |
-| `monitor.tick` | `{ id, issueId, result }` | Monitor detected changes |
-| `monitor.error` | `{ id, issueId, error, errorCount }` | Monitor poll threw error |
-| `steering.reminder` | `{ issueId, reminder }` | Steering rule fired |
-| `plugin.loaded` | `{ name }` | Plugin registered |
-| `plugin.error` | `{ name, error }` | Plugin setup failed |
-
-## Database
-
-SQLite via `@libsql/client` + `drizzle-orm`:
-
-```typescript
-import { Database } from "workhorse-core";
-
-const db = await Database.create(":memory:");  // or "/path/to/workhorse.db"
-
-// Issues
-const issue = await db.issues.insert({ externalId: "PROJ-123", source: "jira", ... });
-await db.issues.getById(id);
-await db.issues.getByExternalId("PROJ-123", "jira");
-await db.issues.updateStatus(id, "in_progress");
-await db.issues.getByStatus("pending");
-
-// Events
-await db.events.insert({ issueId, type: "comment", message: "..." });
-await db.events.getForIssue(issueId);
-
-// Notifications
-await db.notifications.create({ issueId, source: "jira", title: "New comment", body: "..." });
-await db.notifications.getUnread(issueId);
-await db.notifications.markRead(id);
-await db.notifications.acknowledgeMany([id1, id2]);
-
-db.close();
-```
-
-### Tables
-
-| Table | Description |
-|-------|-------------|
-| `issues` | Tracked issues from external sources |
-| `issue_events` | Events/activity log for issues |
-| `notifications` | Push notifications for agents |
-
-### Schema Details
-
-**Issues**: `id`, `externalId`, `source`, `title`, `description`, `status`, `issueType`, `url`, `assignee`, `labels`, `metadata`, `worktreePath`, `createdAt`, `updatedAt`
-
-**Notifications**: `id`, `issueId`, `source`, `sourceId` (unique, dedup), `priority`, `status`, `title`, `body`, `metadata`, `createdAt`, `readAt`, `acknowledgedAt`
-
-**Events**: `id`, `issueId`, `type`, `message`, `metadata`, `createdAt`
-
-## Memory Service
-
-Two-tier memory system for agent context:
-
-```typescript
-// L1: Session memory (context.md per worktree)
-const ctx = memory.l1.get("AM-123");
-if (ctx) {
-  const session = await ctx.read();
-  await ctx.appendSession({ timestamp: new Date(), status: "implementing", ... });
+  // State
+  issue: Issue;
+  worktreePath: string;
+  state: AgentState;
+  tools: OrchestratorTool[];
+  steering: SteeringRule[];
 }
-
-// L2: Semantic search (retriv + FTS5 + vector embeddings)
-await memory.l2.index([{ id: "doc-1", content: "...", metadata: { type: "decision" } }]);
-const results = await memory.l2.search("authentication flow", { limit: 5 });
-
-// Notifications
-await memory.notifications.create({ issueId, source: "jira", title: "...", body: "..." });
-const unread = await memory.notifications.getUnread(issueId);
-const inboxXml = memory.notifications.generateInbox(unread);
 ```
 
-See `src/services/memory/README.md` for full documentation.
-
-## Monitor Service
-
-Polling framework for external changes:
+**Tool registration:**
 
 ```typescript
-// Register a monitor (once at plugin setup)
-monitors.registerMonitor({
-  id: "jira-comments",
-  type: "remote",
-  interval: 30_000,
-  async poll(ctx) {
-    const comments = await fetchNewComments(ctx.issueId);
-    return { hasChanges: comments.length > 0, data: comments };
+orchestrator.registerTool({
+  name: "my_tool",
+  description: "Does something useful",
+  schema: { type: "object", properties: { ... } },
+  async execute(args, ctx) {
+    return { content: "result" };
   },
 });
-
-// Start for an issue (from a hook)
-monitors.startMonitor("jira-comments", issueId);
-
-// Stop
-monitors.stopMonitor("jira-comments", issueId);
-monitors.stopMonitors(issueId);
-
-// Query
-const running = monitors.getRunningMonitors(issueId);
-
-// Shutdown all
-monitors.shutdown();
 ```
 
-See `src/services/monitor/README.md` for full documentation.
+Tools are harness-agnostic — adapters translate to native format.
 
-## Tracker
+**Used by:** Harness plugins (pi-adapter, claude-code, opencode), TUI.
 
-Issue parsing and prompt building:
+### Steering System (`src/workflow/steering/`)
+
+**Problem:** Guide agents when they go idle.
+
+Plugins register steering rules that fire reminders based on conditions:
 
 ```typescript
-// Register a parser (in plugin setup)
+orchestrator.registerSteeringRule({
+  id: "github:create-pr",
+  name: "Remind to create PR",
+  priority: 10,
+
+  // When this rule applies
+  condition: {
+    status: ["in-progress"],
+    source: ["github"],
+    when: (ctx) => ctx.fileChangesExist && !ctx.prExists,
+  },
+
+  // What to remind
+  reminder: (ctx) => `You have changes but no PR. Run \`gh pr create\`.`,
+});
+```
+
+**Flow:**
+1. Agent goes idle → `agent.idle` hook fires
+2. SteeringRule evaluates conditions
+3. If matched: build context → call `reminder()` → emit `steering.reminder`
+4. AgentAdapter sends reminder to agent
+
+**Used by:** GitHub plugin, Jira plugin, custom plugins.
+
+### Tracker (`src/workflow/tracker/`)
+
+**Problem:** Parse user input into issues and build prompts with context.
+
+**Issue parsing:**
+
+```typescript
+// Plugin registers a parser
 tracker.registerParser({
   source: "jira",
   canParse: (input) => /^[A-Z]+-\d+$/.test(input),
-  parse: async (input) => fetchJiraIssue(input),
+  parse: async (input) => {
+    const issue = await jiraClient.fetch(input);
+    return { externalId: input, source: "jira", metadata: issue };
+  },
 });
 
-// Parse user input
-const issue = await tracker.parseInput("AM-123");
-
-// Build prompt
-const prompt = await tracker.buildPrompt(issue.id);
-
-// Fetch backlog
-const backlog = await tracker.fetchBacklog();
-
-// Delete issue (cleans up worktree too)
-await tracker.deleteIssue(issue.id);
+// User provides input → tracker tries parsers in order
+const issue = await tracker.parseInput("PROJ-123");
 ```
 
-See `src/workflow/tracker/README.md` for full documentation.
-
-## Orchestrator
-
-Agent lifecycle management:
+**Prompt building:**
 
 ```typescript
-// Register adapter (in plugin setup)
-orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter);
+const prompt = await tracker.buildPrompt(issueId);
+// Includes: issue context, L1 memory, L2 search, notifications, custom instructions
+```
 
-// Register tools
-orchestrator.registerTool({
-  name: "my_action",
-  description: "Does something",
-  schema: { type: "object", properties: { ... } },
-  execute: async (args, ctx) => ({ success: true, output: "Done" }),
+The `prompt.building` hook lets plugins contribute context blocks:
+
+```typescript
+hooks.on("prompt.building", (ctx) => {
+  ctx.contextBlocks.push({
+    id: "github-pr",
+    title: "Pull Request",
+    content: "PR #45 has 2 pending reviews...",
+    priority: 10,  // Lower = earlier in prompt
+  });
+});
+```
+
+**Used by:** Orchestrator, GitHub/Jira plugins.
+
+### Memory Service (`src/services/memory/`)
+
+**Problem:** Provide both fast session memory and long-term semantic search.
+
+**Two-tier architecture:**
+
+| Tier | Storage | Use Case |
+|------|---------|----------|
+| L1 | `.workhorse/session/context.md` per worktree | Fast read/write, structured sections |
+| L2 | retriv (FTS5 + vectors) | Semantic search across history |
+
+```typescript
+// L1: Per-issue session memory
+const l1 = memory.l1.forIssue(issueId);
+await l1.write("## Decisions\n- Use React for UI");
+const content = await l1.read();
+
+// L2: Semantic search
+const results = await memory.l2.search({
+  query: "authentication implementation",
+  issueId: "issue-123",
+  limit: 5,
+});
+```
+
+**Notifications:**
+
+```typescript
+// Add notification (deduplicated by sourceId)
+await memory.notifications.add({
+  issueId: "issue-123",
+  sourceId: "github-review-456",
+  type: "pr_review",
+  priority: "high",
+  message: "Changes requested on PR #45",
 });
 
-// Register steering rules
-orchestrator.registerSteeringRule({
-  id: "review-reminder",
-  name: "PR Review Reminder",
-  description: "Reminds agents to check PR reviews",
-  condition: { status: ["in_review"] },
-  reminder: "Check for PR review feedback.",
+// Get unread as XML for agent prompt
+const inbox = memory.notifications.formatInbox(issueId);
+```
+
+**Used by:** PromptEngineer, AgentAdapter, monitors.
+
+### Monitor Service (`src/services/monitor/`)
+
+**Problem:** Poll external systems for changes.
+
+Two-phase API:
+
+```typescript
+// 1. Plugin registers monitor definition
+monitors.registerMonitor({
+  id: "github-pr",
+  type: "remote",
+  interval: 30000,
+  async poll(ctx) {
+    const pr = await github.getPR(ctx.metadata.prNumber);
+    return { hasChanges: true, data: pr };
+  },
 });
 
-// Spawn an agent
-const agent = await orchestrator.spawn({
-  issue,
+// 2. Start polling for specific issue
+monitors.startMonitor("github-pr", issueId);
+```
+
+Auto-stops after 5 consecutive errors. Emits `monitor.tick` on changes.
+
+**Used by:** GitHub plugin, Jira plugin.
+
+### Auth (`src/auth/`)
+
+**Problem:** Unified authentication for plugins with different flows.
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `oauth` | Full OAuth 2.0 with local callback | Jira Cloud |
+| `external` | Delegate to CLI tool | GitHub CLI |
+| `apitoken` | User-provided API token | Linear |
+| `none` | No auth required | Local parser |
+
+```typescript
+definePlugin({
+  auth: {
+    provider: "oauth",
+    createAuthorizationURL: () => oauthClient.createAuthorizationURL(),
+    validateAuthorizationCode: (code) => oauthClient.validateCode(code),
+    saveTokens: (tokens) => storeCredential("jira", tokens),
+  },
+});
+```
+
+**Used by:** Jira plugin, GitHub plugin, TUI (auth flows).
+
+### Git Utilities (`src/lib/git/`)
+
+**Problem:** Manage isolated working directories per issue.
+
+```typescript
+// Create worktree (idempotent - reuses if exists)
+const path = await createWorktree(repoPath, "PROJ-123", "feat", "main");
+// → ../repo-worktrees/PROJ-123 with branch feat/PROJ-123
+
+// Clean up
+await removeWorktree(repoPath, "PROJ-123", { deleteBranch: true });
+```
+
+**Used by:** AgentAdapter, Tracker (deleteIssue).
+
+### Path Validation (`src/lib/paths/`)
+
+**Problem:** Prevent agents from escaping their worktree.
+
+```typescript
+const validator = createPathValidator({
+  rootDir: worktreePath,
+  additionalAllowedDirs: ["/tmp"],
+});
+
+if (validator.isAllowed(path)) {
+  // Safe
+}
+
+validator.assert(path); // Throws if not allowed
+```
+
+**Used by:** Tool implementations, Pi adapter.
+
+### Metadata Footer (`src/lib/metadata-footer.ts`)
+
+**Problem:** Identify agent-generated content.
+
+```typescript
+const body = withWorkhorseFooter("PR description here");
+// Adds hidden footer marker
+
+if (isWorkhorseGenerated(comment.body)) {
+  // Skip in monitors to avoid infinite loops
+}
+```
+
+**Used by:** GitHub plugin, Jira plugin.
+
+## Cross-Cutting Patterns
+
+### 1. Event-Driven Architecture
+
+All modules communicate via hooks. This enables loose coupling and plugin extensibility.
+
+### 2. Context Injection
+
+`useWorkhorse()` provides services without explicit passing:
+
+```typescript
+const { db, hooks, orchestrator } = useWorkhorse();
+```
+
+### 3. Factory Methods
+
+Complex classes use `static async create()`:
+
+```typescript
+const db = await Database.create(path);
+const memory = await MemoryService.create(options);
+```
+
+### 4. Zod Validation
+
+External data validated with Zod schemas that double as type definitions:
+
+```typescript
+export const IssueStatusSchema = z.enum(["pending", "queued", ...]);
+export type IssueStatus = z.infer<typeof IssueStatusSchema>;
+```
+
+## Usage
+
+```typescript
+import { bootstrap } from "workhorse-core";
+import myPlugin from "./my-plugin";
+
+const workhorse = await bootstrap({
   repoPath: "/path/to/repo",
+  plugins: [myPlugin],
+});
+
+// Parse and spawn
+const issue = await workhorse.tracker.parseInput("PROJ-123");
+const agent = await workhorse.orchestrator.spawn({
+  issueId: issue.id,
   harness: "pi-coding-agent",
   model: "claude-sonnet-4",
 });
 
 await agent.start();
-
-// Send message
-await orchestrator.sendMessage("AM-123", "Please check the failing tests");
-
-// Get models
-const models = orchestrator.getAllModels();
-
-// Shutdown all agents
-await orchestrator.shutdown();
 ```
-
-See `src/workflow/orchestrator/README.md` for full documentation.
-
-## Steering
-
-Autonomous rules for idle agent guidance:
-
-```typescript
-orchestrator.registerSteeringRule({
-  id: "blocked-check",
-  name: "Blocked Agent Check",
-  description: "Reminds blocked agents to check notifications",
-  condition: {
-    status: ["blocked"],
-    hook: ["agent.idle"],
-    when: async (ctx) => ctx.notifications.length > 0,
-  },
-  reminder: async (ctx) => `You have ${ctx.notifications.length} unread notifications.`,
-  once: true,
-});
-```
-
-See `src/workflow/steering/README.md` for full documentation.
-
-## Built-in Tools
-
-The core plugin registers three tools available to all agents:
-
-| Tool | Description |
-|------|-------------|
-| `workhorse_acknowledge` | Mark notification(s) as read |
-| `workhorse_update_status` | Update the current issue's status |
-| `workhorse_escalate` | Escalate to a human when blocked |
-
-## Git Worktree Operations
-
-```typescript
-import { createWorktree, removeWorktree } from "workhorse-core";
-
-const worktree = await createWorktree("/path/to/repo", "PROJ-123", "task", "main");
-console.log(worktree.path);    // "/path/to/repo-worktrees/PROJ-123"
-console.log(worktree.branch);  // "task/PROJ-123"
-
-await removeWorktree("/path/to/repo", "PROJ-123", true);  // delete branch too
-```
-
-## Module READMEs
-
-Detailed documentation for each internal module:
-
-- `src/config/README.md` — Config loading, validation, credentials
-- `src/context/README.md` — Async context system
-- `src/db/README.md` — Database schema and controllers
-- `src/lib/hooks/README.md` — Event pub/sub system
-- `src/lib/git/README.md` — Git worktree operations
-- `src/plugins/README.md` — Plugin system and registry
-- `src/services/memory/README.md` — L1/L2 memory and notifications
-- `src/services/monitor/README.md` — Polling framework
-- `src/workflow/orchestrator/README.md` — Agent lifecycle, adapters, tools
-- `src/workflow/steering/README.md` — Autonomous steering rules
-- `src/workflow/tracker/README.md` — Issue parsing and prompt building
-
-## API Reference
-
-### Config Module
-
-| Export | Description |
-|--------|-------------|
-| `resolveConfigPaths(repoRoot?)` | Resolve config file paths |
-| `loadConfig(paths)` | Load and merge configs |
-| `parseTomlFile(path)` | Parse a TOML file |
-| `mergeConfigs(...configs)` | Deep merge configs (last wins) |
-| `configToToml(config)` | Convert config to TOML string |
-| `writeTomlFile(path, config)` | Write config to TOML file |
-| `storeCredential(service, key, value)` | Store in system keychain |
-| `getCredential(service, key)` | Retrieve from keychain |
-| `deleteCredential(service, key)` | Remove from keychain |
-| `workhorseConfigSchema` | Zod schema for config validation |
-| `defaultConfig` | Default config values |
-
-### Plugin Module
-
-| Export | Description |
-|--------|-------------|
-| `definePlugin(options)` | Create a plugin |
-| `PluginRegistry` | Plugin management class |
-| `isPlugin(value)` | Type guard for plugins |
-| `PluginSymbol` | Symbol identifying plugins |
-
-### Context Module
-
-| Export | Description |
-|--------|-------------|
-| `useWorkhorse()` | Get current Workhorse context (throws if not in context) |
-| `tryUseWorkhorse()` | Get context or `undefined` |
-| `runWithContext(ctx, fn)` | Execute function with context |
-| `setContext(ctx)` | Set singleton context (testing only) |
-| `unsetContext()` | Clear singleton context (testing only) |
-
-### Database Module
-
-| Export | Description |
-|--------|-------------|
-| `Database` | Database class (async factory: `Database.create()`) |
-| `dateText`, `nullableDateText` | Custom Drizzle column types |
-| `IssueStatusSchema` | Zod schema for issue status |
-| `NotificationPrioritySchema` | Zod schema for notification priority |
-| `NotificationStatusSchema` | Zod schema for notification status |
-
-### Hooks Module
-
-| Export | Description |
-|--------|-------------|
-| `hooks` | Global hook emitter instance |
-| `HookEmitter` | Emitter type |
-| `HookEventMap` | Type map for all events |
-| `PromptBuildingContext` | Context for `prompt.building` |
-| `PromptContextBlock` | Block of context for prompts |
-
-### Orchestrator Module
-
-| Export | Description |
-|--------|-------------|
-| `HarnessOrchestrator` | Agent lifecycle manager |
-| `AgentAdapter` | Abstract adapter base class |
-| `ModelRegistry` | Abstract model registry base class |
-| `SteeringRule` | Autonomous steering rule class |
-| `OrchestratorTool`, `ToolExecutionContext`, `ToolResult` | Tool types |
-| `ModelInfo`, `AgentState`, `AdapterInfo` | Agent/adapter types |
-| `SteeringRuleConfig`, `SteeringCondition`, `SteeringContext` | Steering types |
-
-### Memory Module
-
-| Export | Description |
-|--------|-------------|
-| `MemoryService` | Facade class (L1 + L2 + notifications) |
-| `L1Store` | Session memory store |
-| `L2Store` | Semantic search store |
-| `NotificationService` | Notification manager |
-| `generateSystemInbox` | XML generation for agent prompts |
-| `parseSessionMemory`, `serializeSessionMemory` | Markdown ↔ SessionMemory |
-| `SessionMemory`, `SessionEntry` | Session memory types |
-| `MemoryDocument`, `SearchResult` | L2 types |
-| `CreateNotificationInput` | Notification creation input |
-
-### Monitor Module
-
-| Export | Description |
-|--------|-------------|
-| `MonitorService` | Polling framework manager |
-| `MonitorOptions` | Monitor definition options |
-| `MonitorContext`, `MonitorResult`, `MonitorStatus` | Monitor types |
-
-### Tracker Module
-
-| Export | Description |
-|--------|-------------|
-| `Tracker` | Issue parsing and prompt building |
-| `IssueParserOptions` | Parser registration options |
-| `ParsedIssue` | Intermediate parse result |
-| `IssueSource`, `IssueType` | Source/type identifiers |
-
-### Bootstrap
-
-| Export | Description |
-|--------|-------------|
-| `bootstrap(options)` | Initialize Workhorse instance |
-| `BootstrapOptions` | Bootstrap configuration |
-| `Workhorse` | Initialized instance interface |
-
-## License
-
-MIT

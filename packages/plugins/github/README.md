@@ -1,347 +1,247 @@
 # workhorse-plugin-github
 
-GitHub integration plugin for Workhorse. Provides issue parsing, PR monitoring, status sync, tools, steering, and prompt enrichment.
+GitHub integration for Workhorse — enables agents to create PRs, monitor reviews/CI, and respond to feedback.
 
-## Installation
+## What This Plugin Does
 
-```bash
-bun add workhorse-plugin-github
+This plugin connects Workhorse to GitHub, providing:
+
+- **Issue parsing** from `owner/repo#45` format and GitHub URLs
+- **PR lifecycle management** — create, monitor, respond to reviews
+- **CI/checks monitoring** — track status and notify agents of failures
+- **Status label sync** — keep PR labels in sync with internal issue status
+- **Steering rules** — guide agents to create PRs, fix CI, address reviews
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     GitHub Plugin                                │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   Parser    │  │   Monitor   │  │         Tools           │  │
+│  │ owner/repo# │  │  PR status  │  │ open_pr, add_comment,   │  │
+│  │   URLs      │  │  reviews,CI │  │ get_pr_status/reviews   │  │
+│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
+│         │                │                     │                 │
+│         ▼                ▼                     ▼                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                     Steering Rules                         │  │
+│  │  create-pr │ fix-ci │ address-review │ missing-pr          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                         Hooks                                    │
+│  Emits: pr.opening, pr.created, pr.merged, checks.*, review.*   │
+│  Listens: agent.create.post, prompt.building, issue.status_*   │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+                      ┌─────────────────┐
+                      │  workhorse-core │
+                      │ tracker, hooks, │
+                      │ orchestrator,   │
+                      │ monitors        │
+                      └─────────────────┘
 ```
 
-## Prerequisites
+## What It Registers
 
-- **`gh` CLI** must be installed and authenticated (`gh auth login`)
-- GitHub repositories must be accessible from the authenticated account
+### Parser
 
-## Features
+Handles GitHub issue references:
 
-| Feature | Description |
-|---------|-------------|
-| **Issue Parsing** | Parse `owner/repo#45` and GitHub URLs into Workhorse issues |
-| **PR Monitor** | Unified monitor for PR reviews, comments, CI checks, and mergeable state |
-| **Prompt Enrichment** | Inject GitHub issue/PR state into agent system prompts |
-| **Status Sync** | Sync Workhorse issue status → GitHub PR labels |
-| **Tools** | `github_open_pr`, `github_add_comment`, `github_get_pr_status`, `github_get_ci_check`, `github_get_pr_reviews` |
-| **Steering** | Idle agent reminders for PR reviews and CI failures |
-| **Cross-plugin Sync** | React to Jira status changes (when both plugins are loaded) |
+```typescript
+// Formats supported:
+"owner/repo#45"
+"https://github.com/owner/repo/issues/45"
+"https://github.com/owner/repo/pull/45"
+```
+
+### Monitor: `github-pr`
+
+Polls PRs for changes every 30 seconds (configurable):
+
+- Review status (approved, changes requested, pending)
+- CI check results (success, failure, pending)
+- Mergeable state
+- New comments
+
+Auto-starts when agent spawns for an issue with `prNumber` in metadata.
+
+### Tools
+
+| Tool | Description |
+|------|-------------|
+| `github_open_pr` | Create PR from current branch |
+| `github_add_comment` | Add comment to issue/PR |
+| `github_get_pr_status` | Get review/CI/mergeable summary |
+| `github_get_ci_check` | Detailed CI check status |
+| `github_get_pr_reviews` | Detailed review info with inline comments |
+
+### Steering Rules
+
+| Rule | Condition | Reminder |
+|------|-----------|----------|
+| `github:create-pr` | Has file changes, no PR | "Create a PR with your changes" |
+| `github:fix-ci` | CI checks failing | "CI is failing, investigate and fix" |
+| `github:address-review` | Changes requested | "Address review feedback" |
+| `github:missing-pr` | Status past implementation, no PR | "You should have a PR by now" |
+
+### Auth
+
+Uses `external` auth type — delegates to `gh` CLI:
+
+```bash
+gh auth login  # User authenticates separately
+```
+
+The plugin calls `gh` commands under the hood.
+
+## Hooks
+
+### Emitted
+
+| Hook | Payload | When |
+|------|---------|------|
+| `github:pr.opening` | `{ issueId, title, body, contributions: [] }` | Before PR creation (collect sections) |
+| `github:pr.created` | `{ issueId, prNumber, url }` | After PR created |
+| `github:pr.merged` | `{ issueId, prNumber, source }` | PR merged |
+| `github:pr.closed` | `{ issueId, prNumber }` | PR closed without merge |
+| `github:review.submitted` | `{ issueId, review }` | Review submitted |
+| `github:checks.passed` | `{ issueId, prNumber }` | All CI checks pass |
+| `github:checks.failed` | `{ issueId, prNumber, failures }` | CI checks fail |
+
+### Listened
+
+| Hook | Action |
+|------|--------|
+| `agent.create.post` | Start PR monitor if issue has `prNumber` |
+| `prompt.building` | Add GitHub/PR context blocks |
+| `issue.status_changed` | Sync labels to PR |
+
+## Cross-Plugin Integration
+
+### PR Contribution Pattern
+
+Other plugins can contribute sections to PRs:
+
+```typescript
+// GitHub emits opening event with mutable contributions array
+hooks.emit("github:pr.opening", {
+  issueId,
+  title: "feat: implement login",
+  body: "Initial PR body",
+  contributions: [],  // Other plugins push to this
+});
+
+// Jira plugin adds Related Tickets
+hooks.on("github:pr.opening", (ctx) => {
+  ctx.contributions.push({
+    section: "Related Tickets",
+    content: "| Ticket | Summary |\n| PROJ-123 | Login feature |",
+    priority: 10,
+  });
+});
+
+// Playwright plugin adds Screenshots
+hooks.on("github:pr.opening", (ctx) => {
+  ctx.contributions.push({
+    section: "Screenshots",
+    content: "![Login](./screenshots/login.png)",
+    priority: 80,
+  });
+});
+```
+
+### PR Merge Triggers
+
+Jira plugin listens for merges to auto-transition tickets:
+
+```typescript
+// GitHub emits
+hooks.emit("github:pr.merged", { issueId, prNumber, source: "jira" });
+
+// Jira plugin responds
+hooks.on("github:pr.merged", async (event) => {
+  if (event.source !== "jira") return;
+  await transitionToQA(event.issueId);
+});
+```
 
 ## Configuration
 
 ```toml
-# ~/.workhorse.toml or .workhorse.toml
-
 [plugins.github]
-poll_interval = 30000    # PR monitor poll interval in ms (default: 30000)
+pollInterval = 30000  # PR monitor interval (ms)
 ```
 
-## Usage
+## Usage Examples
 
-### Register the Plugin
-
-```typescript
-import { githubPlugin } from "workhorse-plugin-github";
-
-const wh = await bootstrap({
-  plugins: [githubPlugin],
-});
-```
-
-### Issue Parsing
-
-The plugin registers a parser that handles GitHub references:
+### Agent Creates PR
 
 ```typescript
-// These inputs are recognized:
-await tracker.parseInput("octocat/hello-world#42");    // owner/repo#number
-await tracker.parseInput("https://github.com/octocat/hello-world/issues/42");
-await tracker.parseInput("https://github.com/octocat/hello-world/pull/42");
-
-// The parser auto-detects whether it's an issue or PR
-```
-
-### PR Monitoring
-
-The unified PR monitor tracks:
-
-| Watch | Description |
-|-------|-------------|
-| **Reviews** | New reviews and review state changes |
-| **Comments** | New issue and review comments |
-| **CI Checks** | Check run status and conclusions |
-| **Mergeable** | Mergeable state and merge conflicts |
-| **Merged/Closed** | PR merge or close events |
-
-Monitors start automatically when an agent spawns on a GitHub issue that has a PR:
-
-```typescript
-// Automatic — triggered by agent.create.post hook
-// Only starts if the issue has metadata.prNumber
-```
-
-### Tools
-
-#### github_open_pr
-
-Create a pull request from the current worktree branch:
-
-```typescript
-{
-  owner: "octocat",
-  repo: "hello-world",
-  head: "task/PROJ-123",
+// Agent calls tool
+await tools.github_open_pr({
+  title: "feat: implement user authentication",
+  body: "Implements login flow with OAuth support",
   base: "main",
-  title: "Add priority field to tasks",
-  body: "## Changes\n\n- Added priority column to issues table",
-  draft: false
-}
+});
+
+// Plugin:
+// 1. Emits github:pr.opening (collects contributions)
+// 2. Creates PR via gh CLI
+// 3. Emits github:pr.created
+// 4. Starts github-pr monitor
 ```
 
-#### github_add_comment
-
-Add a comment to an issue or PR:
+### Monitor Detects Review
 
 ```typescript
-{
-  owner: "octocat",
-  repo: "hello-world",
-  number: 42,
-  body: "I've addressed the review feedback. Please take another look."
-}
-```
-
-#### github_get_pr_status
-
-Get a comprehensive PR status summary:
-
-```typescript
-{
-  owner: "octocat",
-  repo: "hello-world",
-  number: 42
-}
-
-// Returns PRStatusSummary:
-// {
-//   state: "open",
-//   draft: false,
-//   mergeable: true,
-//   mergeableState: "clean",
-//   reviews: { approved: 1, changesRequested: 0, commented: 2, pending: 0 },
-//   checks: { total: 3, passing: 3, failing: 0, pending: 0 },
-//   additions: 45,
-//   deletions: 12,
-//   changedFiles: 3
-// }
-```
-
-#### github_get_ci_check
-
-Get the status of a specific CI check by name:
-
-```typescript
-{
-  owner: "octocat",
-  repo: "hello-world",
-  checkName: "build",    // Case-insensitive, supports partial match
-  ref: "HEAD"            // Optional: commit SHA, branch, or "HEAD" (default)
-}
-
-// Returns CICheckResult:
-// {
-//   found: true,
-//   name: "build",
-//   status: "completed",
-//   conclusion: "success",
-//   url: "https://github.com/octocat/hello-world/runs/123456",
-//   startedAt: "2024-01-15T10:00:00Z",
-//   completedAt: "2024-01-15T10:05:30Z",
-//   durationSeconds: 330
-// }
-
-// If check not found, returns available checks:
-// {
-//   found: false,
-//   name: "nonexistent",
-//   status: null,
-//   conclusion: null,
-//   url: null,
-//   startedAt: null,
-//   completedAt: null,
-//   durationSeconds: null,
-//   availableChecks: ["build", "test", "lint", "typecheck"]
-// }
-```
-
-#### github_get_pr_reviews
-
-Get detailed PR reviews including inline code comments:
-
-```typescript
-{
-  owner: "octocat",
-  repo: "hello-world",
-  number: 42,
-  state: "changes_requested",  // Optional: filter by state (default: "all")
-  includeComments: true        // Optional: include inline comments (default: true)
-}
-
-// Returns PRReviewsResult:
-// {
-//   totalReviews: 3,
-//   summary: {
-//     approved: 1,
-//     changesRequested: 1,
-//     commented: 1,
-//     dismissed: 0,
-//     pending: 0
-//   },
-//   reviews: [
-//     {
-//       id: 12345,
-//       author: "reviewer1",
-//       state: "CHANGES_REQUESTED",
-//       body: "Please address the following issues:",
-//       submittedAt: "2024-01-15T14:30:00Z",
-//       comments: [
-//         {
-//           path: "src/utils.ts",
-//           line: 42,
-//           diffHunk: "@@ -40,6 +40,8 @@ function processData() {",
-//           body: "This should handle the null case"
-//         }
-//       ]
-//     }
-//   ]
-// }
+// Monitor polls and finds new review
+// 1. Creates notification via MemoryService
+// 2. Emits github:review.submitted
+// 3. Next prompt.building includes review context
+// 4. Steering rule fires if changes requested
 ```
 
 ### Prompt Enrichment
 
-The plugin adds context blocks to agent prompts via the `prompt.building` hook:
-
-- **GitHub Issue State** — Title, status, labels, assignee
-- **PR State** — Reviews, checks, mergeable status (if PR exists)
-- **Workflow Instructions** — Step-by-step guidance for PR workflows
-
-### Status Sync
-
-Workhorse issue status changes are synced to GitHub PR labels:
-
-| Workhorse Status | GitHub Label |
-|-----------------|-------------|
-| `implementing` | `workhorse:implementing` |
-| `in_review` | `workhorse:in-review` |
-| `blocked` | `workhorse:blocked` |
-| `done` | `workhorse:done` |
-
-### Steering Rules
-
-The plugin registers steering rules for idle agents:
-
-1. **PR Review Reminder** — When agent is idle and has unread GitHub review notifications
-2. **CI Failure Reminder** — When agent is idle and CI checks are failing
-
-## Types
-
-### GitHubRef
-
 ```typescript
-interface GitHubRef {
-  owner: string;
-  repo: string;
-  number: number;
-  type: "issue" | "pull";
-}
+hooks.on("prompt.building", (ctx) => {
+  const pr = getPRForIssue(ctx.issueId);
+  if (!pr) return;
+
+  ctx.contextBlocks.push({
+    id: "github-pr",
+    title: "Pull Request Status",
+    content: `
+PR #${pr.number}: ${pr.title}
+Reviews: ${pr.reviews.length} (${pr.approvals} approvals)
+CI: ${pr.checksStatus}
+Mergeable: ${pr.mergeable}
+    `.trim(),
+    priority: 20,
+  });
+});
 ```
 
-### GitHubIssue
+## Dependencies on Core
 
-```typescript
-interface GitHubIssue {
-  owner: string;
-  repo: string;
-  number: number;
-  title: string;
-  body: string | null;
-  state: "open" | "closed";
-  html_url: string;
-  assignee: { login: string } | null;
-  labels: Array<{ name: string }>;
-  pull_request?: { url: string };
-  created_at: string;
-  updated_at: string;
-}
-```
+| Import | Usage |
+|--------|-------|
+| `definePlugin` | Plugin definition |
+| `IssueParserOptions` | Parser interface |
+| `MonitorOptions` | Monitor interface |
+| `OrchestratorTool` | Tool interface |
+| `SteeringRuleConfigInput` | Steering rule definition |
+| `WorkhorseContext` | Service access |
+| `PromptContextBlock` | Prompt enrichment |
+| `isWorkhorseGenerated` | Filter bot comments |
 
-### GitHubPR
+## Why This Architecture
 
-```typescript
-interface GitHubPR extends GitHubIssue {
-  head: { ref: string; sha: string };
-  base: { ref: string };
-  mergeable: boolean | null;
-  mergeable_state: string;
-  merged: boolean;
-  merged_at: string | null;
-  draft: boolean;
-  additions: number;
-  deletions: number;
-  changed_files: number;
-}
-```
-
-### PRStatusSummary
-
-```typescript
-interface PRStatusSummary {
-  state: "open" | "closed" | "merged";
-  draft: boolean;
-  mergeable: boolean | null;
-  mergeableState: string;
-  reviews: {
-    approved: number;
-    changesRequested: number;
-    commented: number;
-    pending: number;
-  };
-  checks: {
-    total: number;
-    passing: number;
-    failing: number;
-    pending: number;
-  };
-  additions: number;
-  deletions: number;
-  changedFiles: number;
-}
-```
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `index.ts` | Plugin definition and setup |
-| `client.ts` | GitHubClient — `gh` CLI wrapper for API access |
-| `gh-cli.ts` | Low-level `gh` command execution helpers |
-| `parser.ts` | GitHub reference parsing (owner/repo#num, URLs) |
-| `mapper.ts` | GitHubIssue/PR → Workhorse issue mapping |
-| `monitor.ts` | PR monitor factory (creates MonitorOptions) |
-| `monitor-notifications.ts` | PR notification detection (new reviews, comments) |
-| `monitor-checks.ts` | CI check state tracking |
-| `prompt.ts` | Prompt enrichment via `prompt.building` hook |
-| `sync.ts` | Status sync (Workhorse → GitHub labels) |
-| `steering.ts` | Steering rules for PR reviews and CI failures |
-| `tools/index.ts` | Tool registration factory |
-| `tools/open-pr.ts` | `github_open_pr` tool implementation |
-| `tools/add-comment.ts` | `github_add_comment` tool implementation |
-| `tools/get-pr-status.ts` | `github_get_pr_status` tool implementation |
-| `tools/get-ci-check.ts` | `github_get_ci_check` tool implementation |
-| `tools/get-pr-reviews.ts` | `github_get_pr_reviews` tool implementation |
-| `tools/types.ts` | Tool-specific types |
-| `renderer.ts` | TUI activity renderer |
-| `hooks.ts` | Plugin-specific hook type definitions |
-| `types.ts` | Domain types (GitHubIssue, GitHubPR, etc.) |
-
-## License
-
-MIT
+1. **Decoupled tools** — Each tool is self-contained, agents can use them independently
+2. **Event-driven monitoring** — Changes detected via polling → notifications → agent sees in next prompt
+3. **Cross-plugin hooks** — Other plugins (Jira, Playwright) can contribute without coupling
+4. **Steering guidance** — Agents don't forget to create PRs or address reviews
+5. **Status sync** — Internal issue status reflected in PR labels for visibility

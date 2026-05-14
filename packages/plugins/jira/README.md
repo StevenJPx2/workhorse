@@ -1,272 +1,279 @@
 # workhorse-plugin-jira
 
-Jira Cloud integration plugin for Workhorse. Provides issue parsing, comment monitoring, status sync, tools, steering, and prompt enrichment.
+Jira Cloud integration for Workhorse — enables agents to work on Jira tickets with auto-transitions, comments, and cross-plugin coordination.
 
-## Installation
+## What This Plugin Does
 
-```bash
-bun add workhorse-plugin-jira
+This plugin connects Workhorse to Jira Cloud, providing:
+
+- **Ticket parsing** from `PROJ-123` keys and Jira URLs
+- **Status transitions** — auto-move tickets through workflow
+- **Comment monitoring** — detect feedback and notify agents
+- **Cross-plugin sync** — transition tickets when GitHub PRs merge
+- **Steering rules** — remind agents to update Jira after code changes
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       Jira Plugin                                │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   Parser    │  │   Monitor   │  │         Tools           │  │
+│  │  PROJ-123   │  │  Comments   │  │ add_comment, transition │  │
+│  │  URLs       │  │  (polling)  │  │ get_comments            │  │
+│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
+│         │                │                     │                 │
+│         ▼                ▼                     ▼                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                     Steering Rules                         │  │
+│  │  update-after-impl │ transition-after-merge │ feedback     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                    Request/Consumer Pattern                      │
+│  ┌─────────────────┐          ┌─────────────────────────────┐   │
+│  │   Sync Layer    │ ──emit─▶ │    Hook Consumer Layer      │   │
+│  │ (status sync)   │          │ (executes Jira API calls)   │   │
+│  └─────────────────┘          └─────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│  Hooks Emitted: transition.requested, issue.transitioned, ...   │
+│  Hooks Listened: prompt.building, github:pr.merged, ...         │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+                      ┌─────────────────┐
+                      │  workhorse-core │
+                      └─────────────────┘
 ```
 
-## Prerequisites
+## What It Registers
 
-- **Jira Cloud** account with API access
-- **OAuth credentials** stored in system keychain (via `workhorse setup` or manual keychain entry)
-- Cloud ID for your Jira instance (e.g., `company.atlassian.net`)
+### Parser
 
-## Features
+Handles Jira ticket references:
 
-| Feature | Description |
-|---------|-------------|
-| **Issue Parsing** | Parse Jira ticket keys (`PROJ-123`) and URLs into Workhorse issues |
-| **Comment Monitor** | Poll for new comments and update notifications |
-| **Prompt Enrichment** | Inject Jira issue state into agent system prompts |
-| **Status Sync** | Sync Workhorse issue status → Jira workflow transitions |
-| **Tools** | `jira_add_comment`, `jira_transition_issue`, `jira_get_comments` |
-| **Steering** | Idle agent reminders for unread comments |
-| **Cross-plugin Sync** | React to GitHub PR events (when both plugins are loaded) |
+```typescript
+// Formats supported:
+"PROJ-123"
+"https://company.atlassian.net/browse/PROJ-123"
+```
+
+Fetches full ticket details including description, comments, status, assignee.
+
+### Monitor: `jira-comments`
+
+Polls tickets for new comments every 30 seconds (configurable):
+
+- Detects comments added after agent started
+- Creates notifications for agent inbox
+- Filters out bot-generated comments (via metadata footer)
+
+### Tools
+
+| Tool | Description |
+|------|-------------|
+| `jira_add_comment` | Add comment to ticket |
+| `jira_transition_issue` | Change ticket status (In Progress, Done, etc.) |
+| `jira_get_comments` | Get recent comments |
+
+### Steering Rules
+
+| Rule | Condition | Reminder |
+|------|-----------|----------|
+| `jira:update-after-implementation` | Status is "implementing", file changes exist | "Update Jira with your progress" |
+| `jira:transition-after-merge` | PR merged, ticket not in QA/Done | "Transition ticket to appropriate status" |
+| `jira:address-feedback` | Unread notifications exist | "Check inbox for feedback" |
+
+### Auth
+
+Uses API token authentication with guided setup:
+
+```
+1. User visits Atlassian API tokens page
+2. Creates token with appropriate permissions
+3. Enters token in TUI setup wizard
+4. Plugin stores securely via keychain
+```
+
+## Hooks
+
+### Emitted
+
+| Hook | Payload | When |
+|------|---------|------|
+| `jira:transition.requested` | `{ issueId, targetStatus }` | Request to change status |
+| `jira:assign.requested` | `{ issueId, accountId }` | Request to assign ticket |
+| `jira:issue.transitioned` | `{ issueId, from, to }` | After successful transition |
+| `jira:issue.assigned` | `{ issueId, assignee }` | After successful assignment |
+| `jira:comment.added` | `{ issueId, comment }` | Comment added to ticket |
+
+### Listened
+
+| Hook | Action |
+|------|--------|
+| `prompt.building` | Add Jira state context (status, assignee, labels) |
+| `issue.status_changed` | Sync internal status → Jira transitions |
+| `jira:transition.requested` | Execute transition via Jira API |
+| `jira:assign.requested` | Execute assignment via Jira API |
+| `github:pr.merged` | Transition to QA, assign to reporter |
+| `github:pr.opening` | Add Related Tickets section to PR |
+
+## Request/Consumer Pattern
+
+The plugin uses a decoupled pattern where sync logic emits requests and separate consumers execute them:
+
+```typescript
+// Sync layer detects status change
+hooks.on("issue.status_changed", ({ issue, to }) => {
+  if (issue.source !== "jira") return;
+
+  // Emit request (doesn't execute directly)
+  hooks.emit("jira:transition.requested", {
+    issueId: issue.externalId,
+    targetStatus: mapStatusToJira(to),
+  });
+});
+
+// Consumer layer handles requests
+hooks.on("jira:transition.requested", async (event) => {
+  const transitions = await client.getTransitions(event.issueId);
+  const target = transitions.find(t => t.to.name === event.targetStatus);
+  if (target) {
+    await client.transitionIssue(event.issueId, target.id);
+    hooks.emit("jira:issue.transitioned", { ... });
+  }
+});
+```
+
+**Why this pattern:**
+- Testability — can test sync logic without mocking Jira API
+- Extensibility — other plugins could intercept/modify requests
+- Auditing — all state changes flow through observable hooks
+
+## Cross-Plugin Integration
+
+### GitHub PR Merge → Jira Transition
+
+```typescript
+hooks.on("github:pr.merged", async (event) => {
+  if (event.source !== "jira") return;
+
+  const issue = await db.issues.findById(event.issueId);
+  const jiraTicket = await client.fetchIssue(issue.externalId);
+
+  // Auto-transition to QA
+  const qaTransition = findQATransition(await client.getTransitions(ticketKey));
+  if (qaTransition) {
+    await client.transitionIssue(ticketKey, qaTransition.id);
+  }
+
+  // Assign back to reporter for verification
+  if (jiraTicket.fields.reporter) {
+    await client.editIssue(ticketKey, {
+      assignee: { accountId: jiraTicket.fields.reporter.accountId },
+    });
+  }
+});
+```
+
+### Contribute to GitHub PRs
+
+```typescript
+hooks.on("github:pr.opening", async (ctx) => {
+  const issue = await db.issues.findById(ctx.issueId);
+  if (issue.source !== "jira") return;
+
+  const ticket = await client.fetchIssue(issue.externalId);
+
+  ctx.contributions.push({
+    section: "Related Tickets",
+    content: `
+| Ticket | Summary | Status |
+|--------|---------|--------|
+| [${ticket.key}](${ticketUrl}) | ${ticket.fields.summary} | ${ticket.fields.status.name} |
+    `.trim(),
+    priority: 10,
+  });
+});
+```
 
 ## Configuration
 
 ```toml
-# ~/.workhorse.toml or .workhorse.toml
-
 [plugins.jira]
-cloud_id = "company.atlassian.net"    # Required — your Jira Cloud ID
-poll_interval = 30000                  # Comment poll interval in ms (default: 30000)
+pollInterval = 30000  # Comment monitor interval (ms)
 ```
 
-## Usage
+Jira Cloud connection details are stored securely via keychain after setup.
 
-### Register the Plugin
+## Usage Examples
+
+### Agent Transitions Ticket
 
 ```typescript
-import { jiraPlugin } from "workhorse-plugin-jira";
-
-const wh = await bootstrap({
-  plugins: [jiraPlugin],
+// Agent calls tool
+await tools.jira_transition_issue({
+  status: "In Progress",
 });
+
+// Plugin:
+// 1. Looks up available transitions
+// 2. Finds matching transition
+// 3. Executes via Jira API
+// 4. Emits jira:issue.transitioned
 ```
 
-### Authentication
-
-The plugin uses OAuth credentials stored in the system keychain:
+### Comment Notification
 
 ```typescript
-// Credentials are retrieved via keychain at runtime
-// Store them via `workhorse setup` or manually:
-import { storeCredential } from "workhorse-core";
-
-await storeCredential("workhorse", "jira_access_token", "your-token");
-await storeCredential("workhorse", "jira_refresh_token", "your-refresh-token");
-```
-
-### Issue Parsing
-
-The plugin registers a parser that handles Jira references:
-
-```typescript
-// These inputs are recognized:
-await tracker.parseInput("PROJ-123");                                        // Ticket key
-await tracker.parseInput("https://company.atlassian.net/browse/PROJ-123");  // URL
-
-// The parser fetches the full issue from Jira REST API
-```
-
-### Comment Monitoring
-
-The comment monitor polls for new comments on issues being worked on:
-
-- Starts automatically when an agent spawns on a Jira issue
-- Emits `monitor.tick` when new comments are found
-- Creates notifications for each new comment
-- Deduplicates by comment ID
-
-```typescript
-// Automatic — triggered by agent.create.post hook
-// The monitor polls every `poll_interval` milliseconds
-```
-
-### Tools
-
-#### jira_add_comment
-
-Add a comment to a Jira issue, optionally as a reply:
-
-```typescript
-{
-  ticketKey: "PROJ-123",
-  body: "I've pushed the changes. Please review.",
-  replyToId: "comment-456"    // Optional — for threaded replies
-}
-```
-
-#### jira_transition_issue
-
-Transition a Jira issue to a new status:
-
-```typescript
-{
-  ticketKey: "PROJ-123",
-  status: "In Progress"       // Must match an available Jira transition
-}
-```
-
-The plugin automatically fetches available transitions and matches by name.
-
-#### jira_get_comments
-
-Get all comments from a Jira issue:
-
-```typescript
-{
-  ticketKey: "PROJ-123"
-}
-
-// Returns comments with id, author, body, timestamps, and parentId
+// Monitor polls and finds new comment
+// 1. Filters out bot comments (isWorkhorseGenerated)
+// 2. Creates notification: "New comment from @john: ..."
+// 3. Next prompt includes notification in inbox
+// 4. Steering rule fires if unread notifications exist
 ```
 
 ### Prompt Enrichment
 
-The plugin adds context blocks to agent prompts via the `prompt.building` hook:
-
-- **Jira Issue State** — Title, status, priority, assignee, description
-- **Workflow Instructions** — Step-by-step guidance for Jira workflows
-- **Available Transitions** — List of valid status transitions
-
-### Status Sync
-
-Workhorse issue status changes are synced to Jira workflow transitions:
-
-| Workhorse Status | Jira Transition (typical) |
-|-----------------|--------------------------|
-| `planning` | → "In Progress" |
-| `implementing` | → "In Progress" |
-| `in_review` | → "In Review" |
-| `blocked` | → "Blocked" |
-| `done` | → "Done" |
-
-The actual transition names depend on your Jira workflow configuration. The plugin auto-discovers available transitions.
-
-### Cross-Plugin Sync
-
-When both the Jira and GitHub plugins are loaded, the Jira plugin reacts to GitHub events:
-
-- **PR Opened** — Adds a comment to the Jira issue linking the PR
-- **PR Merged** — Adds a comment and transitions the Jira issue
-- **PR Review** — Adds a comment about review feedback
-
-### Steering Rules
-
-The plugin registers steering rules for idle agents:
-
-1. **Comment Response** — When agent is idle and has unread Jira comment notifications, reminds to check for new comments
-2. **Status Check** — When agent updates status, reminds to sync with Jira
-
-## Client API
-
-The `AtlassianClient` provides direct Jira REST API access:
-
 ```typescript
-import { AtlassianClient } from "workhorse-plugin-jira";
+hooks.on("prompt.building", async (ctx) => {
+  const issue = await db.issues.findById(ctx.issueId);
+  if (issue.source !== "jira") return;
 
-const client = new AtlassianClient("company.atlassian.net", credentialGetter);
+  const ticket = await client.fetchIssue(issue.externalId);
 
-// Fetch an issue
-const issue = await client.fetchIssue("PROJ-123");
-
-// Add a comment
-await client.addComment("PROJ-123", "Working on this now.");
-
-// Get available transitions
-const transitions = await client.getTransitions("PROJ-123");
-
-// Transition an issue
-await client.transitionIssue("PROJ-123", "31");  // transition ID
-
-// Edit issue fields
-await client.editIssue("PROJ-123", { priority: { name: "High" } });
-
-// Get current user
-const user = await client.getCurrentUser();
+  ctx.contextBlocks.push({
+    id: "jira-state",
+    title: "Jira Ticket",
+    content: `
+Ticket: ${ticket.key}
+Status: ${ticket.fields.status.name}
+Assignee: ${ticket.fields.assignee?.displayName || "Unassigned"}
+Labels: ${ticket.fields.labels.join(", ") || "None"}
+    `.trim(),
+    priority: 15,
+  });
+});
 ```
 
-## Types
+## Dependencies on Core
 
-### JiraIssue
+| Import | Usage |
+|--------|-------|
+| `definePlugin` | Plugin definition |
+| `IssueParserOptions` | Parser interface |
+| `MonitorOptions` | Monitor interface |
+| `OrchestratorTool` | Tool interface |
+| `SteeringRuleConfigInput` | Steering rule definition |
+| `WorkhorseContext` | Service access |
+| `PromptContextBlock` | Prompt enrichment |
+| `isWorkhorseGenerated` | Filter bot comments |
+| `storeCredential`, `getCredential` | Secure token storage |
 
-```typescript
-interface JiraIssue {
-  key: string;
-  self: string;
-  fields: {
-    summary: string;
-    description?: string;
-    status: { name: string; id: string };
-    priority?: { name: string; id: string };
-    assignee?: { displayName: string; accountId: string } | null;
-    reporter?: { displayName: string; accountId: string };
-    issuetype?: { name: string };
-    labels?: string[];
-    comment?: { comments: JiraComment[]; total: number };
-    created?: string;
-    updated?: string;
-  };
-}
-```
+## Why This Architecture
 
-### JiraComment
-
-```typescript
-interface JiraComment {
-  id: string;
-  author: { displayName: string; accountId: string };
-  body: string;
-  created: string;
-  updated: string;
-  parentId?: string;    // For threaded replies
-}
-```
-
-### JiraTransition
-
-```typescript
-interface JiraTransition {
-  id: string;
-  name: string;
-  to: { name: string; id: string };
-}
-```
-
-### JiraCredentials
-
-```typescript
-interface JiraCredentials {
-  accessToken: string;
-  refreshToken?: string;
-  expiresAt?: Date;
-}
-```
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `index.ts` | Plugin definition and setup |
-| `client.ts` | AtlassianClient — Jira Cloud REST API wrapper |
-| `auth.ts` | Credential retrieval from system keychain |
-| `parser.ts` | Jira ticket key/URL parsing |
-| `mapper.ts` | JiraIssue → Workhorse issue mapping |
-| `monitor.ts` | Comment monitor factory |
-| `prompt.ts` | Prompt enrichment via `prompt.building` hook |
-| `sync.ts` | Status sync (Workhorse → Jira transitions) |
-| `cross-plugin-sync.ts` | Reactions to GitHub plugin events |
-| `steering.ts` | Steering rules for comment responses |
-| `tools.ts` | Tool definitions and implementations |
-| `renderer.ts` | TUI activity renderer |
-| `hooks.ts` | Plugin-specific hook type definitions |
-| `types.ts` | Domain types (JiraIssue, JiraComment, etc.) |
-
-## License
-
-MIT
+1. **Request/consumer decoupling** — Sync logic separate from API calls for testability
+2. **Cross-plugin coordination** — GitHub PR events trigger Jira actions automatically
+3. **Bidirectional sync** — Internal status ↔ Jira status stay aligned
+4. **Notification system** — Comments don't get lost, agents see them in inbox
+5. **Steering reminders** — Agents don't forget to update Jira during work

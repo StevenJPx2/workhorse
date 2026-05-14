@@ -1,182 +1,261 @@
 # workhorse-plugin-pi-adapter
 
-Pi Coding Agent adapter plugin for Workhorse. Wraps `@anthropic-ai/claude-code` SDK as a Workhorse agent adapter.
+Pi Coding Agent adapter for Workhorse — enables using the Pi SDK as an agent harness with security constraints.
 
-## Installation
+## What This Plugin Does
 
-```bash
-bun add workhorse-plugin-pi-adapter
-```
+This plugin adapts the [Pi Coding Agent SDK](https://github.com/anthropics/pi-coding-agent) to work as a Workhorse agent adapter. It:
 
-## Prerequisites
-
-- **Pi Coding Agent** installed (`@anthropic-ai/claude-code`)
-- **Authentication** via `pi /login` (OAuth credentials stored in `~/.pi/agent/auth.json`)
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Agent Adapter** | Full Pi SDK integration as a Workhorse AgentAdapter |
-| **Model Registry** | Exposes Pi's available models (with auth check) |
-| **Tool Extensions** | Translates Workhorse tools to Pi Extension API |
-| **Event Handling** | Maps Pi session events to Workhorse hooks |
-| **Streaming Support** | Send messages during streaming via `session.steer()` |
-
-## Usage
-
-### Register the Plugin
-
-```typescript
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
-
-const wh = await bootstrap({
-  plugins: [piAdapterPlugin],
-});
-```
-
-### Spawn a Pi Agent
-
-```typescript
-const adapter = await orchestrator.spawn({
-  issue,
-  repoPath: "/path/to/repo",
-  harness: "pi-coding-agent",    // This harness is registered by the plugin
-  model: "anthropic/claude-sonnet-4",  // Optional — uses default if omitted
-});
-
-await adapter.start();
-```
-
-### Model Selection
-
-Models can be specified in several ways:
-
-```typescript
-// Fully qualified: "provider/model-id"
-model: "anthropic/claude-sonnet-4"
-
-// Short name (auto-resolved if unambiguous)
-model: "claude-sonnet-4"
-
-// Default (uses Pi's default model)
-model: undefined
-```
+- **Wraps Pi SDK** as a `AgentAdapter` implementation
+- **Enforces path restrictions** — agents can only access their worktree
+- **Integrates Workhorse tools** — Pi can use tools registered by other plugins
+- **Provides model registry** — discovers available models from Pi SDK
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                     PiAgentAdapter                      │
-│                                                        │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  │
-│  │ Pi SDK      │  │ Extensions   │  │ Event       │  │
-│  │ Session     │  │ (Tools)      │  │ Handler     │  │
-│  │             │  │              │  │             │  │
-│  │ create()   │  │ Workhorse    │  │ agent.idle  │  │
-│  │ prompt()    │  │ tools →      │  │ status      │  │
-│  │ steer()     │  │ Pi extension │  │ changes     │  │
-│  │ dispose()   │  │              │  │             │  │
-│  └─────────────┘  └──────────────┘  └─────────────┘  │
-│                                                        │
-│  Inherits: AgentAdapter (worktree, prompt, steering)   │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     Pi Adapter Plugin                            │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                   PiAgentAdapter                          │   │
+│  │  extends AgentAdapter                                     │   │
+│  │                                                           │   │
+│  │  ┌─────────────────┐  ┌────────────────────────────────┐ │   │
+│  │  │  Pi SDK Session │  │  Path-Restricted Tools         │ │   │
+│  │  │  (createAgent)  │  │  ReadTool, WriteTool, EditTool │ │   │
+│  │  │                 │  │  BashTool, GrepTool, GlobTool  │ │   │
+│  │  └─────────────────┘  └────────────────────────────────┘ │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              PiAdapterModelRegistry                       │   │
+│  │  Wraps Pi SDK's model discovery                           │   │
+│  └──────────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│  TUI Renderer: pi-tools (Read/Write/Edit/Bash activity)        │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+          ┌─────────────────────────────────────────┐
+          │  workhorse-core (AgentAdapter base)     │
+          │  - Provides: issue, worktreePath, tools │
+          │  - Manages: lifecycle, steering rules   │
+          └─────────────────────────────────────────┘
 ```
 
-### Session Lifecycle
+## What It Registers
 
-```
-1. doStart()
-   ├── Create AuthStorage (reuses ~/.pi/agent/auth.json)
-   ├── Create PiModelRegistry from auth
-   ├── Create DefaultResourceLoader
-   │   ├── Set systemPromptOverride → agent's system prompt
-   │   └── Add extensionFactories → Workhorse tools as Pi extensions
-   ├── Create AgentSession
-   └── Subscribe to session events → handleSessionEvent()
-
-2. sendMessage(content)
-   ├── If streaming: session.steer(content)  — inject mid-stream
-   └── If idle: session.prompt(content)      — new prompt
-
-3. doStop()
-   ├── Unsubscribe from events
-   └── session.dispose()
-```
-
-### Tool Translation
-
-Workhorse tools (`OrchestratorTool[]`) are translated to Pi extensions:
+### Adapter: `pi-coding-agent`
 
 ```typescript
-// Workhorse tool → Pi extension
-{
-  name: "workhorse_acknowledge",
-  description: "Mark notification(s) as read...",
-  schema: { type: "object", properties: {...} },
-  execute: async (args, ctx) => {...}
+class PiAgentAdapter extends AgentAdapter {
+  readonly harness = "pi-coding-agent";
+
+  static displayName = "Pi Coding Agent";
+  static icon = "🥧";
+  static registry = PiAdapterModelRegistry.getInstance();
 }
-// ↓ converted to ↓
-Pi Extension with matching name, description, parameters, and handler
 ```
 
-The extension handler receives tool call arguments and delegates to the original `execute()` function with a `ToolExecutionContext` containing `issueId`, `worktreePath`, `db`, `hooks`, and `memory`.
+### TUI Renderer: `pi-tools`
 
-### Event Mapping
+Renders file operation activities for the TUI:
 
-Pi session events are mapped to Workhorse hooks:
+- Read operations → file icon + path
+- Write operations → pencil icon + path
+- Edit operations → edit icon + path + diff summary
+- Bash commands → terminal icon + command
+- Grep/Glob → search icon + pattern
 
-| Pi Event | Workhorse Action |
-|----------|----------------|
-| Agent becomes idle | Emit `agent.idle` hook |
-| Agent tool call | Emit `agent.tool_call` hook |
-| Status change | Update issue status + emit `issue.status_changed` |
-| Session streaming state | Update adapter `state` |
+## Security: Path Restrictions
+
+All file operations are constrained to the agent's worktree:
+
+```typescript
+// Tool creation with path restrictions
+const readTool = createReadTool(worktreePath, {
+  operations: createRestrictedReadOperations({
+    rootDir: worktreePath,
+  }),
+});
+
+const bashTool = createBashTool(worktreePath, {
+  operations: createRestrictedBashOperations({
+    rootDir: worktreePath,
+    allowTmp: true,  // Also allows /tmp/ for temp files
+  }),
+});
+```
+
+**How it works:**
+
+```typescript
+function isPathAllowed(path: string, options: PathValidationOptions): boolean {
+  const normalizedPath = normalize(resolve(path));
+
+  // Must be under root directory
+  if (normalizedPath.startsWith(options.rootDir)) return true;
+
+  // Or in additional allowed directories
+  return options.additionalAllowedDirs?.some(dir =>
+    normalizedPath.startsWith(dir)
+  ) ?? false;
+}
+```
+
+**Why this matters:**
+- Agents work in isolated worktrees (`../repo-worktrees/PROJ-123`)
+- Without restrictions, agent could access main repo, other worktrees, system files
+- Path validation prevents escape attacks via symlinks, `..`, etc.
 
 ## Model Registry
 
-The `PiAdapterModelRegistry` wraps Pi's `ModelRegistry` to provide model discovery:
+Wraps Pi SDK's model discovery:
 
 ```typescript
-import { PiAdapterModelRegistry } from "workhorse-plugin-pi-adapter";
+class PiAdapterModelRegistry extends ModelRegistry {
+  getAll(): ModelInfo[] {
+    return getPiRegistry().getAll().map(model => ({
+      provider: model.provider,
+      id: model.id,
+      name: model.name,
+      contextWindow: model.contextWindow,
+      capabilities: model.capabilities,
+    }));
+  }
 
-const registry = PiAdapterModelRegistry.getInstance();
+  getAvailable(): ModelInfo[] {
+    // Only models with configured API keys
+    return this.getAll().filter(m => hasApiKey(m.provider));
+  }
 
-// All models (including unauthenticated)
-const all = registry.getAll();
-
-// Available models (authenticated only)
-const available = registry.getAvailable();
-
-// Preferred provider
-const provider = registry.getPreferredProvider(); // "anthropic", etc.
-
-// Find specific model
-const model = registry.find("anthropic", "claude-sonnet-4");
-
-// Refresh after auth changes
-registry.refresh();
+  getPreferredProvider(): string {
+    // Priority: anthropic > openai > first available
+    if (hasApiKey("anthropic")) return "anthropic";
+    if (hasApiKey("openai")) return "openai";
+    return this.getAvailable()[0]?.provider ?? "anthropic";
+  }
+}
 ```
 
-## Types
+## Workhorse Tool Integration
 
-The plugin re-exports `ModelInfo` from `workhorse-core` and provides:
+Workhorse tools (from other plugins) are exposed to Pi via extension:
 
-| Export | Description |
-|--------|-------------|
-| `PiAgentAdapter` | The adapter class |
-| `PiAdapterModelRegistry` | Model registry singleton |
+```typescript
+protected override async doStart(): Promise<void> {
+  const loader = new DefaultResourceLoader({
+    cwd: this.worktreePath,
+    extensionFactories: [
+      createExtensionFromTools(this.tools, {
+        issueId: this.issueId,
+        worktreePath: this.worktreePath,
+        db: this.db,
+        hooks: this.hooks,
+      }),
+    ],
+  });
 
-## Files
+  const { session } = await createAgentSession({
+    cwd: this.worktreePath,
+    resourceLoader: loader,
+    customTools: [
+      // Path-restricted versions of built-in tools
+      createReadTool(this.worktreePath, { ... }),
+      createWriteTool(this.worktreePath, { ... }),
+      createEditTool(this.worktreePath, { ... }),
+      createBashTool(this.worktreePath, { ... }),
+    ],
+  });
 
-| File | Purpose |
-|------|---------|
-| `index.ts` | Plugin definition — registers adapter and TUI renderer |
-| `adapter.ts` | PiAgentAdapter — extends AgentAdapter with Pi SDK integration |
-| `events.ts` | Pi session event handler → Workhorse hook mapping |
-| `registry.ts` | PiAdapterModelRegistry — wraps Pi's model registry |
-| `renderers.ts` | TUI tool call renderer for Pi-specific display |
+  this.session = session;
+}
+```
 
-## License
+**How tools flow:**
 
-MIT
+```
+┌─────────────────────┐
+│  GitHub Plugin      │──registers──▶ github_open_pr, github_add_comment
+│  Jira Plugin        │──registers──▶ jira_add_comment, jira_transition
+│  Playwright Plugin  │──registers──▶ playwright_navigate, playwright_screenshot
+└─────────────────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Orchestrator       │ collects all tools
+│  .registerTool()    │
+└─────────────────────┘
+           │
+           ▼ (adapter receives tools array)
+┌─────────────────────┐
+│  PiAgentAdapter     │ wraps as Pi Extension
+│  createExtension()  │
+└─────────────────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Pi SDK Session     │ agent can call any tool
+└─────────────────────┘
+```
+
+## Agent Lifecycle
+
+```typescript
+// 1. Orchestrator spawns adapter
+const adapter = await orchestrator.spawn({
+  issueId: "issue-123",
+  harness: "pi-coding-agent",
+  model: "claude-sonnet-4",
+});
+
+// 2. Initialize (creates worktree, builds prompt)
+// Called automatically by spawn()
+
+// 3. Start agent
+await adapter.start();
+// Creates Pi session with restricted tools
+// Sends initial prompt with issue context
+
+// 4. Send messages
+adapter.sendMessage("Please also add error handling");
+// Appends to Pi session
+
+// 5. Stop agent
+await adapter.stop();
+// Terminates Pi session
+// Agent state → "stopped"
+```
+
+## Configuration
+
+No additional configuration needed — uses Pi SDK defaults with path enforcement.
+
+Model selection happens at spawn time:
+
+```typescript
+await orchestrator.spawn({
+  harness: "pi-coding-agent",
+  model: "claude-sonnet-4",  // or "gpt-4", etc.
+});
+```
+
+## Dependencies on Core
+
+| Import | Usage |
+|--------|-------|
+| `AgentAdapter` | Base class for adapter implementation |
+| `ModelRegistry` | Model discovery interface |
+| `AgentState` | Lifecycle state enum |
+| `OrchestratorTool` | Tool interface |
+| `assertPathAllowed`, `isPathAllowed` | Security utilities |
+| `WorkhorseContext` | Service access |
+
+## Why This Architecture
+
+1. **Adapter pattern** — Pi SDK has its own paradigm; adapter translates to Workhorse's
+2. **Security first** — Path restrictions prevent agents from escaping worktree
+3. **Tool composability** — Any plugin's tools automatically available to Pi agent
+4. **Model abstraction** — ModelRegistry provides consistent interface across harnesses
+5. **Activity rendering** — TUI can visualize what Pi is doing via renderer hook
