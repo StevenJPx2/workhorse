@@ -89,28 +89,13 @@ foo.ts
 foo.test.ts
 ```
 
-### Required TODO Tests
-
-Every test file must have at least one `it.fails("TODO: ...")` documenting planned behavior:
-
-```typescript
-describe("MyFeature", () => {
-  it("does something", () => {
-    // actual test
-  });
-
-  it.fails("TODO: should handle edge case X", () => {
-    // documents future behavior
-  });
-});
-```
-
 ### Running Tests
 
 ```bash
-bun run test                              # All packages
-bun run --filter workhorse-core test      # Single package
-bun run --filter workhorse-core test:watch # Watch mode
+bun run test                                  # All packages
+bun run --filter workhorse-core test          # Single package
+bun run --filter workhorse-core test foo      # Test files matching "foo"
+bun run --filter workhorse-core test:watch    # Watch mode
 bun run --filter workhorse-core test:coverage # With coverage
 ```
 
@@ -185,18 +170,22 @@ jt.plugins.register(myPlugin);
 await jt.plugins.setup();
 ```
 
-## Module READMEs
+## Package READMEs
 
-Each module has its own README with detailed documentation:
+Each package has detailed architecture documentation:
 
-- `packages/core/src/config/README.md` — Config loading
-- `packages/core/src/context/README.md` — Context system
-- `packages/core/src/db/README.md` — Database
-- `packages/core/src/lib/hooks/README.md` — Hooks
-- `packages/core/src/plugins/README.md` — Plugin system
-- `packages/core/src/services/memory/README.md` — Memory service
-- `packages/core/src/services/monitor/README.md` — Monitor service
-- `packages/core/src/workflow/tracker/README.md` — Tracker
+**Core:**
+- [`packages/core/README.md`](../packages/core/README.md) — Full architecture overview
+
+**Plugins:**
+- [`packages/plugins/github/README.md`](../packages/plugins/github/README.md) — GitHub integration
+- [`packages/plugins/jira/README.md`](../packages/plugins/jira/README.md) — Jira integration
+- [`packages/plugins/pi-adapter/README.md`](../packages/plugins/pi-adapter/README.md) — Pi adapter
+- [`packages/plugins/playwright/README.md`](../packages/plugins/playwright/README.md) — Browser automation
+
+**Other:**
+- [`packages/tui/README.md`](../packages/tui/README.md) — Terminal UI
+- [`oxlint/eslint-plugin-workhorse/README.md`](../oxlint/eslint-plugin-workhorse/README.md) — Custom lint rules
 
 ## Reference
 

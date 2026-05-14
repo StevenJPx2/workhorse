@@ -9,8 +9,9 @@ An AI-powered agent orchestrator that manages coding agents working on Jira and 
 | Runtime | Bun |
 | Language | TypeScript (strict) |
 | Database | SQLite via `@libsql/client` + `drizzle-orm` |
-| Testing | Vitest (97% line/function coverage, 95% branch) |
-| Linting | oxlint with custom rules |
+| Testing | Vitest (97% line/function, 95% branch coverage) |
+| Linting | oxlint with custom plugin (`eslint-plugin-workhorse`) |
+| Formatting | oxfmt |
 | Monorepo | Bun workspaces |
 
 ## Project Structure
@@ -37,9 +38,10 @@ workhorse/
 │   │           ├── steering/    # Autonomous steering rules
 │   │           └── tracker/     # Issue parsing, prompt building
 │   ├── plugins/           # External plugins
-│   │   ├── github/        # @workhorse/plugin-github — PR monitoring, tools, status sync
-│   │   ├── jira/          # @workhorse/plugin-jira — comment monitoring, tools, transitions
-│   │   └── pi-adapter/    # @workhorse/plugin-pi-adapter — Pi Coding Agent adapter
+│   │   ├── github/        # workhorse-plugin-github — PR monitoring, tools, status sync
+│   │   ├── jira/          # workhorse-plugin-jira — comment monitoring, tools, transitions
+│   │   ├── pi-adapter/    # workhorse-plugin-pi-adapter — Pi Coding Agent adapter
+│   │   └── playwright/    # workhorse-plugin-playwright — browser automation
 │   ├── tui/               # @workhorse/tui — Terminal UI (OpenTUI + Solid.js)
 │   └── tui-worktrees/     # TUI worktree instances
 ├── oxlint/                # Custom lint rules
@@ -373,33 +375,49 @@ poll_interval = 30000
 
 ## Plugins
 
-### @workhorse/plugin-jira
+### workhorse-plugin-jira
 
 Jira Cloud integration:
 - Issue parsing for ticket keys (`PROJ-123`) and URLs
 - Comment monitoring with deduplication
 - Status sync (Workhorse → Jira transitions)
 - Tools: `jira_add_comment`, `jira_transition_issue`, `jira_get_comments`
-- Cross-plugin sync with GitHub (PR → Jira comment)
+- Cross-plugin sync with GitHub (PR merge → Jira transition)
 - Steering rules for comment response
 
-### @workhorse/plugin-github
+See [`packages/plugins/jira/README.md`](../packages/plugins/jira/README.md) for details.
+
+### workhorse-plugin-github
 
 GitHub integration via `gh` CLI:
 - Issue/PR parsing for `owner/repo#45` and URLs
 - Unified PR monitor (reviews, comments, CI checks, mergeable state)
 - Status sync (Workhorse → GitHub labels)
-- Tools: `github_open_pr`, `github_add_comment`, `github_get_pr_status`
+- Tools: `github_open_pr`, `github_add_comment`, `github_get_pr_status`, `github_get_ci_check`, `github_get_pr_reviews`
 - Steering rules for PR review and CI failure reminders
+- Cross-plugin PR contribution system via `github:pr.opening` hook
 
-### @workhorse/plugin-pi-adapter
+See [`packages/plugins/github/README.md`](../packages/plugins/github/README.md) for details.
+
+### workhorse-plugin-pi-adapter
 
 Pi Coding Agent adapter:
-- Wraps `@mariozechner/pi-coding-agent` SDK
+- Wraps Pi SDK as `AgentAdapter` implementation
 - Translates Workhorse tools to Pi extensions
-- Maps Pi session events to Workhorse hooks
+- Enforces path restrictions (agents can only access their worktree)
 - Model registry with Pi's authentication
-- Streaming support (`session.steer()` for mid-stream injection)
+
+See [`packages/plugins/pi-adapter/README.md`](../packages/plugins/pi-adapter/README.md) for details.
+
+### workhorse-plugin-playwright
+
+Browser automation:
+- Tools: `playwright_navigate`, `playwright_screenshot`, `playwright_click`, `playwright_fill`, etc.
+- Session management (one browser per issue, auto-cleanup)
+- Screenshot contribution to PRs via `github:pr.opening` hook
+- Steering rule to remind agents to capture screenshots
+
+See [`packages/plugins/playwright/README.md`](../packages/plugins/playwright/README.md) for details.
 
 ## Database Schema
 
