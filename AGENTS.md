@@ -1,56 +1,49 @@
 # AGENTS.md
 
-Workhorse is an agent orchestrator managing coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for current status.
+Workhorse is an agent orchestrator for coding agents on Jira/GitHub issues. Active rewrite — check `plan/PROGRESS.md` for status.
 
-## Quick Reference
+## Commands
 
 ```bash
-bun install                    # Install dependencies
-bun run check                  # Full audit: lint → typecheck → test → fallow (run before commits)
-bun run --filter workhorse-core test   # Test single package
+bun install                                 # Install dependencies
+bun run check                               # Full: lint → typecheck → test → fallow (run before commits)
+bun run --filter workhorse-core test        # Test single package
+bun run --filter workhorse-core test foo    # Test files matching "foo"
+cd packages/core && bunx drizzle-kit generate  # Generate DB migrations
 ```
 
-## Project Structure
+**CI build order**: oxlint plugin → core → plugins (`bun run build:plugins`) → tui (`bun run build:tui`)
+
+## Structure
 
 ```
-packages/core/     # Main package (workhorse-core) — bootstrap, config, plugins, services
-packages/plugins/  # External plugins (github, jira, pi-adapter)
-oxlint/            # Custom lint rules (eslint-plugin-workhorse)
-plan/              # Build plan docs — read XX-module.md for context on each module
+packages/core/       # workhorse-core — main library
+packages/plugins/    # External plugins (github, jira, pi-adapter, playwright)
+packages/tui/        # Terminal UI (Ink-based)
+oxlint/              # Custom lint rules (eslint-plugin-workhorse)
+plan/                # Build plan — read XX-module.md for module context
 ```
 
-**Entry points**:
-- `packages/core/src/bootstrap.ts` — Creates `Workhorse` instance
-- `packages/core/src/index.ts` — Public API exports
+**Entry points**: `packages/core/src/bootstrap.ts` (creates Workhorse), `packages/core/src/index.ts` (public API)
 
-## Import Rules (enforced by oxlint)
+## Import Rules (oxlint-enforced)
 
-**Use path aliases** — defined in `packages/core/tsconfig.json`:
+Use path aliases from `packages/core/tsconfig.json`:
 ```typescript
-// ✅ Good
-import { SteeringRule } from "#workflow/steering";
-import { HookEmitter } from "#lib/hooks";
-
-// ❌ Bad — deep relative paths
-import { SteeringRule } from "../../workflow/steering/rule";
+import { SteeringRule } from "#workflow/steering";   // ✅
+import { SteeringRule } from "../../workflow/steering/rule";  // ❌ deep relative
 ```
 
-**Import from module index only** — never reach into internals:
+Import from module index only:
 ```typescript
-// ✅ Good
-import { SteeringRule, type SteeringRuleConfig } from "#workflow/steering";
-
-// ❌ Bad
-import { SteeringRule } from "#workflow/steering/rule";
+import { SteeringRule } from "#workflow/steering";   // ✅
+import { SteeringRule } from "#workflow/steering/rule";  // ❌ reaching into internals
 ```
 
-**No explicit `/index.ts`** on subpaths:
+No explicit `/index.ts` on subpaths:
 ```typescript
-// ✅ Good
-import { something } from "./types";
-
-// ❌ Bad
-import { something } from "./types/index.ts";
+import { something } from "./types";        // ✅
+import { something } from "./types/index.ts";  // ❌
 ```
 
 ## Code Constraints
@@ -63,24 +56,19 @@ import { something } from "./types/index.ts";
 | Filenames | kebab-case | oxlint |
 | Test location | Colocated (`foo.ts` + `foo.test.ts`) | oxlint |
 
-**Every test file must have at least one `it.fails("TODO: ...")`** documenting planned behavior.
-
 ## Database
 
 SQLite via drizzle-orm. Schema in `packages/core/src/db/schema/`.
 
-```bash
-cd packages/core && bunx drizzle-kit generate  # Generate migrations
-```
-
 ## Pre-commit
 
-`simple-git-hooks` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files automatically.
+`simple-git-hooks` runs `oxfmt --write` and `oxlint` on staged `.ts/.tsx` files.
 
-## Architecture Notes
+## Architecture
 
-- **bootstrap()** creates `Workhorse` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
-- **Context system**: Use `useWorkhorse()` inside plugin setup to access services
-- **Plugins**: Define with `definePlugin({ manifest, setup, teardown })` — see `MIGRATION.md` for full architecture
-- **Hooks**: Event-based pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
-- **Services**: MemoryService (L1 context.md + L2 semantic search), MonitorService (polling framework)
+- **bootstrap()** — Creates `Workhorse` instance with config, db, hooks, memory, monitors, tracker, orchestrator, plugins
+- **Context**: Use `useWorkhorse()` inside plugin setup to access services
+- **Plugins**: `definePlugin({ manifest, setup, teardown })` — see `MIGRATION.md`
+- **Hooks**: Event pub/sub via mitt (`hooks.on()`, `hooks.emit()`)
+- **MemoryService**: L1 (context.md) + L2 (retriv semantic search)
+- **MonitorService**: Polling framework for health checks
