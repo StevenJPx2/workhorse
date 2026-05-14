@@ -1,8 +1,16 @@
 import { defineConfig } from "vitest/config";
 
+const isCI = process.env.CI === "true";
+
 export default defineConfig({
   test: {
     globals: true,
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      // Integration tests require API tokens - skip in CI, run locally
+      ...(isCI ? ["**/integration.test.ts"] : []),
+    ],
     coverage: {
       provider: "v8",
       exclude: [
