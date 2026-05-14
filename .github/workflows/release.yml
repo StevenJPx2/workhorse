@@ -1,8 +1,7 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,13 +13,14 @@ jobs:
 
     permissions:
       contents: write
-      pull-requests: write
       packages: write
       id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -50,63 +50,17 @@ jobs:
       - name: Build TUI
         run: bun run build:tui:prod
 
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: bun changeset version
-          publish: bun changeset publish
-          title: "chore: version packages"
-          commit: "chore: version packages"
+      - name: Release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bunx changelogen --release --push
+          bunx changelogen gh release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish TUI to npm
+        run: npm publish --access public
+        working-directory: packages/tui
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Upload TUI binary to GitHub Release
-        if: steps.changesets.outputs.published == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const publishedPackages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
-            const tuiPkg = publishedPackages.find(p => p.name === '@fdcn/workhorse');
-            if (!tuiPkg) { console.log('TUI not published this run, skipping.'); return; }
-
-            const tagName = `workhorse@${tuiPkg.version}`;
-
-            const { data: release } = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: tagName,
-            });
-
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              name: 'workhorse.js',
-              data: fs.readFileSync('packages/tui/dist/workhorse.js'),
-            });
-
-            const installInstructions = [
-              `## Install`,
-              ``,
-              `\`\`\`sh`,
-              `# With bun`,
-              `bun install -g workhorse`,
-              `\`\`\``,
-              ``,
-              `Or download \`workhorse.js\` from the assets below and place it in your PATH:`,
-              `\`\`\`sh`,
-              `chmod +x workhorse.js && mv workhorse.js $(bun pm bin -g)/workhorse`,
-              `\`\`\``,
-            ].join('\n');
-
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
-              body: `${release.body ?? ''}\n\n${installInstructions}`,
-            });
-
