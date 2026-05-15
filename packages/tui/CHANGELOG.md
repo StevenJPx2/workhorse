@@ -1,5 +1,9 @@
 # @fdcn/workhorse
 
+## v0.1.13
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.1...v0.1.13)
+
 ## 0.1.5
 
 ### Patch Changes
