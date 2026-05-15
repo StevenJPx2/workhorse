@@ -6,6 +6,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+import { countImagesInMarkdown } from "../attachments.ts";
 import type { GitHubClient } from "../client";
 import type {
   ConversationComment,
@@ -25,7 +26,8 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
     description:
       "Get detailed PR reviews and conversation comments including review comments, inline code feedback, " +
       "reviewer decisions, and general PR discussion. Use this to understand what reviewers are requesting, " +
-      "see specific code feedback, read conversation comments, and address all feedback.",
+      "see specific code feedback, read conversation comments, and address all feedback. " +
+      "Comments containing images will have an 'imageCount' field - use github_get_attachments to download them.",
     schema: {
       type: "object",
       properties: {
@@ -106,28 +108,45 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
         );
 
         const conversationComments: ConversationComment[] = issueComments
-          .map((c) => ({ id: c.id, author: c.user.login, body: c.body, createdAt: c.created_at }))
+          .map((c) => {
+            const imageCount = countImagesInMarkdown(c.body);
+            return {
+              id: c.id,
+              author: c.user.login,
+              body: c.body,
+              createdAt: c.created_at,
+              // Include image count if comment has embedded images
+              ...(imageCount > 0 && { imageCount }),
+            };
+          })
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Count total images across all comments
+        const totalImages = conversationComments.reduce((sum, c) => sum + (c.imageCount ?? 0), 0);
+
+        const result: PRReviewsResult & { totalImages?: number; imageNote?: string } = {
+          totalReviews: reviews.length,
+          totalConversationComments: conversationComments.length,
+          summary: {
+            approved: reviews.filter((r) => r.state === "APPROVED").length,
+            changesRequested: reviews.filter((r) => r.state === "CHANGES_REQUESTED").length,
+            commented: reviews.filter((r) => r.state === "COMMENTED").length,
+            dismissed: reviews.filter((r) => r.state === "DISMISSED").length,
+            pending: reviews.filter((r) => r.state === "PENDING").length,
+          },
+          reviews: detailedReviews,
+          conversationComments,
+        };
+
+        // Add image summary if there are any
+        if (totalImages > 0) {
+          result.totalImages = totalImages;
+          result.imageNote = `${totalImages} image(s) found in comments. Use github_get_attachments to download them.`;
+        }
 
         return {
           success: true,
-          output: JSON.stringify(
-            {
-              totalReviews: reviews.length,
-              totalConversationComments: conversationComments.length,
-              summary: {
-                approved: reviews.filter((r) => r.state === "APPROVED").length,
-                changesRequested: reviews.filter((r) => r.state === "CHANGES_REQUESTED").length,
-                commented: reviews.filter((r) => r.state === "COMMENTED").length,
-                dismissed: reviews.filter((r) => r.state === "DISMISSED").length,
-                pending: reviews.filter((r) => r.state === "PENDING").length,
-              },
-              reviews: detailedReviews,
-              conversationComments,
-            } satisfies PRReviewsResult,
-            null,
-            2,
-          ),
+          output: JSON.stringify(result, null, 2),
         };
       } catch (error) {
         return {

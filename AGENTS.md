@@ -7,12 +7,13 @@ Workhorse is an agent orchestrator for coding agents on Jira/GitHub issues. Acti
 ```bash
 bun install                                 # Install dependencies
 bun run check                               # Full: lint → typecheck → test → fallow (run before commits)
+bun run build:all                           # Sequential build: core → plugins → tui (production)
 bun run --filter workhorse-core test        # Test single package
 bun run --filter workhorse-core test foo    # Test files matching "foo"
 cd packages/core && bunx drizzle-kit generate  # Generate DB migrations
 ```
 
-**CI build order**: oxlint plugin → core → plugins (`bun run build:plugins`) → tui (`bun run build:tui`)
+**Build order**: core → plugins (`bun run build:plugins`) → tui (`bun run build:tui` or `build:tui:prod`)
 
 ## Structure
 

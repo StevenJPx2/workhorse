@@ -7,7 +7,7 @@
  */
 
 import { markdownToAdf } from "marklassian";
-import type { JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
+import type { JiraAttachment, JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
 
 export class AtlassianClient {
   private readonly getCredentials: () => Promise<JiraCredentials>;
@@ -76,9 +76,37 @@ export class AtlassianClient {
     }
   }
 
-  /** Fetch a Jira issue by key */
+  /** Fetch a Jira issue by key (excludes attachments for performance) */
   async fetchIssue(ticketKey: string): Promise<JiraIssue> {
     return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`);
+  }
+
+  /** Fetch a Jira issue by key with attachments included */
+  async fetchIssueWithAttachments(ticketKey: string): Promise<JiraIssue> {
+    return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all`);
+  }
+
+  /** Get attachments for an issue */
+  async getAttachments(ticketKey: string): Promise<JiraAttachment[]> {
+    const issue = await this.fetchIssueWithAttachments(ticketKey);
+    return issue.fields.attachment ?? [];
+  }
+
+  /** Download attachment content as a Buffer */
+  async downloadAttachment(contentUrl: string): Promise<Buffer> {
+    const { email, apiToken } = await this.getCredentials();
+    const response = await fetch(contentUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${email}:${apiToken}`).toString("base64")}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download attachment: ${response.status} ${response.statusText}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
   }
 
   /** Add a comment to an issue, optionally as a reply to another comment.

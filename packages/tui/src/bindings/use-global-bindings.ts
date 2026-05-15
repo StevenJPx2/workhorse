@@ -33,7 +33,8 @@ export function useGlobalBindings() {
 
       switch (key.name) {
         case "q":
-          renderer.destroy();
+          // Gracefully shutdown (stop agents, cleanup) before destroying renderer
+          ui.shutdown().finally(() => renderer.destroy());
           return;
         case "h":
         case "?":

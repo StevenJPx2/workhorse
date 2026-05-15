@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "workhorse-core";
+import { AttachmentService, definePlugin } from "workhorse-core";
 import { registerAgentHooks } from "./agent-hooks.ts";
 import { jiraAuthProvider } from "./auth.ts";
 import { AtlassianClient } from "./client.ts";
@@ -52,7 +52,12 @@ export const jiraPlugin = definePlugin({
     capabilities: {
       parsers: ["jira"],
       monitors: ["jira-comments"],
-      tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
+      tools: [
+        "jira_add_comment",
+        "jira_transition_issue",
+        "jira_get_comments",
+        "jira_get_attachments",
+      ],
     },
   },
   // API Token auth provider - user provides email + API token via setup wizard
@@ -61,6 +66,9 @@ export const jiraPlugin = definePlugin({
   setup(ctx, config) {
     // Create Jira REST API client with credentials from keychain
     const client = new AtlassianClient(createCredentialGetter());
+
+    // Create attachment service for downloading Jira attachments
+    const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
 
     // Register issue parser for Jira keys and URLs
     ctx.tracker.registerParser(createJiraParserOptions(client));
@@ -83,8 +91,8 @@ export const jiraPlugin = definePlugin({
     // Register cross-plugin sync (reacts to GitHub plugin events)
     registerCrossPluginSync(ctx, client, ctx.db);
 
-    // Register Jira tools with orchestrator
-    for (const tool of createJiraTools(client, ctx.hooks)) {
+    // Register Jira tools with orchestrator (including attachment tool)
+    for (const tool of createJiraTools(client, ctx.hooks, attachmentService)) {
       ctx.orchestrator.registerTool(tool);
     }
 

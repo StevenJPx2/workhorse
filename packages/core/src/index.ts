@@ -75,6 +75,12 @@ export {
   type MonitorResult,
   type MonitorStatus,
 } from "#services/monitor";
+// Attachment service exports
+export {
+  AttachmentService,
+  type DownloadOptions,
+  type StoredAttachment,
+} from "#services/attachment";
 // Memory service exports
 export {
   // Types

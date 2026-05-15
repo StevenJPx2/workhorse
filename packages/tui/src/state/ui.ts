@@ -9,16 +9,24 @@ import {
   type Toast,
   type ToastType,
 } from "./ui-toast.ts";
+import {
+  inputMode,
+  setInputMode,
+  focusedComponent,
+  setFocusedComponent,
+  lastFocusedList,
+  enterInputMode,
+  exitInputMode,
+  focusNext,
+  focusPrev,
+  isFocused,
+  resetChatContext,
+  type FocusTarget,
+} from "./ui-focus.ts";
 
-export type { Toast, ToastType };
+export type { Toast, ToastType, FocusTarget };
 export type Screen = "overview" | "agent" | "help";
 export type Modal = "spawn" | "model" | "delete" | null;
-
-/**
- * Focus targets for tab navigation.
- * Each represents a focusable region in the UI.
- */
-export type FocusTarget = "issues" | "agents" | "chat";
 
 // Global UI state signals
 const [screen, setScreen] = createSignal<Screen>("overview");
@@ -30,16 +38,8 @@ const [deleteIssue, setDeleteIssue] = createSignal<Issue | null>(null);
 // Model selection state (overrides config when set)
 const [selectedModel, setSelectedModel] = createSignal<string | null>(null);
 
-// Input and focus state
-const [inputMode, setInputMode] = createSignal(false);
-const [focusedComponent, setFocusedComponent] = createSignal<FocusTarget>("issues");
-
-// Focus order for tab navigation
-const FOCUS_ORDER: FocusTarget[] = ["issues", "agents", "chat"];
-
-// Track which list (issues or agents) was last focused before entering chat
-// This determines whether chat input creates a new issue or messages an agent
-const [lastFocusedList, setLastFocusedList] = createSignal<"issues" | "agents">("issues");
+// Shutdown callback - set by index.tsx, called on quit
+let shutdownCallback: (() => Promise<void>) | null = null;
 
 /**
  * Global UI state manager using Solid signals.
@@ -63,63 +63,12 @@ export const ui = {
   setFocusedComponent,
   setSelectedModel,
 
-  /**
-   * Enter input mode (blocks global shortcuts).
-   */
-  enterInputMode: () => {
-    setInputMode(true);
-  },
-
-  /**
-   * Exit input mode (re-enables global shortcuts).
-   */
-  exitInputMode: () => {
-    setInputMode(false);
-  },
-
-  /**
-   * Focus the next component in tab order.
-   * Automatically enters input mode when focusing chat.
-   * Tracks which list was last focused before entering chat.
-   */
-  focusNext: () => {
-    const current = focusedComponent();
-    const next = FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) + 1) % FOCUS_ORDER.length]!;
-
-    // Track the list we're leaving if moving to chat
-    if (next === "chat" && (current === "issues" || current === "agents")) {
-      setLastFocusedList(current);
-    }
-
-    setFocusedComponent(next);
-    // Auto-toggle input mode based on what we're focusing
-    setInputMode(next === "chat");
-  },
-
-  /**
-   * Focus the previous component in tab order.
-   * Automatically enters input mode when focusing chat.
-   * Tracks which list was last focused before entering chat.
-   */
-  focusPrev: () => {
-    const current = focusedComponent();
-    const prev =
-      FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length]!;
-
-    // Track the list we're leaving if moving to chat
-    if (prev === "chat" && (current === "issues" || current === "agents")) {
-      setLastFocusedList(current);
-    }
-
-    setFocusedComponent(prev);
-    // Auto-toggle input mode based on what we're focusing
-    setInputMode(prev === "chat");
-  },
-
-  /**
-   * Check if a component is currently focused.
-   */
-  isFocused: (target: FocusTarget) => focusedComponent() === target,
+  enterInputMode,
+  exitInputMode,
+  focusNext,
+  focusPrev,
+  isFocused,
+  resetChatContext,
 
   /**
    * Open the spawn modal for a specific issue.
@@ -172,16 +121,25 @@ export const ui = {
     setScreen("overview");
   },
 
-  /**
-   * Reset the chat context to default (issues mode).
-   * Called when user presses Escape to clear agent chat context.
-   */
-  resetChatContext: () => {
-    setLastFocusedList("issues");
-  },
-
   toast,
   dismissToast,
   showError,
   showSuccess,
+
+  /**
+   * Set the shutdown callback. Called from index.tsx after bootstrap.
+   */
+  setShutdownCallback: (callback: () => Promise<void>) => {
+    shutdownCallback = callback;
+  },
+
+  /**
+   * Gracefully shutdown the app (stop all agents, cleanup resources).
+   * Returns a promise that resolves when shutdown is complete.
+   */
+  shutdown: async () => {
+    if (shutdownCallback) {
+      await shutdownCallback();
+    }
+  },
 };

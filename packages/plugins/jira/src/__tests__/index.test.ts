@@ -17,7 +17,12 @@ describe("jiraPlugin", () => {
     expect(jiraPlugin.manifest.capabilities).toEqual({
       parsers: ["jira"],
       monitors: ["jira-comments"],
-      tools: ["jira_add_comment", "jira_transition_issue", "jira_get_comments"],
+      tools: [
+        "jira_add_comment",
+        "jira_transition_issue",
+        "jira_get_comments",
+        "jira_get_attachments",
+      ],
     });
   });
 

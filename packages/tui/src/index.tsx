@@ -19,6 +19,7 @@ import {
 } from "./setup";
 import { setTheme } from "./theme.ts";
 import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
+import { ui } from "./state/ui.ts";
 
 interface SetupWrapperProps {
   plugins: SetupPluginConfig[];
@@ -166,6 +167,9 @@ export async function startTUI() {
   // Initialize theme from config
   setTheme(workhorse.config.ui.theme);
 
+  // Set shutdown callback so UI can trigger graceful shutdown
+  ui.setShutdownCallback(() => workhorse.shutdown());
+
   // Render the TUI
   await render(
     () => (
@@ -182,7 +186,7 @@ export async function startTUI() {
     await createCliRenderer(),
   );
 
-  // Cleanup on exit
+  // Cleanup on exit (Ctrl+C)
   process.on("SIGINT", async () => {
     await workhorse.shutdown();
     process.exit(0);

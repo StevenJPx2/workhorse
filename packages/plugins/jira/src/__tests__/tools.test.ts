@@ -1,5 +1,6 @@
 /**
- * Tests for Jira tools.
+ * Tests for Jira tools (add_comment, transition_issue, get_comments).
+ * See get-attachments.test.ts for jira_get_attachments tool tests.
  */
 
 import { describe, expect, it, vi } from "vitest";
@@ -30,13 +31,24 @@ function createMockDb(externalId: string, source: string = "jira") {
 }
 
 describe("createJiraTools", () => {
-  it("returns all three tools", () => {
+  it("returns three tools without attachmentService", () => {
     const mockClient = {} as AtlassianClient;
     const tools = createJiraTools(mockClient, mockHooks);
     expect(tools).toHaveLength(3);
     expect(tools[0]!.name).toBe("jira_add_comment");
     expect(tools[1]!.name).toBe("jira_transition_issue");
     expect(tools[2]!.name).toBe("jira_get_comments");
+  });
+
+  it("returns four tools with attachmentService", () => {
+    const mockClient = {} as AtlassianClient;
+    const mockAttachmentService = {} as Parameters<typeof createJiraTools>[2];
+    const tools = createJiraTools(mockClient, mockHooks, mockAttachmentService);
+    expect(tools).toHaveLength(4);
+    expect(tools[0]!.name).toBe("jira_add_comment");
+    expect(tools[1]!.name).toBe("jira_transition_issue");
+    expect(tools[2]!.name).toBe("jira_get_comments");
+    expect(tools[3]!.name).toBe("jira_get_attachments");
   });
 });
 

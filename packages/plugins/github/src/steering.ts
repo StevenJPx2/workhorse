@@ -22,8 +22,12 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
       },
     },
     reminder: `You've made code changes but haven't created a PR yet. When ready:
-1. Run tests to verify the fix
-2. Create a PR with \`github_open_pr\``,
+1. Run tests to verify the implementation
+2. Commit any remaining changes
+3. Push the branch to remote: \`git push -u origin <branch>\`
+4. Create a PR with \`github_open_pr\`
+
+Note: You must push before creating the PR - the tool does not push automatically.`,
     priority: 15,
   });
 
@@ -90,7 +94,7 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
         return !(meta?.prNumber != null || meta?.prUrl != null);
       },
     },
-    reminder: `You're past the implementation phase but haven't created a PR yet. Create one with \`github_open_pr\` to submit your changes for review.`,
+    reminder: `You're past the implementation phase but haven't created a PR yet. Push your branch first with \`git push -u origin <branch>\`, then create one with \`github_open_pr\` to submit your changes for review.`,
     priority: 18,
   });
 }

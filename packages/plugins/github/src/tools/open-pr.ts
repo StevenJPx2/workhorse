@@ -7,7 +7,7 @@
 import { type Database, type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 import type { GitHubClient } from "../client";
 import type { PROpeningContext } from "../hooks";
-import { getCurrentBranch, getOwnerRepoFromRemote, pushBranch } from "./git-helpers";
+import { getCurrentBranch, getOwnerRepoFromRemote } from "./git-helpers";
 import type { HooksEmitter, MonitorServiceLike } from "./types";
 
 /** Create the github_open_pr tool */
@@ -20,8 +20,10 @@ export function createOpenPRTool(
   return {
     name: "github_open_pr",
     description:
-      "Create a pull request from the current branch. Uses the current worktree's branch " +
-      "as the head and targets the specified base branch. Updates the issue with PR information.",
+      "Create a pull request from the current branch. IMPORTANT: You must push the branch " +
+      "to the remote BEFORE calling this tool (use `git push -u origin <branch>`). " +
+      "This tool does not push automatically to avoid timeouts from git hooks. " +
+      "Updates the issue with PR information after creation.",
     schema: {
       type: "object",
       properties: {
@@ -71,11 +73,8 @@ export function createOpenPRTool(
         }
         const head = branchResult.value;
 
-        // Push branch to remote first
-        const pushResult = await pushBranch(ctx.worktreePath, head);
-        if (!pushResult.ok) {
-          return { success: false, error: pushResult.error };
-        }
+        // Note: We do NOT push here - the agent should push manually before calling this tool
+        // to avoid timeouts from git hooks (pre-commit, pre-push, etc.)
 
         // Emit pr.opening hook to collect contributions from other plugins
         const openingContext: PROpeningContext = {
@@ -88,10 +87,9 @@ export function createOpenPRTool(
           worktreePath: ctx.worktreePath,
           contributions: [],
         };
-        hooks.emit("github:pr.opening", openingContext);
 
-        // Allow async handlers to complete (they push to contributions array)
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Use callHook to await async handlers (e.g., Playwright screenshot collection)
+        await hooks.callHook("github:pr.opening", openingContext);
 
         // Create PR with body built from user body + plugin contributions
         const result = await client.createPR({

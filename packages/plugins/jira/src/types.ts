@@ -35,9 +35,33 @@ export interface JiraIssue {
       comments: JiraComment[];
       total: number;
     };
+    attachment?: JiraAttachment[];
     created?: string;
     updated?: string;
   };
+}
+
+/** Jira attachment as returned by the REST API */
+export interface JiraAttachment {
+  /** Attachment ID */
+  id: string;
+  /** Original filename */
+  filename: string;
+  /** MIME type (e.g., "image/png", "application/pdf") */
+  mimeType: string;
+  /** File size in bytes */
+  size: number;
+  /** URL to download the attachment content (requires auth) */
+  content: string;
+  /** ISO timestamp of when the attachment was created */
+  created: string;
+  /** Author of the attachment */
+  author: {
+    displayName: string;
+    accountId: string;
+  };
+  /** Thumbnail URL (images only) */
+  thumbnail?: string;
 }
 
 /** Jira comment */

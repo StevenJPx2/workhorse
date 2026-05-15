@@ -4,9 +4,10 @@
  * @module workhorse-plugin-github/tools
  */
 
-import type { Database, OrchestratorTool } from "workhorse-core";
+import type { AttachmentService, Database, OrchestratorTool } from "workhorse-core";
 import type { GitHubClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment";
+import { createGetAttachmentsTool } from "./get-attachments";
 import { createGetCICheckTool } from "./get-ci-check";
 import { createGetPRReviewsTool } from "./get-pr-reviews";
 import { createGetPRStatusTool } from "./get-pr-status";
@@ -19,12 +20,20 @@ export function createGitHubTools(
   db: Database,
   hooks: HooksEmitter,
   monitors: MonitorServiceLike,
+  attachmentService?: AttachmentService,
 ): OrchestratorTool[] {
-  return [
+  const tools = [
     createOpenPRTool(client, db, hooks, monitors),
-    createAddCommentTool(client),
+    createAddCommentTool(client, attachmentService),
     createGetPRStatusTool(client),
     createGetCICheckTool(client),
     createGetPRReviewsTool(client),
   ];
+
+  // Only add attachment tool if service is available
+  if (attachmentService) {
+    tools.push(createGetAttachmentsTool(client, attachmentService));
+  }
+
+  return tools;
 }

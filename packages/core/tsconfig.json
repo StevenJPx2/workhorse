@@ -22,6 +22,8 @@
 			"#lib/metadata-footer": ["./src/lib/metadata-footer.ts"],
 			"#plugins": ["./src/plugins/index.ts"],
 			"#plugins/*": ["./src/plugins/*.ts"],
+			"#services/attachment": ["./src/services/attachment/index.ts"],
+			"#services/attachment/*": ["./src/services/attachment/*.ts"],
 			"#services/memory": ["./src/services/memory/index.ts"],
 			"#services/memory/*": ["./src/services/memory/*.ts"],
 			"#services/monitor": ["./src/services/monitor/index.ts"],

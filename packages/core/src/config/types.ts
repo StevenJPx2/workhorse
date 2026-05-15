@@ -20,4 +20,6 @@ export interface ConfigPaths {
   database: string;
   memoryDatabase: string;
   worktreesRoot: string;
+  /** Directory for downloaded attachments: ~/.local/share/workhorse/attachments/{repo}/{issueId}/ */
+  attachmentsDir: string;
 }

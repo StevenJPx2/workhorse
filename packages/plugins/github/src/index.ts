@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "workhorse-core";
+import { AttachmentService, definePlugin } from "workhorse-core";
 import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
@@ -68,6 +68,7 @@ export const githubPlugin = definePlugin({
         "github_get_pr_status",
         "github_get_ci_check",
         "github_get_pr_reviews",
+        "github_get_attachments",
       ],
     },
   },
@@ -76,6 +77,9 @@ export const githubPlugin = definePlugin({
   configSchema: GitHubConfigSchema,
   setup(ctx, config) {
     const client = new GitHubClient();
+
+    // Create attachment service for downloading/storing images
+    const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
 
     // Register issue parser for GitHub refs and URLs
     ctx.tracker.registerParser(createGitHubParserOptions(client));
@@ -97,7 +101,13 @@ export const githubPlugin = definePlugin({
     registerStatusSync(ctx, client);
 
     // Register GitHub tools with orchestrator
-    for (const tool of createGitHubTools(client, ctx.db, ctx.hooks, ctx.monitors)) {
+    for (const tool of createGitHubTools(
+      client,
+      ctx.db,
+      ctx.hooks,
+      ctx.monitors,
+      attachmentService,
+    )) {
       ctx.orchestrator.registerTool(tool);
     }
 

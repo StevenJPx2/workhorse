@@ -31,6 +31,7 @@ workhorse/
 │   │       ├── plugins/          # Plugin system & core tools
 │   │       │   └── builtin/     # Core plugin (acknowledge, update_status, escalate)
 │   │       ├── services/
+│   │       │   ├── attachment/   # External attachment storage (images, files)
 │   │       │   ├── memory/       # L1 (context.md) + L2 (semantic search) + notifications
 │   │       │   └── monitor/      # Polling framework
 │   │       └── workflow/
@@ -228,7 +229,46 @@ const unread = await memory.notifications.getUnread(issueId);
 const inboxXml = memory.notifications.generateInbox(unread);
 ```
 
-### 7. MonitorService (`services/monitor/`)
+### 7. AttachmentService (`services/attachment/`)
+
+Centralized storage for downloaded attachments from external sources (Jira, GitHub):
+
+```typescript
+import { AttachmentService } from "workhorse-core";
+
+const attachmentService = new AttachmentService(paths.attachmentsDir);
+
+// Store an attachment
+const stored = await attachmentService.store(
+  "owner/repo",        // Repository identifier
+  "issue-uuid",        // Internal issue ID
+  contentBuffer,       // File content
+  {
+    source: "jira",
+    sourceId: "att-123",
+    filename: "screenshot.png",
+    mimeType: "image/png",
+    size: 12345,
+  }
+);
+
+// Check if already downloaded (deduplication)
+const existing = await attachmentService.exists("owner/repo", "issue-uuid", "att-123");
+
+// List all attachments for an issue
+const attachments = await attachmentService.listForIssue("owner/repo", "issue-uuid");
+```
+
+**Storage Location:** `~/.local/share/workhorse/attachments/{repo}/{issueId}/`
+
+**Why outside repo?**
+- Avoids polluting git history with binary files
+- Consistent location regardless of worktree
+- Cross-session persistence
+
+See [`packages/core/src/services/attachment/README.md`](../packages/core/src/services/attachment/README.md) for details.
+
+### 8. MonitorService (`services/monitor/`)
 
 Polling framework for background tasks:
 
@@ -254,7 +294,7 @@ monitors.stopMonitors(issueId);
 
 Monitors self-stop after 5 consecutive errors. Error count resets on successful poll.
 
-### 8. SteeringRule (`workflow/steering/`)
+### 9. SteeringRule (`workflow/steering/`)
 
 Autonomous rules for agent behavior when idle:
 
@@ -281,7 +321,7 @@ Each `SteeringRule` is fully autonomous:
 - Respects cooldown and once-only constraints
 - Never reminds when issue is `blocked`
 
-### 9. Hooks (`lib/hooks/`)
+### 10. Hooks (`lib/hooks/`)
 
 Event pub/sub via `mitt`:
 
@@ -381,7 +421,8 @@ Jira Cloud integration:
 - Issue parsing for ticket keys (`PROJ-123`) and URLs
 - Comment monitoring with deduplication
 - Status sync (Workhorse → Jira transitions)
-- Tools: `jira_add_comment`, `jira_transition_issue`, `jira_get_comments`
+- Attachment handling (issue attachments + embedded comment media)
+- Tools: `jira_add_comment`, `jira_transition_issue`, `jira_get_comments`, `jira_get_attachments`
 - Cross-plugin sync with GitHub (PR merge → Jira transition)
 - Steering rules for comment response
 

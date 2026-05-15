@@ -2,13 +2,13 @@
  * Tests for GitHub tools.
  */
 
-import type { OrchestratorTool } from "workhorse-core";
+import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools";
 
 describe("createGitHubTools", () => {
-  it("returns all five tools", () => {
+  it("returns five tools without attachmentService", () => {
     const mockClient = {} as GitHubClient;
     const tools = createGitHubTools(mockClient, {} as any, {} as any, {} as any);
     expect(tools).toHaveLength(5);
@@ -17,6 +17,20 @@ describe("createGitHubTools", () => {
     expect(tools[2]!.name).toBe("github_get_pr_status");
     expect(tools[3]!.name).toBe("github_get_ci_check");
     expect(tools[4]!.name).toBe("github_get_pr_reviews");
+  });
+
+  it("returns six tools with attachmentService", () => {
+    const mockClient = {} as GitHubClient;
+    const mockAttachmentService = {} as AttachmentService;
+    const tools = createGitHubTools(
+      mockClient,
+      {} as any,
+      {} as any,
+      {} as any,
+      mockAttachmentService,
+    );
+    expect(tools).toHaveLength(6);
+    expect(tools[5]!.name).toBe("github_get_attachments");
   });
 });
 
@@ -237,7 +251,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       },
     };
 
-    const mockHooks = { emit: vi.fn() };
+    const mockHooks = { emit: vi.fn(), callHook: vi.fn().mockResolvedValue(undefined) };
     const mockMonitors = { startMonitor: vi.fn() };
 
     const tools = createGitHubTools(
@@ -341,7 +355,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       },
     };
 
-    const mockHooks = { emit: vi.fn() };
+    const mockHooks = { emit: vi.fn(), callHook: vi.fn().mockResolvedValue(undefined) };
     const mockMonitors = { startMonitor: vi.fn() };
 
     const tools = createGitHubTools(

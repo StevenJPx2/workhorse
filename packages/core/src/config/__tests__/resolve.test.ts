@@ -11,6 +11,7 @@ describe("resolveConfigPaths", () => {
     expect(paths.globalDir).toContain("workhorse");
     expect(paths.database).toContain("workhorse.db");
     expect(paths.memoryDatabase).toContain("memory.db");
+    expect(paths.attachmentsDir).toContain("attachments");
   });
 
   it("defaults projectConfig to cwd when no repoRoot provided", async () => {
@@ -32,6 +33,7 @@ describe("resolveConfigPaths", () => {
 
       expect(paths.globalDir).toBe("/custom/data/workhorse");
       expect(paths.database).toBe("/custom/data/workhorse/workhorse.db");
+      expect(paths.attachmentsDir).toBe("/custom/data/workhorse/attachments");
     } finally {
       if (originalXdgData) {
         process.env["XDG_DATA_HOME"] = originalXdgData;

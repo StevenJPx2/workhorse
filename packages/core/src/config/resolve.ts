@@ -36,5 +36,6 @@ export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPath
     database: join(globalDir, "workhorse.db"),
     memoryDatabase: join(globalDir, "memory.db"),
     worktreesRoot: join(dirname(repoRoot), `${basename(repoRoot)}-worktrees`),
+    attachmentsDir: join(globalDir, "attachments"),
   };
 }

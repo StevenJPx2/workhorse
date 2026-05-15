@@ -150,6 +150,24 @@ export interface ConversationComment {
   author: string;
   body: string;
   createdAt: string;
+  /** Number of images embedded in comment (only present if > 0) */
+  imageCount?: number;
+}
+
+/** Attachment/image reference extracted from GitHub markdown */
+export interface GitHubAttachment {
+  /** Unique identifier (hash of URL) */
+  id: string;
+  /** Original URL of the image */
+  url: string;
+  /** Alt text from markdown if present */
+  alt?: string;
+  /** Source location: "body", "comment-{id}" */
+  source: string;
+  /** Detected MIME type based on URL */
+  mimeType: string;
+  /** Original filename from URL */
+  filename: string;
 }
 
 /** Result returned by the github_get_pr_reviews tool */

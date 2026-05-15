@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod/v4";
-import { definePlugin } from "workhorse-core";
+import { AttachmentService, definePlugin } from "workhorse-core";
 import { registerPlaywrightCrossPluginSync } from "./cross-plugin-sync.ts";
 import { registerPlaywrightPromptHooks } from "./prompt.ts";
 import { playwrightRenderer } from "./renderer.ts";
@@ -86,8 +86,11 @@ export const playwrightPlugin = definePlugin({
       config.timeout,
     );
 
+    // Create attachment service for storing screenshots
+    const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
+
     // Register all Playwright tools with orchestrator
-    for (const tool of createPlaywrightTools(sessionManager)) {
+    for (const tool of createPlaywrightTools(sessionManager, attachmentService)) {
       ctx.orchestrator.registerTool(tool);
     }
 
@@ -105,7 +108,7 @@ export const playwrightPlugin = definePlugin({
     });
 
     // Register cross-plugin sync (screenshots in PRs)
-    registerPlaywrightCrossPluginSync(ctx, sessionManager);
+    registerPlaywrightCrossPluginSync(ctx, sessionManager, attachmentService);
 
     // Register steering rules (screenshot reminders)
     registerPlaywrightSteering(ctx);

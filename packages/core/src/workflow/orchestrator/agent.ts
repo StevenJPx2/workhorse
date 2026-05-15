@@ -178,7 +178,8 @@ export abstract class AgentAdapter {
       for (const rule of this.steering) rule.dispose();
       if (options.removeWorktree && this.worktreePath)
         await removeWorktree(this.repoPath, this.issueId, options.deleteBranch);
-      this.hooks.emit("agent.stop.post", { adapter: this });
+      // Use callHook to await async cleanup handlers (e.g., Playwright browser close)
+      await this.hooks.callHook("agent.stop.post", { adapter: this });
     }
   }
 

@@ -10,6 +10,7 @@
     "dev": "cd packages/tui && bun run dev",
     "test": "bun run --filter '*' test",
     "build": "bun run --filter '*' build",
+    "build:all": "bun run --filter workhorse-core build && bun run build:plugins && bun run build:tui:prod",
     "build:plugins": "bun scripts/build-plugins.ts",
     "build:tui": "bun scripts/build-tui.ts",
     "build:tui:prod": "bun scripts/build-tui.ts --minify --no-sourcemap",

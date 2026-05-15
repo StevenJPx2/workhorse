@@ -4,7 +4,7 @@
  * @module workhorse-plugin-playwright/tools
  */
 
-import type { OrchestratorTool } from "workhorse-core";
+import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { createClickTool } from "./click.ts";
 import { createCloseSessionTool } from "./close-session.ts";
@@ -18,10 +18,11 @@ import { createScreenshotTool } from "./screenshot.ts";
 /** Create all Playwright tool definitions */
 export function createPlaywrightTools(
   sessionManager: PlaywrightSessionManager,
+  attachmentService?: AttachmentService,
 ): OrchestratorTool[] {
   return [
     createNavigateTool(sessionManager),
-    createScreenshotTool(sessionManager),
+    createScreenshotTool(sessionManager, attachmentService),
     createClickTool(sessionManager),
     createFillTool(sessionManager),
     createGetElementTool(sessionManager),
