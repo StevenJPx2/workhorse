@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.1
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.0...v0.1.1)
+
+### 🚀 Features
+
+- Add more things ([711777c](https://github.com/StevenJPx2/workhorse/commit/711777c))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.0
 
 
