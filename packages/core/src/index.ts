@@ -28,9 +28,16 @@ export {
 export {
   type HookEmitter,
   type HookEventMap,
+  type HookMetadata,
   hooks,
   type PromptBuildingContext,
   type PromptContextBlock,
+  registerHookMetadata,
+  clearPluginHookMetadata,
+  getAllHookMetadata,
+  CORE_HOOK_METADATA,
+  generateHooksMarkdown,
+  generateHooksReference,
 } from "#lib/hooks";
 export {
   definePlugin,

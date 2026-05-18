@@ -65,3 +65,14 @@ export type {
   HookEmitter,
 } from "./types.ts";
 export type { PromptBuildingContext, PromptContextBlock } from "#workflow/tracker";
+
+// Hook metadata for documentation generation
+export {
+  CORE_HOOK_METADATA,
+  getAllHookMetadata,
+  registerHookMetadata,
+  clearPluginHookMetadata,
+  generateHooksMarkdown,
+  generateHooksReference,
+  type HookMetadata,
+} from "./metadata.ts";

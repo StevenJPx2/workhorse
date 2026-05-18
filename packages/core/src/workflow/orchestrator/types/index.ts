@@ -31,3 +31,7 @@ export type { SpawnOptions } from "./spawn.ts";
 
 // Tool types
 export type { JSONSchema, OrchestratorTool, ToolExecutionContext, ToolResult } from "./tools.ts";
+
+// Skill types
+export { PluginSkillSchema } from "./skills.ts";
+export type { PluginSkill, PluginSkillInput, ResolvedSkill } from "./skills.ts";

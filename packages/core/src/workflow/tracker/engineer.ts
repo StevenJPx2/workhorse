@@ -1,13 +1,14 @@
 import type { Issue } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService, SearchResult, SessionMemory } from "#services/memory";
-import type { OrchestratorTool } from "#workflow/orchestrator";
+import type { OrchestratorTool, ResolvedSkill } from "#workflow/orchestrator";
 import {
   buildInitialPrompt,
   buildResumePrompt,
   renderContextBlock,
   renderIssueSection,
   renderSearchResults,
+  renderToolsSection,
   sortContextBlocks,
 } from "./render.ts";
 import type { PromptBuildingContext, PromptContextBlock } from "./types.ts";
@@ -20,6 +21,7 @@ export interface BuildPromptOptions {
 /** Options for building a hybrid prompt (system + initial message). */
 export interface HybridPromptOptions extends BuildPromptOptions {
   tools?: OrchestratorTool[];
+  skills?: ResolvedSkill[];
 }
 
 /** Result from buildHybridPrompt(). Split into system prompt and initial message. */
@@ -66,16 +68,42 @@ export class PromptEngineer {
 
   /**
    * Build hybrid prompt split into system prompt and initial message.
+   * Skills are listed by name/description only — full instructions loaded on-demand via tool.
    */
   async buildHybridPrompt(options: HybridPromptOptions = {}): Promise<HybridPrompt> {
     const { sessionMemory, searchResults, contextBlocks, isResume } =
       await this.gatherContext(options);
+
+    // Add skills summary (not full instructions) as a context block
+    const skills = options.skills ?? [];
+    if (skills.length > 0) {
+      contextBlocks.push({
+        id: "available-skills",
+        title: "Available Skills",
+        content: this.renderSkillsSummary(skills),
+        priority: 80, // Show after most context, before custom instructions
+      });
+    }
+
     return {
       systemPrompt: this.buildSystemPrompt(contextBlocks, searchResults, options.tools ?? []),
       initialMessage: isResume
         ? buildResumePrompt(this.issue, sessionMemory)
         : buildInitialPrompt(this.issue),
     };
+  }
+
+  /** Render a summary of available skills (not full instructions). */
+  private renderSkillsSummary(skills: ResolvedSkill[]): string {
+    const lines = [
+      "The following skills provide specialized instructions for particular tasks.",
+      "Use the `load_skill` tool to load a skill's full instructions when needed.",
+      "",
+    ];
+    for (const skill of skills) {
+      lines.push(`- **${skill.id}**: ${skill.description}`);
+    }
+    return lines.join("\n");
   }
 
   /**
@@ -148,7 +176,7 @@ ${this.memory.notifications.generateInbox(notifications)}`,
     tools: OrchestratorTool[] = [],
   ): string {
     const sections: string[] = [renderIssueSection(this.issue)];
-    if (tools.length > 0) sections.push(this.renderToolsSection(tools));
+    if (tools.length > 0) sections.push(renderToolsSection(tools));
     for (const block of sortContextBlocks(contextBlocks)) sections.push(renderContextBlock(block));
     if (searchResults.length > 0) sections.push(renderSearchResults(searchResults));
     if (this.customInstructions)
@@ -159,17 +187,5 @@ ${this.memory.notifications.generateInbox(notifications)}`,
   /** Search L2 memory for relevant context. */
   private async searchL2Memory(query: string): Promise<SearchResult[]> {
     return query ? this.memory.l2.search(query, { limit: 5, returnContent: true }) : [];
-  }
-
-  /** Render tools section for system prompt. */
-  private renderToolsSection(tools: OrchestratorTool[]): string {
-    const lines = [
-      "## Workhorse Tools",
-      "",
-      "The following tools are available for interacting with Workhorse:",
-      "",
-    ];
-    for (const tool of tools) lines.push(`### ${tool.name}`, tool.description, "");
-    return lines.join("\n");
   }
 }

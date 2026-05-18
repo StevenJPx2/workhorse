@@ -1,5 +1,6 @@
 import type { Issue } from "#db";
 import type { SearchResult, SessionMemory } from "#services/memory";
+import type { OrchestratorTool } from "#workflow/orchestrator";
 import type { PromptContextBlock } from "./types.ts";
 
 /**
@@ -67,6 +68,15 @@ You are starting work on issue **${issue.externalId}**: ${issue.title}
 ${issue.description || "No description provided."}
 
 Please analyze the requirements and begin implementation.`;
+}
+
+/**
+ * Render tools section for system prompt.
+ */
+export function renderToolsSection(tools: OrchestratorTool[]): string {
+  const lines = ["## Workhorse Tools", "", "The following tools are available:", ""];
+  for (const tool of tools) lines.push(`### ${tool.name}`, tool.description, "");
+  return lines.join("\n");
 }
 
 /**

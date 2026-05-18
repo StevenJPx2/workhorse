@@ -20,14 +20,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "workhorse-core": "workspace:*",
-    "@earendil-works/pi-coding-agent": "^0.74.0",
-    "typebox": "^1.1.38"
+    "@earendil-works/pi-coding-agent": "^0.75.1",
+    "typebox": "^1.1.38",
+    "workhorse-core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^6.0.3",
-    "vite": "^8.0.12",
+    "vite": "^8.0.13",
     "vite-plugin-dts": "^5.0.0",
     "vitest": "^4.1.6"
   }

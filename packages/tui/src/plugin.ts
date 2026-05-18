@@ -1,4 +1,4 @@
-import { definePlugin, useWorkhorse } from "workhorse-core";
+import { definePlugin, useWorkhorse, registerHookMetadata } from "workhorse-core";
 import {
   registerRenderer,
   type RegisterRendererPayload,
@@ -13,6 +13,7 @@ import { agentRenderer } from "./renderers/agent.ts";
  * This plugin:
  * - Registers built-in renderer for agent notifications
  * - Provides a hook for other plugins to register their renderers
+ * - Registers hook metadata for documentation
  */
 export default definePlugin({
   manifest: {
@@ -22,6 +23,25 @@ export default definePlugin({
   },
   setup() {
     const { hooks } = useWorkhorse();
+
+    // Register hook metadata for documentation
+    registerHookMetadata({
+      name: "tui.register_renderer",
+      category: "TUI",
+      description: "Fired to register a custom TUI renderer for tools or notifications",
+      payload: "{ id: string, renderer: ActivityRenderer, priority?: number }",
+      plugin: "tui",
+      example: `hooks.emit("tui.register_renderer", {
+  id: "my-tool",
+  renderer: (input) => ({
+    icon: "🔧",
+    color: "blue",
+    title: "My Tool",
+    body: input.args.message,
+  }),
+  priority: 50,
+});`,
+    });
 
     // Register built-in renderer for agent notifications
     registerRenderer("agent", agentRenderer);

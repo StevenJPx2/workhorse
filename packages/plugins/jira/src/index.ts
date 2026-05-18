@@ -19,6 +19,7 @@ import { AtlassianClient } from "./client.ts";
 import { createCredentialGetter } from "./credentials.ts";
 import { registerCrossPluginSync } from "./cross-plugin-sync.ts";
 import { registerHookConsumers } from "./hook-consumers.ts";
+import { registerJiraHookMetadata } from "./hook-metadata.ts";
 import { createJiraCommentMonitor } from "./monitor.ts";
 import { createJiraParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
@@ -64,6 +65,9 @@ export const jiraPlugin = definePlugin({
   auth: jiraAuthProvider,
   configSchema: JiraConfigSchema,
   setup(ctx, config) {
+    // Register hook metadata for documentation
+    registerJiraHookMetadata();
+
     // Create Jira REST API client with credentials from keychain
     const client = new AtlassianClient(createCredentialGetter());
 

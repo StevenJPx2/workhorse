@@ -9,6 +9,7 @@ import {
   type SteeringRuleConfigInput,
   SteeringRuleConfigSchema,
 } from "#workflow/steering";
+import { SkillRegistry } from "./skills.ts";
 import type { AdapterInfo, AgentAdapter, ModelInfo, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
@@ -19,13 +20,16 @@ export class HarnessOrchestrator {
   private readonly tools = new Map<string, OrchestratorTool>();
   private readonly adapters = new Map<string, typeof AgentAdapter>();
   private readonly steeringRules: SteeringRuleConfig[] = [];
+  readonly skillRegistry: SkillRegistry;
 
   constructor(
     readonly db: Database,
     readonly hooks: HookEmitter,
     readonly memory: MemoryService,
     readonly config: Readonly<WorkhorseConfig>,
-  ) {}
+  ) {
+    this.skillRegistry = new SkillRegistry(hooks);
+  }
 
   /** Register an adapter class. Plugins call this during setup. */
   registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void {

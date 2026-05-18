@@ -38,20 +38,20 @@
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
     "@libsql/client": "^0.17.3",
-    "onnxruntime-node": "^1.24.3",
+    "onnxruntime-node": "^1.26.0",
     "playwright": "^1.60.0",
     "retriv": "^0.13.2"
   },
   "devDependencies": {
+    "@opentui/core": "0.2.1",
+    "@opentui/solid": "0.2.1",
+    "@types/bun": "latest",
+    "solid-js": "^1.9.13",
+    "typescript": "^6.0.3",
     "workhorse-core": "workspace:*",
     "workhorse-plugin-github": "workspace:*",
     "workhorse-plugin-jira": "workspace:*",
     "workhorse-plugin-pi-adapter": "workspace:*",
-    "workhorse-plugin-playwright": "workspace:*",
-    "@opentui/core": "0.2.1",
-    "@opentui/solid": "0.2.1",
-    "@types/bun": "latest",
-    "solid-js": "^1.9.12",
-    "typescript": "^6.0.3"
+    "workhorse-plugin-playwright": "workspace:*"
   }
 }

@@ -29,6 +29,23 @@ interface RenderedActivity {
 }
 
 /**
+ * Skill loading renderer for TUI display.
+ * Handles the load_skill tool.
+ */
+export function skillRenderer(input: ActivityInput): RenderedActivity | null {
+  if (input.kind !== "tool") return null;
+  if (input.tool !== "load_skill") return null;
+
+  const skillId = String(((input.args ?? {}) as Record<string, unknown>).skillId ?? "unknown");
+  return {
+    icon: "📖",
+    title: `loaded skill: ${skillId}`,
+    style: "inline",
+    color: "accent",
+  };
+}
+
+/**
  * Workhorse tool renderer for TUI display.
  * Handles core Workhorse tools (update_status, escalate, acknowledge).
  * Returns null for other inputs.

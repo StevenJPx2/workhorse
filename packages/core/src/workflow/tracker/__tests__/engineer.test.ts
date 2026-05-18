@@ -414,5 +414,49 @@ describe("PromptEngineer", () => {
       // This should throw a validation error
       expect(() => new PromptEngineer(invalidIssue, mockMemory as any)).toThrow();
     });
+
+    it("includes skills summary when skills provided", async () => {
+      const mockMemory = createMockMemory();
+      const issue = createMockIssue();
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const skills = [
+        {
+          id: "github:pr-workflow",
+          name: "PR Workflow",
+          description: "How to create and manage pull requests",
+          instructions: "Full instructions here",
+          priority: 50,
+        },
+        {
+          id: "jira:ticket-workflow",
+          name: "Ticket Workflow",
+          description: "How to update Jira tickets",
+          instructions: "Full instructions here",
+          priority: 50,
+        },
+      ];
+
+      const result = await engineer.buildHybridPrompt({ skills });
+
+      expect(result.systemPrompt).toContain("## Available Skills");
+      expect(result.systemPrompt).toContain("github:pr-workflow");
+      expect(result.systemPrompt).toContain("How to create and manage pull requests");
+      expect(result.systemPrompt).toContain("jira:ticket-workflow");
+      expect(result.systemPrompt).toContain("How to update Jira tickets");
+      expect(result.systemPrompt).toContain("load_skill");
+      // Should NOT include full instructions in the prompt
+      expect(result.systemPrompt).not.toContain("Full instructions here");
+    });
+
+    it("skips skills section when no skills provided", async () => {
+      const mockMemory = createMockMemory();
+      const issue = createMockIssue();
+      const engineer = new PromptEngineer(issue, mockMemory as any);
+
+      const result = await engineer.buildHybridPrompt({ skills: [] });
+
+      expect(result.systemPrompt).not.toContain("## Available Skills");
+    });
   });
 });

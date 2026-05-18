@@ -17,6 +17,7 @@ import { z } from "zod/v4";
 import { AttachmentService, definePlugin } from "workhorse-core";
 import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
+import { registerGitHubHookMetadata } from "./hook-metadata.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
 import { createGitHubParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
@@ -76,6 +77,9 @@ export const githubPlugin = definePlugin({
   auth: githubAuthProvider,
   configSchema: GitHubConfigSchema,
   setup(ctx, config) {
+    // Register hook metadata for documentation
+    registerGitHubHookMetadata();
+
     const client = new GitHubClient();
 
     // Create attachment service for downloading/storing images

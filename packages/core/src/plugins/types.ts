@@ -15,6 +15,7 @@ export const PluginManifestSchema = z.object({
       monitors: z.array(z.string()).optional(),
       tools: z.array(z.string()).optional(),
       adapters: z.array(z.string()).optional(),
+      skills: z.array(z.string()).optional(),
     })
     .optional(),
 });

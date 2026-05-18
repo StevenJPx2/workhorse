@@ -16,6 +16,7 @@
 import { z } from "zod/v4";
 import { AttachmentService, definePlugin } from "workhorse-core";
 import { registerPlaywrightCrossPluginSync } from "./cross-plugin-sync.ts";
+import { registerPlaywrightHookMetadata } from "./hook-metadata.ts";
 import { registerPlaywrightPromptHooks } from "./prompt.ts";
 import { playwrightRenderer } from "./renderer.ts";
 import { PlaywrightSessionManager } from "./session-manager.ts";
@@ -78,6 +79,9 @@ export const playwrightPlugin = definePlugin({
   },
   configSchema: PlaywrightConfigSchema,
   setup(ctx, config) {
+    // Register hook metadata for documentation
+    registerPlaywrightHookMetadata();
+
     // Create session manager with config
     const sessionManager = new PlaywrightSessionManager(
       ctx.hooks,

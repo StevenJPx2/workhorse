@@ -1,5 +1,5 @@
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { AgentAdapter, CreateOptions } from "#workflow/orchestrator";
+import type { AgentAdapter, CreateOptions, ResolvedSkill } from "#workflow/orchestrator";
 import type { PromptBuildingContext } from "#workflow/tracker";
 
 /**
@@ -74,6 +74,9 @@ export type HookCallbacks = {
   // Plugins
   "plugin.loaded": (payload: { name: string }) => void | Promise<void>;
   "plugin.error": (payload: { name: string; error: Error }) => void | Promise<void>;
+
+  // Skills
+  "skill.registered": (payload: { skill: ResolvedSkill }) => void | Promise<void>;
 
   // TUI events (registered by workhorse plugin)
   "tui.register_renderer": (payload: {
