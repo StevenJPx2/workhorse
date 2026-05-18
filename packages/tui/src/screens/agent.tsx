@@ -107,14 +107,13 @@ export function Agent() {
                 <text fg={theme.colors.info}>{agent().model}</text>
               </Show>
             </box>
-            <box flexDirection="row" flexShrink={0}>
+            <box flexDirection="row" flexShrink={0} gap={1}>
               <WorkhorseStatus status={issueStatusState().status} />
-              <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
+              <text fg={theme.colors.dim}>|</text>
               <MonitorIndicator state={monitorState()} />
-              <text fg={theme.colors.dim}>{"\u00A0|\u00A0"}</text>
+              <text fg={theme.colors.dim}>|</text>
               <text fg={statusColor(getState(selectedId()) ?? "stopped")}>
-                {statusIcon(getState(selectedId()) ?? "stopped")}
-                {"\u00A0"}
+                {statusIcon(getState(selectedId()) ?? "stopped")}{" "}
                 {(getState(selectedId()) ?? "stopped").toUpperCase()}
               </text>
             </box>
@@ -146,12 +145,13 @@ export function Agent() {
             backgroundColor={isChatFocused() ? theme.colors.selection : theme.colors.surface}
             paddingX={1}
             paddingY={1}
+            gap={1}
             onMouseDown={() => {
               ui.setFocusedComponent("chat");
               ui.enterInputMode();
             }}
           >
-            <text fg={theme.colors.accent}>❯{"\u00A0"}</text>
+            <text fg={theme.colors.accent}>❯</text>
             <box flexGrow={1}>
               <input
                 width="100%"

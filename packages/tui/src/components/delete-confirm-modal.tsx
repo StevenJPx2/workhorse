@@ -16,31 +16,40 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
   const dimensions = useTerminalDimensions();
   const [selectedOption, setSelectedOption] = createSignal<"cancel" | "delete">("cancel");
 
-  // Constrain modal to fit in terminal (max 80% height, cap at 16 rows)
-  const modalHeight = () => Math.min(16, Math.floor(dimensions().height * 0.8));
+  // Constrain modal to fit in terminal (max 80% height, cap at 14 rows)
+  const modalHeight = () => Math.min(14, Math.floor(dimensions().height * 0.8));
+
+  const handleConfirm = () => {
+    if (selectedOption() === "delete") {
+      props.onConfirm(props.issue);
+    } else {
+      props.onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    props.onClose();
+  };
+
+  const toggleSelection = () => {
+    setSelectedOption((prev) => (prev === "cancel" ? "delete" : "cancel"));
+  };
 
   useKeyboard((key) => {
     // Guard: only handle keys when this modal is actually open
     if (ui.modal() !== "delete") return;
 
     if (key.name === "return") {
-      if (selectedOption() === "delete") {
-        props.onConfirm(props.issue);
-      } else {
-        props.onClose();
-      }
+      handleConfirm();
       return;
     }
-    if (key.name === "escape") {
-      props.onClose();
-      return;
-    }
+    // Note: ESC is handled by global bindings in use-global-bindings.ts
     if (key.name === "left" || key.name === "h" || key.name === "tab") {
-      setSelectedOption((prev) => (prev === "cancel" ? "delete" : "cancel"));
+      toggleSelection();
       return;
     }
     if (key.name === "right" || key.name === "l") {
-      setSelectedOption((prev) => (prev === "cancel" ? "delete" : "cancel"));
+      toggleSelection();
     }
   });
 
@@ -57,55 +66,53 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
     >
       <box
         flexDirection="column"
-        width={50}
+        width={56}
         height={modalHeight()}
         backgroundColor={theme.colors.surface}
         borderStyle="rounded"
         borderColor={theme.colors.error}
       >
-        {/* Header */}
+        {/* Header - full width background */}
         <box
           backgroundColor={theme.colors.error}
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
           paddingBottom={1}
+          width="100%"
         >
           <text fg={theme.colors.background}>
             <b>🗑️ DELETE ISSUE</b>
           </text>
         </box>
 
-        {/* Issue info */}
-        <box paddingLeft={2} paddingRight={2} paddingTop={1}>
-          <text fg={theme.colors.dim}>Issue: </text>
+        {/* Issue ID and title */}
+        <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} flexDirection="row">
           <text fg={theme.colors.info}>
             <b>{props.issue.externalId || props.issue.id}</b>
           </text>
-        </box>
-        <box paddingLeft={2} paddingRight={2} paddingBottom={1}>
+          <text fg={theme.colors.dim}>{" · "}</text>
           <text fg={theme.colors.text}>{props.issue.title}</text>
         </box>
 
         {/* Warning */}
-        <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
-          <text fg={theme.colors.warning}>⚠️ Are you sure you want to delete this issue?</text>
-        </box>
-        <box paddingLeft={2} paddingRight={2} paddingBottom={1}>
-          <text fg={theme.colors.dim}>This will remove the issue from your local backlog.</text>
+        <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={2}>
+          <text fg={theme.colors.warning}>{"⚠️ This will be permanently removed."}</text>
         </box>
 
-        {/* Action buttons */}
+        {/* Action buttons - clickable */}
         <box
           backgroundColor={theme.colors.background}
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
-          paddingBottom={1}
+          paddingBottom={2}
           flexDirection="row"
-          gap={3}
+          justifyContent="center"
+          gap={4}
         >
           <box
+            onMouseDown={handleCancel}
             backgroundColor={selectedOption() === "cancel" ? theme.colors.selection : undefined}
             paddingLeft={2}
             paddingRight={2}
@@ -116,6 +123,10 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
             </text>
           </box>
           <box
+            onMouseDown={() => {
+              setSelectedOption("delete");
+              props.onConfirm(props.issue);
+            }}
             backgroundColor={selectedOption() === "delete" ? theme.colors.selection : undefined}
             paddingLeft={2}
             paddingRight={2}
@@ -127,25 +138,34 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
           </box>
         </box>
 
-        {/* Shortcuts */}
+        {/* Shortcuts - clickable */}
         <box
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
           paddingBottom={1}
           flexDirection="row"
-          gap={2}
+          justifyContent="center"
+          gap={3}
         >
-          <text fg={theme.colors.accent}>Tab</text>
-          <text fg={theme.colors.dim}>
-            {"\u00A0"}switch{"\u00A0\u00A0"}
-          </text>
-          <text fg={theme.colors.success}>Enter</text>
-          <text fg={theme.colors.dim}>
-            {"\u00A0"}confirm{"\u00A0\u00A0"}
-          </text>
-          <text fg={theme.colors.warning}>Esc</text>
-          <text fg={theme.colors.dim}>{"\u00A0"}cancel</text>
+          <box flexDirection="row" gap={1} onMouseDown={toggleSelection}>
+            <text fg={theme.colors.accent}>
+              <b>Tab</b>
+            </text>
+            <text fg={theme.colors.dim}>switch</text>
+          </box>
+          <box flexDirection="row" gap={1} onMouseDown={handleConfirm}>
+            <text fg={theme.colors.success}>
+              <b>Enter</b>
+            </text>
+            <text fg={theme.colors.dim}>confirm</text>
+          </box>
+          <box flexDirection="row" gap={1} onMouseDown={handleCancel}>
+            <text fg={theme.colors.warning}>
+              <b>Esc</b>
+            </text>
+            <text fg={theme.colors.dim}>cancel</text>
+          </box>
         </box>
       </box>
     </box>

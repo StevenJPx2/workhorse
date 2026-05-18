@@ -54,21 +54,19 @@ export function StatusBar(props: StatusBarProps) {
       <box flexDirection="row" gap={3}>
         <For each={props.shortcuts}>
           {(shortcut) => (
-            <box flexDirection="row" onMouseDown={() => handleShortcutClick(shortcut)}>
+            <box flexDirection="row" gap={1} onMouseDown={() => handleShortcutClick(shortcut)}>
               <text fg={theme.colors.accent}>
                 <b>{shortcut.key}</b>
               </text>
-              <text>{"\u00A0"}</text>
               <text fg={theme.colors.dim}>{shortcut.action}</text>
             </box>
           )}
         </For>
       </box>
-      <box flexDirection="row" onMouseDown={() => renderer.destroy()}>
+      <box flexDirection="row" gap={1} onMouseDown={() => renderer.destroy()}>
         <text fg={theme.colors.accent}>
           <b>Ctrl+X Q</b>
         </text>
-        <text>{"\u00A0"}</text>
         <text fg={theme.colors.dim}>quit</text>
       </box>
     </box>

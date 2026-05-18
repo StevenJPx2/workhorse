@@ -103,7 +103,8 @@ describe("playwright_screenshot tool", () => {
 
       await tool.execute({}, ctx as never);
 
-      const [, , filepath] = mockScreenshot.mock.calls[0];
+      const call = mockScreenshot.mock.calls[0] as [unknown, unknown, string, unknown];
+      const filepath = call[2];
       expect(filepath).toMatch(/screenshot-\d+\.png$/);
     });
 
@@ -115,22 +116,25 @@ describe("playwright_screenshot tool", () => {
 
       await tool.execute({ format: "jpeg" }, ctx as never);
 
-      const [, , filepath] = mockScreenshot.mock.calls[0];
+      const call = mockScreenshot.mock.calls[0] as [unknown, unknown, string, unknown];
+      const filepath = call[2];
       expect(filepath).toMatch(/\.jpeg$/);
     });
   });
 
   describe("with AttachmentService", () => {
-    const mockAttachmentService = {
+    const mockAttachmentServiceFns = {
       store: vi.fn(),
       exists: vi.fn(),
       list: vi.fn(),
       delete: vi.fn(),
     };
+    const mockAttachmentService =
+      mockAttachmentServiceFns as unknown as import("workhorse-core").AttachmentService;
 
     beforeEach(() => {
-      mockAttachmentService.store.mockReset();
-      mockAttachmentService.store.mockResolvedValue({
+      mockAttachmentServiceFns.store.mockReset();
+      mockAttachmentServiceFns.store.mockResolvedValue({
         localPath: "/attachments/org/repo/TEST-123/screenshot_test.png",
         size: 1024,
         mimeType: "image/png",
@@ -173,7 +177,7 @@ describe("playwright_screenshot tool", () => {
         writeFileSync(tempPath, Buffer.from("fake jpeg data"));
         return { success: true, path: tempPath };
       });
-      mockAttachmentService.store.mockResolvedValue({
+      mockAttachmentServiceFns.store.mockResolvedValue({
         localPath: "/attachments/org/repo/TEST-123/screenshot_photo.jpeg",
         size: 2048,
         mimeType: "image/jpeg",
@@ -247,7 +251,7 @@ describe("playwright_screenshot tool", () => {
         writeFileSync(tempPath, Buffer.from("fake png data"));
         return { success: true, path: tempPath };
       });
-      mockAttachmentService.store.mockRejectedValue(new Error("Disk full"));
+      mockAttachmentServiceFns.store.mockRejectedValue(new Error("Disk full"));
 
       const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
       const ctx = createMockContext();

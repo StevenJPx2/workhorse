@@ -199,7 +199,7 @@ describe("registerPlaywrightCrossPluginSync", () => {
     };
 
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
-    await handlers[0](prOpeningEvent);
+    await handlers[0]!(prOpeningEvent);
 
     // Should NOT have added any contribution
     expect(prOpeningEvent.contributions.length).toBe(0);
@@ -245,20 +245,20 @@ describe("registerPlaywrightCrossPluginSync", () => {
       attachmentService as never,
     );
 
-    const prOpeningEvent = {
+    const prOpeningEvent: PROpeningEvent = {
       issueId: "TEST-123",
       contributions: [],
     };
 
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
-    await handlers[0](prOpeningEvent);
+    await handlers[0]!(prOpeningEvent);
 
     // Should only include the screenshot (not PDF or jira-image)
     expect(prOpeningEvent.contributions.length).toBe(1);
-    expect(prOpeningEvent.contributions[0].content).toContain("1 screenshot captured");
-    expect(prOpeningEvent.contributions[0].content).toContain("test.png");
-    expect(prOpeningEvent.contributions[0].content).not.toContain("document.pdf");
-    expect(prOpeningEvent.contributions[0].content).not.toContain("diagram.png");
+    expect(prOpeningEvent.contributions[0]!.content).toContain("1 screenshot captured");
+    expect(prOpeningEvent.contributions[0]!.content).toContain("test.png");
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain("document.pdf");
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain("diagram.png");
   });
 
   it("handles issue not found gracefully", async () => {
@@ -282,7 +282,7 @@ describe("registerPlaywrightCrossPluginSync", () => {
     };
 
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
-    await handlers[0](prOpeningEvent);
+    await handlers[0]!(prOpeningEvent);
 
     // Should not have added anything and not throw
     expect(prOpeningEvent.contributions.length).toBe(0);
@@ -313,13 +313,13 @@ describe("registerPlaywrightCrossPluginSync", () => {
       attachmentService as never,
     );
 
-    const prOpeningEvent = {
+    const prOpeningEvent: PROpeningEvent = {
       issueId: "TEST-123",
       contributions: [],
     };
 
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
-    await handlers[0](prOpeningEvent);
+    await handlers[0]!(prOpeningEvent);
 
     // Should not throw and should log error
     expect(prOpeningEvent.contributions.length).toBe(0);
@@ -358,15 +358,15 @@ describe("registerPlaywrightCrossPluginSync", () => {
       attachmentService as never,
     );
 
-    const prOpeningEvent = {
+    const prOpeningEvent: PROpeningEvent = {
       issueId: "TEST-123",
       contributions: [],
     };
 
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
-    await handlers[0](prOpeningEvent);
+    await handlers[0]!(prOpeningEvent);
 
-    expect(prOpeningEvent.contributions[0].content).toContain("1 screenshot captured");
-    expect(prOpeningEvent.contributions[0].content).not.toContain("screenshots");
+    expect(prOpeningEvent.contributions[0]!.content).toContain("1 screenshot captured");
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain("screenshots");
   });
 });

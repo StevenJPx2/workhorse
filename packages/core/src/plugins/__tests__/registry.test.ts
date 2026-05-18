@@ -26,6 +26,7 @@ const mockPaths: ConfigPaths = {
   database: "/tmp/workhorse/workhorse.db",
   memoryDatabase: "/tmp/workhorse/memory.db",
   worktreesRoot: "/tmp/project-worktrees",
+  attachmentsDir: "/tmp/workhorse/attachments",
 };
 
 // Helper to create a mock context with optional config overrides

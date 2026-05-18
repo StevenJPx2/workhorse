@@ -1,10 +1,11 @@
-import { createSignal, createMemo } from "solid-js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { createMemo, createSignal } from "solid-js";
 import type { AdapterInfo } from "workhorse-core";
-import { getTheme } from "../../theme.ts";
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { ui } from "../../state/ui.ts";
+import { getTheme } from "../../theme.ts";
 import { HarnessList } from "./harness-list.tsx";
+import { ModalFooter } from "./modal-footer.tsx";
 import type { SpawnModalProps } from "./types.ts";
 
 /** Modal for configuring and spawning an agent for an issue. */
@@ -24,8 +25,9 @@ export function SpawnModal(props: SpawnModalProps) {
   const [baseBranch, _setBaseBranch] = createSignal("main");
   const [focusedField, setFocusedField] = createSignal<"harness" | "branch">("harness");
 
-  const modalHeight = () => Math.min(20, Math.floor(dimensions().height * 0.8));
-  const harnessListHeight = () => Math.max(3, modalHeight() - 11);
+  // Smaller modal - just enough for content
+  const modalHeight = () => Math.min(16, Math.floor(dimensions().height * 0.8));
+  const harnessListHeight = () => Math.max(1, harnessOptions().length);
 
   const handleConfirm = () => {
     const selectedHarness = harnessOptions()[harnessIndex()];
@@ -40,14 +42,23 @@ export function SpawnModal(props: SpawnModalProps) {
     }
   };
 
+  const handleCancel = () => {
+    props.onClose();
+  };
+
+  const toggleField = () => {
+    setFocusedField((p) => (p === "harness" ? "branch" : "harness"));
+  };
+
   useKeyboard((key) => {
     if (ui.modal() !== "spawn") return;
     if (key.name === "return") {
       handleConfirm();
       return;
     }
+    // Note: ESC is handled by global bindings in use-global-bindings.ts
     if (key.name === "tab") {
-      setFocusedField((p) => (p === "harness" ? "branch" : "harness"));
+      toggleField();
       return;
     }
     if (focusedField() === "harness") {
@@ -79,33 +90,37 @@ export function SpawnModal(props: SpawnModalProps) {
     >
       <box
         flexDirection="column"
-        width={50}
+        width={56}
         height={modalHeight()}
         backgroundColor={theme.colors.surface}
         borderStyle="rounded"
         borderColor={theme.colors.accent}
       >
+        {/* Header - full width background */}
         <box
           backgroundColor={theme.colors.selection}
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
           paddingBottom={1}
+          width="100%"
         >
           <text fg={theme.colors.accent}>
             <b>🚀 SPAWN AGENT</b>
           </text>
         </box>
-        <box paddingLeft={2} paddingRight={2} paddingTop={1}>
-          <text fg={theme.colors.dim}>Issue: </text>
+
+        {/* Issue info */}
+        <box paddingX={2} paddingTop={1} flexDirection="column" gap={1}>
           <text fg={theme.colors.info}>
             <b>{props.issue.externalId || props.issue.id}</b>
           </text>
+          <text fg={theme.colors.dim}>{props.issue.title}</text>
         </box>
-        <box paddingLeft={2} paddingRight={2} paddingBottom={1}>
-          <text fg={theme.colors.text}>{props.issue.title}</text>
-        </box>
+
+        {/* Agent Harness field */}
         <box
+          onMouseDown={() => setFocusedField("harness")}
           backgroundColor={isHarnessFocused() ? theme.colors.background : undefined}
           paddingLeft={2}
           paddingRight={2}
@@ -126,12 +141,15 @@ export function SpawnModal(props: SpawnModalProps) {
             />
           </box>
         </box>
+
+        {/* Base Branch field */}
         <box
+          onMouseDown={() => setFocusedField("branch")}
           backgroundColor={focusedField() === "branch" ? theme.colors.background : undefined}
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
-          paddingBottom={1}
+          paddingBottom={2}
         >
           <box marginBottom={1}>
             <text fg={fieldColor("branch")}>
@@ -145,37 +163,8 @@ export function SpawnModal(props: SpawnModalProps) {
             </box>
           </box>
         </box>
-        <box
-          backgroundColor={theme.colors.background}
-          paddingLeft={2}
-          paddingRight={2}
-          paddingTop={1}
-          paddingBottom={1}
-          flexDirection="row"
-          gap={3}
-        >
-          <box flexDirection="row">
-            <text fg={theme.colors.success}>
-              <b>Enter</b>
-            </text>
-            <text>{"\u00A0"}</text>
-            <text fg={theme.colors.dim}>spawn</text>
-          </box>
-          <box flexDirection="row">
-            <text fg={theme.colors.warning}>
-              <b>Esc</b>
-            </text>
-            <text>{"\u00A0"}</text>
-            <text fg={theme.colors.dim}>cancel</text>
-          </box>
-          <box flexDirection="row">
-            <text fg={theme.colors.accent}>
-              <b>Tab</b>
-            </text>
-            <text>{"\u00A0"}</text>
-            <text fg={theme.colors.dim}>switch field</text>
-          </box>
-        </box>
+
+        <ModalFooter onConfirm={handleConfirm} onCancel={handleCancel} onToggle={toggleField} />
       </box>
     </box>
   );

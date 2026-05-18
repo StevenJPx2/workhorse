@@ -32,6 +32,7 @@ describe("loadConfig", () => {
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     const config = loadConfig(paths);
@@ -68,6 +69,7 @@ theme = "gruvbox"
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     const config = loadConfig(paths);
@@ -90,6 +92,7 @@ theme = "gruvbox"
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     const config = loadConfig(paths);
@@ -119,6 +122,7 @@ cloud_id = "company.atlassian.net"
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     const config = loadConfig(paths);
@@ -149,6 +153,7 @@ harness = "custom"
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     const config = loadConfig(paths);
@@ -181,6 +186,7 @@ auto_resume = "not-a-boolean"
       database: join(tmpDir, "workhorse.db"),
       memoryDatabase: join(tmpDir, "memory.db"),
       worktreesRoot: join(tmpDir, "worktrees"),
+      attachmentsDir: join(tmpDir, "attachments"),
     };
 
     // This should throw a validation error

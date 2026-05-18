@@ -39,13 +39,12 @@ export function IssueList(props: IssueListProps) {
         paddingTop={1}
         paddingBottom={1}
         flexDirection="row"
+        gap={1}
       >
         <text fg={theme.colors.accent}>
           <b>ISSUES</b>
         </text>
-        <text fg={theme.colors.dim}>
-          {"\u00A0"}({issues().length})
-        </text>
+        <text fg={theme.colors.dim}>({issues().length})</text>
       </box>
 
       {/* Issue list - disable focus when modal is open to prevent scroll bleeding */}
@@ -65,14 +64,12 @@ export function IssueList(props: IssueListProps) {
                 >
                   {/* First row: ID + status */}
                   <box flexDirection="row" justifyContent="space-between">
-                    <box flexDirection="row">
+                    <box flexDirection="row" gap={1}>
                       <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
                         {isSelected() ? "▸ " : "  "}
                         <b>{issue.externalId || issue.id.slice(0, 8)}</b>
                       </text>
-                      <text fg={getStatusColor(issue.status, theme)}>
-                        {"\u00A0"}[{issue.status}]
-                      </text>
+                      <text fg={getStatusColor(issue.status, theme)}>[{issue.status}]</text>
                     </box>
                     <Show when={isSelected()}>
                       <box
