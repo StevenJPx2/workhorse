@@ -1,5 +1,21 @@
 # @fdcn/workhorse
 
+## v0.1.14
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.13...v0.1.14)
+
+### 🚀 Enhancements
+
+- Add core to main ([7d7576a](https://github.com/StevenJPx2/workhorse/commit/7d7576a))
+
+### 🩹 Fixes
+
+- Visual bugs ([c434704](https://github.com/StevenJPx2/workhorse/commit/c434704))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.13
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.1...v0.1.13)
