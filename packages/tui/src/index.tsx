@@ -3,6 +3,7 @@ import { githubPlugin } from "workhorse-plugin-github";
 import { jiraPlugin } from "workhorse-plugin-jira";
 import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 import { playwrightPlugin } from "workhorse-plugin-playwright";
+import { webPlugin } from "workhorse-plugin-web";
 import { createCliRenderer } from "@opentui/core";
 import { render, useRenderer } from "@opentui/solid";
 import { App } from "./app.tsx";
@@ -28,9 +29,7 @@ interface SetupWrapperProps {
   onSkip: () => void;
 }
 
-/**
- * Wrapper component for Setup that can access the renderer via useRenderer().
- */
+/** Wrapper component for Setup that can access the renderer via useRenderer(). */
 function SetupWrapper(props: SetupWrapperProps) {
   const renderer = useRenderer();
 
@@ -56,9 +55,7 @@ interface AuthWrapperProps {
   onSkip?: () => void;
 }
 
-/**
- * Wrapper component for Auth that can access the renderer via useRenderer().
- */
+/** Wrapper component for Auth that can access the renderer via useRenderer(). */
 function AuthWrapper(props: AuthWrapperProps) {
   const renderer = useRenderer();
 
@@ -158,6 +155,7 @@ export async function startTUI() {
       jiraPlugin, // Jira integration
       githubPlugin, // GitHub integration
       playwrightPlugin, // Browser automation
+      webPlugin, // Web operations (Jina AI)
       piAdapterPlugin, // Default agent harness
     ],
     // Pass CLI model override (deep partial allows nested partial objects)
