@@ -87,7 +87,7 @@ describe("load_skill tool", () => {
       const result = await tool.execute({ skillId: "nonexistent:skill" }, mockContext);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("Available skills: none");
+      expect(result.error).toContain("Available: none");
     });
   });
 
