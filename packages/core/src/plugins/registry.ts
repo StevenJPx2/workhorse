@@ -39,8 +39,10 @@ export class PluginRegistry {
     const { paths } = useWorkhorse();
 
     await Promise.all([
-      this.discover(join(dirname(paths.globalConfig), "plugins")),
-      this.discover(join(dirname(paths.projectConfig), "plugins")),
+      // ~/.workhorse/plugins/
+      this.discover(join(paths.globalDir, "plugins")),
+      // .workhorse/plugins/ (relative to project root)
+      this.discover(join(dirname(paths.projectConfig), ".workhorse", "plugins")),
     ]);
   }
 

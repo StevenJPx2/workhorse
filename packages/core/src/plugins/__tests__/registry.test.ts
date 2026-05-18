@@ -202,10 +202,10 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
   });
 
   it("discovers plugins from directory with file plugins", async () => {
-    // Point globalConfig to fixtures directory so discover() looks there
+    // Point globalDir to fixtures directory so discover() looks at FIXTURES_DIR/plugins
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
-      globalConfig: join(FIXTURES_DIR, "config.toml"),
+      globalDir: FIXTURES_DIR,
       projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
@@ -235,7 +235,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     // Create a context where discover() will find our fixtures dir
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
-      globalConfig: join(FIXTURES_DIR, "config.toml"),
+      globalDir: FIXTURES_DIR,
       projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
@@ -265,7 +265,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
 
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
-      globalConfig: join(FIXTURES_DIR, "config.toml"),
+      globalDir: FIXTURES_DIR,
       projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 
@@ -307,7 +307,7 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     // The fixtures/plugins directory has an empty-dir/ without index.ts
     const pathsWithFixtures: ConfigPaths = {
       ...mockPaths,
-      globalConfig: join(FIXTURES_DIR, "config.toml"),
+      globalDir: FIXTURES_DIR,
       projectConfig: "/tmp/no-plugins/.workhorse.toml",
     };
 

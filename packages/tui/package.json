@@ -23,6 +23,7 @@
   },
   "exports": {
     ".": "./dist/workhorse.js",
+    "./core": "./src/core.ts",
     "./plugin": "./src/plugin.ts",
     "./renderers": "./src/renderers/index.ts"
   },
