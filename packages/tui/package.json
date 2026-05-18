@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/StevenJPx2/workhorse.git",
+    "url": "git+https://github.com/StevenJPx2/workhorse.git",
     "directory": "packages/tui"
   },
   "publishConfig": {
