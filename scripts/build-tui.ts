@@ -18,6 +18,7 @@ import {
   patchDynamicImports,
   copyTreeSitterAssets,
   copyDrizzleMigrations,
+  copySkillFiles,
   formatDuration,
   formatSize,
 } from "./build-tui-utils.ts";
@@ -59,6 +60,8 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
       "@libsql/client",
       "@huggingface/transformers",
       "onnxruntime-node",
+      // @opentui/core has platform-specific native bindings and uses Bun asset imports
+      "@opentui/core",
     ],
     naming: { entry: "workhorse.js" },
   });
@@ -71,8 +74,9 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   patchDynamicImports(ROOT, BUNDLE);
   copyTreeSitterAssets(TUI, OUTDIR);
   copyDrizzleMigrations(ROOT, OUTDIR);
+  copySkillFiles(ROOT, OUTDIR);
 
-  // Prepend shebang so the bundle is directly executable
+  // Prepend shebang so the bundle is directly executable (requires bun runtime)
   const existing = await Bun.file(BUNDLE).text();
   if (!existing.startsWith("#!/usr/bin/env bun")) {
     await Bun.write(BUNDLE, `#!/usr/bin/env bun\n${existing}`);

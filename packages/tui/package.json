@@ -36,8 +36,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
+    "@huggingface/transformers": "^3.8.0",
     "@libsql/client": "^0.17.3",
+    "@opentui/core": "0.2.1",
     "onnxruntime-node": "^1.26.0",
     "playwright": "^1.60.0",
     "retriv": "^0.13.2"

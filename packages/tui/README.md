@@ -2,6 +2,20 @@
 
 Terminal UI for Workhorse — a reactive interface for managing AI coding agents.
 
+## Installation
+
+**Requires [Bun](https://bun.sh) runtime** (v1.0+)
+
+```bash
+# Install bun if you haven't already
+curl -fsSL https://bun.sh/install | bash
+
+# Install workhorse globally
+bun i -g @fdcn/workhorse
+```
+
+> **Note**: Workhorse requires Bun as its runtime due to dependencies on Bun-specific features in the terminal UI framework.
+
 ## What This Package Does
 
 This package provides the interactive terminal interface for Workhorse:

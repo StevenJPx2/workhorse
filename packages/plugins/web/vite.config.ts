@@ -10,7 +10,15 @@ export default defineConfig({
       fileName: "index",
     },
     rollupOptions: {
-      external: ["workhorse-core", "zod", /^zod\//],
+      external: [
+        // Node built-ins must be external
+        /^node:/,
+        // Workspace dependencies
+        "workhorse-core",
+        // External dependencies
+        "zod",
+        /^zod\//,
+      ],
     },
     outDir: "dist",
     emptyOutDir: true,

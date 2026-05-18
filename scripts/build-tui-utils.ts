@@ -3,79 +3,14 @@
  * @module scripts/build-tui-utils
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  copyFileSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, copyFileSync } from "node:fs";
 import { resolve, extname } from "node:path";
 
-/** Patch dynamic platform imports to use absolute paths */
-export function patchDynamicImports(root: string, bundle: string): void {
-  const p = process.platform,
-    a = process.arch;
-  let content = readFileSync(bundle, "utf-8");
-  let n = 0;
-
-  // @opentui/core dynamic import
-  const otuiPath = resolve(
-    root,
-    `node_modules/.bun/@opentui+core-${p}-${a}@0.2.1/node_modules/@opentui/core-${p}-${a}/index.ts`,
-  );
-  if (existsSync(otuiPath)) {
-    content = content.replace(
-      /import\(`@opentui\/core-\$\{process\.platform\}-\$\{process\.arch\}\/index\.ts`\)/g,
-      `import("${otuiPath}")`,
-    );
-    n++;
-  }
-
-  // @libsql dynamic require
-  const lsqlTarget = p === "darwin" ? `darwin-${a}` : `linux-${a}-gnu`;
-  const lsqlPath = resolve(
-    root,
-    `node_modules/.bun/@libsql+${lsqlTarget}@0.5.29/node_modules/@libsql/${lsqlTarget}`,
-  );
-  if (existsSync(lsqlPath)) {
-    content = content.replace(
-      /return __require\(`@libsql\/\$\{target\}`\);/g,
-      `return __require("${lsqlPath}");`,
-    );
-    n++;
-  }
-
-  // onnxruntime-node dynamic require
-  const onnxPath = resolve(
-    root,
-    `node_modules/.bun/onnxruntime-node@1.24.3/node_modules/onnxruntime-node/bin/napi-v6/${p}/${a}/onnxruntime_binding.node`,
-  );
-  if (existsSync(onnxPath)) {
-    content = content.replace(
-      /__require\(`\.\.\/bin\/napi-v6\/\$\{process\.platform\}\/\$\{process\.arch\}\/onnxruntime_binding\.node`\)/g,
-      `__require("${onnxPath}")`,
-    );
-    n++;
-  }
-
-  // sharp dynamic require - patch the paths array to use absolute path
-  const sharpPlatform = p === "darwin" ? `darwin-${a}` : `linux-${a}`;
-  const sharpPath = resolve(
-    root,
-    `node_modules/.bun/@img+sharp-${sharpPlatform}@0.34.5/node_modules/@img/sharp-${sharpPlatform}/lib/sharp-${sharpPlatform}.node`,
-  );
-  if (existsSync(sharpPath)) {
-    content = content.replace(
-      /`@img\/sharp-\$\{runtimePlatform\}\/sharp\.node`/g,
-      `"${sharpPath}"`,
-    );
-    n++;
-  }
-
-  writeFileSync(bundle, content);
-  console.log(`  ✓ Patched ${n} dynamic imports`);
+/** Patch dynamic platform imports - currently a no-op since all native deps are external */
+export function patchDynamicImports(_root: string, _bundle: string): void {
+  // Native dependencies (@opentui/core, @libsql/client, onnxruntime-node, sharp)
+  // are now marked as external and installed at runtime, so no patching needed.
+  console.log(`  ✓ Native deps are external (no patching needed)`);
 }
 
 export function copyTreeSitterAssets(tuiDir: string, outdir: string): void {
@@ -106,6 +41,19 @@ export function copyDrizzleMigrations(root: string, outdir: string): void {
 
   copyDir(src, resolve(outdir, "drizzle"));
   console.log("  ✓ Copied drizzle migrations");
+}
+
+/** Copy skill markdown files to dist folder */
+export function copySkillFiles(root: string, outdir: string): void {
+  const src = resolve(root, "packages/core/src/plugins/builtin/skills");
+  if (!existsSync(src)) return;
+
+  for (const f of readdirSync(src)) {
+    if (extname(f) === ".md") {
+      copyFileSync(resolve(src, f), resolve(outdir, f));
+    }
+  }
+  console.log("  ✓ Copied skill files");
 }
 
 export const formatDuration = (ms: number): string =>
