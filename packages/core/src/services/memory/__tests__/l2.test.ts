@@ -7,7 +7,11 @@ import type { MemoryDocument } from "../types.ts";
 const TEST_DIR = join(import.meta.dirname, ".test-l2");
 const DB_PATH = join(TEST_DIR, "memory.db");
 
-describe("L2: Semantic Search (retriv)", () => {
+// Skip L2 tests in CI — the HuggingFace model download is flaky and causes worker crashes.
+// These tests run reliably locally where the model is cached.
+const isCI = process.env["CI"] === "true";
+
+describe.skipIf(isCI)("L2: Semantic Search (retriv)", () => {
   let store: L2Store | null = null;
 
   beforeEach(async () => {
