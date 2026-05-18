@@ -1,5 +1,34 @@
 # @fdcn/workhorse
 
+## v0.1.15
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.14...v0.1.15)
+
+### 🚀 Enhancements
+
+- **skills:** Implement plugin skills system with on-demand loading ([249858d](https://github.com/StevenJPx2/workhorse/commit/249858d))
+- **plugins:** Add web plugin wrapping jina-cli for web operations ([e4467f0](https://github.com/StevenJPx2/workhorse/commit/e4467f0))
+- **tui:** Add web plugin to default plugin list ([32afcf6](https://github.com/StevenJPx2/workhorse/commit/32afcf6))
+
+### 🩹 Fixes
+
+- **tests:** Fix skill test assertion and tui vitest solid-js path ([a1e25e0](https://github.com/StevenJPx2/workhorse/commit/a1e25e0))
+- **release:** Localize release to tui ([96fc4e9](https://github.com/StevenJPx2/workhorse/commit/96fc4e9))
+
+### 📖 Documentation
+
+- Add skills section to plugin guide ([3aa040a](https://github.com/StevenJPx2/workhorse/commit/3aa040a))
+
+### 🏡 Chore
+
+- **ci:** Use provenance ([73d9451](https://github.com/StevenJPx2/workhorse/commit/73d9451))
+- Bun lock ([535311d](https://github.com/StevenJPx2/workhorse/commit/535311d))
+- Bump version ([8ee50f2](https://github.com/StevenJPx2/workhorse/commit/8ee50f2))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.14
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.13...v0.1.14)
