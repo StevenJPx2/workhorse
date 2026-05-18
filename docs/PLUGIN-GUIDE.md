@@ -404,7 +404,105 @@ setup(config) {
 }
 ```
 
-### 9. Listen to Hooks
+### 9. Provide Skills
+
+Skills are on-demand instruction sets that agents can load when working on specific tasks. Unlike prompt context (which is always included), skills are only loaded when explicitly requested via the `load_skill` tool.
+
+```typescript
+export default definePlugin({
+  manifest: {
+    name: "my-plugin",
+    version: "1.0.0",
+    capabilities: {
+      skills: ["database-migrations", "api-design"],
+    },
+  },
+  setup(config) {
+    const { orchestrator } = useWorkhorse();
+
+    // Register skills from the manifest
+    orchestrator.skillRegistry.registerPluginSkill("my-plugin", {
+      id: "database-migrations",
+      name: "Database Migrations",
+      description: "Step-by-step guide for creating and running database migrations",
+      content: `
+# Database Migration Guide
+
+When creating database migrations, follow these steps:
+
+1. **Generate migration file**: Run \`bun run db:generate\`
+2. **Edit the migration**: Add your schema changes
+3. **Test locally**: Run \`bun run db:migrate\`
+4. **Verify**: Check the database state matches expectations
+      `.trim(),
+      priority: 50,
+    });
+
+    orchestrator.skillRegistry.registerPluginSkill("my-plugin", {
+      id: "api-design",
+      name: "API Design Patterns",
+      description: "Best practices for designing REST APIs in this project",
+      content: loadSkillFromFile("./skills/api-design.md"),
+      priority: 50,
+    });
+  },
+});
+```
+
+**Skill properties:**
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier (forms `pluginName:id` in registry) |
+| `name` | `string` | Yes | Human-readable name |
+| `description` | `string` | Yes | Brief description shown in agent's skill list |
+| `content` | `string` | Yes | Full instructions (Markdown) |
+| `priority` | `number` | No | Display order in skill list (lower = earlier, default: 50) |
+
+**How skills appear to agents:**
+
+The agent sees a brief skills summary in their system prompt:
+
+```
+## Available Skills
+Load a specialized skill that provides domain-specific instructions and workflows.
+...
+- **database-migrations**: Step-by-step guide for creating and running database migrations
+- **api-design**: Best practices for designing REST APIs in this project
+```
+
+When the agent calls `load_skill({ skillId: "my-plugin:database-migrations" })`, the full content is returned.
+
+**Skill file format (optional YAML frontmatter):**
+
+```markdown
+---
+name: Database Migrations
+description: Step-by-step guide for creating and running database migrations
+priority: 30
+---
+
+# Database Migration Guide
+
+When creating database migrations...
+```
+
+**Local skills (not plugin-provided):**
+
+Users can also create skills in these locations (no plugin required):
+- `.workhorse/skills/*.md` — Project-specific skills
+- `~/.workhorse/skills/*.md` — Global user skills
+- `.claude/skills/*.md` — Claude-compatible skills
+
+These use prefixes: `local:`, `global:`, `claude:` respectively.
+
+**Built-in skills:**
+
+Workhorse provides two built-in skills:
+- `builtin:plugin-development` — Guide for creating Workhorse plugins
+- `builtin:skill-development` — Guide for creating custom skills
+
+### 10. Listen to Hooks
 
 React to system events:
 
@@ -441,6 +539,9 @@ setup(config) {
   // Plugin events
   hooks.on("plugin.loaded", ({ name }) => { /* ... */ });
   hooks.on("plugin.error", ({ name, error }) => { /* ... */ });
+
+  // Skill events
+  hooks.on("skill.registered", ({ skill }) => { /* ... */ });
 }
 ```
 
