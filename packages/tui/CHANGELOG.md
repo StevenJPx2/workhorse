@@ -1,5 +1,17 @@
 # @fdcn/workhorse
 
+## v0.1.16
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.15...v0.1.16)
+
+### 🩹 Fixes
+
+- Build issues with web ([475ad03](https://github.com/StevenJPx2/workhorse/commit/475ad03))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.15
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.14...v0.1.15)

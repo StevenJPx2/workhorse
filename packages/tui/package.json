@@ -1,6 +1,6 @@
 {
   "name": "@fdcn/workhorse",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Terminal UI for Workhorse - AI-powered issue resolver",
   "type": "module",
   "license": "MIT",
