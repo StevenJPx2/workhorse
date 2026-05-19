@@ -1,5 +1,22 @@
 # @fdcn/workhorse
 
+## v0.1.17
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.16...v0.1.17)
+
+### 🚀 Enhancements
+
+- Add figma plugin ([5d2ae29](https://github.com/StevenJPx2/workhorse/commit/5d2ae29))
+
+### 🩹 Fixes
+
+- **tests:** Skip L2/MemoryService tests in CI ([6abe5e0](https://github.com/StevenJPx2/workhorse/commit/6abe5e0))
+- Skill registry ([7296bd0](https://github.com/StevenJPx2/workhorse/commit/7296bd0))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.16
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.15...v0.1.16)
