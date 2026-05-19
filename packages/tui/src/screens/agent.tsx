@@ -32,7 +32,7 @@ const FILES_PANEL_WIDTH = 32;
  * └─────────────────────────────────────────────────────────────┘
  */
 export function Agent() {
-  const { monitors } = useWorkhorseContext();
+  const { monitors, orchestrator } = useWorkhorseContext();
   const { agents, getState } = createAgents();
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
@@ -177,7 +177,14 @@ export function Agent() {
 
       <StatusBar
         shortcuts={[
-          { key: "s", action: "stop" },
+          {
+            key: "s",
+            action: "stop",
+            onActivate: () => {
+              const agentId = selectedId();
+              if (agentId) orchestrator.getAgent(agentId)?.stop();
+            },
+          },
           { key: "Ctrl+X M", action: "model" },
           { key: "ESC", action: "back" },
         ]}

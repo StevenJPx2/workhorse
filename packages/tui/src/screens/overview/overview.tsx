@@ -54,6 +54,7 @@ export function Overview() {
     setAgentIndex,
     onIssueSelect: (issue: Issue) => ui.openSpawnModal(issue),
     onAgentSelect: (agent: AgentAdapter) => ui.enterAgentView(agent.issueId),
+    onAgentStop: (agent: AgentAdapter) => orchestrator.getAgent(agent.issueId)?.stop(),
   });
 
   return (
@@ -112,6 +113,14 @@ export function Overview() {
           { key: "←→", action: "switch" },
           { key: "Tab", action: "cycle" },
           { key: "Enter", action: "select" },
+          {
+            key: "s",
+            action: "stop",
+            onActivate: () => {
+              const agentId = selectedAgentId();
+              if (agentId) orchestrator.getAgent(agentId)?.stop();
+            },
+          },
           { key: "Ctrl+X M", action: "model" },
         ]}
       />

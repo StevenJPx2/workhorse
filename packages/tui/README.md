@@ -208,6 +208,7 @@ Focus-aware shortcuts:
 | Overview | `Tab` | Cycle focus (issues → agents → chat) |
 | Overview | `↑/↓` | Navigate list |
 | Overview | `Enter` | Select/spawn |
+| Overview (agents focused) | `s` | Stop selected agent |
 | Agent | `s` | Stop agent |
 | Agent | `Esc` | Back to overview |
 | Chat | `Enter` | Send message |

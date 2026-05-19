@@ -17,6 +17,7 @@ interface UseOverviewBindingsOptions {
   setAgentIndex: Setter<number>;
   onIssueSelect: (issue: Issue) => void;
   onAgentSelect: (agent: AgentAdapter) => void;
+  onAgentStop: (agent: AgentAdapter) => void;
 }
 
 export function useOverviewBindings(options: UseOverviewBindingsOptions) {
@@ -87,6 +88,13 @@ export function useOverviewBindings(options: UseOverviewBindingsOptions) {
     if ((keyName === "d" || keyName === "backspace") && focused === "issues") {
       const issue = options.issues()[options.issueIndex()];
       if (issue) ui.openDeleteModal(issue);
+      return;
+    }
+
+    // s: stop the selected agent (when agents pane is focused)
+    if (keyName === "s" && focused === "agents") {
+      const agent = options.agents()[options.agentIndex()];
+      if (agent) options.onAgentStop(agent);
       return;
     }
   });

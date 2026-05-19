@@ -8,6 +8,7 @@
  */
 import { createSignal } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
+import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { ui } from "../state/ui.ts";
 
 // Command mode state - true after Ctrl+X is pressed, waiting for next key
@@ -19,6 +20,7 @@ const [commandMode, setCommandMode] = createSignal(false);
  */
 export function useGlobalBindings() {
   const renderer = useRenderer();
+  const { orchestrator } = useWorkhorseContext();
 
   useKeyboard((key) => {
     // Ctrl+X enters command mode
@@ -72,6 +74,15 @@ export function useGlobalBindings() {
         ui.backToOverview();
       }
       return;
+    }
+
+    // s: stop the selected agent (agent screen only, not while typing)
+    if (key.name === "s" && !ui.inputMode() && !ui.modal()) {
+      if (ui.screen() === "agent") {
+        const agentId = ui.selectedAgentId();
+        if (agentId) orchestrator.getAgent(agentId)?.stop();
+        return;
+      }
     }
   });
 }
