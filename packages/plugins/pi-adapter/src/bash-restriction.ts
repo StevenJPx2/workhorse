@@ -25,6 +25,9 @@ export interface RestrictedBashOptions extends PathValidationOptions {
 
 const DEFAULT_TMP_DIR = tmpdir();
 
+/** Default timeout for bash commands (5 minutes in milliseconds). */
+const DEFAULT_BASH_TIMEOUT_MS = 5 * 60 * 1000;
+
 /** Creates a spawn hook that validates cwd before command execution. */
 export function createPathValidatingSpawnHook(options: RestrictedBashOptions): BashSpawnHook {
   const { rootDir, allowTmp = true, additionalEnv } = options;
@@ -77,7 +80,12 @@ export function createRestrictedBashOperations(options: RestrictedBashOptions): 
   return {
     exec: async (command, cwd, execOptions) => {
       // assertPathAllowed throws if cwd is outside allowed directories
-      return localOps.exec(command, assertPathAllowed(cwd, pathOptions), execOptions);
+      // Apply default 5-minute timeout unless explicitly overridden
+      const optionsWithTimeout = {
+        ...execOptions,
+        timeout: execOptions.timeout ?? DEFAULT_BASH_TIMEOUT_MS,
+      };
+      return localOps.exec(command, assertPathAllowed(cwd, pathOptions), optionsWithTimeout);
     },
   };
 }
