@@ -75,7 +75,8 @@ export const jiraPlugin = definePlugin({
     const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
 
     // Register issue parser for Jira keys and URLs
-    ctx.tracker.registerParser(createJiraParserOptions(client));
+    // Pass hooks so parser can emit issue.links.discovered for cross-plugin enrichment
+    ctx.tracker.registerParser(createJiraParserOptions(client, ctx.hooks));
 
     // Register comment monitor (started per-issue when agent spawns)
     ctx.monitors.registerMonitor(createJiraCommentMonitor(client, config.pollInterval, ctx.db));

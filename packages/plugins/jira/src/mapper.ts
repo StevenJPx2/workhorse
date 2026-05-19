@@ -7,9 +7,29 @@
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
 import type { JiraComment, JiraIssue } from "./types.ts";
 
+/** Extracted link from ADF content */
+export interface ExtractedLink {
+  /** Display text of the link */
+  text: string;
+  /** URL href */
+  href: string;
+  /** Source location: "description" or "comment" */
+  source: "description" | "comment";
+}
+
 /** Map a Jira issue to the generic ParsedIssue format */
 export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
   const fields = jira.fields;
+
+  // Extract links from description and comments
+  const descriptionLinks = extractLinksFromAdf(fields.description).map((l) => ({
+    ...l,
+    source: "description" as const,
+  }));
+  const commentLinks = (fields.comment?.comments ?? []).flatMap((c) =>
+    extractLinksFromAdf(c.body).map((l) => ({ ...l, source: "comment" as const })),
+  );
+  const allLinks = [...descriptionLinks, ...commentLinks];
 
   return {
     externalId: jira.key,
@@ -28,6 +48,7 @@ export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
       comments: (fields.comment?.comments ?? []).map(mapJiraComment),
       created: fields.created,
       updated: fields.updated,
+      links: allLinks.length > 0 ? allLinks : undefined,
     },
   };
 }
@@ -80,4 +101,55 @@ function extractDescription(description: unknown): string {
 function extractCloudId(selfUrl: string): string {
   // https://<cloudId>.atlassian.net/rest/api/3/issue/...
   return selfUrl.match(/https:\/\/([^.]+)\.atlassian\.net/)?.[1] ?? "";
+}
+
+/**
+ * Extract links from ADF content.
+ * In ADF, links appear as text nodes with a "link" mark:
+ * { type: "text", text: "link text", marks: [{ type: "link", attrs: { href: "..." } }] }
+ */
+export function extractLinksFromAdf(adf: unknown): Array<{ text: string; href: string }> {
+  const links: Array<{ text: string; href: string }> = [];
+
+  if (adf === null || adf === undefined) return links;
+
+  // Handle plain string — extract URLs with regex
+  if (typeof adf === "string") {
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
+    const matches = adf.match(urlRegex);
+    if (matches) {
+      for (const href of matches) {
+        links.push({ text: href, href });
+      }
+    }
+    return links;
+  }
+
+  if (typeof adf !== "object") return links;
+
+  const obj = adf as Record<string, unknown>;
+
+  // Check if this is a text node with link marks
+  if (typeof obj.text === "string" && Array.isArray(obj.marks)) {
+    for (const mark of obj.marks) {
+      if (typeof mark === "object" && mark !== null) {
+        const m = mark as Record<string, unknown>;
+        if (m.type === "link" && typeof (m.attrs as Record<string, unknown>)?.href === "string") {
+          links.push({
+            text: obj.text as string,
+            href: (m.attrs as Record<string, unknown>).href as string,
+          });
+        }
+      }
+    }
+  }
+
+  // Recurse into content arrays
+  if (Array.isArray(obj.content)) {
+    for (const child of obj.content) {
+      links.push(...extractLinksFromAdf(child));
+    }
+  }
+
+  return links;
 }

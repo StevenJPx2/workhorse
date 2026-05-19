@@ -54,6 +54,7 @@
     "workhorse-plugin-jira": "workspace:*",
     "workhorse-plugin-pi-adapter": "workspace:*",
     "workhorse-plugin-playwright": "workspace:*",
+    "workhorse-plugin-figma": "workspace:*",
     "workhorse-plugin-web": "workspace:*"
   }
 }

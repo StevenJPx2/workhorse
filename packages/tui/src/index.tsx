@@ -1,4 +1,5 @@
 import { bootstrap, resolveConfigPaths } from "workhorse-core";
+import { figmaPlugin } from "workhorse-plugin-figma";
 import { githubPlugin } from "workhorse-plugin-github";
 import { jiraPlugin } from "workhorse-plugin-jira";
 import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
@@ -154,6 +155,7 @@ export async function startTUI() {
       tuiPlugin, // TUI plugin (renderer hooks)
       jiraPlugin, // Jira integration
       githubPlugin, // GitHub integration
+      figmaPlugin, // Figma design file integration
       playwrightPlugin, // Browser automation
       webPlugin, // Web operations (Jina AI)
       piAdapterPlugin, // Default agent harness

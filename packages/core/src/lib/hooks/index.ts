@@ -63,6 +63,7 @@ export type {
   HookCallbacks,
   HookPayload,
   HookEmitter,
+  DiscoveredLink,
 } from "./types.ts";
 export type { PromptBuildingContext, PromptContextBlock } from "#workflow/tracker";
 

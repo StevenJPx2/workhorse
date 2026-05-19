@@ -6,9 +6,9 @@
  * @module workhorse-plugin-jira/parser
  */
 
-import type { IssueParserOptions } from "workhorse-core";
+import type { HookEmitter, IssueParserOptions } from "workhorse-core";
 import type { AtlassianClient } from "./client.ts";
-import { mapJiraToIssue } from "./mapper.ts";
+import { type ExtractedLink, mapJiraToIssue } from "./mapper.ts";
 
 /** Regex for matching Jira ticket keys like AM-123, PROJ-456 */
 const JIRA_KEY_REGEX = /^[A-Z][A-Z0-9]*-\d+$/;
@@ -23,7 +23,10 @@ export function canParseJira(input: string): boolean {
 }
 
 /** Create parser options for registering with the Tracker */
-export function createJiraParserOptions(client: AtlassianClient): IssueParserOptions {
+export function createJiraParserOptions(
+  client: AtlassianClient,
+  hooks?: HookEmitter,
+): IssueParserOptions {
   return {
     source: "jira",
     canParse: canParseJira,
@@ -37,7 +40,22 @@ export function createJiraParserOptions(client: AtlassianClient): IssueParserOpt
         throw new Error(`Could not extract Jira ticket key from: "${trimmed}"`);
       }
 
-      return mapJiraToIssue(await client.fetchIssue(ticketKey));
+      const parsed = mapJiraToIssue(await client.fetchIssue(ticketKey));
+
+      // Emit issue.links.discovered if links were found
+      const links = parsed.metadata.links as ExtractedLink[] | undefined;
+      if (hooks && links && links.length > 0) {
+        // We need the Issue (with id) but we don't have it yet - the Tracker will create it.
+        // Instead, emit after mapping but with the ParsedIssue data.
+        // The hook payload expects Issue but we can emit with ParsedIssue since the shape overlaps.
+        // The Tracker will handle the actual persistence and can re-emit if needed.
+        hooks.emit("issue.links.discovered", {
+          issue: parsed as any, // ParsedIssue -> Issue shape is compatible for this purpose
+          links,
+        });
+      }
+
+      return parsed;
     },
   };
 }

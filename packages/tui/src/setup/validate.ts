@@ -59,6 +59,25 @@ export const PLUGIN_REQUIREMENTS: PluginConfigRequirement[] = [
       },
     ],
   },
+  {
+    name: "figma",
+    fields: [
+      {
+        key: "commentPollInterval",
+        label: "Comment Poll Interval (ms)",
+        description: "How often to check for new Figma comments (default: 60000)",
+        required: false,
+        default: "60000",
+      },
+      {
+        key: "filePollInterval",
+        label: "File Poll Interval (ms)",
+        description: "How often to check for Figma file updates (default: 120000)",
+        required: false,
+        default: "120000",
+      },
+    ],
+  },
 ];
 
 /**

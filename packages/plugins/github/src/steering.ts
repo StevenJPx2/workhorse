@@ -76,25 +76,4 @@ Note: You must push before creating the PR - the tool does not push automaticall
     reminder: `A reviewer has requested changes on your PR. Address the feedback and push updates.`,
     priority: 20,
   });
-
-  // Remind to create PR if not in early stages and no PR exists yet
-  // Checks issue.metadata.prNumber which is only set on successful PR creation
-  ctx.orchestrator.registerSteeringRule({
-    id: "github:missing-pr",
-    name: "Create PR if missing",
-    description: "Remind to create a PR when not planning/implementing and no PR exists",
-    condition: {
-      when: (steerCtx) => {
-        const status = steerCtx.issue.status;
-        // Early stages: still working on the code, PR not expected yet
-        if (status === "planning" || status === "implementing") return false;
-
-        // Check if a PR was actually created (metadata set by open-pr tool on success)
-        const meta = steerCtx.issue.metadata as Record<string, unknown> | undefined;
-        return !(meta?.prNumber != null || meta?.prUrl != null);
-      },
-    },
-    reminder: `You're past the implementation phase but haven't created a PR yet. Push your branch first with \`git push -u origin <branch>\`, then create one with \`github_open_pr\` to submit your changes for review.`,
-    priority: 18,
-  });
 }

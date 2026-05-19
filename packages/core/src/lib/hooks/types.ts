@@ -3,6 +3,18 @@ import type { AgentAdapter, CreateOptions, ResolvedSkill } from "#workflow/orche
 import type { PromptBuildingContext } from "#workflow/tracker";
 
 /**
+ * Extracted link from issue content (description/comments).
+ */
+export interface DiscoveredLink {
+  /** Display text of the link */
+  text: string;
+  /** URL href */
+  href: string;
+  /** Source location within the issue */
+  source: "description" | "comment";
+}
+
+/**
  * All known hook events with their payload types.
  * Plugins can register additional hooks via string keys.
  */
@@ -15,6 +27,10 @@ export type HookCallbacks = {
     to: IssueStatus;
   }) => void | Promise<void>;
   "issue.deleted": (payload: { issue: Issue }) => void | Promise<void>;
+  "issue.links.discovered": (payload: {
+    issue: Issue;
+    links: DiscoveredLink[];
+  }) => void | Promise<void>;
 
   // Prompts
   "prompt.building": (payload: PromptBuildingContext) => void | Promise<void>;

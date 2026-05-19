@@ -26,6 +26,7 @@ export {
   nullableDateText,
 } from "#db";
 export {
+  type DiscoveredLink,
   type HookEmitter,
   type HookEventMap,
   type HookMetadata,
