@@ -26,7 +26,7 @@ interface AgentSidebarProps {
   focused?: boolean;
 }
 
-const SIDEBAR_WIDTH = 28;
+const SIDEBAR_WIDTH = 34;
 
 export function AgentSidebar(props: AgentSidebarProps) {
   const theme = getTheme();
@@ -85,7 +85,7 @@ export function AgentSidebar(props: AgentSidebarProps) {
                     <text fg={getStatusColor(state(), theme)}>{getStatusIcon(state())}</text>
                   </box>
                   {/* Row 2: Agent state + workflow status */}
-                  <box paddingLeft={2} flexDirection="row" gap={1}>
+                  <box paddingLeft={2} flexDirection="row" gap={1} flexWrap="no-wrap">
                     <text fg={getStatusColor(state(), theme)}>{getStatusText(state())}</text>
                     <Show when={agent.issue.status}>
                       <text fg={theme.colors.dim}>·</text>
