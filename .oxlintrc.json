@@ -10,6 +10,7 @@
     "workhorse/no-single-reference-function": "warn",
     "workhorse/no-single-use-variable": "warn",
     "workhorse/no-section-comments": "warn",
+    "workhorse/no-reexport-chain": "warn",
     "workhorse/no-reexport-outside-barrel": "warn",
     "workhorse/prefer-folder-barrel": "warn",
     "workhorse/prefer-inline-single-import": "warn",

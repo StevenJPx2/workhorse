@@ -5,6 +5,7 @@ import enforceTestColocation from "./rules/enforce-test-colocation";
 import maxLinesPerFile from "./rules/max-lines-per-file";
 import noCascadingTernary from "./rules/no-cascading-ternary";
 import noIndexImports from "./rules/no-index-imports";
+import noReexportChain from "./rules/no-reexport-chain";
 import noReexportOutsideBarrel from "./rules/no-reexport-outside-barrel";
 import noSectionComments from "./rules/no-section-comments";
 import noSingleReferenceFunction from "./rules/no-single-reference-function";
@@ -30,6 +31,7 @@ const plugin = {
     "enforce-barrel-exports": enforceBarrelExports,
     "no-index-imports": noIndexImports,
     "no-section-comments": noSectionComments,
+    "no-reexport-chain": noReexportChain,
     "no-reexport-outside-barrel": noReexportOutsideBarrel,
     "prefer-export-directory": preferExportDirectory,
     "prefer-folder-barrel": preferFolderBarrel,

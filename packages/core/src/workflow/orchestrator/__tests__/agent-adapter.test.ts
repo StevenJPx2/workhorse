@@ -123,9 +123,9 @@ describe("agent tools filtering", () => {
     const { readFile } = await import("node:fs/promises");
     const agentSource = await readFile(new URL("../agent.ts", import.meta.url).pathname, "utf-8");
 
-    // Verify the tools getter filters by source
+    // Verify the tools getter filters by source (uses 't' as the parameter name in arrow function)
     expect(agentSource).toContain("get tools()");
-    expect(agentSource).toContain("tool.sources");
+    expect(agentSource).toContain("t.sources");
     expect(agentSource).toContain("this.issue.source");
   });
 
