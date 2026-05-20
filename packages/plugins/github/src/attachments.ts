@@ -25,6 +25,9 @@ const GITHUB_IMAGE_DOMAINS = [
   "private-user-images.githubusercontent.com",
 ];
 
+/** URL paths that indicate GitHub user-uploaded content (no extension needed) */
+const GITHUB_USER_CONTENT_PATHS = ["/user-attachments/assets/"];
+
 /** Generate a stable ID from a URL */
 function hashUrl(url: string): string {
   return createHash("md5").update(url).digest("hex").slice(0, 12);
@@ -61,8 +64,16 @@ function extractFilename(url: string): string {
 function isDownloadableImage(url: string): boolean {
   try {
     const parsedUrl = new URL(url);
-    // Accept GitHub-hosted images
+    // Accept GitHub-hosted images from CDN subdomains
     if (GITHUB_IMAGE_DOMAINS.some((d) => parsedUrl.hostname.includes(d))) {
+      return true;
+    }
+    // Accept GitHub user-attachments URLs (github.com/user-attachments/assets/...)
+    // These are uploaded images that don't have file extensions
+    if (
+      parsedUrl.hostname === "github.com" &&
+      GITHUB_USER_CONTENT_PATHS.some((p) => parsedUrl.pathname.startsWith(p))
+    ) {
       return true;
     }
     // Accept common image extensions from any source

@@ -4,23 +4,19 @@
  * @module workhorse-plugin-github/attachment-download
  */
 
+import { createHash } from "node:crypto";
+
 import type { AttachmentService, StoredAttachment } from "workhorse-core";
 
+import { downloadWithAuth } from "./gh-cli.ts";
 import type { GitHubAttachment } from "./types.ts";
 
-/** Download an image from a URL */
+/**
+ * Download an image from a URL.
+ * Uses authenticated requests for github.com URLs (including user-attachments).
+ */
 export async function downloadImage(url: string): Promise<Buffer> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Workhorse-GitHub-Plugin/1.0",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
-  }
-
-  return Buffer.from(await response.arrayBuffer());
+  return downloadWithAuth(url);
 }
 
 /** Result of downloading attachments */
@@ -74,4 +70,60 @@ export async function downloadAttachments(
   }
 
   return result;
+}
+
+/** Result of downloading a direct URL */
+export interface DirectUrlDownloadResult {
+  success: boolean;
+  output?: string;
+  error?: string;
+}
+
+/** Download a single image from a direct URL */
+export async function downloadDirectUrl(
+  attachmentService: AttachmentService,
+  issueId: string,
+  url: string,
+): Promise<DirectUrlDownloadResult> {
+  const urlHash = createHash("md5").update(url).digest("hex").slice(0, 12);
+
+  // Use "direct" as repo identifier for direct URL downloads
+  const repoIdentifier = "direct-download";
+
+  // Check if already downloaded
+  const existingPath = await attachmentService.exists(repoIdentifier, issueId, urlHash);
+  if (existingPath) {
+    return {
+      success: true,
+      output: JSON.stringify({
+        message: "Image already downloaded",
+        localPath: existingPath,
+        cached: true,
+      }),
+    };
+  }
+
+  // Download the image with authentication
+  const content = await downloadImage(url);
+
+  // Store it
+  const stored = await attachmentService.store(repoIdentifier, issueId, content, {
+    source: "github",
+    sourceId: urlHash,
+    filename: `github-image-${urlHash}.png`,
+    mimeType: "image/png", // Default, could be improved with content-type detection
+    size: content.length,
+    originalUrl: url,
+  });
+
+  return {
+    success: true,
+    output: JSON.stringify({
+      message: "Image downloaded successfully",
+      localPath: stored.localPath,
+      filename: stored.filename,
+      size: stored.size,
+      originalUrl: url,
+    }),
+  };
 }

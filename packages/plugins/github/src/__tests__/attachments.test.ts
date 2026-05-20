@@ -124,6 +124,35 @@ describe("extractImagesFromMarkdown", () => {
     // Should generate a readable filename instead of UUID
     expect(result[0]!.filename).toMatch(/^github-image-[a-f0-9]+\.png$/);
   });
+
+  it("extracts github.com/user-attachments/assets URLs", () => {
+    // This is the format used when users upload images directly in GitHub comments/issues
+    const markdown =
+      "![gap issue](https://github.com/user-attachments/assets/ae6981ed-fadd-489f-8635-d8a8b7d67448)";
+    const result = extractImagesFromMarkdown(markdown, "comment-123");
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!).toMatchObject({
+      url: "https://github.com/user-attachments/assets/ae6981ed-fadd-489f-8635-d8a8b7d67448",
+      alt: "gap issue",
+      source: "comment-123",
+      mimeType: "image/png", // Default for user-content without extension
+    });
+    // Filename should be generated since URL has no extension
+    expect(result[0]!.filename).toMatch(/^github-image-[a-f0-9]+\.png$/);
+  });
+
+  it("handles mixed user-attachments and traditional GitHub image URLs", () => {
+    const markdown = `
+      ![traditional](https://user-images.githubusercontent.com/123/screenshot.png)
+      ![user-upload](https://github.com/user-attachments/assets/abc12345-def6-7890-abcd-ef1234567890)
+    `;
+    const result = extractImagesFromMarkdown(markdown, "body");
+
+    expect(result).toHaveLength(2);
+    expect(result[0]!.url).toContain("user-images.githubusercontent.com");
+    expect(result[1]!.url).toContain("user-attachments/assets");
+  });
 });
 
 describe("extractAllAttachments", () => {
@@ -230,7 +259,7 @@ describe("downloadImage", () => {
 
     try {
       await expect(downloadImage("https://example.com/missing.png")).rejects.toThrow(
-        "Failed to download image: 404 Not Found",
+        "Failed to download: 404 Not Found",
       );
     } finally {
       globalThis.fetch = originalFetch;

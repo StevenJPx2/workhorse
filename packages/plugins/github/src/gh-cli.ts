@@ -57,3 +57,41 @@ export async function api<T>(
 
   return JSON.parse(stdout) as T;
 }
+
+/**
+ * Download a file from a GitHub URL with authentication.
+ * Uses `gh api` to handle auth for github.com URLs (including user-attachments).
+ */
+export async function downloadWithAuth(url: string): Promise<Buffer> {
+  // For github.com URLs, use gh api which handles auth automatically
+  if (new URL(url).hostname === "github.com") {
+    // gh api can fetch any github.com URL with auth
+    const proc = Bun.spawn(["gh", "api", url], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).arrayBuffer(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+
+    if (exitCode !== 0) {
+      throw new Error(`Failed to download ${url}: ${stderr}`);
+    }
+
+    return Buffer.from(stdout);
+  }
+
+  // For other URLs (CDN, etc.), use regular fetch
+  const response = await fetch(url, {
+    headers: { "User-Agent": "Workhorse-GitHub-Plugin/1.0" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
