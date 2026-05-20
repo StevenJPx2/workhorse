@@ -81,7 +81,7 @@ describe("jira_add_comment tool", () => {
     );
     // Also verify the footer is appended
     const callArgs = (mockClient.addComment as ReturnType<typeof vi.fn>).mock.calls[0]!;
-    expect(callArgs[1]).toContain("Posted by [Workhorse]");
+    expect(callArgs[1]).toContain("Posted by Workhorse");
     expect(result.success).toBe(true);
   });
 
@@ -113,7 +113,7 @@ describe("jira_add_comment tool", () => {
     // Also verify the footer is appended
     expect(mockClient.addComment).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining("Posted by [Workhorse]"),
+      expect.stringContaining("Posted by Workhorse"),
       expect.anything(),
     );
     expect(result.success).toBe(true);

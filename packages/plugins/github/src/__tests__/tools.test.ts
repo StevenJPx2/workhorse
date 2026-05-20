@@ -66,7 +66,7 @@ describe("github_add_comment tool", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.stringContaining("Posted by [Workhorse]"),
+      expect.stringContaining("Posted by Workhorse"),
     );
     expect(result.success).toBe(true);
     expect(result.output).toContain("Comment added");
