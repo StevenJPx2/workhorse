@@ -1,6 +1,8 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { registerBuiltinSkills } from "../register.ts";
+
 import type { SkillRegistry } from "#workflow/orchestrator";
+
+import { registerBuiltinSkills } from "../register.ts";
 
 describe("registerBuiltinSkills", () => {
   let mockRegistry: {

@@ -3,8 +3,8 @@
  * Uses git diff --stat to get actual line counts.
  */
 
-import { createSignal, onCleanup, createEffect, type Accessor } from "solid-js";
 import { $ } from "bun";
+import { createSignal, onCleanup, createEffect, type Accessor } from "solid-js";
 
 export interface FileChange {
   path: string;

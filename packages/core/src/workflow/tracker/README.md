@@ -5,6 +5,7 @@ Entry point for parsing user input into issues and building prompts. Source-agno
 ## Overview
 
 The Tracker module provides:
+
 - **Issue parsing**: Convert user input (e.g., "AM-123") into database issues
 - **Prompt building**: Assemble prompts with memory enrichment and plugin context
 
@@ -50,9 +51,9 @@ import { IssueParser } from "#workflow/tracker";
 
 // Create directly with constructor arguments
 const parser = new IssueParser(
-  "jira",                                    // source
-  (input) => /^[A-Z]+-\d+$/.test(input),    // canParse
-  async (input) => fetchJiraIssue(input),   // parse
+  "jira", // source
+  (input) => /^[A-Z]+-\d+$/.test(input), // canParse
+  async (input) => fetchJiraIssue(input), // parse
 );
 
 // Or create from options object (memory/config injected by Tracker)
@@ -143,7 +144,7 @@ definePlugin({
         id: "my-context",
         title: "Custom Context",
         content: "Additional information...",
-        priority: 0,  // Lower = earlier in prompt
+        priority: 0, // Lower = earlier in prompt
       });
     });
   },

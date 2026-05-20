@@ -18,11 +18,13 @@ Two related enhancements to the orchestrator:
 **Cross-plugin coordination:** GitHub plugin knows when a PR is merged, but Jira plugin needs to react to that event. Currently no way for plugins to communicate.
 
 **Agent guidance:** Agents complete tasks but don't always know what to do next. Without guidance:
+
 - Code is written but no PR is created
 - PR is created but Jira isn't updated
 - Review feedback is received but not addressed
 
 We need:
+
 1. A way for plugins to emit their own hooks
 2. A way for plugins to inject workflow-specific nudges at the right time
 
@@ -38,16 +40,16 @@ Plugin hooks use a namespaced format: `{plugin}:{entity}.{event}`
 
 ```typescript
 // GitHub plugin hooks
-"github:pr.created"
-"github:pr.merged"
-"github:pr.closed"
-"github:review.submitted"
-"github:checks.passed"
-"github:checks.failed"
+"github:pr.created";
+"github:pr.merged";
+"github:pr.closed";
+"github:review.submitted";
+"github:checks.passed";
+"github:checks.failed";
 
 // Jira plugin hooks
-"jira:issue.transitioned"
-"jira:comment.added"
+"jira:issue.transitioned";
+"jira:comment.added";
 ```
 
 ### Emitting Plugin Hooks
@@ -89,12 +91,13 @@ export function registerCrossPluginSync(ctx: WorkhorseContext): void {
 
     // Transition to "In QA"
     const transitions = await ctx.jiraClient.getTransitions(issue.externalId);
-    const qaTransition = transitions.find(t => 
-      t.name.toLowerCase().includes("qa") || 
-      t.name.toLowerCase().includes("review") ||
-      t.name.toLowerCase().includes("testing")
+    const qaTransition = transitions.find(
+      (t) =>
+        t.name.toLowerCase().includes("qa") ||
+        t.name.toLowerCase().includes("review") ||
+        t.name.toLowerCase().includes("testing"),
     );
-    
+
     if (qaTransition) {
       await ctx.jiraClient.transitionIssue(issue.externalId, qaTransition.id);
     }
@@ -108,7 +111,7 @@ export function registerCrossPluginSync(ctx: WorkhorseContext): void {
 
     await ctx.jiraClient.addComment(
       issue.externalId,
-      `✅ PR #${pr.number} has been merged. Assigned to reporter for QA.`
+      `✅ PR #${pr.number} has been merged. Assigned to reporter for QA.`,
     );
   });
 }
@@ -180,6 +183,7 @@ This gives type safety when other code listens to GitHub hooks.
 ### Cross-Plugin Coordination Examples
 
 **GitHub PR merged → Jira "In QA" + assign to reporter:**
+
 ```typescript
 // jira/src/sync.ts
 ctx.hooks.on("github:pr.merged", async ({ issueId, pr }) => {
@@ -191,15 +195,17 @@ ctx.hooks.on("github:pr.merged", async ({ issueId, pr }) => {
 ```
 
 **GitHub checks failed → Jira comment:**
+
 ```typescript
 // jira/src/sync.ts
 ctx.hooks.on("github:checks.failed", async ({ issueId, failedChecks }) => {
-  const names = failedChecks.map(c => c.name).join(", ");
+  const names = failedChecks.map((c) => c.name).join(", ");
   await addComment(issueId, `⚠️ CI checks failed: ${names}`);
 });
 ```
 
 **Jira issue transitioned → GitHub label:**
+
 ```typescript
 // github/src/sync.ts
 ctx.hooks.on("jira:issue.transitioned", async ({ issueId, to }) => {
@@ -354,9 +360,7 @@ class SteeringService {
 
       // Generate reminder
       const reminder =
-        typeof rule.reminder === "function"
-          ? await rule.reminder(ctx)
-          : rule.reminder;
+        typeof rule.reminder === "function" ? await rule.reminder(ctx) : rule.reminder;
 
       matching.push({ rule, reminder });
 
@@ -381,28 +385,20 @@ class SteeringService {
   ): Promise<boolean> {
     // Check status
     if (condition.status) {
-      const statuses = Array.isArray(condition.status)
-        ? condition.status
-        : [condition.status];
+      const statuses = Array.isArray(condition.status) ? condition.status : [condition.status];
       if (!statuses.includes(ctx.issue.status)) return false;
     }
 
     // Check source
     if (condition.source) {
-      const sources = Array.isArray(condition.source)
-        ? condition.source
-        : [condition.source];
+      const sources = Array.isArray(condition.source) ? condition.source : [condition.source];
       if (!sources.includes(ctx.issue.source)) return false;
     }
 
     // Check hook events
     if (condition.hook) {
-      const hooks = Array.isArray(condition.hook)
-        ? condition.hook
-        : [condition.hook];
-      const hasRecentHook = hooks.some((h) =>
-        ctx.recentHooks.some((r) => r.name === h),
-      );
+      const hooks = Array.isArray(condition.hook) ? condition.hook : [condition.hook];
+      const hasRecentHook = hooks.some((h) => ctx.recentHooks.some((r) => r.name === h));
       if (!hasRecentHook) return false;
     }
 
@@ -524,8 +520,7 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:update-after-implementation",
     name: "Update Jira after implementation",
-    description:
-      "Remind to add a comment or transition Jira after implementing",
+    description: "Remind to add a comment or transition Jira after implementing",
     condition: {
       source: "jira",
       status: "in_progress",
@@ -534,9 +529,7 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
         const hasEdits = steerCtx.recentTools.some((t) =>
           ["edit", "write", "create_file"].includes(t.name),
         );
-        const hasJiraUpdate = steerCtx.recentTools.some((t) =>
-          t.name.startsWith("jira_"),
-        );
+        const hasJiraUpdate = steerCtx.recentTools.some((t) => t.name.startsWith("jira_"));
         return hasEdits && !hasJiraUpdate;
       },
     },
@@ -568,8 +561,7 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:address-feedback",
     name: "Address review feedback",
-    description:
-      "Remind to address comments when there are unacknowledged notifications",
+    description: "Remind to address comments when there are unacknowledged notifications",
     condition: {
       source: "jira",
       when: async (steerCtx) => {
@@ -644,9 +636,7 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
       },
     },
     reminder: (steerCtx) => {
-      const ciFailure = steerCtx.notifications.find(
-        (n) => n.type === "ci_failure",
-      );
+      const ciFailure = steerCtx.notifications.find((n) => n.type === "ci_failure");
       return `CI checks are failing. Review the error and fix the issue:\n\n${ciFailure?.message ?? "Check the PR for details."}`;
     },
     priority: 25,
@@ -662,8 +652,7 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
       status: "pr_created",
       when: async (steerCtx) => {
         const reviewRequest = steerCtx.notifications.find(
-          (n) =>
-            n.type === "review" && n.priority === "high" && !n.acknowledged,
+          (n) => n.type === "review" && n.priority === "high" && !n.acknowledged,
         );
         return Boolean(reviewRequest);
       },

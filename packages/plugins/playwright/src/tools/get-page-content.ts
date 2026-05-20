@@ -5,8 +5,9 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
-import { getContent } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { getContent } from "../session-operations.ts";
 
 /** Create the playwright_get_page_content tool */
 export function createGetPageContentTool(

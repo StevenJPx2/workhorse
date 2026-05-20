@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-orm/zod";
 import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-orm/zod";
 import z from "zod";
+
 import { dateText } from "./custom-types.ts";
 
 /** Zod schema for validating issue status */

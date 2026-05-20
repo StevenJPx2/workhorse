@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+
 import { mapJiraComment, mapJiraToIssue } from "../mapper.ts";
 import type { JiraComment, JiraIssue } from "../types.ts";
 

@@ -8,13 +8,13 @@ All GitHub functionality in a self-contained plugin. Provides GitHub issue parsi
 
 ## What It Registers
 
-| Hook Point | Registration |
-|------------|-------------|
-| IssueParser | Parser for `owner/repo#45`, GitHub issue URLs |
-| MonitorService | Unified PR monitor (reviews, comments, checks, mergeable state) |
+| Hook Point      | Registration                                                         |
+| --------------- | -------------------------------------------------------------------- |
+| IssueParser     | Parser for `owner/repo#45`, GitHub issue URLs                        |
+| MonitorService  | Unified PR monitor (reviews, comments, checks, mergeable state)      |
 | Prompt Engineer | PR state context block + workflow instructions via `prompt.building` |
-| Tools | `github_open_pr`, `github_add_comment`, `github_get_pr_status` |
-| Hooks | `issue.status_changed` → update PR labels/status |
+| Tools           | `github_open_pr`, `github_add_comment`, `github_get_pr_status`       |
+| Hooks           | `issue.status_changed` → update PR labels/status                     |
 
 ## Plugin Config
 
@@ -31,16 +31,16 @@ Wrapper around `gh` CLI for GitHub API access. All operations use `gh api` for c
 
 ```typescript
 class GitHubClient {
-  constructor()
-  async connect(): Promise<void> // Verifies gh auth status
-  async disconnect(): Promise<void>
-  async fetchIssue(owner: string, repo: string, number: number): Promise<GitHubIssue>
-  async fetchPR(owner: string, repo: string, number: number): Promise<GitHubPR>
-  async createPR(opts: CreatePROptions): Promise<{ url: string; number: number }>
-  async addComment(owner: string, repo: string, number: number, body: string): Promise<void>
-  async getPRReviews(owner: string, repo: string, number: number): Promise<GitHubReview[]>
-  async getPRComments(owner: string, repo: string, number: number): Promise<GitHubComment[]>
-  async getCheckRuns(owner: string, repo: string, ref: string): Promise<GitHubCheckRun[]>
+  constructor();
+  async connect(): Promise<void>; // Verifies gh auth status
+  async disconnect(): Promise<void>;
+  async fetchIssue(owner: string, repo: string, number: number): Promise<GitHubIssue>;
+  async fetchPR(owner: string, repo: string, number: number): Promise<GitHubPR>;
+  async createPR(opts: CreatePROptions): Promise<{ url: string; number: number }>;
+  async addComment(owner: string, repo: string, number: number, body: string): Promise<void>;
+  async getPRReviews(owner: string, repo: string, number: number): Promise<GitHubReview[]>;
+  async getPRComments(owner: string, repo: string, number: number): Promise<GitHubComment[]>;
+  async getCheckRuns(owner: string, repo: string, ref: string): Promise<GitHubCheckRun[]>;
 }
 ```
 
@@ -49,6 +49,7 @@ Uses `Bun.spawn(["gh", "api", ...])` for all API calls. No separate OAuth flow n
 ### Parser
 
 Matches:
+
 - Short form: `owner/repo#45`
 - Issue URLs: `https://github.com/owner/repo/issues/45`
 - PR URLs: `https://github.com/owner/repo/pull/45`
@@ -77,7 +78,7 @@ export function mapGitHubToIssue(gh: GitHubIssue): ParsedIssue {
     issueType: inferIssueType(gh.labels), // bug, feature, task based on labels
     url: gh.html_url,
     assignee: gh.assignee?.login,
-    labels: gh.labels.map(l => l.name),
+    labels: gh.labels.map((l) => l.name),
     metadata: {
       owner: gh.owner,
       repo: gh.repo,
@@ -93,10 +94,11 @@ export function mapGitHubToIssue(gh: GitHubIssue): ParsedIssue {
 
 ```typescript
 // tools.ts
-export function createGitHubTools(client: GitHubClient): OrchestratorTool[]
+export function createGitHubTools(client: GitHubClient): OrchestratorTool[];
 ```
 
 **`github_open_pr`** — Create a PR from the current worktree:
+
 1. Get issue from DB by issueId in context
 2. Run `gh pr create` from worktree directory
 3. Parse PR URL from output → `owner/repo/number`
@@ -106,9 +108,11 @@ export function createGitHubTools(client: GitHubClient): OrchestratorTool[]
 7. Return success with PR URL
 
 **`github_add_comment`** — Add a comment to an issue/PR:
+
 - `owner`, `repo`, `number`, `body`
 
 **`github_get_pr_status`** — Get PR status (reviews, checks, mergeable):
+
 - `owner`, `repo`, `number`
 - Returns: review state, CI status, mergeable state
 
@@ -124,14 +128,14 @@ export function createGitHubPRMonitor(
   client: GitHubClient,
   interval: number,
   db: Database,
-): MonitorOptions
+): MonitorOptions;
 ```
 
 **Polls for:**
 
 1. **Reviews** — New reviews on the PR
    - `CHANGES_REQUESTED` → `priority: "high"`
-   - `APPROVED` → `priority: "normal"` 
+   - `APPROVED` → `priority: "normal"`
    - `COMMENTED`, `DISMISSED` → `priority: "low"`
 
 2. **Comments** — Both review comments and issue comments
@@ -149,6 +153,7 @@ export function createGitHubPRMonitor(
    - Base branch updated (needs rebase) → `priority: "normal"`
 
 **Tracking state in metadata:**
+
 ```typescript
 interface GitHubPRMonitorState {
   lastSeenReviewIds: string[];
@@ -165,6 +170,7 @@ Started on `orchestrator.spawn.post` for issues that have a PR.
 Hooks `prompt.building`. Pushes two context blocks for issues with PRs:
 
 **PR State (priority 10):**
+
 ```markdown
 **PR:** #123 - Fix the thing
 **State:** open
@@ -175,6 +181,7 @@ Hooks `prompt.building`. Pushes two context blocks for issues with PRs:
 ```
 
 **GitHub Workflow (priority 50):**
+
 ```markdown
 You have access to GitHub tools:
 
@@ -188,12 +195,13 @@ Check notifications for review feedback.
 ### Status Sync
 
 Hooks `issue.status_changed`. For GitHub issues with PRs:
+
 - `done` → Could close PR or add label (configurable)
 - `blocked` → Add "blocked" label to PR
 
 ```typescript
 // sync.ts
-export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void
+export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void;
 ```
 
 ## Domain Types (colocated)
@@ -264,7 +272,15 @@ export interface GitHubCheckRun {
   id: number;
   name: string;
   status: "queued" | "in_progress" | "completed";
-  conclusion: "success" | "failure" | "neutral" | "cancelled" | "skipped" | "timed_out" | "action_required" | null;
+  conclusion:
+    | "success"
+    | "failure"
+    | "neutral"
+    | "cancelled"
+    | "skipped"
+    | "timed_out"
+    | "action_required"
+    | null;
   html_url: string;
   started_at: string | null;
   completed_at: string | null;
@@ -274,6 +290,7 @@ export interface GitHubCheckRun {
 ## Auth
 
 Uses `gh` CLI auth exclusively. On plugin setup:
+
 1. Run `gh auth status` to verify authentication
 2. If not authenticated, throw with instructions to run `gh auth login`
 

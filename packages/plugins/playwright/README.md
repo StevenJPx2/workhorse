@@ -49,21 +49,21 @@ This plugin provides Playwright-powered browser automation, allowing agents to:
 
 ### Tools
 
-| Tool | Description |
-|------|-------------|
-| `playwright_navigate` | Navigate to URL (creates session if needed) |
-| `playwright_screenshot` | Capture screenshot of page or element |
-| `playwright_click` | Click element by selector |
-| `playwright_fill` | Fill form field |
-| `playwright_get_element` | Get element info (text, attributes) |
-| `playwright_get_page_content` | Get page HTML or text content |
-| `playwright_evaluate` | Run JavaScript on page |
-| `playwright_close_session` | Close browser session |
+| Tool                          | Description                                 |
+| ----------------------------- | ------------------------------------------- |
+| `playwright_navigate`         | Navigate to URL (creates session if needed) |
+| `playwright_screenshot`       | Capture screenshot of page or element       |
+| `playwright_click`            | Click element by selector                   |
+| `playwright_fill`             | Fill form field                             |
+| `playwright_get_element`      | Get element info (text, attributes)         |
+| `playwright_get_page_content` | Get page HTML or text content               |
+| `playwright_evaluate`         | Run JavaScript on page                      |
+| `playwright_close_session`    | Close browser session                       |
 
 ### Steering Rules
 
-| Rule | Condition | Reminder |
-|------|-----------|----------|
+| Rule                              | Condition                            | Reminder                                 |
+| --------------------------------- | ------------------------------------ | ---------------------------------------- |
 | `playwright:screenshot-before-pr` | Has UI changes, no screenshots taken | "Capture screenshots before creating PR" |
 
 ### TUI Renderer: `playwright`
@@ -131,24 +131,24 @@ hooks.on("agent.stop.post", async ({ adapter }) => {
 
 ### Emitted
 
-| Hook | Payload | When |
-|------|---------|------|
-| `playwright:session.started` | `{ issueId }` | Browser launched |
-| `playwright:session.closed` | `{ issueId }` | Browser closed |
-| `playwright:page.loading` | `{ issueId, url, initScripts: [] }` | Before navigation (inject scripts) |
-| `playwright:page.navigated` | `{ issueId, url, title }` | After navigation |
-| `playwright:screenshot.taken` | `{ issueId, path, selector? }` | Screenshot captured |
-| `playwright:console.error` | `{ issueId, message }` | Page console error |
-| `playwright:network.failed` | `{ issueId, url, error }` | Network request failed |
-| `playwright:viewport.changed` | `{ issueId, width, height }` | Viewport resized |
+| Hook                          | Payload                             | When                               |
+| ----------------------------- | ----------------------------------- | ---------------------------------- |
+| `playwright:session.started`  | `{ issueId }`                       | Browser launched                   |
+| `playwright:session.closed`   | `{ issueId }`                       | Browser closed                     |
+| `playwright:page.loading`     | `{ issueId, url, initScripts: [] }` | Before navigation (inject scripts) |
+| `playwright:page.navigated`   | `{ issueId, url, title }`           | After navigation                   |
+| `playwright:screenshot.taken` | `{ issueId, path, selector? }`      | Screenshot captured                |
+| `playwright:console.error`    | `{ issueId, message }`              | Page console error                 |
+| `playwright:network.failed`   | `{ issueId, url, error }`           | Network request failed             |
+| `playwright:viewport.changed` | `{ issueId, width, height }`        | Viewport resized                   |
 
 ### Listened
 
-| Hook | Action |
-|------|--------|
-| `agent.stop.post` | Close browser session |
-| `prompt.building` | Add Playwright workflow guidance |
-| `github:pr.opening` | Add Screenshots section to PR |
+| Hook                | Action                           |
+| ------------------- | -------------------------------- |
+| `agent.stop.post`   | Close browser session            |
+| `prompt.building`   | Add Playwright workflow guidance |
+| `github:pr.opening` | Add Screenshots section to PR    |
 
 ## Cross-Plugin Integration
 
@@ -161,7 +161,7 @@ Other plugins can inject scripts before navigation:
 hooks.emit("playwright:page.loading", {
   issueId,
   url: "https://app.example.com",
-  initScripts: [],  // Mutable array
+  initScripts: [], // Mutable array
 });
 
 // Test plugin could inject mocks
@@ -186,10 +186,8 @@ hooks.on("github:pr.opening", async (event) => {
   if (screenshots.length > 0) {
     event.contributions.push({
       section: "Screenshots",
-      content: screenshots.map(file =>
-        `![${basename(file)}](./${file})`
-      ).join("\n\n"),
-      priority: 80,  // After code changes, before footer
+      content: screenshots.map((file) => `![${basename(file)}](./${file})`).join("\n\n"),
+      priority: 80, // After code changes, before footer
     });
   }
 });
@@ -253,7 +251,7 @@ page.on("console", (msg) => {
 ```typescript
 // Agent extracts page data
 const content = await tools.playwright_get_page_content({
-  format: "text",  // or "html"
+  format: "text", // or "html"
 });
 
 // Agent evaluates JavaScript
@@ -270,14 +268,14 @@ const data = await tools.playwright_evaluate({
 
 ## Dependencies on Core
 
-| Import | Usage |
-|--------|-------|
-| `definePlugin` | Plugin definition |
-| `OrchestratorTool` | Tool interface |
-| `SteeringRuleConfigInput` | Steering rule definition |
-| `WorkhorseContext` | Service access |
-| `PromptContextBlock` | Prompt enrichment |
-| `MemoryService` | Notifications for browser events |
+| Import                    | Usage                            |
+| ------------------------- | -------------------------------- |
+| `definePlugin`            | Plugin definition                |
+| `OrchestratorTool`        | Tool interface                   |
+| `SteeringRuleConfigInput` | Steering rule definition         |
+| `WorkhorseContext`        | Service access                   |
+| `PromptContextBlock`      | Prompt enrichment                |
+| `MemoryService`           | Notifications for browser events |
 
 ## Why This Architecture
 

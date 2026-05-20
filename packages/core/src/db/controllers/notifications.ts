@@ -1,5 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
+
 import type { InsertNotification, Notification } from "#db";
+
 import { notifications } from "../schema";
 import type { DrizzleDb } from "../types.ts";
 

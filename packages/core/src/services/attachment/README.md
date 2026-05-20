@@ -6,12 +6,12 @@ Centralized service for downloading and managing attachments from external issue
 
 AttachmentService provides a consistent way to download, store, and retrieve attachments from external sources. Files are stored in a central location organized by repository and issue.
 
-| Feature | Description |
-|---------|-------------|
-| **Storage Location** | `~/.local/share/workhorse/attachments/{repo}/{issueId}/` |
-| **Deduplication** | Checks if attachment already downloaded before fetching |
-| **Filename Format** | `{sourceId}_{originalName}` (preserves original name with unique prefix) |
-| **Supported Sources** | Jira (via plugin), extensible to GitHub, etc. |
+| Feature               | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| **Storage Location**  | `~/.local/share/workhorse/attachments/{repo}/{issueId}/`                 |
+| **Deduplication**     | Checks if attachment already downloaded before fetching                  |
+| **Filename Format**   | `{sourceId}_{originalName}` (preserves original name with unique prefix) |
+| **Supported Sources** | Jira (via plugin), extensible to GitHub, etc.                            |
 
 ## Architecture
 
@@ -46,17 +46,17 @@ const content: Buffer = await downloadFromJira(attachmentUrl);
 
 // Store locally
 const stored = await attachmentService.store(
-  "owner/repo",           // Repository identifier
-  "issue-uuid-123",       // Internal issue ID
-  content,                // File content as Buffer
+  "owner/repo", // Repository identifier
+  "issue-uuid-123", // Internal issue ID
+  content, // File content as Buffer
   {
-    source: "jira",       // Source system
-    sourceId: "att-456",  // External attachment ID (for dedup)
+    source: "jira", // Source system
+    sourceId: "att-456", // External attachment ID (for dedup)
     filename: "screenshot.png",
     mimeType: "image/png",
     size: 12345,
-    originalUrl: "https://...",  // Optional, for reference
-  }
+    originalUrl: "https://...", // Optional, for reference
+  },
 );
 
 console.log(stored.localPath);
@@ -69,7 +69,7 @@ console.log(stored.localPath);
 const existingPath = await attachmentService.exists(
   "owner/repo",
   "issue-uuid-123",
-  "att-456"  // sourceId
+  "att-456", // sourceId
 );
 
 if (existingPath) {
@@ -231,14 +231,15 @@ Agents can use this tool to download and access attachments:
 ### Deduplication via `exists()`
 
 Before downloading, plugins should check if an attachment already exists. This:
+
 - Avoids redundant downloads
 - Speeds up repeated tool calls
 - Preserves bandwidth
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `service.ts` | AttachmentService class implementation |
-| `types.ts` | StoredAttachment, DownloadOptions interfaces |
-| `index.ts` | Barrel exports |
+| File         | Purpose                                      |
+| ------------ | -------------------------------------------- |
+| `service.ts` | AttachmentService class implementation       |
+| `types.ts`   | StoredAttachment, DownloadOptions interfaces |
+| `index.ts`   | Barrel exports                               |

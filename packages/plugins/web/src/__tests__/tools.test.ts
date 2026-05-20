@@ -4,8 +4,9 @@
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { ToolExecutionContext } from "workhorse-core";
-import { createWebReadTool, createWebSearchTool, createScreenshotTool } from "../tools";
+
 import * as client from "../client.ts";
+import { createWebReadTool, createWebSearchTool, createScreenshotTool } from "../tools";
 
 // Mock execution context
 const mockCtx = {} as ToolExecutionContext;

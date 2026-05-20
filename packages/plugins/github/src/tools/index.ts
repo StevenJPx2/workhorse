@@ -5,6 +5,7 @@
  */
 
 import type { AttachmentService, Database, OrchestratorTool } from "workhorse-core";
+
 import type { GitHubClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment";
 import { createGetAttachmentsTool } from "./get-attachments";

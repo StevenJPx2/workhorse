@@ -83,10 +83,10 @@ import { captureSnapshot } from "./harness.ts";
 const snapshot = await captureSnapshot({
   cols: 120,
   rows: 40,
-  renderWaitMs: 5000,  // Wait for TUI to render
+  renderWaitMs: 5000, // Wait for TUI to render
 });
 
-console.log(snapshot.text);  // Plain text representation
+console.log(snapshot.text); // Plain text representation
 ```
 
 ### `captureWithKeys(options)`
@@ -184,8 +184,9 @@ ht --size 120x40 bun src/index.tsx
 ```
 
 Then type JSON commands:
+
 ```json
-{"type": "takeSnapshot"}
+{ "type": "takeSnapshot" }
 ```
 
 ### Live Preview
@@ -204,6 +205,7 @@ This prints a URL you can open in a browser to see the terminal in real-time.
 ### "ht not found"
 
 Install ht:
+
 ```bash
 cargo install --git https://github.com/andyk/ht
 ```
@@ -211,6 +213,7 @@ cargo install --git https://github.com/andyk/ht
 ### Timeout errors
 
 Increase `renderWaitMs` or `timeoutSec` in test options. The TUI needs time to:
+
 1. Bootstrap core services
 2. Initialize database
 3. Render components
@@ -222,6 +225,7 @@ The TUI may not have rendered yet. Increase `renderWaitMs`.
 ### "Failed to capture snapshot"
 
 Check that:
+
 1. The TUI starts without errors: `cd packages/tui && bun src/index.tsx`
 2. `ht` is working: `echo '{"type":"takeSnapshot"}' | ht --subscribe snapshot echo hello`
 

@@ -5,6 +5,7 @@
  */
 
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
+
 import type { JiraComment, JiraIssue } from "./types.ts";
 
 /** Extracted link from ADF content */

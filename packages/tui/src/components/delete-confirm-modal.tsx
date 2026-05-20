@@ -1,8 +1,9 @@
-import { createSignal } from "solid-js";
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
+import { createSignal } from "solid-js";
 import type { Issue } from "workhorse-core";
-import { getTheme } from "../theme.ts";
+
 import { ui } from "../state/ui.ts";
+import { getTheme } from "../theme.ts";
 
 interface DeleteConfirmModalProps {
   issue: Issue;

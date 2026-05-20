@@ -1,6 +1,7 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid";
 import { createMemo, createSignal } from "solid-js";
 import type { AdapterInfo } from "workhorse-core";
+
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { ui } from "../../state/ui.ts";
 import { getTheme } from "../../theme.ts";

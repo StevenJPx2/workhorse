@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+
 import { getTheme } from "../../theme.ts";
 
 interface SetupStatusBarProps {

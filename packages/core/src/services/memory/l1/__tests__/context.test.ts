@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { L1Context } from "../context.ts";
 
 const TEST_DIR = join(import.meta.dirname, ".test-context");

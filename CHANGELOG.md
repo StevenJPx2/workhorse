@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v0.1.1
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.0...v0.1.1)
@@ -14,7 +13,6 @@
 - Steven John <stevenjpx2@gmail.com>
 
 ## v0.1.0
-
 
 ### 🚀 Features
 
@@ -35,7 +33,7 @@
 - Add webhook system for real-time GitHub/Jira updates ([264e1f7](https://github.com/StevenJPx2/workhorse/commit/264e1f7))
 - Auto-assign ticket and transition to In Progress when agent picks up ([69a5842](https://github.com/StevenJPx2/workhorse/commit/69a5842))
 - Add ARCHITECTURE.md and agent orchestration system improvements ([a28a1d6](https://github.com/StevenJPx2/workhorse/commit/a28a1d6))
-- ⚠️  Complete rewrite ([14eb3b7](https://github.com/StevenJPx2/workhorse/commit/14eb3b7))
+- ⚠️ Complete rewrite ([14eb3b7](https://github.com/StevenJPx2/workhorse/commit/14eb3b7))
 - Step 0-3 done ([43d7bdd](https://github.com/StevenJPx2/workhorse/commit/43d7bdd))
 - Add bootstrap ([e2ffd50](https://github.com/StevenJPx2/workhorse/commit/e2ffd50))
 - Add fallow ([80cf492](https://github.com/StevenJPx2/workhorse/commit/80cf492))
@@ -81,7 +79,7 @@
 ### 🐛 Bug Fixes
 
 - Resolve all lint errors ([2a5426a](https://github.com/StevenJPx2/workhorse/commit/2a5426a))
-- Resolve lint errors - split text-input component and move tests to __tests__ directory ([602a3e0](https://github.com/StevenJPx2/workhorse/commit/602a3e0))
+- Resolve lint errors - split text-input component and move tests to **tests** directory ([602a3e0](https://github.com/StevenJPx2/workhorse/commit/602a3e0))
 - Handle empty string cloudId in useAtlassian hook ([ea7b8cf](https://github.com/StevenJPx2/workhorse/commit/ea7b8cf))
 - Fetch GitHub issue comments and start poller on resume ([aef4717](https://github.com/StevenJPx2/workhorse/commit/aef4717))
 - Tests ([ca081a4](https://github.com/StevenJPx2/workhorse/commit/ca081a4))
@@ -139,7 +137,7 @@
 - Simplify App component and extract AppContent ([512cedb](https://github.com/StevenJPx2/workhorse/commit/512cedb))
 - 200 loc per file ([c52789c](https://github.com/StevenJPx2/workhorse/commit/c52789c))
 - More ([4f9f9ea](https://github.com/StevenJPx2/workhorse/commit/4f9f9ea))
-- ⚠️  Major refactor ([3f128d2](https://github.com/StevenJPx2/workhorse/commit/3f128d2))
+- ⚠️ Major refactor ([3f128d2](https://github.com/StevenJPx2/workhorse/commit/3f128d2))
 - Use DB lookups for webhook ticket routing ([7d0749c](https://github.com/StevenJPx2/workhorse/commit/7d0749c))
 - Config ([63d6b58](https://github.com/StevenJPx2/workhorse/commit/63d6b58))
 - Plugins, plugin registry ([8ec8c96](https://github.com/StevenJPx2/workhorse/commit/8ec8c96))
@@ -236,10 +234,9 @@
 
 #### ⚠️ Breaking Changes
 
-- ⚠️  Complete rewrite ([14eb3b7](https://github.com/StevenJPx2/workhorse/commit/14eb3b7))
-- ⚠️  Major refactor ([3f128d2](https://github.com/StevenJPx2/workhorse/commit/3f128d2))
+- ⚠️ Complete rewrite ([14eb3b7](https://github.com/StevenJPx2/workhorse/commit/14eb3b7))
+- ⚠️ Major refactor ([3f128d2](https://github.com/StevenJPx2/workhorse/commit/3f128d2))
 
 ### ❤️ Contributors
 
 - Steven John <stevenjpx2@gmail.com>
-

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { WorkhorseConfig } from "#config";
 import type { Issue } from "#db";
 import type { Database } from "#db/database";

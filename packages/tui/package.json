@@ -2,30 +2,30 @@
   "name": "@fdcn/workhorse",
   "version": "0.1.17",
   "description": "Terminal UI for Workhorse - AI-powered issue resolver",
-  "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/StevenJPx2/workhorse.git",
     "directory": "packages/tui"
   },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org",
-    "access": "public"
+  "bin": {
+    "workhorse": "./dist/workhorse.js"
   },
   "files": [
     "dist",
     "!dist/**/*.map"
   ],
+  "type": "module",
   "main": "./dist/workhorse.js",
-  "bin": {
-    "workhorse": "./dist/workhorse.js"
-  },
   "exports": {
     ".": "./dist/workhorse.js",
     "./core": "./src/core.ts",
     "./plugin": "./src/plugin.ts",
     "./renderers": "./src/renderers/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "scripts": {
     "build": "bun ../../scripts/build-tui.ts",
@@ -50,11 +50,11 @@
     "solid-js": "^1.9.13",
     "typescript": "^6.0.3",
     "workhorse-core": "workspace:*",
+    "workhorse-plugin-figma": "workspace:*",
     "workhorse-plugin-github": "workspace:*",
     "workhorse-plugin-jira": "workspace:*",
     "workhorse-plugin-pi-adapter": "workspace:*",
     "workhorse-plugin-playwright": "workspace:*",
-    "workhorse-plugin-figma": "workspace:*",
     "workhorse-plugin-web": "workspace:*"
   }
 }

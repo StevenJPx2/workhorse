@@ -8,6 +8,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import type { FigmaClient } from "../client.ts";
 
 /** Tool: Fetch a Figma file's structure, components, and styles */

@@ -4,6 +4,7 @@
  */
 
 import { useKeyboard, useRenderer } from "@opentui/solid";
+
 import { getTheme } from "../theme.ts";
 
 export interface OAuthConfigMissingProps {

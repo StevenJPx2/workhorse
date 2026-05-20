@@ -1,21 +1,22 @@
 /**
- * Core plugin - registers built-in Workhorse tools, local parser, and skills.
+ * Core plugin - registers built-in Workhorse tools, local parser, monitors, and skills.
  *
  * @module plugins/builtin/tools/plugin
  */
 
 // oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
-import { createLocalParserOptions } from "./tools/parser.ts";
+import { createAgentHealthMonitor } from "./monitors/health.ts";
+import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers.ts";
+import { registerBuiltinSkills } from "./skills/register.ts";
 import {
   acknowledgeTool,
   escalateTool,
   memorySearchTool,
   updateStatusTool,
 } from "./tools/definitions";
+import { createLocalParserOptions } from "./tools/parser.ts";
 import { createLoadSkillTool } from "./tools/skill.ts";
-import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers.ts";
-import { registerBuiltinSkills } from "./skills/register.ts";
 
 export const corePlugin = definePlugin({
   manifest: {
@@ -31,6 +32,7 @@ export const corePlugin = definePlugin({
         "load_skill",
       ],
       parsers: ["local"],
+      monitors: ["agent-health"],
       skills: ["builtin:plugin-development", "builtin:skill-development"],
     },
   },
@@ -47,6 +49,11 @@ export const corePlugin = definePlugin({
 
     // Register local parser as fallback (should be last, always matches)
     ctx.tracker.registerParser(createLocalParserOptions());
+
+    // Register agent health monitor (started by Harness when agent spawns)
+    ctx.monitors.registerMonitor(
+      createAgentHealthMonitor({ interval: ctx.config.behavior.pollInterval }),
+    );
 
     // Register Workhorse tool renderers with TUI (if TUI plugin is loaded)
     ctx.hooks.emit("tui.register_renderer", {

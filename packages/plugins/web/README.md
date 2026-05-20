@@ -19,6 +19,7 @@ uv pip install jina-cli
 ```
 
 Get a Jina API key (free tier available):
+
 - Visit https://jina.ai/?sui=apikey
 - Set `JINA_API_KEY` environment variable
 
@@ -117,6 +118,7 @@ See [jina-ai/cli](https://github.com/jina-ai/cli) for full CLI documentation.
 ## Why Jina?
 
 The Jina Reader API:
+
 - Converts any URL to clean, LLM-friendly markdown
 - Handles JavaScript-rendered pages
 - Supports PDFs natively

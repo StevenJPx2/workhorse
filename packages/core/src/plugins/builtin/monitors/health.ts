@@ -1,6 +1,14 @@
-// fallow-ignore-file unused-file
-import { Monitor } from "./monitor.ts";
-import type { MonitorContext } from "./types.ts";
+/**
+ * Agent health monitor for detecting unresponsive agents.
+ *
+ * This monitor is registered by the builtin plugin and started by Harness
+ * during agent spawn. It emits `agent.crashed` when the agent is detected
+ * as unresponsive.
+ *
+ * @module plugins/builtin/monitors/health
+ */
+
+import type { MonitorContext, PollingMonitorOptions } from "#services/monitor";
 
 /**
  * Options for creating an agent health monitor.
@@ -15,33 +23,33 @@ export interface AgentHealthOptions {
 }
 
 /**
- * Create an agent health monitor.
+ * Create agent health monitor options.
  *
  * This is a stub implementation - full port/PID checking will be
  * implemented when Harness (Step 9) is ready.
  *
- * The agent health monitor is started by Harness during agent spawn.
- * It emits `agent.crashed` when the agent is detected as unresponsive.
- *
  * @example
  * ```typescript
- * // Harness starts health monitor during spawn
- * monitorService.startMonitor(issueId, ctx, createAgentHealthMonitor({
- *   interval: config.behavior.pollInterval,
+ * // Register at plugin setup
+ * ctx.monitors.registerMonitor(createAgentHealthMonitor({
+ *   interval: ctx.config.behavior.pollInterval,
  *   port: 3000,  // For Opencode
  *   pid: 12345,  // Process ID
  * }));
+ *
+ * // Start for an issue when agent spawns
+ * ctx.monitors.startMonitor("agent-health", issueId);
  * ```
  */
-export function createAgentHealthMonitor(options: AgentHealthOptions): Monitor {
-  return new Monitor({
+export function createAgentHealthMonitor(options: AgentHealthOptions): PollingMonitorOptions {
+  return {
     id: "agent-health",
-    type: "local",
+    type: "polling",
     interval: options.interval,
     poll: async (_ctx: MonitorContext) => {
       // Stub: always returns healthy. Full implementation (Harness step) will
       // check port/PID and return hasChanges: true + emit agent.crashed if down.
       return { hasChanges: false };
     },
-  });
+  };
 }

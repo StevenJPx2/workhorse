@@ -7,6 +7,7 @@ Location: `packages/core/src/config/`
 ## Config Files
 
 **Global** (first found wins):
+
 1. `~/.workhorse.toml`
 2. `~/.config/workhorse.toml`
 3. `~/.config/workhorse/config.toml`
@@ -18,6 +19,7 @@ Project overrides global. Missing keys fall back to defaults.
 ## Data Directory
 
 Application data (database, logs, cache) lives in:
+
 - `~/.local/share/workhorse/`
 
 Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/workhorse/`
@@ -56,15 +58,15 @@ auto_poll_reviews = true
 
 ```typescript
 interface WorkhorseConfig {
-  agent: { harness: AgentHarness; model?: string }
-  behavior: { autoResume: boolean; pollInterval: number }
-  prompt: { custom?: string }
-  ui: { theme: string }
+  agent: { harness: AgentHarness; model?: string };
+  behavior: { autoResume: boolean; pollInterval: number };
+  prompt: { custom?: string };
+  ui: { theme: string };
   plugins: {
-    enabled: string[]
-    directories: string[]
-    [pluginName: string]: unknown
-  }
+    enabled: string[];
+    directories: string[];
+    [pluginName: string]: unknown;
+  };
 }
 ```
 
@@ -76,10 +78,10 @@ Pure functions for config resolution and loading:
 
 ```typescript
 // Resolve config file paths (uses XDG_DATA_HOME, finds first existing global config)
-function resolveConfigPaths(repoRoot?: string): ConfigPaths
+function resolveConfigPaths(repoRoot?: string): ConfigPaths;
 
 // Load and merge configs: defaults ← global ← project
-function loadConfig(paths: ConfigPaths): WorkhorseConfig
+function loadConfig(paths: ConfigPaths): WorkhorseConfig;
 ```
 
 Additional helpers for plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`, `writeTomlFile`.
@@ -89,9 +91,9 @@ Additional helpers for plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`,
 Sensitive values in system keychain via `keytar`, not TOML files.
 
 ```typescript
-function storeCredential(service: string, key: string, value: string): Promise<void>
-function getCredential(service: string, key: string): Promise<string | null>
-function deleteCredential(service: string, key: string): Promise<void>
+function storeCredential(service: string, key: string, value: string): Promise<void>;
+function getCredential(service: string, key: string): Promise<string | null>;
+function deleteCredential(service: string, key: string): Promise<void>;
 ```
 
 Service name: `"workhorse"`. Keys: `"github_token"`, `"jira_token"`, etc.

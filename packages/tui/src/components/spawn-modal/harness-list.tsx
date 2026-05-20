@@ -1,5 +1,6 @@
 import { For } from "solid-js";
 import type { AdapterInfo } from "workhorse-core";
+
 import { getTheme } from "../../theme.ts";
 
 interface HarnessListProps {

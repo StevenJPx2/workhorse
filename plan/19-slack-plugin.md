@@ -17,8 +17,8 @@ Add a Slack plugin that enables bidirectional communication between Workhorse ag
 
 ```typescript
 export const SlackConfigSchema = z.object({
-  botToken: z.string(),              // xoxb-... token for Slack API
-  webhookUrl: z.string().url(),      // Incoming webhook (optional fallback)
+  botToken: z.string(), // xoxb-... token for Slack API
+  webhookUrl: z.string().url(), // Incoming webhook (optional fallback)
   channel: z.string().default("#dev"),
   pollInterval: z.number().default(30000), // 30s default
   notifyOnPrMerge: z.boolean().default(true),
@@ -151,9 +151,12 @@ hooks.on("github:pr.opening", async (event: PROpeningContext) => {
   if (threads?.length) {
     event.contributions.push({
       section: "Slack Discussions",
-      content: threads.map(ts => 
-        `- [Thread](https://slack.com/archives/${config.channel}/p${ts.replace(".", "")})`
-      ).join("\n"),
+      content: threads
+        .map(
+          (ts) =>
+            `- [Thread](https://slack.com/archives/${config.channel}/p${ts.replace(".", "")})`,
+        )
+        .join("\n"),
       priority: 40,
     });
   }
@@ -173,11 +176,11 @@ interface SlackReply {
 async function fetchThreadReplies(
   botToken: string,
   channel: string,
-  threadTs: string
+  threadTs: string,
 ): Promise<SlackReply[]> {
   const response = await fetch(
     `https://slack.com/api/conversations.replies?channel=${channel}&ts=${threadTs}`,
-    { headers: { Authorization: `Bearer ${botToken}` } }
+    { headers: { Authorization: `Bearer ${botToken}` } },
   );
   const data = await response.json();
   if (!data.ok) throw new Error(data.error);
@@ -195,7 +198,7 @@ async function fetchThreadReplies(
 
 async function postSlackMessage(
   botToken: string,
-  payload: { channel: string; text: string; thread_ts?: string }
+  payload: { channel: string; text: string; thread_ts?: string },
 ): Promise<{ ts: string }> {
   const response = await fetch("https://slack.com/api/chat.postMessage", {
     method: "POST",
@@ -245,12 +248,12 @@ packages/plugins/slack/
 
 The Slack app needs these OAuth scopes:
 
-| Scope | Purpose |
-|-------|---------|
-| `chat:write` | Post messages |
-| `channels:history` | Read public channel messages |
-| `groups:history` | Read private channel messages |
-| `users:read` | Resolve user IDs to names (optional) |
+| Scope              | Purpose                              |
+| ------------------ | ------------------------------------ |
+| `chat:write`       | Post messages                        |
+| `channels:history` | Read public channel messages         |
+| `groups:history`   | Read private channel messages        |
+| `users:read`       | Resolve user IDs to names (optional) |
 
 ## Future Enhancements
 

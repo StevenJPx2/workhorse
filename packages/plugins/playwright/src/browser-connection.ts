@@ -15,6 +15,7 @@ import type {
   Request,
   Response,
 } from "playwright";
+
 import type { BrowserType, ConsoleMessage, NetworkRequest, Viewport } from "./types.ts";
 
 export interface BrowserConnectionConfig {

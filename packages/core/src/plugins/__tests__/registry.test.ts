@@ -1,9 +1,12 @@
 import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { ConfigPaths, WorkhorseConfig } from "#config";
 import { DEFAULT_CONFIG } from "#config";
 import { setContext, unsetContext } from "#context";
 import { hooks } from "#lib/hooks";
+
 import { definePlugin } from "../define.ts";
 import { isPlugin, PluginRegistry } from "../registry.ts";
 import type { Plugin } from "../types.ts";

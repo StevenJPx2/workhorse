@@ -8,6 +8,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import type { FigmaClient } from "../client.ts";
 
 /** Tool: Post a comment (or reply) on the Figma file */

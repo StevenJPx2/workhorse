@@ -5,9 +5,6 @@
  * to ensure agents can only read/write files within their worktree.
  */
 
-import type { AgentState } from "workhorse-core";
-
-import { AgentAdapter } from "workhorse-core";
 import {
   type AgentSession,
   type AgentSessionEvent,
@@ -22,13 +19,16 @@ import {
   ModelRegistry as PiModelRegistry,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
+import type { AgentState } from "workhorse-core";
+import { AgentAdapter } from "workhorse-core";
+
+import { createRestrictedBashOperations } from "./bash-restriction.ts";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 import {
   createRestrictedReadOperations,
   createRestrictedWriteOperations,
   createRestrictedEditOperations,
 } from "./path-restriction.ts";
-import { createRestrictedBashOperations } from "./bash-restriction.ts";
 import { PiAdapterModelRegistry } from "./registry.ts";
 
 /** Pi Coding Agent adapter. Extends AgentAdapter to wrap the pi SDK session. */

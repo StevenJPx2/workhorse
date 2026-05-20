@@ -4,6 +4,7 @@
 
 import { For, Show, type Accessor } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
+
 import { getTheme } from "../theme.ts";
 
 interface AgentSidebarProps {

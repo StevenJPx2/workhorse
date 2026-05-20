@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+
 import type { AtlassianClient } from "../client.ts";
 import { canParseJira, createJiraParserOptions } from "../parser.ts";
 

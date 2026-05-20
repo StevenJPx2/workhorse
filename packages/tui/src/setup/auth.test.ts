@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Plugin } from "workhorse-core";
+
 import { checkAllPluginsAuth, checkPluginAuth, getPluginsNeedingAuth } from "./auth";
 
 function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {

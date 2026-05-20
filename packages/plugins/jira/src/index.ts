@@ -11,8 +11,9 @@
  * @module workhorse-plugin-jira
  */
 
-import { z } from "zod/v4";
 import { AttachmentService, definePlugin } from "workhorse-core";
+import { z } from "zod/v4";
+
 import { registerAgentHooks } from "./agent-hooks.ts";
 import { jiraAuthProvider } from "./auth.ts";
 import { AtlassianClient } from "./client.ts";

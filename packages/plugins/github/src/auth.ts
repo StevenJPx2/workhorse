@@ -8,6 +8,7 @@
  */
 
 import type { ExternalProvider } from "workhorse-core";
+
 import { gh } from "./gh-cli.ts";
 
 /**

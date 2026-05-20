@@ -11,6 +11,7 @@
  */
 
 import type { Database, WorkhorseContext } from "workhorse-core";
+
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
 import "./hooks.ts";

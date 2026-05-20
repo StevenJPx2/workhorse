@@ -5,6 +5,7 @@ TOML-based configuration with cascading merge (global → project) and Zod valid
 ## Overview
 
 The config module provides:
+
 - **Path resolution** with XDG support
 - **Config loading** from TOML files with deep merging
 - **Schema validation** via Zod
@@ -13,6 +14,7 @@ The config module provides:
 ## File Locations
 
 **Global config** (first found wins):
+
 1. `~/.workhorse.toml`
 2. `~/.config/workhorse.toml`
 3. `~/.config/workhorse/config.toml`
@@ -68,7 +70,7 @@ import { mergeConfigs } from "#config";
 
 const merged = mergeConfigs(
   { agent: { harness: "opencode" }, ui: { theme: "dark" } },
-  { agent: { model: "sonnet-4" } }
+  { agent: { model: "sonnet-4" } },
 );
 // { agent: { harness: "opencode", model: "sonnet-4" }, ui: { theme: "dark" } }
 ```
@@ -153,8 +155,8 @@ poll_interval = 5000
 
 ```typescript
 // In code
-config.behavior.autoResume    // true
-config.behavior.pollInterval  // 5000
+config.behavior.autoResume; // true
+config.behavior.pollInterval; // 5000
 ```
 
 ## Validation
@@ -172,21 +174,21 @@ if (!result.success) {
 
 ## Exports
 
-| Function | Description |
-|----------|-------------|
-| `resolveConfigPaths(repoRoot?)` | Find config files and data directory |
-| `loadConfig(paths)` | Load and merge configs from paths |
-| `parseTomlFile(path)` | Parse TOML file to object |
-| `mergeConfigs(...configs)` | Deep merge configs (last wins) |
-| `configToToml(config)` | Convert config object to TOML string |
-| `writeTomlFile(path, config)` | Write config to TOML file |
-| `storeCredential(service, key, value)` | Store in system keychain |
-| `getCredential(service, key)` | Retrieve from keychain |
-| `deleteCredential(service, key)` | Remove from keychain |
+| Function                               | Description                          |
+| -------------------------------------- | ------------------------------------ |
+| `resolveConfigPaths(repoRoot?)`        | Find config files and data directory |
+| `loadConfig(paths)`                    | Load and merge configs from paths    |
+| `parseTomlFile(path)`                  | Parse TOML file to object            |
+| `mergeConfigs(...configs)`             | Deep merge configs (last wins)       |
+| `configToToml(config)`                 | Convert config object to TOML string |
+| `writeTomlFile(path, config)`          | Write config to TOML file            |
+| `storeCredential(service, key, value)` | Store in system keychain             |
+| `getCredential(service, key)`          | Retrieve from keychain               |
+| `deleteCredential(service, key)`       | Remove from keychain                 |
 
-| Type/Schema | Description |
-|-------------|-------------|
-| `WorkhorseConfig` | Config interface |
-| `ConfigPaths` | Paths interface |
+| Type/Schema             | Description           |
+| ----------------------- | --------------------- |
+| `WorkhorseConfig`       | Config interface      |
+| `ConfigPaths`           | Paths interface       |
 | `workhorseConfigSchema` | Zod validation schema |
-| `defaultConfig` | Default config values |
+| `defaultConfig`         | Default config values |

@@ -8,24 +8,30 @@ Location: `packages/core/src/types/`
 
 ```typescript
 interface Issue {
-  id: string
-  externalId: string              // "AM-123", "owner/repo#45"
-  source: string                  // plugin-defined: "jira", "github", etc.
-  title: string
-  description: string
-  status: IssueStatus
-  issueType: string               // plugin-defined: "bug", "feature", etc.
-  url?: string
-  assignee?: string
-  labels?: string[]
-  metadata: Record<string, unknown>
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  externalId: string; // "AM-123", "owner/repo#45"
+  source: string; // plugin-defined: "jira", "github", etc.
+  title: string;
+  description: string;
+  status: IssueStatus;
+  issueType: string; // plugin-defined: "bug", "feature", etc.
+  url?: string;
+  assignee?: string;
+  labels?: string[];
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type IssueStatus =
-  | "pending" | "queued" | "planning" | "implementing"
-  | "blocked" | "pr_created" | "in_review" | "done"
+  | "pending"
+  | "queued"
+  | "planning"
+  | "implementing"
+  | "blocked"
+  | "pr_created"
+  | "in_review"
+  | "done";
 ```
 
 `source` and `issueType` are plain strings — plugins define their own literal types and narrow at their boundary. Core doesn't pretend to know what sources or issue types exist.
@@ -36,12 +42,12 @@ type IssueStatus =
 
 ```typescript
 interface IssueEvent {
-  id: string
-  issueId: string
-  type: string                    // plugin-extensible
-  message: string
-  metadata?: Record<string, unknown>
-  createdAt: Date
+  id: string;
+  issueId: string;
+  type: string; // plugin-extensible
+  message: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
 }
 ```
 
@@ -49,37 +55,37 @@ interface IssueEvent {
 
 ```typescript
 interface Notification {
-  id: string
-  issueId: string
-  source: string                  // plugin-defined: "jira_comment", "github_review", etc.
-  sourceId?: string
-  priority: NotificationPriority
-  status: NotificationStatus
-  title: string
-  body: string
-  metadata?: Record<string, unknown>
-  createdAt: Date
-  readAt?: Date
-  acknowledgedAt?: Date
+  id: string;
+  issueId: string;
+  source: string; // plugin-defined: "jira_comment", "github_review", etc.
+  sourceId?: string;
+  priority: NotificationPriority;
+  status: NotificationStatus;
+  title: string;
+  body: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+  readAt?: Date;
+  acknowledgedAt?: Date;
 }
 
-type NotificationPriority = "blocking" | "high" | "normal" | "low"
-type NotificationStatus = "unread" | "read" | "acknowledged"
+type NotificationPriority = "blocking" | "high" | "normal" | "low";
+type NotificationStatus = "unread" | "read" | "acknowledged";
 ```
 
 `NotificationPriority` and `NotificationStatus` stay as unions — core workflow logic depends on them. `source` is a plain string owned by plugins.
 
 ## Colocated Types (reference)
 
-| Type | Module | Step |
-|------|--------|------|
-| `HookEventMap` | Hooks | 3 |
-| `Plugin`, `PluginManifest`, `PluginContext` | Plugins | 4 |
-| `AgentInstance`, `AgentHarness`, `AgentState` | AgentAdapter | 9 |
-| `PromptContext`, `PromptContextBlock`, `SessionMemory`, `SessionEntry` | IssueProvider | 8 |
-| `IssueParser`, `ParsedIssue` | IssueProvider | 8 |
-| `MemoryDocument`, `SearchResult`, `MemorySearchOptions` | MemoryService | 6 |
-| `Monitor`, `MonitorResult`, `MonitorFactory`, `MonitorContext` | MonitorService | 7 |
+| Type                                                                   | Module         | Step |
+| ---------------------------------------------------------------------- | -------------- | ---- |
+| `HookEventMap`                                                         | Hooks          | 3    |
+| `Plugin`, `PluginManifest`, `PluginContext`                            | Plugins        | 4    |
+| `AgentInstance`, `AgentHarness`, `AgentState`                          | AgentAdapter   | 9    |
+| `PromptContext`, `PromptContextBlock`, `SessionMemory`, `SessionEntry` | IssueProvider  | 8    |
+| `IssueParser`, `ParsedIssue`                                           | IssueProvider  | 8    |
+| `MemoryDocument`, `SearchResult`, `MemorySearchOptions`                | MemoryService  | 6    |
+| `Monitor`, `MonitorResult`, `MonitorFactory`, `MonitorContext`         | MonitorService | 7    |
 
 ## Zod Schemas
 

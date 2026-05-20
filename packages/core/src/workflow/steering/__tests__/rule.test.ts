@@ -6,12 +6,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  baseIssue,
-  createMockHooks,
-  createRule,
-  defaultSteeringConfig,
-} from "./fixtures.ts";
+
+import { baseIssue, createMockHooks, createRule, defaultSteeringConfig } from "./fixtures.ts";
 
 describe("SteeringRule", () => {
   beforeEach(() => {
@@ -454,5 +450,4 @@ describe("SteeringRule", () => {
       expect(hooks.off).toHaveBeenCalledWith("agent.idle", expect.any(Function));
     });
   });
-
 });

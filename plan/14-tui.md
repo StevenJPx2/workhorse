@@ -23,6 +23,7 @@ packages/tui/                    # Standalone TUI application
 ```
 
 **Why this structure:**
+
 - TUI is the main entry point that bootstraps Workhorse
 - It registers its own plugin so other plugins (Jira, GitHub) can register notification renderers
 - The plugin is loaded alongside other plugins during bootstrap
@@ -40,24 +41,26 @@ packages/tui/                    # Standalone TUI application
 
 **All external events flow into the chat stream:**
 
-| Source | Event | Icon | Agent Behavior |
-|--------|-------|------|----------------|
-| GitHub | PR comment | 💬 | Auto-respond if actionable |
-| GitHub | Changes requested | 🔴 | Address feedback, push fixes |
-| GitHub | PR approved | ✅ | Merge if ready |
-| GitHub | CI failed | ❌ | Analyze and fix |
-| Jira | Comment added | 🎫 | Incorporate new context |
-| Jira | Status changed | 🎫 | React accordingly |
-| Jira | Assignee changed | 🎫 | Note the change |
+| Source | Event             | Icon | Agent Behavior               |
+| ------ | ----------------- | ---- | ---------------------------- |
+| GitHub | PR comment        | 💬   | Auto-respond if actionable   |
+| GitHub | Changes requested | 🔴   | Address feedback, push fixes |
+| GitHub | PR approved       | ✅   | Merge if ready               |
+| GitHub | CI failed         | ❌   | Analyze and fix              |
+| Jira   | Comment added     | 🎫   | Incorporate new context      |
+| Jira   | Status changed    | 🎫   | React accordingly            |
+| Jira   | Assignee changed  | 🎫   | Note the change              |
 
 **Blocking behavior (agent can't proceed alone):**
+
 - Agent stops and waits for user input
-- Status shows `⚠ BLOCKED` in sidebar and header  
+- Status shows `⚠ BLOCKED` in sidebar and header
 - Blocked message is highlighted in chat
 - User responds in chat to unblock
 - Agent resumes work after receiving guidance
 
 **Examples of blocking situations:**
+
 - Unclear PR feedback that needs clarification
 - Jira ticket moved to "Blocked" status
 - Missing permissions or access
@@ -67,6 +70,7 @@ packages/tui/                    # Standalone TUI application
 ## Architecture: TUI with Plugin
 
 The TUI is a standalone application that also registers a plugin (`tui`). This allows:
+
 - Other plugins (Jira, GitHub) to register notification renderers
 - Clean separation between core TUI and source-specific rendering
 - Easy extensibility for new notification sources
@@ -85,12 +89,12 @@ export default definePlugin({
   },
   setup() {
     const { hooks } = useWorkhorse();
-    
+
     // Register hook for other plugins to add notification renderers
     hooks.on("tui.register_renderer", ({ type, renderer }) => {
       registerRenderer(type, renderer);
     });
-    
+
     // TUI startup happens in index.ts after bootstrap, not here
   },
 });
@@ -301,6 +305,7 @@ Simple layout: large chat box on top, issues and agents side-by-side below.
 ```
 
 **Layout:**
+
 - **Top**: Large chat/output area
 - **Middle**: Chat input box
 - **Bottom left**: Unassigned issues (click to spawn agent via modal)
@@ -308,6 +313,7 @@ Simple layout: large chat box on top, issues and agents side-by-side below.
 - **Footer**: Keyboard shortcuts
 
 **Agent Status Indicators:**
+
 - `●` = running normally
 - `⚠ blocked` = agent is stuck, needs user intervention (click to see why)
 
@@ -342,6 +348,7 @@ When you click an agent, you enter this view with sidebar + full chat.
 ```
 
 **Layout:**
+
 - **Left sidebar**: All running agents (click to switch)
 - **Right**: Full chat history + input for selected agent
 - **Footer**: Keyboard shortcuts
@@ -383,7 +390,7 @@ The agent automatically handles PR comments and continues working.
 
 ### Blocking Notification (Agent Stuck)
 
-When the agent encounters something it can't handle alone (e.g., "Changes Requested" 
+When the agent encounters something it can't handle alone (e.g., "Changes Requested"
 with unclear feedback, permission issues, or needs clarification), it becomes blocked:
 
 ```
@@ -418,6 +425,7 @@ with unclear feedback, permission issues, or needs clarification), it becomes bl
 ```
 
 **Blocking states:**
+
 - Agent stops working and waits for user input
 - Status changes to `⚠ BLOCKED` in header and sidebar
 - Blocked message is highlighted/boxed in the chat stream
@@ -569,7 +577,8 @@ export function ChatBox(props: ChatBoxProps) {
           {(msg) => (
             <box flexDirection="column" marginBottom={1}>
               <text fg={msg.role === "user" ? theme.colors.info : theme.colors.text}>
-                {msg.role === "user" ? "> " : ""}{msg.content}
+                {msg.role === "user" ? "> " : ""}
+                {msg.content}
               </text>
             </box>
           )}
@@ -657,12 +666,7 @@ export function NotificationBox(props: NotificationBoxProps) {
       }
     >
       {/* Box style */}
-      <box
-        flexDirection="column"
-        borderStyle="rounded"
-        padding={1}
-        marginBottom={1}
-      >
+      <box flexDirection="column" borderStyle="rounded" padding={1} marginBottom={1}>
         <text>
           {rendered().icon} <b>{rendered().title}</b>
         </text>
@@ -837,9 +841,7 @@ export function AgentSidebar(props: AgentSidebarProps) {
           <box
             onClick={() => props.onSelect(agent)}
             backgroundColor={
-              agent.issueId === props.selectedId()
-                ? theme.colors.selection
-                : undefined
+              agent.issueId === props.selectedId() ? theme.colors.selection : undefined
             }
           >
             <text>
@@ -849,9 +851,7 @@ export function AgentSidebar(props: AgentSidebarProps) {
             <text fg={theme.colors.dim}>
               {agent.state === "running" ? "●" : "○"} {formatDuration(agent.startedAt)}
             </text>
-            {agent.hasBlockingNotification && (
-              <text fg={theme.colors.warning}>⚠ blocked</text>
-            )}
+            {agent.hasBlockingNotification && <text fg={theme.colors.warning}>⚠ blocked</text>}
           </box>
         )}
       </For>
@@ -964,10 +964,7 @@ export function SpawnModal(props: SpawnModalProps) {
 
         <box marginTop={1}>
           <text>Base branch:</text>
-          <input
-            value={baseBranch()}
-            onInput={(e) => setBaseBranch(e.target.value)}
-          />
+          <input value={baseBranch()} onInput={(e) => setBaseBranch(e.target.value)} />
         </box>
 
         <box flexDirection="row" gap={2} marginTop={2}>
@@ -1128,10 +1125,7 @@ export function createChat(issueId: Accessor<string | null>) {
           const last = prev[prev.length - 1];
           if (last?.role === "agent") {
             // Append to existing agent message
-            return [
-              ...prev.slice(0, -1),
-              { ...last, content: last.content + delta },
-            ];
+            return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
           }
           // New agent message
           return [
@@ -1290,11 +1284,7 @@ export function WorkhorseProvider(props: WorkhorseProviderProps) {
     config: props.config,
   };
 
-  return (
-    <WorkhorseContext.Provider value={value}>
-      {props.children}
-    </WorkhorseContext.Provider>
-  );
+  return <WorkhorseContext.Provider value={value}>{props.children}</WorkhorseContext.Provider>;
 }
 ```
 
@@ -1394,7 +1384,8 @@ export function Overview() {
     {
       id: "1",
       role: "system" as const,
-      content: "Welcome! Select an issue to spawn an agent, or click on a running agent to view its progress.",
+      content:
+        "Welcome! Select an issue to spawn an agent, or click on a running agent to view its progress.",
     },
   ]);
 
@@ -1459,8 +1450,7 @@ export function Agent() {
   const agents = createAgents();
   const chat = createChat(ui.selectedAgentId);
 
-  const selectedAgent = () =>
-    agents().find((a) => a.issueId === ui.selectedAgentId());
+  const selectedAgent = () => agents().find((a) => a.issueId === ui.selectedAgentId());
 
   const handleAgentSelect = (agent: AgentAdapter) => {
     ui.enterAgentView(agent.issueId);
@@ -1492,10 +1482,7 @@ export function Agent() {
       {/* Main content: sidebar + chat */}
       <box flexDirection="row" flexGrow={1}>
         {/* Agent sidebar */}
-        <AgentSidebar
-          selectedId={ui.selectedAgentId}
-          onSelect={handleAgentSelect}
-        />
+        <AgentSidebar selectedId={ui.selectedAgentId} onSelect={handleAgentSelect} />
 
         {/* Chat area */}
         <ChatBox
@@ -1564,6 +1551,7 @@ preload = ["@opentui/solid/preload"]
 ```
 
 The TUI package:
+
 - **`@fdcn/workhorse`** - standalone application package
 - **`startTUI()`** - exported function to launch the TUI (used by CLI)
 - **Exports `./plugin`** - so other packages can import the TUI plugin if needed
@@ -1572,33 +1560,37 @@ The TUI package:
 ## Keyboard Shortcuts
 
 ### Global
-| Key | Action |
-|-----|--------|
-| `q` | Quit |
-| `?` | Help screen |
+
+| Key   | Action                         |
+| ----- | ------------------------------ |
+| `q`   | Quit                           |
+| `?`   | Help screen                    |
 | `ESC` | Close modal / Back to overview |
 
 ### Overview Screen
-| Key | Action |
-|-----|--------|
-| `j/k` or `↑/↓` | Navigate lists |
-| `Tab` | Switch between Issues and Agents lists |
-| `Enter` | Select (spawn modal for issue, enter agent view for agent) |
+
+| Key            | Action                                                     |
+| -------------- | ---------------------------------------------------------- |
+| `j/k` or `↑/↓` | Navigate lists                                             |
+| `Tab`          | Switch between Issues and Agents lists                     |
+| `Enter`        | Select (spawn modal for issue, enter agent view for agent) |
 
 ### Agent Screen
-| Key | Action |
-|-----|--------|
-| `j/k` or `↑/↓` | Navigate agent sidebar |
-| `Enter` | Send message / Switch agent |
-| `s` | Stop current agent |
-| `ESC` | Back to overview |
+
+| Key            | Action                      |
+| -------------- | --------------------------- |
+| `j/k` or `↑/↓` | Navigate agent sidebar      |
+| `Enter`        | Send message / Switch agent |
+| `s`            | Stop current agent          |
+| `ESC`          | Back to overview            |
 
 ### Spawn Modal
-| Key | Action |
-|-----|--------|
+
+| Key     | Action                  |
+| ------- | ----------------------- |
 | `Enter` | Confirm and spawn agent |
-| `Tab` | Switch between fields |
-| `ESC` | Cancel and close modal |
+| `Tab`   | Switch between fields   |
+| `ESC`   | Cancel and close modal  |
 
 ## Theme
 
@@ -1626,11 +1618,11 @@ export const theme = {
   },
 
   status: {
-    running: "#4ade80",   // green
-    stopped: "#666666",   // dim
-    crashed: "#f87171",   // red
-    starting: "#facc15",  // yellow
-    stopping: "#facc15",  // yellow
+    running: "#4ade80", // green
+    stopped: "#666666", // dim
+    crashed: "#f87171", // red
+    starting: "#facc15", // yellow
+    stopping: "#facc15", // yellow
   },
 
   priority: {
@@ -1667,11 +1659,7 @@ OpenTUI provides built-in components perfect for agent output:
 
 ```tsx
 // Show file changes made by agents
-<diff
-  before={originalCode}
-  after={modifiedCode}
-  mode="unified"
-/>
+<diff before={originalCode} after={modifiedCode} mode="unified" />
 ```
 
 ### Scrollable Output
@@ -1790,52 +1778,55 @@ interface HtSnapshot {
 export class HeadlessTerminal {
   private proc: Subprocess;
   private stdout: ReadableStreamDefaultReader<string>;
-  
+
   static async start(command: string[], options?: { cols?: number; rows?: number }) {
     const cols = options?.cols ?? 80;
     const rows = options?.rows ?? 24;
-    
-    const proc = spawn(["ht", "--size", `${cols}x${rows}`, "--subscribe", "snapshot,init", ...command], {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "inherit",
-    });
-    
+
+    const proc = spawn(
+      ["ht", "--size", `${cols}x${rows}`, "--subscribe", "snapshot,init", ...command],
+      {
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "inherit",
+      },
+    );
+
     const ht = new HeadlessTerminal(proc);
     await ht.waitForInit();
     return ht;
   }
-  
+
   private constructor(proc: Subprocess) {
     this.proc = proc;
     this.stdout = proc.stdout.getReader();
   }
-  
+
   async sendKeys(keys: string[]): Promise<void> {
     const cmd = JSON.stringify({ type: "sendKeys", keys });
     this.proc.stdin.write(cmd + "\n");
   }
-  
+
   async sendInput(text: string): Promise<void> {
     const cmd = JSON.stringify({ type: "input", payload: text });
     this.proc.stdin.write(cmd + "\n");
   }
-  
+
   async takeSnapshot(): Promise<HtSnapshot> {
     const cmd = JSON.stringify({ type: "takeSnapshot" });
     this.proc.stdin.write(cmd + "\n");
-    
+
     // Read snapshot event from stdout
     const { value } = await this.stdout.read();
     const event = JSON.parse(value);
     return event.data;
   }
-  
+
   async resize(cols: number, rows: number): Promise<void> {
     const cmd = JSON.stringify({ type: "resize", cols, rows });
     this.proc.stdin.write(cmd + "\n");
   }
-  
+
   private async waitForInit(): Promise<void> {
     const { value } = await this.stdout.read();
     const event = JSON.parse(value);
@@ -1843,7 +1834,7 @@ export class HeadlessTerminal {
       throw new Error(`Expected init event, got ${event.type}`);
     }
   }
-  
+
   async close(): Promise<void> {
     this.proc.kill();
   }
@@ -1859,62 +1850,62 @@ import { HeadlessTerminal } from "../helpers/ht.ts";
 
 describe("Overview Screen (E2E)", () => {
   let ht: HeadlessTerminal;
-  
+
   beforeEach(async () => {
     ht = await HeadlessTerminal.start(["bun", "run", "bin/workhorse-tui.ts"], {
       cols: 80,
       rows: 24,
     });
   });
-  
+
   afterEach(async () => {
     await ht.close();
   });
-  
+
   it("shows welcome message on start", async () => {
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("Workhorse");
     expect(snapshot.text).toContain("Welcome!");
     expect(snapshot.text).toContain("ISSUES");
     expect(snapshot.text).toContain("AGENTS");
   });
-  
+
   it("navigates to agent view on Enter", async () => {
     // Navigate to agents list
     await ht.sendKeys(["Tab"]); // Move to agents pane
     await ht.sendKeys(["Enter"]); // Select first agent
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     // Should show agent dashboard with sidebar
     expect(snapshot.text).toContain("AGENTS");
     expect(snapshot.text).toContain("[ESC]back");
   });
-  
+
   it("opens spawn modal when selecting issue", async () => {
     await ht.sendKeys(["Enter"]); // Select first issue
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("Spawn Agent");
     expect(snapshot.text).toContain("Harness:");
     expect(snapshot.text).toContain("[Enter] Spawn");
   });
-  
+
   it("closes modal on Escape", async () => {
     await ht.sendKeys(["Enter"]); // Open spawn modal
     await ht.sendKeys(["Escape"]); // Close it
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).not.toContain("Spawn Agent");
     expect(snapshot.text).toContain("Welcome!");
   });
-  
+
   it("quits on q", async () => {
     await ht.sendKeys(["q"]);
-    
+
     // Process should exit
     await expect(ht.proc.exited).resolves.toBeDefined();
   });
@@ -1928,61 +1919,61 @@ import { HeadlessTerminal } from "../helpers/ht.ts";
 
 describe("Agent Chat (E2E)", () => {
   let ht: HeadlessTerminal;
-  
+
   beforeEach(async () => {
     ht = await HeadlessTerminal.start(["bun", "run", "bin/workhorse-tui.ts"], {
       cols: 80,
       rows: 24,
     });
-    
+
     // Navigate to an agent
     await ht.sendKeys(["Tab"]); // Agents pane
     await ht.sendKeys(["Enter"]); // Select agent
   });
-  
+
   afterEach(async () => {
     await ht.close();
   });
-  
+
   it("shows chat input", async () => {
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("[Enter]send");
   });
-  
+
   it("sends message on Enter", async () => {
     await ht.sendInput("Hello agent");
     await ht.sendKeys(["Enter"]);
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("Hello agent");
   });
-  
+
   it("displays PR comment notification in chat", async () => {
     // Simulate a PR comment notification via mock
     // (would be injected via test fixtures)
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("💬");
     expect(snapshot.text).toContain("PR Comment");
   });
-  
+
   it("displays Jira comment notification in chat", async () => {
     // Simulate a Jira comment notification
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("🎫");
     expect(snapshot.text).toContain("Jira Comment");
   });
-  
+
   it("shows blocked status when agent is stuck", async () => {
     // Simulate agent becoming blocked
-    
+
     const snapshot = await ht.takeSnapshot();
-    
+
     expect(snapshot.text).toContain("⚠ BLOCKED");
   });
 });

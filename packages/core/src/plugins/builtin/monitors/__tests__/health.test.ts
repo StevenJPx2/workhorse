@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
+import type { MonitorContext } from "#services/monitor";
+
 import { createAgentHealthMonitor } from "../health.ts";
-import type { MonitorContext } from "../types.ts";
 
 describe("createAgentHealthMonitor", () => {
   function createMockContext(overrides: Partial<MonitorContext> = {}): MonitorContext {
@@ -21,43 +23,43 @@ describe("createAgentHealthMonitor", () => {
     };
   }
 
-  it("returns a Monitor instance", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000 });
-    expect(monitor).toBeDefined();
-    expect(typeof monitor.start).toBe("function");
-    expect(typeof monitor.stop).toBe("function");
-    expect(typeof monitor.poll).toBe("function");
+  it("returns PollingMonitorOptions", () => {
+    const options = createAgentHealthMonitor({ interval: 5000 });
+    expect(options).toBeDefined();
+    expect(options.id).toBe("agent-health");
+    expect(options.type).toBe("polling");
+    expect(typeof options.poll).toBe("function");
   });
 
   it("creates monitor with id 'agent-health'", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000 });
-    expect(monitor.id).toBe("agent-health");
+    const options = createAgentHealthMonitor({ interval: 5000 });
+    expect(options.id).toBe("agent-health");
   });
 
-  it("creates monitor with type 'local'", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000 });
-    expect(monitor.type).toBe("local");
+  it("creates monitor with type 'polling'", () => {
+    const options = createAgentHealthMonitor({ interval: 5000 });
+    expect(options.type).toBe("polling");
   });
 
   it("uses the provided interval", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000 });
-    expect(monitor.interval).toBe(5000);
+    const options = createAgentHealthMonitor({ interval: 5000 });
+    expect(options.interval).toBe(5000);
   });
 
   it("poll returns hasChanges: false (stub)", async () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000 });
-    const result = await monitor.poll(createMockContext());
+    const options = createAgentHealthMonitor({ interval: 5000 });
+    const result = await options.poll(createMockContext());
     expect(result).toEqual({ hasChanges: false });
   });
 
   it("accepts port option for Opencode", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000, port: 3000 });
-    expect(monitor.id).toBe("agent-health");
+    const options = createAgentHealthMonitor({ interval: 5000, port: 3000 });
+    expect(options.id).toBe("agent-health");
   });
 
   it("accepts pid option for process checking", () => {
-    const monitor = createAgentHealthMonitor({ interval: 5000, pid: 12345 });
-    expect(monitor.id).toBe("agent-health");
+    const options = createAgentHealthMonitor({ interval: 5000, pid: 12345 });
+    expect(options.id).toBe("agent-health");
   });
 
   it.fails("TODO: detect crashed agent and emit agent.crashed", () => {

@@ -1,4 +1,5 @@
 import { definePlugin, useWorkhorse, registerHookMetadata } from "workhorse-core";
+
 import {
   registerRenderer,
   type RegisterRendererPayload,

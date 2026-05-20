@@ -18,12 +18,14 @@ AgentAdapter (owns per-issue resources)
 ## What Changed
 
 ### Before
+
 - `SteeringRule` was an **interface** with plain data
 - `evaluateRules()` and `matchesCondition()` were **standalone functions** in `evaluator.ts`
 - `SteeringService` orchestrated evaluation, tracked `firedOnce` set, managed hook subscriptions
 - `SteeringContext` passed issue/status/recentHooks to evaluator
 
 ### After
+
 - `SteeringRule` is a **class** that owns its behavior and state
 - Rules subscribe to `agent.idle` themselves (debounced via `es-toolkit`)
 - Rules track their own `fired`, `recentHooks`, `lastReminderTime` state
@@ -44,15 +46,16 @@ AgentAdapter (owns per-issue resources)
 
 ## Final File Structure
 
-| File | Description |
-|------|-------------|
-| `steering/rule.ts` | `SteeringRule` class — autonomous evaluation, hook subscriptions, reminder emission |
-| `steering/types.ts` | Zod schemas, `SteeringRuleConfig`, `SteeringRuleConfigInput`, `RecentHookEvent` |
-| `steering/index.ts` | Exports (no `SteeringService`) |
-| `steering/__tests__/rule.test.ts` | Tests for `SteeringRule` class |
-| `steering/__tests__/fixtures.ts` | `createRule()`, `createMockHooks()`, `baseIssue` |
+| File                              | Description                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| `steering/rule.ts`                | `SteeringRule` class — autonomous evaluation, hook subscriptions, reminder emission |
+| `steering/types.ts`               | Zod schemas, `SteeringRuleConfig`, `SteeringRuleConfigInput`, `RecentHookEvent`     |
+| `steering/index.ts`               | Exports (no `SteeringService`)                                                      |
+| `steering/__tests__/rule.test.ts` | Tests for `SteeringRule` class                                                      |
+| `steering/__tests__/fixtures.ts`  | `createRule()`, `createMockHooks()`, `baseIssue`                                    |
 
 ### Deleted Files
+
 - `steering/service.ts` — Removed (was thin wrapper)
 - `steering/evaluator.ts` — Removed (logic in rule)
 - `steering/__tests__/service.test.ts` — Removed
@@ -81,6 +84,7 @@ export class SteeringRule {
 ```
 
 **Internal behavior:**
+
 - Subscribes to `agent.idle` (debounced by `steeringConfig.debounceMs`)
 - Subscribes to hooks in `condition.hook[]` to track recent events
 - On idle: evaluates conditions, emits `steering.reminder` if matched
@@ -124,12 +128,7 @@ ctx.orchestrator.registerSteeringRule({
 ```typescript
 // In AgentAdapter constructor:
 this.steering = this.orchestrator.getSteeringRules().map((rule) => {
-  return new SteeringRule(
-    rule,
-    this.hooks,
-    this.issue,
-    this.orchestrator.config.steering,
-  );
+  return new SteeringRule(rule, this.hooks, this.issue, this.orchestrator.config.steering);
 });
 
 // In stop():

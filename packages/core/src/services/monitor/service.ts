@@ -1,15 +1,23 @@
 import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
-import { Monitor } from "./monitor.ts";
+
+import type { BaseMonitor } from "./base-monitor.ts";
+import { EventMonitor } from "./event-monitor.ts";
+import { PollingMonitor } from "./polling-monitor.ts";
 import type { MonitorOptions, MonitorStatus } from "./types.ts";
 
 /**
- * Polling framework for Workhorse. Core provides infrastructure, plugins bring the "what" to monitor.
+ * Polling and event framework for Workhorse.
+ * Core provides infrastructure, plugins bring the "what" to monitor.
  *
  * Two-phase API:
  * 1. registerMonitor(options) - Plugin registers a monitor definition (once at startup)
  * 2. startMonitor(id, issueId) - Start a registered monitor for a specific issue (e.g., from a hook)
+ *
+ * Supports two monitor types:
+ * - "polling" - Calls poll() at a fixed interval (for APIs without webhooks)
+ * - "event" - Sets up a listener once, emits results as events occur (for WebSockets, webhooks)
  *
  * See README.md for examples.
  */
@@ -17,7 +25,7 @@ export class MonitorService {
   /** Registered monitor definitions (templates) */
   private registered = new Map<string, MonitorOptions>();
   /** Running monitor instances, keyed by issueId:monitorId */
-  private running = new Map<string, Monitor>();
+  private running = new Map<string, BaseMonitor>();
 
   constructor(
     private readonly hooks: HookEmitter,
@@ -27,9 +35,9 @@ export class MonitorService {
 
   /**
    * Register a monitor definition. Call once at plugin initialization.
-   * Does not start polling - use startMonitor() to begin monitoring an issue.
+   * Does not start monitoring - use startMonitor() to begin monitoring an issue.
    *
-   * @param options - Monitor configuration including unique id, type, interval, and poll function
+   * @param options - Monitor configuration (polling or event)
    * @throws If a monitor with the same id is already registered
    */
   registerMonitor(options: MonitorOptions): void {
@@ -51,7 +59,7 @@ export class MonitorService {
    * @param issueId - Issue to monitor
    * @throws If monitor id is not registered
    */
-  startMonitor(id: string, issueId: string): void {
+  async startMonitor(id: string, issueId: string): Promise<void> {
     const options = this.registered.get(id);
     if (!options) {
       throw new Error(`Monitor "${id}" is not registered. Call registerMonitor() first.`);
@@ -60,8 +68,10 @@ export class MonitorService {
     const key = this.makeKey(issueId, id);
     if (this.running.has(key)) return;
 
-    const monitor = new Monitor(options);
-    monitor.start({
+    const monitor =
+      options.type === "event" ? new EventMonitor(options) : new PollingMonitor(options);
+
+    await monitor.start({
       issueId,
       hooks: this.hooks,
       memory: this.memory,
@@ -76,11 +86,11 @@ export class MonitorService {
    * @param issueId - Issue ID
    * @param id - Monitor id
    */
-  stopMonitor(issueId: string, id: string): void {
+  async stopMonitor(issueId: string, id: string): Promise<void> {
     const key = this.makeKey(issueId, id);
     const monitor = this.running.get(key);
     if (monitor) {
-      monitor.stop();
+      await monitor.stop();
       this.running.delete(key);
     }
   }
@@ -90,12 +100,21 @@ export class MonitorService {
    *
    * @param issueId - Issue to stop monitoring
    */
-  stopMonitors(issueId: string): void {
+  async stopMonitors(issueId: string): Promise<void> {
+    const stops: Promise<void>[] = [];
+    const keysToDelete: string[] = [];
+
     for (const [key, monitor] of this.running) {
       if (monitor.status.issueId === issueId) {
-        monitor.stop();
-        this.running.delete(key);
+        stops.push(Promise.resolve(monitor.stop()));
+        keysToDelete.push(key);
       }
+    }
+
+    await Promise.all(stops);
+
+    for (const key of keysToDelete) {
+      this.running.delete(key);
     }
   }
 
@@ -126,10 +145,8 @@ export class MonitorService {
   /**
    * Shutdown all monitors. Called during application shutdown.
    */
-  shutdown(): void {
-    for (const monitor of this.running.values()) {
-      monitor.stop();
-    }
+  async shutdown(): Promise<void> {
+    await Promise.all([...this.running.values()].map((m) => Promise.resolve(m.stop())));
     this.running.clear();
   }
 

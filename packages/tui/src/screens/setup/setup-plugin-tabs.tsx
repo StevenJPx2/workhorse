@@ -1,4 +1,5 @@
 import { For } from "solid-js";
+
 import { getTheme } from "../../theme.ts";
 import type { SetupPluginConfig } from "./types.ts";
 

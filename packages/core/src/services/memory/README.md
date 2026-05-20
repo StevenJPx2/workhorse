@@ -6,11 +6,11 @@ Two-tier memory system for Workhorse agents, combining fast session-level contex
 
 MemoryService is a facade providing access to three subsystems:
 
-| Subsystem | Purpose | Storage | Access Pattern |
-|-----------|---------|---------|----------------|
-| **L1 Store** | Session memory per worktree | `context.md` files | Read/write by issue ID |
-| **L2 Store** | Semantic search across sessions | SQLite (retriv + FTS5 + vectors) | Query by natural language |
-| **NotificationService** | Agent inbox management | SQLite (notifications table) | CRUD by issue ID |
+| Subsystem               | Purpose                         | Storage                          | Access Pattern            |
+| ----------------------- | ------------------------------- | -------------------------------- | ------------------------- |
+| **L1 Store**            | Session memory per worktree     | `context.md` files               | Read/write by issue ID    |
+| **L2 Store**            | Semantic search across sessions | SQLite (retriv + FTS5 + vectors) | Query by natural language |
+| **NotificationService** | Agent inbox management          | SQLite (notifications table)     | CRUD by issue ID          |
 
 ## Architecture
 
@@ -37,8 +37,8 @@ MemoryService is a facade providing access to three subsystems:
 import { MemoryService } from "#services/memory";
 
 const memory = await MemoryService.create({
-  db,                                 // Database instance
-  hooks,                              // HookEmitter instance
+  db, // Database instance
+  hooks, // HookEmitter instance
   worktreesRoot: "/path/to/worktrees",
   memoryDbPath: "/path/to/memory.db",
 });
@@ -53,8 +53,8 @@ L1 stores per-worktree session context in Markdown files (`context.md`). Each wo
 const ctx = memory.l1.get("AM-123");
 if (ctx) {
   const session = await ctx.read();
-  console.log(session.title);       // "AM-123: Add priority field"
-  console.log(session.patterns);    // ["Uses Zod for validation", ...]
+  console.log(session.title); // "AM-123: Add priority field"
+  console.log(session.patterns); // ["Uses Zod for validation", ...]
   console.log(session.latestStatus); // "implementing"
 }
 
@@ -72,10 +72,7 @@ await ctx.appendSession({
 });
 
 // Update patterns
-await ctx.updatePatterns([
-  "Uses Zod for validation",
-  "Database migrations via drizzle-kit",
-]);
+await ctx.updatePatterns(["Uses Zod for validation", "Database migrations via drizzle-kit"]);
 
 // Re-scan worktrees directory
 memory.l1.refresh();
@@ -98,13 +95,16 @@ The `context.md` file (located at `<worktree>/.workhorse/context.md`) is a Markd
 ### Session 1 — 2025-05-11T10:30:00Z — planning
 
 **Summary:**
+
 - Analyzed existing schema
 - Designed priority field approach
 
 **Learnings:**
+
 - Drizzle ORM supports $type<T>() for column types
 
 **Files Changed:**
+
 - src/db/schema/issues.ts
 
 ## Status: implementing
@@ -160,13 +160,13 @@ await memory.l2.close();
 
 #### Document Types
 
-| Type | Description |
-|------|-------------|
-| `session_memory` | Agent session summaries |
-| `issue_context` | Context about specific issues |
-| `decision` | Architectural decisions |
-| `code_context` | Code-related context |
-| _(custom)_ | Plugins can define additional types via `string & {}` |
+| Type             | Description                                           |
+| ---------------- | ----------------------------------------------------- |
+| `session_memory` | Agent session summaries                               |
+| `issue_context`  | Context about specific issues                         |
+| `decision`       | Architectural decisions                               |
+| `code_context`   | Code-related context                                  |
+| _(custom)_       | Plugins can define additional types via `string & {}` |
 
 ### Notifications
 
@@ -176,11 +176,11 @@ NotificationService manages agent inboxes with deduplication, priority, and XML 
 // Create a notification (deduplicates by sourceId)
 const notification = await memory.notifications.create({
   issueId: "AM-123",
-  source: "jira",                      // Source system
-  sourceId: "jira-comment-456",        // Dedup key
+  source: "jira", // Source system
+  sourceId: "jira-comment-456", // Dedup key
   title: "New comment",
   body: "Please review the implementation",
-  priority: "high",                     // "blocking" | "high" | "normal" | "low"
+  priority: "high", // "blocking" | "high" | "normal" | "low"
   metadata: { author: "john.doe" },
 });
 
@@ -217,12 +217,12 @@ await memory.notifications.acknowledge([id1, id2, id3]);
 
 #### Notification Priority
 
-| Priority | Description |
-|----------|-------------|
+| Priority   | Description                                         |
+| ---------- | --------------------------------------------------- |
 | `blocking` | Agent is blocked — needs human response immediately |
-| `high` | Important update (new review, merge conflict) |
-| `normal` | Standard notification (new comment) |
-| `low` | Informational (CI check passed) |
+| `high`     | Important update (new review, merge conflict)       |
+| `normal`   | Standard notification (new comment)                 |
+| `low`      | Informational (CI check passed)                     |
 
 ## Types
 
@@ -290,7 +290,7 @@ interface SearchResult {
 interface CreateNotificationInput {
   issueId: string;
   source: string;
-  sourceId?: string;           // For deduplication
+  sourceId?: string; // For deduplication
   priority?: NotificationPriority;
   title: string;
   body: string;
@@ -300,15 +300,15 @@ interface CreateNotificationInput {
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `service.ts` | MemoryService facade class |
-| `l1/store.ts` | L1Store — manages context.md files across worktrees |
-| `l1/context.ts` | L1Context — CRUD for a single worktree's context.md |
-| `l1/parse.ts` | Markdown → SessionMemory parser |
-| `l1/serialize.ts` | SessionMemory → Markdown serializer |
-| `l2.ts` | L2Store — semantic search via retriv |
-| `notifications.ts` | NotificationService — notification management |
-| `inbox.ts` | XML generation for system inbox |
-| `types.ts` | All type definitions |
-| `index.ts` | Barrel exports |
+| File               | Purpose                                             |
+| ------------------ | --------------------------------------------------- |
+| `service.ts`       | MemoryService facade class                          |
+| `l1/store.ts`      | L1Store — manages context.md files across worktrees |
+| `l1/context.ts`    | L1Context — CRUD for a single worktree's context.md |
+| `l1/parse.ts`      | Markdown → SessionMemory parser                     |
+| `l1/serialize.ts`  | SessionMemory → Markdown serializer                 |
+| `l2.ts`            | L2Store — semantic search via retriv                |
+| `notifications.ts` | NotificationService — notification management       |
+| `inbox.ts`         | XML generation for system inbox                     |
+| `types.ts`         | All type definitions                                |
+| `index.ts`         | Barrel exports                                      |

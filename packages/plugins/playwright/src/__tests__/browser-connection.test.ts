@@ -6,6 +6,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BrowserConnectionConfig } from "../browser-connection.ts";
 
 // Mock Playwright module

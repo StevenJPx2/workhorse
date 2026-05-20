@@ -5,6 +5,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import type { AtlassianClient } from "../client.ts";
 import type { Hooks } from "./types.ts";
 

@@ -10,6 +10,7 @@
  */
 
 import type { IssueParserOptions } from "workhorse-core";
+
 import type { GitHubClient } from "./client.ts";
 import { mapGitHubToIssue } from "./mapper.ts";
 import type { GitHubRef } from "./types.ts";

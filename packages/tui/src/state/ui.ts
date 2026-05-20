@@ -1,14 +1,6 @@
 import { createSignal } from "solid-js";
 import type { Issue } from "workhorse-core";
-import {
-  toast,
-  dismissToast,
-  showError,
-  showSuccess,
-  toasts,
-  type Toast,
-  type ToastType,
-} from "./ui-toast.ts";
+
 import {
   inputMode,
   setInputMode,
@@ -23,6 +15,15 @@ import {
   resetChatContext,
   type FocusTarget,
 } from "./ui-focus.ts";
+import {
+  toast,
+  dismissToast,
+  showError,
+  showSuccess,
+  toasts,
+  type Toast,
+  type ToastType,
+} from "./ui-toast.ts";
 
 export type { Toast, ToastType, FocusTarget };
 export type Screen = "overview" | "agent" | "help";

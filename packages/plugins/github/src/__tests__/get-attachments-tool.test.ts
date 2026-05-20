@@ -2,8 +2,9 @@
  * Tests for github_get_attachments tool
  */
 
-import type { AttachmentService } from "workhorse-core";
 import { describe, expect, it, vi } from "vitest";
+import type { AttachmentService } from "workhorse-core";
+
 import type { GitHubClient } from "../client.ts";
 import { createGetAttachmentsTool } from "../tools/get-attachments.ts";
 

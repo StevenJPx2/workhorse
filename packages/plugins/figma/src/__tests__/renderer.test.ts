@@ -3,9 +3,10 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { Notification } from "workhorse-core";
+
 import { figmaRenderer } from "../renderer.ts";
 import type { ActivityInput } from "../renderer.ts";
-import type { Notification } from "workhorse-core";
 
 // Helpers
 

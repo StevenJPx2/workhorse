@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
+
 import { getMonitorDisplayInfo } from "../primitives/monitor-display";
 
 function makeStatus(
   overrides: {
     id?: string;
-    type?: "remote" | "local";
+    type?: "polling" | "event";
     state?: "running" | "stopped" | "error";
     errorCount?: number;
   } = {},
 ) {
   return {
     id: overrides.id ?? "test",
-    type: overrides.type ?? "remote",
+    type: overrides.type ?? "polling",
     issueId: "AM-123",
     state: overrides.state ?? "running",
     errorCount: overrides.errorCount ?? 0,
@@ -26,10 +27,10 @@ describe("getMonitorDisplayInfo", () => {
 
   it("returns count and no errors for a healthy monitor", () => {
     const result = getMonitorDisplayInfo({
-      monitors: [makeStatus({ id: "ci", type: "remote" })],
+      monitors: [makeStatus({ id: "ci", type: "polling" })],
       loading: false,
     });
-    expect(result).toEqual({ count: 1, hasErrors: false, remoteCount: 1, localCount: 0 });
+    expect(result).toEqual({ count: 1, hasErrors: false, pollingCount: 1, eventCount: 0 });
   });
 
   it("detects errors when any monitor has error state", () => {
@@ -51,17 +52,17 @@ describe("getMonitorDisplayInfo", () => {
     expect(result?.hasErrors).toBe(true);
   });
 
-  it("breaks down remote vs local counts", () => {
+  it("breaks down polling vs event counts", () => {
     const result = getMonitorDisplayInfo({
       monitors: [
-        makeStatus({ id: "r1", type: "remote" }),
-        makeStatus({ id: "r2", type: "remote" }),
-        makeStatus({ id: "l1", type: "local" }),
+        makeStatus({ id: "p1", type: "polling" }),
+        makeStatus({ id: "p2", type: "polling" }),
+        makeStatus({ id: "e1", type: "event" }),
       ],
       loading: false,
     });
-    expect(result?.remoteCount).toBe(2);
-    expect(result?.localCount).toBe(1);
+    expect(result?.pollingCount).toBe(2);
+    expect(result?.eventCount).toBe(1);
     expect(result?.count).toBe(3);
   });
 

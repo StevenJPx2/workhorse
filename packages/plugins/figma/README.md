@@ -6,15 +6,15 @@ Allows agents to work directly from Figma design URLs, read designer comments, p
 
 ## Features
 
-| Capability | Description |
-|---|---|
-| **Issue Parser** | Accepts Figma file/design/proto URLs (with optional `node-id` anchor) |
-| **Comment Monitor** | Polls for new designer comments and pushes them as agent notifications |
-| **File Monitor** | Detects when the design file is saved/updated |
-| **Prompt Enrichment** | Injects file structure, frames, components & styles into the agent's system prompt |
-| **Tools** | `figma_get_file`, `figma_get_comments`, `figma_post_comment` |
-| **Steering Rules** | Idle-agent reminders to inspect the design, comment after changes, re-fetch on updates |
-| **TUI Renderer** | Renders Figma notifications and tool calls in the Workhorse TUI |
+| Capability            | Description                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| **Issue Parser**      | Accepts Figma file/design/proto URLs (with optional `node-id` anchor)                  |
+| **Comment Monitor**   | Polls for new designer comments and pushes them as agent notifications                 |
+| **File Monitor**      | Detects when the design file is saved/updated                                          |
+| **Prompt Enrichment** | Injects file structure, frames, components & styles into the agent's system prompt     |
+| **Tools**             | `figma_get_file`, `figma_get_comments`, `figma_post_comment`                           |
+| **Steering Rules**    | Idle-agent reminders to inspect the design, comment after changes, re-fetch on updates |
+| **TUI Renderer**      | Renders Figma notifications and tool calls in the Workhorse TUI                        |
 
 ## Supported URL Formats
 
@@ -76,6 +76,7 @@ wh add "https://www.figma.com/design/abc123XYZ/My-App?node-id=1-23"
 ```
 
 The agent will automatically:
+
 1. Parse the URL and create an issue from the Figma file/frame metadata
 2. Inject the file's pages, frames, components, and styles into its system prompt
 3. Start polling for new comments and file changes
@@ -114,12 +115,12 @@ figma_post_comment({
 
 ## Steering Rules
 
-| Rule | Trigger | Reminder |
-|---|---|---|
-| `figma:check-design-before-implementing` | Status `implementing`, no `figma_get_file` yet | Inspect the Figma file first |
-| `figma:comment-after-implementation` | Code edits with no subsequent `figma_post_comment` | Let the designer know progress |
-| `figma:design-updated-check` | File-update notification, no re-fetch since then | Design changed — re-fetch |
-| `figma:address-feedback` | Unacknowledged Figma notifications | Read and address designer feedback |
+| Rule                                     | Trigger                                            | Reminder                           |
+| ---------------------------------------- | -------------------------------------------------- | ---------------------------------- |
+| `figma:check-design-before-implementing` | Status `implementing`, no `figma_get_file` yet     | Inspect the Figma file first       |
+| `figma:comment-after-implementation`     | Code edits with no subsequent `figma_post_comment` | Let the designer know progress     |
+| `figma:design-updated-check`             | File-update notification, no re-fetch since then   | Design changed — re-fetch          |
+| `figma:address-feedback`                 | Unacknowledged Figma notifications                 | Read and address designer feedback |
 
 ## Architecture
 

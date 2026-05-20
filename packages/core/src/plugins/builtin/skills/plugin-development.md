@@ -113,7 +113,7 @@ hooks.on("prompt.building", ({ issueId, context }) => {
     id: "my-context",
     title: "My Context",
     content: "Additional context for the agent",
-    priority: 50,  // Lower = earlier in prompt
+    priority: 50, // Lower = earlier in prompt
   });
 });
 ```
@@ -232,10 +232,10 @@ Push notifications to agent inboxes:
 await memory.notifications.create({
   issueId: "issue-internal-id",
   source: "my-service",
-  sourceId: "update-456",  // Dedup key
+  sourceId: "update-456", // Dedup key
   title: "Configuration changed",
   body: "Please review the changes.",
-  priority: "high",  // "blocking" | "high" | "normal" | "low"
+  priority: "high", // "blocking" | "high" | "normal" | "low"
   metadata: { changedBy: "john.doe" },
 });
 ```

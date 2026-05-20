@@ -4,9 +4,10 @@
  */
 
 import { Show } from "solid-js";
+
+import type { MonitorsState } from "../primitives/create-monitors";
 import { getMonitorDisplayInfo } from "../primitives/monitor-display";
 import { getTheme } from "../theme";
-import type { MonitorsState } from "../primitives/create-monitors";
 
 interface MonitorIndicatorProps {
   state: MonitorsState;
@@ -24,8 +25,8 @@ export function MonitorIndicator(props: MonitorIndicatorProps) {
           <text fg={theme.colors.dim}>
             {data().count} {data().count === 1 ? "monitor" : "monitors"}
           </text>
-          <Show when={data().remoteCount > 0 && data().localCount > 0}>
-            <text fg={theme.colors.dim}>({`${data().remoteCount}r${data().localCount}l`})</text>
+          <Show when={data().pollingCount > 0 && data().eventCount > 0}>
+            <text fg={theme.colors.dim}>({`${data().pollingCount}p${data().eventCount}e`})</text>
           </Show>
         </box>
       )}

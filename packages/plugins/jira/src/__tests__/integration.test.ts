@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+
 import { AtlassianClient } from "../client.ts";
 import { mapJiraToIssue } from "../mapper.ts";
 import { canParseJira, createJiraParserOptions } from "../parser.ts";

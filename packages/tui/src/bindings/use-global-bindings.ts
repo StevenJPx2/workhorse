@@ -1,3 +1,4 @@
+import { useKeyboard, useRenderer } from "@opentui/solid";
 /**
  * Global keybindings for the Workhorse TUI.
  *
@@ -7,7 +8,7 @@
  * Tab and ESC work directly (not in command mode).
  */
 import { createSignal } from "solid-js";
-import { useKeyboard, useRenderer } from "@opentui/solid";
+
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { ui } from "../state/ui.ts";
 

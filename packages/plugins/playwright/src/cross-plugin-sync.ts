@@ -8,6 +8,7 @@
  */
 
 import type { AttachmentService, WorkhorseContext } from "workhorse-core";
+
 import type { PlaywrightSessionManager } from "./session-manager.ts";
 
 /** Payload type for github:pr.opening event (mirrors PROpeningContext) */

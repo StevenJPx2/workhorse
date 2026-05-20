@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+
 import { githubPlugin, GitHubConfigSchema } from "../index.ts";
 
 describe("githubPlugin", () => {
@@ -20,7 +21,7 @@ describe("githubPlugin", () => {
 describe("GitHubConfigSchema", () => {
   it("has default pollInterval", () => {
     const parsed = GitHubConfigSchema.parse({});
-    expect(parsed.pollInterval).toBe(30000);
+    expect(parsed.pollInterval).toBe(15_000);
   });
 
   it("accepts custom pollInterval", () => {

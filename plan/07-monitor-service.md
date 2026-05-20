@@ -8,34 +8,34 @@ Location: `packages/core/src/workflow/services/monitor/`
 
 ```typescript
 interface Monitor {
-  name: string
-  type: "remote" | "local"
-  interval: number                     // ms
-  poll: () => Promise<MonitorResult>
+  name: string;
+  type: "remote" | "local";
+  interval: number; // ms
+  poll: () => Promise<MonitorResult>;
 }
 
 interface MonitorResult {
-  hasChanges: boolean
-  data?: unknown
+  hasChanges: boolean;
+  data?: unknown;
 }
 
-type MonitorFactory = (ctx: MonitorContext) => Monitor
+type MonitorFactory = (ctx: MonitorContext) => Monitor;
 
 interface MonitorContext {
-  issueId: string
-  hooks: Hooks
-  memory: MemoryService
-  config: Readonly<WorkhorseConfig>
+  issueId: string;
+  hooks: Hooks;
+  memory: MemoryService;
+  config: Readonly<WorkhorseConfig>;
 }
 
 interface MonitorStatus {
-  name: string
-  type: "remote" | "local"
-  issueId: string
-  state: "running" | "stopped" | "error"
-  lastPoll?: Date
-  lastResult?: MonitorResult
-  errorCount: number
+  name: string;
+  type: "remote" | "local";
+  issueId: string;
+  state: "running" | "stopped" | "error";
+  lastPoll?: Date;
+  lastResult?: MonitorResult;
+  errorCount: number;
 }
 ```
 

@@ -4,6 +4,7 @@
 
 import { useKeyboard } from "@opentui/solid";
 import type { Accessor, Setter } from "solid-js";
+
 import type { SetupPluginConfig } from "./types.ts";
 
 interface UseSetupKeyboardOptions {

@@ -12,6 +12,7 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
+
 import { FigmaClient } from "../client.ts";
 import { canParseFigma, extractFigmaRef } from "../parser.ts";
 

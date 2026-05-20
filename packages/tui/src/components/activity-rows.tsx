@@ -3,6 +3,7 @@
  */
 
 import { Match, Switch } from "solid-js";
+
 import type { ActivityItem } from "../primitives/activity-types.ts";
 import { getTheme } from "../theme.ts";
 import { ActivityRow } from "./activity-row.tsx";

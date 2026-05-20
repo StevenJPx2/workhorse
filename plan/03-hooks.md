@@ -7,10 +7,10 @@ Location: `packages/core/src/lib/hooks/`
 ## Implementation
 
 ```typescript
-import mitt from "mitt"
-import type { HookEventMap } from "./types"
+import mitt from "mitt";
+import type { HookEventMap } from "./types";
 
-export const hooks = mitt<HookEventMap>()
+export const hooks = mitt<HookEventMap>();
 ```
 
 That's it. One instance, exported directly.
@@ -21,21 +21,21 @@ That's it. One instance, exported directly.
 // hooks/types.ts
 
 interface HookEventMap {
-  "issue.parsed": { issue: Issue; raw: unknown }
-  "issue.status_changed": { issue: Issue; from: IssueStatus; to: IssueStatus }
-  "prompt.building": { issueId: string; context: PromptContext }
-  "prompt.built": { issueId: string; prompt: string }
-  "agent.starting": { instance: AgentInstance }
-  "agent.started": { instance: AgentInstance }
-  "agent.stopping": { instance: AgentInstance }
-  "agent.stopped": { instance: AgentInstance }
-  "agent.crashed": { instance: AgentInstance; error?: Error }
-  "notification.created": { notification: Notification; issueId: string }
-  "monitor.registered": { name: string; type: "remote" | "local" }
-  "monitor.tick": { name: string; result: unknown }
-  "plugin.loaded": { name: string }
-  "plugin.error": { name: string; error: Error }
-  [custom: string]: unknown
+  "issue.parsed": { issue: Issue; raw: unknown };
+  "issue.status_changed": { issue: Issue; from: IssueStatus; to: IssueStatus };
+  "prompt.building": { issueId: string; context: PromptContext };
+  "prompt.built": { issueId: string; prompt: string };
+  "agent.starting": { instance: AgentInstance };
+  "agent.started": { instance: AgentInstance };
+  "agent.stopping": { instance: AgentInstance };
+  "agent.stopped": { instance: AgentInstance };
+  "agent.crashed": { instance: AgentInstance; error?: Error };
+  "notification.created": { notification: Notification; issueId: string };
+  "monitor.registered": { name: string; type: "remote" | "local" };
+  "monitor.tick": { name: string; result: unknown };
+  "plugin.loaded": { name: string };
+  "plugin.error": { name: string; error: Error };
+  [custom: string]: unknown;
 }
 ```
 

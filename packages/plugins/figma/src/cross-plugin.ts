@@ -10,6 +10,7 @@
  */
 
 import type { DiscoveredLink, HookEmitter, PromptContextBlock } from "workhorse-core";
+
 import type { FigmaClient } from "./client.ts";
 import { canParseFigma, extractFigmaRef } from "./parser.ts";
 import type { FigmaRef } from "./types.ts";

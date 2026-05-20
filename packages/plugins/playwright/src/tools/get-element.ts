@@ -5,8 +5,9 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
-import { getElement } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { getElement } from "../session-operations.ts";
 
 /** Create the playwright_get_element tool */
 export function createGetElementTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {

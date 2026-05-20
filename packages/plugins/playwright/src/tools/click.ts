@@ -5,8 +5,9 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
-import { click } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { click } from "../session-operations.ts";
 
 /** Create the playwright_click tool */
 export function createClickTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {

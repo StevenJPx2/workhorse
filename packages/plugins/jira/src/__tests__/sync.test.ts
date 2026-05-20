@@ -3,8 +3,9 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { registerStatusSync } from "../sync.ts";
 import type { Issue } from "workhorse-core";
+
+import { registerStatusSync } from "../sync.ts";
 
 describe("registerStatusSync", () => {
   it("ignores non-jira issues", () => {

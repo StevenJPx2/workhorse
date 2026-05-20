@@ -5,6 +5,7 @@
  */
 
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
+
 import type { GitHubIssue } from "./types.ts";
 
 /** Map a GitHub issue to the generic ParsedIssue format */

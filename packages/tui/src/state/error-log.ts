@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import { homedir } from "node:os";
+import { join } from "node:path";
 
 /** Error log entry */
 export interface LogEntry {

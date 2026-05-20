@@ -1,3 +1,5 @@
+import { createCliRenderer } from "@opentui/core";
+import { render, useRenderer } from "@opentui/solid";
 import { bootstrap, resolveConfigPaths } from "workhorse-core";
 import { figmaPlugin } from "workhorse-plugin-figma";
 import { githubPlugin } from "workhorse-plugin-github";
@@ -5,8 +7,7 @@ import { jiraPlugin } from "workhorse-plugin-jira";
 import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 import { playwrightPlugin } from "workhorse-plugin-playwright";
 import { webPlugin } from "workhorse-plugin-web";
-import { createCliRenderer } from "@opentui/core";
-import { render, useRenderer } from "@opentui/solid";
+
 import { App } from "./app.tsx";
 import { parseCliArgs, showHelp, showModels } from "./cli.ts";
 import tuiPlugin from "./plugin.ts";
@@ -19,9 +20,9 @@ import {
   savePluginConfig,
   setupValuesToConfig,
 } from "./setup";
-import { setTheme } from "./theme.ts";
 import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
 import { ui } from "./state/ui.ts";
+import { setTheme } from "./theme.ts";
 
 interface SetupWrapperProps {
   plugins: SetupPluginConfig[];
@@ -75,13 +76,8 @@ function AuthWrapper(props: AuthWrapperProps) {
   );
 }
 
-/**
- * Start the Workhorse TUI.
- * Shows setup wizard if required config is missing, then authenticates plugins,
- * then bootstraps the system.
- */
+/** Start the Workhorse TUI. Shows setup wizard if needed, authenticates plugins, then bootstraps. */
 export async function startTUI() {
-  // Install error logging early
   installErrorHandler();
   logInfo(`TUI starting, log file: ${getLogPath()}`);
 

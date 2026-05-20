@@ -1,5 +1,6 @@
 import { createMemo, createSignal, Show } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
+
 import { MonitorIndicator, StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";

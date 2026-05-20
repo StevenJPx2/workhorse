@@ -11,6 +11,7 @@
 import { createRoot, createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import type { AgentAdapter, HookEmitter, HarnessOrchestrator, MemoryService } from "workhorse-core";
+
 import type { WorkhorseContextValue } from "../context/workhorse";
 
 /** Creates a mock hook emitter with working on/off/emit */

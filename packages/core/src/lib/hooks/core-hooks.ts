@@ -150,7 +150,7 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
     name: "monitor.registered",
     category: "Monitors",
     description: "Fired when a monitor definition is registered",
-    payload: '{ name: string, type: "remote" | "local" }',
+    payload: '{ name: string, type: "polling" | "event" }',
   },
   {
     name: "monitor.tick",

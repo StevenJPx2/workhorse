@@ -1,6 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+
 import { useWorkhorse } from "#context";
+
 import { type Plugin, PluginSymbol } from "./types.ts";
 
 /**

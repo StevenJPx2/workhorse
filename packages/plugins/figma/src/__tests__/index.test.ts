@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { PluginSymbol } from "workhorse-core";
+
 import { figmaPlugin } from "../index.ts";
 
 describe("figmaPlugin", () => {

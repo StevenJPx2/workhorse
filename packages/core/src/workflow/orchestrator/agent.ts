@@ -1,6 +1,7 @@
 /** Agent adapter base class. Lifecycle: create() → start() → sendMessage() → stop() */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+
 import type { Issue } from "#db";
 import type { Database } from "#db/database";
 import { createWorktree, removeWorktree } from "#lib/git";
@@ -8,6 +9,7 @@ import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import { SteeringRule } from "#workflow/steering";
 import { PromptEngineer } from "#workflow/tracker";
+
 import type { HarnessOrchestrator } from "./orchestrator.ts";
 import type { ModelRegistry } from "./registry.ts";
 import type {

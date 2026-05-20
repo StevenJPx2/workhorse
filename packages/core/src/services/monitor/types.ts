@@ -3,17 +3,17 @@ import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 
 /**
- * Result returned by a monitor's poll function.
+ * Result returned by a monitor's poll function or event emission.
  */
 export interface MonitorResult {
-  /** Whether changes were detected since last poll */
+  /** Whether changes were detected since last poll/event */
   hasChanges: boolean;
   /** Optional data payload (e.g., new comments, review status) */
   data?: unknown;
 }
 
 /**
- * Context passed to poll() on each invocation and to start().
+ * Context passed to monitors on start and each poll/event.
  */
 export interface MonitorContext {
   /** The issue ID this monitor is watching */
@@ -33,29 +33,95 @@ export interface MonitorStatus {
   /** Monitor identifier */
   id: string;
   /** Monitor type */
-  type: "remote" | "local";
+  type: "polling" | "event";
   /** Issue ID being monitored */
   issueId: string;
   /** Current state */
   state: "running" | "stopped" | "error";
-  /** When the last poll occurred */
-  lastPoll?: Date;
-  /** Result from the last poll */
+  /** When the last activity occurred (poll or event) */
+  lastActivity?: Date;
+  /** Result from the last poll/event */
   lastResult?: MonitorResult;
   /** Number of consecutive errors */
   errorCount: number;
 }
 
+// Event Monitor Types
+
 /**
- * Options for registering a monitor with MonitorService.
+ * Callback for event monitors to emit results.
+ * Call this whenever an event occurs that should notify the system.
  */
-export interface MonitorOptions {
+export type EventEmitter = (result: MonitorResult) => void;
+
+/**
+ * Cleanup function returned by event monitor setup.
+ * Called when the monitor is stopped.
+ */
+export type EventCleanup = () => Promise<void> | void;
+
+// Monitor Options
+
+/**
+ * Base options shared by all monitor types.
+ */
+interface MonitorOptionsBase {
   /** Unique identifier for this monitor */
   id: string;
-  /** Whether this monitors remote APIs or local resources */
-  type: "remote" | "local";
+}
+
+/**
+ * Options for polling-based monitors.
+ *
+ * Polling monitors call poll() at a fixed interval to check for changes.
+ * Use for external APIs without webhooks (Jira comments, GitHub PR status).
+ */
+export interface PollingMonitorOptions extends MonitorOptionsBase {
+  /** Monitor type */
+  type: "polling";
   /** Polling interval in milliseconds */
   interval: number;
   /** Poll function - receives full context on each call */
   poll: (ctx: MonitorContext) => Promise<MonitorResult>;
 }
+
+/**
+ * Options for event-driven monitors.
+ *
+ * Event monitors set up a listener once and emit results as events occur.
+ * Use for WebSockets, webhooks, file watchers, etc.
+ *
+ * @example
+ * ```typescript
+ * ctx.monitors.registerMonitor({
+ *   id: "slack-events",
+ *   type: "event",
+ *   setup: async (ctx, emit) => {
+ *     const socket = connectToSlack();
+ *     socket.on("message", (msg) => {
+ *       emit({ hasChanges: true, data: msg });
+ *     });
+ *     return () => socket.close();
+ *   },
+ * });
+ * ```
+ */
+export interface EventMonitorOptions extends MonitorOptionsBase {
+  /** Monitor type */
+  type: "event";
+  /**
+   * Called once when the monitor starts.
+   * Set up your event listener and call `emit()` when events occur.
+   * Return a cleanup function that will be called on stop.
+   *
+   * @param ctx - Monitor context (issueId, hooks, memory, config)
+   * @param emit - Call this to emit a MonitorResult when an event occurs
+   * @returns Cleanup function (or Promise of one)
+   */
+  setup: (ctx: MonitorContext, emit: EventEmitter) => Promise<EventCleanup> | EventCleanup;
+}
+
+/**
+ * Union type for all monitor options.
+ */
+export type MonitorOptions = PollingMonitorOptions | EventMonitorOptions;

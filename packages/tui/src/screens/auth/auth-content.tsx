@@ -1,10 +1,11 @@
 import { For, Show } from "solid-js";
 import type { ApiTokenAuthField } from "workhorse-core";
-import { getTheme } from "../../theme.ts";
+
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
-import type { AuthFlowState } from "./types.ts";
-import { AuthPluginCard } from "./auth-plugin-card.tsx";
+import { getTheme } from "../../theme.ts";
 import { ApiTokenForm } from "./api-token-form.tsx";
+import { AuthPluginCard } from "./auth-plugin-card.tsx";
+import type { AuthFlowState } from "./types.ts";
 
 export interface AuthContentProps {
   isApiTokenForm: boolean;

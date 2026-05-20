@@ -4,8 +4,9 @@
  */
 
 import { Show } from "solid-js";
-import { getTheme } from "../../theme.ts";
+
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
+import { getTheme } from "../../theme.ts";
 import type { AuthFlowState } from "./types.ts";
 
 interface AuthPluginCardProps {

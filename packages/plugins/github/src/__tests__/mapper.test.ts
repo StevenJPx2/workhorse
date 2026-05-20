@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+
 import { mapGitHubToIssue } from "../mapper.ts";
 import type { GitHubIssue } from "../types.ts";
 

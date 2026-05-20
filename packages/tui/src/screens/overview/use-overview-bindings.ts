@@ -1,3 +1,4 @@
+import { useKeyboard } from "@opentui/solid";
 /**
  * Keybindings for the Overview screen.
  * Handles arrow/vim navigation within lists and Enter to select.
@@ -5,7 +6,7 @@
  */
 import type { Accessor, Setter } from "solid-js";
 import type { AgentAdapter, Issue } from "workhorse-core";
-import { useKeyboard } from "@opentui/solid";
+
 import { ui } from "../../state/ui.ts";
 
 interface UseOverviewBindingsOptions {

@@ -15,32 +15,32 @@ This plugin enforces architectural decisions that keep the codebase maintainable
 
 ### File Organization
 
-| Rule | Severity | What It Does |
-|------|----------|--------------|
-| `max-lines-per-file` | **error** | Max 200 lines (500 for tests). Forces splitting large files. |
-| `enforce-kebab-case-filenames` | warn | Files must be `kebab-case.ts`, not `MyFile.ts` or `myFile.ts`. |
-| `enforce-colocated-exports` | warn | Folders with multiple `.ts` files must have `index.ts`. |
-| `enforce-test-colocation` | warn | Tests go in `__tests__/` when test ratio >30% or folder exists. |
+| Rule                           | Severity  | What It Does                                                    |
+| ------------------------------ | --------- | --------------------------------------------------------------- |
+| `max-lines-per-file`           | **error** | Max 200 lines (500 for tests). Forces splitting large files.    |
+| `enforce-kebab-case-filenames` | warn      | Files must be `kebab-case.ts`, not `MyFile.ts` or `myFile.ts`.  |
+| `enforce-colocated-exports`    | warn      | Folders with multiple `.ts` files must have `index.ts`.         |
+| `enforce-test-colocation`      | warn      | Tests go in `__tests__/` when test ratio >30% or folder exists. |
 
 ### Import Conventions
 
-| Rule | Severity | What It Does |
-|------|----------|--------------|
-| `prefer-path-alias` | warn | `../../foo` → `#config/foo` for deep imports. |
-| `no-index-imports` | warn | `./foo` not `./foo/index.ts`. |
-| `no-reexport-outside-barrel` | warn | Re-exports only in `index.ts` files. |
-| `prefer-folder-barrel` | warn | Files that only re-export → convert to folder with index. |
-| `enforce-barrel-exports` | warn | Barrel re-exporting barrels must use `export *`. |
+| Rule                         | Severity | What It Does                                              |
+| ---------------------------- | -------- | --------------------------------------------------------- |
+| `prefer-path-alias`          | warn     | `../../foo` → `#config/foo` for deep imports.             |
+| `no-index-imports`           | warn     | `./foo` not `./foo/index.ts`.                             |
+| `no-reexport-outside-barrel` | warn     | Re-exports only in `index.ts` files.                      |
+| `prefer-folder-barrel`       | warn     | Files that only re-export → convert to folder with index. |
+| `enforce-barrel-exports`     | warn     | Barrel re-exporting barrels must use `export *`.          |
 
 ### Code Style
 
-| Rule | Severity | What It Does |
-|------|----------|--------------|
-| `prefer-then-chain` | warn | `(await x).foo` → `await x.then(r => r.foo)`. |
-| `no-cascading-ternary` | warn | Nested ternaries → object map or switch. |
-| `no-section-comments` | warn | Remove `// ---`, `// 1.`, `// Step 1:` scaffolding. |
-| `no-single-reference-function` | warn | Functions called once should be inlined. |
-| `no-single-use-variable` | warn | Variables used once should be inlined. |
+| Rule                           | Severity | What It Does                                        |
+| ------------------------------ | -------- | --------------------------------------------------- |
+| `prefer-then-chain`            | warn     | `(await x).foo` → `await x.then(r => r.foo)`.       |
+| `no-cascading-ternary`         | warn     | Nested ternaries → object map or switch.            |
+| `no-section-comments`          | warn     | Remove `// ---`, `// 1.`, `// Step 1:` scaffolding. |
+| `no-single-reference-function` | warn     | Functions called once should be inlined.            |
+| `no-single-use-variable`       | warn     | Variables used once should be inlined.              |
 
 ## Why These Rules Exist
 
@@ -115,7 +115,7 @@ const name = (await fetchUser(id)).profile.name;
 
 ```typescript
 // ✅ Reads left-to-right
-const name = await fetchUser(id).then(u => u.profile.name);
+const name = await fetchUser(id).then((u) => u.profile.name);
 ```
 
 This rule is auto-fixable.

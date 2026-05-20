@@ -62,6 +62,7 @@ timeout = 10000
 ## Plugin Discovery
 
 Plugins are loaded from:
+
 1. `config.plugins.enabled` — npm packages by name
 2. `~/.workhorse/plugins/` — global directory
 3. `.workhorse/plugins/` — project directory
@@ -70,15 +71,15 @@ Plugins are loaded from:
 
 ```typescript
 const registry = new PluginRegistry();
-await registry.loadPlugins();       // Load from config and plugin directories
+await registry.loadPlugins(); // Load from config and plugin directories
 
-registry.register(plugin);          // Add plugin manually
-await registry.setup();             // Call all setup()
-await registry.teardown();          // Call all teardown() in reverse order
+registry.register(plugin); // Add plugin manually
+await registry.setup(); // Call all setup()
+await registry.teardown(); // Call all teardown() in reverse order
 
-registry.has("my-plugin");          // boolean
-registry.get("my-plugin");          // Plugin | undefined
-registry.list();                    // Plugin[]
+registry.has("my-plugin"); // boolean
+registry.get("my-plugin"); // Plugin | undefined
+registry.list(); // Plugin[]
 ```
 
 ## Lifecycle
@@ -92,6 +93,7 @@ registry.list();                    // Plugin[]
 ### Error Handling
 
 When a plugin's setup fails:
+
 1. `plugin.error` hook is emitted with `{ name, error }`
 2. Error is re-thrown (fail fast behavior)
 3. Registry stops setting up further plugins

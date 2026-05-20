@@ -13,8 +13,9 @@
  * @module workhorse-plugin-web
  */
 
-import { z } from "zod/v4";
 import { definePlugin } from "workhorse-core";
+import { z } from "zod/v4";
+
 import { checkJinaInstalled, hasApiKey } from "./client.ts";
 import { webRenderer } from "./renderer.ts";
 import { createWebTools } from "./tools";

@@ -3,8 +3,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadCredentials, saveCredentials, createCredentialGetter } from "../credentials.ts";
 import * as keychain from "workhorse-core";
+
+import { loadCredentials, saveCredentials, createCredentialGetter } from "../credentials.ts";
 
 vi.mock("workhorse-core", () => ({
   getCredential: vi.fn(),

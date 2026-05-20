@@ -6,13 +6,13 @@ Location: `packages/plugins/jira/` (standalone package: `workhorse-plugin-jira`)
 
 ## What It Registers
 
-| Hook Point | Registration |
-|------------|-------------|
-| IssueProvider | Parser for `AM-123`, Jira URLs |
-| MonitorService | Jira comment poller (started on `orchestrator.spawn.post`) |
+| Hook Point      | Registration                                                           |
+| --------------- | ---------------------------------------------------------------------- |
+| IssueProvider   | Parser for `AM-123`, Jira URLs                                         |
+| MonitorService  | Jira comment poller (started on `orchestrator.spawn.post`)             |
 | Prompt Engineer | Jira state context block + workflow instructions via `prompt.building` |
-| Tools | Jira-specific tools: `jira_add_comment`, `jira_transition_issue` |
-| Hooks | `issue.status_changed` → transition Jira ticket |
+| Tools           | Jira-specific tools: `jira_add_comment`, `jira_transition_issue`       |
+| Hooks           | `issue.status_changed` → transition Jira ticket                        |
 
 ## Plugin Config
 
@@ -30,15 +30,15 @@ Direct REST API client for Jira Cloud (not MCP). Uses `fetch` via Bun's native H
 
 ```typescript
 class AtlassianClient {
-  constructor(cloudId: string)
-  async connect(): Promise<void> // Validates auth (OAuth2 3LO or API token)
-  async disconnect(): Promise<void>
-  async fetchIssue(ticketKey: string): Promise<JiraIssue>
-  async addComment(ticketKey: string, body: string): Promise<void>
-  async transitionIssue(ticketKey: string, transitionId: string): Promise<void>
-  async getTransitions(ticketKey: string): Promise<JiraTransition[]>
-  async editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void>
-  async getCurrentUser(): Promise<{ accountId: string; displayName: string }>
+  constructor(cloudId: string);
+  async connect(): Promise<void>; // Validates auth (OAuth2 3LO or API token)
+  async disconnect(): Promise<void>;
+  async fetchIssue(ticketKey: string): Promise<JiraIssue>;
+  async addComment(ticketKey: string, body: string): Promise<void>;
+  async transitionIssue(ticketKey: string, transitionId: string): Promise<void>;
+  async getTransitions(ticketKey: string): Promise<JiraTransition[]>;
+  async editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void>;
+  async getCurrentUser(): Promise<{ accountId: string; displayName: string }>;
 }
 ```
 
@@ -55,6 +55,7 @@ Registers `"jira-comments"` monitor at plugin setup. Starts monitoring on `orche
 ### Prompt Enrichment
 
 Hooks `prompt.building`. Pushes two context blocks:
+
 - **Jira State** (priority 10): key, summary, status, priority, assignee, recent comments
 - **Jira Workflow** (priority 50): instructions for using Jira tools and transitions
 
@@ -83,6 +84,7 @@ Registers Jira-specific tools with the orchestrator:
 OAuth 2.0 via `arctic` (`arctic.Atlassian`).
 
 Flow:
+
 1. Plugin setup checks keychain for existing tokens
 2. If missing/expired, starts a temporary local HTTP server to catch the OAuth callback
 3. Opens browser to Atlassian authorization URL (`arctic.Atlassian.createAuthorizationURL()`)
@@ -92,6 +94,7 @@ Flow:
 7. Auto-refreshes via `arctic` when expired
 
 Config (non-sensitive, in `~/.workhorse.toml`):
+
 ```toml
 [plugins.jira]
 cloud_id = "company.atlassian.net"
@@ -99,6 +102,7 @@ poll_interval = 30000
 ```
 
 Credentials (stored in system keychain via `keychain.ts`):
+
 - `workhorse:jira:client_id` — Atlassian OAuth client ID
 - `workhorse:jira:client_secret` — Atlassian OAuth client secret
 - `workhorse:jira:access_token` — OAuth access token

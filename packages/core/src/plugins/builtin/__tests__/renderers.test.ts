@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { skillRenderer, workhorseToolRenderer, notificationRenderer } from "../renderers.ts";
+
 import type { Notification } from "#db";
+
+import { skillRenderer, workhorseToolRenderer, notificationRenderer } from "../renderers.ts";
 
 describe("skillRenderer", () => {
   it("renders load_skill tool", () => {

@@ -7,6 +7,7 @@
  */
 
 import type { HookEmitter, IssueParserOptions } from "workhorse-core";
+
 import type { AtlassianClient } from "./client.ts";
 import { type ExtractedLink, mapJiraToIssue } from "./mapper.ts";
 

@@ -5,6 +5,7 @@
  */
 
 import mitt from "mitt";
+
 import type { HookEmitter, HookEventMap } from "../types.ts";
 
 /**

@@ -28,16 +28,16 @@ Main Repo (/path/to/repo)
 import { createWorktree } from "#lib/git";
 
 const worktree = await createWorktree(
-  "/path/to/repo",       // Main repo path
-  "PROJ-123",            // Issue ID
-  "task",                // Issue type (used for branch prefix)
-  "main",                // Base branch (default: "main")
+  "/path/to/repo", // Main repo path
+  "PROJ-123", // Issue ID
+  "task", // Issue type (used for branch prefix)
+  "main", // Base branch (default: "main")
 );
 
 if (worktree) {
-  console.log(worktree.path);    // "/path/to/repo-worktrees/PROJ-123"
-  console.log(worktree.branch);  // "task/PROJ-123"
-  console.log(worktree.head);    // "abc123def..."
+  console.log(worktree.path); // "/path/to/repo-worktrees/PROJ-123"
+  console.log(worktree.branch); // "task/PROJ-123"
+  console.log(worktree.head); // "abc123def..."
   console.log(worktree.issueId); // "PROJ-123"
 }
 ```
@@ -48,9 +48,9 @@ if (worktree) {
 import { removeWorktree } from "#lib/git";
 
 const success = await removeWorktree(
-  "/path/to/repo",       // Main repo path
-  "PROJ-123",            // Issue ID
-  true,                  // Delete branch too (default: false)
+  "/path/to/repo", // Main repo path
+  "PROJ-123", // Issue ID
+  true, // Delete branch too (default: false)
 );
 ```
 
@@ -58,13 +58,13 @@ const success = await removeWorktree(
 
 Branch names are derived from issue type and ID:
 
-| Issue Type | Branch Name |
-|------------|-------------|
-| `"task"` | `task/PROJ-123` |
-| `"bug"` | `bug/PROJ-123` |
-| `"story"` | `story/PROJ-123` |
-| `"epic"` | `epic/PROJ-123` |
-| _(no type)_ | `PROJ-123` |
+| Issue Type  | Branch Name      |
+| ----------- | ---------------- |
+| `"task"`    | `task/PROJ-123`  |
+| `"bug"`     | `bug/PROJ-123`   |
+| `"story"`   | `story/PROJ-123` |
+| `"epic"`    | `epic/PROJ-123`  |
+| _(no type)_ | `PROJ-123`       |
 
 ## Worktree Creation Flow
 
@@ -102,9 +102,9 @@ interface WorktreeInfo {
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `operations.ts` | `createWorktree()` and `removeWorktree()` functions |
-| `utils.ts` | Helper functions (execGit, parseWorktreeList, buildBranchName, etc.) |
-| `types.ts` | WorktreeInfo type definition |
-| `index.ts` | Barrel exports |
+| File            | Purpose                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| `operations.ts` | `createWorktree()` and `removeWorktree()` functions                  |
+| `utils.ts`      | Helper functions (execGit, parseWorktreeList, buildBranchName, etc.) |
+| `types.ts`      | WorktreeInfo type definition                                         |
+| `index.ts`      | Barrel exports                                                       |

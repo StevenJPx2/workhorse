@@ -5,6 +5,7 @@
 
 import { createSignal, onMount, onCleanup, createEffect, type Accessor } from "solid-js";
 import type { IssueStatus, Issue } from "workhorse-core";
+
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 
 export interface CreateIssueStatusesOptions {

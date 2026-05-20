@@ -5,8 +5,9 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
-import { evaluate } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { evaluate } from "../session-operations.ts";
 
 /** Create the playwright_evaluate tool */
 export function createEvaluateTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {

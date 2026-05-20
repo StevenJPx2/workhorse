@@ -1,18 +1,19 @@
-import { createSignal, onCleanup } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
+import { createSignal, onCleanup } from "solid-js";
 import type { ApiTokenProvider } from "workhorse-core";
+
 import { getTheme } from "../../theme.ts";
-import type { AuthFlowState, AuthScreenProps } from "./types.ts";
-import { AuthHeader } from "./auth-header.tsx";
-import { AuthStatusBar } from "./auth-status-bar.tsx";
 import { AuthContent } from "./auth-content.tsx";
-import { useApiTokenForm } from "./use-api-token-form.ts";
 import {
   handleOAuth,
   handleExternalAuth,
   handleApiTokenAuth,
   submitApiTokenForm,
 } from "./auth-handlers.ts";
+import { AuthHeader } from "./auth-header.tsx";
+import { AuthStatusBar } from "./auth-status-bar.tsx";
+import type { AuthFlowState, AuthScreenProps } from "./types.ts";
+import { useApiTokenForm } from "./use-api-token-form.ts";
 
 export function Auth(props: AuthScreenProps) {
   const renderer = useRenderer();

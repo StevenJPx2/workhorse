@@ -4,6 +4,7 @@
 
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import type { Database, WorkhorseContext } from "workhorse-core";
+
 import type { AtlassianClient } from "../client.ts";
 import { registerCrossPluginSync } from "../cross-plugin-sync.ts";
 

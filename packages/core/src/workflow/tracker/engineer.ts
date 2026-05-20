@@ -2,6 +2,7 @@ import type { Issue } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService, SearchResult, SessionMemory } from "#services/memory";
 import type { OrchestratorTool, ResolvedSkill } from "#workflow/orchestrator";
+
 import {
   buildInitialPrompt,
   buildResumePrompt,

@@ -8,6 +8,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import type { FigmaClient } from "../client.ts";
 
 /** Tool: Fetch comments and feedback threads from the Figma file */

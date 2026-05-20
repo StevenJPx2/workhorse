@@ -6,8 +6,10 @@
  */
 
 import { debounce } from "es-toolkit";
+
 import type { Issue, Notification } from "#db";
 import type { HookEmitter, HookEventName } from "#lib/hooks";
+
 import type {
   HookHistoryEntry,
   SteeringContext,

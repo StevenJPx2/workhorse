@@ -1,9 +1,11 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { type Client, createClient } from "@libsql/client";
 import { type LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
+
 import { EventController, IssueController, NotificationController } from "./controllers";
 import * as schema from "./schema";
 

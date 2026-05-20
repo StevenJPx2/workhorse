@@ -5,6 +5,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import { extractMediaRefsFromAdf } from "../attachments.ts";
 import type { AtlassianClient } from "../client.ts";
 

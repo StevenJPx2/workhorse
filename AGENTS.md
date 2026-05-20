@@ -30,32 +30,35 @@ plan/                # Build plan — read XX-module.md for module context
 ## Import Rules (oxlint-enforced)
 
 Use path aliases from `packages/core/tsconfig.json`:
+
 ```typescript
-import { SteeringRule } from "#workflow/steering";   // ✅
-import { SteeringRule } from "../../workflow/steering/rule";  // ❌ deep relative
+import { SteeringRule } from "#workflow/steering"; // ✅
+import { SteeringRule } from "../../workflow/steering/rule"; // ❌ deep relative
 ```
 
 Import from module index only:
+
 ```typescript
-import { SteeringRule } from "#workflow/steering";   // ✅
-import { SteeringRule } from "#workflow/steering/rule";  // ❌ reaching into internals
+import { SteeringRule } from "#workflow/steering"; // ✅
+import { SteeringRule } from "#workflow/steering/rule"; // ❌ reaching into internals
 ```
 
 No explicit `/index.ts` on subpaths:
+
 ```typescript
-import { something } from "./types";        // ✅
-import { something } from "./types/index.ts";  // ❌
+import { something } from "./types"; // ✅
+import { something } from "./types/index.ts"; // ❌
 ```
 
 ## Code Constraints
 
-| Rule | Limit | Enforced by |
-|------|-------|-------------|
-| Max file lines | 200 | oxlint `workhorse/max-lines-per-file` |
-| Coverage (lines, functions) | 97% | vitest.config.ts |
-| Coverage (branches) | 95% | vitest.config.ts |
-| Filenames | kebab-case | oxlint |
-| Test location | Colocated (`foo.ts` + `foo.test.ts`) | oxlint |
+| Rule                        | Limit                                | Enforced by                           |
+| --------------------------- | ------------------------------------ | ------------------------------------- |
+| Max file lines              | 200                                  | oxlint `workhorse/max-lines-per-file` |
+| Coverage (lines, functions) | 97%                                  | vitest.config.ts                      |
+| Coverage (branches)         | 95%                                  | vitest.config.ts                      |
+| Filenames                   | kebab-case                           | oxlint                                |
+| Test location               | Colocated (`foo.ts` + `foo.test.ts`) | oxlint                                |
 
 ## Database
 

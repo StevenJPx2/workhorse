@@ -24,22 +24,25 @@ Location: `packages/core/src/workflow/harness/mcp/`
 
 ```typescript
 function createWorkhorseServer(options: {
-  db: Database
-  memory: MemoryService
-  hooks: Hooks
-  issueId: string
-}): McpServer
+  db: Database;
+  memory: MemoryService;
+  hooks: Hooks;
+  issueId: string;
+}): McpServer;
 ```
 
 ## Core Tools
 
 ### `workhorse_acknowledge`
+
 Input: `{ notificationIds: string[] }`. Marks notifications acknowledged.
 
 ### `workhorse_update_status`
+
 Input: `{ status: IssueStatus, message?: string }`. Updates DB, logs event, emits `issue.status_changed` hook (plugins listen: Jira transitions ticket, GitHub updates labels, etc.).
 
 ### `workhorse_escalate`
+
 Input: `{ reason: string, blocking: boolean, question?: string }`. Creates escalation notification (`priority: "blocking"` or `"high"`), emits `notification.created`.
 
 ## Plugin-Contributed Tools
@@ -51,10 +54,16 @@ ctx.hooks.on("mcp.tools.registering", ({ tools }) => {
   tools.push({
     name: "workhorse_open_pr",
     description: "Create a pull request",
-    inputSchema: z.object({ title: z.string(), body: z.string(), baseBranch: z.string().optional() }),
-    handler: async (input) => { /* ... */ },
-  })
-})
+    inputSchema: z.object({
+      title: z.string(),
+      body: z.string(),
+      baseBranch: z.string().optional(),
+    }),
+    handler: async (input) => {
+      /* ... */
+    },
+  });
+});
 ```
 
 ## CLI Entry Point

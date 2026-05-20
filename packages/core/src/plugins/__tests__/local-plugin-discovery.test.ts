@@ -1,9 +1,12 @@
 import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { ConfigPaths } from "#config";
 import { DEFAULT_CONFIG } from "#config";
 import { setContext, unsetContext } from "#context";
 import { hooks } from "#lib/hooks";
+
 import { PluginRegistry } from "../registry.ts";
 
 // Point to the project root where .workhorse/plugins/ exists

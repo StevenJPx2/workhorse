@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { FigmaClient } from "../client.ts";
 
 const originalFetch = globalThis.fetch;

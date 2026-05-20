@@ -40,14 +40,15 @@ ctx.orchestrator.registerSteeringRule({
   name: "PR Review Reminder",
   description: "Reminds agents to check for PR reviews when idle",
   condition: {
-    status: ["in_review"],            // Only when issue is in_review
-    hook: ["agent.idle"],            // Only after agent goes idle
-    when: async (ctx) => {           // Custom condition check
-      return ctx.notifications.some(n => n.source === "github");
+    status: ["in_review"], // Only when issue is in_review
+    hook: ["agent.idle"], // Only after agent goes idle
+    when: async (ctx) => {
+      // Custom condition check
+      return ctx.notifications.some((n) => n.source === "github");
     },
   },
   reminder: async (ctx) => {
-    const reviews = ctx.notifications.filter(n => n.source === "github");
+    const reviews = ctx.notifications.filter((n) => n.source === "github");
     return `You have ${reviews.length} unread review notification(s). Check for feedback.`;
   },
   priority: 10,
@@ -68,7 +69,7 @@ ctx.orchestrator.registerSteeringRule({
     status: ["blocked"],
   },
   reminder: "You are marked as blocked. Check your notifications for human responses.",
-  once: true,  // Only fires once per agent session
+  once: true, // Only fires once per agent session
 });
 ```
 
@@ -158,9 +159,9 @@ cooldown_ms = 30000     # Minimum time between reminders (ms)
 
 ```typescript
 interface SteeringConfig {
-  debounceMs: number;    // Debounce agent.idle events before evaluation
-  maxReminders: number;  // Maximum reminders per rule
-  cooldownMs: number;    // Minimum time between reminders from same rule
+  debounceMs: number; // Debounce agent.idle events before evaluation
+  maxReminders: number; // Maximum reminders per rule
+  cooldownMs: number; // Minimum time between reminders from same rule
 }
 ```
 
@@ -222,12 +223,12 @@ for (const rule of this.steering) rule.dispose();
 
 ## Hooks
 
-| Event | Payload | When |
-|-------|---------|------|
-| `steering.reminder` | `{ issueId, reminder }` | Rule evaluates to true and emits reminder |
-| `agent.idle` | `{ issueId }` | Agent becomes idle (triggers evaluation) |
-| `agent.tool_call` | `{ tool, args }` | Agent calls a tool (tracked in toolHistory) |
-| `issue.status_changed` | `{ issue, from, to }` | Issue status changes (tracked by rule) |
+| Event                  | Payload                 | When                                        |
+| ---------------------- | ----------------------- | ------------------------------------------- |
+| `steering.reminder`    | `{ issueId, reminder }` | Rule evaluates to true and emits reminder   |
+| `agent.idle`           | `{ issueId }`           | Agent becomes idle (triggers evaluation)    |
+| `agent.tool_call`      | `{ tool, args }`        | Agent calls a tool (tracked in toolHistory) |
+| `issue.status_changed` | `{ issue, from, to }`   | Issue status changes (tracked by rule)      |
 
 ## Types
 
@@ -240,8 +241,8 @@ interface SteeringRuleConfig {
   description: string;
   condition: SteeringCondition;
   reminder: (ctx: SteeringContext) => Promise<string>;
-  priority: number;     // default: 0
-  once: boolean;        // default: false
+  priority: number; // default: 0
+  once: boolean; // default: false
 }
 ```
 
@@ -249,10 +250,10 @@ interface SteeringRuleConfig {
 
 ```typescript
 interface SteeringCondition {
-  status: IssueStatus[];          // default: []
-  source: string[];              // default: []
-  hook: string[];                // default: []
-  when: (ctx: SteeringContext) => Promise<boolean>;  // default: async () => true
+  status: IssueStatus[]; // default: []
+  source: string[]; // default: []
+  hook: string[]; // default: []
+  when: (ctx: SteeringContext) => Promise<boolean>; // default: async () => true
 }
 ```
 
@@ -260,8 +261,8 @@ interface SteeringCondition {
 
 ```typescript
 interface ToolHistoryEntry {
-  name: string;      // Tool name (e.g., "edit", "github_open_pr")
-  args: unknown;     // Arguments passed
+  name: string; // Tool name (e.g., "edit", "github_open_pr")
+  args: unknown; // Arguments passed
   timestamp: number; // Unix timestamp
 }
 ```
@@ -270,16 +271,16 @@ interface ToolHistoryEntry {
 
 ```typescript
 interface HookHistoryEntry {
-  name: string;      // Hook name
+  name: string; // Hook name
   timestamp: number; // Unix timestamp
-  payload: unknown;  // Hook payload
+  payload: unknown; // Hook payload
 }
 ```
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `rule.ts` | SteeringRule class — autonomous evaluation and reminder emission |
-| `types.ts` | Zod schemas and TypeScript types for steering configuration |
-| `index.ts` | Barrel exports |
+| File       | Purpose                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `rule.ts`  | SteeringRule class — autonomous evaluation and reminder emission |
+| `types.ts` | Zod schemas and TypeScript types for steering configuration      |
+| `index.ts` | Barrel exports                                                   |

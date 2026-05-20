@@ -1,6 +1,7 @@
 import { createHooks, type HookKeys } from "hookable";
-import type { HookCallbacks, HookPayload, HookEmitter } from "./types.ts";
+
 import { createDeferredHooks } from "./deferred.ts";
+import type { HookCallbacks, HookPayload, HookEmitter } from "./types.ts";
 
 // Create the underlying hookable instance
 const hookable = createHooks<HookCallbacks>();

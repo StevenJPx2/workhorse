@@ -1,8 +1,9 @@
 import type { WorkhorseConfig } from "#config";
 import type { Database, Issue } from "#db";
-import type { HookEmitter } from "#lib/hooks";
 import { removeWorktree } from "#lib/git";
+import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
+
 import type { BuildPromptOptions } from "./engineer.ts";
 import { IssueParser, type IssueParserOptions } from "./parser.ts";
 

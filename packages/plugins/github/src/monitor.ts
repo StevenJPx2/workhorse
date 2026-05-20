@@ -8,7 +8,8 @@
  * @module workhorse-plugin-github/monitor
  */
 
-import { type Database, isWorkhorseGenerated, type MonitorOptions } from "workhorse-core";
+import { type Database, isWorkhorseGenerated, type PollingMonitorOptions } from "workhorse-core";
+
 import type { GitHubClient } from "./client.ts";
 // Import hooks types to enable module augmentation
 import "./hooks.ts";
@@ -28,10 +29,10 @@ export function createGitHubPRMonitor(
   client: GitHubClient,
   interval: number,
   db: Database,
-): MonitorOptions {
+): PollingMonitorOptions {
   return {
     id: "github-pr",
-    type: "remote",
+    type: "polling",
     interval,
     poll: async (ctx) => {
       // ctx.issueId is the internal UUID (monitors are started with issue.id)

@@ -6,7 +6,8 @@
  * @module workhorse-plugin-jira/monitor
  */
 
-import type { Database, MonitorOptions } from "workhorse-core";
+import type { Database, PollingMonitorOptions } from "workhorse-core";
+
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraComment } from "./mapper.ts";
 
@@ -18,10 +19,10 @@ export function createJiraCommentMonitor(
   client: AtlassianClient,
   interval: number,
   db: Database,
-): MonitorOptions {
+): PollingMonitorOptions {
   return {
     id: "jira-comments",
-    type: "remote",
+    type: "polling",
     interval,
     poll: async (ctx) => {
       // ctx.issueId is the internal UUID (monitors are started with issue.id)

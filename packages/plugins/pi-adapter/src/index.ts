@@ -8,6 +8,7 @@
  */
 
 import { definePlugin } from "workhorse-core";
+
 import { PiAgentAdapter } from "./adapter.ts";
 import { piToolRenderer } from "./renderers.ts";
 

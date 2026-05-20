@@ -11,17 +11,17 @@ bun run --filter workhorse-core test   # Test single package
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `bun install` | Install all dependencies |
-| `bun run check` | Full audit (lint → typecheck → test → fallow) |
-| `bun run test` | Run tests across all packages |
-| `bun run typecheck` | TypeScript type checking |
-| `bun run lint` | Run oxlint |
-| `bun run lint:fix` | Fix linting issues |
-| `bun run format` | Check formatting with oxfmt |
-| `bun run format:fix` | Fix formatting |
-| `bun run fallow` | Run fallow analysis |
+| Command              | Description                                   |
+| -------------------- | --------------------------------------------- |
+| `bun install`        | Install all dependencies                      |
+| `bun run check`      | Full audit (lint → typecheck → test → fallow) |
+| `bun run test`       | Run tests across all packages                 |
+| `bun run typecheck`  | TypeScript type checking                      |
+| `bun run lint`       | Run oxlint                                    |
+| `bun run lint:fix`   | Fix linting issues                            |
+| `bun run format`     | Check formatting with oxfmt                   |
+| `bun run format:fix` | Fix formatting                                |
+| `bun run fallow`     | Run fallow analysis                           |
 
 ### Package-specific
 
@@ -33,13 +33,13 @@ cd packages/core && bunx drizzle-kit generate  # Generate DB migrations
 
 ## Code Constraints
 
-| Rule | Limit | Enforced by |
-|------|-------|-------------|
-| Max file lines | 200 | oxlint `workhorse/max-lines-per-file` |
-| Coverage (lines, functions) | 97% | vitest.config.ts |
-| Coverage (branches) | 95% | vitest.config.ts |
-| Filenames | kebab-case | oxlint |
-| Test location | Colocated (`foo.ts` + `foo.test.ts`) | oxlint |
+| Rule                        | Limit                                | Enforced by                           |
+| --------------------------- | ------------------------------------ | ------------------------------------- |
+| Max file lines              | 200                                  | oxlint `workhorse/max-lines-per-file` |
+| Coverage (lines, functions) | 97%                                  | vitest.config.ts                      |
+| Coverage (branches)         | 95%                                  | vitest.config.ts                      |
+| Filenames                   | kebab-case                           | oxlint                                |
+| Test location               | Colocated (`foo.ts` + `foo.test.ts`) | oxlint                                |
 
 ## Import Rules (enforced by oxlint)
 
@@ -84,6 +84,7 @@ import { something } from "./types/index.ts";
 ### Location
 
 Tests are colocated with source files:
+
 ```
 foo.ts
 foo.test.ts
@@ -150,7 +151,7 @@ export default definePlugin({
   configSchema: MyConfigSchema,
   setup(config) {
     const { hooks, tracker, orchestrator, monitors } = useWorkhorse();
-    
+
     // Register parsers, tools, monitors, steering rules
   },
   teardown() {
@@ -175,15 +176,18 @@ await jt.plugins.setup();
 Each package has detailed architecture documentation:
 
 **Core:**
+
 - [`packages/core/README.md`](../packages/core/README.md) — Full architecture overview
 
 **Plugins:**
+
 - [`packages/plugins/github/README.md`](../packages/plugins/github/README.md) — GitHub integration
 - [`packages/plugins/jira/README.md`](../packages/plugins/jira/README.md) — Jira integration
 - [`packages/plugins/pi-adapter/README.md`](../packages/plugins/pi-adapter/README.md) — Pi adapter
 - [`packages/plugins/playwright/README.md`](../packages/plugins/playwright/README.md) — Browser automation
 
 **Other:**
+
 - [`packages/tui/README.md`](../packages/tui/README.md) — Terminal UI
 - [`oxlint/eslint-plugin-workhorse/README.md`](../oxlint/eslint-plugin-workhorse/README.md) — Custom lint rules
 

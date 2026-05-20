@@ -1,8 +1,9 @@
-import { createSignal, createMemo, onMount } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
-import { getTheme } from "../../theme.ts";
-import { ui } from "../../state/ui.ts";
+import { createSignal, createMemo, onMount } from "solid-js";
+
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
+import { ui } from "../../state/ui.ts";
+import { getTheme } from "../../theme.ts";
 import { useModelSelectorKeyboard } from "./use-keyboard-nav.ts";
 
 interface ModelSelectorModalProps {

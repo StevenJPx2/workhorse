@@ -3,10 +3,9 @@
  * @module workflow/orchestrator/types/adapter
  */
 
-import type { SpawnOptions } from "./spawn.ts";
-
 // Import type-only to avoid circular dependency at runtime
 import type { HarnessOrchestrator } from "../orchestrator.ts";
+import type { SpawnOptions } from "./spawn.ts";
 
 /**
  * Agent harness identifier.

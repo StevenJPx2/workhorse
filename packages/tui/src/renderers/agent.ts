@@ -5,6 +5,7 @@
  */
 
 import type { Notification } from "workhorse-core";
+
 import type { ActivityInput, RenderedActivity } from "./types.ts";
 
 /**

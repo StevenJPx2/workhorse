@@ -62,7 +62,7 @@ describe("hooks", () => {
 
     hooks.on("*", handler);
     hooks.emit("plugin.loaded", { name: "jira" });
-    hooks.emit("monitor.registered", { name: "jira-poller", type: "remote" });
+    hooks.emit("monitor.registered", { name: "jira-poller", type: "polling" });
 
     expect(events).toEqual(["plugin.loaded", "monitor.registered"]);
 

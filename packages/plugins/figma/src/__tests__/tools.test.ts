@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+
 import type { FigmaClient } from "../client.ts";
 import { createFigmaTools } from "../tools";
 

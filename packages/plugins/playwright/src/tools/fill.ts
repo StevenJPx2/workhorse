@@ -5,8 +5,9 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
-import { fill } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { fill } from "../session-operations.ts";
 
 /** Create the playwright_fill tool */
 export function createFillTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {

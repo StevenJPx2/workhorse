@@ -17,6 +17,7 @@ Workhorse uses TOML configuration files with cascading merge (global → project
 ### Config File Locations
 
 **Global** (first found wins):
+
 1. `~/.workhorse.toml`
 2. `~/.config/workhorse.toml`
 3. `~/.config/workhorse/config.toml`
@@ -28,6 +29,7 @@ Project config overrides global. Missing keys fall back to defaults.
 ### Data Directory
 
 Application data (database, logs, cache) lives in:
+
 - `~/.local/share/workhorse/`
 
 Respects `XDG_DATA_HOME` if set: `$XDG_DATA_HOME/workhorse/`

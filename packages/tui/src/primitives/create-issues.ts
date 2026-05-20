@@ -1,5 +1,6 @@
 import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
 import type { Issue } from "workhorse-core";
+
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { getRepoIdentifier } from "./get-repo-identifier.ts";
 

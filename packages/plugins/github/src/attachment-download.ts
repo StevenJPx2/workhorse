@@ -5,6 +5,7 @@
  */
 
 import type { AttachmentService, StoredAttachment } from "workhorse-core";
+
 import type { GitHubAttachment } from "./types.ts";
 
 /** Download an image from a URL */

@@ -2,8 +2,10 @@
  * Tests for path validation utilities.
  */
 
-import { describe, it, expect } from "vitest";
 import { resolve } from "node:path";
+
+import { describe, it, expect } from "vitest";
+
 import { validatePath, isPathAllowed, assertPathAllowed, createPathValidator } from "../index.ts";
 
 describe("validatePath", () => {

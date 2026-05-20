@@ -1,9 +1,10 @@
-import type { AgentAdapter } from "workhorse-core";
 import { createMemo, For, Show } from "solid-js";
+import type { AgentAdapter } from "workhorse-core";
+
 import { createAgents } from "../primitives/create-agents.ts";
 import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
-import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
+import { getTheme } from "../theme.ts";
 import { WorkhorseStatus } from "./workhorse-status.tsx";
 
 interface AgentListProps {

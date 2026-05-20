@@ -4,13 +4,14 @@
  */
 
 import { createSignal, For, Show } from "solid-js";
+
 import { getTheme } from "../../theme.ts";
-import type { SetupPluginConfig, SetupScreenProps } from "./types.ts";
-import { useSetupKeyboard } from "./use-setup-keyboard.ts";
+import { SetupField } from "./setup-field.tsx";
 import { SetupHeader } from "./setup-header.tsx";
 import { SetupPluginTabs } from "./setup-plugin-tabs.tsx";
-import { SetupField } from "./setup-field.tsx";
 import { SetupStatusBar } from "./setup-status-bar.tsx";
+import type { SetupPluginConfig, SetupScreenProps } from "./types.ts";
+import { useSetupKeyboard } from "./use-setup-keyboard.ts";
 
 export function Setup(props: SetupScreenProps) {
   const theme = getTheme();

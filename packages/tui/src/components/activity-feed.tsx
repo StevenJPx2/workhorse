@@ -4,10 +4,11 @@
  */
 
 import { For, Show, type Accessor } from "solid-js";
+
 import type { ActivityState } from "../state/activity-store.ts";
-import { ActivityItemRow } from "./activity-rows.tsx";
-import { getTheme } from "../theme.ts";
 import { ui } from "../state/ui.ts";
+import { getTheme } from "../theme.ts";
+import { ActivityItemRow } from "./activity-rows.tsx";
 
 interface ActivityFeedProps {
   state: Accessor<ActivityState>;

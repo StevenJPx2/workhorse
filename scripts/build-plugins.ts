@@ -16,6 +16,7 @@
 import { readdir, stat } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { parseArgs } from "node:util";
+
 import { $ } from "bun";
 
 const PLUGINS_DIR = resolve(import.meta.dir, "../packages/plugins");

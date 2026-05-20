@@ -1,6 +1,7 @@
 import type { WorkhorseConfig } from "#config";
 import type { Issue } from "#db";
 import type { MemoryService } from "#services/memory";
+
 import { type BuildPromptOptions, PromptEngineer } from "./engineer.ts";
 import type { IssueSource, ParsedIssue } from "./types.ts";
 

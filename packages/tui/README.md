@@ -76,11 +76,11 @@ This package provides the interactive terminal interface for Workhorse:
 type Screen = "overview" | "agent" | "help";
 ```
 
-| Screen | Layout | Purpose |
-|--------|--------|---------|
+| Screen   | Layout                     | Purpose                      |
+| -------- | -------------------------- | ---------------------------- |
 | Overview | Two-pane: issues \| agents | Main dashboard, spawn agents |
-| Agent | Activity feed + sidebar | Monitor agent, send messages |
-| Help | Keyboard shortcuts | Reference |
+| Agent    | Activity feed + sidebar    | Monitor agent, send messages |
+| Help     | Keyboard shortcuts         | Reference                    |
 
 ### Reactive Primitives
 
@@ -117,7 +117,7 @@ const changes = createFileChanges(worktreePath);
 ```typescript
 function createAgents() {
   const [version, setVersion] = createSignal(0);
-  const bump = () => setVersion(v => v + 1);
+  const bump = () => setVersion((v) => v + 1);
 
   // Subscribe to relevant hooks
   const { hooks, orchestrator } = useWorkhorseContext();
@@ -127,7 +127,7 @@ function createAgents() {
 
   // Memo recomputes when version changes
   return createMemo(() => {
-    version();  // Subscribe to version
+    version(); // Subscribe to version
     return orchestrator.getAll();
   });
 }
@@ -171,6 +171,7 @@ function renderActivity(input: ActivityInput): RenderedActivity {
 ```
 
 **Built-in renderers:**
+
 - `agent` — Agent lifecycle events (start, stop, idle)
 - Plugins add their own (Pi tools, Playwright, etc.)
 
@@ -200,18 +201,18 @@ const ui = {
 
 Focus-aware shortcuts:
 
-| Context | Key | Action |
-|---------|-----|--------|
-| Global | `q` | Quit |
-| Global | `?` | Show help |
-| Global | `Ctrl+X M` | Model selector |
-| Overview | `Tab` | Cycle focus (issues → agents → chat) |
-| Overview | `↑/↓` | Navigate list |
-| Overview | `Enter` | Select/spawn |
-| Overview (agents focused) | `s` | Stop selected agent |
-| Agent | `s` | Stop agent |
-| Agent | `Esc` | Back to overview |
-| Chat | `Enter` | Send message |
+| Context                   | Key        | Action                               |
+| ------------------------- | ---------- | ------------------------------------ |
+| Global                    | `q`        | Quit                                 |
+| Global                    | `?`        | Show help                            |
+| Global                    | `Ctrl+X M` | Model selector                       |
+| Overview                  | `Tab`      | Cycle focus (issues → agents → chat) |
+| Overview                  | `↑/↓`      | Navigate list                        |
+| Overview                  | `Enter`    | Select/spawn                         |
+| Overview (agents focused) | `s`        | Stop selected agent                  |
+| Agent                     | `s`        | Stop agent                           |
+| Agent                     | `Esc`      | Back to overview                     |
+| Chat                      | `Enter`    | Send message                         |
 
 ## Startup Flow
 
@@ -334,16 +335,16 @@ Configure and spawn agent:
 
 ## Dependencies on Core
 
-| Import | Usage |
-|--------|-------|
-| `bootstrap` | Initialize core |
-| `WorkhorseContext` | Service access |
-| `HookEmitter` | Event subscription |
-| `Tracker` | Issue management |
-| `HarnessOrchestrator` | Agent lifecycle |
-| `MemoryService` | Chat/notifications |
-| `MonitorService` | Monitor status |
-| `AgentAdapter` | Agent state/control |
+| Import                | Usage               |
+| --------------------- | ------------------- |
+| `bootstrap`           | Initialize core     |
+| `WorkhorseContext`    | Service access      |
+| `HookEmitter`         | Event subscription  |
+| `Tracker`             | Issue management    |
+| `HarnessOrchestrator` | Agent lifecycle     |
+| `MemoryService`       | Chat/notifications  |
+| `MonitorService`      | Monitor status      |
+| `AgentAdapter`        | Agent state/control |
 
 ## Why This Architecture
 

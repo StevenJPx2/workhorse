@@ -1,6 +1,7 @@
 import { createRoot, createSignal } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MonitorService } from "workhorse-core";
+
 import { createMonitors } from "./create-monitors";
 
 function mockMonitorService(
@@ -53,7 +54,7 @@ describe("createMonitors", () => {
       const statuses = [
         {
           id: "ci",
-          type: "remote" as const,
+          type: "polling" as const,
           issueId: "AM-123",
           state: "running" as const,
           errorCount: 0,
@@ -118,7 +119,7 @@ describe("createMonitors", () => {
         [
           {
             id: "a",
-            type: "remote" as const,
+            type: "polling" as const,
             issueId: "AM-123",
             state: "running" as const,
             errorCount: 0,
@@ -127,14 +128,14 @@ describe("createMonitors", () => {
         [
           {
             id: "a",
-            type: "remote" as const,
+            type: "polling" as const,
             issueId: "AM-123",
             state: "running" as const,
             errorCount: 0,
           },
           {
             id: "b",
-            type: "local" as const,
+            type: "event" as const,
             issueId: "AM-123",
             state: "running" as const,
             errorCount: 0,

@@ -63,6 +63,7 @@ workhorse spawn https://github.com/owner/repo/issues/123
 ```
 
 **Options:**
+
 - `--harness <name>` — Override default harness (pi-coding-agent, claude-code, etc.)
 - `--model <model>` — Override default model
 - `--base <branch>` — Base branch for worktree (default: main)
@@ -71,6 +72,7 @@ workhorse spawn https://github.com/owner/repo/issues/123
 - `--json` — Output JSON instead of human-readable
 
 **Flow:**
+
 1. Parse issue via Tracker
 2. Call `orchestrator.spawn()`
 3. Stream `agent.output` events to stdout
@@ -85,7 +87,11 @@ import { createContext } from "../context.ts";
 export const spawnCommand = defineCommand({
   meta: { name: "spawn", description: "Start an agent on an issue" },
   args: {
-    issue: { type: "positional", description: "Issue identifier (e.g., AM-123, owner/repo#45)", required: true },
+    issue: {
+      type: "positional",
+      description: "Issue identifier (e.g., AM-123, owner/repo#45)",
+      required: true,
+    },
     harness: { type: "string", alias: "h", description: "Agent harness to use" },
     model: { type: "string", alias: "m", description: "Model to use" },
     base: { type: "string", alias: "b", default: "main", description: "Base branch" },
@@ -150,6 +156,7 @@ workhorse stop --all
 ```
 
 **Options:**
+
 - `--all` — Stop all running agents
 - `--remove-worktree` — Also delete the worktree
 - `--force` — Don't wait for graceful shutdown
@@ -165,10 +172,12 @@ workhorse list --status running
 ```
 
 **Options:**
+
 - `--json` — Output JSON
 - `--status <state>` — Filter by state (running, stopped, crashed)
 
 **Output:**
+
 ```
 ISSUE           HARNESS           STATUS    WORKTREE
 AM-123          pi-coding-agent   running   ../workhorse-worktrees/AM-123
@@ -185,6 +194,7 @@ workhorse status AM-123
 ```
 
 **Output:**
+
 ```
 Issue:        AM-123 — Fix the login bug
 Status:       running
@@ -214,6 +224,7 @@ workhorse send AM-123 --file ./instructions.md
 ```
 
 **Options:**
+
 - `--file <path>` — Read message from file
 - `--steer` — Force steer mode (interrupt streaming)
 
@@ -287,8 +298,8 @@ p.cancel("Operation cancelled");
 
 ```typescript
 // output/formatters.ts
-export function table(headers: string[], rows: string[][]): string
-export function json<T>(data: T): string
+export function table(headers: string[], rows: string[][]): string;
+export function json<T>(data: T): string;
 ```
 
 Table formatting is the only thing Clack doesn't provide — we'll implement a simple column-aligned formatter.
@@ -325,6 +336,7 @@ export async function destroyContext(): Promise<void> {
 ## Global Options
 
 All commands support:
+
 - `--verbose, -v` — Verbose output (debug logs)
 - `--quiet, -q` — Suppress non-essential output
 - `--json` — Output JSON (machine-readable)

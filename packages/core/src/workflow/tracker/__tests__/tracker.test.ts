@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { WorkhorseConfig } from "#config";
 import { Database } from "#db";
 import { hooks } from "#lib/hooks";

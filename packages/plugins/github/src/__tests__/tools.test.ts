@@ -2,8 +2,9 @@
  * Tests for GitHub tools.
  */
 
-import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import type { AttachmentService, OrchestratorTool } from "workhorse-core";
+
 import type { GitHubClient } from "../client.ts";
 import { createGitHubTools } from "../tools";
 

@@ -6,6 +6,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import { countImagesInMarkdown } from "../attachments.ts";
 import type { GitHubClient } from "../client";
 import type {

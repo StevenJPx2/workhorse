@@ -47,10 +47,18 @@ class MyAdapter extends AgentAdapter {
   static override readonly displayName = "My Harness";
   static override readonly icon = "🔧";
 
-  protected override async doStart(): Promise<void> { /* ... */ }
-  override async sendMessage(content: string): Promise<void> { /* ... */ }
-  protected override async doStop(): Promise<void> { /* ... */ }
-  override isRunning(): boolean { /* ... */ }
+  protected override async doStart(): Promise<void> {
+    /* ... */
+  }
+  override async sendMessage(content: string): Promise<void> {
+    /* ... */
+  }
+  protected override async doStop(): Promise<void> {
+    /* ... */
+  }
+  override isRunning(): boolean {
+    /* ... */
+  }
 }
 
 export default definePlugin({
@@ -123,10 +131,10 @@ ctx.orchestrator.registerSteeringRule({
 
 ```typescript
 const adapter = await orchestrator.spawn({
-  issue,                            // Issue from DB
-  repoPath: "/path/to/repo",        // Main git repo
-  baseBranch: "main",               // Base branch for worktree
-  harness: "pi-coding-agent",       // Adapter to use (optional, uses config default)
+  issue, // Issue from DB
+  repoPath: "/path/to/repo", // Main git repo
+  baseBranch: "main", // Base branch for worktree
+  harness: "pi-coding-agent", // Adapter to use (optional, uses config default)
   model: "anthropic/claude-sonnet-4", // Model to use (optional)
 });
 
@@ -195,34 +203,34 @@ const model = orchestrator.findModelInAdapter("pi", "anthropic", "claude-sonnet-
 
 ### Agent States
 
-| State | Description |
-|-------|-------------|
-| `stopped` | Agent not running (initial or after stop) |
-| `starting` | Agent is initializing |
-| `running` | Agent is active and processing |
-| `stopping` | Agent is shutting down |
-| `crashed` | Agent failed during startup |
+| State      | Description                               |
+| ---------- | ----------------------------------------- |
+| `stopped`  | Agent not running (initial or after stop) |
+| `starting` | Agent is initializing                     |
+| `running`  | Agent is active and processing            |
+| `stopping` | Agent is shutting down                    |
+| `crashed`  | Agent failed during startup               |
 
 ### AgentAdapter Abstract Methods
 
 Subclasses must implement these methods:
 
-| Method | Description |
-|--------|-------------|
-| `doStart()` | Harness-specific start logic |
-| `sendMessage(content)` | Send a message to the running agent |
-| `doStop()` | Harness-specific stop/cleanup logic |
-| `isRunning()` | Whether the agent is actively processing |
+| Method                 | Description                              |
+| ---------------------- | ---------------------------------------- |
+| `doStart()`            | Harness-specific start logic             |
+| `sendMessage(content)` | Send a message to the running agent      |
+| `doStop()`             | Harness-specific stop/cleanup logic      |
+| `isRunning()`          | Whether the agent is actively processing |
 
 ### Static Properties
 
 Each adapter class defines:
 
-| Property | Description |
-|----------|-------------|
-| `displayName` | Human-readable name for the harness |
-| `icon` | Emoji icon for display |
-| `registry` | ModelRegistry instance for this harness |
+| Property      | Description                             |
+| ------------- | --------------------------------------- |
+| `displayName` | Human-readable name for the harness     |
+| `icon`        | Emoji icon for display                  |
+| `registry`    | ModelRegistry instance for this harness |
 
 ## Built-in Tools
 
@@ -234,10 +242,13 @@ Marks notification(s) as read after the agent processes them.
 
 ```typescript
 // Acknowledge specific notifications
-{ notificationIds: ["notif-1", "notif-2"] }
+{
+  notificationIds: ["notif-1", "notif-2"];
+}
 
 // Acknowledge all unread for current issue
-{}
+{
+}
 ```
 
 ### workhorse_update_status
@@ -245,7 +256,9 @@ Marks notification(s) as read after the agent processes them.
 Updates the current issue's status to reflect progress.
 
 ```typescript
-{ status: "implementing" }  // Valid: pending, queued, planning, implementing, blocked, in_review, done
+{
+  status: "implementing";
+} // Valid: pending, queued, planning, implementing, blocked, in_review, done
 ```
 
 ### workhorse_escalate
@@ -258,18 +271,18 @@ Escalates to a human when blocked or needing clarification.
 
 ## Hooks Emitted
 
-| Event | Payload | When |
-|-------|---------|------|
-| `agent.create.pre` | `{ issue, options }` | Before adapter initialization |
-| `agent.create.post` | `{ adapter }` | After adapter initialization |
-| `agent.start.pre` | `{ adapter }` | Before agent starts |
-| `agent.start.post` | `{ adapter }` | After agent starts successfully |
-| `agent.stop.pre` | `{ adapter }` | Before agent stops |
-| `agent.stop.post` | `{ adapter }` | After agent stops |
-| `agent.idle` | `{ issueId }` | Agent becomes idle |
-| `agent.tool_call` | `{ tool, args }` | Agent calls a tool |
-| `steering.reminder` | `{ issueId, reminder }` | Steering rule fires |
-| `issue.status_changed` | `{ issue, from, to }` | Issue status changes |
+| Event                  | Payload                 | When                            |
+| ---------------------- | ----------------------- | ------------------------------- |
+| `agent.create.pre`     | `{ issue, options }`    | Before adapter initialization   |
+| `agent.create.post`    | `{ adapter }`           | After adapter initialization    |
+| `agent.start.pre`      | `{ adapter }`           | Before agent starts             |
+| `agent.start.post`     | `{ adapter }`           | After agent starts successfully |
+| `agent.stop.pre`       | `{ adapter }`           | Before agent stops              |
+| `agent.stop.post`      | `{ adapter }`           | After agent stops               |
+| `agent.idle`           | `{ issueId }`           | Agent becomes idle              |
+| `agent.tool_call`      | `{ tool, args }`        | Agent calls a tool              |
+| `steering.reminder`    | `{ issueId, reminder }` | Steering rule fires             |
+| `issue.status_changed` | `{ issue, from, to }`   | Issue status changes            |
 
 ## Types
 
@@ -334,13 +347,13 @@ interface ModelInfo {
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `orchestrator.ts` | HarnessOrchestrator class — adapter registry, tool registry, agent management |
-| `agent.ts` | AgentAdapter abstract class — lifecycle, worktree, prompt, steering |
-| `registry.ts` | ModelRegistry abstract class — adapter-specific model discovery |
-| `types/adapter.ts` | Agent types (AgentState, CreateOptions, SpawnOptions, etc.) |
-| `types/tools.ts` | Tool types (OrchestratorTool, ToolExecutionContext, ToolResult) |
-| `types/spawn.ts` | Spawn-related types |
-| `types/index.ts` | Barrel re-exports |
-| `index.ts` | Module barrel exports |
+| File               | Purpose                                                                       |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `orchestrator.ts`  | HarnessOrchestrator class — adapter registry, tool registry, agent management |
+| `agent.ts`         | AgentAdapter abstract class — lifecycle, worktree, prompt, steering           |
+| `registry.ts`      | ModelRegistry abstract class — adapter-specific model discovery               |
+| `types/adapter.ts` | Agent types (AgentState, CreateOptions, SpawnOptions, etc.)                   |
+| `types/tools.ts`   | Tool types (OrchestratorTool, ToolExecutionContext, ToolResult)               |
+| `types/spawn.ts`   | Spawn-related types                                                           |
+| `types/index.ts`   | Barrel re-exports                                                             |
+| `index.ts`         | Module barrel exports                                                         |

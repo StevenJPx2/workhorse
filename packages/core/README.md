@@ -117,7 +117,7 @@ await db.issues.insert({
   externalId: "PROJ-123",
   source: "jira",
   status: "queued",
-  metadata: { title: "Fix bug" }
+  metadata: { title: "Fix bug" },
 });
 
 // Query with type safety
@@ -147,16 +147,16 @@ await hooks.callHook("prompt.building", { contextBlocks });
 
 **Core events:**
 
-| Category | Events |
-|----------|--------|
-| Issues | `issue.parsed`, `issue.status_changed`, `issue.deleted` |
-| Prompts | `prompt.building`, `prompt.built` |
-| Agent | `agent.create.pre/post`, `agent.start.pre/post`, `agent.stop.pre/post`, `agent.idle`, `agent.output` |
-| Steering | `steering.reminder` |
-| Notifications | `notification.created` |
-| Monitors | `monitor.registered`, `monitor.tick`, `monitor.error` |
-| Plugins | `plugin.loaded`, `plugin.error` |
-| TUI | `tui.register_renderer` |
+| Category      | Events                                                                                               |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| Issues        | `issue.parsed`, `issue.status_changed`, `issue.deleted`                                              |
+| Prompts       | `prompt.building`, `prompt.built`                                                                    |
+| Agent         | `agent.create.pre/post`, `agent.start.pre/post`, `agent.stop.pre/post`, `agent.idle`, `agent.output` |
+| Steering      | `steering.reminder`                                                                                  |
+| Notifications | `notification.created`                                                                               |
+| Monitors      | `monitor.registered`, `monitor.tick`, `monitor.error`                                                |
+| Plugins       | `plugin.loaded`, `plugin.error`                                                                      |
+| TUI           | `tui.register_renderer`                                                                              |
 
 **Deferred hooks pattern:** During plugin setup, certain hooks are buffered and replayed after all plugins have subscribed. This solves the ordering problem where Plugin A emits during setup but Plugin B hasn't subscribed yet.
 
@@ -200,6 +200,7 @@ export default definePlugin({
 ```
 
 **Plugin discovery order:**
+
 1. User-provided plugins (`bootstrap({ plugins })`)
 2. Custom plugins from `~/.workhorse/plugins/` and `.workhorse/plugins/`
 3. Core plugins (built-in tools, local parser)
@@ -240,10 +241,10 @@ abstract class AgentAdapter {
   static registry: ModelRegistry;
 
   // Lifecycle
-  async initialize(): Promise<void>;  // Setup worktree + build prompt
-  async start(): Promise<void>;       // Begin agent execution
+  async initialize(): Promise<void>; // Setup worktree + build prompt
+  async start(): Promise<void>; // Begin agent execution
   async sendMessage(content: string): Promise<void>;
-  async stop(): Promise<void>;        // Terminate
+  async stop(): Promise<void>; // Terminate
 
   // State
   issue: Issue;
@@ -296,6 +297,7 @@ orchestrator.registerSteeringRule({
 ```
 
 **Flow:**
+
 1. Agent goes idle → `agent.idle` hook fires
 2. SteeringRule evaluates conditions
 3. If matched: build context → call `reminder()` → emit `steering.reminder`
@@ -339,7 +341,7 @@ hooks.on("prompt.building", (ctx) => {
     id: "github-pr",
     title: "Pull Request",
     content: "PR #45 has 2 pending reviews...",
-    priority: 10,  // Lower = earlier in prompt
+    priority: 10, // Lower = earlier in prompt
   });
 });
 ```
@@ -352,10 +354,10 @@ hooks.on("prompt.building", (ctx) => {
 
 **Two-tier architecture:**
 
-| Tier | Storage | Use Case |
-|------|---------|----------|
-| L1 | `.workhorse/session/context.md` per worktree | Fast read/write, structured sections |
-| L2 | retriv (FTS5 + vectors) | Semantic search across history |
+| Tier | Storage                                      | Use Case                             |
+| ---- | -------------------------------------------- | ------------------------------------ |
+| L1   | `.workhorse/session/context.md` per worktree | Fast read/write, structured sections |
+| L2   | retriv (FTS5 + vectors)                      | Semantic search across history       |
 
 ```typescript
 // L1: Per-issue session memory
@@ -419,12 +421,12 @@ Auto-stops after 5 consecutive errors. Emits `monitor.tick` on changes.
 
 **Problem:** Unified authentication for plugins with different flows.
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `oauth` | Full OAuth 2.0 with local callback | Jira Cloud |
-| `external` | Delegate to CLI tool | GitHub CLI |
-| `apitoken` | User-provided API token | Linear |
-| `none` | No auth required | Local parser |
+| Type       | Description                        | Example      |
+| ---------- | ---------------------------------- | ------------ |
+| `oauth`    | Full OAuth 2.0 with local callback | Jira Cloud   |
+| `external` | Delegate to CLI tool               | GitHub CLI   |
+| `apitoken` | User-provided API token            | Linear       |
+| `none`     | No auth required                   | Local parser |
 
 ```typescript
 definePlugin({

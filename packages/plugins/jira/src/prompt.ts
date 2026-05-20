@@ -7,8 +7,9 @@
  */
 
 import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";
-import type { AtlassianClient } from "./client.ts";
+
 import { extractMediaRefsFromAdf } from "./attachments.ts";
+import type { AtlassianClient } from "./client.ts";
 
 /** Register prompt enrichment hooks */
 export function registerPromptHooks(ctx: WorkhorseContext, client: AtlassianClient): void {

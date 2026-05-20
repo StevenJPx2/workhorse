@@ -8,38 +8,38 @@ Location: `packages/core/src/workflow/tracker/`
 
 ```typescript
 interface ParsedIssue {
-  externalId: string
-  source: IssueSource
-  title: string
-  description: string
-  issueType: IssueType
-  url?: string
-  assignee?: string
-  labels?: string[]
-  metadata: Record<string, unknown>
+  externalId: string;
+  source: IssueSource;
+  title: string;
+  description: string;
+  issueType: IssueType;
+  url?: string;
+  assignee?: string;
+  labels?: string[];
+  metadata: Record<string, unknown>;
 }
 
 interface IssueParser {
-  source: IssueSource
-  canParse(input: string): boolean
-  parse(input: string): Promise<ParsedIssue>
+  source: IssueSource;
+  canParse(input: string): boolean;
+  parse(input: string): Promise<ParsedIssue>;
 }
 
 interface PromptContextBlock {
-  id: string              // "jira-context", "pr-state"
-  title: string           // section heading
-  content: string         // markdown
-  priority?: number       // lower = earlier, default 0
-  metadata?: Record<string, unknown>
+  id: string; // "jira-context", "pr-state"
+  title: string; // section heading
+  content: string; // markdown
+  priority?: number; // lower = earlier, default 0
+  metadata?: Record<string, unknown>;
 }
 
 interface PromptContext {
-  issue: Issue
-  sessionMemory?: SessionMemory
-  searchResults?: SearchResult[]
-  isResume: boolean
-  contextBlocks: PromptContextBlock[]
-  customInstructions?: string
+  issue: Issue;
+  sessionMemory?: SessionMemory;
+  searchResults?: SearchResult[];
+  isResume: boolean;
+  contextBlocks: PromptContextBlock[];
+  customInstructions?: string;
 }
 ```
 
@@ -47,13 +47,13 @@ interface PromptContext {
 
 ```typescript
 class Tracker {
-  private parsers: IssueParser[] = []
+  private parsers: IssueParser[] = [];
 
-  constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<WorkhorseConfig>)
+  constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<WorkhorseConfig>);
 
-  registerParser(parser: IssueParser): void
-  async parseInput(input: string): Promise<Issue>
-  async buildPrompt(issueId: string, options?: { isResume?: boolean }): Promise<string>
+  registerParser(parser: IssueParser): void;
+  async parseInput(input: string): Promise<Issue>;
+  async buildPrompt(issueId: string, options?: { isResume?: boolean }): Promise<string>;
 }
 ```
 
@@ -67,12 +67,12 @@ class Tracker {
 
 ```typescript
 class PromptEngineer {
-  constructor(config: Readonly<WorkhorseConfig>)
+  constructor(config: Readonly<WorkhorseConfig>);
 
-  buildPrompt(ctx: PromptContext): string
-  buildSystemPrompt(ctx: PromptContext): string
-  buildInitialPrompt(ctx: PromptContext): string
-  buildResumePrompt(ctx: PromptContext): string
+  buildPrompt(ctx: PromptContext): string;
+  buildSystemPrompt(ctx: PromptContext): string;
+  buildInitialPrompt(ctx: PromptContext): string;
+  buildResumePrompt(ctx: PromptContext): string;
 }
 ```
 
@@ -88,6 +88,7 @@ class PromptEngineer {
 ### Memory + Notification Enrichment
 
 Before building, query MemoryService:
+
 - L1: `readSessionMemory(worktreePath)` → sets `isResume` + `sessionMemory`
 - L2: `search(issue title + description)` → `searchResults`
 - Pending notifications: `getUnreadNotifications(issueId)` → bundled as `<system_inbox>` XML in the prompt so the agent starts with full context. No polling needed.

@@ -73,7 +73,7 @@ export type HookCallbacks = {
   // Monitors
   "monitor.registered": (payload: {
     name: string;
-    type: "remote" | "local";
+    type: "polling" | "event";
   }) => void | Promise<void>;
   "monitor.tick": (payload: {
     id: string;

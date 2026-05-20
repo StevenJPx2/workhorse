@@ -24,21 +24,21 @@ hooks.all.clear();
 
 ## Events
 
-| Event                    | Payload                                           |
-|--------------------------|---------------------------------------------------|
-| `issue.parsed`           | `{ issue: Issue, raw: unknown }`                  |
-| `issue.status_changed`   | `{ issue: Issue, from: IssueStatus, to }`         |
-| `prompt.building`        | `{ issueId: string, context: PromptContext }`     |
-| `prompt.built`           | `{ issueId: string, prompt: string }`             |
-| `agent.starting`         | `{ instance: AgentInstance }`                     |
-| `agent.started`          | `{ instance: AgentInstance }`                     |
-| `agent.stopping`         | `{ instance: AgentInstance }`                     |
-| `agent.stopped`          | `{ instance: AgentInstance }`                     |
-| `agent.crashed`          | `{ instance: AgentInstance, error?: Error }`      |
-| `notification.created`   | `{ notification: Notification, issueId }`         |
-| `monitor.registered`     | `{ name: string, type: "remote" \| "local" }`     |
-| `monitor.tick`           | `{ name: string, result: unknown }`               |
-| `plugin.loaded`          | `{ name: string }`                                |
-| `plugin.error`           | `{ name: string, error: Error }`                  |
+| Event                  | Payload                                       |
+| ---------------------- | --------------------------------------------- |
+| `issue.parsed`         | `{ issue: Issue, raw: unknown }`              |
+| `issue.status_changed` | `{ issue: Issue, from: IssueStatus, to }`     |
+| `prompt.building`      | `{ issueId: string, context: PromptContext }` |
+| `prompt.built`         | `{ issueId: string, prompt: string }`         |
+| `agent.starting`       | `{ instance: AgentInstance }`                 |
+| `agent.started`        | `{ instance: AgentInstance }`                 |
+| `agent.stopping`       | `{ instance: AgentInstance }`                 |
+| `agent.stopped`        | `{ instance: AgentInstance }`                 |
+| `agent.crashed`        | `{ instance: AgentInstance, error?: Error }`  |
+| `notification.created` | `{ notification: Notification, issueId }`     |
+| `monitor.registered`   | `{ name: string, type: "remote" \| "local" }` |
+| `monitor.tick`         | `{ name: string, result: unknown }`           |
+| `plugin.loaded`        | `{ name: string }`                            |
+| `plugin.error`         | `{ name: string, error: Error }`              |
 
 Custom events allowed via `Record<string, unknown>` extension.

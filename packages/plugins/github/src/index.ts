@@ -13,8 +13,9 @@
  * @module workhorse-plugin-github
  */
 
-import { z } from "zod/v4";
 import { AttachmentService, definePlugin } from "workhorse-core";
+import { z } from "zod/v4";
+
 import { githubAuthProvider } from "./auth.ts";
 import { GitHubClient } from "./client.ts";
 import { registerGitHubHookMetadata } from "./hook-metadata.ts";
@@ -28,11 +29,18 @@ import { createGitHubTools } from "./tools";
 
 /** Config schema for the GitHub plugin */
 export const GitHubConfigSchema = z.object({
-  pollInterval: z.number().int().positive().default(30_000),
+  pollInterval: z.number().int().positive().default(15_000),
 });
 
 export type GitHubConfig = z.infer<typeof GitHubConfigSchema>;
 
+export { GitHubClient } from "./client.ts";
+// Export plugin hook types for cross-plugin coordination
+export type { GitHubPluginHooks } from "./hooks.ts";
+export { mapGitHubToIssue } from "./mapper.ts";
+export { canParseGitHub, parseGitHubRef } from "./parser.ts";
+export type { CICheckResult } from "./tools/get-ci-check.ts";
+export type { DetailedReview, PRReviewsResult, ReviewComment } from "./tools/get-pr-reviews.ts";
 // Export types for external use
 export type {
   GitHubCheckRun,
@@ -44,16 +52,6 @@ export type {
   GitHubReview,
   PRStatusSummary,
 } from "./types.ts";
-
-export type { CICheckResult } from "./tools/get-ci-check.ts";
-export type { DetailedReview, PRReviewsResult, ReviewComment } from "./tools/get-pr-reviews.ts";
-
-// Export plugin hook types for cross-plugin coordination
-export type { GitHubPluginHooks } from "./hooks.ts";
-
-export { GitHubClient } from "./client.ts";
-export { canParseGitHub, parseGitHubRef } from "./parser.ts";
-export { mapGitHubToIssue } from "./mapper.ts";
 
 export const githubPlugin = definePlugin({
   manifest: {

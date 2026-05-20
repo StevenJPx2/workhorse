@@ -3,8 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { jiraPlugin, JiraConfigSchema } from "../index.ts";
 import { PluginSymbol } from "workhorse-core";
+
+import { jiraPlugin, JiraConfigSchema } from "../index.ts";
 
 describe("jiraPlugin", () => {
   it("is a valid Workhorse plugin", () => {

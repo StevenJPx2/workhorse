@@ -31,10 +31,7 @@ Bun workspace monorepo with `packages/core`. Tooling, deps, linting, structure.
     "pre-commit": "bunx lint-staged"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "oxfmt --write",
-      "oxlint"
-    ]
+    "*.{ts,tsx}": ["oxfmt --write", "oxlint"]
   }
 }
 ```
@@ -86,13 +83,13 @@ Carry over from old repo. oxlint for linting, oxfmt for formatting, pre-commit h
 
 Port from old repo, drop `prefer-composables-over-props` (TUI-only).
 
-| Rule | Severity | What it does |
-|------|----------|-------------|
-| `max-lines-per-file` | error (200) | Max 200 lines per source file, 500 for test files |
-| `enforce-kebab-case-filenames` | warn | All files must be kebab-case (allows `index.ts`) |
-| `enforce-colocated-exports` | warn | Folders with multiple source files must have `index.ts` |
-| `enforce-test-colocation` | warn | When folder test ratio >40%, tests must move to `__tests__/` |
-| `no-single-reference-function` | warn | Non-exported functions used in exactly one place should be inlined |
+| Rule                           | Severity    | What it does                                                       |
+| ------------------------------ | ----------- | ------------------------------------------------------------------ |
+| `max-lines-per-file`           | error (200) | Max 200 lines per source file, 500 for test files                  |
+| `enforce-kebab-case-filenames` | warn        | All files must be kebab-case (allows `index.ts`)                   |
+| `enforce-colocated-exports`    | warn        | Folders with multiple source files must have `index.ts`            |
+| `enforce-test-colocation`      | warn        | When folder test ratio >40%, tests must move to `__tests__/`       |
+| `no-single-reference-function` | warn        | Non-exported functions used in exactly one place should be inlined |
 
 Standalone package at `oxlint/eslint-plugin-workhorse/` with its own `package.json` and `tsconfig.json`. Built via `bun build index.ts --outdir . --target bun`.
 

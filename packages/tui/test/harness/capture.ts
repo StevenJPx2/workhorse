@@ -4,6 +4,7 @@
  */
 
 import { $ } from "bun";
+
 import type { Snapshot, HarnessOptions } from "./types.ts";
 
 async function cleanup(name: string): Promise<void> {

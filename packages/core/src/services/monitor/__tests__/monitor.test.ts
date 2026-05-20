@@ -1,17 +1,19 @@
 /**
- * Tests for the Monitor class directly (not MonitorService).
+ * Tests for the PollingMonitor class directly (not MonitorService).
  * Covers edge cases in the poll loop that are hard to hit via service.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
 import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
-import { Monitor } from "../monitor.ts";
-import type { MonitorContext, MonitorOptions } from "../types.ts";
+import type { MemoryService } from "#services/memory";
 
-describe("Monitor", () => {
+import { PollingMonitor } from "../polling-monitor.ts";
+import type { MonitorContext, PollingMonitorOptions } from "../types.ts";
+
+describe("PollingMonitor", () => {
   let hooks: HookEmitter;
   let memory: MemoryService;
   let config: WorkhorseConfig;
@@ -28,11 +30,11 @@ describe("Monitor", () => {
   });
 
   function createMonitor(
-    options: Partial<MonitorOptions> & { poll?: MonitorOptions["poll"] } = {},
-  ): Monitor {
-    return new Monitor({
+    options: Partial<PollingMonitorOptions> & { poll?: PollingMonitorOptions["poll"] } = {},
+  ): PollingMonitor {
+    return new PollingMonitor({
       id: options.id ?? "test-monitor",
-      type: options.type ?? "remote",
+      type: "polling",
       interval: options.interval ?? 100,
       poll: options.poll ?? (async () => ({ hasChanges: false })),
     });

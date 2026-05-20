@@ -5,6 +5,7 @@
  */
 
 import { Show } from "solid-js";
+
 import { render, type ActivityInput } from "../renderers";
 import { getTheme } from "../theme.ts";
 

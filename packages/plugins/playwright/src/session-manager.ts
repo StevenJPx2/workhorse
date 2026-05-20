@@ -1,5 +1,6 @@
 /** Playwright Session Manager - manages persistent browser sessions per issue. */
 import type { HookEmitter } from "workhorse-core";
+
 import {
   addInitScript,
   closeBrowser,

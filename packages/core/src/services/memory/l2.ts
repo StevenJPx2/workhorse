@@ -1,6 +1,7 @@
 import { createRetriv, type SearchFilter } from "retriv";
 import { libsql } from "retriv/db/libsql";
 import { transformersJs } from "retriv/embeddings/transformers-js";
+
 import type { MemoryDocument, MemorySearchOptions, SearchResult } from "./types.ts";
 
 /** Type for the retriv instance */

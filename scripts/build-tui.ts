@@ -14,6 +14,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
+
 import {
   patchDynamicImports,
   copyTreeSitterAssets,

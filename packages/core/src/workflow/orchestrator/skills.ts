@@ -5,8 +5,10 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+
 import type { ConfigPaths } from "#config";
 import type { HookEmitter } from "#lib/hooks";
+
 import type { PluginSkillInput, ResolvedSkill } from "./types";
 import { PluginSkillSchema } from "./types";
 

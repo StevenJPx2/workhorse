@@ -5,6 +5,7 @@
  */
 
 import { existsSync } from "node:fs";
+
 import type { WorktreeInfo } from "./types.ts";
 import { buildBranchName, buildWorktreePath, execGit, parseWorktreeList } from "./utils.ts";
 

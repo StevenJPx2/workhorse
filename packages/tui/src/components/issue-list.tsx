@@ -1,5 +1,6 @@
-import type { Issue } from "workhorse-core";
 import { For, Show } from "solid-js";
+import type { Issue } from "workhorse-core";
+
 import { createIssues } from "../primitives/create-issues.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";

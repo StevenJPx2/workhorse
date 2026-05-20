@@ -7,6 +7,7 @@
  */
 
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
+
 import { downloadAttachments } from "../attachment-download.ts";
 import { extractAllAttachments, filterImageAttachments } from "../attachments.ts";
 import type { GitHubClient } from "../client.ts";

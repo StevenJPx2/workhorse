@@ -1,5 +1,6 @@
 import { createMemo, createSignal, onMount } from "solid-js";
 import type { AgentAdapter, Issue } from "workhorse-core";
+
 import { AgentList, IssueList, StatusBar } from "../../components";
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { createChat } from "../../primitives";

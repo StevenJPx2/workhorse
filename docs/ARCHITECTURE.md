@@ -4,15 +4,15 @@ An AI-powered agent orchestrator that manages coding agents working on Jira and 
 
 ## Tech Stack
 
-| Category | Choice |
-|----------|--------|
-| Runtime | Bun |
-| Language | TypeScript (strict) |
-| Database | SQLite via `@libsql/client` + `drizzle-orm` |
-| Testing | Vitest (97% line/function, 95% branch coverage) |
-| Linting | oxlint with custom plugin (`eslint-plugin-workhorse`) |
-| Formatting | oxfmt |
-| Monorepo | Bun workspaces |
+| Category   | Choice                                                |
+| ---------- | ----------------------------------------------------- |
+| Runtime    | Bun                                                   |
+| Language   | TypeScript (strict)                                   |
+| Database   | SQLite via `@libsql/client` + `drizzle-orm`           |
+| Testing    | Vitest (97% line/function, 95% branch coverage)       |
+| Linting    | oxlint with custom plugin (`eslint-plugin-workhorse`) |
+| Formatting | oxfmt                                                 |
+| Monorepo   | Bun workspaces                                        |
 
 ## Project Structure
 
@@ -63,6 +63,7 @@ await jt.shutdown();
 ```
 
 Components initialized (in order):
+
 1. **Hooks** — Global event emitter cleared and reset
 2. **Config** — Loaded from TOML files (global → project cascade), with optional overrides
 3. **Database** — SQLite with migrations, issues, events, notifications tables
@@ -122,6 +123,7 @@ export default definePlugin({
 ```
 
 **Plugin Types:**
+
 - **Integration plugins** — Connect to external services (Jira, GitHub)
 - **Adapter plugins** — Register agent harnesses (Pi, Claude Code, Opencode)
 
@@ -165,6 +167,7 @@ const adapter = await orchestrator.spawn({
 ```
 
 **AgentAdapter** — Abstract class for harness implementations:
+
 - `create()` — Factory method: creates worktree, builds prompt, subscribes to hooks
 - `start()` → `doStart()` — Begin agent execution (subclass override)
 - `sendMessage()` — Send messages to running agent (subclass override)
@@ -194,6 +197,7 @@ const prompt = await tracker.buildPrompt(issue.id);
 ```
 
 **Components:**
+
 - **Tracker** — Entry point, manages parsers, coordinates prompt building
 - **IssueParser** — Parses ticket keys, URLs via plugin-registered parsers
 - **PromptEngineer** — Builds prompts with L1/L2 memory context, notifications, and custom instructions
@@ -203,6 +207,7 @@ const prompt = await tracker.buildPrompt(issue.id);
 Three-tier memory system:
 
 **L1 Store** — Per-worktree session memory (`context.md` files):
+
 ```typescript
 const ctx = memory.l1.get("AM-123");
 if (ctx) {
@@ -213,16 +218,21 @@ if (ctx) {
 ```
 
 **L2 Store** — Semantic search via `retriv` (BM25 FTS5 + vector embeddings):
+
 ```typescript
 await memory.l2.index([{ id: "doc-1", content: "...", metadata: { type: "decision" } }]);
 const results = await memory.l2.search("authentication flow", { limit: 5 });
 ```
 
 **NotificationService** — Push-based agent inbox:
+
 ```typescript
 await memory.notifications.create({
-  issueId, source: "jira", sourceId: "comment-456",
-  title: "New comment", body: "Please review",
+  issueId,
+  source: "jira",
+  sourceId: "comment-456",
+  title: "New comment",
+  body: "Please review",
   priority: "high",
 });
 const unread = await memory.notifications.getUnread(issueId);
@@ -240,16 +250,16 @@ const attachmentService = new AttachmentService(paths.attachmentsDir);
 
 // Store an attachment
 const stored = await attachmentService.store(
-  "owner/repo",        // Repository identifier
-  "issue-uuid",        // Internal issue ID
-  contentBuffer,       // File content
+  "owner/repo", // Repository identifier
+  "issue-uuid", // Internal issue ID
+  contentBuffer, // File content
   {
     source: "jira",
     sourceId: "att-123",
     filename: "screenshot.png",
     mimeType: "image/png",
     size: 12345,
-  }
+  },
 );
 
 // Check if already downloaded (deduplication)
@@ -262,6 +272,7 @@ const attachments = await attachmentService.listForIssue("owner/repo", "issue-uu
 **Storage Location:** `~/.local/share/workhorse/attachments/{repo}/{issueId}/`
 
 **Why outside repo?**
+
 - Avoids polluting git history with binary files
 - Consistent location regardless of worktree
 - Cross-session persistence
@@ -306,7 +317,7 @@ orchestrator.registerSteeringRule({
   condition: {
     status: ["in_review"],
     hook: ["agent.idle"],
-    when: async (ctx) => ctx.notifications.some(n => n.source === "github"),
+    when: async (ctx) => ctx.notifications.some((n) => n.source === "github"),
   },
   reminder: async (ctx) => `You have ${ctx.notifications.length} pending reviews.`,
   once: false,
@@ -314,6 +325,7 @@ orchestrator.registerSteeringRule({
 ```
 
 Each `SteeringRule` is fully autonomous:
+
 - Subscribes to `agent.idle` and other hooks
 - Tracks hook history and tool history
 - Evaluates conditions (status, source, hook, custom `when()`)
@@ -326,12 +338,15 @@ Each `SteeringRule` is fully autonomous:
 Event pub/sub via `mitt`:
 
 ```typescript
-hooks.on("issue.status_changed", ({ issue, from, to }) => { /* ... */ });
+hooks.on("issue.status_changed", ({ issue, from, to }) => {
+  /* ... */
+});
 hooks.emit("notification.created", { notification, issueId });
 hooks.off("issue.status_changed", handler);
 ```
 
 **Key Events:**
+
 - Agent: `agent.create.pre`, `agent.create.post`, `agent.start.pre`, `agent.start.post`, `agent.stop.pre`, `agent.stop.post`, `agent.idle`, `agent.tool_call`
 - Issue: `issue.parsed`, `issue.status_changed`, `issue.deleted`
 - Prompt: `prompt.building`, `prompt.built`
@@ -408,6 +423,7 @@ poll_interval = 30000
 ```
 
 **Config Locations:**
+
 - Global: `~/.workhorse.toml`, `~/.config/workhorse.toml`, or `~/.config/workhorse/config.toml`
 - Project: `<repo>/.workhorse.toml`
 
@@ -418,6 +434,7 @@ poll_interval = 30000
 ### workhorse-plugin-jira
 
 Jira Cloud integration:
+
 - Issue parsing for ticket keys (`PROJ-123`) and URLs
 - Comment monitoring with deduplication
 - Status sync (Workhorse → Jira transitions)
@@ -431,6 +448,7 @@ See [`packages/plugins/jira/README.md`](../packages/plugins/jira/README.md) for 
 ### workhorse-plugin-github
 
 GitHub integration via `gh` CLI:
+
 - Issue/PR parsing for `owner/repo#45` and URLs
 - Unified PR monitor (reviews, comments, CI checks, mergeable state)
 - Status sync (Workhorse → GitHub labels)
@@ -443,6 +461,7 @@ See [`packages/plugins/github/README.md`](../packages/plugins/github/README.md) 
 ### workhorse-plugin-pi-adapter
 
 Pi Coding Agent adapter:
+
 - Wraps Pi SDK as `AgentAdapter` implementation
 - Translates Workhorse tools to Pi extensions
 - Enforces path restrictions (agents can only access their worktree)
@@ -453,6 +472,7 @@ See [`packages/plugins/pi-adapter/README.md`](../packages/plugins/pi-adapter/REA
 ### workhorse-plugin-playwright
 
 Browser automation:
+
 - Tools: `playwright_navigate`, `playwright_screenshot`, `playwright_click`, `playwright_fill`, etc.
 - Session management (one browser per issue, auto-cleanup)
 - Screenshot contribution to PRs via `github:pr.opening` hook
@@ -464,55 +484,55 @@ See [`packages/plugins/playwright/README.md`](../packages/plugins/playwright/REA
 
 ### issues
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text (PK) | UUID |
-| external_id | text | External ID (e.g., "PROJ-123") |
-| source | text | Source system (e.g., "jira") |
-| title | text | Issue title |
-| description | text | Issue body |
-| status | text | Issue status |
-| issue_type | text | Type (task, bug, story, etc.) |
-| url | text | Link to external issue |
-| assignee | text | Assigned user |
-| labels | text (json) | Label array |
-| metadata | text (json) | Source-specific data |
-| worktree_path | text | Git worktree location |
-| created_at | text | Creation timestamp |
-| updated_at | text | Update timestamp |
+| Column        | Type        | Description                    |
+| ------------- | ----------- | ------------------------------ |
+| id            | text (PK)   | UUID                           |
+| external_id   | text        | External ID (e.g., "PROJ-123") |
+| source        | text        | Source system (e.g., "jira")   |
+| title         | text        | Issue title                    |
+| description   | text        | Issue body                     |
+| status        | text        | Issue status                   |
+| issue_type    | text        | Type (task, bug, story, etc.)  |
+| url           | text        | Link to external issue         |
+| assignee      | text        | Assigned user                  |
+| labels        | text (json) | Label array                    |
+| metadata      | text (json) | Source-specific data           |
+| worktree_path | text        | Git worktree location          |
+| created_at    | text        | Creation timestamp             |
+| updated_at    | text        | Update timestamp               |
 
 ### notifications
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text (PK) | UUID |
-| issue_id | text (FK) | Associated issue |
-| source | text | Source system |
-| source_id | text (unique) | Dedup key |
-| priority | text | blocking/high/normal/low |
-| status | text | unread/read/acknowledged |
-| title | text | Notification title |
-| body | text | Notification content |
-| metadata | text (json) | Additional data |
-| created_at | text | Creation timestamp |
-| read_at | text | Read timestamp |
-| acknowledged_at | text | Acknowledged timestamp |
+| Column          | Type          | Description              |
+| --------------- | ------------- | ------------------------ |
+| id              | text (PK)     | UUID                     |
+| issue_id        | text (FK)     | Associated issue         |
+| source          | text          | Source system            |
+| source_id       | text (unique) | Dedup key                |
+| priority        | text          | blocking/high/normal/low |
+| status          | text          | unread/read/acknowledged |
+| title           | text          | Notification title       |
+| body            | text          | Notification content     |
+| metadata        | text (json)   | Additional data          |
+| created_at      | text          | Creation timestamp       |
+| read_at         | text          | Read timestamp           |
+| acknowledged_at | text          | Acknowledged timestamp   |
 
 ### issue_events
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text (PK) | UUID |
-| issue_id | text (FK) | Associated issue |
-| type | text | Event type |
-| message | text | Event message |
-| metadata | text (json) | Additional data |
-| created_at | text | Creation timestamp |
+| Column     | Type        | Description        |
+| ---------- | ----------- | ------------------ |
+| id         | text (PK)   | UUID               |
+| issue_id   | text (FK)   | Associated issue   |
+| type       | text        | Event type         |
+| message    | text        | Event message      |
+| metadata   | text (json) | Additional data    |
+| created_at | text        | Creation timestamp |
 
 ## Built-in Agent Tools
 
-| Tool | Description | Parameters |
-|------|-------------|-----------|
-| `workhorse_acknowledge` | Mark notification(s) as read | `notificationIds?: string[]` |
-| `workhorse_update_status` | Update issue status | `status: string` |
-| `workhorse_escalate` | Escalate to a human | `message: string`, `blocking?: boolean` |
+| Tool                      | Description                  | Parameters                              |
+| ------------------------- | ---------------------------- | --------------------------------------- |
+| `workhorse_acknowledge`   | Mark notification(s) as read | `notificationIds?: string[]`            |
+| `workhorse_update_status` | Update issue status          | `status: string`                        |
+| `workhorse_escalate`      | Escalate to a human          | `message: string`, `blocking?: boolean` |

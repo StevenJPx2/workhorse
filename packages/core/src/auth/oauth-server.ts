@@ -7,8 +7,8 @@
  * @module workhorse-core/auth
  */
 
-import type { OAuthProvider, OAuthTokens } from "./types.ts";
 import { errorHtml, successHtml } from "./oauth-html.ts";
+import type { OAuthProvider, OAuthTokens } from "./types.ts";
 
 const DEFAULT_PORT = 9876;
 const CALLBACK_PATH = "/callback";

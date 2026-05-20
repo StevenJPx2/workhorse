@@ -18,13 +18,13 @@ runWithContext({ config, hooks }, async () => {
 
 ## API
 
-| Function          | Description                                      |
-|-------------------|--------------------------------------------------|
-| `useWorkhorse()`   | Get context (throws if not in context)           |
-| `tryUseWorkhorse()`| Get context or `undefined`                       |
-| `runWithContext()`| Execute function with context                    |
-| `setContext()`    | Set singleton context (testing only)             |
-| `unsetContext()`  | Clear singleton context (testing only)           |
+| Function            | Description                            |
+| ------------------- | -------------------------------------- |
+| `useWorkhorse()`    | Get context (throws if not in context) |
+| `tryUseWorkhorse()` | Get context or `undefined`             |
+| `runWithContext()`  | Execute function with context          |
+| `setContext()`      | Set singleton context (testing only)   |
+| `unsetContext()`    | Clear singleton context (testing only) |
 
 ## WorkhorseContext
 

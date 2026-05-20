@@ -2,10 +2,11 @@
  * Tests for Playwright cross-plugin sync with GitHub
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Test directory for attachments
 const testDir = join(tmpdir(), "wh-cross-plugin-test");

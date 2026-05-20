@@ -15,6 +15,7 @@
  */
 
 import { definePlugin } from "workhorse-core";
+
 import { FigmaClient } from "./client.ts";
 import { createCredentialGetter } from "./credentials.ts";
 import { registerCrossPluginHandlers } from "./cross-plugin.ts";

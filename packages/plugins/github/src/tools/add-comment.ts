@@ -10,8 +10,10 @@
 
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
+
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 import { withWorkhorseFooter } from "workhorse-core";
+
 import type { GitHubClient } from "../client";
 
 /** Create the github_add_comment tool */

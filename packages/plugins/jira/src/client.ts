@@ -7,6 +7,7 @@
  */
 
 import { markdownToAdf } from "marklassian";
+
 import type { JiraAttachment, JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
 
 export class AtlassianClient {

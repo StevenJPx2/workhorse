@@ -52,9 +52,9 @@ Handles GitHub issue references:
 
 ```typescript
 // Formats supported:
-"owner/repo#45"
-"https://github.com/owner/repo/issues/45"
-"https://github.com/owner/repo/pull/45"
+"owner/repo#45";
+"https://github.com/owner/repo/issues/45";
+"https://github.com/owner/repo/pull/45";
 ```
 
 ### Monitor: `github-pr`
@@ -70,22 +70,22 @@ Auto-starts when agent spawns for an issue with `prNumber` in metadata.
 
 ### Tools
 
-| Tool | Description |
-|------|-------------|
-| `github_open_pr` | Create PR from current branch |
-| `github_add_comment` | Add comment to issue/PR |
-| `github_get_pr_status` | Get review/CI/mergeable summary |
-| `github_get_ci_check` | Detailed CI check status |
+| Tool                    | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `github_open_pr`        | Create PR from current branch             |
+| `github_add_comment`    | Add comment to issue/PR                   |
+| `github_get_pr_status`  | Get review/CI/mergeable summary           |
+| `github_get_ci_check`   | Detailed CI check status                  |
 | `github_get_pr_reviews` | Detailed review info with inline comments |
 
 ### Steering Rules
 
-| Rule | Condition | Reminder |
-|------|-----------|----------|
-| `github:create-pr` | Has file changes, no PR | "Create a PR with your changes" |
-| `github:fix-ci` | CI checks failing | "CI is failing, investigate and fix" |
-| `github:address-review` | Changes requested | "Address review feedback" |
-| `github:missing-pr` | Status past implementation, no PR | "You should have a PR by now" |
+| Rule                    | Condition                         | Reminder                             |
+| ----------------------- | --------------------------------- | ------------------------------------ |
+| `github:create-pr`      | Has file changes, no PR           | "Create a PR with your changes"      |
+| `github:fix-ci`         | CI checks failing                 | "CI is failing, investigate and fix" |
+| `github:address-review` | Changes requested                 | "Address review feedback"            |
+| `github:missing-pr`     | Status past implementation, no PR | "You should have a PR by now"        |
 
 ### Auth
 
@@ -101,23 +101,23 @@ The plugin calls `gh` commands under the hood.
 
 ### Emitted
 
-| Hook | Payload | When |
-|------|---------|------|
-| `github:pr.opening` | `{ issueId, title, body, contributions: [] }` | Before PR creation (collect sections) |
-| `github:pr.created` | `{ issueId, prNumber, url }` | After PR created |
-| `github:pr.merged` | `{ issueId, prNumber, source }` | PR merged |
-| `github:pr.closed` | `{ issueId, prNumber }` | PR closed without merge |
-| `github:review.submitted` | `{ issueId, review }` | Review submitted |
-| `github:checks.passed` | `{ issueId, prNumber }` | All CI checks pass |
-| `github:checks.failed` | `{ issueId, prNumber, failures }` | CI checks fail |
+| Hook                      | Payload                                       | When                                  |
+| ------------------------- | --------------------------------------------- | ------------------------------------- |
+| `github:pr.opening`       | `{ issueId, title, body, contributions: [] }` | Before PR creation (collect sections) |
+| `github:pr.created`       | `{ issueId, prNumber, url }`                  | After PR created                      |
+| `github:pr.merged`        | `{ issueId, prNumber, source }`               | PR merged                             |
+| `github:pr.closed`        | `{ issueId, prNumber }`                       | PR closed without merge               |
+| `github:review.submitted` | `{ issueId, review }`                         | Review submitted                      |
+| `github:checks.passed`    | `{ issueId, prNumber }`                       | All CI checks pass                    |
+| `github:checks.failed`    | `{ issueId, prNumber, failures }`             | CI checks fail                        |
 
 ### Listened
 
-| Hook | Action |
-|------|--------|
-| `agent.create.post` | Start PR monitor if issue has `prNumber` |
-| `prompt.building` | Add GitHub/PR context blocks |
-| `issue.status_changed` | Sync labels to PR |
+| Hook                   | Action                                   |
+| ---------------------- | ---------------------------------------- |
+| `agent.create.post`    | Start PR monitor if issue has `prNumber` |
+| `prompt.building`      | Add GitHub/PR context blocks             |
+| `issue.status_changed` | Sync labels to PR                        |
 
 ## Cross-Plugin Integration
 
@@ -131,7 +131,7 @@ hooks.emit("github:pr.opening", {
   issueId,
   title: "feat: implement login",
   body: "Initial PR body",
-  contributions: [],  // Other plugins push to this
+  contributions: [], // Other plugins push to this
 });
 
 // Jira plugin adds Related Tickets
@@ -227,16 +227,16 @@ Mergeable: ${pr.mergeable}
 
 ## Dependencies on Core
 
-| Import | Usage |
-|--------|-------|
-| `definePlugin` | Plugin definition |
-| `IssueParserOptions` | Parser interface |
-| `MonitorOptions` | Monitor interface |
-| `OrchestratorTool` | Tool interface |
+| Import                    | Usage                    |
+| ------------------------- | ------------------------ |
+| `definePlugin`            | Plugin definition        |
+| `IssueParserOptions`      | Parser interface         |
+| `MonitorOptions`          | Monitor interface        |
+| `OrchestratorTool`        | Tool interface           |
 | `SteeringRuleConfigInput` | Steering rule definition |
-| `WorkhorseContext` | Service access |
-| `PromptContextBlock` | Prompt enrichment |
-| `isWorkhorseGenerated` | Filter bot comments |
+| `WorkhorseContext`        | Service access           |
+| `PromptContextBlock`      | Prompt enrichment        |
+| `isWorkhorseGenerated`    | Filter bot comments      |
 
 ## Why This Architecture
 

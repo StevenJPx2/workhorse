@@ -83,7 +83,7 @@ const readTool = createReadTool(worktreePath, {
 const bashTool = createBashTool(worktreePath, {
   operations: createRestrictedBashOperations({
     rootDir: worktreePath,
-    allowTmp: true,  // Also allows /tmp/ for temp files
+    allowTmp: true, // Also allows /tmp/ for temp files
   }),
 });
 ```
@@ -98,13 +98,12 @@ function isPathAllowed(path: string, options: PathValidationOptions): boolean {
   if (normalizedPath.startsWith(options.rootDir)) return true;
 
   // Or in additional allowed directories
-  return options.additionalAllowedDirs?.some(dir =>
-    normalizedPath.startsWith(dir)
-  ) ?? false;
+  return options.additionalAllowedDirs?.some((dir) => normalizedPath.startsWith(dir)) ?? false;
 }
 ```
 
 **Why this matters:**
+
 - Agents work in isolated worktrees (`../repo-worktrees/PROJ-123`)
 - Without restrictions, agent could access main repo, other worktrees, system files
 - Path validation prevents escape attacks via symlinks, `..`, etc.
@@ -116,18 +115,20 @@ Wraps Pi SDK's model discovery:
 ```typescript
 class PiAdapterModelRegistry extends ModelRegistry {
   getAll(): ModelInfo[] {
-    return getPiRegistry().getAll().map(model => ({
-      provider: model.provider,
-      id: model.id,
-      name: model.name,
-      contextWindow: model.contextWindow,
-      capabilities: model.capabilities,
-    }));
+    return getPiRegistry()
+      .getAll()
+      .map((model) => ({
+        provider: model.provider,
+        id: model.id,
+        name: model.name,
+        contextWindow: model.contextWindow,
+        capabilities: model.capabilities,
+      }));
   }
 
   getAvailable(): ModelInfo[] {
     // Only models with configured API keys
-    return this.getAll().filter(m => hasApiKey(m.provider));
+    return this.getAll().filter((m) => hasApiKey(m.provider));
   }
 
   getPreferredProvider(): string {
@@ -237,20 +238,20 @@ Model selection happens at spawn time:
 ```typescript
 await orchestrator.spawn({
   harness: "pi-coding-agent",
-  model: "claude-sonnet-4",  // or "gpt-4", etc.
+  model: "claude-sonnet-4", // or "gpt-4", etc.
 });
 ```
 
 ## Dependencies on Core
 
-| Import | Usage |
-|--------|-------|
-| `AgentAdapter` | Base class for adapter implementation |
-| `ModelRegistry` | Model discovery interface |
-| `AgentState` | Lifecycle state enum |
-| `OrchestratorTool` | Tool interface |
-| `assertPathAllowed`, `isPathAllowed` | Security utilities |
-| `WorkhorseContext` | Service access |
+| Import                               | Usage                                 |
+| ------------------------------------ | ------------------------------------- |
+| `AgentAdapter`                       | Base class for adapter implementation |
+| `ModelRegistry`                      | Model discovery interface             |
+| `AgentState`                         | Lifecycle state enum                  |
+| `OrchestratorTool`                   | Tool interface                        |
+| `assertPathAllowed`, `isPathAllowed` | Security utilities                    |
+| `WorkhorseContext`                   | Service access                        |
 
 ## Why This Architecture
 

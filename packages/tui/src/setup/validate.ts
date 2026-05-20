@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+
 import {
   type WorkhorseConfig,
   mergeConfigs,
@@ -7,6 +8,7 @@ import {
   writeTomlFile,
   DEFAULT_CONFIG,
 } from "workhorse-core";
+
 import type { SetupPluginConfig } from "../screens/setup";
 
 /**

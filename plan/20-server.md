@@ -18,26 +18,26 @@ HTTP/WebSocket server for Workhorse. Exposes core APIs over REST and real-time s
 
 ## Why Nitro?
 
-| Benefit | Description |
-|---------|-------------|
-| **UnJS ecosystem** | Same ecosystem as `citty`, `unctx`, `defu`, `consola` already used in Workhorse |
-| **File-based routing** | Convention-over-configuration, routes are `routes/api/agents/index.ts` |
-| **Universal deployment** | Build once, deploy anywhere (Node, Bun, Deno, Cloudflare, Vercel, AWS Lambda) |
-| **Auto-imports** | `defineEventHandler`, `readBody`, `getQuery` available without imports |
-| **Built-in WebSocket** | First-class WebSocket support via `defineWebSocketHandler` |
-| **Tasks & Scheduled Jobs** | Built-in task system for background work |
-| **Storage abstraction** | Unified KV storage API (useful for caching) |
-| **Dev experience** | HMR in development, type-safe route params |
+| Benefit                    | Description                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| **UnJS ecosystem**         | Same ecosystem as `citty`, `unctx`, `defu`, `consola` already used in Workhorse |
+| **File-based routing**     | Convention-over-configuration, routes are `routes/api/agents/index.ts`          |
+| **Universal deployment**   | Build once, deploy anywhere (Node, Bun, Deno, Cloudflare, Vercel, AWS Lambda)   |
+| **Auto-imports**           | `defineEventHandler`, `readBody`, `getQuery` available without imports          |
+| **Built-in WebSocket**     | First-class WebSocket support via `defineWebSocketHandler`                      |
+| **Tasks & Scheduled Jobs** | Built-in task system for background work                                        |
+| **Storage abstraction**    | Unified KV storage API (useful for caching)                                     |
+| **Dev experience**         | HMR in development, type-safe route params                                      |
 
 ## Design Decisions
 
-| Decision | Choice |
-|----------|--------|
-| Framework | Nitro (universal, file-based routing, UnJS ecosystem) |
-| WebSocket | Nitro's built-in WebSocket support via `crossws` |
-| Auth | Bearer tokens, optional API key fallback |
-| Versioning | URL prefix `/api/v1/` via nested route folders |
-| Errors | RFC 7807 problem details format |
+| Decision   | Choice                                                |
+| ---------- | ----------------------------------------------------- |
+| Framework  | Nitro (universal, file-based routing, UnJS ecosystem) |
+| WebSocket  | Nitro's built-in WebSocket support via `crossws`      |
+| Auth       | Bearer tokens, optional API key fallback              |
+| Versioning | URL prefix `/api/v1/` via nested route folders        |
+| Errors     | RFC 7807 problem details format                       |
 
 ## File Structure
 
@@ -104,20 +104,26 @@ import { z } from "zod/v4";
 export const ServerConfigSchema = z.object({
   host: z.string().default("127.0.0.1"),
   port: z.number().default(3847),
-  cors: z.object({
-    origin: z.union([z.string(), z.array(z.string())]).default("*"),
-    credentials: z.boolean().default(false),
-  }).default({}),
-  auth: z.object({
-    enabled: z.boolean().default(true),
-    apiKeys: z.array(z.string()).default([]),
-    tokenSecret: z.string().optional(), // For JWT validation
-  }).default({}),
-  rateLimit: z.object({
-    enabled: z.boolean().default(true),
-    maxRequests: z.number().default(100),
-    windowMs: z.number().default(60000), // 1 minute
-  }).default({}),
+  cors: z
+    .object({
+      origin: z.union([z.string(), z.array(z.string())]).default("*"),
+      credentials: z.boolean().default(false),
+    })
+    .default({}),
+  auth: z
+    .object({
+      enabled: z.boolean().default(true),
+      apiKeys: z.array(z.string()).default([]),
+      tokenSecret: z.string().optional(), // For JWT validation
+    })
+    .default({}),
+  rateLimit: z
+    .object({
+      enabled: z.boolean().default(true),
+      maxRequests: z.number().default(100),
+      windowMs: z.number().default(60000), // 1 minute
+    })
+    .default({}),
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
@@ -155,7 +161,7 @@ export default defineNitroConfig({
   experimental: {
     websocket: true,
   },
-  
+
   // Runtime config (accessible via useRuntimeConfig())
   runtimeConfig: {
     host: "127.0.0.1",
@@ -165,7 +171,7 @@ export default defineNitroConfig({
       apiKeys: [],
     },
   },
-  
+
   // CORS
   routeRules: {
     "/api/**": {
@@ -176,7 +182,7 @@ export default defineNitroConfig({
       },
     },
   },
-  
+
   // Presets for different deployment targets
   // bun, node-server, cloudflare, vercel, etc.
   preset: "bun",
@@ -201,12 +207,12 @@ export default defineNitroPlugin(async (nitroApp) => {
   workhorse = await bootstrap({
     plugins: [piAdapterPlugin, jiraPlugin, githubPlugin],
   });
-  
+
   // Make available to all event handlers via event.context
   nitroApp.hooks.hook("request", (event) => {
     event.context.workhorse = workhorse;
   });
-  
+
   // Cleanup on shutdown
   nitroApp.hooks.hook("close", async () => {
     await workhorse?.shutdown();
@@ -233,32 +239,32 @@ export default defineNitroPlugin((nitroApp) => {
   // Wait for workhorse plugin to initialize
   nitroApp.hooks.hook("request", (event) => {
     const { hooks } = event.context.workhorse;
-    
+
     // Only subscribe once
     if ((hooks as any).__wsSubscribed) return;
     (hooks as any).__wsSubscribed = true;
-    
+
     hooks.on("agent.output", (data) => {
       wsManager.broadcast("agents", "agent.output", data);
     });
-    
+
     hooks.on("notification.created", (data) => {
       wsManager.broadcast("notifications", "notification.created", data);
     });
-    
+
     hooks.on("orchestrator.spawn.post", ({ adapter }) => {
       wsManager.broadcast("agents", "agent.spawned", {
         issueId: adapter.issueId,
         harness: adapter.harness,
       });
     });
-    
+
     hooks.on("orchestrator.stop.post", ({ adapter }) => {
       wsManager.broadcast("agents", "agent.stopped", {
         issueId: adapter.issueId,
       });
     });
-    
+
     hooks.on("issue.status_changed", (data) => {
       wsManager.broadcast("issues", "issue.status_changed", data);
     });
@@ -281,42 +287,42 @@ export default defineWebSocketHandler({
     wsManager.addConnection(connId, peer);
     console.log(`WebSocket connected: ${connId}`);
   },
-  
+
   message(peer, message) {
     const connId = peer.ctx.connId as string;
     const msg = JSON.parse(message.text());
-    
+
     switch (msg.type) {
       case "subscribe":
         wsManager.subscribe(connId, msg.channels);
         peer.send(JSON.stringify({ type: "subscribed", channels: msg.channels }));
         break;
-        
+
       case "unsubscribe":
         wsManager.unsubscribe(connId, msg.channels);
         peer.send(JSON.stringify({ type: "unsubscribed", channels: msg.channels }));
         break;
-        
+
       case "ping":
         peer.send(JSON.stringify({ type: "pong" }));
         break;
-        
+
       case "send_message":
         // Get workhorse from global (set by plugin)
         const workhorse = (globalThis as any).__workhorse;
-        workhorse?.orchestrator
-          .sendMessage(msg.issueId, msg.content)
-          .catch((err: Error) => {
-            peer.send(JSON.stringify({
+        workhorse?.orchestrator.sendMessage(msg.issueId, msg.content).catch((err: Error) => {
+          peer.send(
+            JSON.stringify({
               type: "error",
               code: "SEND_FAILED",
               message: err.message,
-            }));
-          });
+            }),
+          );
+        });
         break;
     }
   },
-  
+
   close(peer) {
     const connId = peer.ctx.connId as string;
     wsManager.removeConnection(connId);
@@ -338,45 +344,45 @@ interface Connection {
 
 class WebSocketManager {
   private connections = new Map<string, Connection>();
-  
+
   addConnection(id: string, peer: Peer): void {
     this.connections.set(id, { peer, subscriptions: new Set() });
   }
-  
+
   removeConnection(id: string): void {
     this.connections.delete(id);
   }
-  
+
   subscribe(id: string, channels: string[]): void {
     const conn = this.connections.get(id);
     if (conn) {
       channels.forEach((ch) => conn.subscriptions.add(ch));
     }
   }
-  
+
   unsubscribe(id: string, channels: string[]): void {
     const conn = this.connections.get(id);
     if (conn) {
       channels.forEach((ch) => conn.subscriptions.delete(ch));
     }
   }
-  
+
   broadcast(channel: string, event: string, data: unknown): void {
     const message = JSON.stringify({ type: "event", channel, event, data });
-    
+
     for (const conn of this.connections.values()) {
       // Check if subscribed to channel or channel:issueId
       const issueId = (data as any)?.issueId;
       const shouldSend =
         conn.subscriptions.has(channel) ||
         (issueId && conn.subscriptions.has(`${channel}:${issueId}`));
-        
+
       if (shouldSend) {
         conn.peer.send(message);
       }
     }
   }
-  
+
   closeAll(): void {
     for (const conn of this.connections.values()) {
       conn.peer.close();
@@ -400,18 +406,18 @@ Nitro uses file-based routing with `defineEventHandler`. Each file exports a han
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const query = getQuery(event);
-  
+
   const status = query.status as string | undefined;
   const limit = Number(query.limit || 50);
   const offset = Number(query.offset || 0);
-  
+
   const issues = await workhorse.db.issues.findMany({
     where: status ? { status } : undefined,
     limit,
     offset,
     orderBy: { createdAt: "desc" },
   });
-  
+
   return { issues, pagination: { limit, offset } };
 });
 ```
@@ -423,7 +429,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const id = getRouterParam(event, "id")!;
-  
+
   if (event.method === "GET") {
     const issue = await workhorse.db.issues.findByExternalId(id);
     if (!issue) {
@@ -431,7 +437,7 @@ export default defineEventHandler(async (event) => {
     }
     return issue;
   }
-  
+
   if (event.method === "PATCH") {
     const body = await readBody(event);
     const issue = await workhorse.db.issues.update(id, body);
@@ -446,7 +452,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const { input } = await readBody(event);
-  
+
   const parsed = await workhorse.tracker.parse(input);
   return parsed;
 });
@@ -470,10 +476,10 @@ export default defineEventHandler((event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const body = await readBody(event);
-  
+
   // Parse the issue first
   const parsedIssue = await workhorse.tracker.parse(body.issue);
-  
+
   const adapter = await workhorse.orchestrator.spawn({
     issue: parsedIssue,
     harness: body.harness,
@@ -482,7 +488,7 @@ export default defineEventHandler(async (event) => {
     repoPath: body.repoPath ?? process.cwd(),
     prompt: body.prompt,
   });
-  
+
   setResponseStatus(event, 201);
   return serializeAgent(adapter);
 });
@@ -494,7 +500,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler((event) => {
   const { workhorse } = event.context;
   const issueId = getRouterParam(event, "issueId")!;
-  
+
   const agent = workhorse.orchestrator.getAgent(issueId);
   if (!agent) {
     throw createError({ statusCode: 404, message: "Agent not found" });
@@ -511,7 +517,7 @@ export default defineEventHandler(async (event) => {
   const issueId = getRouterParam(event, "issueId")!;
   const query = getQuery(event);
   const removeWorktree = query.removeWorktree === "true";
-  
+
   await workhorse.orchestrator.stop(issueId, { removeWorktree });
   return { success: true };
 });
@@ -524,7 +530,7 @@ export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const issueId = getRouterParam(event, "issueId")!;
   const { content } = await readBody(event);
-  
+
   await workhorse.orchestrator.sendMessage(issueId, content);
   return { success: true };
 });
@@ -553,13 +559,13 @@ export function serializeAgent(agent: AgentAdapter) {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const query = getQuery(event);
-  
+
   const notifications = await workhorse.memory.notifications.list({
     issueId: query.issueId as string | undefined,
     status: query.status as "pending" | "acknowledged" | undefined,
     limit: Number(query.limit || 50),
   });
-  
+
   return { notifications };
 });
 ```
@@ -570,7 +576,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const { ids } = await readBody(event);
-  
+
   await workhorse.memory.notifications.acknowledge(ids);
   return { success: true, count: ids.length };
 });
@@ -582,7 +588,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const id = getRouterParam(event, "id")!;
-  
+
   await workhorse.memory.notifications.acknowledge([id]);
   return { success: true };
 });
@@ -596,7 +602,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const issueId = getRouterParam(event, "issueId")!;
-  
+
   const context = await workhorse.memory.l1.getContext(issueId);
   return { context };
 });
@@ -608,7 +614,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const { query, issueId, limit = 10 } = await readBody(event);
-  
+
   const results = await workhorse.memory.l2.search(query, { issueId, limit });
   return { results };
 });
@@ -621,7 +627,7 @@ export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const issueId = getRouterParam(event, "issueId")!;
   const { content } = await readBody(event);
-  
+
   await workhorse.memory.l1.append(issueId, content);
   return { success: true };
 });
@@ -635,7 +641,7 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler((event) => {
   const { workhorse } = event.context;
   const config = workhorse.config;
-  
+
   // Redact sensitive fields
   return {
     ...config,
@@ -643,7 +649,7 @@ export default defineEventHandler((event) => {
       Object.entries(config.plugins ?? {}).map(([k, v]) => [
         k,
         redactSensitive(v as Record<string, unknown>),
-      ])
+      ]),
     ),
   };
 });
@@ -654,7 +660,7 @@ function redactSensitive(obj: Record<string, unknown>): Record<string, unknown> 
     Object.entries(obj).map(([k, v]) => [
       k,
       sensitiveKeys.some((s) => k.toLowerCase().includes(s)) ? "[REDACTED]" : v,
-    ])
+    ]),
   );
 }
 ```
@@ -664,14 +670,14 @@ function redactSensitive(obj: Record<string, unknown>): Record<string, unknown> 
 // GET /api/v1/config/plugins - List enabled plugins
 export default defineEventHandler((event) => {
   const { workhorse } = event.context;
-  
+
   const plugins = workhorse.plugins.list().map((p) => ({
     name: p.manifest.name,
     version: p.manifest.version,
     description: p.manifest.description,
     capabilities: p.manifest.capabilities,
   }));
-  
+
   return { plugins };
 });
 ```
@@ -686,13 +692,13 @@ export default defineEventHandler(() => {
 });
 ```
 
-```typescript
+````typescript
 // routes/ready.ts
 // GET /ready - Readiness check (no auth required)
 export default defineEventHandler(async (event) => {
   const { workhorse } = event.context;
   const ready = await workhorse.db.isConnected();
-  
+
   if (!ready) {
     setResponseStatus(event, 503);
   }
@@ -724,7 +730,7 @@ export type ServerMessage =
 // - "notifications" — all notifications
 // - "notifications:{issueId}" — specific issue notifications
 // - "issues" — all issue changes
-```
+````
 
 ### WebSocket Handler
 
@@ -742,10 +748,10 @@ interface Connection {
 
 export function createWebSocketHandler(workhorse: WorkhorseContext) {
   const connections = new Map<string, Connection>();
-  
+
   function upgrade(c: Context) {
     const { upgradeWebSocket } = c.env;
-    
+
     return upgradeWebSocket((ws) => {
       const connId = crypto.randomUUID();
       const conn: Connection = {
@@ -754,74 +760,72 @@ export function createWebSocketHandler(workhorse: WorkhorseContext) {
         subscriptions: new Set(),
       };
       connections.set(connId, conn);
-      
+
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data) as ClientMessage;
         handleMessage(conn, msg);
       };
-      
+
       ws.onclose = () => {
         connections.delete(connId);
       };
     });
   }
-  
+
   function handleMessage(conn: Connection, msg: ClientMessage): void {
     switch (msg.type) {
       case "subscribe":
         msg.channels.forEach((ch) => conn.subscriptions.add(ch));
         send(conn, { type: "subscribed", channels: msg.channels });
         break;
-        
+
       case "unsubscribe":
         msg.channels.forEach((ch) => conn.subscriptions.delete(ch));
         send(conn, { type: "unsubscribed", channels: msg.channels });
         break;
-        
+
       case "ping":
         send(conn, { type: "pong" });
         break;
-        
+
       case "send_message":
-        workhorse.orchestrator
-          .sendMessage(msg.issueId, msg.content)
-          .catch((err) => {
-            send(conn, {
-              type: "error",
-              code: "SEND_FAILED",
-              message: err.message,
-            });
+        workhorse.orchestrator.sendMessage(msg.issueId, msg.content).catch((err) => {
+          send(conn, {
+            type: "error",
+            code: "SEND_FAILED",
+            message: err.message,
           });
+        });
         break;
     }
   }
-  
+
   function send(conn: Connection, msg: ServerMessage): void {
     conn.ws.send(JSON.stringify(msg));
   }
-  
+
   function broadcast(event: string, data: unknown): void {
     const [category, issueId] = parseEvent(event);
-    
+
     for (const conn of connections.values()) {
       // Check if connection is subscribed to this event
       const shouldSend =
         conn.subscriptions.has(category) ||
         (issueId && conn.subscriptions.has(`${category}:${issueId}`));
-        
+
       if (shouldSend) {
         send(conn, { type: "event", channel: category, event, data });
       }
     }
   }
-  
+
   function closeAll(): void {
     for (const conn of connections.values()) {
       conn.ws.close();
     }
     connections.clear();
   }
-  
+
   return { upgrade, broadcast, closeAll };
 }
 
@@ -851,21 +855,21 @@ Nitro middleware are files in `middleware/` that run before route handlers. File
 export default defineEventHandler((event) => {
   // Skip auth for health checks
   if (event.path === "/health" || event.path === "/ready") return;
-  
+
   // Skip non-API routes
   if (!event.path.startsWith("/api/")) return;
-  
+
   const config = useRuntimeConfig(event);
   if (!config.auth.enabled) return;
-  
+
   const authHeader = getHeader(event, "Authorization");
   const apiKey = getHeader(event, "X-API-Key");
-  
+
   // Check API key
   if (apiKey && config.auth.apiKeys.includes(apiKey)) {
     return; // Continue to route handler
   }
-  
+
   // Check Bearer token
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
@@ -873,7 +877,7 @@ export default defineEventHandler((event) => {
       return; // Continue to route handler
     }
   }
-  
+
   throw createError({
     statusCode: 401,
     statusMessage: "Unauthorized",
@@ -905,9 +909,9 @@ export default defineEventHandler((event) => {
 // nitro.config.ts (add to existing config)
 export default defineNitroConfig({
   // ... other config
-  
+
   hooks: {
-    "error"(error, { event }) {
+    error(error, { event }) {
       if (error instanceof WorkhorseError) {
         return {
           type: `https://api.workhorse.dev/errors/${error.code}`,
@@ -917,7 +921,7 @@ export default defineNitroConfig({
           hint: error.hint,
         };
       }
-      
+
       return {
         type: "https://api.workhorse.dev/errors/internal",
         title: "Internal Server Error",
@@ -939,7 +943,7 @@ export function createProblemError(
   statusCode: number,
   code: string,
   message: string,
-  hint?: string
+  hint?: string,
 ) {
   return createError({
     statusCode,
@@ -1007,18 +1011,24 @@ export default definePlugin({
   manifest: { name: "my-plugin", version: "1.0.0" },
   setup() {
     const { hooks } = useWorkhorse();
-    
+
     // Register routes when server is setting up
     hooks.on("server.routes.registering", ({ router }) => {
-      router.get("/api/v1/my-plugin/status", defineEventHandler(() => {
-        return { hello: "world" };
-      }));
-      
-      router.post("/api/v1/my-plugin/action", defineEventHandler(async (event) => {
-        const body = await readBody(event);
-        // ... do something
-        return { success: true };
-      }));
+      router.get(
+        "/api/v1/my-plugin/status",
+        defineEventHandler(() => {
+          return { hello: "world" };
+        }),
+      );
+
+      router.post(
+        "/api/v1/my-plugin/action",
+        defineEventHandler(async (event) => {
+          const body = await readBody(event);
+          // ... do something
+          return { success: true };
+        }),
+      );
     });
   },
 });
@@ -1080,14 +1090,14 @@ Nitro supports multiple deployment targets via presets:
 // nitro.config.ts
 export default defineNitroConfig({
   // Local development
-  preset: "bun",        // or "node-server"
-  
+  preset: "bun", // or "node-server"
+
   // Serverless
   // preset: "vercel",
   // preset: "cloudflare",
   // preset: "netlify",
   // preset: "aws-lambda",
-  
+
   // Edge
   // preset: "cloudflare-pages",
   // preset: "vercel-edge",
@@ -1099,38 +1109,38 @@ export default defineNitroConfig({
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| GET | `/ready` | Readiness check (DB connected) |
-| GET | `/api/v1/issues` | List issues |
-| GET | `/api/v1/issues/:id` | Get issue details |
-| POST | `/api/v1/issues/parse` | Parse issue identifier |
-| PATCH | `/api/v1/issues/:id` | Update issue |
-| GET | `/api/v1/agents` | List running agents |
-| GET | `/api/v1/agents/:issueId` | Get agent status |
-| POST | `/api/v1/agents` | Spawn agent |
-| POST | `/api/v1/agents/:issueId/message` | Send message to agent |
-| DELETE | `/api/v1/agents/:issueId` | Stop agent |
-| GET | `/api/v1/notifications` | List notifications |
-| POST | `/api/v1/notifications/:id/acknowledge` | Acknowledge notification |
-| POST | `/api/v1/notifications/acknowledge` | Batch acknowledge |
-| GET | `/api/v1/memory/:issueId/context` | Get L1 context |
-| POST | `/api/v1/memory/search` | Semantic search |
-| POST | `/api/v1/memory/:issueId/append` | Append to context |
-| GET | `/api/v1/config` | Get config (redacted) |
-| GET | `/api/v1/config/plugins` | List plugins |
-| WS | `/ws` | WebSocket connection |
+| Method | Path                                    | Description                    |
+| ------ | --------------------------------------- | ------------------------------ |
+| GET    | `/health`                               | Health check                   |
+| GET    | `/ready`                                | Readiness check (DB connected) |
+| GET    | `/api/v1/issues`                        | List issues                    |
+| GET    | `/api/v1/issues/:id`                    | Get issue details              |
+| POST   | `/api/v1/issues/parse`                  | Parse issue identifier         |
+| PATCH  | `/api/v1/issues/:id`                    | Update issue                   |
+| GET    | `/api/v1/agents`                        | List running agents            |
+| GET    | `/api/v1/agents/:issueId`               | Get agent status               |
+| POST   | `/api/v1/agents`                        | Spawn agent                    |
+| POST   | `/api/v1/agents/:issueId/message`       | Send message to agent          |
+| DELETE | `/api/v1/agents/:issueId`               | Stop agent                     |
+| GET    | `/api/v1/notifications`                 | List notifications             |
+| POST   | `/api/v1/notifications/:id/acknowledge` | Acknowledge notification       |
+| POST   | `/api/v1/notifications/acknowledge`     | Batch acknowledge              |
+| GET    | `/api/v1/memory/:issueId/context`       | Get L1 context                 |
+| POST   | `/api/v1/memory/search`                 | Semantic search                |
+| POST   | `/api/v1/memory/:issueId/append`        | Append to context              |
+| GET    | `/api/v1/config`                        | Get config (redacted)          |
+| GET    | `/api/v1/config/plugins`                | List plugins                   |
+| WS     | `/ws`                                   | WebSocket connection           |
 
 ### WebSocket Channels
 
-| Channel | Events |
-|---------|--------|
-| `agents` | `agent.output`, `agent.spawned`, `agent.stopped` |
-| `agents:{issueId}` | Same, filtered by issue |
-| `notifications` | `notification.created` |
-| `notifications:{issueId}` | Same, filtered by issue |
-| `issues` | `issue.status_changed` |
+| Channel                   | Events                                           |
+| ------------------------- | ------------------------------------------------ |
+| `agents`                  | `agent.output`, `agent.spawned`, `agent.stopped` |
+| `agents:{issueId}`        | Same, filtered by issue                          |
+| `notifications`           | `notification.created`                           |
+| `notifications:{issueId}` | Same, filtered by issue                          |
+| `issues`                  | `issue.status_changed`                           |
 
 ## package.json
 

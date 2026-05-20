@@ -6,6 +6,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+
 import { GitHubClient } from "../client.ts";
 
 const isBun = typeof globalThis.Bun !== "undefined";

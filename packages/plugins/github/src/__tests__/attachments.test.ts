@@ -6,6 +6,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { AttachmentService } from "workhorse-core";
+
 import { downloadAttachments, downloadImage } from "../attachment-download.ts";
 import {
   countImagesInMarkdown,

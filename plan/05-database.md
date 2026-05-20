@@ -158,6 +158,7 @@ db.close();
 ## Type Changes
 
 Types are now **derived from Drizzle schema** and re-exported from `packages/core/src/types/`:
+
 - `Issue`, `IssueStatus` — from `src/db/schema/issues.ts`
 - `IssueEvent` — from `src/db/schema/events.ts`
 - `Notification`, `NotificationPriority`, `NotificationStatus` — from `src/db/schema/notifications.ts`

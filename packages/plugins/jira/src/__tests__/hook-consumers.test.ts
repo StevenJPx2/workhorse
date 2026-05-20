@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+
 import type { AtlassianClient } from "../client.ts";
 import { registerHookConsumers } from "../hook-consumers.ts";
 

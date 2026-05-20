@@ -5,6 +5,7 @@
  */
 
 import type { OrchestratorTool } from "#workflow/orchestrator";
+
 import { memorySearchToolImpl } from "../implementations";
 
 export const memorySearchTool: OrchestratorTool = {

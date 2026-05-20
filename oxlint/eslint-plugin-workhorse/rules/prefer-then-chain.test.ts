@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import rule from "./prefer-then-chain";
 
 // Minimal AST node types for testing

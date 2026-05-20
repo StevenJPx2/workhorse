@@ -5,6 +5,7 @@
  */
 
 import type { MonitorContext } from "workhorse-core";
+
 import type { GitHubComment, GitHubReview } from "./types.ts";
 
 /** Priority mapping for review states */

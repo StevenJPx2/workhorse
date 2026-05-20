@@ -47,38 +47,38 @@ packages/plugins/
 ## Domain Types
 
 ```typescript
-type AgentHarness = string  // Validated at runtime against registered adapters
-type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed"
+type AgentHarness = string; // Validated at runtime against registered adapters
+type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed";
 
 interface SpawnOptions {
-  issue: Issue
-  prompt?: string           // Overrides PromptEngineer output if provided
-  harness?: AgentHarness    // Uses config default if not specified
-  model?: string
-  repoPath: string
-  baseBranch?: string
+  issue: Issue;
+  prompt?: string; // Overrides PromptEngineer output if provided
+  harness?: AgentHarness; // Uses config default if not specified
+  model?: string;
+  repoPath: string;
+  baseBranch?: string;
 }
 
 // Harness-agnostic tool interface — plugins register once, adapters translate
 interface OrchestratorTool {
-  name: string
-  description: string       // Rendered in system prompt so agent knows tool exists
-  schema: JSONSchema
-  execute: (args: unknown, ctx: ToolExecutionContext) => Promise<ToolResult>
+  name: string;
+  description: string; // Rendered in system prompt so agent knows tool exists
+  schema: JSONSchema;
+  execute: (args: unknown, ctx: ToolExecutionContext) => Promise<ToolResult>;
 }
 
 interface ToolExecutionContext {
-  issueId: string
-  worktreePath: string
-  db: Database
-  hooks: Emitter<HookEventMap>
-  memory: MemoryService
+  issueId: string;
+  worktreePath: string;
+  db: Database;
+  hooks: Emitter<HookEventMap>;
+  memory: MemoryService;
 }
 
 interface ToolResult {
-  success: boolean
-  output?: string
-  error?: string
+  success: boolean;
+  output?: string;
+  error?: string;
 }
 ```
 
@@ -89,30 +89,34 @@ Each adapter extends this abstract base class. The base handles common construct
 ```typescript
 // workflow/orchestrator/types/agent.ts
 abstract class AgentAdapter {
-  get issueId(): string { return this.ctx.issue.externalId }
-  get worktreePath(): string { return this.ctx.worktreePath }
-  state: AgentState = "stopped"
-  abstract readonly harness: AgentHarness
+  get issueId(): string {
+    return this.ctx.issue.externalId;
+  }
+  get worktreePath(): string {
+    return this.ctx.worktreePath;
+  }
+  state: AgentState = "stopped";
+  abstract readonly harness: AgentHarness;
 
   constructor(protected readonly ctx: AdapterContext) {}
 
-  abstract start(): Promise<void>
-  abstract sendMessage(content: string): Promise<void>
-  abstract stop(): Promise<void>
-  abstract isRunning(): boolean
+  abstract start(): Promise<void>;
+  abstract sendMessage(content: string): Promise<void>;
+  abstract stop(): Promise<void>;
+  abstract isRunning(): boolean;
 }
 
 // Context passed to adapter constructor
 interface AdapterContext {
-  issue: Issue
-  worktreePath: string
-  systemPrompt: string
-  initialMessage: string
-  tools: OrchestratorTool[]
-  db: Database
-  hooks: Emitter<HookEventMap>
-  memory: MemoryService
-  model?: string
+  issue: Issue;
+  worktreePath: string;
+  systemPrompt: string;
+  initialMessage: string;
+  tools: OrchestratorTool[];
+  db: Database;
+  hooks: Emitter<HookEventMap>;
+  memory: MemoryService;
+  model?: string;
 }
 ```
 
@@ -133,7 +137,7 @@ class HarnessOrchestrator {
 
   // Adapter registration — plugins call this during setup
   registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void
-  
+
   // Tool registration — plugins call this, harness-agnostic
   registerTool(tool: OrchestratorTool): void
   getTools(): OrchestratorTool[]
@@ -163,10 +167,10 @@ class HarnessOrchestrator {
 
 ```typescript
 // spawn.ts
-const harness = options.harness ?? config.agent.harness
-const AdapterClass = this.adapters.get(harness)
+const harness = options.harness ?? config.agent.harness;
+const AdapterClass = this.adapters.get(harness);
 if (!AdapterClass) {
-  throw new Error(`No adapter registered for harness: ${harness}`)
+  throw new Error(`No adapter registered for harness: ${harness}`);
 }
 
 const adapter = new AdapterClass({
@@ -179,8 +183,8 @@ const adapter = new AdapterClass({
   hooks: this.hooks,
   memory: this.memory,
   model: options.model,
-})
-await adapter.start()
+});
+await adapter.start();
 ```
 
 ## Stop Flow
@@ -200,8 +204,8 @@ Plugins register adapter classes via `ctx.orchestrator.registerAdapter()`:
 
 ```typescript
 // packages/plugins/pi-adapter/src/index.ts
-import { definePlugin } from "workhorse-core"
-import { PiAgentAdapter } from "./adapter.ts"
+import { definePlugin } from "workhorse-core";
+import { PiAgentAdapter } from "./adapter.ts";
 
 export const piAdapterPlugin = definePlugin({
   manifest: {
@@ -211,9 +215,9 @@ export const piAdapterPlugin = definePlugin({
     capabilities: { adapters: ["pi-coding-agent"] },
   },
   setup(ctx) {
-    ctx.orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter)
+    ctx.orchestrator.registerAdapter("pi-coding-agent", PiAgentAdapter);
   },
-})
+});
 ```
 
 ### Plugin Manifest Capabilities
@@ -225,7 +229,7 @@ capabilities: z.object({
   monitors: z.array(z.string()).optional(),
   tools: z.array(z.string()).optional(),
   adapters: z.array(z.string()).optional(),
-}).optional()
+}).optional();
 ```
 
 ### Config Schema
@@ -234,10 +238,10 @@ Harness is a string validated at runtime against registered adapters:
 
 ```typescript
 // config/schema.ts
-harness: z.string().default("pi-coding-agent")
+harness: z.string().default("pi-coding-agent");
 
 // config/types.ts
-type AgentHarness = string
+type AgentHarness = string;
 ```
 
 ## Example: Pi Adapter Plugin
@@ -251,71 +255,71 @@ import {
   createAgentSession,
   DefaultResourceLoader,
   SessionManager,
-} from "@mariozechner/pi-coding-agent"
-import type { AgentAdapter, AdapterContext, AgentState } from "#workflow/orchestrator"
+} from "@mariozechner/pi-coding-agent";
+import type { AgentAdapter, AdapterContext, AgentState } from "#workflow/orchestrator";
 
 export class PiAgentAdapter extends AgentAdapter {
-  readonly harness = "pi-coding-agent"
+  readonly harness = "pi-coding-agent";
 
-  private session: AgentSession | null = null
+  private session: AgentSession | null = null;
 
   async start(): Promise<void> {
-    this.state = "starting"
+    this.state = "starting";
 
     // Translate OrchestratorTool[] → pi ExtensionFactory
-    const extensionFactory = this.createExtensionFromTools()
+    const extensionFactory = this.createExtensionFromTools();
 
     const loader = new DefaultResourceLoader({
       cwd: this.worktreePath,
       systemPromptOverride: () => this.ctx.systemPrompt,
       extensionFactories: [extensionFactory],
-    })
-    await loader.reload()
+    });
+    await loader.reload();
 
     const { session } = await createAgentSession({
       cwd: this.worktreePath,
       resourceLoader: loader,
       sessionManager: SessionManager.create(this.worktreePath),
-    })
-    this.session = session
+    });
+    this.session = session;
 
     // Bridge pi events → Workhorse hooks
-    this.subscribeToEvents()
+    this.subscribeToEvents();
 
-    this.state = "running"
-    await session.prompt(this.ctx.initialMessage)
+    this.state = "running";
+    await session.prompt(this.ctx.initialMessage);
   }
 
   async sendMessage(content: string): Promise<void> {
-    if (!this.session) throw new Error("Session not started")
+    if (!this.session) throw new Error("Session not started");
     if (this.session.isStreaming) {
-      await this.session.steer(content)
+      await this.session.steer(content);
     } else {
-      await this.session.prompt(content)
+      await this.session.prompt(content);
     }
   }
 
   async stop(): Promise<void> {
-    this.state = "stopping"
-    this.session?.dispose()
-    this.session = null
-    this.state = "stopped"
+    this.state = "stopping";
+    this.session?.dispose();
+    this.session = null;
+    this.state = "stopped";
   }
 
   isRunning(): boolean {
-    return this.session?.isStreaming ?? false
+    return this.session?.isStreaming ?? false;
   }
 
   private createExtensionFromTools() {
-    const { tools } = this.ctx
+    const { tools } = this.ctx;
     const execCtx = {
       issueId: this.issueId,
       worktreePath: this.worktreePath,
       db: this.ctx.db,
       hooks: this.ctx.hooks,
       memory: this.ctx.memory,
-    }
-    
+    };
+
     return (pi: ExtensionAPI) => {
       for (const tool of tools) {
         pi.registerTool({
@@ -323,27 +327,31 @@ export class PiAgentAdapter extends AgentAdapter {
           description: tool.description,
           schema: tool.schema,
           execute: async (args) => {
-            const result = await tool.execute(args, execCtx)
-            if (!result.success) throw new Error(result.error ?? "Tool execution failed")
-            return result.output ?? ""
-          }
-        })
+            const result = await tool.execute(args, execCtx);
+            if (!result.success) throw new Error(result.error ?? "Tool execution failed");
+            return result.output ?? "";
+          },
+        });
       }
-    }
+    };
   }
 
   private subscribeToEvents() {
     this.session?.subscribe((event) => {
       if (event.type === "message_update") {
-        const delta = event.assistantMessageEvent
+        const delta = event.assistantMessageEvent;
         if (delta.type === "text_delta") {
-          this.ctx.hooks.emit("agent.output", { issueId: this.issueId, delta: delta.delta })
+          this.ctx.hooks.emit("agent.output", { issueId: this.issueId, delta: delta.delta });
         }
       }
       if (event.type === "tool_execution_start") {
-        this.ctx.hooks.emit("agent.tool_call", { issueId: this.issueId, tool: event.toolName, args: event.args })
+        this.ctx.hooks.emit("agent.tool_call", {
+          issueId: this.issueId,
+          tool: event.toolName,
+          args: event.args,
+        });
       }
-    })
+    });
   }
 }
 ```
@@ -352,16 +360,29 @@ export class PiAgentAdapter extends AgentAdapter {
 
 ```typescript
 // workhorse-opencode-adapter (hypothetical npm package)
-import { definePlugin, type AdapterContext, type AgentAdapter, type AgentState } from "workhorse-core"
-import { OpencodeSDK } from "opencode-sdk"
+import {
+  definePlugin,
+  type AdapterContext,
+  type AgentAdapter,
+  type AgentState,
+} from "workhorse-core";
+import { OpencodeSDK } from "opencode-sdk";
 
 class OpencodeAdapter extends AgentAdapter {
-  readonly harness = "opencode"
+  readonly harness = "opencode";
 
-  async start(): Promise<void> { /* ... */ }
-  async sendMessage(content: string): Promise<void> { /* ... */ }
-  async stop(): Promise<void> { /* ... */ }
-  isRunning(): boolean { /* ... */ }
+  async start(): Promise<void> {
+    /* ... */
+  }
+  async sendMessage(content: string): Promise<void> {
+    /* ... */
+  }
+  async stop(): Promise<void> {
+    /* ... */
+  }
+  isRunning(): boolean {
+    /* ... */
+  }
 }
 
 export default definePlugin({
@@ -371,9 +392,9 @@ export default definePlugin({
     capabilities: { adapters: ["opencode"] },
   },
   setup(ctx) {
-    ctx.orchestrator.registerAdapter("opencode", OpencodeAdapter)
+    ctx.orchestrator.registerAdapter("opencode", OpencodeAdapter);
   },
-})
+});
 ```
 
 ## Core Tools Plugin
@@ -387,14 +408,16 @@ export const corePlugin = definePlugin({
     name: "builtin-tools",
     version: "1.0.0",
     description: "Core Workhorse agent tools",
-    capabilities: { tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"] },
+    capabilities: {
+      tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"],
+    },
   },
   setup(ctx) {
-    ctx.orchestrator.registerTool(acknowledgeTool)
-    ctx.orchestrator.registerTool(updateStatusTool)
-    ctx.orchestrator.registerTool(escalateTool)
+    ctx.orchestrator.registerTool(acknowledgeTool);
+    ctx.orchestrator.registerTool(updateStatusTool);
+    ctx.orchestrator.registerTool(escalateTool);
   },
-})
+});
 ```
 
 ## Bootstrap
@@ -403,15 +426,16 @@ Core only registers the corePlugin (tools). Adapter plugins are external package
 
 ```typescript
 // bootstrap.ts (inside workhorse-core)
-for (const plugin of CORE_PLUGINS) {  // Only corePlugin
-  plugins.register(plugin)
+for (const plugin of CORE_PLUGINS) {
+  // Only corePlugin
+  plugins.register(plugin);
 }
-await plugins.setup()
+await plugins.setup();
 
 // Application code registers adapter plugins
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter"
-jt.plugins.register(piAdapterPlugin)
-await jt.plugins.setup()
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
+jt.plugins.register(piAdapterPlugin);
+await jt.plugins.setup();
 ```
 
 ## PromptEngineer Extension

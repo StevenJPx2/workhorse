@@ -32,7 +32,7 @@ orchestrator.skillRegistry.registerSkill({
   id: "myplugin:deployment",
   name: "Deployment Process",
   description: "How to deploy to production",
-  instructionsPath: "./skills/deployment.md",  // Relative to plugin dir
+  instructionsPath: "./skills/deployment.md", // Relative to plugin dir
   priority: 30,
 });
 ```
@@ -101,11 +101,11 @@ priority: 40
 
 ### Frontmatter Fields
 
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `name` | No | Filename (title-cased) | Display name |
-| `description` | No | "Local skill: {name}" | Brief description shown in prompt |
-| `priority` | No | 50 | Sort order (0-100, lower = earlier) |
+| Field         | Required | Default                | Description                         |
+| ------------- | -------- | ---------------------- | ----------------------------------- |
+| `name`        | No       | Filename (title-cased) | Display name                        |
+| `description` | No       | "Local skill: {name}"  | Brief description shown in prompt   |
+| `priority`    | No       | 50                     | Sort order (0-100, lower = earlier) |
 
 ## Creating a Skill File
 
@@ -145,9 +145,11 @@ This skill provides guidance for...
 ## Common Issues
 
 ### Issue 1
+
 Solution for issue 1...
 
 ### Issue 2
+
 Solution for issue 2...
 ```
 
@@ -169,13 +171,13 @@ Each skill should cover one specific workflow or topic:
 
 ### Use Appropriate Priority
 
-| Priority Range | Use Case |
-|---------------|----------|
-| 0-20 | Critical project-specific rules |
-| 20-40 | Important workflows |
-| 40-60 | Standard procedures (default) |
-| 60-80 | Reference information |
-| 80-100 | Nice-to-have context |
+| Priority Range | Use Case                        |
+| -------------- | ------------------------------- |
+| 0-20           | Critical project-specific rules |
+| 20-40          | Important workflows             |
+| 40-60          | Standard procedures (default)   |
+| 60-80          | Reference information           |
+| 80-100         | Nice-to-have context            |
 
 ### Organize by Topic
 
@@ -226,16 +228,16 @@ orchestrator.skillRegistry.registerSkill({
 
 ### Schema Requirements
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `id` | ✅ | string | Format: `pluginname:skillname` (lowercase, alphanumeric, hyphens) |
-| `name` | ✅ | string | Human-readable name (1-100 chars) |
-| `description` | ✅ | string | Brief description (1-500 chars) |
-| `instructions` | ✅* | string | Inline markdown content |
-| `instructionsPath` | ✅* | string | Relative path to .md file |
-| `priority` | ❌ | number | 0-100, default: 50 |
+| Field              | Required | Type   | Description                                                       |
+| ------------------ | -------- | ------ | ----------------------------------------------------------------- |
+| `id`               | ✅       | string | Format: `pluginname:skillname` (lowercase, alphanumeric, hyphens) |
+| `name`             | ✅       | string | Human-readable name (1-100 chars)                                 |
+| `description`      | ✅       | string | Brief description (1-500 chars)                                   |
+| `instructions`     | ✅\*     | string | Inline markdown content                                           |
+| `instructionsPath` | ✅\*     | string | Relative path to .md file                                         |
+| `priority`         | ❌       | number | 0-100, default: 50                                                |
 
-*Exactly one of `instructions` or `instructionsPath` must be provided.
+\*Exactly one of `instructions` or `instructionsPath` must be provided.
 
 ## Using Skills
 

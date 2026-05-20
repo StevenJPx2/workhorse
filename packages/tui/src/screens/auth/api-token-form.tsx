@@ -4,8 +4,9 @@
  */
 
 import { For, Show } from "solid-js";
-import { getTheme } from "../../theme.ts";
 import type { ApiTokenAuthField } from "workhorse-core";
+
+import { getTheme } from "../../theme.ts";
 
 interface ApiTokenFormProps {
   pluginName: string;

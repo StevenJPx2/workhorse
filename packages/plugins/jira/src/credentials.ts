@@ -3,8 +3,9 @@
  * @module workhorse-plugin-jira/credentials
  */
 
-import { z } from "zod/v4";
 import { deleteCredential, getCredential, storeCredential } from "workhorse-core";
+import { z } from "zod/v4";
+
 import type { JiraCredentials } from "./types.ts";
 
 const SERVICE = "jira";

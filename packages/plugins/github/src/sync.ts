@@ -5,6 +5,7 @@
  */
 
 import type { IssueStatus, WorkhorseContext } from "workhorse-core";
+
 import type { GitHubClient } from "./client.ts";
 
 /** Status to label mapping */

@@ -2,9 +2,11 @@
  * Tests for bash restriction utilities.
  */
 
-import { describe, it, expect } from "vitest";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+import { describe, it, expect } from "vitest";
+
 import {
   createRestrictedBashOperations,
   createPathValidatingSpawnHook,

@@ -6,12 +6,13 @@
 
 import { tmpdir } from "node:os";
 import { resolve, normalize } from "node:path";
-import { assertPathAllowed, isPathAllowed, type PathValidationOptions } from "workhorse-core";
+
 import {
   createLocalBashOperations,
   type BashOperations,
   type BashSpawnHook,
 } from "@earendil-works/pi-coding-agent";
+import { assertPathAllowed, isPathAllowed, type PathValidationOptions } from "workhorse-core";
 
 /** Options for creating restricted bash operations. */
 export interface RestrictedBashOptions extends PathValidationOptions {

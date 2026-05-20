@@ -1,5 +1,6 @@
-import type { Accessor, Setter } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
+import type { Accessor, Setter } from "solid-js";
+
 import { ui } from "../../state/ui.ts";
 
 interface UseKeyboardNavOptions {

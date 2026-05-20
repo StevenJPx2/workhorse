@@ -5,6 +5,7 @@
 
 import { createSignal } from "solid-js";
 import type { HookEmitter, Notification } from "workhorse-core";
+
 import type { ActivityItem } from "../primitives/activity-types.ts";
 import { showError } from "./ui-toast.ts";
 

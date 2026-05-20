@@ -10,6 +10,7 @@
  */
 
 import type { Hookable, HookKeys } from "hookable";
+
 import type { HookCallbacks, HookPayload } from "./types.ts";
 
 /** Hook types that should be deferred during plugin setup */

@@ -1,4 +1,4 @@
-import { Match, Switch, Show, onMount } from "solid-js";
+import { Match, Switch, Show, onMount, type JSX } from "solid-js";
 import type {
   WorkhorseConfig,
   ConfigPaths,
@@ -9,8 +9,8 @@ import type {
   HarnessOrchestrator,
   Issue,
 } from "workhorse-core";
-import { WorkhorseProvider } from "./context/workhorse.tsx";
-import { Overview, Agent, Help } from "./screens";
+
+import { useGlobalBindings } from "./bindings";
 import {
   SpawnModal,
   type SpawnConfig,
@@ -18,10 +18,11 @@ import {
   DeleteConfirmModal,
   ToastContainer,
 } from "./components";
-import { useGlobalBindings } from "./bindings";
+import { WorkhorseProvider } from "./context/workhorse.tsx";
+import { Overview, Agent, Help } from "./screens";
 import { initActivityStore } from "./state/activity-store.ts";
-import { ui } from "./state/ui.ts";
 import { logError } from "./state/error-log.ts";
+import { ui } from "./state/ui.ts";
 
 interface AppProps {
   config: WorkhorseConfig;
@@ -33,12 +34,9 @@ interface AppProps {
   orchestrator: HarnessOrchestrator;
 }
 
-/**
- * Root application component.
- * Handles screen routing and modal display.
- * Uses @opentui/keymap for layered, focus-aware keybindings.
- */
-export function App(props: AppProps) {
+/** Inner component that uses context - must be rendered inside WorkhorseProvider */
+function AppContent(props: AppProps & { children?: JSX.Element }) {
+  // Initialize global keybindings (requires WorkhorseContext)
   useGlobalBindings();
 
   // Initialize global activity store with hooks (runs once)
@@ -70,6 +68,66 @@ export function App(props: AppProps) {
   const currentModel = () => ui.selectedModel() || props.config.agent.model || "";
 
   return (
+    <box flexDirection="column" width="100%" height="100%">
+      {/* Modal layer - rendered first but with higher zIndex to overlay */}
+      <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
+        {(issue: () => Issue) => (
+          <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
+        )}
+      </Show>
+      <Show when={ui.modal() === "model"}>
+        <ModelSelectorModal
+          currentModel={currentModel()}
+          onSelect={(modelId) => {
+            ui.setSelectedModel(modelId);
+            ui.closeModal();
+          }}
+          onClose={ui.closeModal}
+        />
+      </Show>
+      <Show when={ui.modal() === "delete" && ui.deleteIssue()}>
+        {(issue: () => Issue) => (
+          <DeleteConfirmModal
+            issue={issue()}
+            onConfirm={async (issueToDelete) => {
+              try {
+                await props.tracker.deleteIssue(issueToDelete.id);
+                ui.closeModal();
+              } catch (err) {
+                console.error("Failed to delete issue:", err);
+              }
+            }}
+            onClose={ui.closeModal}
+          />
+        )}
+      </Show>
+
+      {/* Main content */}
+      <Switch>
+        <Match when={ui.screen() === "overview"}>
+          <Overview />
+        </Match>
+        <Match when={ui.screen() === "agent"}>
+          <Agent />
+        </Match>
+        <Match when={ui.screen() === "help"}>
+          <Help />
+        </Match>
+      </Switch>
+
+      {/* Toast notifications */}
+      <ToastContainer />
+    </box>
+  );
+}
+
+/**
+ * Root application component.
+ * Handles screen routing and modal display.
+ * Uses @opentui/keymap for layered, focus-aware keybindings.
+ */
+export function App(props: AppProps) {
+  return (
     <WorkhorseProvider
       value={{
         config: props.config,
@@ -81,56 +139,7 @@ export function App(props: AppProps) {
         orchestrator: props.orchestrator,
       }}
     >
-      <box flexDirection="column" width="100%" height="100%">
-        {/* Modal layer - rendered first but with higher zIndex to overlay */}
-        <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
-          {(issue: () => Issue) => (
-            <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
-          )}
-        </Show>
-        <Show when={ui.modal() === "model"}>
-          <ModelSelectorModal
-            currentModel={currentModel()}
-            onSelect={(modelId) => {
-              ui.setSelectedModel(modelId);
-              ui.closeModal();
-            }}
-            onClose={ui.closeModal}
-          />
-        </Show>
-        <Show when={ui.modal() === "delete" && ui.deleteIssue()}>
-          {(issue: () => Issue) => (
-            <DeleteConfirmModal
-              issue={issue()}
-              onConfirm={async (issueToDelete) => {
-                try {
-                  await props.tracker.deleteIssue(issueToDelete.id);
-                  ui.closeModal();
-                } catch (err) {
-                  console.error("Failed to delete issue:", err);
-                }
-              }}
-              onClose={ui.closeModal}
-            />
-          )}
-        </Show>
-
-        {/* Main content */}
-        <Switch>
-          <Match when={ui.screen() === "overview"}>
-            <Overview />
-          </Match>
-          <Match when={ui.screen() === "agent"}>
-            <Agent />
-          </Match>
-          <Match when={ui.screen() === "help"}>
-            <Help />
-          </Match>
-        </Switch>
-
-        {/* Toast notifications */}
-        <ToastContainer />
-      </box>
+      <AppContent {...props} />
     </WorkhorseProvider>
   );
 }

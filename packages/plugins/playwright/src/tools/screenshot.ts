@@ -7,11 +7,13 @@
  */
 
 import { readFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
-import { screenshot } from "../session-operations.ts";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
+import { screenshot } from "../session-operations.ts";
 
 /** Create the playwright_screenshot tool */
 export function createScreenshotTool(

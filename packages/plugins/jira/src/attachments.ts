@@ -8,6 +8,7 @@
  */
 
 import type { AttachmentService, StoredAttachment } from "workhorse-core";
+
 import type { AtlassianClient } from "./client.ts";
 import type { JiraAttachment } from "./types.ts";
 

@@ -5,6 +5,7 @@
  */
 
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
+
 import type { AtlassianClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment.ts";
 import { createGetAttachmentsTool } from "./get-attachments.ts";

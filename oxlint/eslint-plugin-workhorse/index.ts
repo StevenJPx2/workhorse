@@ -1,18 +1,18 @@
-import maxLinesPerFile from "./rules/max-lines-per-file";
-import enforceKebabCaseFilenames from "./rules/enforce-kebab-case-filenames";
+import enforceBarrelExports from "./rules/enforce-barrel-exports";
 import enforceColocatedExports from "./rules/enforce-colocated-exports";
+import enforceKebabCaseFilenames from "./rules/enforce-kebab-case-filenames";
 import enforceTestColocation from "./rules/enforce-test-colocation";
+import maxLinesPerFile from "./rules/max-lines-per-file";
+import noCascadingTernary from "./rules/no-cascading-ternary";
+import noIndexImports from "./rules/no-index-imports";
+import noReexportOutsideBarrel from "./rules/no-reexport-outside-barrel";
+import noSectionComments from "./rules/no-section-comments";
 import noSingleReferenceFunction from "./rules/no-single-reference-function";
 import noSingleUseVariable from "./rules/no-single-use-variable";
-import enforceBarrelExports from "./rules/enforce-barrel-exports";
-import noIndexImports from "./rules/no-index-imports";
-import noSectionComments from "./rules/no-section-comments";
-import noReexportOutsideBarrel from "./rules/no-reexport-outside-barrel";
 import preferExportDirectory from "./rules/prefer-export-directory";
 import preferFolderBarrel from "./rules/prefer-folder-barrel";
 import preferPathAlias from "./rules/prefer-path-alias";
 import preferThenChain from "./rules/prefer-then-chain";
-import noCascadingTernary from "./rules/no-cascading-ternary";
 
 const plugin = {
   meta: {

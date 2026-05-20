@@ -13,8 +13,9 @@
  * @module workhorse-plugin-playwright
  */
 
-import { z } from "zod/v4";
 import { AttachmentService, definePlugin } from "workhorse-core";
+import { z } from "zod/v4";
+
 import { registerPlaywrightCrossPluginSync } from "./cross-plugin-sync.ts";
 import { registerPlaywrightHookMetadata } from "./hook-metadata.ts";
 import { registerPlaywrightPromptHooks } from "./prompt.ts";

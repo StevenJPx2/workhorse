@@ -5,6 +5,7 @@
  */
 
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
+
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { createClickTool } from "./click.ts";
 import { createCloseSessionTool } from "./close-session.ts";

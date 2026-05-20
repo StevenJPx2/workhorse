@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+
 import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
 
 describe("agent.stop.post hook behavior", () => {

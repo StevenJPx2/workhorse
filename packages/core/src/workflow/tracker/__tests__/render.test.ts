@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import type { Issue } from "#db";
 import type { SearchResult, SessionMemory } from "#services/memory";
+
 import {
   buildInitialPrompt,
   buildResumePrompt,

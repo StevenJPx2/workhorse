@@ -3,9 +3,10 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { createJiraCommentMonitor } from "../monitor.ts";
-import type { AtlassianClient } from "../client.ts";
 import type { MonitorContext, Issue } from "workhorse-core";
+
+import type { AtlassianClient } from "../client.ts";
+import { createJiraCommentMonitor } from "../monitor.ts";
 
 describe("createJiraCommentMonitor", () => {
   it("returns monitor options with correct id and type", () => {
@@ -14,7 +15,7 @@ describe("createJiraCommentMonitor", () => {
     const monitor = createJiraCommentMonitor(mockClient, 30_000, mockDb);
 
     expect(monitor.id).toBe("jira-comments");
-    expect(monitor.type).toBe("remote");
+    expect(monitor.type).toBe("polling");
     expect(monitor.interval).toBe(30_000);
   });
 

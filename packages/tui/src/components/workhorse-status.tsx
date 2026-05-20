@@ -4,6 +4,7 @@
 
 import { Show } from "solid-js";
 import type { IssueStatus } from "workhorse-core";
+
 import { getTheme } from "../theme.ts";
 
 interface WorkhorseStatusProps {

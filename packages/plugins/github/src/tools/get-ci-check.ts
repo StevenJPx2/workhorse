@@ -7,6 +7,7 @@
  */
 
 import type { OrchestratorTool } from "workhorse-core";
+
 import type { GitHubClient } from "../client";
 import type { GitHubCheckRun } from "../types";
 

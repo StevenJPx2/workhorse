@@ -54,8 +54,8 @@ Handles Jira ticket references:
 
 ```typescript
 // Formats supported:
-"PROJ-123"
-"https://company.atlassian.net/browse/PROJ-123"
+"PROJ-123";
+"https://company.atlassian.net/browse/PROJ-123";
 ```
 
 Fetches full ticket details including description, comments, status, assignee.
@@ -70,19 +70,19 @@ Polls tickets for new comments every 30 seconds (configurable):
 
 ### Tools
 
-| Tool | Description |
-|------|-------------|
-| `jira_add_comment` | Add comment to ticket |
+| Tool                    | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `jira_add_comment`      | Add comment to ticket                          |
 | `jira_transition_issue` | Change ticket status (In Progress, Done, etc.) |
-| `jira_get_comments` | Get recent comments |
+| `jira_get_comments`     | Get recent comments                            |
 
 ### Steering Rules
 
-| Rule | Condition | Reminder |
-|------|-----------|----------|
-| `jira:update-after-implementation` | Status is "implementing", file changes exist | "Update Jira with your progress" |
-| `jira:transition-after-merge` | PR merged, ticket not in QA/Done | "Transition ticket to appropriate status" |
-| `jira:address-feedback` | Unread notifications exist | "Check inbox for feedback" |
+| Rule                               | Condition                                    | Reminder                                  |
+| ---------------------------------- | -------------------------------------------- | ----------------------------------------- |
+| `jira:update-after-implementation` | Status is "implementing", file changes exist | "Update Jira with your progress"          |
+| `jira:transition-after-merge`      | PR merged, ticket not in QA/Done             | "Transition ticket to appropriate status" |
+| `jira:address-feedback`            | Unread notifications exist                   | "Check inbox for feedback"                |
 
 ### Auth
 
@@ -99,24 +99,24 @@ Uses API token authentication with guided setup:
 
 ### Emitted
 
-| Hook | Payload | When |
-|------|---------|------|
-| `jira:transition.requested` | `{ issueId, targetStatus }` | Request to change status |
-| `jira:assign.requested` | `{ issueId, accountId }` | Request to assign ticket |
-| `jira:issue.transitioned` | `{ issueId, from, to }` | After successful transition |
-| `jira:issue.assigned` | `{ issueId, assignee }` | After successful assignment |
-| `jira:comment.added` | `{ issueId, comment }` | Comment added to ticket |
+| Hook                        | Payload                     | When                        |
+| --------------------------- | --------------------------- | --------------------------- |
+| `jira:transition.requested` | `{ issueId, targetStatus }` | Request to change status    |
+| `jira:assign.requested`     | `{ issueId, accountId }`    | Request to assign ticket    |
+| `jira:issue.transitioned`   | `{ issueId, from, to }`     | After successful transition |
+| `jira:issue.assigned`       | `{ issueId, assignee }`     | After successful assignment |
+| `jira:comment.added`        | `{ issueId, comment }`      | Comment added to ticket     |
 
 ### Listened
 
-| Hook | Action |
-|------|--------|
-| `prompt.building` | Add Jira state context (status, assignee, labels) |
-| `issue.status_changed` | Sync internal status → Jira transitions |
-| `jira:transition.requested` | Execute transition via Jira API |
-| `jira:assign.requested` | Execute assignment via Jira API |
-| `github:pr.merged` | Transition to QA, assign to reporter |
-| `github:pr.opening` | Add Related Tickets section to PR |
+| Hook                        | Action                                            |
+| --------------------------- | ------------------------------------------------- |
+| `prompt.building`           | Add Jira state context (status, assignee, labels) |
+| `issue.status_changed`      | Sync internal status → Jira transitions           |
+| `jira:transition.requested` | Execute transition via Jira API                   |
+| `jira:assign.requested`     | Execute assignment via Jira API                   |
+| `github:pr.merged`          | Transition to QA, assign to reporter              |
+| `github:pr.opening`         | Add Related Tickets section to PR                 |
 
 ## Request/Consumer Pattern
 
@@ -146,6 +146,7 @@ hooks.on("jira:transition.requested", async (event) => {
 ```
 
 **Why this pattern:**
+
 - Testability — can test sync logic without mocking Jira API
 - Extensibility — other plugins could intercept/modify requests
 - Auditing — all state changes flow through observable hooks
@@ -258,17 +259,17 @@ Labels: ${ticket.fields.labels.join(", ") || "None"}
 
 ## Dependencies on Core
 
-| Import | Usage |
-|--------|-------|
-| `definePlugin` | Plugin definition |
-| `IssueParserOptions` | Parser interface |
-| `MonitorOptions` | Monitor interface |
-| `OrchestratorTool` | Tool interface |
-| `SteeringRuleConfigInput` | Steering rule definition |
-| `WorkhorseContext` | Service access |
-| `PromptContextBlock` | Prompt enrichment |
-| `isWorkhorseGenerated` | Filter bot comments |
-| `storeCredential`, `getCredential` | Secure token storage |
+| Import                             | Usage                    |
+| ---------------------------------- | ------------------------ |
+| `definePlugin`                     | Plugin definition        |
+| `IssueParserOptions`               | Parser interface         |
+| `MonitorOptions`                   | Monitor interface        |
+| `OrchestratorTool`                 | Tool interface           |
+| `SteeringRuleConfigInput`          | Steering rule definition |
+| `WorkhorseContext`                 | Service access           |
+| `PromptContextBlock`               | Prompt enrichment        |
+| `isWorkhorseGenerated`             | Filter bot comments      |
+| `storeCredential`, `getCredential` | Secure token storage     |
 
 ## Why This Architecture
 

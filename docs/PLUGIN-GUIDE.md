@@ -110,15 +110,15 @@ The `parse()` function returns a `ParsedIssue`:
 
 ```typescript
 interface ParsedIssue {
-  externalId: string;     // External ID (e.g., "MY-123")
-  source: string;        // Source identifier
-  title: string;         // Issue title
-  description: string;  // Issue body
-  issueType: string;     // Type (task, bug, story, etc.)
-  url?: string;          // Link to external issue
-  assignee?: string;     // Assigned user
-  labels?: string[];     // Tags
-  metadata: Record<string, unknown>;  // Source-specific data
+  externalId: string; // External ID (e.g., "MY-123")
+  source: string; // Source identifier
+  title: string; // Issue title
+  description: string; // Issue body
+  issueType: string; // Type (task, bug, story, etc.)
+  url?: string; // Link to external issue
+  assignee?: string; // Assigned user
+  labels?: string[]; // Tags
+  metadata: Record<string, unknown>; // Source-specific data
 }
 ```
 
@@ -178,9 +178,9 @@ setup(config) {
 
 **Monitor events:**
 
-| Event | When |
-|-------|------|
-| `monitor.tick` | Poll returns `hasChanges: true` |
+| Event           | When                                         |
+| --------------- | -------------------------------------------- |
+| `monitor.tick`  | Poll returns `hasChanges: true`              |
 | `monitor.error` | Poll throws an error (includes `errorCount`) |
 
 Monitors self-stop after 5 consecutive errors.
@@ -278,6 +278,7 @@ export default definePlugin({
 ```
 
 **What AgentAdapter provides automatically:**
+
 - Worktree creation (`createWorktree`)
 - Prompt building (`PromptEngineer.buildHybridPrompt`)
 - Steering rule subscription and disposal
@@ -286,6 +287,7 @@ export default definePlugin({
 - Hook emission for lifecycle events
 
 **What subclasses must implement:**
+
 - `doStart()` — Harness-specific start
 - `sendMessage(content)` — Send a message to the running agent
 - `doStop()` — Harness-specific cleanup
@@ -342,6 +344,7 @@ setup(config) {
 | `when` | `async () => true` | Custom async condition function |
 
 **Evaluation rules:**
+
 - Never reminds when issue status is `"blocked"`
 - Respects cooldown (default: 30s between reminders)
 - `once: true` only fires once per agent session
@@ -451,13 +454,13 @@ When creating database migrations, follow these steps:
 
 **Skill properties:**
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `id` | `string` | Yes | Unique identifier (forms `pluginName:id` in registry) |
-| `name` | `string` | Yes | Human-readable name |
-| `description` | `string` | Yes | Brief description shown in agent's skill list |
-| `content` | `string` | Yes | Full instructions (Markdown) |
-| `priority` | `number` | No | Display order in skill list (lower = earlier, default: 50) |
+| Property      | Type     | Required | Description                                                |
+| ------------- | -------- | -------- | ---------------------------------------------------------- |
+| `id`          | `string` | Yes      | Unique identifier (forms `pluginName:id` in registry)      |
+| `name`        | `string` | Yes      | Human-readable name                                        |
+| `description` | `string` | Yes      | Brief description shown in agent's skill list              |
+| `content`     | `string` | Yes      | Full instructions (Markdown)                               |
+| `priority`    | `number` | No       | Display order in skill list (lower = earlier, default: 50) |
 
 **How skills appear to agents:**
 
@@ -490,6 +493,7 @@ When creating database migrations...
 **Local skills (not plugin-provided):**
 
 Users can also create skills in these locations (no plugin required):
+
 - `.workhorse/skills/*.md` — Project-specific skills
 - `~/.workhorse/skills/*.md` — Global user skills
 - `.claude/skills/*.md` — Claude-compatible skills
@@ -499,6 +503,7 @@ These use prefixes: `local:`, `global:`, `claude:` respectively.
 **Built-in skills:**
 
 Workhorse provides two built-in skills:
+
 - `builtin:plugin-development` — Guide for creating Workhorse plugins
 - `builtin:skill-development` — Guide for creating custom skills
 
@@ -602,9 +607,9 @@ The `github:pr.opening` hook allows plugins to contribute sections to PR descrip
 
 ```typescript
 interface PRContentContribution {
-  section: string;     // Section heading (e.g., "Related Tickets")
-  content: string;     // Markdown content
-  priority?: number;   // Lower = earlier in PR body (default: 50)
+  section: string; // Section heading (e.g., "Related Tickets")
+  content: string; // Markdown content
+  priority?: number; // Lower = earlier in PR body (default: 50)
 }
 ```
 
@@ -619,7 +624,7 @@ interface PROpeningContext {
   head: string;
   draft: boolean;
   worktreePath: string;
-  contributions: PRContentContribution[];  // Push to this array
+  contributions: PRContentContribution[]; // Push to this array
 }
 ```
 
@@ -629,15 +634,15 @@ interface PROpeningContext {
 // In your plugin's setup
 ctx.hooks.on("github:pr.opening", async (event: unknown) => {
   const openingCtx = event as PROpeningContext;
-  
+
   // Fetch data for your section
   const data = await fetchMyData(openingCtx.issueId);
-  
+
   if (data) {
     openingCtx.contributions.push({
       section: "My Section",
       content: formatMyContent(data),
-      priority: 30,  // Show between tickets (10) and screenshots (80)
+      priority: 30, // Show between tickets (10) and screenshots (80)
     });
   }
 });
@@ -645,23 +650,26 @@ ctx.hooks.on("github:pr.opening", async (event: unknown) => {
 
 **Built-in PR contributions:**
 
-| Plugin | Section | Priority | Content |
-|--------|---------|----------|---------|
-| **Jira** | Related Tickets | 10 | Table of linked Jira issues |
-| **Playwright** | Screenshots | 80 | Images from `screenshot-*.png` files |
+| Plugin         | Section         | Priority | Content                              |
+| -------------- | --------------- | -------- | ------------------------------------ |
+| **Jira**       | Related Tickets | 10       | Table of linked Jira issues          |
+| **Playwright** | Screenshots     | 80       | Images from `screenshot-*.png` files |
 
 **Example PR body structure:**
 
 ```markdown
 ## Summary
+
 Added dashboard feature with real-time updates
 
 ## Related Tickets
-| Ticket | Summary | Status |
-| --- | --- | --- |
+
+| Ticket                                               | Summary       | Status      |
+| ---------------------------------------------------- | ------------- | ----------- |
 | [PROJ-123](https://jira.example.com/browse/PROJ-123) | Add dashboard | In Progress |
 
 ## Screenshots
+
 ![screenshot-1.png](./screenshot-1.png)
 
 ![screenshot-2.png](./screenshot-2.png)

@@ -78,10 +78,12 @@ export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";
 // Monitor exports for plugin authors
 export {
   MonitorService,
+  type EventMonitorOptions,
   type MonitorContext,
   type MonitorOptions,
   type MonitorResult,
   type MonitorStatus,
+  type PollingMonitorOptions,
 } from "#services/monitor";
 // Attachment service exports
 export {

@@ -4,6 +4,7 @@
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { HookEmitter } from "workhorse-core";
+
 import type { FigmaClient } from "../client.ts";
 import {
   registerCrossPluginHandlers,

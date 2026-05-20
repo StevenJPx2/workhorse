@@ -6,12 +6,12 @@ Location: `packages/core/src/workflow/orchestrator/` (skill registration) + `pac
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Skill scope | Global only | All registered skills always included in prompt |
-| File location | Plugin-relative | Each plugin has its own `skills/` directory |
-| TUI visibility | None | Skills are internal, not exposed to users |
-| Manifest declaration | Required | Declare in `manifest.capabilities.skills[]` for discoverability |
+| Decision             | Choice          | Rationale                                                       |
+| -------------------- | --------------- | --------------------------------------------------------------- |
+| Skill scope          | Global only     | All registered skills always included in prompt                 |
+| File location        | Plugin-relative | Each plugin has its own `skills/` directory                     |
+| TUI visibility       | None            | Skills are internal, not exposed to users                       |
+| Manifest declaration | Required        | Declare in `manifest.capabilities.skills[]` for discoverability |
 
 ## Skill Interface
 
@@ -21,32 +21,34 @@ Location: `packages/core/src/workflow/orchestrator/` (skill registration) + `pac
 interface PluginSkill {
   /** Unique identifier: "pluginName:skillName" (e.g., "github:pr-workflow") */
   id: string;
-  
+
   /** Human-readable name for logging/debugging */
   name: string;
-  
+
   /** Short description of what this skill teaches */
   description: string;
-  
+
   /** Skill content - exactly one required */
-  instructions?: string;        // Inline markdown
-  instructionsPath?: string;    // Relative path to .md file in plugin package
-  
+  instructions?: string; // Inline markdown
+  instructionsPath?: string; // Relative path to .md file in plugin package
+
   /** Ordering in prompt (lower = earlier, default: 50) */
   priority?: number;
 }
 
-const PluginSkillSchema = z.object({
-  id: z.string().regex(/^[a-z0-9-]+:[a-z0-9-]+$/),
-  name: z.string().min(1).max(100),
-  description: z.string().min(1).max(500),
-  instructions: z.string().optional(),
-  instructionsPath: z.string().optional(),
-  priority: z.number().int().min(0).max(100).default(50),
-}).refine(
-  (s) => Boolean(s.instructions) !== Boolean(s.instructionsPath),
-  "Exactly one of 'instructions' or 'instructionsPath' must be provided"
-);
+const PluginSkillSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]+:[a-z0-9-]+$/),
+    name: z.string().min(1).max(100),
+    description: z.string().min(1).max(500),
+    instructions: z.string().optional(),
+    instructionsPath: z.string().optional(),
+    priority: z.number().int().min(0).max(100).default(50),
+  })
+  .refine(
+    (s) => Boolean(s.instructions) !== Boolean(s.instructionsPath),
+    "Exactly one of 'instructions' or 'instructionsPath' must be provided",
+  );
 ```
 
 ## Manifest Declaration
@@ -63,7 +65,7 @@ export const githubPlugin = definePlugin({
       parsers: ["github"],
       monitors: ["github-pr"],
       tools: ["github_open_pr", "github_add_comment"],
-      skills: ["github:pr-workflow", "github:code-review"],  // NEW
+      skills: ["github:pr-workflow", "github:code-review"], // NEW
     },
   },
   setup(ctx, config) {
@@ -75,7 +77,7 @@ export const githubPlugin = definePlugin({
       instructionsPath: "skills/pr-workflow.md",
       priority: 20,
     });
-    
+
     ctx.orchestrator.registerSkill({
       id: "github:code-review",
       name: "Code Review Response",
@@ -112,6 +114,7 @@ Skill files are plain markdown with the instructions:
 
 ```markdown
 <!-- skills/pr-workflow.md -->
+
 ## Pull Request Workflow
 
 When your implementation is complete and tests pass:
@@ -124,6 +127,7 @@ When your implementation is complete and tests pass:
    - Any breaking changes
 
 After creating the PR:
+
 - Monitor CI checks and address failures promptly
 - Respond to review comments within the same session if possible
 - Use `github_add_comment` to reply to reviewers
@@ -140,30 +144,30 @@ When a plugin calls `ctx.orchestrator.registerSkill()`:
 
 class HarnessOrchestrator {
   private skills = new Map<string, ResolvedSkill>();
-  
+
   registerSkill(skill: PluginSkill): void {
     // Validate schema
     const validated = PluginSkillSchema.parse(skill);
-    
+
     // Resolve instructions if path provided
     const resolved: ResolvedSkill = {
       ...validated,
       instructions: validated.instructions ?? this.loadSkillFile(validated.instructionsPath!),
     };
-    
+
     // Check for duplicates
     if (this.skills.has(resolved.id)) {
       throw new Error(`Skill "${resolved.id}" already registered`);
     }
-    
+
     this.skills.set(resolved.id, resolved);
     this.hooks.emit("skill.registered", { skill: resolved });
   }
-  
+
   getSkills(): ResolvedSkill[] {
     return [...this.skills.values()].sort((a, b) => a.priority - b.priority);
   }
-  
+
   private loadSkillFile(relativePath: string): string {
     // Path is relative to the plugin package that's currently being set up
     // This requires tracking the "current plugin" during setup
@@ -182,9 +186,9 @@ PromptEngineer queries skills and renders them as context blocks:
 
 async buildSystemPrompt(issue: Issue): Promise<string> {
   const blocks: ContextBlock[] = [];
-  
+
   // ... existing blocks (issue state, pending notifications, etc.)
-  
+
   // Add skill blocks
   const skills = this.orchestrator.getSkills();
   for (const skill of skills) {
@@ -195,7 +199,7 @@ async buildSystemPrompt(issue: Issue): Promise<string> {
       content: skill.instructions,
     });
   }
-  
+
   // Sort by priority and render
   return this.renderBlocks(blocks.sort((a, b) => a.priority - b.priority));
 }
@@ -236,29 +240,31 @@ const PluginManifestSchema = z.object({
   name: z.string(),
   version: z.string(),
   description: z.string().optional(),
-  capabilities: z.object({
-    parsers: z.array(z.string()).optional(),
-    monitors: z.array(z.string()).optional(),
-    tools: z.array(z.string()).optional(),
-    adapters: z.array(z.string()).optional(),
-    skills: z.array(z.string()).optional(),  // NEW
-  }).optional(),
+  capabilities: z
+    .object({
+      parsers: z.array(z.string()).optional(),
+      monitors: z.array(z.string()).optional(),
+      tools: z.array(z.string()).optional(),
+      adapters: z.array(z.string()).optional(),
+      skills: z.array(z.string()).optional(), // NEW
+    })
+    .optional(),
 });
 ```
 
 ## Implementation Files
 
-| File | Change |
-|------|--------|
-| `packages/core/src/workflow/orchestrator/types/skills.ts` | NEW: `PluginSkill`, `ResolvedSkill`, schema |
-| `packages/core/src/workflow/orchestrator/types/index.ts` | Export skill types |
+| File                                                      | Change                                              |
+| --------------------------------------------------------- | --------------------------------------------------- |
+| `packages/core/src/workflow/orchestrator/types/skills.ts` | NEW: `PluginSkill`, `ResolvedSkill`, schema         |
+| `packages/core/src/workflow/orchestrator/types/index.ts`  | Export skill types                                  |
 | `packages/core/src/workflow/orchestrator/orchestrator.ts` | Add `registerSkill()`, `getSkills()`, skill storage |
-| `packages/core/src/workflow/tracker/engineer.ts` | Render skills into system prompt |
-| `packages/core/src/plugins/types.ts` | Add `skills` to manifest capabilities |
-| `packages/core/src/lib/hooks/types.ts` | Add `skill.registered` hook |
-| `packages/plugins/github/skills/` | NEW: GitHub skill files |
-| `packages/plugins/jira/skills/` | NEW: Jira skill files |
-| `packages/plugins/playwright/skills/` | NEW: Playwright skill files |
+| `packages/core/src/workflow/tracker/engineer.ts`          | Render skills into system prompt                    |
+| `packages/core/src/plugins/types.ts`                      | Add `skills` to manifest capabilities               |
+| `packages/core/src/lib/hooks/types.ts`                    | Add `skill.registered` hook                         |
+| `packages/plugins/github/skills/`                         | NEW: GitHub skill files                             |
+| `packages/plugins/jira/skills/`                           | NEW: Jira skill files                               |
+| `packages/plugins/playwright/skills/`                     | NEW: Playwright skill files                         |
 
 ## Tests
 
@@ -280,12 +286,14 @@ const PluginManifestSchema = z.object({
 ### GitHub Plugin
 
 **`skills/pr-workflow.md`** (priority: 20)
+
 - When to create PRs
 - How to write good PR descriptions
 - Handling CI failures
 - Responding to reviews
 
 **`skills/code-review.md`** (priority: 25)
+
 - How to interpret review comments
 - When to push fixes vs discuss
 - Marking conversations resolved
@@ -293,6 +301,7 @@ const PluginManifestSchema = z.object({
 ### Jira Plugin
 
 **`skills/ticket-workflow.md`** (priority: 30)
+
 - Understanding Jira statuses
 - When to transition tickets
 - Adding useful comments
@@ -301,6 +310,7 @@ const PluginManifestSchema = z.object({
 ### Playwright Plugin
 
 **`skills/browser-testing.md`** (priority: 40)
+
 - When to use browser automation
 - Writing reliable selectors
 - Handling dynamic content
@@ -309,19 +319,21 @@ const PluginManifestSchema = z.object({
 ## Migration Notes
 
 Currently, "skill-like" behavior exists in:
+
 - `prompt.building` hook handlers that inject context blocks
 - Steering rules that remind idle agents
 
 These can coexist with the new skills system:
+
 - **Prompt hooks**: For dynamic, runtime-computed context (e.g., current PR status)
 - **Skills**: For static instructions that don't change per-issue
 - **Steering rules**: For idle-triggered reminders (orthogonal to skills)
 
 ## Open Questions (Resolved)
 
-| Question | Decision |
-|----------|----------|
+| Question             | Decision                                        |
+| -------------------- | ----------------------------------------------- |
 | Per-issue vs global? | Global only — simpler, all skills always active |
-| File location? | Plugin-relative — each plugin owns its skills |
-| TUI visibility? | None — internal implementation detail |
-| Manifest required? | Yes — discoverability and validation |
+| File location?       | Plugin-relative — each plugin owns its skills   |
+| TUI visibility?      | None — internal implementation detail           |
+| Manifest required?   | Yes — discoverability and validation            |

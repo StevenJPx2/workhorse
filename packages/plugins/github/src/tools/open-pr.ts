@@ -5,6 +5,7 @@
  */
 
 import { type Database, type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
+
 import type { GitHubClient } from "../client";
 import type { PROpeningContext } from "../hooks";
 import { getCurrentBranch, getOwnerRepoFromRemote } from "./git-helpers";

@@ -11,6 +11,7 @@
  */
 
 import type { WorkhorseContext } from "workhorse-core";
+
 import type { FigmaClient } from "./client.ts";
 import { buildLinkedDesignContextBlocks } from "./cross-plugin.ts";
 import type { FigmaFile, FigmaNode } from "./types.ts";

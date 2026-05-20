@@ -2,10 +2,11 @@
  * Tests for playwright_screenshot tool with AttachmentService
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock session-operations module
 const mockScreenshot = vi.fn();

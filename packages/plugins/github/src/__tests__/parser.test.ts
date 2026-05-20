@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
+
 import type { GitHubClient } from "../client.ts";
 import { canParseGitHub, createGitHubParserOptions, parseGitHubRef } from "../parser.ts";
 

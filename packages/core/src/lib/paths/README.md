@@ -82,11 +82,7 @@ validatePath("/tmp/workhorse-cache/data.json", options); // valid: true
 The Pi adapter wraps the SDK's built-in tools with path-restricted operations:
 
 ```typescript
-import {
-  createReadTool,
-  createWriteTool,
-  createEditTool,
-} from "@mariozechner/pi-coding-agent";
+import { createReadTool, createWriteTool, createEditTool } from "@mariozechner/pi-coding-agent";
 import {
   createRestrictedReadOperations,
   createRestrictedWriteOperations,
@@ -144,10 +140,12 @@ class MyAdapter extends AgentAdapter {
 Validates that a path is within allowed directories.
 
 **Parameters:**
+
 - `path: string` - Path to validate (relative or absolute)
 - `options: PathValidationOptions` - Validation options
 
 **Returns:** `PathValidationResult`
+
 - `valid: boolean` - Whether path is allowed
 - `normalizedPath: string` - The absolute, normalized path
 - `error?: string` - Error message if invalid
@@ -165,6 +163,7 @@ Throws an error if path is not allowed, otherwise returns the normalized path.
 Creates a validator bound to specific options.
 
 **Returns:**
+
 - `validate(path)` - Full validation result
 - `isAllowed(path)` - Boolean check
 - `assert(path)` - Assert and return normalized path
