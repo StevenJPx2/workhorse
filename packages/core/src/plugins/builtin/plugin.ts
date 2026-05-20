@@ -7,7 +7,7 @@
 // oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
 import { createAgentHealthMonitor } from "./monitors/health.ts";
-import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers.ts";
+import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers/index.ts";
 import { registerBuiltinSkills } from "./skills/register.ts";
 import { registerCoreSteering } from "./steering.ts";
 import {

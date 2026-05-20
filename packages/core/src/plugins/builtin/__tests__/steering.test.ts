@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseContext } from "#context";
 
-import { registerCoreSteering } from "./steering.ts";
+import { registerCoreSteering } from "../steering.ts";
 
 describe("registerCoreSteering", () => {
   let mockContext: WorkhorseContext;

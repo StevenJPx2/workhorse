@@ -41,11 +41,10 @@ export function registerCoreSteering(ctx: WorkhorseContext): void {
         if (recentTools.length < MIN_TOOLS_SINCE_WRITE) return false;
 
         // Need meaningful work tools, not just reads/searches
-        const workToolCount = recentTools.filter((t: { name: string }) =>
-          WORK_TOOLS.includes(t.name),
-        ).length;
-
-        return workToolCount >= MIN_WORK_TOOLS;
+        return (
+          recentTools.filter((t: { name: string }) => WORK_TOOLS.includes(t.name)).length >=
+          MIN_WORK_TOOLS
+        );
       },
     },
     reminder: `You've done significant work since your last memory checkpoint. Consider recording your progress:
