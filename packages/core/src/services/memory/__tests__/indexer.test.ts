@@ -184,7 +184,7 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       expect(results.length).toBeGreaterThan(0);
 
       // Check that session summary was indexed
-      const summaryResult = results.find((r) => r.id.includes(":summary:"));
+      const summaryResult = results.find((r) => r.id === `session:${issueId}:summary`);
       expect(summaryResult).toBeDefined();
       expect(summaryResult!.metadata?.type).toBe("session_memory");
       expect(summaryResult!.metadata?.externalId).toBe(issueId);
@@ -210,7 +210,7 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       await new Promise((r) => setTimeout(r, 100));
 
       const results = await l2.search("Zod validation", { returnContent: true });
-      const patternResult = results.find((r) => r.id.includes(":patterns:"));
+      const patternResult = results.find((r) => r.id === `session:${issueId}:patterns`);
       expect(patternResult).toBeDefined();
       expect(patternResult!.metadata?.type).toBe("code_context");
     });
@@ -241,7 +241,7 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       await new Promise((r) => setTimeout(r, 100));
 
       const results = await l2.search("async/await discovery", { returnContent: true });
-      const learningResult = results.find((r) => r.id.includes(":learnings:"));
+      const learningResult = results.find((r) => r.id === `session:${issueId}:learnings`);
       expect(learningResult).toBeDefined();
       expect(learningResult!.metadata?.type).toBe("decision");
     });

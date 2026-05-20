@@ -73,31 +73,9 @@ export function handleSessionEvent(event: AgentSessionEvent, ctx: EventHandlerCo
         .catch((err) => {
           console.error("Failed to get issue status:", err);
         });
-
-      updateL1Memory(ctx).catch((err) => {
-        console.error("Failed to update L1 memory:", err);
-      });
       break;
     }
   }
-}
-
-/** Update L1 memory with session summary. */
-async function updateL1Memory(ctx: EventHandlerContext): Promise<void> {
-  const l1 = ctx.memory.l1.get(ctx.issueId);
-  if (!l1) return;
-
-  const sessionData = await l1.read();
-  if (!sessionData) return;
-
-  sessionData.sessions.push({
-    timestamp: new Date(),
-    status: await ctx.getIssueStatus(),
-    summary: ["Session completed"],
-    learnings: [],
-    filesChanged: [],
-  });
-  await l1.write(sessionData);
 }
 
 export interface ToolFactoryContext {

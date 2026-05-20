@@ -9,10 +9,12 @@ import { definePlugin } from "../define.ts";
 import { createAgentHealthMonitor } from "./monitors/health.ts";
 import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers.ts";
 import { registerBuiltinSkills } from "./skills/register.ts";
+import { registerCoreSteering } from "./steering.ts";
 import {
   acknowledgeTool,
   escalateTool,
   memorySearchTool,
+  memoryWriteTool,
   updateStatusTool,
 } from "./tools/definitions";
 import { createLocalParserOptions } from "./tools/parser.ts";
@@ -29,6 +31,7 @@ export const corePlugin = definePlugin({
         "workhorse_update_status",
         "workhorse_escalate",
         "workhorse_memory_search",
+        "workhorse_memory_write",
         "load_skill",
       ],
       parsers: ["local"],
@@ -42,6 +45,7 @@ export const corePlugin = definePlugin({
     ctx.orchestrator.registerTool(updateStatusTool);
     ctx.orchestrator.registerTool(escalateTool);
     ctx.orchestrator.registerTool(memorySearchTool);
+    ctx.orchestrator.registerTool(memoryWriteTool);
     ctx.orchestrator.registerTool(createLoadSkillTool(ctx.orchestrator));
 
     // Register builtin skills
@@ -72,5 +76,8 @@ export const corePlugin = definePlugin({
       id: "workhorse-skills",
       renderer: skillRenderer,
     });
+
+    // Register core steering rules
+    registerCoreSteering(ctx);
   },
 });

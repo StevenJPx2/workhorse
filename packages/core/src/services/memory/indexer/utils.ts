@@ -11,6 +11,9 @@ const SESSION_DOC_PREFIX = "session:";
 
 /**
  * Build L2 documents from session memory.
+ *
+ * Document IDs are deterministic (no timestamp) so re-indexing upserts
+ * the existing document rather than accumulating duplicate copies.
  */
 export function buildSessionDocuments(
   externalId: string,
@@ -18,13 +21,12 @@ export function buildSessionDocuments(
   memory: SessionMemory,
 ): MemoryDocument[] {
   const documents: MemoryDocument[] = [];
-  const timestamp = Date.now();
 
   // Index the overall session summary
   const summaryContent = buildSessionSummaryContent(memory);
   if (summaryContent) {
     documents.push({
-      id: `${SESSION_DOC_PREFIX}${externalId}:summary:${timestamp}`,
+      id: `${SESSION_DOC_PREFIX}${externalId}:summary`,
       content: summaryContent,
       metadata: {
         type: "session_memory" as MemoryDocumentType,
@@ -40,7 +42,7 @@ export function buildSessionDocuments(
   // Index patterns as a separate document (reusable across issues)
   if (memory.patterns.length > 0) {
     documents.push({
-      id: `${SESSION_DOC_PREFIX}${externalId}:patterns:${timestamp}`,
+      id: `${SESSION_DOC_PREFIX}${externalId}:patterns`,
       content: `Codebase patterns discovered while working on ${memory.title}:\n\n${memory.patterns.map((p) => `- ${p}`).join("\n")}`,
       metadata: {
         type: "code_context" as MemoryDocumentType,
@@ -56,7 +58,7 @@ export function buildSessionDocuments(
 
   if (learnings.length > 0) {
     documents.push({
-      id: `${SESSION_DOC_PREFIX}${externalId}:learnings:${timestamp}`,
+      id: `${SESSION_DOC_PREFIX}${externalId}:learnings`,
       content: `Learnings from ${memory.title}:\n\n${learnings.map((l) => `- ${l}`).join("\n")}`,
       metadata: {
         type: "decision" as MemoryDocumentType,
