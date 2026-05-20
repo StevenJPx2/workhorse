@@ -116,3 +116,58 @@ describe("agent stop() implementation", () => {
     expect(agentSource).toContain('this.hooks.emit("agent.stop.pre"');
   });
 });
+
+describe("agent tools filtering", () => {
+  it("filters tools by issue source", async () => {
+    // This test verifies the implementation by reading the source
+    const { readFile } = await import("node:fs/promises");
+    const agentSource = await readFile(new URL("../agent.ts", import.meta.url).pathname, "utf-8");
+
+    // Verify the tools getter filters by source
+    expect(agentSource).toContain("get tools()");
+    expect(agentSource).toContain("tool.sources");
+    expect(agentSource).toContain("this.issue.source");
+  });
+
+  it("tools filtering logic is correct", () => {
+    // Test the filtering logic directly
+    const tools = [
+      { name: "global_tool", sources: undefined },
+      { name: "empty_sources", sources: [] },
+      { name: "jira_tool", sources: ["jira"] },
+      { name: "github_tool", sources: ["github"] },
+      { name: "multi_source", sources: ["jira", "github"] },
+    ];
+
+    // Filter function matches AgentAdapter.tools getter
+    const filterTools = (issueSource: string) =>
+      tools.filter((tool) => {
+        if (!tool.sources || tool.sources.length === 0) return true;
+        return tool.sources.includes(issueSource);
+      });
+
+    // For a Jira issue
+    const jiraTools = filterTools("jira").map((t) => t.name);
+    expect(jiraTools).toContain("global_tool");
+    expect(jiraTools).toContain("empty_sources");
+    expect(jiraTools).toContain("jira_tool");
+    expect(jiraTools).not.toContain("github_tool");
+    expect(jiraTools).toContain("multi_source");
+
+    // For a GitHub issue
+    const githubTools = filterTools("github").map((t) => t.name);
+    expect(githubTools).toContain("global_tool");
+    expect(githubTools).toContain("empty_sources");
+    expect(githubTools).not.toContain("jira_tool");
+    expect(githubTools).toContain("github_tool");
+    expect(githubTools).toContain("multi_source");
+
+    // For a local issue
+    const localTools = filterTools("local").map((t) => t.name);
+    expect(localTools).toContain("global_tool");
+    expect(localTools).toContain("empty_sources");
+    expect(localTools).not.toContain("jira_tool");
+    expect(localTools).not.toContain("github_tool");
+    expect(localTools).not.toContain("multi_source");
+  });
+});

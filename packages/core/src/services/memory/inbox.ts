@@ -24,11 +24,12 @@ function escapeXml(text: string): string {
  * @example
  * ```typescript
  * const inbox = generateSystemInbox([
- *   { id: "1", priority: "high", source: "jira", title: "New comment", body: "Please review..." }
+ *   { id: "1", priority: "high", source: "jira", title: "New comment", body: "Please review...",
+ *     metadata: { commentId: "12345" } }
  * ]);
  * // Returns:
  * // <system_inbox>
- * //   <notification id="1" priority="high" source="jira">
+ * //   <notification id="1" priority="high" source="jira" comment_id="12345">
  * //     <title>New comment</title>
  * //     <body>Please review...</body>
  * //   </notification>
@@ -43,9 +44,16 @@ export function generateSystemInbox(notifications: Notification[]): string {
   const lines: string[] = ["<system_inbox>"];
 
   for (const notification of notifications) {
-    lines.push(
-      `  <notification id="${escapeXml(notification.id)}" priority="${escapeXml(notification.priority)}" source="${escapeXml(notification.source)}">`,
-    );
+    // Build attributes string with optional metadata fields
+    let attrs = `id="${escapeXml(notification.id)}" priority="${escapeXml(notification.priority)}" source="${escapeXml(notification.source)}"`;
+
+    // Include commentId if present (for Jira comment replies)
+    const metadata = notification.metadata as Record<string, unknown> | null;
+    if (metadata?.commentId) {
+      attrs += ` comment_id="${escapeXml(String(metadata.commentId))}"`;
+    }
+
+    lines.push(`  <notification ${attrs}>`);
     lines.push(`    <title>${escapeXml(notification.title)}</title>`);
     lines.push(`    <body>${escapeXml(notification.body)}</body>`);
     lines.push("  </notification>");

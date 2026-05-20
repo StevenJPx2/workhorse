@@ -16,7 +16,8 @@ export function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orc
     description:
       "Transition a Jira issue to a new status. Fetches available transitions and " +
       "matches by status name. Use when the agent has completed work or needs to " +
-      "update the ticket status. Only works for Jira-sourced issues.",
+      "update the ticket status.",
+    sources: ["jira"],
     schema: {
       type: "object",
       properties: {

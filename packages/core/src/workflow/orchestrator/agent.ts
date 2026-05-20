@@ -68,7 +68,12 @@ export abstract class AgentAdapter {
     });
   }
   get tools(): OrchestratorTool[] {
-    return this.orchestrator.getTools();
+    return this.orchestrator.getTools().filter((tool) => {
+      // No sources specified = available for all sources
+      if (!tool.sources || tool.sources.length === 0) return true;
+      // Check if issue source matches any of the tool's sources
+      return tool.sources.includes(this.issue.source);
+    });
   }
   get db(): Database {
     return this.orchestrator.db;

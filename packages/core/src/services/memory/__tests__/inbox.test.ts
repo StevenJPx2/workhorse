@@ -189,6 +189,77 @@ describe("inbox: XML notification formatting", () => {
       expect(lines[3]).toMatch(/^\s{4}<body>/);
     });
 
+    it("includes comment_id attribute when metadata has commentId", () => {
+      const notifications: Notification[] = [
+        {
+          id: "notif-1",
+          issueId: "AM-123",
+          priority: "normal",
+          status: "unread",
+          source: "jira",
+          sourceId: "jira-comment-456",
+          title: "New comment from John",
+          body: "Please check the implementation",
+          createdAt: new Date("2025-07-15T10:00:00Z"),
+          readAt: null,
+          acknowledgedAt: null,
+          metadata: { commentId: "456", author: "John" },
+        },
+      ];
+
+      const result = generateSystemInbox(notifications);
+
+      expect(result).toContain('comment_id="456"');
+      expect(result).toContain('source="jira"');
+    });
+
+    it("omits comment_id attribute when metadata has no commentId", () => {
+      const notifications: Notification[] = [
+        {
+          id: "notif-1",
+          issueId: "AM-123",
+          priority: "normal",
+          status: "unread",
+          source: "github",
+          sourceId: "github-review-789",
+          title: "PR review",
+          body: "Changes requested",
+          createdAt: new Date("2025-07-15T10:00:00Z"),
+          readAt: null,
+          acknowledgedAt: null,
+          metadata: { reviewId: "789" }, // No commentId
+        },
+      ];
+
+      const result = generateSystemInbox(notifications);
+
+      expect(result).not.toContain("comment_id");
+      expect(result).toContain('source="github"');
+    });
+
+    it("omits comment_id attribute when metadata is null", () => {
+      const notifications: Notification[] = [
+        {
+          id: "notif-1",
+          issueId: "AM-123",
+          priority: "normal",
+          status: "unread",
+          source: "system",
+          sourceId: null,
+          title: "System notification",
+          body: "Something happened",
+          createdAt: new Date("2025-07-15T10:00:00Z"),
+          readAt: null,
+          acknowledgedAt: null,
+          metadata: null,
+        },
+      ];
+
+      const result = generateSystemInbox(notifications);
+
+      expect(result).not.toContain("comment_id");
+    });
+
     it.fails("TODO: generateSystemInbox should handle null body gracefully", () => {
       // Currently generateSystemInbox crashes when body is null because
       // escapeXml doesn't handle null values. Future enhancement: handle nulls.

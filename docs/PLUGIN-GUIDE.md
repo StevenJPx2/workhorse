@@ -226,6 +226,39 @@ setup(config) {
 }
 ```
 
+**Source-specific tools:**
+
+Tools can be restricted to specific issue sources using the `sources` field:
+
+```typescript
+const jiraTool: OrchestratorTool = {
+  name: "jira_add_comment",
+  description: "Add a comment to a Jira issue",
+  sources: ["jira"],  // Only shown for Jira-sourced issues
+  schema: { /* ... */ },
+  execute: async (args, ctx) => { /* ... */ },
+};
+
+const multiSourceTool: OrchestratorTool = {
+  name: "ticket_link",
+  description: "Link to an external ticket",
+  sources: ["jira", "github"],  // Shown for both Jira and GitHub issues
+  schema: { /* ... */ },
+  execute: async (args, ctx) => { /* ... */ },
+};
+
+// Tools without `sources` (or with empty array) are available for all issue sources
+const globalTool: OrchestratorTool = {
+  name: "workhorse_status",
+  description: "Update issue status",
+  // sources: undefined — available for all sources
+  schema: { /* ... */ },
+  execute: async (args, ctx) => { /* ... */ },
+};
+```
+
+This is useful for plugins that integrate with external services — their tools should only appear when working on issues from that source. For example, Jira tools (`jira_add_comment`, `jira_transition_issue`) are hidden when working on a local or GitHub issue.
+
 ### 5. Register Agent Adapters
 
 Add support for a new AI harness by extending `AgentAdapter`:

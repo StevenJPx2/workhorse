@@ -95,6 +95,16 @@ export interface OrchestratorTool {
   schema: JSONSchema;
 
   /**
+   * Issue sources this tool applies to (e.g., ["jira"], ["github"]).
+   * If omitted or empty, tool is available for all issue sources.
+   *
+   * This allows plugins to register tools that only appear when working on
+   * issues from specific sources. For example, Jira tools won't be shown
+   * when working on a local issue that has no Jira integration.
+   */
+  sources?: string[];
+
+  /**
    * Execute the tool with given arguments.
    *
    * @param args - Arguments matching the schema

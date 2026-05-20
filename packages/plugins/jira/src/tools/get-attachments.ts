@@ -36,7 +36,8 @@ export function createGetAttachmentsTool(
     description:
       "Download and list attachments from the current Jira issue, including media embedded " +
       "in comments. Returns local file paths where attachments have been saved. " +
-      "Use `imagesOnly: true` to filter to just image files. Only works for Jira-sourced issues.",
+      "Use `imagesOnly: true` to filter to just image files.",
+    sources: ["jira"],
     schema: {
       type: "object",
       properties: {

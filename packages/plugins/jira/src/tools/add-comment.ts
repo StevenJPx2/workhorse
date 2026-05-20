@@ -15,9 +15,11 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
     name: "jira_add_comment",
     description:
       "Add a comment to a Jira issue. Use this to provide updates, ask questions, " +
-      "or share findings with the Jira ticket stakeholders. Optionally reply to an existing comment. " +
-      "Only works for Jira-sourced issues. " +
+      "or share findings with the Jira ticket stakeholders. " +
+      "IMPORTANT: When responding to a notification that has a comment_id attribute, " +
+      "you MUST use replyToId to reply in the same thread instead of creating a new top-level comment. " +
       "Do NOT include any footer or signature - one is added automatically.",
+    sources: ["jira"],
     schema: {
       type: "object",
       properties: {
@@ -28,7 +30,8 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
         replyToId: {
           type: "string",
           description:
-            "Optional: The ID of an existing comment to reply to. Get comment IDs from jira_get_comments.",
+            "The ID of the comment to reply to. REQUIRED when responding to a Jira comment notification " +
+            "(use the comment_id from the notification). Creates a threaded reply instead of a new comment.",
         },
       },
       required: ["body"],

@@ -16,8 +16,8 @@ export function createGetCommentsTool(client: AtlassianClient): OrchestratorTool
     description:
       "Get all comments from the current Jira issue. Returns an array of comments with id, author, body, " +
       "creation timestamp, parentId for threaded replies, and mediaCount for embedded images/files. " +
-      "Use the id field to reply to a specific comment. Use jira_get_attachments to download media. " +
-      "Only works for Jira-sourced issues.",
+      "Use the id field to reply to a specific comment. Use jira_get_attachments to download media.",
+    sources: ["jira"],
     schema: {
       type: "object",
       properties: {},
