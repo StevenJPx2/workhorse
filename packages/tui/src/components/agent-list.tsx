@@ -5,6 +5,7 @@ import { createAgents } from "../primitives/create-agents.ts";
 import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
 import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
+import { Spinner } from "./spinner.tsx";
 import { WorkhorseStatus } from "./workhorse-status.tsx";
 
 interface AgentListProps {
@@ -28,6 +29,9 @@ export function AgentList(props: AgentListProps) {
 
   // Check if this component is focused
   const isFocused = () => ui.focusedComponent() === "agents";
+
+  // Get spawning issues as an array
+  const spawningIssues = () => Array.from(ui.spawningIssues().values());
 
   const getStatusColor = (state: string) => {
     switch (state) {
@@ -84,6 +88,28 @@ export function AgentList(props: AgentListProps) {
 
       {/* Agent list */}
       <box flexDirection="column" flexGrow={1} paddingTop={1}>
+        {/* Spawning agents */}
+        <For each={spawningIssues()}>
+          {(issue) => (
+            <box paddingLeft={2} paddingRight={2} flexDirection="column">
+              <box flexDirection="row" justifyContent="space-between">
+                <text fg={theme.colors.dim}>
+                  {"  "}
+                  <b>{issue.externalId}</b>
+                </text>
+                <box flexDirection="row" gap={1}>
+                  <Spinner color={theme.colors.warning} />
+                  <text fg={theme.colors.warning}>spawning</text>
+                </box>
+              </box>
+              <box paddingLeft={2}>
+                <text fg={theme.colors.dim}>{issue.title}</text>
+              </box>
+            </box>
+          )}
+        </For>
+
+        {/* Active agents */}
         <For each={agents()}>
           {(agent, index) => {
             // Only show selection highlight if this list is focused
@@ -122,7 +148,7 @@ export function AgentList(props: AgentListProps) {
             );
           }}
         </For>
-        {agents().length === 0 && (
+        {agents().length === 0 && spawningIssues().length === 0 && (
           <box paddingLeft={2}>
             <text fg={theme.colors.dim}>No agents running</text>
           </box>

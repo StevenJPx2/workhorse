@@ -93,10 +93,22 @@ export function Overview() {
           }
           try {
             const issue = await tracker.parseInput(msg, { repository: currentRepo() });
-            await orchestrator
-              .spawn({ issue, repoPath: paths.worktreesRoot.replace(/-worktrees$/, "") })
-              .then((a) => a.start());
-            ui.enterAgentView(issue.externalId);
+            // Spawn in background - stay on overview
+            ui.startSpawning(issue);
+
+            orchestrator
+              .spawn({
+                issue,
+                repoPath: paths.worktreesRoot.replace(/-worktrees$/, ""),
+              })
+              .then((agent) => {
+                ui.stopSpawning(issue.externalId);
+                return agent.start();
+              })
+              .catch((err) => {
+                ui.stopSpawning(issue.externalId);
+                ui.showError(`Spawn failed: ${err instanceof Error ? err.message : String(err)}`);
+              });
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes("credentials not found") || message.includes("authenticate")) {

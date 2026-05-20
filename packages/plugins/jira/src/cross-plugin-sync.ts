@@ -10,7 +10,7 @@
  * @module workhorse-plugin-jira/cross-plugin-sync
  */
 
-import type { Database, WorkhorseContext } from "workhorse-core";
+import { type Database, type WorkhorseContext, withWorkhorseFooter } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
@@ -86,11 +86,13 @@ export function registerCrossPluginSync(
 
       await client.addComment(
         ticketKey,
-        `✅ PR #${pr.number} has been merged.\n\n${
-          reporterAccountId
-            ? "Assigned to reporter for QA verification."
-            : "Ready for QA verification."
-        }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\nPR URL: ${pr.url}`,
+        withWorkhorseFooter(
+          `✅ PR #${pr.number} has been merged.\n\n${
+            reporterAccountId
+              ? "Assigned to reporter for QA verification."
+              : "Ready for QA verification."
+          }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\nPR URL: ${pr.url}`,
+        ),
       );
 
       // Emit hook for other listeners

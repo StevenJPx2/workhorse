@@ -7,7 +7,7 @@
  * @module workhorse-plugin-figma/tools/post-comment
  */
 
-import type { OrchestratorTool } from "workhorse-core";
+import { type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 
 import type { FigmaClient } from "../client.ts";
 
@@ -57,11 +57,7 @@ export function createPostCommentTool(client: FigmaClient): OrchestratorTool {
           return { success: false, error: "Could not determine Figma file key." };
         }
 
-        const posted = await client.postComment(
-          fileKey,
-          `${message}\n\n---\n*Posted by Workhorse agent*`,
-          replyToId,
-        );
+        const posted = await client.postComment(fileKey, withWorkhorseFooter(message), replyToId);
 
         return {
           success: true,

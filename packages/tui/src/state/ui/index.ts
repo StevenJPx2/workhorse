@@ -42,6 +42,10 @@ const [selectedModel, setSelectedModel] = createSignal<string | null>(null);
 // Shutdown state - true while gracefully shutting down
 const [shuttingDown, setShuttingDown] = createSignal(false);
 
+// Spawning state - tracks issues that are currently being spawned
+// Maps issueId -> Issue for showing loading state in agent view
+const [spawningIssues, setSpawningIssues] = createSignal<Map<string, Issue>>(new Map());
+
 // Shutdown callback - set by index.tsx, called on quit
 let shutdownCallback: (() => Promise<void>) | null = null;
 
@@ -61,6 +65,13 @@ export const ui = {
   toasts,
   lastFocusedList,
   shuttingDown,
+  spawningIssues,
+
+  /** Check if an issue is currently being spawned */
+  isSpawning: (issueId: string) => spawningIssues().has(issueId),
+
+  /** Get the issue being spawned (for loading state display) */
+  getSpawningIssue: (issueId: string) => spawningIssues().get(issueId) ?? null,
 
   // Actions (write)
   setScreen,
@@ -120,6 +131,24 @@ export const ui = {
   },
 
   /**
+   * Mark an issue as spawning (for loading state in agent view).
+   */
+  startSpawning: (issue: Issue) => {
+    setSpawningIssues((prev) => new Map(prev).set(issue.externalId, issue));
+  },
+
+  /**
+   * Clear spawning state for an issue (spawn completed or failed).
+   */
+  stopSpawning: (issueId: string) => {
+    setSpawningIssues((prev) => {
+      const next = new Map(prev);
+      next.delete(issueId);
+      return next;
+    });
+  },
+
+  /**
    * Return to the overview screen.
    */
   backToOverview: () => {
@@ -131,9 +160,7 @@ export const ui = {
   showError,
   showSuccess,
 
-  /**
-   * Set the shutdown callback. Called from index.tsx after bootstrap.
-   */
+  /** Set the shutdown callback. Called from index.tsx after bootstrap. */
   setShutdownCallback: (callback: () => Promise<void>) => {
     shutdownCallback = callback;
   },

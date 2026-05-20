@@ -44,8 +44,9 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
   onMount(() => initActivityStore(props.hooks));
 
   const handleSpawn = async (config: SpawnConfig) => {
-    // Close modal immediately so user isn't stuck waiting
+    // Close modal and spawn in background - stay on overview
     ui.closeModal();
+    ui.startSpawning(config.issue);
 
     try {
       await props.orchestrator
@@ -56,11 +57,10 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
           repoPath: props.paths.worktreesRoot.replace(/-worktrees$/, ""),
           model: ui.selectedModel() || props.config.agent.model || undefined,
         })
-        .then((agent) => {
-          ui.enterAgentView(config.issue.externalId);
-          return agent.start();
-        });
+        .then((r) => r.start());
+      ui.stopSpawning(config.issue.externalId);
     } catch (err) {
+      ui.stopSpawning(config.issue.externalId);
       ui.showError(`Spawn failed: ${logError(err, "handleSpawn")}`);
     }
   };

@@ -16,7 +16,8 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
     description:
       "Add a comment to a Jira issue. Use this to provide updates, ask questions, " +
       "or share findings with the Jira ticket stakeholders. Optionally reply to an existing comment. " +
-      "Only works for Jira-sourced issues.",
+      "Only works for Jira-sourced issues. " +
+      "Do NOT include any footer or signature - one is added automatically.",
     schema: {
       type: "object",
       properties: {

@@ -133,7 +133,12 @@ export {
   type OAuthFlowResult,
   type OAuthResult,
 } from "./auth";
-export { bootstrap, type BootstrapOptions, type Workhorse } from "./bootstrap.ts";
+export {
+  bootstrap,
+  type BootstrapOptions,
+  type ProgressCallback,
+  type Workhorse,
+} from "./bootstrap.ts";
 // Path validation exports for harness authors
 export {
   assertPathAllowed,

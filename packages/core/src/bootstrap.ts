@@ -12,6 +12,12 @@ import { HarnessOrchestrator } from "#workflow/orchestrator";
 import { Tracker } from "#workflow/tracker";
 
 /**
+ * Callback for reporting bootstrap progress.
+ * @param stage - Human-readable stage description
+ */
+export type ProgressCallback = (stage: string) => void;
+
+/**
  * Options for bootstrapping a Workhorse instance.
  */
 export interface BootstrapOptions {
@@ -23,6 +29,9 @@ export interface BootstrapOptions {
 
   /** Config overrides (merged on top of loaded config) */
   overrides?: DeepPartial<WorkhorseConfig>;
+
+  /** Optional callback for progress updates during bootstrap */
+  onProgress?: ProgressCallback;
 }
 
 export interface Workhorse {
@@ -74,7 +83,10 @@ export interface Workhorse {
  * ```
  */
 export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhorse> {
-  const { plugins: extraPlugins = [], overrides } = options;
+  const { plugins: extraPlugins = [], overrides, onProgress } = options;
+  const progress = onProgress ?? (() => {});
+
+  progress("Loading configuration...");
 
   // Use git root as default repo root (falls back to cwd if not in a git repo)
   const repoRoot = options.repoRoot ?? (await getGitRoot());
@@ -89,8 +101,10 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
     config = mergeConfigs(config, overrides);
   }
 
+  progress("Initializing database...");
   const db = await Database.create(paths.database);
 
+  progress("Loading memory service...");
   // Initialize memory service (includes L1 session memory and L2 semantic search)
   const memory = await MemoryService.create({
     db,
@@ -111,6 +125,7 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
   return runWithContext(
     { config, paths, hooks, db, memory, monitors, tracker, orchestrator },
     async () => {
+      progress("Loading plugins...");
       const plugins = new PluginRegistry();
 
       // Register additional plugins provided via options first
@@ -136,10 +151,14 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
       deferredHooks.flush();
 
       // Index codebase intelligence files (README, ARCHITECTURE, etc.)
-      // This is deduplicated - only indexes files not already in L2
-      await memory.indexer.indexCodebaseIntelligence(repoRoot).catch((err) => {
-        console.warn("Failed to index codebase intelligence:", err);
+      // Runs in background - deduplicates automatically (skips already-indexed files)
+      setImmediate(() => {
+        memory.indexer.indexCodebaseIntelligence(repoRoot).catch((err) => {
+          console.warn("Failed to index codebase intelligence:", err);
+        });
       });
+
+      progress("Ready");
 
       return {
         config: Object.freeze(config),

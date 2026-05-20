@@ -1,80 +1,23 @@
+// ─── Preloader (runs before any heavy imports) ──────────────────────────────
+import { startPreloader, stopPreloader, updatePreloader } from "./preloader.ts";
+startPreloader();
+
+// ─── Heavy Imports ───────────────────────────────────────────────────────────
 import { createCliRenderer } from "@opentui/core";
-import { render, useRenderer } from "@opentui/solid";
-import { bootstrap, resolveConfigPaths } from "workhorse-core";
-import { figmaPlugin } from "workhorse-plugin-figma";
-import { githubPlugin } from "workhorse-plugin-github";
-import { jiraPlugin } from "workhorse-plugin-jira";
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
-import { playwrightPlugin } from "workhorse-plugin-playwright";
-import { webPlugin } from "workhorse-plugin-web";
+import { render } from "@opentui/solid";
+import { createSignal, type Accessor, Match, Switch } from "solid-js";
+import { bootstrap, resolveConfigPaths, type Workhorse } from "workhorse-core";
 
 import { App } from "./app.tsx";
 import { parseCliArgs, showHelp, showModels } from "./cli.ts";
-import tuiPlugin from "./plugin.ts";
-import { Auth, Setup } from "./screens";
-import type { SetupPluginConfig, AuthScreenProps } from "./screens";
-import {
-  getPluginsNeedingAuth,
-  getPluginsNeedingSetup,
-  loadExistingConfig,
-  savePluginConfig,
-  setupValuesToConfig,
-} from "./setup";
+import { LoadingScreen } from "./components";
+import { getPluginsNeedingAuth, getPluginsNeedingSetup, loadExistingConfig } from "./setup";
+import { loadAuthPlugins, loadPlugins, runAuthIfNeeded, runSetupIfNeeded } from "./startup.tsx";
 import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
 import { ui } from "./state/ui";
 import { setTheme } from "./theme.ts";
 
-interface SetupWrapperProps {
-  plugins: SetupPluginConfig[];
-  configPath: string;
-  onComplete: () => void;
-  onSkip: () => void;
-}
-
-/** Wrapper component for Setup that can access the renderer via useRenderer(). */
-function SetupWrapper(props: SetupWrapperProps) {
-  const renderer = useRenderer();
-
-  return (
-    <Setup
-      plugins={props.plugins}
-      onComplete={(configs) => {
-        savePluginConfig(props.configPath, setupValuesToConfig(configs));
-        renderer.destroy();
-        props.onComplete();
-      }}
-      onSkip={() => {
-        renderer.destroy();
-        props.onSkip();
-      }}
-    />
-  );
-}
-
-interface AuthWrapperProps {
-  plugins: AuthScreenProps["plugins"];
-  onComplete: () => void;
-  onSkip?: () => void;
-}
-
-/** Wrapper component for Auth that can access the renderer via useRenderer(). */
-function AuthWrapper(props: AuthWrapperProps) {
-  const renderer = useRenderer();
-
-  return (
-    <Auth
-      plugins={props.plugins}
-      onComplete={() => {
-        renderer.destroy();
-        props.onComplete();
-      }}
-      onSkip={() => {
-        renderer.destroy();
-        props.onSkip?.();
-      }}
-    />
-  );
-}
+// ─── Main Entry Point ────────────────────────────────────────────────────────
 
 /** Start the Workhorse TUI. Shows setup wizard if needed, authenticates plugins, then bootstraps. */
 export async function startTUI() {
@@ -86,16 +29,21 @@ export async function startTUI() {
 
   // Handle --help
   if (args.help) {
+    stopPreloader();
     showHelp();
     process.exit(0);
   }
 
   // Handle --list-models (needs bootstrap to register adapters first)
   if (args.listModels) {
-    const workhorse = await bootstrap({
-      plugins: [piAdapterPlugin], // Only need adapter plugins to list models
-    });
-    showModels(workhorse.orchestrator);
+    updatePreloader("Loading model registry...");
+    const { piAdapterPlugin } = await import("workhorse-plugin-pi-adapter");
+    showModels(
+      await bootstrap({
+        plugins: [piAdapterPlugin], // Only need adapter plugins to list models
+      }).then((r) => r.orchestrator),
+    );
+    stopPreloader();
     process.exit(0);
   }
 
@@ -103,88 +51,85 @@ export async function startTUI() {
   const paths = resolveConfigPaths();
   const existingConfig = loadExistingConfig(paths.globalConfig, paths.projectConfig);
 
-  // Set theme early so setup/auth screens match the app theme
+  // Set theme early so loading/setup/auth screens match the app theme
   setTheme(existingConfig.ui.theme);
 
   const pluginsNeedingSetup = getPluginsNeedingSetup(existingConfig);
 
-  if (
-    pluginsNeedingSetup.length > 0 &&
-    !(await new Promise<boolean>((resolve) => {
-      render(() => (
-        <SetupWrapper
-          plugins={pluginsNeedingSetup}
-          configPath={paths.globalConfig}
-          onComplete={() => resolve(true)}
-          onSkip={() => resolve(false)}
-        />
-      ));
-    }))
-  ) {
-    console.log("Setup skipped. Please configure plugins manually in ~/.workhorse.toml");
-    process.exit(1);
+  if (pluginsNeedingSetup.length > 0) {
+    stopPreloader(); // Stop preloader before showing setup UI
+    if (!(await runSetupIfNeeded(pluginsNeedingSetup, paths.globalConfig))) {
+      console.log("Setup skipped. Please configure plugins manually in ~/.workhorse.toml");
+      process.exit(1);
+    }
+    startPreloader(); // Restart preloader after setup
   }
 
   // Check if any plugins need authentication before bootstrapping
   // Auth providers are self-contained (keychain, CLI checks) so this works pre-bootstrap
-  const pluginsNeedingAuth = await getPluginsNeedingAuth([jiraPlugin, githubPlugin]);
+  updatePreloader("Checking authentication...");
+  const pluginsNeedingAuth = await getPluginsNeedingAuth(await loadAuthPlugins());
 
-  if (
-    pluginsNeedingAuth.length > 0 &&
-    !(await new Promise<boolean>((resolve) => {
-      render(() => (
-        <AuthWrapper
-          plugins={pluginsNeedingAuth}
-          onComplete={() => resolve(true)}
-          onSkip={() => resolve(false)}
-        />
-      ));
-    }))
-  ) {
-    console.log("Authentication skipped. Some features may be unavailable.");
-    process.exit(1);
+  if (pluginsNeedingAuth.length > 0) {
+    stopPreloader(); // Stop preloader before showing auth UI
+    if (!(await runAuthIfNeeded(pluginsNeedingAuth))) {
+      console.log("Authentication skipped. Some features may be unavailable.");
+      process.exit(1);
+    }
+    startPreloader(); // Restart preloader after auth
   }
 
-  // Bootstrap Workhorse with all plugins
-  const workhorse = await bootstrap({
-    plugins: [
-      tuiPlugin, // TUI plugin (renderer hooks)
-      jiraPlugin, // Jira integration
-      githubPlugin, // GitHub integration
-      figmaPlugin, // Figma design file integration
-      playwrightPlugin, // Browser automation
-      webPlugin, // Web operations (Jina AI)
-      piAdapterPlugin, // Default agent harness
-    ],
-    // Pass CLI model override (deep partial allows nested partial objects)
-    overrides: args.model ? { agent: { model: args.model } } : undefined,
-  });
+  // Stop preloader - we're about to show the full TUI loading screen
+  stopPreloader();
 
-  // Initialize theme from config
-  setTheme(workhorse.config.ui.theme);
+  // Reactive state for loading screen and workhorse instance
+  const [stage, setStage] = createSignal("Initializing...");
+  const [workhorse, setWorkhorse] = createSignal<Workhorse | null>(null);
 
-  // Set shutdown callback so UI can trigger graceful shutdown
-  ui.setShutdownCallback(() => workhorse.shutdown());
-
-  // Render the TUI
-  await render(
+  // Create renderer and start rendering immediately (shows loading screen)
+  render(
     () => (
-      <App
-        config={workhorse.config}
-        paths={workhorse.paths}
-        hooks={workhorse.hooks}
-        memory={workhorse.memory}
-        monitors={workhorse.monitors}
-        tracker={workhorse.tracker}
-        orchestrator={workhorse.orchestrator}
-      />
+      <Switch fallback={<LoadingScreen stage={stage} />}>
+        <Match when={workhorse()}>
+          {(wh: Accessor<Workhorse>) => (
+            <App
+              config={wh().config}
+              paths={wh().paths}
+              hooks={wh().hooks}
+              memory={wh().memory}
+              monitors={wh().monitors}
+              tracker={wh().tracker}
+              orchestrator={wh().orchestrator}
+            />
+          )}
+        </Match>
+      </Switch>
     ),
     await createCliRenderer(),
   );
 
+  // Load plugins in parallel with showing loading screen
+  setStage("Loading plugins...");
+
+  // Bootstrap in the background while showing loading screen
+  const wh = await bootstrap({
+    plugins: await loadPlugins(),
+    overrides: args.model ? { agent: { model: args.model } } : undefined,
+    onProgress: setStage, // Update loading screen with progress
+  });
+
+  // Initialize theme from config
+  setTheme(wh.config.ui.theme);
+
+  // Set shutdown callback so UI can trigger graceful shutdown
+  ui.setShutdownCallback(() => wh.shutdown());
+
+  // Signal that bootstrap is complete - this triggers the Switch to render App
+  setWorkhorse(wh);
+
   // Cleanup on exit (Ctrl+C)
   process.on("SIGINT", async () => {
-    await workhorse.shutdown();
+    await wh.shutdown();
     process.exit(0);
   });
 }

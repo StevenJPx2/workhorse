@@ -26,7 +26,8 @@ export function createAddCommentTool(
     description:
       "Add a comment to a GitHub issue or pull request. Use this to provide updates, " +
       "ask questions, or share findings with stakeholders. " +
-      "Can include image attachments by providing local paths or URLs.",
+      "Can include image attachments by providing local paths or URLs. " +
+      "Do NOT include any footer or signature - one is added automatically.",
     schema: {
       type: "object",
       properties: {

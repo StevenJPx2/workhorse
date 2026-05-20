@@ -64,7 +64,16 @@ export function StatusBar(props: StatusBarProps) {
           )}
         </For>
       </box>
-      <box flexDirection="row" gap={1} onMouseDown={() => renderer.destroy()}>
+      <box
+        flexDirection="row"
+        gap={1}
+        onMouseDown={() =>
+          ui.shutdown().finally(() => {
+            renderer.destroy();
+            process.exit(0);
+          })
+        }
+      >
         <text fg={theme.colors.accent}>
           <b>Ctrl+X Q</b>
         </text>
