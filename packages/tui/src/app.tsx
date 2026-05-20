@@ -17,6 +17,7 @@ import {
   ModelSelectorModal,
   DeleteConfirmModal,
   ToastContainer,
+  ShutdownOverlay,
 } from "./components";
 import { WorkhorseProvider } from "./context/workhorse.tsx";
 import { Overview, Agent, Help } from "./screens";
@@ -117,6 +118,11 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
 
       {/* Toast notifications */}
       <ToastContainer />
+
+      {/* Shutdown overlay - shown during graceful shutdown */}
+      <Show when={ui.shuttingDown()}>
+        <ShutdownOverlay />
+      </Show>
     </box>
   );
 }

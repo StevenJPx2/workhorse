@@ -39,6 +39,9 @@ const [deleteIssue, setDeleteIssue] = createSignal<Issue | null>(null);
 // Model selection state (overrides config when set)
 const [selectedModel, setSelectedModel] = createSignal<string | null>(null);
 
+// Shutdown state - true while gracefully shutting down
+const [shuttingDown, setShuttingDown] = createSignal(false);
+
 // Shutdown callback - set by index.tsx, called on quit
 let shutdownCallback: (() => Promise<void>) | null = null;
 
@@ -57,6 +60,7 @@ export const ui = {
   selectedModel,
   toasts,
   lastFocusedList,
+  shuttingDown,
 
   // Actions (write)
   setScreen,
@@ -139,6 +143,8 @@ export const ui = {
    * Returns a promise that resolves when shutdown is complete.
    */
   shutdown: async () => {
+    if (shuttingDown()) return; // Prevent double shutdown
+    setShuttingDown(true);
     if (shutdownCallback) {
       await shutdownCallback();
     }

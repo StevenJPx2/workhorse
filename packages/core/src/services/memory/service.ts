@@ -1,6 +1,7 @@
 import type { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 
+import { MemoryIndexer } from "./indexer/index.ts";
 import { L1Store } from "./l1/store.ts";
 import { L2Store } from "./l2.ts";
 import { NotificationService } from "./notifications.ts";
@@ -11,6 +12,7 @@ import { NotificationService } from "./notifications.ts";
  * Facade providing access to:
  * - `l1`: Session memory (context.md per worktree) - fast, append-only, markdown-based
  * - `l2`: Semantic search (retriv with FTS5 + vector embeddings) - long-term knowledge
+ * - `indexer`: Automatic L2 indexing of sessions and codebase context
  * - `notifications`: Notification management with hook integration
  *
  * @example
@@ -36,6 +38,9 @@ import { NotificationService } from "./notifications.ts";
  * await memory.l2.index([{ id: "doc-1", content: "...", metadata: { type: "decision" } }]);
  * const results = await memory.l2.search("authentication flow", { limit: 5 });
  *
+ * // Index codebase intelligence (deduplicates automatically)
+ * await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
+ *
  * // Notifications
  * memory.notifications.create({ issueId: "AM-123", source: "jira", title: "New comment", body: "..." });
  * const unread = memory.notifications.getUnread("AM-123");
@@ -49,6 +54,8 @@ export class MemoryService {
     readonly l1: L1Store,
     /** L2: Semantic search (retriv) */
     readonly l2: L2Store,
+    /** Memory Indexer: Automatic indexing of sessions and codebase context */
+    readonly indexer: MemoryIndexer,
     /** Notification management */
     readonly notifications: NotificationService,
   ) {}
@@ -62,17 +69,21 @@ export class MemoryService {
     worktreesRoot: string;
     memoryDbPath: string;
   }): Promise<MemoryService> {
-    return new MemoryService(
-      new L1Store(options.worktreesRoot),
-      await L2Store.create(options.memoryDbPath),
-      new NotificationService(options.db, options.hooks),
-    );
+    const l1 = new L1Store(options.worktreesRoot);
+    const l2 = await L2Store.create(options.memoryDbPath);
+    const indexer = new MemoryIndexer(l1, l2, options.hooks);
+
+    // Initialize indexer to start listening for agent.stop.post events
+    indexer.initialize();
+
+    return new MemoryService(l1, l2, indexer, new NotificationService(options.db, options.hooks));
   }
 
   /**
    * Shutdown the memory service and release resources.
    */
   async shutdown(): Promise<void> {
+    this.indexer.dispose();
     await this.l2.close();
   }
 }

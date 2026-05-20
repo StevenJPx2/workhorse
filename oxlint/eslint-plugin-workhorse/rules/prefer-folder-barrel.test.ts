@@ -1,3 +1,5 @@
+import fs from "node:fs";
+
 import rule from "./prefer-folder-barrel";
 
 interface Report {
@@ -260,6 +262,70 @@ describe("prefer-folder-barrel", () => {
       const code = `export { foo } from "./foo.js";`;
       const reports = runRule("/project/src/lib.js", code);
       expect(reports).toHaveLength(0);
+    });
+  });
+
+  describe("reports files with hyphen-suffixed siblings (Pattern 2)", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function mockDir(entries: string[]) {
+      vi.spyOn(fs, "readdirSync").mockReturnValue(entries as any);
+    }
+
+    it("reports when a sibling with a hyphen suffix exists", () => {
+      mockDir(["indexer.ts", "indexer-utils.ts"]);
+      const code = `export class MemoryIndexer {}`;
+      const reports = runRule("/project/src/memory/indexer.ts", code);
+      expect(reports).toHaveLength(1);
+      expect(reports[0]!.messageId).toBe("preferFolderSiblings");
+      expect(reports[0]!.data?.filename).toBe("indexer.ts");
+      expect(reports[0]!.data?.folderName).toBe("indexer");
+      expect(reports[0]!.data?.example).toBe("indexer-utils.ts");
+    });
+
+    it("reports when multiple hyphen-suffixed siblings exist", () => {
+      mockDir(["indexer.ts", "indexer-utils.ts", "indexer-types.ts"]);
+      const code = `export class MemoryIndexer {}`;
+      const reports = runRule("/project/src/memory/indexer.ts", code);
+      expect(reports).toHaveLength(1);
+      expect(reports[0]!.messageId).toBe("preferFolderSiblings");
+    });
+
+    it("ignores when no hyphen-suffixed siblings exist", () => {
+      mockDir(["indexer.ts", "service.ts", "types.ts"]);
+      const code = `export class MemoryIndexer {}`;
+      const reports = runRule("/project/src/memory/indexer.ts", code);
+      expect(reports).toHaveLength(0);
+    });
+
+    it("ignores a file that is itself a hyphen-suffixed sibling", () => {
+      // indexer-utils.ts should not flag itself — its base name is "indexer-utils",
+      // and there's no "indexer-utils-*.ts" sibling
+      mockDir(["indexer.ts", "indexer-utils.ts"]);
+      const code = `export function buildSessionDocuments() {}`;
+      const reports = runRule("/project/src/memory/indexer-utils.ts", code);
+      expect(reports).toHaveLength(0);
+    });
+
+    it("ignores index files even if hyphen siblings exist", () => {
+      mockDir(["index.ts", "index-helpers.ts"]);
+      const code = `export { foo } from "./foo.ts";`;
+      const reports = runRule("/project/src/memory/index.ts", code);
+      expect(reports).toHaveLength(0);
+    });
+
+    it("prefers Pattern 1 (barrel) over Pattern 2 when both apply", () => {
+      // A pure barrel file that also has a hyphen sibling — Pattern 1 fires first
+      mockDir(["parser.ts", "parser-utils.ts", "parse.ts", "serialize.ts"]);
+      const code = `
+        export { foo } from "./parse.ts";
+        export { bar } from "./serialize.ts";
+      `;
+      const reports = runRule("/project/src/parser.ts", code);
+      expect(reports).toHaveLength(1);
+      expect(reports[0]!.messageId).toBe("preferFolderBarrel");
     });
   });
 });

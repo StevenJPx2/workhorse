@@ -201,18 +201,20 @@ const ui = {
 
 Focus-aware shortcuts:
 
-| Context                   | Key        | Action                               |
-| ------------------------- | ---------- | ------------------------------------ |
-| Global                    | `q`        | Quit                                 |
-| Global                    | `?`        | Show help                            |
-| Global                    | `Ctrl+X M` | Model selector                       |
-| Overview                  | `Tab`      | Cycle focus (issues → agents → chat) |
-| Overview                  | `↑/↓`      | Navigate list                        |
-| Overview                  | `Enter`    | Select/spawn                         |
-| Overview (agents focused) | `s`        | Stop selected agent                  |
-| Agent                     | `s`        | Stop agent                           |
-| Agent                     | `Esc`      | Back to overview                     |
-| Chat                      | `Enter`    | Send message                         |
+| Context                   | Key           | Action                               |
+| ------------------------- | ------------- | ------------------------------------ |
+| Global                    | `q`           | Quit                                 |
+| Global                    | `?`           | Show help                            |
+| Global                    | `Ctrl+X M`    | Model selector                       |
+| Overview                  | `Tab`         | Cycle focus (issues → agents → chat) |
+| Overview                  | `↑/↓`         | Navigate list                        |
+| Overview                  | `Enter`       | Select/spawn                         |
+| Overview (agents focused) | `s`           | Toggle agent (start/stop)            |
+| Overview (agents focused) | `d/Backspace` | Remove stopped agent                 |
+| Agent                     | `s`           | Toggle agent (start/stop)            |
+| Agent                     | `d/Backspace` | Remove agent (if stopped)            |
+| Agent                     | `Esc`         | Back to overview                     |
+| Chat                      | `Enter`       | Send message                         |
 
 ## Startup Flow
 

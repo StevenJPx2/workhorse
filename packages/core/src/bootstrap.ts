@@ -73,7 +73,7 @@ export interface Workhorse {
  * ```
  */
 export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhorse> {
-  const { repoRoot, plugins: extraPlugins = [], overrides } = options;
+  const { repoRoot = process.cwd(), plugins: extraPlugins = [], overrides } = options;
 
   hooks.all.clear();
 
@@ -130,6 +130,12 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
 
       // Flush buffered hooks now that all listeners are registered
       deferredHooks.flush();
+
+      // Index codebase intelligence files (README, ARCHITECTURE, etc.)
+      // This is deduplicated - only indexes files not already in L2
+      await memory.indexer.indexCodebaseIntelligence(repoRoot).catch((err) => {
+        console.warn("Failed to index codebase intelligence:", err);
+      });
 
       return {
         config: Object.freeze(config),

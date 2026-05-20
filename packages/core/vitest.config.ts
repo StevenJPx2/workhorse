@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -28,5 +30,9 @@ export default defineConfig({
   },
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      // Allow .workhorse/plugins to import workhorse-core from source
+      "workhorse-core": resolve(__dirname, "src/index.ts"),
+    },
   },
 });

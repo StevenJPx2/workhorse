@@ -9,3 +9,4 @@ export { ModelSelectorModal } from "./model-selector-modal";
 export { DeleteConfirmModal } from "./delete-confirm-modal.tsx";
 export { ToastContainer } from "./toast.tsx";
 export { MonitorIndicator } from "./monitor-indicator.tsx";
+export { ShutdownOverlay } from "./shutdown-overlay.tsx";

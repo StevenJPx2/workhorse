@@ -10,6 +10,7 @@ MemoryService is a facade providing access to three subsystems:
 | ----------------------- | ------------------------------- | -------------------------------- | ------------------------- |
 | **L1 Store**            | Session memory per worktree     | `context.md` files               | Read/write by issue ID    |
 | **L2 Store**            | Semantic search across sessions | SQLite (retriv + FTS5 + vectors) | Query by natural language |
+| **Memory Indexer**      | Automatic L2 population         | (uses L1 + L2 Store)             | Hooks + startup indexing  |
 | **NotificationService** | Agent inbox management          | SQLite (notifications table)     | CRUD by issue ID          |
 
 ## Architecture
@@ -168,6 +169,40 @@ await memory.l2.close();
 | `code_context`   | Code-related context                                  |
 | _(custom)_       | Plugins can define additional types via `string & {}` |
 
+### Memory Indexer
+
+The Memory Indexer (`MemoryIndexer`) orchestrates data flow into L2, reading from L1 and the filesystem:
+
+1. **Session memories** — When an agent stops (`agent.stop.post` hook), the indexer reads the L1 context.md and indexes:
+   - Session summary (as `session_memory`)
+   - Discovered patterns (as `code_context`)
+   - Learnings (as `decision`)
+
+2. **Codebase intelligence** — On startup, indexes documentation files matching glob patterns:
+   - `**/README.md`, `**/ARCHITECTURE.md`, `**/CONTRIBUTING.md`, `**/CHANGELOG.md`
+   - `docs/**/*.md`
+   - `.github/**/*.md`
+
+   Excludes common directories: `node_modules`, `.git`, `dist`, `build`, `coverage`.
+   Deduplication ensures files are only indexed once.
+
+```typescript
+// Index codebase intelligence manually (deduplicates automatically)
+const indexed = await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
+console.log(`Indexed ${indexed} new files`);
+
+// Second call skips already-indexed files
+const reindexed = await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
+console.log(`Indexed ${reindexed} new files`); // 0
+```
+
+#### Document ID Prefixes
+
+| Prefix      | Source                      |
+| ----------- | --------------------------- |
+| `codebase:` | Codebase intelligence files |
+| `session:`  | Session memory from L1 → L2 |
+
 ### Notifications
 
 NotificationService manages agent inboxes with deduplication, priority, and XML generation for system prompts.
@@ -303,6 +338,7 @@ interface CreateNotificationInput {
 | File               | Purpose                                             |
 | ------------------ | --------------------------------------------------- |
 | `service.ts`       | MemoryService facade class                          |
+| `indexer.ts`       | MemoryIndexer — automatic session/codebase indexing |
 | `l1/store.ts`      | L1Store — manages context.md files across worktrees |
 | `l1/context.ts`    | L1Context — CRUD for a single worktree's context.md |
 | `l1/parse.ts`      | Markdown → SessionMemory parser                     |

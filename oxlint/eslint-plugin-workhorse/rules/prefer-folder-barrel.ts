@@ -1,20 +1,38 @@
+import path from "node:path";
+
 import { isIndexFile, parseFileContext, shouldSkipFile } from "./utils.ts";
 
 /**
- * Detect non-index files that only contain barrel exports (re-exports) from sibling files.
+ * Detect two patterns that suggest files should be moved into a folder:
  *
- * When a file like `parser.ts` only re-exports from sibling files in the same directory:
+ * **Pattern 1 – Barrel-only file:**
+ * A non-index file like `parser.ts` that only re-exports from sibling files:
  * ```ts
  * export { parseSessionMemory } from "./parse.ts";
  * export { serializeSessionMemory } from "./serialize.ts";
  * ```
- *
- * It should be refactored to a folder structure:
+ * Should be refactored to:
  * ```
  * parser/
  * ├── index.ts      # the barrel exports
  * ├── parse.ts      # moved here
  * └── serialize.ts  # moved here
+ * ```
+ *
+ * **Pattern 2 – Hyphen-suffixed sibling files:**
+ * A group of files sharing a common base name via hyphen suffixes, e.g.:
+ * ```
+ * indexer.ts
+ * indexer-utils.ts
+ * indexer-types.ts
+ * ```
+ * Should be refactored to:
+ * ```
+ * indexer/
+ * ├── index.ts
+ * ├── indexer.ts
+ * ├── utils.ts
+ * └── types.ts
  * ```
  *
  * Files that re-export from parent directories (../) or subdirectories are not flagged,
@@ -29,6 +47,8 @@ const rule = {
     messages: {
       preferFolderBarrel:
         'File "{{filename}}" only contains re-exports from sibling files. Convert to folder: {{folderName}}/index.ts with source files moved inside.',
+      preferFolderSiblings:
+        'File "{{filename}}" has hyphen-suffixed siblings (e.g. "{{example}}") that share its base name. Move them into a folder: {{folderName}}/',
     },
   },
 
@@ -57,6 +77,31 @@ const rule = {
       // Must not have additional path separators (except the leading ./)
       const rest = source.slice(2);
       return !rest.includes("/");
+    }
+
+    /**
+     * Check whether the current file has hyphen-suffixed siblings on disk.
+     * e.g. if the current file is `indexer.ts`, look for siblings like
+     * `indexer-utils.ts`, `indexer-types.ts`, etc.
+     *
+     * Uses the physical filesystem via `require("fs")` so it works at lint time.
+     */
+    function findHyphenSuffixedSiblings(): string[] {
+      try {
+        const fs: typeof import("fs") = require("fs");
+        const dir = ctx.dirname;
+        const base = ctx.nameWithoutExt; // e.g. "indexer"
+        const entries = fs.readdirSync(dir);
+        return entries.filter((entry: string) => {
+          const entryExt = path.extname(entry);
+          if (entryExt !== ".ts" && entryExt !== ".tsx") return false;
+          const entryBase = entry.slice(0, -entryExt.length);
+          // Match "base-<something>" but not "base" itself
+          return entryBase.startsWith(`${base}-`) && entryBase.length > base.length + 1;
+        });
+      } catch {
+        return [];
+      }
     }
 
     return {
@@ -114,16 +159,30 @@ const rule = {
 
       // Check at the end of the file
       "Program:exit"(_node: any) {
-        // Only report if:
-        // - File has sibling re-exports
-        // - File has NO non-sibling re-exports (type alias files re-export from other dirs)
-        // - File has NO other statements
-        if (hasSiblingReExports && !hasNonSiblingReExports && !hasOtherStatements && programNode) {
+        if (!programNode) return;
+
+        // Pattern 1: barrel-only file (only sibling re-exports, nothing else)
+        if (hasSiblingReExports && !hasNonSiblingReExports && !hasOtherStatements) {
           context.report({
             node: programNode,
             messageId: "preferFolderBarrel",
             data: {
               filename: ctx.basename,
+              folderName: ctx.nameWithoutExt,
+            },
+          });
+          return;
+        }
+
+        // Pattern 2: file has hyphen-suffixed siblings sharing its base name
+        const siblings = findHyphenSuffixedSiblings();
+        if (siblings.length > 0) {
+          context.report({
+            node: programNode,
+            messageId: "preferFolderSiblings",
+            data: {
+              filename: ctx.basename,
+              example: siblings[0],
               folderName: ctx.nameWithoutExt,
             },
           });
