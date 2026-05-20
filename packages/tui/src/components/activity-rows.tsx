@@ -4,6 +4,7 @@
 
 import { Match, Switch } from "solid-js";
 
+import { getSyntaxStyle } from "../lib/syntax-style.ts";
 import type { ActivityItem } from "../primitives/activity-types.ts";
 import { getTheme } from "../theme.ts";
 import { ActivityRow } from "./activity-row.tsx";
@@ -48,7 +49,7 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
   );
 }
 
-/** Text output bubble from agent */
+/** Text output bubble from agent - renders markdown content with live streaming */
 function TextBubbleRow(props: { item: ActivityItem & { type: "text" } }) {
   const theme = getTheme();
 
@@ -61,7 +62,12 @@ function TextBubbleRow(props: { item: ActivityItem & { type: "text" } }) {
         <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>
       </box>
       <box backgroundColor={theme.colors.surface} paddingLeft={1} paddingRight={1}>
-        <text fg={theme.colors.text}>{props.item.content}</text>
+        <markdown
+          content={props.item.content}
+          syntaxStyle={getSyntaxStyle()}
+          fg={theme.colors.text}
+          streaming
+        />
       </box>
     </box>
   );
@@ -127,14 +133,14 @@ function IdleRow(props: { timestamp: Date }) {
 /** Memory indexing indicator */
 function MemoryRow(props: { item: ActivityItem & { type: "memory" } }) {
   const theme = getTheme();
-  const label = props.item.trigger === "idle" ? "indexed (idle)" : "indexed";
 
   return (
     <box flexDirection="row" paddingLeft={1} gap={1}>
       <text fg={theme.colors.dim}>🧠</text>
       <text fg={theme.colors.dim}>
         <i>
-          memory {label} ({props.item.documentCount} docs)
+          memory {props.item.trigger === "idle" ? "indexed (idle)" : "indexed"} (
+          {props.item.documentCount} docs)
         </i>
       </text>
       <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>

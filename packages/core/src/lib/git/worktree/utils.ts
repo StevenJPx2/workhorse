@@ -9,6 +9,18 @@ import { basename, dirname, join } from "node:path";
 import type { WorktreeInfo } from "./types.ts";
 import { BRANCH_PREFIXES } from "./types.ts";
 
+/**
+ * Get the root directory of the git repository.
+ * Uses `git rev-parse --show-toplevel` to find the repository root.
+ *
+ * @param cwd - Starting directory (defaults to process.cwd())
+ * @returns Repository root path, or cwd if not in a git repository
+ */
+export async function getGitRoot(cwd: string = process.cwd()): Promise<string> {
+  const result = await execGit(["git", "rev-parse", "--show-toplevel"], cwd);
+  return result.success ? result.output : cwd;
+}
+
 // fallow-ignore-next-line unused-type
 export interface GitResult {
   success: boolean;

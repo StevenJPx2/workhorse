@@ -15,14 +15,7 @@ import type { MemoryDocument, MemoryDocumentType } from "../types.ts";
 import { buildSessionDocuments } from "./utils.ts";
 
 /** Glob patterns for codebase intelligence files */
-const CODEBASE_PATTERNS = [
-  "**/README.md",
-  "**/ARCHITECTURE.md",
-  "**/CONTRIBUTING.md",
-  "**/CHANGELOG.md",
-  "docs/**/*.md",
-  ".github/**/*.md",
-];
+const CODEBASE_PATTERNS = ["**/README.md", "**/ARCHITECTURE.md", "docs/**/*.md", ".github/**/*.md"];
 const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build", "coverage", ".next", ".nuxt"];
 const MAX_FILE_SIZE = 100 * 1024;
 const CODEBASE_DOC_PREFIX = "codebase:";
@@ -96,9 +89,7 @@ export class MemoryIndexer {
             fileName: basename(relativePath),
           },
         });
-      } catch {
-        continue;
-      }
+      } catch {}
     }
     if (documents.length > 0) await this.l2.index(documents);
     return documents.length;

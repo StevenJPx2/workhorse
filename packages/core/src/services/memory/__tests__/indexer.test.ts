@@ -19,15 +19,6 @@ const REPO_ROOT = join(TEST_DIR, "repo");
 // Skip tests in CI — the HuggingFace model download is flaky
 const isCI = process.env["CI"] === "true";
 
-/** Create a mock database for testing */
-function createMockDb(): Database {
-  return {
-    issues: {
-      getByExternalId: vi.fn().mockResolvedValue(undefined),
-    },
-  } as unknown as Database;
-}
-
 describe.skipIf(isCI)("MemoryIndexer", () => {
   let l1: L1Store;
   let l2: L2Store;
@@ -45,7 +36,9 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
     mkdirSync(REPO_ROOT, { recursive: true });
 
     hooks = createMockHooks();
-    db = createMockDb();
+    db = {
+      issues: { getByExternalId: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Database;
     l1 = new L1Store(WORKTREES_ROOT);
     l2 = await L2Store.create(DB_PATH);
     indexer = new MemoryIndexer(l1, l2, hooks, db);

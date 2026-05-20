@@ -9,3 +9,6 @@
 
 // Operations
 export { createWorktree, removeWorktree, syncWorktree } from "./operations.ts";
+
+// Utilities
+export { getGitRoot } from "./utils.ts";

@@ -2,6 +2,7 @@ import type { ConfigPaths, DeepPartial, WorkhorseConfig } from "#config";
 import { loadConfig, mergeConfigs, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
+import { getGitRoot } from "#lib/git";
 import type { HookEmitter } from "#lib/hooks";
 import { deferredHooks, hooks } from "#lib/hooks";
 import { CORE_PLUGINS, type Plugin, PluginRegistry } from "#plugins";
@@ -14,7 +15,7 @@ import { Tracker } from "#workflow/tracker";
  * Options for bootstrapping a Workhorse instance.
  */
 export interface BootstrapOptions {
-  /** Project root directory (defaults to cwd) */
+  /** Project root directory (defaults to git root, falls back to cwd if not in a git repo) */
   repoRoot?: string;
 
   /** Additional plugins to register (before core plugins, so their parsers take priority) */
@@ -73,7 +74,10 @@ export interface Workhorse {
  * ```
  */
 export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhorse> {
-  const { repoRoot = process.cwd(), plugins: extraPlugins = [], overrides } = options;
+  const { plugins: extraPlugins = [], overrides } = options;
+
+  // Use git root as default repo root (falls back to cwd if not in a git repo)
+  const repoRoot = options.repoRoot ?? (await getGitRoot());
 
   hooks.all.clear();
 
