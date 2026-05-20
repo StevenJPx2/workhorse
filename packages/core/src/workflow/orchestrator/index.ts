@@ -25,6 +25,7 @@ export type {
   AgentHarness,
   AgentState,
   CreateOptions,
+  ImageContent,
   ModelInfo,
   StopOptions,
   SpawnOptions,

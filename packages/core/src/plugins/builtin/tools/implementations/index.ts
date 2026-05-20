@@ -8,4 +8,5 @@ export { acknowledgeToolImpl } from "./acknowledge.ts";
 export { escalateToolImpl } from "./escalate.ts";
 export { memorySearchToolImpl } from "./memory-search.ts";
 export { memoryWriteToolImpl } from "./memory-write.ts";
+export { previewImageToolImpl } from "./preview-image.ts";
 export { updateStatusToolImpl } from "./update-status.ts";

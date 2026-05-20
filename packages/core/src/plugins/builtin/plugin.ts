@@ -15,6 +15,7 @@ import {
   escalateTool,
   memorySearchTool,
   memoryWriteTool,
+  previewImageTool,
   updateStatusTool,
 } from "./tools/definitions";
 import { createLocalParserOptions } from "./tools/parser.ts";
@@ -32,6 +33,7 @@ export const corePlugin = definePlugin({
         "workhorse_escalate",
         "workhorse_memory_search",
         "workhorse_memory_write",
+        "workhorse_preview_image",
         "load_skill",
       ],
       parsers: ["local"],
@@ -46,6 +48,7 @@ export const corePlugin = definePlugin({
     ctx.orchestrator.registerTool(escalateTool);
     ctx.orchestrator.registerTool(memorySearchTool);
     ctx.orchestrator.registerTool(memoryWriteTool);
+    ctx.orchestrator.registerTool(previewImageTool);
     ctx.orchestrator.registerTool(createLoadSkillTool(ctx.orchestrator));
 
     // Register builtin skills

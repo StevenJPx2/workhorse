@@ -44,6 +44,18 @@ export interface ToolExecutionContext {
 }
 
 /**
+ * Image content for tool results.
+ * Allows tools to return images that can be displayed to vision-capable models.
+ */
+export interface ImageContent {
+  type: "image";
+  /** Base64-encoded image data */
+  data: string;
+  /** MIME type (e.g., "image/png", "image/jpeg") */
+  mimeType: string;
+}
+
+/**
  * Result from tool execution.
  */
 export interface ToolResult {
@@ -55,6 +67,13 @@ export interface ToolResult {
 
   /** Error message (on failure) */
   error?: string;
+
+  /**
+   * Optional images to include in the result.
+   * Vision-capable models can view these directly.
+   * Non-vision models will receive a text fallback.
+   */
+  images?: ImageContent[];
 }
 
 /**

@@ -30,7 +30,13 @@ export { ModelRegistry } from "../registry.ts";
 export type { SpawnOptions } from "./spawn.ts";
 
 // Tool types
-export type { JSONSchema, OrchestratorTool, ToolExecutionContext, ToolResult } from "./tools.ts";
+export type {
+  ImageContent,
+  JSONSchema,
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "./tools.ts";
 
 // Skill types
 export { PluginSkillSchema } from "./skills.ts";

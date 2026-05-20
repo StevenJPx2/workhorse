@@ -531,8 +531,9 @@ See [`packages/plugins/playwright/README.md`](../packages/plugins/playwright/REA
 
 ## Built-in Agent Tools
 
-| Tool                      | Description                  | Parameters                              |
-| ------------------------- | ---------------------------- | --------------------------------------- |
-| `workhorse_acknowledge`   | Mark notification(s) as read | `notificationIds?: string[]`            |
-| `workhorse_update_status` | Update issue status          | `status: string`                        |
-| `workhorse_escalate`      | Escalate to a human          | `message: string`, `blocking?: boolean` |
+| Tool                       | Description                          | Parameters                              |
+| -------------------------- | ------------------------------------ | --------------------------------------- |
+| `workhorse_acknowledge`    | Mark notification(s) as read         | `notificationIds?: string[]`            |
+| `workhorse_update_status`  | Update issue status                  | `status: string`                        |
+| `workhorse_escalate`       | Escalate to a human                  | `message: string`, `blocking?: boolean` |
+| `workhorse_preview_image`  | View an image file (for vision models) | `path: string`                        |
