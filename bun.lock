@@ -38,6 +38,7 @@
         "defu": "^6.1.7",
         "drizzle-orm": "^1.0.0-rc.2-e38a2ba",
         "es-toolkit": "^1.46.1",
+        "fuse.js": "^7.3.0",
         "hookable": "^6.1.1",
         "mitt": "^3.0.1",
         "retriv": "^0.13.2",
@@ -169,7 +170,7 @@
     },
     "packages/tui": {
       "name": "@fdcn/workhorse",
-      "version": "0.1.17",
+      "version": "0.1.22",
       "bin": {
         "workhorse": "./dist/workhorse.js",
       },
@@ -1097,6 +1098,8 @@
     "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
 
     "function-bind": ["function-bind@1.1.2", "", {}, "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA=="],
+
+    "fuse.js": ["fuse.js@7.3.0", "", {}, "sha512-plz8RVjfcDedTGfVngWH1jmJvBvAwi1v2jecfDerbEnMcmOYUEEwKFTHbNoCiYyzaK2Ws8lABkTCcRSqCY1q4w=="],
 
     "gaxios": ["gaxios@7.1.4", "", { "dependencies": { "extend": "^3.0.2", "https-proxy-agent": "^7.0.1", "node-fetch": "^3.3.2" } }, "sha512-bTIgTsM2bWn3XklZISBTQX7ZSddGW+IO3bMdGaemHZ3tbqExMENHLx6kKZ/KlejgrMtj8q7wBItt51yegqalrA=="],
 

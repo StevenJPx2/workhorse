@@ -8,6 +8,7 @@ import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
 
 /**
  * Write a session summary, patterns, and learnings to L1 memory.
+ * Auto-creates the session memory if it doesn't exist yet.
  */
 export async function memoryWriteToolImpl(
   args: unknown,
@@ -27,20 +28,33 @@ export async function memoryWriteToolImpl(
     };
 
     const l1 = ctx.memory.l1.get(ctx.issueId);
-    if (!l1?.exists()) {
+    if (!l1) {
       return {
         success: false,
-        error: `No session memory found for issue ${ctx.issueId}`,
+        error: `No worktree registered for issue ${ctx.issueId}`,
       };
+    }
+
+    // Auto-create session memory if it doesn't exist
+    if (!l1.exists()) {
+      const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
+      if (!issue) {
+        return {
+          success: false,
+          error: `Issue ${ctx.issueId} not found in database`,
+        };
+      }
+      await l1.create(`${issue.externalId}: ${issue.title}`, issue.status);
+    }
+
+    const currentMemory = await l1.read();
+    if (!currentMemory) {
+      return { success: false, error: "Failed to read session memory" };
     }
 
     // Append a session entry if there's anything to record
     const hasSummary = summary.length > 0 || learnings.length > 0 || filesChanged.length > 0;
     if (hasSummary) {
-      const currentMemory = await l1.read();
-      if (!currentMemory) {
-        return { success: false, error: "Failed to read session memory" };
-      }
       await l1.appendSession({
         timestamp: new Date(),
         status: currentMemory.latestStatus,

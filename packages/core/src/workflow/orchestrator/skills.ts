@@ -7,19 +7,40 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 import type { ConfigPaths } from "#config";
-import type { HookEmitter } from "#lib/hooks";
+import { createFuzzySearcher, type FuzzySearcher, type HookEmitter } from "#lib";
 
 import type { PluginSkillInput, ResolvedSkill } from "./types";
 import { PluginSkillSchema } from "./types";
+
+interface SkillSearchItem {
+  id: string;
+  name: string;
+  skill: ResolvedSkill;
+}
 
 /** Registry for managing skills from plugins and local directories. */
 export class SkillRegistry {
   private readonly skills = new Map<string, ResolvedSkill>();
   private currentPluginPath: string | null = null;
+  private searcherDirty = true;
+  private cachedSearcher: FuzzySearcher<SkillSearchItem> | null = null;
 
   constructor(private readonly hooks: HookEmitter) {}
 
-  /** Set plugin path for resolving skill file paths (called by plugin registry before setup). */
+  /** Get or rebuild the fuzzy searcher (lazy, cached until skills change). */
+  private getSearcher(): FuzzySearcher<SkillSearchItem> {
+    if (!this.searcherDirty && this.cachedSearcher) return this.cachedSearcher;
+    this.cachedSearcher = createFuzzySearcher(
+      Array.from(this.skills.values()).map((s) => ({ id: s.id, name: s.name, skill: s })),
+      { keys: ["id", "name"], threshold: 0.4 },
+    );
+    this.searcherDirty = false;
+    return this.cachedSearcher;
+  }
+
+  private invalidateSearcher(): void {
+    this.searcherDirty = true;
+  }
   setCurrentPluginPath(path: string | null): void {
     this.currentPluginPath = path;
   }
@@ -41,6 +62,7 @@ export class SkillRegistry {
     };
 
     this.skills.set(resolved.id, resolved);
+    this.invalidateSearcher();
     this.hooks.emit("skill.registered", { skill: resolved });
   }
 
@@ -52,6 +74,11 @@ export class SkillRegistry {
   /** Get a skill by ID. Returns undefined if not found. */
   getSkill(id: string): ResolvedSkill | undefined {
     return this.skills.get(id);
+  }
+
+  /** Get a skill by name with fuzzy matching (Fuse.js): exact ID → exact base name → fuzzy. */
+  getSkillByName(name: string): ResolvedSkill | undefined {
+    return this.skills.get(name) ?? this.getSearcher().findBest(name)?.skill;
   }
 
   /**
@@ -107,6 +134,7 @@ export class SkillRegistry {
       };
 
       this.skills.set(resolved.id, resolved);
+      this.invalidateSearcher();
       this.hooks.emit("skill.registered", { skill: resolved });
     } catch (error) {
       console.warn(

@@ -40,7 +40,9 @@ export function createLoadSkillTool(orchestrator: HarnessOrchestrator): Orchestr
     execute: async (args: unknown, _ctx: ToolExecutionContext): Promise<ToolResult> => {
       const { skillId } = args as LoadSkillArgs;
 
-      const skill = orchestrator.skillRegistry.getSkill(skillId);
+      // Use getSkillByName to allow lookup by base name (e.g., "launch-playwright")
+      // in addition to full ID (e.g., "claude:launch-playwright")
+      const skill = orchestrator.skillRegistry.getSkillByName(skillId);
       if (!skill) {
         return {
           success: false,

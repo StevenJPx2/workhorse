@@ -19,6 +19,16 @@ describe("load_skill tool", () => {
     mockOrchestrator = {
       skillRegistry: {
         getSkill: vi.fn((id: string) => mockSkills.get(id)),
+        getSkillByName: vi.fn((name: string) => {
+          // First try exact match
+          if (mockSkills.has(name)) return mockSkills.get(name);
+          // Try matching by base name (after colon)
+          for (const [id, skill] of mockSkills) {
+            const baseName = id.includes(":") ? id.split(":")[1] : id;
+            if (baseName === name) return skill;
+          }
+          return undefined;
+        }),
         getSkills: vi.fn(() => Array.from(mockSkills.values())),
       },
     } as unknown as Partial<HarnessOrchestrator>;

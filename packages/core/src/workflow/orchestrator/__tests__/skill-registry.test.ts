@@ -192,6 +192,102 @@ describe("SkillRegistry", () => {
     });
   });
 
+  describe("getSkillByName", () => {
+    it("returns skill by exact ID", () => {
+      registry.registerSkill({
+        id: "test:my-skill",
+        name: "My Skill",
+        description: "A test skill",
+        instructions: "Do the thing",
+      });
+
+      const skill = registry.getSkillByName("test:my-skill");
+      expect(skill?.id).toBe("test:my-skill");
+    });
+
+    it("returns skill by base name without source prefix", () => {
+      const paths = createTestPaths(tempDir);
+      const projectDir = join(tempDir, "project");
+      const skillsDir = join(projectDir, ".claude", "skills");
+      mkdirSync(skillsDir, { recursive: true });
+
+      writeFileSync(join(skillsDir, "launch-playwright.md"), "Playwright instructions");
+
+      registry.discoverLocalSkills(paths);
+
+      // Should find by base name without "claude:" prefix
+      const skill = registry.getSkillByName("launch-playwright");
+      expect(skill).toBeDefined();
+      expect(skill?.id).toBe("claude:launch-playwright");
+      expect(skill?.instructions).toBe("Playwright instructions");
+    });
+
+    it("returns global skill before local when searching by base name", () => {
+      const paths = createTestPaths(tempDir);
+      const globalSkillsDir = join(paths.globalDir, "skills");
+      const projectDir = join(tempDir, "project");
+      const localSkillsDir = join(projectDir, ".workhorse", "skills");
+
+      mkdirSync(globalSkillsDir, { recursive: true });
+      mkdirSync(localSkillsDir, { recursive: true });
+
+      writeFileSync(join(globalSkillsDir, "shared-skill.md"), "Global version");
+      writeFileSync(join(localSkillsDir, "shared-skill.md"), "Local version");
+
+      registry.discoverLocalSkills(paths);
+
+      // Should find global version first (priority order: global, local, claude)
+      const skill = registry.getSkillByName("shared-skill");
+      expect(skill?.id).toBe("global:shared-skill");
+      expect(skill?.instructions).toBe("Global version");
+    });
+
+    it("returns local skill if no global exists", () => {
+      const paths = createTestPaths(tempDir);
+      const projectDir = join(tempDir, "project");
+      const localSkillsDir = join(projectDir, ".workhorse", "skills");
+      mkdirSync(localSkillsDir, { recursive: true });
+
+      writeFileSync(join(localSkillsDir, "local-only.md"), "Local instructions");
+
+      registry.discoverLocalSkills(paths);
+
+      const skill = registry.getSkillByName("local-only");
+      expect(skill?.id).toBe("local:local-only");
+    });
+
+    it("returns undefined for non-existent base name", () => {
+      expect(registry.getSkillByName("nonexistent")).toBeUndefined();
+    });
+
+    it("finds skill with fuzzy matching (normalized, case-insensitive, substring)", () => {
+      const paths = createTestPaths(tempDir);
+      const projectDir = join(tempDir, "project");
+      const skillsDir = join(projectDir, ".claude", "skills");
+      mkdirSync(skillsDir, { recursive: true });
+
+      writeFileSync(join(skillsDir, "launch-playwright.md"), "Playwright instructions");
+      registry.discoverLocalSkills(paths);
+
+      expect(registry.getSkillByName("launchplaywright")?.id).toBe("claude:launch-playwright");
+      expect(registry.getSkillByName("LAUNCH-PLAYWRIGHT")?.id).toBe("claude:launch-playwright");
+      expect(registry.getSkillByName("playwright")?.id).toBe("claude:launch-playwright");
+    });
+
+    it("prefers exact match over fuzzy match", () => {
+      const paths = createTestPaths(tempDir);
+      const projectDir = join(tempDir, "project");
+      const skillsDir = join(projectDir, ".claude", "skills");
+      mkdirSync(skillsDir, { recursive: true });
+
+      writeFileSync(join(skillsDir, "playwright.md"), "Exact match");
+      writeFileSync(join(skillsDir, "launch-playwright.md"), "Fuzzy match");
+      registry.discoverLocalSkills(paths);
+
+      expect(registry.getSkillByName("playwright")?.id).toBe("claude:playwright");
+    });
+  });
+
   describe("discoverLocalSkills", () => {
     it("discovers skills from global directory", () => {
       const paths = createTestPaths(tempDir);

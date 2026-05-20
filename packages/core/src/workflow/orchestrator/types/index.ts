@@ -21,7 +21,7 @@ export type {
   CreateOptions,
   ModelInfo,
   StopOptions,
-} from "../agent.ts";
+} from "./adapter.ts";
 
 // Model registry types
 export { ModelRegistry } from "../registry.ts";

@@ -9,24 +9,38 @@ describe("memoryWriteToolImpl", () => {
   let mockRead: ReturnType<typeof vi.fn>;
   let mockAppendSession: ReturnType<typeof vi.fn>;
   let mockUpdatePatterns: ReturnType<typeof vi.fn>;
+  let mockCreate: ReturnType<typeof vi.fn>;
   let mockL1Exists: ReturnType<typeof vi.fn>;
+  let mockGetByExternalId: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    mockRead = vi.fn();
+    mockRead = vi.fn().mockResolvedValue({ latestStatus: "implementing" });
     mockAppendSession = vi.fn().mockResolvedValue(undefined);
     mockUpdatePatterns = vi.fn().mockResolvedValue(undefined);
+    mockCreate = vi.fn().mockResolvedValue({ latestStatus: "planning" });
     mockL1Exists = vi.fn().mockReturnValue(true);
+    mockGetByExternalId = vi.fn().mockResolvedValue({
+      id: "uuid-123",
+      externalId: "TEST-123",
+      title: "Test Issue",
+      status: "implementing",
+    });
 
     mockContext = {
       issueId: "TEST-123",
       worktreePath: "/tmp/test",
-      db: {} as any,
+      db: {
+        issues: {
+          getByExternalId: mockGetByExternalId,
+        },
+      } as any,
       hooks: {} as any,
       memory: {
         l1: {
           get: vi.fn().mockReturnValue({
             exists: mockL1Exists,
             read: mockRead,
+            create: mockCreate,
             appendSession: mockAppendSession,
             updatePatterns: mockUpdatePatterns,
           }),
@@ -139,23 +153,48 @@ describe("memoryWriteToolImpl", () => {
     });
   });
 
+  describe("auto-creation", () => {
+    it("auto-creates session memory when it does not exist", async () => {
+      mockL1Exists.mockReturnValue(false);
+      // After create(), read returns the created memory
+      mockRead.mockResolvedValue({ latestStatus: "implementing" });
+
+      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(mockCreate).toHaveBeenCalledWith("TEST-123: Test Issue", "implementing");
+      expect(mockAppendSession).toHaveBeenCalled();
+    });
+
+    it("auto-creates then writes patterns", async () => {
+      mockL1Exists.mockReturnValue(false);
+
+      const result = await memoryWriteToolImpl({ patterns: ["Pattern A"] }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(mockCreate).toHaveBeenCalled();
+      expect(mockUpdatePatterns).toHaveBeenCalledWith(["Pattern A"]);
+    });
+  });
+
   describe("error handling", () => {
-    it("returns error when L1 context not found", async () => {
+    it("returns error when L1 context not registered (no worktree)", async () => {
       (mockContext.memory.l1.get as ReturnType<typeof vi.fn>).mockReturnValue(null);
 
       const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("No session memory found");
+      expect(result.error).toContain("No worktree registered");
     });
 
-    it("returns error when L1 context does not exist on disk", async () => {
+    it("returns error when issue not found in database", async () => {
       mockL1Exists.mockReturnValue(false);
+      mockGetByExternalId.mockResolvedValue(null);
 
       const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("No session memory found");
+      expect(result.error).toContain("not found in database");
     });
 
     it("returns error when read fails", async () => {

@@ -74,15 +74,13 @@ export class GitOperationTracker {
       // Check timeout
       const elapsed = now - this.operation.startTime;
       if (elapsed > this.timeoutMs) {
-        const type = this.operation.type;
-        const minutes = Math.round(elapsed / 60000);
-        const cmds = this.operation.commandCount;
+        const { type, commandCount } = this.operation;
 
         // Clear the operation so subsequent commands don't keep hitting timeout
         this.operation = null;
 
         return (
-          `⏱️ Git ${type} operation timed out after ${minutes} minutes and ${cmds} commands.\n\n` +
+          `⏱️ Git ${type} operation timed out after ${Math.round(elapsed / 60000)} minutes and ${commandCount} commands.\n\n` +
           `The operation is taking too long, likely due to complex conflicts.\n\n` +
           `**Required Actions:**\n` +
           `1. Abort the operation: \`git ${type} --abort\`\n` +

@@ -12,17 +12,8 @@ import { PromptEngineer } from "#workflow/tracker";
 
 import type { HarnessOrchestrator } from "./orchestrator.ts";
 import type { ModelRegistry } from "./registry.ts";
-import type {
-  AdapterInfo,
-  AgentHarness,
-  AgentState,
-  CreateOptions,
-  ModelInfo,
-  StopOptions,
-} from "./types/adapter.ts";
+import type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./types/adapter.ts";
 import type { OrchestratorTool } from "./types/tools.ts";
-
-export type { AdapterInfo, AgentHarness, AgentState, CreateOptions, ModelInfo, StopOptions };
 
 /** Base class for agent adapters. Subclasses override doStart/doStop/sendMessage/isRunning. */
 export abstract class AgentAdapter {
@@ -68,12 +59,9 @@ export abstract class AgentAdapter {
     });
   }
   get tools(): OrchestratorTool[] {
-    return this.orchestrator.getTools().filter((tool) => {
-      // No sources specified = available for all sources
-      if (!tool.sources || tool.sources.length === 0) return true;
-      // Check if issue source matches any of the tool's sources
-      return tool.sources.includes(this.issue.source);
-    });
+    return this.orchestrator
+      .getTools()
+      .filter((t) => !t.sources?.length || t.sources.includes(this.issue.source));
   }
   get db(): Database {
     return this.orchestrator.db;
@@ -86,6 +74,9 @@ export abstract class AgentAdapter {
   }
   get issueId(): string {
     return this.issue.externalId;
+  }
+  get skills() {
+    return this.orchestrator.skillRegistry.getSkills();
   }
 
   /** Factory method - creates and initializes an adapter instance. */
@@ -119,6 +110,7 @@ export abstract class AgentAdapter {
     const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
       isResume: existsSync(join(this.worktreePath, ".workhorse", "session")),
       tools: this.tools,
+      skills: this.skills,
     });
     this.systemPrompt = systemPrompt;
     this.initialMessage = initialMessage;

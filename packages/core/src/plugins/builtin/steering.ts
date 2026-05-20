@@ -85,24 +85,18 @@ This helps future sessions understand what was done and avoid repeating mistakes
     condition: {
       status: ["implementing", "debugging"],
       when: (steerCtx) => {
-        const now = Date.now();
-        const windowStart = now - CONFLICT_WINDOW_MS;
+        const windowStart = Date.now() - CONFLICT_WINDOW_MS;
 
-        // Get recent bash tool calls within the time window
-        const recentBashCalls = steerCtx.toolHistory.filter(
-          (t: { name: string; args: unknown; timestamp: number }) =>
-            t.name === "bash" && t.timestamp >= windowStart,
+        // Count conflict-related bash calls within the time window
+        return (
+          steerCtx.toolHistory.filter((t: { name: string; args: unknown; timestamp: number }) => {
+            if (t.name !== "bash" || t.timestamp < windowStart) return false;
+            if (typeof t.args !== "object" || t.args === null) return false;
+            const args = t.args as Record<string, unknown>;
+            if (typeof args.command !== "string") return false;
+            return GIT_CONFLICT_PATTERNS.some((p) => p.test(args.command as string));
+          }).length >= MAX_CONFLICT_ATTEMPTS
         );
-
-        // Count how many are conflict-related
-        const conflictCalls = recentBashCalls.filter((t: { args: unknown }) => {
-          if (typeof t.args !== "object" || t.args === null) return false;
-          const args = t.args as Record<string, unknown>;
-          if (typeof args.command !== "string") return false;
-          return GIT_CONFLICT_PATTERNS.some((p) => p.test(args.command as string));
-        });
-
-        return conflictCalls.length >= MAX_CONFLICT_ATTEMPTS;
       },
     },
     reminder: `⚠️ **Git Conflict Loop Detected**
