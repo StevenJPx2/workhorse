@@ -24,6 +24,18 @@ export interface RestrictedBashOptions extends PathValidationOptions {
   additionalEnv?: NodeJS.ProcessEnv;
 }
 
+/**
+ * Default environment variables to prevent interactive prompts that brick the agent.
+ * - GIT_EDITOR=true: Prevents git from opening an editor for commit messages
+ * - GIT_SEQUENCE_EDITOR=true: Prevents git from opening an editor for interactive rebase
+ * - GIT_PAGER=cat: Prevents git from using a pager that waits for input
+ */
+const NON_INTERACTIVE_ENV: NodeJS.ProcessEnv = {
+  GIT_EDITOR: "true",
+  GIT_SEQUENCE_EDITOR: "true",
+  GIT_PAGER: "cat",
+};
+
 const DEFAULT_TMP_DIR = tmpdir();
 
 /** Default timeout for bash commands (5 minutes in milliseconds). */
@@ -82,9 +94,11 @@ export function createRestrictedBashOperations(options: RestrictedBashOptions): 
     exec: async (command, cwd, execOptions) => {
       // assertPathAllowed throws if cwd is outside allowed directories
       // Apply default 5-minute timeout unless explicitly overridden
+      // Inject NON_INTERACTIVE_ENV to prevent git/other tools from opening editors
       return localOps.exec(command, assertPathAllowed(cwd, pathOptions), {
         ...execOptions,
         timeout: execOptions.timeout ?? DEFAULT_BASH_TIMEOUT_MS,
+        env: { ...NON_INTERACTIVE_ENV, ...execOptions.env },
       });
     },
   };
