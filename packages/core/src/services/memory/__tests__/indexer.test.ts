@@ -1,12 +1,13 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
 
-import { MemoryIndexer } from "../indexer/index.ts";
+import { MemoryIndexer } from "../indexer";
 import { L1Store } from "../l1/store.ts";
 import { L2Store } from "../l2.ts";
 
@@ -18,11 +19,21 @@ const REPO_ROOT = join(TEST_DIR, "repo");
 // Skip tests in CI — the HuggingFace model download is flaky
 const isCI = process.env["CI"] === "true";
 
+/** Create a mock database for testing */
+function createMockDb(): Database {
+  return {
+    issues: {
+      getByExternalId: vi.fn().mockResolvedValue(undefined),
+    },
+  } as unknown as Database;
+}
+
 describe.skipIf(isCI)("MemoryIndexer", () => {
   let l1: L1Store;
   let l2: L2Store;
   let indexer: MemoryIndexer;
   let hooks: HookEmitter;
+  let db: Database;
 
   beforeEach(async () => {
     // Clean up and create test directories
@@ -34,9 +45,10 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
     mkdirSync(REPO_ROOT, { recursive: true });
 
     hooks = createMockHooks();
+    db = createMockDb();
     l1 = new L1Store(WORKTREES_ROOT);
     l2 = await L2Store.create(DB_PATH);
-    indexer = new MemoryIndexer(l1, l2, hooks);
+    indexer = new MemoryIndexer(l1, l2, hooks, db);
   });
 
   afterEach(async () => {
@@ -256,6 +268,122 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       // Should not throw and L2 should be empty for this issue
       const results = await l2.search("NONEXISTENT");
       expect(results.length).toBe(0);
+    });
+  });
+
+  describe("idle indexing (via agent.idle hook)", () => {
+    it("indexes session memory on agent.idle hook with debounce", async () => {
+      vi.useFakeTimers();
+
+      const issueId = "AM-IDLE";
+      const internalId = "uuid-idle";
+      const worktreePath = join(WORKTREES_ROOT, issueId);
+      mkdirSync(join(worktreePath, ".workhorse"), { recursive: true });
+
+      // Register and create L1 context
+      const l1ctx = l1.register(issueId, worktreePath);
+      await l1ctx.create("AM-IDLE: Idle test feature", "implementing");
+      await l1ctx.updatePatterns(["Pattern from idle"]);
+
+      // Mock db to return the issue
+      vi.mocked(db.issues.getByExternalId).mockResolvedValue({
+        id: internalId,
+        externalId: issueId,
+        source: "jira",
+      } as any);
+
+      // Initialize indexer to set up hooks
+      indexer.initialize();
+
+      // Emit the idle hook
+      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+
+      // Advance timers past the debounce window (5 seconds)
+      await vi.advanceTimersByTimeAsync(5100);
+
+      vi.useRealTimers();
+
+      // Wait a bit for async indexing to complete
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Verify session was indexed
+      const results = await l2.search("Idle test feature", { returnContent: true });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0]!.metadata?.externalId).toBe(issueId);
+    });
+
+    it("does not index on idle if issue not found in db", async () => {
+      vi.useFakeTimers();
+
+      const issueId = "AM-NOTFOUND";
+      const worktreePath = join(WORKTREES_ROOT, issueId);
+      mkdirSync(join(worktreePath, ".workhorse"), { recursive: true });
+
+      const l1ctx = l1.register(issueId, worktreePath);
+      await l1ctx.create("AM-NOTFOUND: Test", "planning");
+
+      // Mock db to return undefined (issue not found)
+      vi.mocked(db.issues.getByExternalId).mockResolvedValue(undefined);
+
+      indexer.initialize();
+
+      hooks.emit("agent.idle", { issueId, status: "planning", source: "jira" });
+
+      await vi.advanceTimersByTimeAsync(5100);
+      vi.useRealTimers();
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Should not have indexed anything
+      const results = await l2.search("AM-NOTFOUND");
+      expect(results.length).toBe(0);
+    });
+
+    it("debounces rapid idle events", async () => {
+      const issueId = "AM-DEBOUNCE";
+      const internalId = "uuid-debounce";
+      const worktreePath = join(WORKTREES_ROOT, issueId);
+      mkdirSync(join(worktreePath, ".workhorse"), { recursive: true });
+
+      const l1ctx = l1.register(issueId, worktreePath);
+      await l1ctx.create("AM-DEBOUNCE: Debounce test", "implementing");
+
+      vi.mocked(db.issues.getByExternalId).mockResolvedValue({
+        id: internalId,
+        externalId: issueId,
+        source: "jira",
+      } as any);
+
+      // Track index calls via hook emissions
+      let indexCount = 0;
+      hooks.on("memory.indexed", () => {
+        indexCount++;
+      });
+
+      // Create indexer with very short debounce for testing
+      const shortDebounceIndexer = new MemoryIndexer(l1, l2, hooks, db, { debounceMs: 50 });
+      shortDebounceIndexer.initialize();
+
+      // Emit multiple idle events rapidly (within debounce window)
+      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      await new Promise((r) => setTimeout(r, 20));
+      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      await new Promise((r) => setTimeout(r, 20));
+      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+
+      // Should not have indexed yet (still within debounce window)
+      expect(indexCount).toBe(0);
+
+      // Wait for debounce to fire
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Should have indexed exactly once
+      expect(indexCount).toBe(1);
+
+      // Verify content was indexed
+      const results = await l2.search("Debounce test", { returnContent: true });
+      expect(results.length).toBeGreaterThan(0);
+
+      shortDebounceIndexer.dispose();
     });
   });
 

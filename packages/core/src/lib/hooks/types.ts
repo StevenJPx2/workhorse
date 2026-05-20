@@ -94,6 +94,13 @@ export type HookCallbacks = {
   // Skills
   "skill.registered": (payload: { skill: ResolvedSkill }) => void | Promise<void>;
 
+  // Memory indexing
+  "memory.indexed": (payload: {
+    issueId: string;
+    documentCount: number;
+    trigger: "idle" | "stop";
+  }) => void | Promise<void>;
+
   // TUI events (registered by workhorse plugin)
   "tui.register_renderer": (payload: {
     id: string;

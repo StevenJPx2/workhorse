@@ -8,4 +8,4 @@
  */
 
 // Operations
-export { createWorktree, removeWorktree } from "./operations.ts";
+export { createWorktree, removeWorktree, syncWorktree } from "./operations.ts";

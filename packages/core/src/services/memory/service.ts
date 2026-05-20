@@ -1,7 +1,7 @@
 import type { Database } from "#db";
 import type { HookEmitter } from "#lib/hooks";
 
-import { MemoryIndexer } from "./indexer/index.ts";
+import { MemoryIndexer } from "./indexer";
 import { L1Store } from "./l1/store.ts";
 import { L2Store } from "./l2.ts";
 import { NotificationService } from "./notifications.ts";
@@ -71,9 +71,9 @@ export class MemoryService {
   }): Promise<MemoryService> {
     const l1 = new L1Store(options.worktreesRoot);
     const l2 = await L2Store.create(options.memoryDbPath);
-    const indexer = new MemoryIndexer(l1, l2, options.hooks);
+    const indexer = new MemoryIndexer(l1, l2, options.hooks, options.db);
 
-    // Initialize indexer to start listening for agent.stop.post events
+    // Initialize indexer to start listening for agent.stop.post and agent.idle events
     indexer.initialize();
 
     return new MemoryService(l1, l2, indexer, new NotificationService(options.db, options.hooks));

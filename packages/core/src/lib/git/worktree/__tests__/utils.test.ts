@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildBranchName, buildWorktreePath, parseWorktreeList } from "./utils.ts";
+import { buildBranchName, buildWorktreePath, parseWorktreeList } from "../utils.ts";
 
 describe("buildWorktreePath", () => {
   it("builds path from repo path and issue ID", () => {

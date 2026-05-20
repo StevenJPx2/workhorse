@@ -173,7 +173,11 @@ await memory.l2.close();
 
 The Memory Indexer (`MemoryIndexer`) orchestrates data flow into L2, reading from L1 and the filesystem:
 
-1. **Session memories** — When an agent stops (`agent.stop.post` hook), the indexer reads the L1 context.md and indexes:
+1. **Session memories** — Indexed at two points:
+   - **On agent stop** (`agent.stop.post` hook) — Final indexing when agent completes
+   - **On agent idle** (`agent.idle` hook) — Incremental indexing during idle periods (debounced at 5 seconds)
+
+   The indexer reads the L1 context.md and indexes:
    - Session summary (as `session_memory`)
    - Discovered patterns (as `code_context`)
    - Learnings (as `decision`)

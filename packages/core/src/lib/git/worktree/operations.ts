@@ -10,9 +10,59 @@ import type { WorktreeInfo } from "./types.ts";
 import { buildBranchName, buildWorktreePath, execGit, parseWorktreeList } from "./utils.ts";
 
 /**
+ * Sync an existing worktree branch with the latest commits from its parent branch.
+ *
+ * Fetches from origin then merges `origin/{baseBranch}` into the worktree's current
+ * branch. If the merge produces conflicts the worktree is left in a conflicted state
+ * and the function returns `false` so callers can surface the error to the user.
+ *
+ * @param repoPath  - Path to the main git repository
+ * @param worktreePath - Path to the existing worktree
+ * @param baseBranch - Parent branch to pull from (default: "main")
+ * @returns true if sync succeeded (including already up-to-date), false on failure
+ */
+export async function syncWorktree(
+  repoPath: string,
+  worktreePath: string,
+  baseBranch: string = "main",
+): Promise<boolean> {
+  // Fetch latest from origin
+  const fetchResult = await execGit(["git", "fetch", "origin"], repoPath);
+  if (!fetchResult.success) {
+    console.error(`Failed to fetch from origin: ${fetchResult.error}`);
+    return false;
+  }
+
+  // Merge parent branch into the worktree branch (fast-forward when possible)
+  if (
+    await execGit(["git", "merge", "--ff-only", `origin/${baseBranch}`], worktreePath).then(
+      (r) => r.success,
+    )
+  ) {
+    return true;
+  }
+
+  // Fast-forward failed — branches have diverged, fall back to a regular merge
+  const mergeNoFfResult = await execGit(
+    ["git", "merge", `origin/${baseBranch}`, "--no-edit"],
+    worktreePath,
+  );
+
+  if (!mergeNoFfResult.success) {
+    console.error(
+      `Failed to sync worktree at ${worktreePath} with origin/${baseBranch}: ${mergeNoFfResult.error}`,
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Create a git worktree for the given issue.
  *
- * If a worktree already exists for this issue, returns the existing one.
+ * If a worktree already exists for this issue, syncs it with the latest commits
+ * from the parent branch and returns it.
  * Creates a new branch from the base branch if one doesn't exist.
  *
  * @param repoPath - Path to the main git repository
@@ -35,6 +85,8 @@ export async function createWorktree(
   if (existing) {
     // Verify the path actually exists on disk
     if (existsSync(existing.path)) {
+      // Sync the branch with the latest from the parent before handing it to the agent
+      await syncWorktree(repoPath, existing.path, baseBranch);
       return existing;
     }
     // Worktree is registered but path doesn't exist on disk - prune the stale reference

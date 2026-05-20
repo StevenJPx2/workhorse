@@ -4,7 +4,7 @@
 export { generateSystemInbox } from "./inbox.ts";
 
 // Memory Indexer (orchestrates L1 → L2 data flow)
-export { MemoryIndexer } from "./indexer/index.ts";
+export { MemoryIndexer } from "./indexer";
 
 // L1: Session memory store
 export { L1Context, L1Store, parseSessionMemory, serializeSessionMemory } from "./l1";

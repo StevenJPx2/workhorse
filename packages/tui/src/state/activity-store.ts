@@ -128,6 +128,22 @@ export function initActivityStore(hooks: HookEmitter) {
     },
   );
 
+  // Handle memory indexing events
+  hooks.on(
+    "memory.indexed",
+    ({
+      issueId,
+      documentCount,
+      trigger,
+    }: {
+      issueId: string;
+      documentCount: number;
+      trigger: "idle" | "stop";
+    }) => {
+      addItem(issueId, { type: "memory", documentCount, trigger, timestamp: new Date() });
+    },
+  );
+
   // Handle monitor errors - show as toast
   hooks.on(
     "monitor.error",

@@ -85,7 +85,6 @@ export abstract class AgentAdapter {
 
   /** Factory method - creates and initializes an adapter instance. */
   static async create(options: CreateOptions): Promise<AgentAdapter> {
-    // Cast to any to allow instantiation of abstract class via concrete subclass
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const adapter = new (this as any)(options) as AgentAdapter;
     await adapter.initialize(options);
@@ -95,32 +94,31 @@ export abstract class AgentAdapter {
   /** Initialize worktree and build prompt. Called by create() after construction. */
   protected async initialize(options: CreateOptions): Promise<void> {
     this.hooks.emit("agent.create.pre", { issue: this.issue, options });
-
-    // Create or reuse worktree (createWorktree handles existing worktrees)
     const worktree = await createWorktree(
       options.repoPath,
       this.issue.externalId,
       this.issue.issueType,
       options.baseBranch ?? "main",
     );
-
-    if (!worktree) {
-      throw new Error(`Failed to create worktree for ${this.issue.externalId}`);
-    }
+    if (!worktree) throw new Error(`Failed to create worktree for ${this.issue.externalId}`);
 
     this.worktreePath = worktree.path;
     await this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
+
+    // Register L1 context for session memory
+    const l1Context = this.memory.l1.register(this.issue.externalId, worktree.path);
+    if (!l1Context.exists()) {
+      await l1Context.create(`${this.issue.externalId}: ${this.issue.title}`, this.issue.status);
+    }
 
     const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
       isResume: existsSync(join(this.worktreePath, ".workhorse", "session")),
       tools: this.tools,
     });
-
     this.systemPrompt = systemPrompt;
     this.initialMessage = initialMessage;
 
-    // Push notifications to agent
-    // Note: issueId in hook payload is external ID (consistent with TUI activity store keying)
+    // Push notifications to agent (issueId is external ID for TUI consistency)
     this.hooks.on("notification.created", async ({ notification, issueId }) => {
       if (this.issueId !== issueId || this.state !== "running") return;
       await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch((err) =>

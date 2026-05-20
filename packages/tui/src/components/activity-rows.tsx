@@ -41,6 +41,9 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
       <Match when={props.item.type === "user_message"}>
         <UserMessageRow item={props.item as ActivityItem & { type: "user_message" }} />
       </Match>
+      <Match when={props.item.type === "memory"}>
+        <MemoryRow item={props.item as ActivityItem & { type: "memory" }} />
+      </Match>
     </Switch>
   );
 }
@@ -117,6 +120,24 @@ function IdleRow(props: { timestamp: Date }) {
       </text>
       <text fg={theme.colors.dim}>{formatTime(props.timestamp)}</text>
       <text fg={theme.colors.dim}>───</text>
+    </box>
+  );
+}
+
+/** Memory indexing indicator */
+function MemoryRow(props: { item: ActivityItem & { type: "memory" } }) {
+  const theme = getTheme();
+  const label = props.item.trigger === "idle" ? "indexed (idle)" : "indexed";
+
+  return (
+    <box flexDirection="row" paddingLeft={1} gap={1}>
+      <text fg={theme.colors.dim}>🧠</text>
+      <text fg={theme.colors.dim}>
+        <i>
+          memory {label} ({props.item.documentCount} docs)
+        </i>
+      </text>
+      <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>
     </box>
   );
 }
