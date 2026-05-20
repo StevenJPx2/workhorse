@@ -30,8 +30,13 @@ export function AgentList(props: AgentListProps) {
   // Check if this component is focused
   const isFocused = () => ui.focusedComponent() === "agents";
 
-  // Get spawning issues as an array
-  const spawningIssues = () => Array.from(ui.spawningIssues().values());
+  // Get spawning issues that don't already have an agent (avoid duplicate display)
+  const spawningIssues = () => {
+    const agentIds = new Set(agents().map((a) => a.issueId));
+    return Array.from(ui.spawningIssues().values()).filter(
+      (issue) => !agentIds.has(issue.externalId),
+    );
+  };
 
   const getStatusColor = (state: string) => {
     switch (state) {
