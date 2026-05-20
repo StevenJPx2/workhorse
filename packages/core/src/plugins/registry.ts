@@ -74,7 +74,7 @@ export class PluginRegistry {
       if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts"))) continue;
 
       await this.load(fullPath).catch((error) => {
-        console.warn(`Skipping invalid plugin "${fullPath}":`, error.message);
+        console.warn(`Skipping invalid plugin "${fullPath}": ${error.message}`);
       });
     }
   }
