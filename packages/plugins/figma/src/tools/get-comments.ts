@@ -59,7 +59,6 @@ export function createGetCommentsTool(client: FigmaClient): OrchestratorTool {
         }
 
         // Group top-level comments and their replies
-        const roots = comments.filter((c) => !c.parent_id);
         const repliesMap = new Map<string, typeof comments>();
         for (const c of comments.filter((c) => c.parent_id)) {
           const bucket = repliesMap.get(c.parent_id!) ?? [];
@@ -67,23 +66,23 @@ export function createGetCommentsTool(client: FigmaClient): OrchestratorTool {
           repliesMap.set(c.parent_id!, bucket);
         }
 
-        const formatted = roots.map((root) => {
-          const replies = repliesMap.get(root.id) ?? [];
-          const thread = [
-            `[${root.id}] **${root.user.handle}** (${root.created_at})${root.resolved_at ? " ✅ resolved" : ""}`,
-            root.message,
-          ];
-          for (const reply of replies) {
-            thread.push(
-              `  ↳ [${reply.id}] **${reply.user.handle}** (${reply.created_at}): ${reply.message}`,
-            );
-          }
-          return thread.join("\n");
-        });
-
         return {
           success: true,
-          output: formatted.join("\n\n---\n\n"),
+          output: comments
+            .filter((c) => !c.parent_id)
+            .map((root) => {
+              const thread = [
+                `[${root.id}] **${root.user.handle}** (${root.created_at})${root.resolved_at ? " ✅ resolved" : ""}`,
+                root.message,
+              ];
+              for (const reply of repliesMap.get(root.id) ?? []) {
+                thread.push(
+                  `  ↳ [${reply.id}] **${reply.user.handle}** (${reply.created_at}): ${reply.message}`,
+                );
+              }
+              return thread.join("\n");
+            })
+            .join("\n\n---\n\n"),
         };
       } catch (error) {
         return {

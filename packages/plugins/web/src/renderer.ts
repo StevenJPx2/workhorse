@@ -44,11 +44,10 @@ export const webRenderer = (input: ActivityInput): RenderedActivity | null => {
     }
     case "web_search": {
       const query = String(args.query ?? "");
-      const truncated = query.length > 40 ? `${query.slice(0, 40)}...` : query;
       return {
         icon: "🔍",
         title: "Web Search",
-        subtitle: truncated,
+        subtitle: query.length > 40 ? `${query.slice(0, 40)}...` : query,
         style: "inline",
         color: "accent",
       };

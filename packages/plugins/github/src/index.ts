@@ -82,9 +82,6 @@ export const githubPlugin = definePlugin({
 
     const client = new GitHubClient();
 
-    // Create attachment service for downloading/storing images
-    const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
-
     // Register issue parser for GitHub refs and URLs
     ctx.tracker.registerParser(createGitHubParserOptions(client));
 
@@ -110,7 +107,7 @@ export const githubPlugin = definePlugin({
       ctx.db,
       ctx.hooks,
       ctx.monitors,
-      attachmentService,
+      new AttachmentService(ctx.paths.attachmentsDir),
     )) {
       ctx.orchestrator.registerTool(tool);
     }

@@ -45,13 +45,11 @@ export function extractFigmaRef(url: string): FigmaRef | null {
 
   const fileKey = match[2] as string; // capture group 2 always exists when match succeeds
   const rawSlug = match[3] as string | undefined;
-  const displayName = rawSlug ? decodeURIComponent(rawSlug.replace(/-/g, " ")) : undefined;
 
   // Extract node-id query param if present
   let nodeId: string | undefined;
   try {
-    const parsed = new URL(url.trim());
-    const raw = parsed.searchParams.get("node-id");
+    const raw = new URL(url.trim()).searchParams.get("node-id");
     if (raw) {
       // Figma encodes colons as hyphens in the URL, normalise to "x:y" form
       nodeId = raw.replace(/-/g, ":");
@@ -61,9 +59,12 @@ export function extractFigmaRef(url: string): FigmaRef | null {
   }
 
   // Canonical URL: strip query/hash for file-level, keep node-id for frame-level
-  const canonical = nodeId
-    ? `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}?node-id=${nodeId}`
-    : `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}`;
-
-  return { fileKey, nodeId, displayName, url: canonical };
+  return {
+    fileKey,
+    nodeId,
+    displayName: rawSlug ? decodeURIComponent(rawSlug.replace(/-/g, " ")) : undefined,
+    url: nodeId
+      ? `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}?node-id=${nodeId}`
+      : `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}`,
+  };
 }

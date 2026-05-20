@@ -71,9 +71,6 @@ export const jiraPlugin = definePlugin({
     // Create Jira REST API client with credentials from keychain
     const client = new AtlassianClient(createCredentialGetter());
 
-    // Create attachment service for downloading Jira attachments
-    const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
-
     // Register issue parser for Jira keys and URLs
     // Pass hooks so parser can emit issue.links.discovered for cross-plugin enrichment
     ctx.tracker.registerParser(createJiraParserOptions(client, ctx.hooks));
@@ -97,7 +94,11 @@ export const jiraPlugin = definePlugin({
     registerCrossPluginSync(ctx, client, ctx.db);
 
     // Register Jira tools with orchestrator (including attachment tool)
-    for (const tool of createJiraTools(client, ctx.hooks, attachmentService)) {
+    for (const tool of createJiraTools(
+      client,
+      ctx.hooks,
+      new AttachmentService(ctx.paths.attachmentsDir),
+    )) {
       ctx.orchestrator.registerTool(tool);
     }
 

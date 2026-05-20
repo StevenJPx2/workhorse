@@ -7,9 +7,7 @@ import { figmaRenderer } from "../renderer.ts";
 import type { ActivityInput } from "../renderer.ts";
 import type { Notification } from "workhorse-core";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeNotification(overrides: Partial<Notification> = {}): Notification {
   return {
@@ -27,9 +25,7 @@ function makeNotification(overrides: Partial<Notification> = {}): Notification {
   } as Notification;
 }
 
-// ---------------------------------------------------------------------------
 // Notification rendering
-// ---------------------------------------------------------------------------
 
 describe("figmaRenderer — notifications", () => {
   it("returns null for non-figma notifications", () => {
@@ -92,9 +88,7 @@ describe("figmaRenderer — notifications", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Tool-call rendering
-// ---------------------------------------------------------------------------
 
 describe("figmaRenderer — tool calls", () => {
   it("returns null for non-figma tools", () => {

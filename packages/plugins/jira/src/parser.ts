@@ -45,12 +45,8 @@ export function createJiraParserOptions(
       // Emit issue.links.discovered if links were found
       const links = parsed.metadata.links as ExtractedLink[] | undefined;
       if (hooks && links && links.length > 0) {
-        // We need the Issue (with id) but we don't have it yet - the Tracker will create it.
-        // Instead, emit after mapping but with the ParsedIssue data.
-        // The hook payload expects Issue but we can emit with ParsedIssue since the shape overlaps.
-        // The Tracker will handle the actual persistence and can re-emit if needed.
         hooks.emit("issue.links.discovered", {
-          issue: parsed as any, // ParsedIssue -> Issue shape is compatible for this purpose
+          issue: parsed,
           links,
         });
       }

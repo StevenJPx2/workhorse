@@ -7,8 +7,8 @@
  * @module workhorse-plugin-pi-adapter/registry
  */
 
-import { type ModelInfo, ModelRegistry } from "workhorse-core";
 import { AuthStorage, ModelRegistry as PiModelRegistry } from "@earendil-works/pi-coding-agent";
+import { type ModelInfo, ModelRegistry } from "workhorse-core";
 
 type Model = ReturnType<PiModelRegistry["getAll"]>[number];
 
@@ -30,7 +30,7 @@ function toModelInfo(model: Model, isDefault: boolean): ModelInfo {
     provider: model.provider,
     id: model.id,
     name: model.name,
-    description: (model as any).description ?? "",
+    description: "",
     contextWindow: model.contextWindow,
     reasoning: model.reasoning,
     isDefault,

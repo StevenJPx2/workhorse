@@ -29,9 +29,7 @@ beforeAll(() => {
   client = new FigmaClient(async () => ({ accessToken: ACCESS_TOKEN }));
 });
 
-// ---------------------------------------------------------------------------
 // FigmaClient.fetchFile
-// ---------------------------------------------------------------------------
 
 describe.skipIf(SKIP)("FigmaClient.fetchFile", () => {
   it("fetches a real Figma file and returns its name", async () => {
@@ -48,9 +46,7 @@ describe.skipIf(SKIP)("FigmaClient.fetchFile", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // FigmaClient.fetchFileVersion
-// ---------------------------------------------------------------------------
 
 describe.skipIf(SKIP)("FigmaClient.fetchFileVersion", () => {
   it("returns the version string", async () => {
@@ -61,9 +57,7 @@ describe.skipIf(SKIP)("FigmaClient.fetchFileVersion", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // FigmaClient.fetchComments
-// ---------------------------------------------------------------------------
 
 describe.skipIf(SKIP)("FigmaClient.fetchComments", () => {
   it("returns an array of comments (may be empty)", async () => {
@@ -80,9 +74,7 @@ describe.skipIf(SKIP)("FigmaClient.fetchComments", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // canParseFigma (utility function)
-// ---------------------------------------------------------------------------
 
 describe.skipIf(SKIP)("canParseFigma", () => {
   it("recognises the test file URL", () => {
@@ -94,9 +86,7 @@ describe.skipIf(SKIP)("canParseFigma", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // extractFigmaRef (utility function)
-// ---------------------------------------------------------------------------
 
 describe.skipIf(SKIP)("extractFigmaRef", () => {
   it("extracts the correct fileKey from the test URL", () => {

@@ -7,7 +7,12 @@
 // oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
 import { createLocalParserOptions } from "./tools/parser.ts";
-import { acknowledgeTool, escalateTool, updateStatusTool } from "./tools/definitions.ts";
+import {
+  acknowledgeTool,
+  escalateTool,
+  memorySearchTool,
+  updateStatusTool,
+} from "./tools/definitions";
 import { createLoadSkillTool } from "./tools/skill.ts";
 import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers.ts";
 import { registerBuiltinSkills } from "./skills/register.ts";
@@ -22,6 +27,7 @@ export const corePlugin = definePlugin({
         "workhorse_acknowledge",
         "workhorse_update_status",
         "workhorse_escalate",
+        "workhorse_memory_search",
         "load_skill",
       ],
       parsers: ["local"],
@@ -33,6 +39,7 @@ export const corePlugin = definePlugin({
     ctx.orchestrator.registerTool(acknowledgeTool);
     ctx.orchestrator.registerTool(updateStatusTool);
     ctx.orchestrator.registerTool(escalateTool);
+    ctx.orchestrator.registerTool(memorySearchTool);
     ctx.orchestrator.registerTool(createLoadSkillTool(ctx.orchestrator));
 
     // Register builtin skills

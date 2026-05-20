@@ -5,11 +5,9 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { FigmaClient } from "../client.ts";
-import { createFigmaTools } from "../tools/index.ts";
+import { createFigmaTools } from "../tools";
 
-// ---------------------------------------------------------------------------
 // Shared fixtures
-// ---------------------------------------------------------------------------
 
 function makeDb(externalId: string, source = "figma") {
   return {
@@ -84,9 +82,7 @@ const mockComments = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // createFigmaTools
-// ---------------------------------------------------------------------------
 
 describe("createFigmaTools", () => {
   it("returns exactly three tools", () => {
@@ -99,9 +95,7 @@ describe("createFigmaTools", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // figma_get_file
-// ---------------------------------------------------------------------------
 
 describe("figma_get_file", () => {
   function getTool(client: FigmaClient) {
@@ -181,9 +175,7 @@ describe("figma_get_file", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // figma_get_comments
-// ---------------------------------------------------------------------------
 
 describe("figma_get_comments", () => {
   function getTool(client: FigmaClient) {
@@ -260,9 +252,7 @@ describe("figma_get_comments", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // figma_post_comment
-// ---------------------------------------------------------------------------
 
 describe("figma_post_comment", () => {
   function getTool(client: FigmaClient) {

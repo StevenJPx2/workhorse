@@ -34,24 +34,26 @@ export function createGetCommentsTool(client: AtlassianClient): OrchestratorTool
           };
         }
 
-        const jiraIssue = await client.fetchIssue(issue.externalId);
-        const comments =
-          jiraIssue.fields.comment?.comments.map((c) => {
-            const mediaRefs = extractMediaRefsFromAdf(c.body);
-            return {
-              id: c.id,
-              author: c.author.displayName,
-              body: c.body,
-              created: c.created,
-              parentId: c.parentId,
-              // Include media count if comment has embedded images/files
-              ...(mediaRefs.length > 0 && { mediaCount: mediaRefs.length }),
-            };
-          }) ?? [];
-
         return {
           success: true,
-          output: JSON.stringify(comments, null, 2),
+          output: JSON.stringify(
+            await client.fetchIssue(issue.externalId).then(
+              (jiraIssue) =>
+                jiraIssue.fields.comment?.comments.map((c) => ({
+                  id: c.id,
+                  author: c.author.displayName,
+                  body: c.body,
+                  created: c.created,
+                  parentId: c.parentId,
+                  // Include media count if comment has embedded images/files
+                  ...(extractMediaRefsFromAdf(c.body).length > 0 && {
+                    mediaCount: extractMediaRefsFromAdf(c.body).length,
+                  }),
+                })) ?? [],
+            ),
+            null,
+            2,
+          ),
         };
       } catch (error) {
         return {

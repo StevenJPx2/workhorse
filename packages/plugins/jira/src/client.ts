@@ -88,8 +88,7 @@ export class AtlassianClient {
 
   /** Get attachments for an issue */
   async getAttachments(ticketKey: string): Promise<JiraAttachment[]> {
-    const issue = await this.fetchIssueWithAttachments(ticketKey);
-    return issue.fields.attachment ?? [];
+    return this.fetchIssueWithAttachments(ticketKey).then((r) => r.fields.attachment ?? []);
   }
 
   /** Download attachment content as a Buffer */

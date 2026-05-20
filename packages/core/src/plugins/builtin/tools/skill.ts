@@ -42,10 +42,14 @@ export function createLoadSkillTool(orchestrator: HarnessOrchestrator): Orchestr
 
       const skill = orchestrator.skillRegistry.getSkill(skillId);
       if (!skill) {
-        const availableSkills = orchestrator.skillRegistry.getSkills().map((s) => s.id);
         return {
           success: false,
-          error: `Skill "${skillId}" not found. Available: ${availableSkills.join(", ") || "none"}`,
+          error: `Skill "${skillId}" not found. Available: ${
+            orchestrator.skillRegistry
+              .getSkills()
+              .map((s) => s.id)
+              .join(", ") || "none"
+          }`,
         };
       }
 

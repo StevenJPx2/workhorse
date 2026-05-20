@@ -47,35 +47,6 @@ export function createGetFileTool(client: FigmaClient): OrchestratorTool {
         const file = await client.fetchFile(fileKey, depth);
 
         // Build a compact summary the agent can read without overwhelming the context
-        const pages = (file.document.children ?? []).map((page) => {
-          const frames = (page.children ?? [])
-            .filter((n) => n.type === "FRAME" || n.type === "COMPONENT")
-            .slice(0, 20)
-            .map((f) => ({
-              id: f.id,
-              name: f.name,
-              type: f.type,
-              description: f.description,
-              childCount: f.children?.length ?? 0,
-            }));
-          return { id: page.id, name: page.name, type: page.type, frames };
-        });
-
-        const components = Object.entries(file.components ?? {}).map(([id, c]) => ({
-          id,
-          key: c.key,
-          name: c.name,
-          description: c.description,
-        }));
-
-        const styles = Object.entries(file.styles ?? {}).map(([id, s]) => ({
-          id,
-          key: s.key,
-          name: s.name,
-          description: s.description,
-          styleType: s.styleType,
-        }));
-
         return {
           success: true,
           output: JSON.stringify(
@@ -83,9 +54,34 @@ export function createGetFileTool(client: FigmaClient): OrchestratorTool {
               name: file.name,
               lastModified: file.lastModified,
               version: file.version,
-              pages,
-              components,
-              styles,
+              pages: (file.document.children ?? []).map((page) => ({
+                id: page.id,
+                name: page.name,
+                type: page.type,
+                frames: (page.children ?? [])
+                  .filter((n) => n.type === "FRAME" || n.type === "COMPONENT")
+                  .slice(0, 20)
+                  .map((f) => ({
+                    id: f.id,
+                    name: f.name,
+                    type: f.type,
+                    description: f.description,
+                    childCount: f.children?.length ?? 0,
+                  })),
+              })),
+              components: Object.entries(file.components ?? {}).map(([id, c]) => ({
+                id,
+                key: c.key,
+                name: c.name,
+                description: c.description,
+              })),
+              styles: Object.entries(file.styles ?? {}).map(([id, s]) => ({
+                id,
+                key: s.key,
+                name: s.name,
+                description: s.description,
+                styleType: s.styleType,
+              })),
             },
             null,
             2,

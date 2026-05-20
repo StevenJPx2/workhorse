@@ -76,19 +76,18 @@ export function createScreenshotTool(
         try {
           // Read the screenshot and store via attachment service
           const content = readFileSync(tempPath);
-          const sourceId = `screenshot-${Date.now()}`;
-
-          // Get repository from issue metadata or use issueId
-          const issue = await ctx.db.issues.get(ctx.issueId);
-          const repoIdentifier = issue?.repository ?? "unknown";
-
-          const stored = await attachmentService.store(repoIdentifier, ctx.issueId, content, {
-            source: "playwright",
-            sourceId,
-            filename: outputFilename,
-            mimeType: ext === "jpeg" ? "image/jpeg" : "image/png",
-            size: content.length,
-          });
+          const stored = await ctx.db.issues
+            .getById(ctx.issueId)
+            .then((issue) => issue?.repository ?? "unknown")
+            .then((repoIdentifier) =>
+              attachmentService.store(repoIdentifier, ctx.issueId, content, {
+                source: "playwright",
+                sourceId: `screenshot-${Date.now()}`,
+                filename: outputFilename,
+                mimeType: ext === "jpeg" ? "image/jpeg" : "image/png",
+                size: content.length,
+              }),
+            );
 
           // Clean up temp file
           unlinkSync(tempPath);

@@ -25,7 +25,7 @@ export interface EventHandlerContext {
   memory: MemoryService;
   setState: (state: AgentState) => void;
   /** Get the current issue status from the database */
-  getIssueStatus: () => IssueStatus;
+  getIssueStatus: () => Promise<IssueStatus>;
   /** Issue source (e.g., "jira", "github") */
   source: string;
 }
@@ -61,11 +61,18 @@ export function handleSessionEvent(event: AgentSessionEvent, ctx: EventHandlerCo
 
     case "agent_end": {
       // Emit idle event so steering rules can evaluate
-      ctx.hooks.emit("agent.idle", {
-        issueId: ctx.issueId,
-        status: ctx.getIssueStatus(),
-        source: ctx.source,
-      });
+      ctx
+        .getIssueStatus()
+        .then((status) => {
+          ctx.hooks.emit("agent.idle", {
+            issueId: ctx.issueId,
+            status,
+            source: ctx.source,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to get issue status:", err);
+        });
 
       updateL1Memory(ctx).catch((err) => {
         console.error("Failed to update L1 memory:", err);
@@ -85,7 +92,7 @@ async function updateL1Memory(ctx: EventHandlerContext): Promise<void> {
 
   sessionData.sessions.push({
     timestamp: new Date(),
-    status: ctx.getIssueStatus(),
+    status: await ctx.getIssueStatus(),
     summary: ["Session completed"],
     learnings: [],
     filesChanged: [],

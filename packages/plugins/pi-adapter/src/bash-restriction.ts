@@ -81,11 +81,10 @@ export function createRestrictedBashOperations(options: RestrictedBashOptions): 
     exec: async (command, cwd, execOptions) => {
       // assertPathAllowed throws if cwd is outside allowed directories
       // Apply default 5-minute timeout unless explicitly overridden
-      const optionsWithTimeout = {
+      return localOps.exec(command, assertPathAllowed(cwd, pathOptions), {
         ...execOptions,
         timeout: execOptions.timeout ?? DEFAULT_BASH_TIMEOUT_MS,
-      };
-      return localOps.exec(command, assertPathAllowed(cwd, pathOptions), optionsWithTimeout);
+      });
     },
   };
 }

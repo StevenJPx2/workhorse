@@ -17,7 +17,7 @@ import { z } from "zod/v4";
 import { definePlugin } from "workhorse-core";
 import { checkJinaInstalled, hasApiKey } from "./client.ts";
 import { webRenderer } from "./renderer.ts";
-import { createWebTools } from "./tools/index.ts";
+import { createWebTools } from "./tools";
 
 /** Config schema for the web plugin */
 export const WebConfigSchema = z.object({
@@ -46,12 +46,9 @@ export const webPlugin = definePlugin({
     }
 
     // Check if jina-cli is installed
-    const jinaInstalled = await checkJinaInstalled();
-
-    if (!jinaInstalled) {
-      const msg = "jina-cli not found. Install with: pip install jina-cli";
+    if (!(await checkJinaInstalled())) {
       if (config.warnIfMissing) {
-        console.warn(`[web] ${msg}`);
+        console.warn("[web] jina-cli not found. Install with: pip install jina-cli");
       }
       // Don't fail - tools will return helpful errors when invoked
     }
@@ -85,5 +82,5 @@ export {
   createWebReadTool,
   createWebSearchTool,
   createScreenshotTool,
-} from "./tools/index.ts";
+} from "./tools";
 export { webRenderer } from "./renderer.ts";

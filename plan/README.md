@@ -46,6 +46,8 @@ packages/core/src/
 | [16](./16-consolidate-spawn-logic.md) | Consolidate Spawn Logic | Steps 9, 15 | — | `workflow/orchestrator/` |
 | [17](./17-steering-rule-class.md) | Steering Rule Class | Step 13 | — | `workflow/orchestrator/steering/` |
 | [18](./18-plugin-skills.md) | Plugin Skills | Steps 4, 8, 9 | — | `workflow/orchestrator/`, `plugins/*/skills/` |
+| [19](./19-slack-plugin.md) | Slack Plugin | Steps 0–10 | — | `packages/plugins/slack/` |
+| [20](./20-server.md) | Server | Steps 0–13 | `nitro`, `h3` | `packages/server/` |
 
 ## Key Decisions
 

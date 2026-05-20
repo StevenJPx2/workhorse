@@ -20,9 +20,7 @@ describe("FigmaClient", () => {
     globalThis.fetch = originalFetch;
   });
 
-  // -------------------------------------------------------------------------
   // fetchFile
-  // -------------------------------------------------------------------------
 
   describe("fetchFile", () => {
     it("GETs the correct Figma API URL with depth param", async () => {
@@ -84,9 +82,7 @@ describe("FigmaClient", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   // fetchNode
-  // -------------------------------------------------------------------------
 
   describe("fetchNode", () => {
     it("URL-encodes the node ID and hits the /nodes endpoint", async () => {
@@ -116,9 +112,7 @@ describe("FigmaClient", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   // fetchComments
-  // -------------------------------------------------------------------------
 
   describe("fetchComments", () => {
     it("fetches and returns the comments array", async () => {
@@ -173,9 +167,7 @@ describe("FigmaClient", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   // postComment
-  // -------------------------------------------------------------------------
 
   describe("postComment", () => {
     it("POSTs a new top-level comment", async () => {
@@ -236,9 +228,7 @@ describe("FigmaClient", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
   // fetchFileVersion
-  // -------------------------------------------------------------------------
 
   describe("fetchFileVersion", () => {
     it("returns the version string from the file", async () => {

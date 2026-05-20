@@ -112,12 +112,10 @@ export class PiAgentAdapter extends AgentAdapter {
         setState: (s: AgentState) => {
           this.state = s;
         },
-        getIssueStatus: () => {
-          return (
-            this.db.issues.getByExternalId(this.issue.externalId, this.issue.source)?.status ??
-            this.issue.status
-          );
-        },
+        getIssueStatus: () =>
+          this.db.issues
+            .getByExternalId(this.issue.externalId, this.issue.source)
+            .then((issue) => issue?.status ?? this.issue.status),
       }),
     );
     await session.prompt(this.initialMessage);

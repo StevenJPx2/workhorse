@@ -43,7 +43,7 @@ export interface LinkedDesignContext {
  * we fetch the design context and make it available for prompt enrichment.
  */
 export function registerCrossPluginHandlers(hooks: HookEmitter, client: FigmaClient): () => void {
-  const unsubscribe = hooks.on("issue.links.discovered", async ({ issue, links }) => {
+  return hooks.on("issue.links.discovered", async ({ issue, links }) => {
     // Filter for Figma URLs
     const figmaLinks = links.filter((link: DiscoveredLink) => canParseFigma(link.href));
 
@@ -78,8 +78,6 @@ export function registerCrossPluginHandlers(hooks: HookEmitter, client: FigmaCli
       linkedDesignCache.set(issue.externalId, contexts);
     }
   });
-
-  return unsubscribe;
 }
 
 /**

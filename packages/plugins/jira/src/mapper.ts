@@ -22,14 +22,15 @@ export function mapJiraToIssue(jira: JiraIssue): ParsedIssue {
   const fields = jira.fields;
 
   // Extract links from description and comments
-  const descriptionLinks = extractLinksFromAdf(fields.description).map((l) => ({
-    ...l,
-    source: "description" as const,
-  }));
-  const commentLinks = (fields.comment?.comments ?? []).flatMap((c) =>
-    extractLinksFromAdf(c.body).map((l) => ({ ...l, source: "comment" as const })),
-  );
-  const allLinks = [...descriptionLinks, ...commentLinks];
+  const allLinks = [
+    ...extractLinksFromAdf(fields.description).map((l) => ({
+      ...l,
+      source: "description" as const,
+    })),
+    ...(fields.comment?.comments ?? []).flatMap((c) =>
+      extractLinksFromAdf(c.body).map((l) => ({ ...l, source: "comment" as const })),
+    ),
+  ];
 
   return {
     externalId: jira.key,
@@ -115,8 +116,7 @@ export function extractLinksFromAdf(adf: unknown): Array<{ text: string; href: s
 
   // Handle plain string — extract URLs with regex
   if (typeof adf === "string") {
-    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
-    const matches = adf.match(urlRegex);
+    const matches = adf.match(/https?:\/\/[^\s<>"{}|\\^`[\]]+/g);
     if (matches) {
       for (const href of matches) {
         links.push({ text: href, href });

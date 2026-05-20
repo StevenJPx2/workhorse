@@ -48,14 +48,11 @@ export function registerPlaywrightCrossPluginSync(
         return;
       }
 
-      const repoIdentifier = (issue.repository as string) ?? "unknown";
-
       // List attachments from AttachmentService
       // Filter for screenshots (filename pattern: screenshot-*.png/jpeg)
-      const attachments = await attachmentService.listForIssue(repoIdentifier, openingCtx.issueId);
-      const screenshots = attachments.filter((a) =>
-        /^screenshot-\d+_.*\.(png|jpe?g)$/i.test(a.filename),
-      );
+      const screenshots = await attachmentService
+        .listForIssue((issue.repository as string) ?? "unknown", openingCtx.issueId)
+        .then((list) => list.filter((a) => /^screenshot-\d+_.*\.(png|jpe?g)$/i.test(a.filename)));
 
       if (screenshots.length === 0) {
         return; // No screenshots to add
@@ -63,20 +60,16 @@ export function registerPlaywrightCrossPluginSync(
 
       // Build the Screenshots section
       // Note: Files are stored locally, not in the repo, so we provide paths
-      const screenshotLines = screenshots.map((s) => {
-        // Extract the human-friendly name (after the sourceId prefix)
-        const displayName = s.filename.includes("_")
-          ? s.filename.slice(s.filename.indexOf("_") + 1)
-          : s.filename;
-        return `- **${displayName}** (${formatSize(s.size)}): \`${s.localPath}\``;
-      });
-
       openingCtx.contributions.push({
         section: "Screenshots",
         content: [
           `${screenshots.length} screenshot${screenshots.length === 1 ? "" : "s"} captured during implementation:`,
           "",
-          ...screenshotLines,
+          ...screenshots.map(
+            (s) =>
+              // Extract the human-friendly name (after the sourceId prefix)
+              `- **${s.filename.includes("_") ? s.filename.slice(s.filename.indexOf("_") + 1) : s.filename}** (${formatSize(s.size)}): \`${s.localPath}\``,
+          ),
           "",
           "_Screenshots are stored locally and can be viewed at the paths above._",
         ].join("\n"),

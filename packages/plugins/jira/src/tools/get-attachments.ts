@@ -73,18 +73,11 @@ export function createGetAttachmentsTool(
           attachments = filterImageAttachments(attachments);
         }
 
-        // Build list of attachment IDs for cross-reference
-        const attachmentIds = new Set(attachments.map((a) => a.id));
-
         // Check which comment media IDs match attachments
-        const unmatchedMediaIds: string[] = [];
-        for (const cm of commentMedia) {
-          for (const mediaId of cm.mediaIds) {
-            if (!attachmentIds.has(mediaId)) {
-              unmatchedMediaIds.push(mediaId);
-            }
-          }
-        }
+        const attachmentIdSet = new Set(attachments.map((a) => a.id));
+        const unmatchedMediaIds = commentMedia.flatMap((cm) =>
+          cm.mediaIds.filter((mediaId) => !attachmentIdSet.has(mediaId)),
+        );
 
         // Download attachments to local storage
         const repoIdentifier = issue.repository ?? "unknown";

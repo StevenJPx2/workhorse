@@ -1,6 +1,6 @@
 // For local plugins, import from the relative path to workhorse-core
 // In production, users would use: import { definePlugin, useWorkhorse } from "@fdcn/workhorse/core";
-import { definePlugin, useWorkhorse } from "../../packages/core/src/index.ts";
+import { definePlugin, useWorkhorse } from "../../packages/core/src";
 
 export default definePlugin({
   manifest: {

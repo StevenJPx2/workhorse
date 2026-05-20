@@ -68,8 +68,7 @@ export async function execJina(
 
 /** Check if jina CLI is installed and accessible */
 export async function checkJinaInstalled(): Promise<boolean> {
-  const result = await execJina(["--version"], { timeout: 5000 });
-  return result.success;
+  return execJina(["--version"], { timeout: 5000 }).then((r) => r.success);
 }
 
 /** Check if JINA_API_KEY is set */

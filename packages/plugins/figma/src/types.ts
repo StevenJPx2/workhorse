@@ -7,9 +7,7 @@
  * @module workhorse-plugin-figma/types
  */
 
-// ---------------------------------------------------------------------------
 // Credentials
-// ---------------------------------------------------------------------------
 
 /** Credentials stored in keychain for the Figma plugin */
 export interface FigmaCredentials {
@@ -17,9 +15,7 @@ export interface FigmaCredentials {
   accessToken: string;
 }
 
-// ---------------------------------------------------------------------------
 // Figma file / node
-// ---------------------------------------------------------------------------
 
 /** Minimal shape of a Figma file response (GET /v1/files/:key) */
 export interface FigmaFile {
@@ -59,9 +55,7 @@ export interface FigmaStyle {
   styleType: "FILL" | "TEXT" | "EFFECT" | "GRID";
 }
 
-// ---------------------------------------------------------------------------
 // Comments
-// ---------------------------------------------------------------------------
 
 /** A comment on a Figma file */
 export interface FigmaComment {
@@ -101,9 +95,7 @@ export interface FigmaReaction {
   created_at: string;
 }
 
-// ---------------------------------------------------------------------------
 // Project / team
-// ---------------------------------------------------------------------------
 
 /** A Figma project */
 export interface FigmaProject {
@@ -119,9 +111,7 @@ export interface FigmaProjectFile {
   last_modified: string;
 }
 
-// ---------------------------------------------------------------------------
 // Parsed reference
-// ---------------------------------------------------------------------------
 
 /**
  * A fully-resolved reference to a Figma resource parsed from a URL.

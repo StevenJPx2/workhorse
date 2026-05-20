@@ -12,6 +12,7 @@
     "workhorse/no-section-comments": "warn",
     "workhorse/no-reexport-outside-barrel": "warn",
     "workhorse/prefer-folder-barrel": "warn",
+    "workhorse/prefer-export-directory": "warn",
     "workhorse/no-index-imports": "warn",
     "workhorse/prefer-path-alias": "warn",
     "workhorse/prefer-then-chain": "warn",

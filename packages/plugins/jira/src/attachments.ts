@@ -106,11 +106,7 @@ export function rewriteAdfMedia(adf: unknown, idToPath: Map<string, string>): un
 export function appendAttachmentListToText(text: string, attachments: StoredAttachment[]): string {
   if (attachments.length === 0) return text;
 
-  const attachmentLines = attachments.map(
-    (att) => `- ${att.filename} (${att.mimeType}): ${att.localPath}`,
-  );
-
-  return `${text}\n\n## Attachments\n\n${attachmentLines.join("\n")}`;
+  return `${text}\n\n## Attachments\n\n${attachments.map((att) => `- ${att.filename} (${att.mimeType}): ${att.localPath}`).join("\n")}`;
 }
 
 /** Check if a MIME type is an image */

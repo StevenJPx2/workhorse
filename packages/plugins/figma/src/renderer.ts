@@ -40,9 +40,7 @@ export function figmaRenderer(input: ActivityInput): RenderedActivity | null {
   return null;
 }
 
-// ---------------------------------------------------------------------------
 // Notification rendering
-// ---------------------------------------------------------------------------
 
 function renderNotification(notification: Notification): RenderedActivity | null {
   if (notification.source !== "figma") return null;
@@ -50,20 +48,18 @@ function renderNotification(notification: Notification): RenderedActivity | null
   const meta = notification.metadata as Record<string, unknown> | undefined;
   const fileKey = meta?.fileKey as string | undefined;
   const author = meta?.author as string | undefined;
-  const isReply = meta?.isReply as boolean | undefined;
-  const isFileUpdate = notification.title.toLowerCase().includes("updated");
 
   let icon = "🎨"; // Default Figma icon
   let color: RenderedActivity["color"] = "info";
 
-  if (isFileUpdate) {
+  if (notification.title.toLowerCase().includes("updated")) {
     icon = "🔄";
     color = "accent";
   } else if (
     notification.title.toLowerCase().includes("comment") ||
     notification.title.toLowerCase().includes("replied")
   ) {
-    icon = isReply ? "↩️" : "💬";
+    icon = (meta?.isReply as boolean | undefined) ? "↩️" : "💬";
   }
 
   const subtitleParts: string[] = [];
@@ -80,9 +76,7 @@ function renderNotification(notification: Notification): RenderedActivity | null
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tool-call rendering
-// ---------------------------------------------------------------------------
 
 function renderTool(tool: string, args: unknown): RenderedActivity | null {
   if (!tool.startsWith("figma_")) return null;

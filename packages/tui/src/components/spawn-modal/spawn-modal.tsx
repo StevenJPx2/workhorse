@@ -29,6 +29,7 @@ export function SpawnModal(props: SpawnModalProps) {
   const modalHeight = () => Math.min(16, Math.floor(dimensions().height * 0.8));
   const harnessListHeight = () => Math.max(1, harnessOptions().length);
 
+  // oxlint-disable-next-line workhorse/no-single-use-variable -- used in useKeyboard and JSX onConfirm
   const handleConfirm = () => {
     const selectedHarness = harnessOptions()[harnessIndex()];
     if (selectedHarness && selectedHarness.harness !== "none") {
@@ -42,10 +43,7 @@ export function SpawnModal(props: SpawnModalProps) {
     }
   };
 
-  const handleCancel = () => {
-    props.onClose();
-  };
-
+  // oxlint-disable-next-line workhorse/no-single-use-variable -- used in useKeyboard and JSX onToggle
   const toggleField = () => {
     setFocusedField((p) => (p === "harness" ? "branch" : "harness"));
   };
@@ -164,7 +162,7 @@ export function SpawnModal(props: SpawnModalProps) {
           </box>
         </box>
 
-        <ModalFooter onConfirm={handleConfirm} onCancel={handleCancel} onToggle={toggleField} />
+        <ModalFooter onConfirm={handleConfirm} onCancel={props.onClose} onToggle={toggleField} />
       </box>
     </box>
   );

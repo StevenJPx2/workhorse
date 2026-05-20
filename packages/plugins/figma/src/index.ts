@@ -20,19 +20,15 @@ import { createCredentialGetter } from "./credentials.ts";
 import { registerCrossPluginHandlers } from "./cross-plugin.ts";
 import { registerPromptHooks } from "./prompt.ts";
 import { figmaRenderer } from "./renderer.ts";
-import { createFigmaTools } from "./tools/index.ts";
+import { createFigmaTools } from "./tools";
 
-// ---------------------------------------------------------------------------
 // Re-exports for consumers
-// ---------------------------------------------------------------------------
 
 export type { FigmaCredentials, FigmaFile, FigmaComment, FigmaRef } from "./types.ts";
 export { canParseFigma, extractFigmaRef } from "./parser.ts";
 export { isFigmaAuthenticated } from "./credentials.ts";
 
-// ---------------------------------------------------------------------------
 // Plugin definition
-// ---------------------------------------------------------------------------
 
 export const figmaPlugin = definePlugin({
   manifest: {

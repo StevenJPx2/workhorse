@@ -44,8 +44,7 @@ function guessMimeType(url: string): string {
 /** Extract filename from URL */
 function extractFilename(url: string): string {
   try {
-    const pathname = new URL(url).pathname;
-    const segments = pathname.split("/");
+    const segments = new URL(url).pathname.split("/");
     const lastSegment = segments[segments.length - 1] || "image";
     // Handle GitHub's UUID-style filenames
     if (lastSegment.includes("-") && lastSegment.length > 30) {
@@ -66,8 +65,9 @@ function isDownloadableImage(url: string): boolean {
       return true;
     }
     // Accept common image extensions from any source
-    const ext = parsedUrl.pathname.toLowerCase().split(".").pop();
-    return ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext || "");
+    return ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(
+      parsedUrl.pathname.toLowerCase().split(".").pop() || "",
+    );
   } catch {
     return false;
   }

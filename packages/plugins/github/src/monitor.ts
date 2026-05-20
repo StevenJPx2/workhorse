@@ -176,7 +176,7 @@ export function createGitHubPRMonitor(
       }
 
       // Update state
-      db.issues.update(issue.id, {
+      await db.issues.update(issue.id, {
         metadata: {
           ...metadata,
           [MONITOR_STATE_KEY]: {

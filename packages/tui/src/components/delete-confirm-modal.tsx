@@ -19,6 +19,7 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
   // Constrain modal to fit in terminal (max 80% height, cap at 14 rows)
   const modalHeight = () => Math.min(14, Math.floor(dimensions().height * 0.8));
 
+  // oxlint-disable-next-line workhorse/no-single-use-variable -- used in useKeyboard and JSX onMouseDown
   const handleConfirm = () => {
     if (selectedOption() === "delete") {
       props.onConfirm(props.issue);
@@ -31,6 +32,7 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
     props.onClose();
   };
 
+  // oxlint-disable-next-line workhorse/no-single-use-variable -- used in useKeyboard and JSX onMouseDown
   const toggleSelection = () => {
     setSelectedOption((prev) => (prev === "cancel" ? "delete" : "cancel"));
   };

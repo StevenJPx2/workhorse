@@ -24,14 +24,11 @@ export type FigmaCredentialGetter = () => Promise<FigmaCredentials>;
 export class FigmaClient {
   constructor(private readonly getCredentials: FigmaCredentialGetter) {}
 
-  // -------------------------------------------------------------------------
   // Private helpers
-  // -------------------------------------------------------------------------
 
   private async headers(): Promise<Record<string, string>> {
-    const creds = await this.getCredentials();
     return {
-      "X-Figma-Token": creds.accessToken,
+      "X-Figma-Token": await this.getCredentials().then((r) => r.accessToken),
       "Content-Type": "application/json",
     };
   }
@@ -42,8 +39,9 @@ export class FigmaClient {
       headers: await this.headers(),
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Figma API error ${res.status} ${res.statusText}: ${text}`);
+      throw new Error(
+        `Figma API error ${res.status} ${res.statusText}: ${await res.text().catch(() => "")}`,
+      );
     }
     return res.json() as Promise<T>;
   }
@@ -55,15 +53,14 @@ export class FigmaClient {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Figma API error ${res.status} ${res.statusText}: ${text}`);
+      throw new Error(
+        `Figma API error ${res.status} ${res.statusText}: ${await res.text().catch(() => "")}`,
+      );
     }
     return res.json() as Promise<T>;
   }
 
-  // -------------------------------------------------------------------------
   // Files
-  // -------------------------------------------------------------------------
 
   /**
    * Fetch a Figma file by its key.
@@ -83,20 +80,18 @@ export class FigmaClient {
     nodeId: string,
   ): Promise<{ nodes: Record<string, { document: import("./types.ts").FigmaNode }> }> {
     // Figma node IDs use colons but the API expects them URL-encoded as %3A
-    const encoded = encodeURIComponent(nodeId);
-    return this.get(`/files/${fileKey}/nodes?ids=${encoded}`);
+    return this.get(`/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}`);
   }
 
-  // -------------------------------------------------------------------------
   // Comments
-  // -------------------------------------------------------------------------
 
   /**
    * Fetch all comments for a Figma file.
    */
   async fetchComments(fileKey: string): Promise<FigmaComment[]> {
-    const data = await this.get<{ comments: FigmaComment[] }>(`/files/${fileKey}/comments`);
-    return data.comments;
+    return this.get<{ comments: FigmaComment[] }>(`/files/${fileKey}/comments`).then(
+      (r) => r.comments,
+    );
   }
 
   /**
@@ -113,17 +108,16 @@ export class FigmaClient {
     return this.post<FigmaComment>(`/files/${fileKey}/comments`, body);
   }
 
-  // -------------------------------------------------------------------------
   // Projects
-  // -------------------------------------------------------------------------
 
   /**
    * Fetch all projects for a Figma team.
    * @param teamId - Figma team ID (found in your Figma URL: figma.com/files/team/<teamId>)
    */
   async fetchTeamProjects(teamId: string): Promise<FigmaProject[]> {
-    const data = await this.get<{ projects: FigmaProject[] }>(`/teams/${teamId}/projects`);
-    return data.projects;
+    return this.get<{ projects: FigmaProject[] }>(`/teams/${teamId}/projects`).then(
+      (r) => r.projects,
+    );
   }
 
   /**
@@ -131,20 +125,18 @@ export class FigmaClient {
    * @param projectId - Figma project ID
    */
   async fetchProjectFiles(projectId: string): Promise<FigmaProjectFile[]> {
-    const data = await this.get<{ files: FigmaProjectFile[] }>(`/projects/${projectId}/files`);
-    return data.files;
+    return this.get<{ files: FigmaProjectFile[] }>(`/projects/${projectId}/files`).then(
+      (r) => r.files,
+    );
   }
 
-  // -------------------------------------------------------------------------
   // Version / metadata
-  // -------------------------------------------------------------------------
 
   /**
    * Fetch the latest version string for a file (cheap sentinel for change detection).
    */
   async fetchFileVersion(fileKey: string): Promise<string> {
     // Use a depth=1 request to get just the top-level metadata cheaply
-    const file = await this.fetchFile(fileKey, 1);
-    return file.version;
+    return this.fetchFile(fileKey, 1).then((r) => r.version);
   }
 }

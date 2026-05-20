@@ -39,11 +39,9 @@ function buildJiraContextBlocks(jiraIssue: {
   // Build attachment summary with filenames
   const attachments = (fields.attachment as { filename: string; mimeType: string }[]) ?? [];
   const imageCount = attachments.filter((a) => a.mimeType?.startsWith("image/")).length;
-  const otherCount = attachments.length - imageCount;
   let attachmentSummary = "None";
   if (attachments.length > 0) {
-    const fileList = attachments.map((a) => a.filename).join(", ");
-    attachmentSummary = `${attachments.length} (${imageCount} images, ${otherCount} other): ${fileList}`;
+    attachmentSummary = `${attachments.length} (${imageCount} images, ${attachments.length - imageCount} other): ${attachments.map((a) => a.filename).join(", ")}`;
   }
 
   contextBlocks.push({
@@ -72,15 +70,10 @@ function buildJiraContextBlocks(jiraIssue: {
     commentsContent = recentComments
       .map((c) => {
         const comment = c as Record<string, unknown>;
-        const author = (comment.author as { displayName: string })?.displayName ?? "Unknown";
-        const created = String(comment.created ?? "");
-        const bodyText = extractTextFromAdf(comment.body);
         const mediaRefs = extractMediaRefsFromAdf(comment.body);
         totalCommentMedia += mediaRefs.length;
 
-        // Add media indicator if comment has embedded images/files
-        const mediaNote = mediaRefs.length > 0 ? ` [📎 ${mediaRefs.length} embedded media]` : "";
-        return `**${author}** (${created}):${mediaNote}\n${bodyText}`;
+        return `**${(comment.author as { displayName: string })?.displayName ?? "Unknown"}** (${String(comment.created ?? "")}):${mediaRefs.length > 0 ? ` [📎 ${mediaRefs.length} embedded media]` : ""}\n${extractTextFromAdf(comment.body)}`;
       })
       .join("\n\n");
   }
@@ -137,6 +130,7 @@ function extractTextFromAdf(adf: unknown): string {
 }
 
 /** Recursively extract text from ADF content nodes */
+// oxlint-disable-next-line workhorse/no-single-reference-function -- recursive function
 function extractTextNodes(nodes: unknown[]): string {
   const parts: string[] = [];
 

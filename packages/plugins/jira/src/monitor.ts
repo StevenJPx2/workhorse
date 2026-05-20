@@ -65,7 +65,7 @@ export function createJiraCommentMonitor(
       }
 
       // Update metadata with all current comment IDs
-      db.issues.update(issue.id, {
+      await db.issues.update(issue.id, {
         metadata: {
           ...metadata,
           [LAST_SEEN_COMMENTS_KEY]: comments.map((c) => c.id),

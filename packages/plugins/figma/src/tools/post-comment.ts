@@ -7,14 +7,8 @@
  * @module workhorse-plugin-figma/tools/post-comment
  */
 
-import type { OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
+import type { OrchestratorTool } from "workhorse-core";
 import type { FigmaClient } from "../client.ts";
-
-// Polyfill: workhorse-core may or may not export withWorkhorseFooter for
-// non-Jira sources.  We wrap messages with a lightweight footer instead.
-function addFooter(message: string): string {
-  return `${message}\n\n---\n*Posted by Workhorse agent*`;
-}
 
 /** Tool: Post a comment (or reply) on the Figma file */
 export function createPostCommentTool(client: FigmaClient): OrchestratorTool {
@@ -62,7 +56,11 @@ export function createPostCommentTool(client: FigmaClient): OrchestratorTool {
           return { success: false, error: "Could not determine Figma file key." };
         }
 
-        const posted = await client.postComment(fileKey, addFooter(message), replyToId);
+        const posted = await client.postComment(
+          fileKey,
+          `${message}\n\n---\n*Posted by Workhorse agent*`,
+          replyToId,
+        );
 
         return {
           success: true,

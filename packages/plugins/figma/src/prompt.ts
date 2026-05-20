@@ -24,12 +24,15 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: FigmaClient):
     // If this is a Figma-sourced issue, add full file context
     if (issue.source === "figma") {
       const fileKey = issue.externalId.split("#")[0];
-      const nodeId = issue.externalId.includes("#") ? issue.externalId.split("#")[1] : undefined;
 
       if (fileKey) {
         try {
-          const file = await client.fetchFile(fileKey, 2);
-          buildingCtx.contextBlocks.push(...buildFigmaContextBlocks(file, nodeId));
+          buildingCtx.contextBlocks.push(
+            ...buildFigmaContextBlocks(
+              await client.fetchFile(fileKey, 2),
+              issue.externalId.includes("#") ? issue.externalId.split("#")[1] : undefined,
+            ),
+          );
         } catch {
           // Silently skip if Figma API fails
         }
@@ -51,10 +54,6 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
 
   // --- File overview ---
   const pages = file.document.children ?? [];
-  const pageList = pages.map((p) => `- ${p.name}`).join("\n") || "None";
-
-  const componentCount = Object.keys(file.components ?? {}).length;
-  const styleCount = Object.keys(file.styles ?? {}).length;
 
   blocks.push({
     id: "figma-file",
@@ -64,9 +63,9 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
       `**Name:** ${file.name}`,
       `**Last Modified:** ${file.lastModified}`,
       `**Version:** ${file.version}`,
-      `**Components:** ${componentCount}`,
-      `**Styles:** ${styleCount}`,
-      `**Pages:**\n${pageList}`,
+      `**Components:** ${Object.keys(file.components ?? {}).length}`,
+      `**Styles:** ${Object.keys(file.styles ?? {}).length}`,
+      `**Pages:**\n${pages.map((p) => `- ${p.name}`).join("\n") || "None"}`,
     ].join("\n"),
   });
 
@@ -91,15 +90,13 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
       .slice(0, 10);
 
     if (frames.length > 0) {
-      const frameList = frames
-        .map((f) => `- **${f.name}** (${f.type})${f.description ? `: ${f.description}` : ""}`)
-        .join("\n");
-
       blocks.push({
         id: "figma-frames",
         title: `Top Frames — ${firstPage.name}`,
         priority: 15,
-        content: frameList,
+        content: frames
+          .map((f) => `- **${f.name}** (${f.type})${f.description ? `: ${f.description}` : ""}`)
+          .join("\n"),
       });
     }
   }
@@ -107,30 +104,26 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
   // --- Components ---
   const componentEntries = Object.values(file.components ?? {}).slice(0, 15);
   if (componentEntries.length > 0) {
-    const compList = componentEntries
-      .map((c) => `- **${c.name}**${c.description ? `: ${c.description}` : ""}`)
-      .join("\n");
-
     blocks.push({
       id: "figma-components",
       title: "Components",
       priority: 20,
-      content: compList,
+      content: componentEntries
+        .map((c) => `- **${c.name}**${c.description ? `: ${c.description}` : ""}`)
+        .join("\n"),
     });
   }
 
   // --- Styles ---
   const styleEntries = Object.values(file.styles ?? {}).slice(0, 20);
   if (styleEntries.length > 0) {
-    const styleList = styleEntries
-      .map((s) => `- **${s.name}** (${s.styleType})${s.description ? `: ${s.description}` : ""}`)
-      .join("\n");
-
     blocks.push({
       id: "figma-styles",
       title: "Design Tokens / Styles",
       priority: 25,
-      content: styleList,
+      content: styleEntries
+        .map((s) => `- **${s.name}** (${s.styleType})${s.description ? `: ${s.description}` : ""}`)
+        .join("\n"),
     });
   }
 
@@ -152,6 +145,7 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
 }
 
 /** Recursively search for a node by ID in the document tree */
+// oxlint-disable-next-line workhorse/no-single-reference-function -- recursive function
 function findNodeById(root: FigmaNode, id: string): FigmaNode | null {
   if (root.id === id) return root;
   for (const child of root.children ?? []) {
@@ -180,11 +174,12 @@ function buildNodeSummary(node: FigmaNode): string {
   const childCount = node.children?.length ?? 0;
   if (childCount > 0) {
     lines.push(`**Direct children:** ${childCount}`);
-    const childNames = (node.children ?? [])
-      .slice(0, 8)
-      .map((c) => c.name)
-      .join(", ");
-    lines.push(`  ${childNames}${childCount > 8 ? ", …" : ""}`);
+    lines.push(
+      `  ${(node.children ?? [])
+        .slice(0, 8)
+        .map((c) => c.name)
+        .join(", ")}${childCount > 8 ? ", …" : ""}`,
+    );
   }
 
   return lines.join("\n");

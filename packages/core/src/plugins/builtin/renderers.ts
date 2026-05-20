@@ -36,10 +36,9 @@ export function skillRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
   if (input.tool !== "load_skill") return null;
 
-  const skillId = String(((input.args ?? {}) as Record<string, unknown>).skillId ?? "unknown");
   return {
     icon: "📖",
-    title: `loaded skill: ${skillId}`,
+    title: `loaded skill: ${String(((input.args ?? {}) as Record<string, unknown>).skillId ?? "unknown")}`,
     style: "inline",
     color: "accent",
   };

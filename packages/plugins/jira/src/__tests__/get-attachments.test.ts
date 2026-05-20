@@ -8,6 +8,7 @@ import type { AtlassianClient } from "../client.ts";
 import { createGetAttachmentsTool } from "../tools/get-attachments.ts";
 
 /** Create mock database with Jira issue */
+// oxlint-disable-next-line workhorse/no-single-reference-function -- test utility
 function createMockDb(externalId: string, source: string = "jira") {
   return {
     issues: {

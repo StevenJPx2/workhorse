@@ -8,9 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { canParseFigma, extractFigmaRef } from "../parser.ts";
 
-// ---------------------------------------------------------------------------
 // canParseFigma
-// ---------------------------------------------------------------------------
 
 describe("canParseFigma", () => {
   it("matches /file/ URLs", () => {
@@ -51,9 +49,7 @@ describe("canParseFigma", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // extractFigmaRef
-// ---------------------------------------------------------------------------
 
 describe("extractFigmaRef", () => {
   it("extracts fileKey from a bare /file/ URL", () => {

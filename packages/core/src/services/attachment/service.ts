@@ -22,8 +22,11 @@ export class AttachmentService {
   /** Get the directory path for an issue's attachments */
   getIssueDir(repoIdentifier: string, issueId: string): string {
     // Sanitize repo identifier (replace slashes with dashes for owner/repo format)
-    const safeRepo = repoIdentifier.replace(/[/\\]/g, "-").replace(/[^a-zA-Z0-9-_.]/g, "_");
-    return join(this.baseDir, safeRepo, issueId);
+    return join(
+      this.baseDir,
+      repoIdentifier.replace(/[/\\]/g, "-").replace(/[^a-zA-Z0-9-_.]/g, "_"),
+      issueId,
+    );
   }
 
   /** Ensure the directory exists for an issue */
@@ -39,8 +42,7 @@ export class AttachmentService {
    *  Format: {sourceId}_{originalName} - uses underscore to separate ID from name */
   private generateFilename(sourceId: string, originalFilename: string): string {
     const ext = originalFilename.includes(".") ? `.${originalFilename.split(".").pop()}` : "";
-    const baseName = basename(originalFilename, ext).slice(0, 50); // Limit name length
-    return `${sourceId}_${baseName}${ext}`;
+    return `${sourceId}_${basename(originalFilename, ext).slice(0, 50)}${ext}`;
   }
 
   /** Store an attachment from a buffer */
@@ -50,9 +52,10 @@ export class AttachmentService {
     content: Buffer,
     options: DownloadOptions,
   ): Promise<StoredAttachment> {
-    const dir = this.ensureDir(repoIdentifier, issueId);
-    const filename = this.generateFilename(options.sourceId, options.filename);
-    const localPath = join(dir, filename);
+    const localPath = join(
+      this.ensureDir(repoIdentifier, issueId),
+      this.generateFilename(options.sourceId, options.filename),
+    );
 
     writeFileSync(localPath, content);
 
@@ -73,8 +76,7 @@ export class AttachmentService {
     const dir = this.getIssueDir(repoIdentifier, issueId);
     if (!existsSync(dir)) return null;
 
-    const files = await readdir(dir);
-    const match = files.find((f) => f.startsWith(`${sourceId}_`));
+    const match = await readdir(dir).then((r) => r.find((f) => f.startsWith(`${sourceId}_`)));
     return match ? join(dir, match) : null;
   }
 
@@ -88,10 +90,9 @@ export class AttachmentService {
     const dir = this.getIssueDir(repoIdentifier, issueId);
     if (!existsSync(dir)) return [];
 
-    const files = await readdir(dir);
     const attachments: StoredAttachment[] = [];
 
-    for (const file of files) {
+    for (const file of await readdir(dir)) {
       const localPath = join(dir, file);
       const stats = await stat(localPath);
 
@@ -132,19 +133,21 @@ export class AttachmentService {
 
 /** Guess MIME type from filename extension */
 function guessMimeType(filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  const mimeTypes: Record<string, string> = {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    webp: "image/webp",
-    svg: "image/svg+xml",
-    pdf: "application/pdf",
-    txt: "text/plain",
-    json: "application/json",
-    xml: "application/xml",
-    zip: "application/zip",
-  };
-  return mimeTypes[ext] ?? "application/octet-stream";
+  return (
+    (
+      {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        gif: "image/gif",
+        webp: "image/webp",
+        svg: "image/svg+xml",
+        pdf: "application/pdf",
+        txt: "text/plain",
+        json: "application/json",
+        xml: "application/xml",
+        zip: "application/zip",
+      } as Record<string, string>
+    )[filename.split(".").pop()?.toLowerCase() ?? ""] ?? "application/octet-stream"
+  );
 }
