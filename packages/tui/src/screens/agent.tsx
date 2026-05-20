@@ -1,11 +1,10 @@
-import { createMemo, createSignal, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
 
-import { MonitorIndicator, StatusBar } from "../components";
+import { StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
-import { WorkhorseStatus } from "../components/workhorse-status.tsx";
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { createAgents, createChat, createIssueStatus } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
@@ -13,6 +12,8 @@ import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { createMonitors } from "../primitives/create-monitors.ts";
 import { ui } from "../state/ui.ts";
 import { getTheme } from "../theme.ts";
+import { AgentHeader } from "./agent/agent-header.tsx";
+import { useAgentBindings } from "./agent/use-agent-bindings.ts";
 
 const FILES_PANEL_WIDTH = 32;
 
@@ -38,6 +39,23 @@ export function Agent() {
   const selectedId = ui.selectedAgentId;
   const theme = getTheme();
 
+  // Sidebar navigation index
+  const [sidebarIndex, setSidebarIndex] = createSignal(0);
+
+  // Keep sidebar index in sync with selected agent
+  createEffect(() => {
+    const idx = agents().findIndex((a) => a.issueId === selectedId());
+    if (idx >= 0) setSidebarIndex(idx);
+  });
+
+  // Setup keyboard navigation for sidebar
+  useAgentBindings({
+    agents,
+    sidebarIndex,
+    setSidebarIndex,
+    onAgentSelect: (agent) => ui.enterAgentView(agent.issueId),
+  });
+
   const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
 
   const { state: monitorState } = createMonitors({
@@ -59,23 +77,6 @@ export function Agent() {
 
   const isChatFocused = () => ui.focusedComponent() === "chat";
 
-  const statusColorMap: Record<string, string> = {
-    running: theme.colors.success,
-    starting: theme.colors.success,
-    crashed: theme.colors.warning,
-    stopped: theme.colors.error,
-    stopping: theme.colors.error,
-  };
-  const statusColor = (s: string) => statusColorMap[s] ?? theme.colors.dim;
-
-  const statusIconMap: Record<string, string> = {
-    running: "●",
-    starting: "◐",
-    crashed: "!",
-    stopped: "■",
-  };
-  const statusIcon = (s: string) => statusIconMap[s] ?? "○";
-
   return (
     <box
       flexDirection="column"
@@ -86,39 +87,12 @@ export function Agent() {
       {/* Header with agent info */}
       <Show when={selectedAgent()}>
         {(agent: () => AgentAdapter) => (
-          <box
-            flexDirection="row"
-            justifyContent="space-between"
-            backgroundColor={theme.colors.surface}
-            paddingX={2}
-            paddingY={2}
-          >
-            <box flexDirection="row" flexShrink={1} overflow="hidden">
-              <text fg={theme.colors.accent}>
-                <b>{agent().issueId}</b>
-              </text>
-              <text fg={theme.colors.dim}>
-                {" — "}
-                {agent().issue.title.length > 30
-                  ? agent().issue.title.slice(0, 30) + "..."
-                  : agent().issue.title}
-              </text>
-              <Show when={agent().model}>
-                <text fg={theme.colors.dim}>{" | "}</text>
-                <text fg={theme.colors.info}>{agent().model}</text>
-              </Show>
-            </box>
-            <box flexDirection="row" flexShrink={0} gap={1}>
-              <WorkhorseStatus status={issueStatusState().status} />
-              <text fg={theme.colors.dim}>|</text>
-              <MonitorIndicator state={monitorState()} />
-              <text fg={theme.colors.dim}>|</text>
-              <text fg={statusColor(getState(selectedId()) ?? "stopped")}>
-                {statusIcon(getState(selectedId()) ?? "stopped")}{" "}
-                {(getState(selectedId()) ?? "stopped").toUpperCase()}
-              </text>
-            </box>
-          </box>
+          <AgentHeader
+            agent={agent}
+            agentState={getState(selectedId())}
+            monitorState={monitorState}
+            issueStatusState={issueStatusState}
+          />
         )}
       </Show>
 
@@ -127,6 +101,7 @@ export function Agent() {
         <AgentSidebar
           agents={agents}
           selectedId={selectedId}
+          selectedIndex={sidebarIndex}
           getState={getState}
           onSelect={(agent) => ui.enterAgentView(agent.issueId)}
         />
@@ -178,12 +153,24 @@ export function Agent() {
 
       <StatusBar
         shortcuts={[
+          { key: "j/k", action: "navigate" },
+          { key: "Enter", action: "select" },
           {
             key: "s",
-            action: "stop",
+            action: (() => {
+              const state = getState(selectedId());
+              return state === "running" || state === "starting" ? "stop" : "start";
+            })(),
             onActivate: () => {
               const agentId = selectedId();
-              if (agentId) orchestrator.getAgent(agentId)?.stop();
+              if (!agentId) return;
+              const agent = orchestrator.getAgent(agentId);
+              if (!agent) return;
+              if (agent.state === "running" || agent.state === "starting") {
+                void agent.stop();
+              } else if (agent.state === "stopped" || agent.state === "crashed") {
+                void agent.start();
+              }
             },
           },
           { key: "Ctrl+X M", action: "model" },

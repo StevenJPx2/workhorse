@@ -18,7 +18,7 @@ interface UseOverviewBindingsOptions {
   setAgentIndex: Setter<number>;
   onIssueSelect: (issue: Issue) => void;
   onAgentSelect: (agent: AgentAdapter) => void;
-  onAgentStop: (agent: AgentAdapter) => void;
+  onAgentToggle: (agent: AgentAdapter) => void;
 }
 
 export function useOverviewBindings(options: UseOverviewBindingsOptions) {
@@ -92,10 +92,10 @@ export function useOverviewBindings(options: UseOverviewBindingsOptions) {
       return;
     }
 
-    // s: stop the selected agent (when agents pane is focused)
+    // s: toggle agent start/stop (when agents pane is focused)
     if (keyName === "s" && focused === "agents") {
       const agent = options.agents()[options.agentIndex()];
-      if (agent) options.onAgentStop(agent);
+      if (agent) options.onAgentToggle(agent);
       return;
     }
   });

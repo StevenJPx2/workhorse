@@ -77,13 +77,17 @@ export function useGlobalBindings() {
       return;
     }
 
-    // s: stop the selected agent (agent screen only, not while typing)
-    if (key.name === "s" && !ui.inputMode() && !ui.modal()) {
-      if (ui.screen() === "agent") {
-        const agentId = ui.selectedAgentId();
-        if (agentId) orchestrator.getAgent(agentId)?.stop();
-        return;
-      }
+    // s: toggle agent start/stop (agent screen only, not while typing)
+    if (key.name !== "s" || ui.inputMode() || ui.modal() || ui.screen() !== "agent") return;
+
+    const agentId = ui.selectedAgentId();
+    const agent = agentId ? orchestrator.getAgent(agentId) : null;
+    if (!agent) return;
+
+    if (agent.state === "running" || agent.state === "starting") {
+      void agent.stop();
+    } else if (agent.state === "stopped" || agent.state === "crashed") {
+      void agent.start();
     }
   });
 }

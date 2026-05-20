@@ -55,7 +55,12 @@ export function Overview() {
     setAgentIndex,
     onIssueSelect: (issue: Issue) => ui.openSpawnModal(issue),
     onAgentSelect: (agent: AgentAdapter) => ui.enterAgentView(agent.issueId),
-    onAgentStop: (agent: AgentAdapter) => orchestrator.getAgent(agent.issueId)?.stop(),
+    onAgentToggle: (agent: AgentAdapter) => {
+      const a = orchestrator.getAgent(agent.issueId);
+      if (!a) return;
+      if (a.state === "running" || a.state === "starting") void a.stop();
+      else if (a.state === "stopped" || a.state === "crashed") void a.start();
+    },
   });
 
   return (
@@ -116,10 +121,14 @@ export function Overview() {
           { key: "Enter", action: "select" },
           {
             key: "s",
-            action: "stop",
+            action: "toggle",
             onActivate: () => {
               const agentId = selectedAgentId();
-              if (agentId) orchestrator.getAgent(agentId)?.stop();
+              if (!agentId) return;
+              const agent = orchestrator.getAgent(agentId);
+              if (!agent) return;
+              if (agent.state === "running" || agent.state === "starting") void agent.stop();
+              else if (agent.state === "stopped" || agent.state === "crashed") void agent.start();
             },
           },
           { key: "Ctrl+X M", action: "model" },
