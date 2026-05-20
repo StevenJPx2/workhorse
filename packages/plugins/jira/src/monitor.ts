@@ -6,7 +6,7 @@
  * @module workhorse-plugin-jira/monitor
  */
 
-import type { Database, PollingMonitorOptions } from "workhorse-core";
+import { isWorkhorseGenerated, type Database, type PollingMonitorOptions } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraComment } from "./mapper.ts";
@@ -47,9 +47,13 @@ export function createJiraCommentMonitor(
         return { hasChanges: false };
       }
 
-      // Create notifications for new comments
+      // Create notifications for new comments (skip bot-generated)
       for (const comment of newComments) {
         const mapped = mapJiraComment(comment);
+        // Skip comments posted by Workhorse itself to avoid echo
+        if (isWorkhorseGenerated(mapped.body as string)) {
+          continue;
+        }
         ctx.memory.notifications.create({
           issueId: ctx.issueId,
           source: "jira",

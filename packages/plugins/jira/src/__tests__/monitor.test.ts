@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import type { MonitorContext, Issue } from "workhorse-core";
+import { WORKHORSE_MARKER, type MonitorContext, type Issue } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";
 import { createJiraCommentMonitor } from "../monitor.ts";
@@ -171,5 +171,82 @@ describe("createJiraCommentMonitor", () => {
     const result = await monitor.poll(ctx);
     expect(result.hasChanges).toBe(false);
     expect(mockNotifications.create).not.toHaveBeenCalled();
+  });
+
+  it("skips bot-generated comments (Workhorse marker)", async () => {
+    const issue = {
+      id: "issue-123",
+      externalId: "AM-123",
+      source: "jira",
+      repository: null,
+      title: "Test",
+      description: "",
+      status: "pending",
+      issueType: "task",
+      url: null,
+      assignee: null,
+      labels: null,
+      metadata: {},
+      worktreePath: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Issue;
+
+    const mockClient = {
+      fetchIssue: vi.fn().mockResolvedValue({
+        key: "AM-123",
+        fields: {
+          comment: {
+            comments: [
+              {
+                id: "10001",
+                author: { displayName: "Bot", accountId: "bot" },
+                // Contains the Workhorse marker - should be skipped
+                body: `PR is ready for review.\n\n---\n${WORKHORSE_MARKER} agent`,
+                created: "2024-01-01T10:00:00Z",
+                updated: "2024-01-01T10:00:00Z",
+              },
+              {
+                id: "10002",
+                author: { displayName: "Alice", accountId: "abc" },
+                // Human comment - should create notification
+                body: "Looks good!",
+                created: "2024-01-01T11:00:00Z",
+                updated: "2024-01-01T11:00:00Z",
+              },
+            ],
+          },
+        },
+      }),
+    } as unknown as AtlassianClient;
+
+    const mockNotifications = { create: vi.fn() };
+    const mockDb = {
+      issues: {
+        getById: vi.fn().mockReturnValue(issue),
+        update: vi.fn(),
+      },
+    };
+
+    const monitor = createJiraCommentMonitor(mockClient, 30_000, mockDb as any);
+
+    const ctx: MonitorContext = {
+      issueId: "issue-123",
+      hooks: { emit: vi.fn() } as any,
+      memory: { notifications: mockNotifications } as any,
+      config: {} as any,
+    };
+
+    const result = await monitor.poll(ctx);
+    expect(result.hasChanges).toBe(true);
+    // Only the human comment should trigger a notification
+    expect(mockNotifications.create).toHaveBeenCalledTimes(1);
+    expect(mockNotifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: "jira-comment-10002",
+        title: "New comment from Alice",
+        body: "Looks good!",
+      }),
+    );
   });
 });

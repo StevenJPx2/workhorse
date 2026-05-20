@@ -56,6 +56,7 @@ export type {
   AdapterInfo,
   AgentState,
   CreateOptions,
+  ImageContent,
   JSONSchema,
   ModelInfo,
   OrchestratorTool,

@@ -115,10 +115,35 @@ export function createExtensionFromTools(
               isError: true,
             };
           }
-          return {
-            content: [{ type: "text", text: result.output ?? "" }],
-            details: {},
-          };
+
+          // Build content array with text and optional images
+          const content: (
+            | { type: "text"; text: string }
+            | { type: "image"; data: string; mimeType: string }
+          )[] = [];
+
+          // Add text output if present
+          if (result.output) {
+            content.push({ type: "text", text: result.output });
+          }
+
+          // Add images if present (for vision-capable models)
+          if (result.images && result.images.length > 0) {
+            for (const img of result.images) {
+              content.push({
+                type: "image",
+                data: img.data,
+                mimeType: img.mimeType,
+              });
+            }
+          }
+
+          // Ensure we have at least one content item
+          if (content.length === 0) {
+            content.push({ type: "text", text: "" });
+          }
+
+          return { content, details: {} };
         },
       });
     }
