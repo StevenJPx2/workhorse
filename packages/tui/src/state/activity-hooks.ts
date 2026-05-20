@@ -6,7 +6,7 @@
 import type { HookEmitter, Notification } from "workhorse-core";
 
 import type { ActivityItem } from "../primitives/activity-types.ts";
-import { showError } from "./ui-toast.ts";
+import { showError } from "./ui/toast.ts";
 
 const MAX_ITEMS = 100;
 
@@ -23,49 +23,44 @@ interface ActivityState {
 type UpdateStateFn = (issueId: string, updater: (prev: ActivityState) => ActivityState) => void;
 type AddItemFn = (issueId: string, item: ActivityItem) => void;
 
-/**
- * Flush accumulated text as a text bubble.
- * If the last item is already a text item, appends to it instead of creating a new one.
- */
-function flushText(issueId: string, updateState: UpdateStateFn) {
-  const timer = flushTimers.get(issueId);
-  if (timer) {
-    clearTimeout(timer);
-    flushTimers.delete(issueId);
-  }
-
-  const buffer = textBuffers.get(issueId) ?? "";
-  if (buffer.trim()) {
-    updateState(issueId, (prev) => {
-      const items = [...prev.items];
-      const lastItem = items[items.length - 1];
-
-      if (lastItem && lastItem.type === "text") {
-        items[items.length - 1] = {
-          ...lastItem,
-          content: lastItem.content + buffer.trimEnd(),
-          timestamp: new Date(),
-        };
-      } else {
-        items.push({ type: "text", content: buffer.trim(), timestamp: new Date() });
-        if (items.length > MAX_ITEMS) {
-          items.splice(0, items.length - MAX_ITEMS);
-        }
-      }
-
-      return { ...prev, items, lastActivity: new Date() };
-    });
-    textBuffers.set(issueId, "");
-  }
-}
-
 /** Subscribe to hooks and update activity store */
 export function subscribeActivityHooks(
   hooks: HookEmitter,
   updateState: UpdateStateFn,
   addItem: AddItemFn,
 ) {
-  const flush = (issueId: string) => flushText(issueId, updateState);
+  // Flush accumulated text as a text bubble
+  const flush = (issueId: string) => {
+    const timer = flushTimers.get(issueId);
+    if (timer) {
+      clearTimeout(timer);
+      flushTimers.delete(issueId);
+    }
+
+    const buffer = textBuffers.get(issueId) ?? "";
+    if (buffer.trim()) {
+      updateState(issueId, (prev) => {
+        const items = [...prev.items];
+        const lastItem = items[items.length - 1];
+
+        if (lastItem && lastItem.type === "text") {
+          items[items.length - 1] = {
+            ...lastItem,
+            content: lastItem.content + buffer.trimEnd(),
+            timestamp: new Date(),
+          };
+        } else {
+          items.push({ type: "text", content: buffer.trim(), timestamp: new Date() });
+          if (items.length > MAX_ITEMS) {
+            items.splice(0, items.length - MAX_ITEMS);
+          }
+        }
+
+        return { ...prev, items, lastActivity: new Date() };
+      });
+      textBuffers.set(issueId, "");
+    }
+  };
 
   hooks.on("agent.output", ({ issueId, delta }: { issueId: string; delta: string }) => {
     textBuffers.set(issueId, (textBuffers.get(issueId) ?? "") + delta);

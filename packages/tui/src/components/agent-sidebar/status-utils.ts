@@ -4,7 +4,7 @@
 
 import type { AgentState, IssueStatus } from "workhorse-core";
 
-import type { getTheme } from "../theme.ts";
+import type { getTheme } from "../../theme.ts";
 
 type Theme = ReturnType<typeof getTheme>;
 

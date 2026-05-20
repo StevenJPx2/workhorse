@@ -10,7 +10,7 @@ import { useKeyboard, useRenderer } from "@opentui/solid";
 import { createSignal } from "solid-js";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 
 // Command mode state - true after Ctrl+X is pressed, waiting for next key
 const [commandMode, setCommandMode] = createSignal(false);

@@ -1,7 +1,10 @@
 /**
  * Jira renderer for TUI display.
  *
- * Handles Jira notifications in the unified activity renderer system.
+ * Handles Jira notifications and tool calls in the unified activity
+ * renderer system.
+ *
+ * @module workhorse-plugin-jira/renderer
  */
 
 import type { Notification } from "workhorse-core";
@@ -27,13 +30,25 @@ export interface RenderedActivity {
 
 /**
  * Jira renderer for TUI display.
- * Handles Jira notifications; returns null for other inputs.
+ * Handles Jira notifications and tool calls; returns null for other inputs.
  */
 export function jiraRenderer(input: ActivityInput): RenderedActivity | null {
-  if (input.kind !== "notification") return null;
-  if (input.notification.source !== "jira") return null;
+  if (input.kind === "notification") {
+    return renderNotification(input.notification);
+  }
 
-  const notification = input.notification;
+  if (input.kind === "tool") {
+    return renderTool(input.tool, input.args);
+  }
+
+  return null;
+}
+
+// Notification rendering
+
+function renderNotification(notification: Notification): RenderedActivity | null {
+  if (notification.source !== "jira") return null;
+
   const meta = notification.metadata as Record<string, unknown> | undefined;
   const jiraKey = meta?.jiraKey as string | undefined;
   const author = meta?.author as string | undefined;
@@ -60,4 +75,59 @@ export function jiraRenderer(input: ActivityInput): RenderedActivity | null {
     body: notification.body ?? undefined,
     style: "box",
   };
+}
+
+// Tool-call rendering
+
+function renderTool(tool: string, args: unknown): RenderedActivity | null {
+  if (!tool.startsWith("jira_")) return null;
+
+  const toolArgs = (args ?? {}) as Record<string, unknown>;
+
+  switch (tool) {
+    case "jira_add_comment":
+      return {
+        icon: "💬",
+        title: toolArgs.replyToId ? "Replying on Jira" : "Adding Jira comment",
+        subtitle: truncate(String(toolArgs.body ?? ""), 60),
+        style: "inline",
+        color: "accent",
+      };
+
+    case "jira_get_comments":
+      return {
+        icon: "💬",
+        title: "Fetching Jira comments",
+        style: "inline",
+        color: "dim",
+      };
+
+    case "jira_get_attachments":
+      return {
+        icon: "📎",
+        title: "Downloading Jira attachments",
+        subtitle: toolArgs.imagesOnly === true ? "images only" : undefined,
+        style: "inline",
+        color: "dim",
+      };
+
+    case "jira_transition_issue": {
+      const status = String(toolArgs.status ?? "");
+      return {
+        icon: "➡️",
+        title: "Transitioning Jira issue",
+        subtitle: status ? `→ ${status}` : undefined,
+        style: "inline",
+        color: "info",
+      };
+    }
+
+    default:
+      return null;
+  }
+}
+
+/** Truncate string to max length */
+function truncate(str: string, max: number): string {
+  return str.length <= max ? str : str.slice(0, max - 1) + "…";
 }

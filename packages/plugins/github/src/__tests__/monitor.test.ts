@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Database, MonitorContext } from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
-import { createGitHubPRMonitor } from "../monitor.ts";
+import { createGitHubPRMonitor } from "../monitor";
 
 describe("createGitHubPRMonitor", () => {
   function createMockContext(issueId = "issue-1"): MonitorContext {

@@ -1,7 +1,7 @@
 import { useRenderer } from "@opentui/solid";
 import { For } from "solid-js";
 
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
 
 interface Shortcut {

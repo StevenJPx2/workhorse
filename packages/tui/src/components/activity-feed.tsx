@@ -6,7 +6,7 @@
 import { For, Show, type Accessor } from "solid-js";
 
 import type { ActivityState } from "../state/activity-store.ts";
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
 import { ActivityItemRow } from "./activity-rows.tsx";
 

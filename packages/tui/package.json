@@ -28,8 +28,8 @@
     "registry": "https://registry.npmjs.org"
   },
   "scripts": {
-    "build": "bun ../../scripts/build-tui.ts",
-    "build:prod": "bun ../../scripts/build-tui.ts --minify --no-sourcemap",
+    "build": "bun ../../scripts/build-tui",
+    "build:prod": "bun ../../scripts/build-tui --minify --no-sourcemap",
     "dev": "bun src/index.tsx",
     "preview": "bun dist/workhorse.js",
     "test": "vitest run",

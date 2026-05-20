@@ -1,7 +1,7 @@
 import type { Accessor } from "solid-js";
 
 import type { ChatMessage } from "../../primitives/create-chat.ts";
-import { ui } from "../../state/ui.ts";
+import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
 
 interface OverviewInputProps {

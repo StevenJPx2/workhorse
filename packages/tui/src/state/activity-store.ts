@@ -44,20 +44,17 @@ function updateState(issueId: string, updater: (prev: ActivityState) => Activity
   setVersion((v) => v + 1);
 }
 
-/** Add an activity item for an issue */
-function addItem(issueId: string, item: ActivityItem) {
-  updateState(issueId, (prev) => {
-    const items = [...prev.items, item];
-    if (items.length > MAX_ITEMS) {
-      items.splice(0, items.length - MAX_ITEMS);
-    }
-    return { ...prev, items, lastActivity: item.timestamp };
-  });
-}
-
 /** Initialize activity store with hook subscriptions */
 export function initActivityStore(hooks: HookEmitter) {
-  subscribeActivityHooks(hooks, updateState, addItem);
+  subscribeActivityHooks(hooks, updateState, (issueId, item) => {
+    updateState(issueId, (prev) => {
+      const items = [...prev.items, item];
+      if (items.length > MAX_ITEMS) {
+        items.splice(0, items.length - MAX_ITEMS);
+      }
+      return { ...prev, items, lastActivity: item.timestamp };
+    });
+  });
 }
 
 /** Clear activity for an issue (e.g., when agent is removed) */

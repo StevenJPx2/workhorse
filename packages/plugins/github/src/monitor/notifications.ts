@@ -6,7 +6,7 @@
 
 import type { MonitorContext } from "workhorse-core";
 
-import type { GitHubComment, GitHubReview } from "./types.ts";
+import type { GitHubComment, GitHubReview } from "../types.ts";
 
 /** Priority mapping for review states */
 export const REVIEW_PRIORITIES: Record<GitHubReview["state"], "high" | "normal" | "low"> = {

@@ -7,7 +7,7 @@ import { useKeyboard } from "@opentui/solid";
 import type { Accessor, Setter } from "solid-js";
 import type { AgentAdapter, Issue } from "workhorse-core";
 
-import { ui } from "../../state/ui.ts";
+import { ui } from "../../state/ui";
 
 interface UseOverviewBindingsOptions {
   issues: Accessor<Issue[]>;

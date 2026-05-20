@@ -10,16 +10,16 @@
 
 import { type Database, isWorkhorseGenerated, type PollingMonitorOptions } from "workhorse-core";
 
-import type { GitHubClient } from "./client.ts";
+import type { GitHubClient } from "../client.ts";
 // Import hooks types to enable module augmentation
-import "./hooks.ts";
-import { processCheckChanges } from "./monitor-checks";
+import "../hooks.ts";
+import type { GitHubPRMonitorState } from "../types.ts";
+import { processCheckChanges } from "./checks";
 import {
   createCommentNotifications,
   createMergeableNotification,
   createReviewNotifications,
-} from "./monitor-notifications";
-import type { GitHubPRMonitorState } from "./types.ts";
+} from "./notifications";
 
 /** Metadata key for storing monitor state */
 const MONITOR_STATE_KEY = "github_pr_monitor_state";

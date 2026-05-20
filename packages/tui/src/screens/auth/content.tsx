@@ -4,7 +4,7 @@ import type { ApiTokenAuthField } from "workhorse-core";
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
 import { getTheme } from "../../theme.ts";
 import { ApiTokenForm } from "./api-token-form.tsx";
-import { AuthPluginCard } from "./auth-plugin-card.tsx";
+import { AuthPluginCard } from "./plugin-card.tsx";
 import type { AuthFlowState } from "./types.ts";
 
 export interface AuthContentProps {

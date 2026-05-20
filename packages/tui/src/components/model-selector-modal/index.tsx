@@ -2,7 +2,7 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { createSignal, createMemo, onMount } from "solid-js";
 
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
-import { ui } from "../../state/ui.ts";
+import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
 import { useModelSelectorKeyboard } from "./use-keyboard-nav.ts";
 

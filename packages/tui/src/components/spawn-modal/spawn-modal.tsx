@@ -3,7 +3,7 @@ import { createMemo, createSignal } from "solid-js";
 import type { AdapterInfo } from "workhorse-core";
 
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
-import { ui } from "../../state/ui.ts";
+import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
 import { HarnessList } from "./harness-list.tsx";
 import { ModalFooter } from "./modal-footer.tsx";

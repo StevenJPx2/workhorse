@@ -7,10 +7,10 @@ import { createChat } from "../../primitives";
 import { createAgents } from "../../primitives/create-agents.ts";
 import { createIssues } from "../../primitives/create-issues.ts";
 import { getRepoIdentifier } from "../../primitives/get-repo-identifier.ts";
-import { ui } from "../../state/ui.ts";
+import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
-import { OverviewHeader } from "./overview-header.tsx";
-import { OverviewInput } from "./overview-input.tsx";
+import { OverviewHeader } from "./header.tsx";
+import { OverviewInput } from "./input.tsx";
 import { useOverviewBindings } from "./use-overview-bindings.ts";
 
 /**

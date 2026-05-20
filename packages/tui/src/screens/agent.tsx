@@ -3,17 +3,17 @@ import type { AgentAdapter } from "workhorse-core";
 
 import { StatusBar } from "../components";
 import { ActivityFeed } from "../components/activity-feed.tsx";
-import { AgentSidebar } from "../components/agent-sidebar.tsx";
+import { AgentSidebar } from "../components/agent-sidebar";
 import { FileChangesPanel } from "../components/file-changes-panel.tsx";
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { createAgents, createChat, createIssueStatus } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
 import { createMonitors } from "../primitives/create-monitors.ts";
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
-import { AgentHeader } from "./agent/agent-header.tsx";
-import { useAgentBindings } from "./agent/use-agent-bindings.ts";
+import { AgentHeader } from "./agent/header.tsx";
+import { useAgentBindings } from "./agent/use-bindings.ts";
 
 const FILES_PANEL_WIDTH = 32;
 

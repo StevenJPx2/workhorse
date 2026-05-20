@@ -23,7 +23,7 @@ import { WorkhorseProvider } from "./context/workhorse.tsx";
 import { Overview, Agent, Help } from "./screens";
 import { initActivityStore } from "./state/activity-store.ts";
 import { logError } from "./state/error-log.ts";
-import { ui } from "./state/ui.ts";
+import { ui } from "./state/ui";
 
 interface AppProps {
   config: WorkhorseConfig;

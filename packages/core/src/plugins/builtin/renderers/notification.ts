@@ -5,29 +5,27 @@
 
 import type { ActivityColor, ActivityInput, RenderedActivity } from "./types.ts";
 
-/** Get icon and color for notification based on priority */
-function getNotificationStyle(priority: string): { icon: string; color: ActivityColor } {
-  switch (priority) {
-    case "blocking":
-      return { icon: "🚫", color: "error" };
-    case "high":
-      return { icon: "❗", color: "warning" };
-    case "normal":
-      return { icon: "📬", color: "info" };
-    case "low":
-      return { icon: "📭", color: "dim" };
-    default:
-      return { icon: "📬", color: "dim" };
-  }
-}
+/** Notification renderer for TUI display. */
+export function notificationRenderer(input: ActivityInput): RenderedActivity | null {
+  if (input.kind !== "notification") return null;
 
-/** Build subtitle from metadata - extracts common fields generically */
-function buildSubtitle(source: string, metadata: Record<string, unknown>): string | undefined {
-  const parts: string[] = [source];
+  const { notification } = input;
 
+  // Get icon and color for notification based on priority
+  const { icon, color }: { icon: string; color: ActivityColor } = (
+    {
+      blocking: { icon: "🚫", color: "error" },
+      high: { icon: "❗", color: "warning" },
+      normal: { icon: "📬", color: "info" },
+      low: { icon: "📭", color: "dim" },
+    } as Record<string, { icon: string; color: ActivityColor }>
+  )[notification.priority] ?? { icon: "📬", color: "dim" };
+
+  // Build subtitle from metadata - extracts common fields generically
+  const parts: string[] = [notification.source];
+  const metadata = (notification.metadata ?? {}) as Record<string, unknown>;
   const author = metadata.author ?? metadata.user ?? metadata.from;
   if (typeof author === "string") parts.push(author);
-
   const ref =
     metadata.key ??
     metadata.ref ??
@@ -37,23 +35,10 @@ function buildSubtitle(source: string, metadata: Record<string, unknown>): strin
     metadata.id;
   if (ref !== undefined && ref !== null) parts.push(String(ref));
 
-  return parts.length > 0 ? parts.join(" · ") : undefined;
-}
-
-/** Notification renderer for TUI display. */
-export function notificationRenderer(input: ActivityInput): RenderedActivity | null {
-  if (input.kind !== "notification") return null;
-
-  const { notification } = input;
-  const { icon, color } = getNotificationStyle(notification.priority);
-
   return {
     icon,
     title: notification.title,
-    subtitle: buildSubtitle(
-      notification.source,
-      (notification.metadata ?? {}) as Record<string, unknown>,
-    ),
+    subtitle: parts.length > 0 ? parts.join(" · ") : undefined,
     body: notification.body,
     style: notification.priority === "blocking" ? "box" : "inline",
     color,

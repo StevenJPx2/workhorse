@@ -9,23 +9,6 @@
 
 import type { ActivityColor, ActivityInput, RenderedActivity } from "./types.ts";
 
-/** Get color for issue status */
-function getStatusColor(status: string): ActivityColor {
-  switch (status) {
-    case "done":
-      return "success";
-    case "blocked":
-      return "error";
-    case "in_review":
-      return "warning";
-    case "implementing":
-    case "planning":
-      return "info";
-    default:
-      return "dim";
-  }
-}
-
 /** Skill loading renderer for TUI display. */
 export function skillRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
@@ -52,7 +35,16 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
       icon: "⚡",
       title: `status → ${status}`,
       style: "inline",
-      color: getStatusColor(status),
+      color:
+        (
+          {
+            done: "success",
+            blocked: "error",
+            in_review: "warning",
+            implementing: "info",
+            planning: "info",
+          } as Record<string, ActivityColor>
+        )[status] ?? "dim",
     };
   }
 
@@ -94,5 +86,24 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
     };
   }
 
+  if (input.tool === "workhorse_preview_image") {
+    return {
+      icon: "🖼️",
+      title: "viewing image",
+      subtitle: shortenPath(String(args.path ?? "")),
+      style: "inline",
+      color: "info",
+    };
+  }
+
   return null;
+}
+
+/** Shorten file path for display */
+function shortenPath(path: string): string {
+  if (!path) return "?";
+  if (path.length <= 35) return path;
+  const parts = path.split("/");
+  if (parts.length <= 2) return path.slice(-35);
+  return `…/${parts.slice(-2).join("/")}`;
 }

@@ -21,9 +21,9 @@ import {
   copyDrizzleMigrations,
   formatDuration,
   formatSize,
-} from "./build-tui-utils.ts";
+} from "./utils";
 
-const ROOT = resolve(import.meta.dir, "..");
+const ROOT = resolve(import.meta.dir, "../..");
 const TUI = resolve(ROOT, "packages/tui");
 const ENTRY = resolve(TUI, "src/index.tsx");
 const OUTDIR = resolve(TUI, "dist");
@@ -100,7 +100,7 @@ const { values } = parseArgs({
 
 if (values.help) {
   console.log(`
-Usage: bun scripts/build-tui.ts [options]
+Usage: bun scripts/build-tui [options]
 
 Options:
   -h, --help       Show this help
@@ -108,8 +108,8 @@ Options:
   -s, --sourcemap  Generate sourcemap (default: true)
 
 Examples:
-  bun scripts/build-tui.ts              # Dev build
-  bun scripts/build-tui.ts --minify     # Production build
+  bun scripts/build-tui                 # Dev build
+  bun scripts/build-tui --minify        # Production build
 `);
   process.exit(0);
 }

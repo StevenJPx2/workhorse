@@ -3,7 +3,7 @@ import type { AgentAdapter } from "workhorse-core";
 
 import { createAgents } from "../primitives/create-agents.ts";
 import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
 import { WorkhorseStatus } from "./workhorse-status.tsx";
 

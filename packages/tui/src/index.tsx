@@ -21,7 +21,7 @@ import {
   setupValuesToConfig,
 } from "./setup";
 import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
-import { ui } from "./state/ui.ts";
+import { ui } from "./state/ui";
 import { setTheme } from "./theme.ts";
 
 interface SetupWrapperProps {

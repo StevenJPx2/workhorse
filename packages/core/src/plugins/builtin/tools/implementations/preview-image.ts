@@ -37,8 +37,10 @@ export async function previewImageToolImpl(
   try {
     const {
       path: inputPath,
-      maxWidth,
-      maxHeight,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      maxWidth: _maxWidth,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      maxHeight: _maxHeight,
     } = args as {
       path: string;
       maxWidth?: number;
@@ -79,21 +81,17 @@ export async function previewImageToolImpl(
       };
     }
 
-    // Convert to base64
-    const base64Data = buffer.toString("base64");
-
-    // Create the image content
-    const imageContent: ImageContent = {
-      type: "image",
-      data: base64Data,
-      mimeType,
-    };
-
     // Return with both text description and image
     return {
       success: true,
       output: `Image loaded: ${inputPath} (${buffer.length} bytes, ${mimeType})`,
-      images: [imageContent],
+      images: [
+        {
+          type: "image",
+          data: buffer.toString("base64"),
+          mimeType,
+        } as ImageContent,
+      ],
     };
   } catch (error) {
     return {

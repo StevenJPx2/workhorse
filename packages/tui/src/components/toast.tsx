@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
 
-import { ui, type Toast as ToastType } from "../state/ui.ts";
+import { ui, type Toast as ToastType } from "../state/ui";
 import { getTheme } from "../theme.ts";
 
 /** Single toast notification item */

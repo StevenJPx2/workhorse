@@ -5,8 +5,8 @@
 import { For, Show, type Accessor } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 
-import { ui } from "../state/ui.ts";
-import { getTheme } from "../theme.ts";
+import { ui } from "../../state/ui";
+import { getTheme } from "../../theme.ts";
 import {
   formatWorkflowStatus,
   getStatusColor,
@@ -15,7 +15,7 @@ import {
   getWorkflowStatusColor,
   getWorkflowStatusIcon,
   truncateModel,
-} from "./agent-status-utils.ts";
+} from "./status-utils.ts";
 
 interface AgentSidebarProps {
   agents: Accessor<AgentAdapter[]>;
@@ -65,43 +65,45 @@ export function AgentSidebar(props: AgentSidebarProps) {
               <box
                 onMouseDown={() => onSelect(agent)}
                 backgroundColor={isHighlighted() ? theme.colors.selection : undefined}
-                paddingLeft={isCurrentAgent() ? 0 : 1}
                 paddingRight={1}
                 paddingTop={0}
                 paddingBottom={0}
-                flexDirection="column"
+                flexDirection="row"
               >
                 {/* Left border indicator for current agent */}
-                {isCurrentAgent() && (
-                  <box width={1} height="100%" backgroundColor={theme.colors.accent} />
-                )}
-                {/* Row 1: Agent ID with selection indicator */}
-                <box flexDirection="row" justifyContent="space-between">
-                  <text fg={isHighlighted() ? theme.colors.accent : theme.colors.text}>
-                    {isHighlighted() ? "▸ " : "  "}
-                    <b>{agent.issueId}</b>
-                  </text>
-                  <text fg={getStatusColor(state(), theme)}>{getStatusIcon(state())}</text>
-                </box>
-                {/* Row 2: Agent state + workflow status */}
-                <box paddingLeft={2} flexDirection="row" gap={1}>
-                  <text fg={getStatusColor(state(), theme)}>{getStatusText(state())}</text>
-                  <Show when={agent.issue.status}>
-                    <text fg={theme.colors.dim}>·</text>
-                    <text fg={getWorkflowStatusColor(agent.issue.status, theme)}>
-                      {getWorkflowStatusIcon(agent.issue.status)}{" "}
-                      {formatWorkflowStatus(agent.issue.status)}
+                <Show when={isCurrentAgent()} fallback={<box width={1} />}>
+                  <box width={1} backgroundColor={theme.colors.accent} />
+                </Show>
+                {/* Content column */}
+                <box flexDirection="column" flexGrow={1}>
+                  {/* Row 1: Agent ID with selection indicator */}
+                  <box flexDirection="row" justifyContent="space-between">
+                    <text fg={isHighlighted() ? theme.colors.accent : theme.colors.text}>
+                      {isHighlighted() ? "▸ " : "  "}
+                      <b>{agent.issueId}</b>
                     </text>
+                    <text fg={getStatusColor(state(), theme)}>{getStatusIcon(state())}</text>
+                  </box>
+                  {/* Row 2: Agent state + workflow status */}
+                  <box paddingLeft={2} flexDirection="row" gap={1}>
+                    <text fg={getStatusColor(state(), theme)}>{getStatusText(state())}</text>
+                    <Show when={agent.issue.status}>
+                      <text fg={theme.colors.dim}>·</text>
+                      <text fg={getWorkflowStatusColor(agent.issue.status, theme)}>
+                        {getWorkflowStatusIcon(agent.issue.status)}{" "}
+                        {formatWorkflowStatus(agent.issue.status)}
+                      </text>
+                    </Show>
+                  </box>
+                  {/* Row 3: Model info */}
+                  <Show when={agent.model}>
+                    <box paddingLeft={2}>
+                      <text fg={theme.colors.dim}>
+                        {truncateModel(agent.model ?? "", SIDEBAR_WIDTH - 6)}
+                      </text>
+                    </box>
                   </Show>
                 </box>
-                {/* Row 3: Model info */}
-                <Show when={agent.model}>
-                  <box paddingLeft={2}>
-                    <text fg={theme.colors.dim}>
-                      {truncateModel(agent.model ?? "", SIDEBAR_WIDTH - 6)}
-                    </text>
-                  </box>
-                </Show>
               </box>
             );
           }}

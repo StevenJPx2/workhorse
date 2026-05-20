@@ -14,7 +14,7 @@ import {
   isFocused,
   resetChatContext,
   type FocusTarget,
-} from "./ui-focus.ts";
+} from "./focus.ts";
 import {
   toast,
   dismissToast,
@@ -23,7 +23,7 @@ import {
   toasts,
   type Toast,
   type ToastType,
-} from "./ui-toast.ts";
+} from "./toast.ts";
 
 export type { Toast, ToastType, FocusTarget };
 export type Screen = "overview" | "agent" | "help";

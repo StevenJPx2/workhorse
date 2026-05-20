@@ -6,10 +6,10 @@
 import { createSignal, For, Show } from "solid-js";
 
 import { getTheme } from "../../theme.ts";
-import { SetupField } from "./setup-field.tsx";
-import { SetupHeader } from "./setup-header.tsx";
-import { SetupPluginTabs } from "./setup-plugin-tabs.tsx";
-import { SetupStatusBar } from "./setup-status-bar.tsx";
+import { SetupField } from "./field.tsx";
+import { SetupHeader } from "./header.tsx";
+import { SetupPluginTabs } from "./plugin-tabs.tsx";
+import { SetupStatusBar } from "./status-bar.tsx";
 import type { SetupPluginConfig, SetupScreenProps } from "./types.ts";
 import { useSetupKeyboard } from "./use-setup-keyboard.ts";
 

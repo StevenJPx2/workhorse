@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 
 export type ToastType = "error" | "success" | "info" | "warning";
+
 export interface Toast {
   id: number;
   type: ToastType;

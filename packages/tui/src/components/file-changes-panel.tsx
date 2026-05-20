@@ -6,7 +6,7 @@
 import { For, Show, type Accessor } from "solid-js";
 
 import type { FileChangesState } from "../primitives/create-file-changes.ts";
-import { ui } from "../state/ui.ts";
+import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
 
 interface FileChangesPanelProps {

@@ -1,39 +1,20 @@
 /**
- * GitHub renderer for TUI display.
+ * GitHub notification renderer for TUI display.
  *
- * Handles GitHub notifications in the unified activity renderer system.
+ * @module workhorse-plugin-github/renderer/notification
  */
 
 import type { Notification } from "workhorse-core";
 
-/**
- * Activity input type for the unified renderer system.
- */
-export type ActivityInput =
-  | { kind: "notification"; notification: Notification }
-  | { kind: "tool"; tool: string; args: unknown };
+import type { RenderedActivity } from "./types.ts";
 
 /**
- * Rendered activity output for TUI display.
+ * Render GitHub notifications.
+ * Returns null for non-GitHub notifications.
  */
-export interface RenderedActivity {
-  icon: string;
-  title: string;
-  subtitle?: string;
-  body?: string;
-  style: "box" | "inline";
-  color?: "info" | "success" | "warning" | "error" | "dim" | "accent";
-}
+export function renderGithubNotification(notification: Notification): RenderedActivity | null {
+  if (notification.source !== "github") return null;
 
-/**
- * GitHub renderer for TUI display.
- * Handles GitHub notifications; returns null for other inputs.
- */
-export function githubRenderer(input: ActivityInput): RenderedActivity | null {
-  if (input.kind !== "notification") return null;
-  if (input.notification.source !== "github") return null;
-
-  const notification = input.notification;
   const meta = notification.metadata as Record<string, unknown> | undefined;
   const owner = meta?.owner as string | undefined;
   const repo = meta?.repo as string | undefined;

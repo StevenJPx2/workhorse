@@ -3,15 +3,15 @@ import { createSignal, onCleanup } from "solid-js";
 import type { ApiTokenProvider } from "workhorse-core";
 
 import { getTheme } from "../../theme.ts";
-import { AuthContent } from "./auth-content.tsx";
+import { AuthContent } from "./content.tsx";
 import {
   handleOAuth,
   handleExternalAuth,
   handleApiTokenAuth,
   submitApiTokenForm,
-} from "./auth-handlers.ts";
-import { AuthHeader } from "./auth-header.tsx";
-import { AuthStatusBar } from "./auth-status-bar.tsx";
+} from "./handlers.ts";
+import { AuthHeader } from "./header.tsx";
+import { AuthStatusBar } from "./status-bar.tsx";
 import type { AuthFlowState, AuthScreenProps } from "./types.ts";
 import { useApiTokenForm } from "./use-api-token-form.ts";
 

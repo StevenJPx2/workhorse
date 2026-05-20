@@ -11,6 +11,7 @@ import noSingleReferenceFunction from "./rules/no-single-reference-function";
 import noSingleUseVariable from "./rules/no-single-use-variable";
 import preferExportDirectory from "./rules/prefer-export-directory";
 import preferFolderBarrel from "./rules/prefer-folder-barrel";
+import preferInlineSingleImport from "./rules/prefer-inline-single-import";
 import preferPathAlias from "./rules/prefer-path-alias";
 import preferThenChain from "./rules/prefer-then-chain";
 
@@ -32,6 +33,7 @@ const plugin = {
     "no-reexport-outside-barrel": noReexportOutsideBarrel,
     "prefer-export-directory": preferExportDirectory,
     "prefer-folder-barrel": preferFolderBarrel,
+    "prefer-inline-single-import": preferInlineSingleImport,
     "prefer-path-alias": preferPathAlias,
     "prefer-then-chain": preferThenChain,
     "no-cascading-ternary": noCascadingTernary,
