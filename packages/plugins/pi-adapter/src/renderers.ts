@@ -32,6 +32,9 @@ interface RenderedActivity {
 export function piToolRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "tool") return null;
 
+  // Skip workhorse_* tools - they have their own renderer
+  if (input.tool.startsWith("workhorse_")) return null;
+
   const tool = input.tool.toLowerCase();
   const args = (input.args ?? {}) as Record<string, unknown>;
 
