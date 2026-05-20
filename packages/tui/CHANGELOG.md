@@ -1,5 +1,17 @@
 # @fdcn/workhorse
 
+## v0.1.20
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.19...v0.1.20)
+
+### 🩹 Fixes
+
+- Improve sidebar ([f8331cd](https://github.com/StevenJPx2/workhorse/commit/f8331cd))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.19
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.18...v0.1.19)
