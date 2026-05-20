@@ -1,5 +1,23 @@
 # @fdcn/workhorse
 
+## v0.1.21
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.20...v0.1.21)
+
+### 🚀 Enhancements
+
+- Increase sidebar width ([3c5eb66](https://github.com/StevenJPx2/workhorse/commit/3c5eb66))
+- Add loading states, improve performance ([4b2b059](https://github.com/StevenJPx2/workhorse/commit/4b2b059))
+- **plugins, jira:** Add sources for tools to only enrich based on source, better visibility to threads ([d453a05](https://github.com/StevenJPx2/workhorse/commit/d453a05))
+
+### 🩹 Fixes
+
+- **github:** Get attachments for everything ([866adc0](https://github.com/StevenJPx2/workhorse/commit/866adc0))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.20
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.19...v0.1.20)
