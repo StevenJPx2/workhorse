@@ -1,5 +1,31 @@
 # @fdcn/workhorse
 
+## v0.1.19
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.18...v0.1.19)
+
+### 🚀 Enhancements
+
+- Add vision tool ([2165491](https://github.com/StevenJPx2/workhorse/commit/2165491))
+
+### 🩹 Fixes
+
+- Ignore bot comments ([d086fd1](https://github.com/StevenJPx2/workhorse/commit/d086fd1))
+- **tui:** Agent toggle, and sidebar ([a56b199](https://github.com/StevenJPx2/workhorse/commit/a56b199))
+- Tests ([82939d7](https://github.com/StevenJPx2/workhorse/commit/82939d7))
+- **pi-adapter:** Prevent agent bricking from interactive git prompts ([f939fc2](https://github.com/StevenJPx2/workhorse/commit/f939fc2))
+
+### 🏡 Chore
+
+- Test fixes ([302b02e](https://github.com/StevenJPx2/workhorse/commit/302b02e))
+- Update build ([bcc9a8a](https://github.com/StevenJPx2/workhorse/commit/bcc9a8a))
+- Fix local workhorse plugin to use dist version ([28ff9a2](https://github.com/StevenJPx2/workhorse/commit/28ff9a2))
+- Remove local plugin ([9fe094a](https://github.com/StevenJPx2/workhorse/commit/9fe094a))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.18
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.17...v0.1.18)
