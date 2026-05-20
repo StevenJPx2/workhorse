@@ -19,7 +19,6 @@ import {
   patchDynamicImports,
   copyTreeSitterAssets,
   copyDrizzleMigrations,
-  copySkillFiles,
   formatDuration,
   formatSize,
 } from "./build-tui-utils.ts";
@@ -75,7 +74,6 @@ async function build(minify: boolean, sourcemap: boolean): Promise<void> {
   patchDynamicImports(ROOT, BUNDLE);
   copyTreeSitterAssets(TUI, OUTDIR);
   copyDrizzleMigrations(ROOT, OUTDIR);
-  copySkillFiles(ROOT, OUTDIR);
 
   // Prepend shebang so the bundle is directly executable (requires bun runtime)
   const existing = await Bun.file(BUNDLE).text();

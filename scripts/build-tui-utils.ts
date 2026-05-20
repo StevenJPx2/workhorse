@@ -43,19 +43,6 @@ export function copyDrizzleMigrations(root: string, outdir: string): void {
   console.log("  ✓ Copied drizzle migrations");
 }
 
-/** Copy skill markdown files to dist folder */
-export function copySkillFiles(root: string, outdir: string): void {
-  const src = resolve(root, "packages/core/src/plugins/builtin/skills");
-  if (!existsSync(src)) return;
-
-  for (const f of readdirSync(src)) {
-    if (extname(f) === ".md") {
-      copyFileSync(resolve(src, f), resolve(outdir, f));
-    }
-  }
-  console.log("  ✓ Copied skill files");
-}
-
 export const formatDuration = (ms: number): string =>
   ms < 1000 ? `${ms.toFixed(0)}ms` : `${(ms / 1000).toFixed(2)}s`;
 
