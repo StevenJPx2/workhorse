@@ -1,5 +1,18 @@
 # @fdcn/workhorse
 
+## v0.1.22
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.21...v0.1.22)
+
+### 🩹 Fixes
+
+- **tui:** Do not show running agents as spawning ([ce37643](https://github.com/StevenJPx2/workhorse/commit/ce37643))
+- **github:** Have attachments authenticated ([7287258](https://github.com/StevenJPx2/workhorse/commit/7287258))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.21
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.20...v0.1.21)
