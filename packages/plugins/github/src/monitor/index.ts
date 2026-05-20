@@ -11,17 +11,17 @@
 import { type Database, isWorkhorseGenerated, type PollingMonitorOptions } from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
-// Import hooks types to enable module augmentation
 import "../hooks.ts";
 import type { GitHubPRMonitorState } from "../types.ts";
 import { processCheckChanges } from "./checks";
+import { emitCheckHooks, emitCloseHook, emitMergeHook, emitReviewHooks } from "./hooks-emitter";
 import {
   createCommentNotifications,
   createMergeableNotification,
+  createMergedNotification,
   createReviewNotifications,
 } from "./notifications";
 
-/** Metadata key for storing monitor state */
 const MONITOR_STATE_KEY = "github_pr_monitor_state";
 
 /** Create monitor options for the unified GitHub PR monitor */
@@ -35,23 +35,15 @@ export function createGitHubPRMonitor(
     type: "polling",
     interval,
     poll: async (ctx) => {
-      // ctx.issueId is the internal UUID (monitors are started with issue.id)
       const issue = await db.issues.getById(ctx.issueId);
-      if (!issue) {
-        return { hasChanges: false };
-      }
+      if (!issue) return { hasChanges: false };
 
-      // Need PR metadata to poll
       const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
       const owner = metadata.owner as string | undefined;
       const repo = metadata.repo as string | undefined;
       const prNumber = metadata.prNumber as number | undefined;
+      if (!owner || !repo || !prNumber) return { hasChanges: false };
 
-      if (!owner || !repo || !prNumber) {
-        return { hasChanges: false };
-      }
-
-      // Get current state from metadata
       const state: GitHubPRMonitorState = (metadata[MONITOR_STATE_KEY] as GitHubPRMonitorState) ?? {
         lastSeenReviewIds: [],
         lastSeenCommentIds: [],
@@ -65,15 +57,12 @@ export function createGitHubPRMonitor(
       const changes: Record<string, unknown> = {};
       const meta = { prNumber, owner, repo };
 
-      // Fetch PR data first to get the head SHA
       const pr = await client.fetchPR(owner, repo, prNumber);
       const headSha = pr.head?.sha;
 
-      // Fetch reviews, comments, and check runs in parallel
       const [reviews, comments, checkRuns] = await Promise.all([
         client.getPRReviews(owner, repo, prNumber),
         client.getPRComments(owner, repo, prNumber),
-        // Use the PR's head SHA for check runs, skip if not available
         headSha ? client.getCheckRuns(owner, repo, headSha) : Promise.resolve([]),
       ]);
 
@@ -83,19 +72,10 @@ export function createGitHubPRMonitor(
         hasChanges = true;
         changes.newReviews = newReviews.length;
         await createReviewNotifications(ctx, newReviews, meta);
-        newReviews.forEach((review) => {
-          ctx.hooks.emit("github:review.submitted", {
-            issueId: issue.id,
-            review: {
-              state: review.state as "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED",
-              author: review.user?.login ?? "unknown",
-              body: review.body ?? "",
-            },
-          });
-        });
+        emitReviewHooks(ctx, issue, newReviews);
       }
 
-      // Process new comments (filter out bot-generated comments)
+      // Process new comments (filter out bot-generated)
       const newComments = comments.filter(
         (c) => !state.lastSeenCommentIds.includes(c.id) && !isWorkhorseGenerated(c.body),
       );
@@ -115,21 +95,7 @@ export function createGitHubPRMonitor(
       if (checkChanges.hasChanges) {
         hasChanges = true;
         changes.checkChanges = checkChanges.summary;
-        if (checkChanges.summary.failed) {
-          ctx.hooks.emit("github:checks.failed", {
-            issueId: issue.id,
-            pr: { number: prNumber },
-            failedChecks: checkRuns
-              .filter((c) => c.conclusion === "failure")
-              .map((c) => ({
-                name: c.name,
-                url: c.html_url ?? "",
-              })),
-          });
-        }
-        if (checkChanges.summary.allPassing) {
-          ctx.hooks.emit("github:checks.passed", { issueId: issue.id, pr: { number: prNumber } });
-        }
+        emitCheckHooks(ctx, issue, prNumber, checkRuns, checkChanges.summary);
       }
 
       // Process mergeable state changes
@@ -139,33 +105,12 @@ export function createGitHubPRMonitor(
         createMergeableNotification(ctx, pr.mergeable_state, meta);
       }
 
-      const emitMergeHook = () => {
-        ctx.hooks.emit("github:pr.merged", {
-          issueId: issue.id,
-          externalId: issue.externalId,
-          source: issue.source,
-          pr: {
-            number: prNumber,
-            url: pr.html_url,
-            mergedBy: pr.merged_by?.login,
-            mergedAt: pr.merged_at ?? new Date().toISOString(),
-          },
-        });
-      };
-
-      const emitCloseHook = (isClosed: boolean) => {
-        if (!isClosed) return;
-        ctx.hooks.emit("github:pr.closed", {
-          issueId: issue.id,
-          pr: { number: prNumber, url: pr.html_url },
-        });
-      };
-
-      // Detect PR merge and emit plugin hook for cross-plugin coordination
+      // Detect PR merge
       if (pr.merged && !state.lastMerged) {
         hasChanges = true;
         changes.merged = true;
-        emitMergeHook();
+        createMergedNotification(ctx, pr.merged_by?.login, meta);
+        emitMergeHook(ctx, issue, prNumber, pr);
       }
 
       // Detect PR closed without merge
@@ -173,7 +118,7 @@ export function createGitHubPRMonitor(
       if (isClosed && !state.lastClosed) {
         hasChanges = true;
         changes.closed = true;
-        emitCloseHook(isClosed);
+        emitCloseHook(ctx, issue, prNumber, pr.html_url);
       }
 
       // Update state

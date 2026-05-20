@@ -79,6 +79,23 @@ export async function createCommentNotifications(
   }
 }
 
+/** Create notification for PR merge */
+export function createMergedNotification(
+  ctx: Pick<MonitorContext, "issueId" | "memory">,
+  mergedBy: string | undefined,
+  meta: PRMeta,
+): void {
+  ctx.memory.notifications.create({
+    issueId: ctx.issueId,
+    source: "github",
+    sourceId: `github-merged-${meta.prNumber}`,
+    title: `PR #${meta.prNumber} merged`,
+    body: `PR was merged${mergedBy ? ` by ${mergedBy}` : ""}. No action needed.`,
+    priority: "normal",
+    metadata: { ...meta, mergedBy },
+  });
+}
+
 /** Create notification for mergeable state changes */
 export function createMergeableNotification(
   ctx: Pick<MonitorContext, "issueId" | "memory">,
