@@ -1,5 +1,36 @@
 # @fdcn/workhorse
 
+## v0.1.18
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.17...v0.1.18)
+
+### 🚀 Enhancements
+
+- Add default timeout ([cbfe4e4](https://github.com/StevenJPx2/workhorse/commit/cbfe4e4))
+- Add memory search ([a46f448](https://github.com/StevenJPx2/workhorse/commit/a46f448))
+- Add more proper stuff ([bba669f](https://github.com/StevenJPx2/workhorse/commit/bba669f))
+- Improve indexer with steering and write tool ([1ec18d0](https://github.com/StevenJPx2/workhorse/commit/1ec18d0))
+- Add more memory features ([fb44be0](https://github.com/StevenJPx2/workhorse/commit/fb44be0))
+
+### 🩹 Fixes
+
+- Tests ([a8d8689](https://github.com/StevenJPx2/workhorse/commit/a8d8689))
+- Memory ([4b202d5](https://github.com/StevenJPx2/workhorse/commit/4b202d5))
+- Renderer ([bcf765a](https://github.com/StevenJPx2/workhorse/commit/bcf765a))
+
+### 🏡 Chore
+
+- Add stop option ([05c215b](https://github.com/StevenJPx2/workhorse/commit/05c215b))
+- Fix lint ([266e535](https://github.com/StevenJPx2/workhorse/commit/266e535))
+
+### 🎨 Styles
+
+- Reformat ([3b0bc69](https://github.com/StevenJPx2/workhorse/commit/3b0bc69))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.17
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.16...v0.1.17)
