@@ -1,6 +1,5 @@
-// For local plugins in development, use relative path to core
-// In production, published plugins would use "workhorse-core" from npm
-import { definePlugin, useWorkhorse } from "../../packages/core/src";
+// Import from dist to use the same context instance as the TUI
+import { definePlugin, useWorkhorse } from "../../packages/core/dist/index.js";
 
 export default definePlugin({
   manifest: {
