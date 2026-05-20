@@ -50,10 +50,10 @@ export function createGetAttachmentsTool(
       };
 
       try {
-        // Fetch issue/PR and comments
+        // Fetch issue/PR and all comments (including PR review comments)
         const [issue, comments] = await Promise.all([
           client.fetchIssue(owner, repo, number),
-          client.getIssueComments(owner, repo, number),
+          client.getPRComments(owner, repo, number),
         ]);
 
         // Extract all image references

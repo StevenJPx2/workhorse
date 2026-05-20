@@ -11,7 +11,7 @@ import { createGetAttachmentsTool } from "../tools/get-attachments.ts";
 describe("github_get_attachments", () => {
   const createMockClient = () => ({
     fetchIssue: vi.fn(),
-    getIssueComments: vi.fn(),
+    getPRComments: vi.fn(),
   });
 
   const createMockService = () => ({
@@ -43,7 +43,7 @@ describe("github_get_attachments", () => {
     mockClient.fetchIssue.mockResolvedValue({
       body: "Screenshot: ![img](https://user-images.githubusercontent.com/1/screenshot.png)",
     });
-    mockClient.getIssueComments.mockResolvedValue([]);
+    mockClient.getPRComments.mockResolvedValue([]);
 
     const mockBuffer = Buffer.from("image data");
     const originalFetch = globalThis.fetch;
@@ -79,7 +79,7 @@ describe("github_get_attachments", () => {
     const mockService = createMockService();
 
     mockClient.fetchIssue.mockResolvedValue({ body: null });
-    mockClient.getIssueComments.mockResolvedValue([
+    mockClient.getPRComments.mockResolvedValue([
       {
         id: 100,
         body: "Here: ![fix](https://user-images.githubusercontent.com/1/fix.png)",
@@ -121,7 +121,7 @@ describe("github_get_attachments", () => {
     mockClient.fetchIssue.mockResolvedValue({
       body: "![img](https://user-images.githubusercontent.com/1/cached.png)",
     });
-    mockClient.getIssueComments.mockResolvedValue([]);
+    mockClient.getPRComments.mockResolvedValue([]);
 
     // Mock exists to return a cached path
     mockService.exists.mockResolvedValue("/attachments/cached.png");
@@ -149,7 +149,7 @@ describe("github_get_attachments", () => {
     const mockService = createMockService();
 
     mockClient.fetchIssue.mockResolvedValue({ body: "No images here, just text." });
-    mockClient.getIssueComments.mockResolvedValue([]);
+    mockClient.getPRComments.mockResolvedValue([]);
 
     const tool = createGetAttachmentsTool(
       mockClient as unknown as GitHubClient,
@@ -174,7 +174,7 @@ describe("github_get_attachments", () => {
     mockClient.fetchIssue.mockResolvedValue({
       body: "![private](https://private.example.com/secret.png)",
     });
-    mockClient.getIssueComments.mockResolvedValue([]);
+    mockClient.getPRComments.mockResolvedValue([]);
 
     const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockResolvedValue({
