@@ -14,6 +14,8 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { assertPathAllowed, isPathAllowed, type PathValidationOptions } from "workhorse-core";
 
+import { GitOperationTracker } from "./git-operation-tracker.ts";
+
 /** Options for creating restricted bash operations. */
 export interface RestrictedBashOptions extends PathValidationOptions {
   /** Allow commands in /tmp/. Default: true */
@@ -22,6 +24,8 @@ export interface RestrictedBashOptions extends PathValidationOptions {
   shellPath?: string;
   /** Additional environment variables to merge with the shell environment. */
   additionalEnv?: NodeJS.ProcessEnv;
+  /** Timeout for git operations (rebase/merge/cherry-pick) in ms. Default: 180000 (3 min) */
+  gitOperationTimeoutMs?: number;
 }
 
 /**
@@ -72,9 +76,9 @@ export function createPathValidatingSpawnHook(options: RestrictedBashOptions): B
   };
 }
 
-/** Creates bash operations that validate paths before execution. */
+/** Creates bash operations that validate paths and track git operations. */
 export function createRestrictedBashOperations(options: RestrictedBashOptions): BashOperations {
-  const { rootDir, allowTmp = true, shellPath } = options;
+  const { rootDir, allowTmp = true, shellPath, gitOperationTimeoutMs } = options;
 
   // Build the list of allowed directories
   const additionalAllowedDirs = [...(options.additionalAllowedDirs ?? [])];
@@ -82,19 +86,19 @@ export function createRestrictedBashOperations(options: RestrictedBashOptions): 
     additionalAllowedDirs.push(DEFAULT_TMP_DIR);
   }
 
-  const pathOptions: PathValidationOptions = {
-    rootDir,
-    additionalAllowedDirs,
-  };
-
-  // Get the base local operations
+  const pathOptions: PathValidationOptions = { rootDir, additionalAllowedDirs };
   const localOps = createLocalBashOperations({ shellPath });
+  const gitTracker = new GitOperationTracker(gitOperationTimeoutMs);
 
   return {
     exec: async (command, cwd, execOptions) => {
+      // Check if git operation has timed out before executing
+      const gitError = gitTracker.checkCommand(command);
+      if (gitError) {
+        return { stdout: "", stderr: gitError, exitCode: 1, interrupted: false };
+      }
+
       // assertPathAllowed throws if cwd is outside allowed directories
-      // Apply default 5-minute timeout unless explicitly overridden
-      // Inject NON_INTERACTIVE_ENV to prevent git/other tools from opening editors
       return localOps.exec(command, assertPathAllowed(cwd, pathOptions), {
         ...execOptions,
         timeout: execOptions.timeout ?? DEFAULT_BASH_TIMEOUT_MS,
