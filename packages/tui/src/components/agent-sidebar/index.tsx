@@ -2,7 +2,7 @@
  * Agent sidebar component - shows list of agents with status.
  */
 import { type Accessor, For, Show } from "solid-js";
-import type { AgentAdapter, AgentState } from "workhorse-core";
+import type { AgentAdapter, AgentState, IssueStatus } from "workhorse-core";
 
 import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
@@ -21,6 +21,7 @@ interface AgentSidebarProps {
   selectedId: Accessor<string | null>;
   selectedIndex: Accessor<number>;
   getState: (issueId: string | null) => AgentState | null;
+  getIssueStatus: (issueId: string) => IssueStatus | null;
   onSelect: (agent: AgentAdapter) => void;
   focused?: boolean;
 }
@@ -108,14 +109,26 @@ export function AgentSidebar(props: AgentSidebarProps) {
                     <text fg={getStatusColor(state(), theme)}>
                       {getStatusText(state())}
                     </text>
-                    <Show when={agent.issue.status}>
-                      <text fg={theme.colors.dim}>·</text>
-                      <text
-                        fg={getWorkflowStatusColor(agent.issue.status, theme)}
-                      >
-                        {getWorkflowStatusIcon(agent.issue.status)}{" "}
-                        {formatWorkflowStatus(agent.issue.status)}
-                      </text>
+                    <Show
+                      when={(() => {
+                        const status =
+                          props.getIssueStatus(agent.issueId) ??
+                          agent.issue.status;
+                        return status ? { status } : null;
+                      })()}
+                    >
+                      {(item: () => { status: IssueStatus }) => {
+                        const status = item().status;
+                        return (
+                          <>
+                            <text fg={theme.colors.dim}>·</text>
+                            <text fg={getWorkflowStatusColor(status, theme)}>
+                              {getWorkflowStatusIcon(status)}{" "}
+                              {formatWorkflowStatus(status)}
+                            </text>
+                          </>
+                        );
+                      }}
                     </Show>
                   </box>
                   {/* Row 3: Model info */}

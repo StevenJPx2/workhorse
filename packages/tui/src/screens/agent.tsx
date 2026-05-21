@@ -9,6 +9,7 @@ import { useWorkhorseContext } from "../context/workhorse.tsx";
 import { createAgents, createChat, createIssueStatus } from "../primitives";
 import { createActivity } from "../primitives/create-activity.ts";
 import { createFileChanges } from "../primitives/create-file-changes.ts";
+import { createIssueStatuses } from "../primitives/create-issue-statuses.ts";
 import { createMonitors } from "../primitives/create-monitors.ts";
 import { ui } from "../state/ui";
 import { getTheme } from "../theme.ts";
@@ -70,6 +71,11 @@ export function Agent() {
     issueId: () => selectedAgent()?.issue.externalId ?? null,
   });
 
+  // Track live issue statuses for all agents in the sidebar
+  const { getStatus: getIssueStatus } = createIssueStatuses({
+    issueIds: createMemo(() => agents().map((a) => a.issue.externalId)),
+  });
+
   const { state: activityState } = createActivity({ issueId: selectedId });
   const { state: fileChangesState } = createFileChanges({
     worktreePath: () => selectedAgent()?.worktreePath ?? null,
@@ -105,6 +111,7 @@ export function Agent() {
           selectedId={selectedId}
           selectedIndex={sidebarIndex}
           getState={getState}
+          getIssueStatus={getIssueStatus}
           onSelect={(agent) => ui.enterAgentView(agent.issueId)}
         />
         <box width={1} backgroundColor={theme.colors.surface} />
