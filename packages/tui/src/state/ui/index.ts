@@ -27,13 +27,14 @@ import {
 
 export type { Toast, ToastType, FocusTarget };
 export type Screen = "overview" | "agent" | "help";
-export type Modal = "spawn" | "model" | "delete" | null;
+export type Modal = "spawn" | "spawn-all" | "model" | "delete" | null;
 
 // Global UI state signals
 const [screen, setScreen] = createSignal<Screen>("overview");
 const [modal, setModal] = createSignal<Modal>(null);
 const [selectedAgentId, setSelectedAgentId] = createSignal<string | null>(null);
 const [spawnIssue, setSpawnIssue] = createSignal<Issue | null>(null);
+const [spawnAllIssues, setSpawnAllIssues] = createSignal<Issue[]>([]);
 const [deleteIssue, setDeleteIssue] = createSignal<Issue | null>(null);
 
 // Model selection state (overrides config when set)
@@ -60,6 +61,7 @@ export const ui = {
   modal,
   selectedAgentId,
   spawnIssue,
+  spawnAllIssues,
   deleteIssue,
   inputMode,
   focusedComponent,
@@ -104,7 +106,17 @@ export const ui = {
   closeModal: () => {
     setModal(null);
     setSpawnIssue(null);
+    setSpawnAllIssues([]);
     setDeleteIssue(null);
+  },
+
+  /**
+   * Open the spawn-all modal for multiple issues.
+   */
+  openSpawnAllModal: (issues: Issue[]) => {
+    setSpawnAllIssues(issues);
+    setModal("spawn-all");
+    setInputMode(false);
   },
 
   /**

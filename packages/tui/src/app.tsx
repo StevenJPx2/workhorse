@@ -15,6 +15,8 @@ import {
   DeleteConfirmModal,
   ModelSelectorModal,
   ShutdownOverlay,
+  type SpawnAllConfig,
+  SpawnAllModal,
   type SpawnConfig,
   SpawnModal,
   ToastContainer,
@@ -43,25 +45,41 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
   // Initialize global activity store with hooks (runs once)
   onMount(() => initActivityStore(props.hooks));
 
-  const handleSpawn = async (config: SpawnConfig) => {
-    // Close modal and spawn in background - stay on overview
-    ui.closeModal();
-    ui.startSpawning(config.issue);
-
+  const spawnSingleIssue = async (
+    issue: Issue,
+    harness: string,
+    baseBranch: string,
+  ) => {
+    ui.startSpawning(issue);
     try {
       await props.orchestrator
         .spawn({
-          issue: config.issue,
-          harness: config.harness,
-          baseBranch: config.baseBranch,
+          issue,
+          harness,
+          baseBranch,
           repoPath: props.paths.worktreesRoot.replace(/-worktrees$/, ""),
           model: ui.selectedModel() || props.config.agent.model || undefined,
         })
         .then((r) => r.start());
-      ui.stopSpawning(config.issue.externalId);
+      ui.stopSpawning(issue.externalId);
     } catch (err) {
-      ui.stopSpawning(config.issue.externalId);
-      ui.showError(`Spawn failed: ${logError(err, "handleSpawn")}`);
+      ui.stopSpawning(issue.externalId);
+      ui.showError(
+        `Spawn failed for ${issue.externalId}: ${logError(err, "spawnSingleIssue")}`,
+      );
+    }
+  };
+
+  const handleSpawn = async (config: SpawnConfig) => {
+    ui.closeModal();
+    await spawnSingleIssue(config.issue, config.harness, config.baseBranch);
+  };
+
+  // oxlint-disable-next-line workhorse/no-single-use-variable -- used in JSX
+  const handleSpawnAll = (config: SpawnAllConfig) => {
+    ui.closeModal();
+    for (const issue of config.issues) {
+      void spawnSingleIssue(issue, config.harness, config.baseBranch);
     }
   };
 
@@ -80,6 +98,13 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
             onClose={ui.closeModal}
           />
         )}
+      </Show>
+      <Show when={ui.modal() === "spawn-all" && ui.spawnAllIssues().length > 0}>
+        <SpawnAllModal
+          issues={ui.spawnAllIssues()}
+          onSpawn={handleSpawnAll}
+          onClose={ui.closeModal}
+        />
       </Show>
       <Show when={ui.modal() === "model"}>
         <ModelSelectorModal

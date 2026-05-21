@@ -50,6 +50,15 @@ export function Overview() {
   // oxlint-disable-next-line workhorse/no-single-use-variable
   const issues = createIssues({ repository: "auto" });
 
+  const handleSpawnAll = () => {
+    const issuesToSpawn = issues().filter((i) => !orchestrator.getAgent(i.id));
+    if (issuesToSpawn.length === 0) {
+      ui.showError("All issues already have agents");
+      return;
+    }
+    ui.openSpawnAllModal(issuesToSpawn);
+  };
+
   useOverviewBindings({
     issues,
     agents,
@@ -65,6 +74,7 @@ export function Overview() {
       if (a.state === "running" || a.state === "starting") void a.stop();
       else if (a.state === "stopped" || a.state === "crashed") void a.start();
     },
+    onSpawnAll: handleSpawnAll,
   });
 
   return (
@@ -96,27 +106,9 @@ export function Overview() {
             return;
           }
           try {
-            const issue = await tracker.parseInput(msg, {
-              repository: currentRepo(),
-            });
-            // Spawn in background - stay on overview
-            ui.startSpawning(issue);
-
-            orchestrator
-              .spawn({
-                issue,
-                repoPath: paths.worktreesRoot.replace(/-worktrees$/, ""),
-              })
-              .then((agent) => {
-                ui.stopSpawning(issue.externalId);
-                return agent.start();
-              })
-              .catch((err) => {
-                ui.stopSpawning(issue.externalId);
-                ui.showError(
-                  `Spawn failed: ${err instanceof Error ? err.message : String(err)}`,
-                );
-              });
+            ui.openSpawnModal(
+              await tracker.parseInput(msg, { repository: currentRepo() }),
+            );
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (
@@ -142,6 +134,7 @@ export function Overview() {
           { key: "←→", action: "switch" },
           { key: "Tab", action: "cycle" },
           { key: "Enter", action: "select" },
+          { key: "a", action: "spawn all", onActivate: handleSpawnAll },
           {
             key: "s",
             action: "toggle",

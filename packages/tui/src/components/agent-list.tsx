@@ -86,11 +86,13 @@ export function AgentList(props: AgentListProps) {
         paddingRight={2}
         paddingTop={1}
         paddingBottom={1}
+        flexDirection="row"
+        gap={1}
       >
         <text fg={theme.colors.success}>
           <b>● AGENTS</b>
         </text>
-        <text fg={theme.colors.dim}> ({agents().length} active)</text>
+        <text fg={theme.colors.dim}>({agents().length} active)</text>
       </box>
 
       {/* Agent list */}
@@ -98,7 +100,13 @@ export function AgentList(props: AgentListProps) {
         {/* Spawning agents */}
         <For each={spawningIssues()}>
           {(issue) => (
-            <box paddingLeft={2} paddingRight={2} flexDirection="column">
+            <box
+              paddingLeft={2}
+              paddingRight={2}
+              paddingTop={1}
+              paddingBottom={1}
+              flexDirection="column"
+            >
               <box flexDirection="row" justifyContent="space-between">
                 <text fg={theme.colors.dim}>
                   {"  "}
@@ -131,6 +139,8 @@ export function AgentList(props: AgentListProps) {
                 }
                 paddingLeft={2}
                 paddingRight={2}
+                paddingTop={1}
+                paddingBottom={1}
                 flexDirection="column"
               >
                 <box flexDirection="row" justifyContent="space-between">

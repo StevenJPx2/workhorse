@@ -1,3 +1,4 @@
+import pkg from "../../../package.json";
 import { getTheme } from "../../theme.ts";
 
 export function OverviewHeader() {
@@ -12,10 +13,11 @@ export function OverviewHeader() {
       justifyContent="space-between"
       flexDirection="row"
     >
-      <box>
+      <box flexDirection="row" gap={1}>
         <text fg={theme.colors.accent}>
           <b>⚡ WORKHORSE</b>
         </text>
+        <text fg={theme.colors.dim}>v{pkg.version}</text>
       </box>
       <box>
         <text fg={theme.colors.dim}>AI-powered issue management</text>

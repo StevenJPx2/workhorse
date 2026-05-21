@@ -19,6 +19,7 @@ interface UseOverviewBindingsOptions {
   onIssueSelect: (issue: Issue) => void;
   onAgentSelect: (agent: AgentAdapter) => void;
   onAgentToggle: (agent: AgentAdapter) => void;
+  onSpawnAll?: () => void;
 }
 
 export function useOverviewBindings(options: UseOverviewBindingsOptions) {
@@ -96,6 +97,12 @@ export function useOverviewBindings(options: UseOverviewBindingsOptions) {
     if (keyName === "s" && focused === "agents") {
       const agent = options.agents()[options.agentIndex()];
       if (agent) options.onAgentToggle(agent);
+      return;
+    }
+
+    // a: spawn all issues (when issues pane is focused)
+    if (keyName === "a" && focused === "issues" && options.onSpawnAll) {
+      options.onSpawnAll();
       return;
     }
   });

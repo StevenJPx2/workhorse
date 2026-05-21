@@ -5,6 +5,7 @@ export { IssueList } from "./issue-list.tsx";
 export { AgentList } from "./agent-list.tsx";
 export { StatusBar } from "./status-bar.tsx";
 export { SpawnModal, type SpawnConfig } from "./spawn-modal";
+export { SpawnAllModal, type SpawnAllConfig } from "./spawn-all-modal";
 export { ModelSelectorModal } from "./model-selector-modal";
 export { DeleteConfirmModal } from "./delete-confirm-modal.tsx";
 export { ToastContainer } from "./toast.tsx";
