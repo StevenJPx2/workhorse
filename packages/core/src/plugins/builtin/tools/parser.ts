@@ -6,7 +6,6 @@
  *
  * @module plugins/builtin/local-parser
  */
-
 import type { IssueParserOptions, ParsedIssue } from "#workflow";
 
 /**

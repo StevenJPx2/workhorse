@@ -2,15 +2,14 @@
  * Reactive primitive that tracks Workhorse statuses for multiple issues.
  * Used by AgentList to show status for all agents.
  */
-
 import {
-  createSignal,
-  onMount,
-  onCleanup,
-  createEffect,
   type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
 } from "solid-js";
-import type { IssueStatus, Issue } from "workhorse-core";
+import type { Issue, IssueStatus } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 

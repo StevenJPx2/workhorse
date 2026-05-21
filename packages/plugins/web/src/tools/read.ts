@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-web/tools/read
  */
-
 import type {
   OrchestratorTool,
   ToolExecutionContext,

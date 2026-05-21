@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-playwright/steering
  */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 /**

@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { L2Store } from "../l2.ts";

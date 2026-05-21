@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/monitor-notifications
  */
-
 import type { MonitorContext } from "workhorse-core";
 
 import type { GitHubComment, GitHubReview } from "../types.ts";

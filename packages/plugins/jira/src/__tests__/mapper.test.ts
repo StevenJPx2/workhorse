@@ -1,7 +1,6 @@
 /**
  * Tests for Jira → ParsedIssue mapper.
  */
-
 import { describe, expect, it } from "vitest";
 
 import { mapJiraComment, mapJiraToIssue } from "../mapper.ts";

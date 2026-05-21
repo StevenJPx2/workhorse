@@ -3,7 +3,6 @@
  *
  * @module workflow/orchestrator/types/tools
  */
-
 import type { Database } from "#db";
 import type { HookEmitter } from "#lib";
 import type { MemoryService } from "#services";

@@ -2,7 +2,6 @@
  * Global activity store - persists agent activity across navigation.
  * Keyed by issueId, stores activity items and streaming state.
  */
-
 import { createSignal } from "solid-js";
 import type { HookEmitter } from "workhorse-core";
 

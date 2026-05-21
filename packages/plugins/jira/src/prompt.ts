@@ -5,8 +5,7 @@
  *
  * @module workhorse-plugin-jira/prompt
  */
-
-import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";
+import type { PromptContextBlock, WorkhorseContext } from "workhorse-core";
 
 import { extractMediaRefsFromAdf } from "./attachments.ts";
 import type { AtlassianClient } from "./client.ts";

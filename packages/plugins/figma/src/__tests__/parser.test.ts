@@ -4,7 +4,6 @@
  * These utilities are used by cross-plugin.ts to detect Figma links in other
  * issues (e.g., Jira tickets) and fetch design context.
  */
-
 import { describe, expect, it } from "vitest";
 
 import { canParseFigma, extractFigmaRef } from "../parser.ts";

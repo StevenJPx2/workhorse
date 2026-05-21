@@ -1,5 +1,4 @@
 /** GitHubClient - Wrapper around `gh` CLI for GitHub API access. Requires `gh auth login` first. */
-
 import { api, gh } from "./gh-cli";
 import { addLabel, removeLabel } from "./label-operations.ts";
 import type {

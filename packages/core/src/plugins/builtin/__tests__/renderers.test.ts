@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { Notification } from "#db";
 
 import {
+  notificationRenderer,
   skillRenderer,
   workhorseToolRenderer,
-  notificationRenderer,
 } from "../renderers";
 
 describe("skillRenderer", () => {

@@ -1,7 +1,6 @@
 /**
  * Focus management for TUI navigation.
  */
-
 import { createSignal } from "solid-js";
 
 /**

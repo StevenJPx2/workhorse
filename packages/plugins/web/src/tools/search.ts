@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-web/tools/search
  */
-
 import type {
   OrchestratorTool,
   ToolExecutionContext,

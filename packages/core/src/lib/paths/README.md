@@ -22,7 +22,7 @@ This prevents agents from:
 ### Basic Validation
 
 ```typescript
-import { validatePath, isPathAllowed, assertPathAllowed } from "workhorse-core";
+import { assertPathAllowed, isPathAllowed, validatePath } from "workhorse-core";
 
 const options = { rootDir: "/path/to/worktree" };
 
@@ -83,14 +83,15 @@ The Pi adapter wraps the SDK's built-in tools with path-restricted operations:
 
 ```typescript
 import {
+  createEditTool,
   createReadTool,
   createWriteTool,
-  createEditTool,
 } from "@mariozechner/pi-coding-agent";
+
 import {
+  createRestrictedEditOperations,
   createRestrictedReadOperations,
   createRestrictedWriteOperations,
-  createRestrictedEditOperations,
 } from "./path-restriction.ts";
 
 // Create path-restricted operations

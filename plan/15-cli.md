@@ -80,8 +80,9 @@ workhorse spawn https://github.com/owner/repo/issues/123
 
 ```typescript
 // commands/spawn.ts
-import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
+import { defineCommand } from "citty";
+
 import { createContext } from "../context.ts";
 
 export const spawnCommand = defineCommand({
@@ -321,10 +322,10 @@ Table formatting is the only thing Clack doesn't provide — we'll implement a s
 
 ```typescript
 // context.ts
-import { bootstrap, type WorkhorseContext } from "workhorse-core";
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
-import { jiraPlugin } from "workhorse-plugin-jira";
+import { type WorkhorseContext, bootstrap } from "workhorse-core";
 import { githubPlugin } from "workhorse-plugin-github";
+import { jiraPlugin } from "workhorse-plugin-jira";
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 
 let ctx: WorkhorseContext | null = null;
 

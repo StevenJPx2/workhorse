@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/implementations/escalate
  */
-
 import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**

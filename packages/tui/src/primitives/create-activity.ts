@@ -2,12 +2,11 @@
  * Primitive for tracking agent activity (tool calls, file edits, text output).
  * Uses the global activity store for persistence across navigation.
  */
-
-import { createMemo, type Accessor } from "solid-js";
+import { type Accessor, createMemo } from "solid-js";
 
 import {
-  getActivityState,
   type ActivityState,
+  getActivityState,
 } from "../state/activity-store.ts";
 
 export interface CreateActivityOptions {

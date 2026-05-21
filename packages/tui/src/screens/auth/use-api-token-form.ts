@@ -1,7 +1,6 @@
 /**
  * API token form state and keyboard handling hook.
  */
-
 import { createSignal } from "solid-js";
 import type { ApiTokenAuthField } from "workhorse-core";
 

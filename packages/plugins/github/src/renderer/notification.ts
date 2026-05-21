@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/renderer/notification
  */
-
 import type { Notification } from "workhorse-core";
 
 import type { RenderedActivity } from "./types.ts";

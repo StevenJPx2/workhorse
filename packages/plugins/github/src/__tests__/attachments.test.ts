@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/__tests__/attachments
  */
-
 import { describe, expect, it, vi } from "vitest";
 import type { AttachmentService } from "workhorse-core";
 

@@ -6,7 +6,6 @@
  *
  * @module lib/hooks/metadata
  */
-
 import { CORE_HOOK_METADATA } from "./core-hooks.ts";
 
 export interface HookMetadata {

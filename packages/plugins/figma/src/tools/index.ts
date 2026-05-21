@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-figma/tools
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { FigmaClient } from "../client.ts";

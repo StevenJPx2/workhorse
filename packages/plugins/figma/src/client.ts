@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-figma/client
  */
-
 import type {
   FigmaComment,
   FigmaCredentials,

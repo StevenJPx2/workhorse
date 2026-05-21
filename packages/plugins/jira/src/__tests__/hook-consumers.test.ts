@@ -1,7 +1,6 @@
 /**
  * Tests for Jira hook consumers — verifies API calls and completion events.
  */
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { AtlassianClient } from "../client.ts";

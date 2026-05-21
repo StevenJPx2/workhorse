@@ -1,7 +1,6 @@
 /**
  * Activity row components - main dispatcher and common rows.
  */
-
 import { Match, Switch } from "solid-js";
 
 import { getSyntaxStyle } from "../lib/syntax-style.ts";

@@ -3,7 +3,6 @@
  *
  * @module lib/git/worktree/utils
  */
-
 import { basename, dirname, join } from "node:path";
 
 import type { WorktreeInfo } from "./types.ts";

@@ -2,7 +2,6 @@
  * Tests for the EventMonitor class directly (not MonitorService).
  * Covers edge cases in event handling and cleanup.
  */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";

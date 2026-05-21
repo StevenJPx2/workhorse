@@ -2,15 +2,14 @@
  * Reactive primitive that tracks the Workhorse status for an issue.
  * Listens to issue.status_changed hook for real-time updates.
  */
-
 import {
-  createSignal,
-  onMount,
-  onCleanup,
-  createEffect,
   type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
 } from "solid-js";
-import type { IssueStatus, Issue } from "workhorse-core";
+import type { Issue, IssueStatus } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 

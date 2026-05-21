@@ -2,10 +2,9 @@
  * Snapshot capture functions for TUI testing.
  * Uses the `ht` (headless terminal) CLI.
  */
-
 import { $ } from "bun";
 
-import type { Snapshot, HarnessOptions } from "./types.ts";
+import type { HarnessOptions, Snapshot } from "./types.ts";
 
 async function cleanup(name: string): Promise<void> {
   try {

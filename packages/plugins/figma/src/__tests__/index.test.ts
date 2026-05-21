@@ -1,7 +1,6 @@
 /**
  * Tests for the Figma plugin definition.
  */
-
 import { describe, expect, it } from "vitest";
 import { PluginSymbol } from "workhorse-core";
 

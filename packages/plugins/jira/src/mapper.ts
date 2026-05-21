@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/mapper
  */
-
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
 
 import { extractDescription, extractLinksFromAdf } from "./adf.ts";

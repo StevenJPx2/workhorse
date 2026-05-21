@@ -6,7 +6,6 @@
  *
  * @module workhorse-core/auth
  */
-
 import { errorHtml, successHtml } from "./oauth-html.ts";
 import type { OAuthProvider, OAuthTokens } from "./types.ts";
 

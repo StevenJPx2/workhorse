@@ -331,11 +331,12 @@ No separate OAuth flow needed — delegates to gh CLI.
 
 ```typescript
 // index.ts
-import { z } from "zod/v4";
 import { definePlugin } from "workhorse-core";
+import { z } from "zod/v4";
+
 import { GitHubClient } from "./client.ts";
-import { createGitHubParserOptions } from "./parser.ts";
 import { createGitHubPRMonitor } from "./monitor.ts";
+import { createGitHubParserOptions } from "./parser.ts";
 import { registerPromptHooks } from "./prompt.ts";
 import { registerStatusSync } from "./sync.ts";
 import { createGitHubTools } from "./tools.ts";

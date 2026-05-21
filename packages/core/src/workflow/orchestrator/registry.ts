@@ -6,7 +6,6 @@
  *
  * @module workflow/orchestrator/registry
  */
-
 import type { ModelInfo } from "./types/adapter.ts";
 
 /**

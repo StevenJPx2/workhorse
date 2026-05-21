@@ -8,7 +8,6 @@
  *
  * @module workhorse-plugin-figma/cross-plugin
  */
-
 import type {
   DiscoveredLink,
   HookEmitter,

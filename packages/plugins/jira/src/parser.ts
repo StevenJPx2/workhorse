@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-jira/parser
  */
-
 import type { HookEmitter, IssueParserOptions } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";

@@ -1,17 +1,16 @@
 /** Hook subscriptions for activity store - handles agent events and updates activity store. */
-
 import type { HookEmitter, Notification } from "workhorse-core";
 
-import { showError } from "./ui/toast.ts";
 import {
+  type AddItemFn,
+  type UpdateStateFn,
   appendTextBuffer,
   clearTextBuffer,
   flushTextBuffer,
   getTextBuffer,
   scheduleFlush,
-  type AddItemFn,
-  type UpdateStateFn,
 } from "./activity-text-buffer.ts";
+import { showError } from "./ui/toast.ts";
 
 /** Subscribe to hooks and update activity store */
 export function subscribeActivityHooks(

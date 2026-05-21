@@ -4,7 +4,6 @@
  * Rules are autonomous - they subscribe to idle events and evaluate themselves.
  * Tests trigger evaluation by emitting agent.idle and advancing timers.
  */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

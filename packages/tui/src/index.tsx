@@ -1,16 +1,14 @@
 // ─── Preloader (runs before any heavy imports) ──────────────────────────────
-import { startPreloader, stopPreloader, updatePreloader } from "./preloader.ts";
-startPreloader();
-
 // ─── Heavy Imports ───────────────────────────────────────────────────────────
 import { createCliRenderer } from "@opentui/core";
 import { render } from "@opentui/solid";
-import { createSignal, type Accessor, Match, Switch } from "solid-js";
-import { bootstrap, resolveConfigPaths, type Workhorse } from "workhorse-core";
+import { type Accessor, Match, Switch, createSignal } from "solid-js";
+import { type Workhorse, bootstrap, resolveConfigPaths } from "workhorse-core";
 
 import { App } from "./app.tsx";
 import { parseCliArgs, showHelp, showModels } from "./cli.ts";
 import { LoadingScreen } from "./components";
+import { startPreloader, stopPreloader, updatePreloader } from "./preloader.ts";
 import {
   getPluginsNeedingAuth,
   getPluginsNeedingSetup,
@@ -22,9 +20,11 @@ import {
   runAuthIfNeeded,
   runSetupIfNeeded,
 } from "./startup.tsx";
-import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
+import { getLogPath, installErrorHandler, logInfo } from "./state/error-log.ts";
 import { ui } from "./state/ui";
 import { setTheme } from "./theme.ts";
+
+startPreloader();
 
 // ─── Main Entry Point ────────────────────────────────────────────────────────
 

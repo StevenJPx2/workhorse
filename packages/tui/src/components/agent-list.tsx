@@ -1,4 +1,4 @@
-import { createMemo, For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
 
 import { createAgents } from "../primitives/create-agents.ts";

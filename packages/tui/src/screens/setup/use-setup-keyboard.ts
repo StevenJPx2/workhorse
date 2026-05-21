@@ -1,7 +1,6 @@
 /**
  * Keyboard handler hook for the Setup screen.
  */
-
 import { useKeyboard } from "@opentui/solid";
 import type { Accessor, Setter } from "solid-js";
 

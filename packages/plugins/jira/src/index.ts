@@ -10,7 +10,6 @@
  *
  * @module workhorse-plugin-jira
  */
-
 import { AttachmentService, definePlugin } from "workhorse-core";
 import { z } from "zod/v4";
 

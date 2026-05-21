@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-playwright/renderer
  */
-
 import type { Notification } from "workhorse-core";
 
 /**

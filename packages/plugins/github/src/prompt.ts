@@ -5,8 +5,7 @@
  *
  * @module workhorse-plugin-github/prompt
  */
-
-import type { WorkhorseContext, PromptContextBlock } from "workhorse-core";
+import type { PromptContextBlock, WorkhorseContext } from "workhorse-core";
 
 import type { GitHubClient } from "./client.ts";
 import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";

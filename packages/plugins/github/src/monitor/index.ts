@@ -7,11 +7,10 @@
  *
  * @module workhorse-plugin-github/monitor
  */
-
 import {
   type Database,
-  isWorkhorseGenerated,
   type PollingMonitorOptions,
+  isWorkhorseGenerated,
 } from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";

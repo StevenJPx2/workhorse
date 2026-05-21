@@ -1,7 +1,6 @@
 /**
  * Tests for jira_get_attachments tool.
  */
-
 import { describe, expect, it, vi } from "vitest";
 import type { AttachmentService } from "workhorse-core";
 

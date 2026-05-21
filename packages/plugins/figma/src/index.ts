@@ -13,7 +13,6 @@
  *
  * @module workhorse-plugin-figma
  */
-
 import { definePlugin } from "workhorse-core";
 
 import { FigmaClient } from "./client.ts";

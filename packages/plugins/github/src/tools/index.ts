@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/tools
  */
-
 import type {
   AttachmentService,
   Database,

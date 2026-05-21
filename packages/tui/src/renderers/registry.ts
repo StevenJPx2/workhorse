@@ -5,7 +5,6 @@
  * Renderers are tried in priority order (highest first).
  * First renderer to return non-null wins; fallback to defaultRenderer.
  */
-
 import type {
   ActivityInput,
   ActivityRenderer,

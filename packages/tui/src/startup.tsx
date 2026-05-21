@@ -1,13 +1,12 @@
 // ─── Startup Helpers ─────────────────────────────────────────────────────────
 // Wrapper components and plugin loaders extracted from index.tsx to keep
 // that entry-point file under the max-lines-per-file limit.
-
 import { render, useRenderer } from "@opentui/solid";
 import type { Plugin } from "workhorse-core";
 
 import tuiPlugin from "./plugin.ts";
 import { Auth, Setup } from "./screens";
-import type { SetupPluginConfig, AuthScreenProps } from "./screens";
+import type { AuthScreenProps, SetupPluginConfig } from "./screens";
 import { savePluginConfig, setupValuesToConfig } from "./setup";
 
 // ─── Plugin Loaders ───────────────────────────────────────────────────────────

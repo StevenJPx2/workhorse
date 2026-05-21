@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/implementations/memory-search
  */
-
 import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**

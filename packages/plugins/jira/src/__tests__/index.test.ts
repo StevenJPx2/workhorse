@@ -1,11 +1,10 @@
 /**
  * Tests for Jira plugin definition.
  */
-
 import { describe, expect, it } from "vitest";
 import { PluginSymbol } from "workhorse-core";
 
-import { jiraPlugin, JiraConfigSchema } from "../index.ts";
+import { JiraConfigSchema, jiraPlugin } from "../index.ts";
 
 describe("jiraPlugin", () => {
   it("is a valid Workhorse plugin", () => {

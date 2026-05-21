@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/plugin
  */
-
 // oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
 import { createAgentHealthMonitor } from "./monitors/health.ts";

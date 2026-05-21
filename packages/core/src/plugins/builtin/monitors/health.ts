@@ -7,7 +7,6 @@
  *
  * @module plugins/builtin/monitors/health
  */
-
 import type { MonitorContext, PollingMonitorOptions } from "#services";
 
 /**

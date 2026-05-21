@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/tools/get-comments
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import { extractMediaRefsFromAdf } from "../attachments.ts";

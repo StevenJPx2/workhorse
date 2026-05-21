@@ -11,8 +11,7 @@
  *   bun test/tui.test.ts message            # Run tests in "message" group
  *   bun test/tui.test.ts "Tab cycles"       # Run tests matching pattern
  */
-
-import { runTests, printResults, type TestCase } from "./harness";
+import { type TestCase, printResults, runTests } from "./harness";
 
 // Helper to skip test if no adapters configured
 const skipIfNoAdapters = (text: string): true | null =>

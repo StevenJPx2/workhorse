@@ -1,15 +1,14 @@
 /**
  * Tests for web plugin tools.
  */
-
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ToolExecutionContext } from "workhorse-core";
 
 import * as client from "../client.ts";
 import {
+  createScreenshotTool,
   createWebReadTool,
   createWebSearchTool,
-  createScreenshotTool,
 } from "../tools";
 
 // Mock execution context

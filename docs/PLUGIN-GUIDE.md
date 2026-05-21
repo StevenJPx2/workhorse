@@ -741,10 +741,10 @@ hooks.on("github:pr.merged", async ({ issueId, pr }) => {
 
 ```typescript
 import {
-  definePlugin,
-  useWorkhorse,
   type OrchestratorTool,
   type ToolResult,
+  definePlugin,
+  useWorkhorse,
 } from "workhorse-core";
 import { z } from "zod/v4";
 

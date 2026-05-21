@@ -4,7 +4,6 @@
  * Creates a lazily-initialized singleton SyntaxStyle that can be used
  * across all markdown components in the app.
  */
-
 import { SyntaxStyle } from "@opentui/core";
 
 import { getTheme } from "../theme.ts";

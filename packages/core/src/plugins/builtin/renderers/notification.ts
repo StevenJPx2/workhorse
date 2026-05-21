@@ -2,7 +2,6 @@
  * Notification renderer for TUI display.
  * Generic renderer that works with any notification source.
  */
-
 import type {
   ActivityColor,
   ActivityInput,

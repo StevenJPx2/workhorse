@@ -3,7 +3,6 @@
  *
  * @module workflow/orchestrator/types/spawn
  */
-
 import type { Issue } from "#db";
 
 import type { AgentHarness } from "./adapter.ts";

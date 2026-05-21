@@ -4,7 +4,6 @@
  * and general PR conversation comments.
  * @module workhorse-plugin-github/tools/get-pr-reviews
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import { countImagesInMarkdown } from "../attachments.ts";

@@ -4,20 +4,19 @@
  * Uses @earendil-works/pi-coding-agent SDK directly with path restrictions
  * to ensure agents can only read/write files within their worktree.
  */
-
 import {
   type AgentSession,
   type AgentSessionEvent,
   AuthStorage,
-  createAgentSession,
-  createReadTool,
-  createWriteTool,
-  createEditTool,
-  createBashTool,
   DefaultResourceLoader,
-  getAgentDir,
   ModelRegistry as PiModelRegistry,
   SessionManager,
+  createAgentSession,
+  createBashTool,
+  createEditTool,
+  createReadTool,
+  createWriteTool,
+  getAgentDir,
 } from "@earendil-works/pi-coding-agent";
 import type { AgentState } from "workhorse-core";
 import { AgentAdapter } from "workhorse-core";
@@ -25,9 +24,9 @@ import { AgentAdapter } from "workhorse-core";
 import { createRestrictedBashOperations } from "./bash-restriction.ts";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
 import {
+  createRestrictedEditOperations,
   createRestrictedReadOperations,
   createRestrictedWriteOperations,
-  createRestrictedEditOperations,
 } from "./path-restriction.ts";
 import { PiAdapterModelRegistry } from "./registry.ts";
 

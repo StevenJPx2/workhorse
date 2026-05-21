@@ -80,6 +80,7 @@ The TUI is a standalone application that also registers a plugin (`tui`). This a
 ```typescript
 // src/plugin.ts - TUI plugin definition
 import { definePlugin, useWorkhorse } from "workhorse-core";
+
 import { registerRenderer } from "./renderers";
 
 export default definePlugin({
@@ -547,7 +548,8 @@ Large chat area with scrollable output and input:
 
 ```tsx
 // components/chat-box.tsx
-import { createSignal, Show, For } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
+
 import { theme } from "../theme.ts";
 
 interface ChatMessage {
@@ -652,9 +654,10 @@ Renders a notification in the chat using plugin-registered renderers:
 ```tsx
 // components/notification-box.tsx
 import { Show } from "solid-js";
+import type { Notification } from "workhorse-core";
+
 import { getRenderer } from "../renderers/types.ts";
 import { theme } from "../theme.ts";
-import type { Notification } from "workhorse-core";
 
 interface NotificationBoxProps {
   notification: Notification;
@@ -733,9 +736,10 @@ Unassigned issues that can be picked up:
 ```tsx
 // components/issue-list.tsx
 import { For } from "solid-js";
+import type { ParsedIssue } from "workhorse-core";
+
 import { createIssues } from "../primitives/create-issues.ts";
 import { theme } from "../theme.ts";
-import type { ParsedIssue } from "workhorse-core";
 
 interface IssueListProps {
   onSelect: (issue: ParsedIssue) => void;
@@ -777,6 +781,7 @@ Running agents (click to enter agent dashboard):
 // components/agent-list.tsx
 import { For } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
+
 import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
 
@@ -834,6 +839,7 @@ Sidebar for agent dashboard showing all agents:
 // components/agent-sidebar.tsx
 import { For } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
+
 import { createAgents } from "../primitives/create-agents.ts";
 import { theme } from "../theme.ts";
 
@@ -890,6 +896,7 @@ function formatDuration(startedAt: Date): string {
 ```tsx
 // components/status-bar.tsx
 import { For } from "solid-js";
+
 import { theme } from "../theme.ts";
 
 interface Shortcut {
@@ -926,10 +933,11 @@ Modal shown when clicking an issue to spawn an agent:
 
 ```tsx
 // components/spawn-modal.tsx
-import { createSignal } from "solid-js";
 import { Portal, useRenderer } from "@opentui/solid";
-import { theme } from "../theme.ts";
+import { createSignal } from "solid-js";
 import type { ParsedIssue } from "workhorse-core";
+
+import { theme } from "../theme.ts";
 
 interface SpawnModalProps {
   issue: ParsedIssue;
@@ -1007,8 +1015,9 @@ export function SpawnModal(props: SpawnModalProps) {
 
 ```tsx
 // components/modal.tsx
-import { JSX } from "solid-js";
 import { Portal, useRenderer } from "@opentui/solid";
+import { JSX } from "solid-js";
+
 import { theme } from "../theme.ts";
 
 interface ModalProps {
@@ -1047,8 +1056,9 @@ Fetches outstanding issues from configured Jira/GitHub sources:
 
 ```typescript
 // primitives/create-issues.ts
-import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
+import { type Accessor, createSignal, onCleanup, onMount } from "solid-js";
 import type { ParsedIssue } from "workhorse-core";
+
 import { useWorkhorse } from "../context/workhorse.tsx";
 
 export function createIssues(): Accessor<ParsedIssue[]> {
@@ -1081,8 +1091,9 @@ export function createIssues(): Accessor<ParsedIssue[]> {
 
 ```typescript
 // primitives/create-agents.ts
-import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
+import { type Accessor, createSignal, onCleanup, onMount } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
+
 import { useWorkhorse } from "../context/workhorse.tsx";
 
 export function createAgents(): Accessor<AgentAdapter[]> {
@@ -1116,12 +1127,13 @@ Chat state for the selected issue/agent:
 ```typescript
 // primitives/create-chat.ts
 import {
-  createSignal,
-  createEffect,
-  onMount,
-  onCleanup,
   type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
 } from "solid-js";
+
 import { useWorkhorse } from "../context/workhorse.tsx";
 
 export interface ChatMessage {
@@ -1296,13 +1308,13 @@ export const ui = {
 
 ```tsx
 // context/workhorse.tsx
-import { createContext, useContext, type JSX } from "solid-js";
+import { type JSX, createContext, useContext } from "solid-js";
 import type {
-  Orchestrator,
+  Config,
   Hooks,
   Memory,
+  Orchestrator,
   Tracker,
-  Config,
 } from "workhorse-core";
 
 interface WorkhorseContextValue {
@@ -1347,22 +1359,23 @@ export function WorkhorseProvider(props: WorkhorseProviderProps) {
 
 ```tsx
 // app.tsx
-import { Match, Switch, Show } from "solid-js";
 import { useRenderer } from "@opentui/solid";
-import { WorkhorseProvider } from "./context/workhorse.tsx";
-import { Overview } from "./screens/overview.tsx";
-import { Agent } from "./screens/agent.tsx";
-import { Help } from "./screens/help.tsx";
-import { SpawnModal } from "./components/spawn-modal.tsx";
-import { ui } from "./state/ui.ts";
-import { createKeyboardHandler } from "./primitives/create-keyboard.ts";
+import { Match, Show, Switch } from "solid-js";
 import type {
-  Orchestrator,
+  Config,
   Hooks,
   Memory,
+  Orchestrator,
   Tracker,
-  Config,
 } from "workhorse-core";
+
+import { SpawnModal } from "./components/spawn-modal.tsx";
+import { WorkhorseProvider } from "./context/workhorse.tsx";
+import { createKeyboardHandler } from "./primitives/create-keyboard.ts";
+import { Agent } from "./screens/agent.tsx";
+import { Help } from "./screens/help.tsx";
+import { Overview } from "./screens/overview.tsx";
+import { ui } from "./state/ui.ts";
 
 interface AppProps {
   orchestrator: Orchestrator;
@@ -1432,13 +1445,14 @@ Simple layout: large chat on top, issues and agents side-by-side below.
 ```tsx
 // screens/overview.tsx
 import { createSignal } from "solid-js";
-import { IssueList } from "../components/issue-list.tsx";
+import type { AgentAdapter, ParsedIssue } from "workhorse-core";
+
 import { AgentList } from "../components/agent-list.tsx";
 import { ChatBox } from "../components/chat-box.tsx";
+import { IssueList } from "../components/issue-list.tsx";
 import { StatusBar } from "../components/status-bar.tsx";
 import { ui } from "../state/ui.ts";
 import { theme } from "../theme.ts";
-import type { ParsedIssue, AgentAdapter } from "workhorse-core";
 
 export function Overview() {
   const [messages] = createSignal([
@@ -1498,14 +1512,15 @@ Sidebar with agents + full chat for selected agent.
 
 ```tsx
 // screens/agent.tsx
+import type { AgentAdapter } from "workhorse-core";
+
 import { AgentSidebar } from "../components/agent-sidebar.tsx";
 import { ChatBox } from "../components/chat-box.tsx";
 import { StatusBar } from "../components/status-bar.tsx";
-import { ui } from "../state/ui.ts";
-import { createChat } from "../primitives/create-chat.ts";
 import { createAgents } from "../primitives/create-agents.ts";
+import { createChat } from "../primitives/create-chat.ts";
+import { ui } from "../state/ui.ts";
 import { theme } from "../theme.ts";
-import type { AgentAdapter } from "workhorse-core";
 
 export function Agent() {
   const agents = createAgents();
@@ -1800,8 +1815,9 @@ describe("AgentList", () => {
 
 ```typescript
 // __tests__/primitives.test.ts
-import { describe, it, expect } from "vitest";
 import { createRoot } from "solid-js";
+import { describe, expect, it } from "vitest";
+
 import { createAgents } from "../primitives/create-agents.ts";
 
 describe("createAgents", () => {
@@ -1840,7 +1856,7 @@ chmod +x ht
 
 ```typescript
 // __tests__/helpers/ht.ts
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
 
 interface HtSnapshot {
   cols: number;
@@ -1928,7 +1944,8 @@ export class HeadlessTerminal {
 
 ```typescript
 // __tests__/e2e/overview.test.ts
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { HeadlessTerminal } from "../helpers/ht.ts";
 
 describe("Overview Screen (E2E)", () => {
@@ -1997,7 +2014,8 @@ describe("Overview Screen (E2E)", () => {
 
 ```typescript
 // __tests__/e2e/agent-chat.test.ts
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { HeadlessTerminal } from "../helpers/ht.ts";
 
 describe("Agent Chat (E2E)", () => {

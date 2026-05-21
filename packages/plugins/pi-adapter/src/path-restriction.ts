@@ -18,21 +18,19 @@
  *
  * @module workhorse-plugin-pi-adapter/path-restriction
  */
-
+import type {
+  EditOperations,
+  ReadOperations,
+  WriteOperations,
+} from "@earendil-works/pi-coding-agent";
 import { constants } from "node:fs";
 import {
-  mkdir as fsMkdir,
   access as fsAccess,
+  mkdir as fsMkdir,
   readFile as fsReadFile,
   writeFile as fsWriteFile,
 } from "node:fs/promises";
-
-import type {
-  WriteOperations,
-  ReadOperations,
-  EditOperations,
-} from "@earendil-works/pi-coding-agent";
-import { assertPathAllowed, type PathValidationOptions } from "workhorse-core";
+import { type PathValidationOptions, assertPathAllowed } from "workhorse-core";
 
 /**
  * Creates write operations that validate paths before writing.

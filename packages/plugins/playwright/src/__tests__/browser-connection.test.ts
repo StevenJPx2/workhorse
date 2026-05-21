@@ -4,7 +4,6 @@
  * Uses mocked Playwright to test connection management logic without
  * actually launching browsers.
  */
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BrowserConnectionConfig } from "../browser-connection.ts";

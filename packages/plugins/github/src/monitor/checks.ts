@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/monitor-checks
  */
-
 import type { GitHubCheckRun } from "../types.ts";
 
 /** Notification creation interface */

@@ -2,8 +2,7 @@
  * File changes panel - shows list of modified files with +/- line counts.
  * Displays git diff stats for the agent's worktree.
  */
-
-import { For, Show, type Accessor } from "solid-js";
+import { type Accessor, For, Show } from "solid-js";
 
 import type { FileChangesState } from "../primitives/create-file-changes.ts";
 import { ui } from "../state/ui";

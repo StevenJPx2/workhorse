@@ -17,7 +17,6 @@
  *
  * @module workhorse-plugin-figma/parser
  */
-
 import type { FigmaRef } from "./types.ts";
 
 /**

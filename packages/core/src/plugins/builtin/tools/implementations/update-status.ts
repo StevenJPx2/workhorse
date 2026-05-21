@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/implementations/update-status
  */
-
 import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**

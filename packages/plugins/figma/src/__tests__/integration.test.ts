@@ -10,7 +10,6 @@
  * Run with:
  *   cd packages/plugins/figma && FIGMA_ACCESS_TOKEN=xxx bun run vitest run src/__tests__/integration.test.ts
  */
-
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { FigmaClient } from "../client.ts";

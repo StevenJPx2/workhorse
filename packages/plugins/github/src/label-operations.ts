@@ -1,5 +1,4 @@
 /** GitHub label operations. */
-
 import { api } from "./gh-cli";
 
 /** Add a label to an issue/PR */

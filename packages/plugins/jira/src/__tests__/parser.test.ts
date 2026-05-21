@@ -1,7 +1,6 @@
 /**
  * Tests for Jira issue parser.
  */
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { AtlassianClient } from "../client.ts";

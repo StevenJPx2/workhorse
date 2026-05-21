@@ -8,7 +8,6 @@
  *
  * @module workhorse-plugin-playwright/hooks
  */
-
 import type { BrowserType, ScreenshotOptions, Viewport } from "./types.ts";
 
 /**

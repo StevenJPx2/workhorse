@@ -8,8 +8,7 @@
  * This solves the chicken-and-egg problem where plugin A emits a hook
  * that plugin B wants to listen to, but B's setup() hasn't run yet.
  */
-
-import type { Hookable, HookKeys } from "hookable";
+import type { HookKeys, Hookable } from "hookable";
 
 import type { HookCallbacks, HookPayload } from "./types.ts";
 

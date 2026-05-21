@@ -3,7 +3,6 @@
  *
  * Provides idle-agent reminders for Jira-specific workflows.
  */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 /**

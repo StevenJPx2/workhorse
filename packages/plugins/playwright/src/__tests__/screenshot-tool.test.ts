@@ -1,11 +1,9 @@
 /**
  * Tests for playwright_screenshot tool with AttachmentService
  */
-
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock session-operations module

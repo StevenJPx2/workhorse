@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-playwright/cross-plugin-sync
  */
-
 import type { AttachmentService, WorkhorseContext } from "workhorse-core";
 
 import type { PlaywrightSessionManager } from "./session-manager.ts";

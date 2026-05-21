@@ -2,7 +2,6 @@
  * Tests for Jira tools (add_comment, transition_issue, get_comments).
  * See get-attachments.test.ts for jira_get_attachments tool tests.
  */
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { AtlassianClient } from "../client.ts";

@@ -1,7 +1,6 @@
 /**
  * Tests for GitHub issue/PR parser.
  */
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { GitHubClient } from "../client.ts";

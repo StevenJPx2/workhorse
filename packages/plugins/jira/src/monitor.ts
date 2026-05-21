@@ -5,11 +5,10 @@
  *
  * @module workhorse-plugin-jira/monitor
  */
-
 import {
-  isWorkhorseGenerated,
   type Database,
   type PollingMonitorOptions,
+  isWorkhorseGenerated,
 } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";

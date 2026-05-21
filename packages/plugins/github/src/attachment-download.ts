@@ -3,9 +3,7 @@
  *
  * @module workhorse-plugin-github/attachment-download
  */
-
 import { createHash } from "node:crypto";
-
 import type { AttachmentService, StoredAttachment } from "workhorse-core";
 
 import { downloadWithAuth } from "./gh-cli.ts";

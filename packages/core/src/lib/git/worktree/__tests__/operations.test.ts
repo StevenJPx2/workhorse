@@ -4,8 +4,12 @@
  * createWorktree and syncWorktree are tested with mocked execGit and existsSync
  * so no real git repository is needed.
  */
-
+// ---------- imports (after mocks are hoisted) ------------------------------
+import { existsSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createWorktree, removeWorktree, syncWorktree } from "../operations.ts";
+import { execGit } from "../utils.ts";
 
 // ---------- module mocks (hoisted) ----------------------------------------
 
@@ -22,13 +26,6 @@ vi.mock("../utils.ts", async (importOriginal) => {
     execGit: vi.fn(),
   };
 });
-
-// ---------- imports (after mocks are hoisted) ------------------------------
-
-import { existsSync } from "node:fs";
-
-import { createWorktree, removeWorktree, syncWorktree } from "../operations.ts";
-import { execGit } from "../utils.ts";
 
 // ---------- helpers --------------------------------------------------------
 

@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/tools/open-pr
  */
-
 import {
   type Database,
   type OrchestratorTool,

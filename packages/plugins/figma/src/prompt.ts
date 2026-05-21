@@ -1,5 +1,4 @@
 /** Figma prompt enrichment - hooks `prompt.building` to inject design context. */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 import type { FigmaClient } from "./client.ts";

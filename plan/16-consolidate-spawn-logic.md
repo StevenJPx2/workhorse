@@ -221,11 +221,13 @@ export class SteeringService {
 // types/agent.ts
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+
 import type { Database, Issue } from "#db";
 import { createWorktree, removeWorktree } from "#lib/git";
 import type { HookEmitter } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { PromptEngineer } from "#workflow/tracker";
+
 import type { OrchestratorTool } from "./tools.ts";
 
 export type AgentHarness = string;
@@ -478,11 +480,13 @@ The orchestrator becomes a simple registry/factory. It no longer owns lifecycle 
 ```typescript
 // orchestrator.ts
 import type { Emitter } from "mitt";
+
 import type { WorkhorseConfig } from "#config";
 import type { Database } from "#db/database";
 import type { HookEventMap } from "#lib/hooks";
 import type { MemoryService } from "#services/memory";
 import type { SteeringRule } from "#workflow/steering";
+
 import type { AgentAdapter, OrchestratorTool, SpawnOptions } from "./types";
 
 /**
@@ -666,14 +670,14 @@ export class HarnessOrchestrator {
 ```typescript
 // packages/plugins/pi-adapter/src/adapter.ts
 import {
+  type AgentSession,
+  createAgentSession,
+} from "@mariozechner/pi-coding-agent";
+import {
   AgentAdapter,
   type CreateOptions,
   type StopOptions,
 } from "workhorse-core";
-import {
-  type AgentSession,
-  createAgentSession,
-} from "@mariozechner/pi-coding-agent";
 
 export class PiAgentAdapter extends AgentAdapter {
   readonly harness = "pi-coding-agent";

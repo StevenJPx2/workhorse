@@ -1,7 +1,6 @@
 /**
  * Component to display the Workhorse workflow status (planning, implementing, etc.)
  */
-
 import { Show } from "solid-js";
 import type { IssueStatus } from "workhorse-core";
 

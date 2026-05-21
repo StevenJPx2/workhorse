@@ -1,23 +1,22 @@
 /** Skill registry - manages plugin and local skill discovery/registration. */
-
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 import type { ConfigPaths } from "#config";
 import {
-  createFuzzySearcher,
   type FuzzySearcher,
   type HookEmitter,
+  createFuzzySearcher,
 } from "#lib";
 
+import type { PluginSkillInput, ResolvedSkill } from "../types";
+import { PluginSkillSchema } from "../types";
 import {
+  type SkillFileMetadata,
   buildSkillFromFile,
   loadSkillFile,
   parseSkillFile,
-  type SkillFileMetadata,
 } from "./skill-file.ts";
-import type { PluginSkillInput, ResolvedSkill } from "../types";
-import { PluginSkillSchema } from "../types";
 
 interface SkillSearchItem {
   id: string;

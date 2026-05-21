@@ -1,9 +1,9 @@
 import {
-  createSignal,
-  createMemo,
-  onMount,
-  onCleanup,
   type Accessor,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
 } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 

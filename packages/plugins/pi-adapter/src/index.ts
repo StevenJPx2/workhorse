@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-pi-adapter
  */
-
 import { definePlugin } from "workhorse-core";
 
 import { PiAgentAdapter } from "./adapter.ts";

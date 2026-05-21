@@ -1,7 +1,6 @@
 /**
  * Types for the Auth screen.
  */
-
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
 
 export type AuthFlowState =

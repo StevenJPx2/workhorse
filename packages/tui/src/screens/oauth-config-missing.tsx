@@ -2,7 +2,6 @@
  * Screen shown when OAuth configuration (env vars) is missing for a plugin.
  * Gives the user clear instructions and lets them choose to continue without the plugin.
  */
-
 import { useKeyboard, useRenderer } from "@opentui/solid";
 
 import { getTheme } from "../theme.ts";

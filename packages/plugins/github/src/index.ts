@@ -12,7 +12,6 @@
  *
  * @module workhorse-plugin-github
  */
-
 import { AttachmentService, definePlugin } from "workhorse-core";
 import { z } from "zod/v4";
 

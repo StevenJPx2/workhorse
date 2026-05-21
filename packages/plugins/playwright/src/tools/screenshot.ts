@@ -5,11 +5,9 @@
  *
  * @module workhorse-plugin-playwright/tools/screenshot
  */
-
 import { readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 
 import type { PlaywrightSessionManager } from "../session-manager.ts";

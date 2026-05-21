@@ -9,7 +9,6 @@
  *
  * @module workhorse-plugin-jira/cross-plugin-sync
  */
-
 import {
   type Database,
   type WorkhorseContext,

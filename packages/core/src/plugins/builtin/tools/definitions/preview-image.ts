@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/definitions/preview-image
  */
-
 import type { OrchestratorTool } from "#workflow";
 
 import { previewImageToolImpl } from "../implementations";

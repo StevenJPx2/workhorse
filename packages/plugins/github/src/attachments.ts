@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-github/attachments
  */
-
 import { createHash } from "node:crypto";
 
 import type { GitHubAttachment, GitHubComment } from "./types.ts";

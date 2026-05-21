@@ -2,7 +2,6 @@
  * Auth plugin card component.
  * Shows plugin auth status and provides actions.
  */
-
 import { Show } from "solid-js";
 
 import type { PluginAuthRequirement } from "../../setup/auth.ts";

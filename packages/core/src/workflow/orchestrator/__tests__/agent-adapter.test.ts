@@ -8,7 +8,6 @@
  * - Playwright browser session cleanup
  * - Resource cleanup that must complete before process exit
  */
-
 import { describe, expect, it } from "vitest";
 
 import { createMockHooks } from "#test-helpers";

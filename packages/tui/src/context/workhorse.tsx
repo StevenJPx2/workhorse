@@ -1,12 +1,12 @@
-import { createContext, useContext, type JSX } from "solid-js";
+import { type JSX, createContext, useContext } from "solid-js";
 import type {
-  WorkhorseConfig,
   ConfigPaths,
+  HarnessOrchestrator,
   HookEmitter,
   MemoryService,
   MonitorService,
   Tracker,
-  HarnessOrchestrator,
+  WorkhorseConfig,
 } from "workhorse-core";
 
 /**

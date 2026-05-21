@@ -3,7 +3,6 @@
  *
  * Provides idle-agent reminders for GitHub-specific workflows.
  */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 /**

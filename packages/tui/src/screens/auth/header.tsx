@@ -1,7 +1,6 @@
 /**
  * Auth screen header component.
  */
-
 import { getTheme } from "../../theme.ts";
 
 export function AuthHeader() {

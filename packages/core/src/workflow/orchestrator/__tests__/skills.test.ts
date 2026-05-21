@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PluginSkillSchema, type PluginSkillInput } from "../types/skills.ts";
+import { type PluginSkillInput, PluginSkillSchema } from "../types/skills.ts";
 
 describe("PluginSkillSchema", () => {
   describe("id validation", () => {

@@ -1,7 +1,6 @@
 /**
  * Tests for the Figma TUI renderer.
  */
-
 import { describe, expect, it } from "vitest";
 import type { Notification } from "workhorse-core";
 

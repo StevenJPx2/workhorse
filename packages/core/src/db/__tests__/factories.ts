@@ -3,7 +3,6 @@
  *
  * @module db/__tests__/factories
  */
-
 import type { Issue, IssueEvent, Notification } from "#db";
 
 // oxlint-disable-next-line workhorse/no-single-reference-function -- test factory

@@ -10,17 +10,16 @@
  *
  * @module scripts/build-tui
  */
-
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import {
-  patchDynamicImports,
-  copyTreeSitterAssets,
   copyDrizzleMigrations,
+  copyTreeSitterAssets,
   formatDuration,
   formatSize,
+  patchDynamicImports,
 } from "./utils";
 
 const ROOT = resolve(import.meta.dir, "../..");

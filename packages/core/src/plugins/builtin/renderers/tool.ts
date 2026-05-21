@@ -6,7 +6,6 @@
  * - memory_search, memory_write
  * - load_skill
  */
-
 import type {
   ActivityColor,
   ActivityInput,

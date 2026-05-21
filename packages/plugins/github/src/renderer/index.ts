@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-github/renderer
  */
-
 import { renderGithubNotification } from "./notification.ts";
 import { renderGithubTool } from "./tool.ts";
 import type { ActivityInput, RenderedActivity } from "./types.ts";

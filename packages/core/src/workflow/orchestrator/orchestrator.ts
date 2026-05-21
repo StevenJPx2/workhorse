@@ -1,5 +1,4 @@
 /** HarnessOrchestrator - Registry/factory for agent adapters. @module workflow/orchestrator/orchestrator */
-
 import type { WorkhorseConfig } from "#config";
 import type { Database } from "#db";
 import type { HookEmitter } from "#lib";

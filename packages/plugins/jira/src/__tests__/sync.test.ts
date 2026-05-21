@@ -1,7 +1,6 @@
 /**
  * Tests for Jira status sync — verifies correct hook emissions.
  */
-
 import { describe, expect, it, vi } from "vitest";
 import type { Issue } from "workhorse-core";
 

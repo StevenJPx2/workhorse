@@ -4,15 +4,14 @@
  * NOTE: These tests require Bun runtime. They are skipped when running in Node.js (vitest default).
  * Run with `bun test` to execute these tests.
  */
-
 import {
+  type MockInstance,
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
   vi,
-  type MockInstance,
 } from "vitest";
 
 import { GitHubClient } from "../client.ts";

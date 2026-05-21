@@ -224,7 +224,6 @@ ctx.hooks.emit("tui.register_renderer", {
 
 ```typescript
 // packages/tui/src/renderers/registry.ts
-
 import type {
   ActivityInput,
   ActivityRenderer,
@@ -357,7 +356,6 @@ export function ActivityRow(props: { input: ActivityInput }) {
 
 ```typescript
 // packages/tui/src/primitives/activity-types.ts
-
 import type { Notification } from "workhorse-core";
 
 export type ActivityItem =

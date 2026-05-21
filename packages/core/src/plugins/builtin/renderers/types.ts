@@ -1,7 +1,6 @@
 /**
  * Shared types for TUI activity renderers.
  */
-
 import type { Notification } from "#db";
 
 /**

@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-playwright/tools/click
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { PlaywrightSessionManager } from "../session-manager.ts";

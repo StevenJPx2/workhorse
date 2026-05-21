@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/tools/get-pr-status
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { GitHubClient } from "../client";

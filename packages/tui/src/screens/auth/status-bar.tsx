@@ -1,7 +1,6 @@
 /**
  * Auth screen status bar component.
  */
-
 import { getTheme } from "../../theme.ts";
 
 interface AuthStatusBarProps {

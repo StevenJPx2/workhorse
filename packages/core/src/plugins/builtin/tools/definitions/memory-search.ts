@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/definitions/memory-search
  */
-
 import type { OrchestratorTool } from "#workflow";
 
 import { memorySearchToolImpl } from "../implementations";

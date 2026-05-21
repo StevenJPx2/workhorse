@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/skill
  */
-
 import type {
   HarnessOrchestrator,
   OrchestratorTool,

@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, type Accessor } from "solid-js";
+import { type Accessor, createSignal, onCleanup, onMount } from "solid-js";
 import type { Issue } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";

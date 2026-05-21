@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-playwright/tools/get-page-content
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { PlaywrightSessionManager } from "../session-manager.ts";

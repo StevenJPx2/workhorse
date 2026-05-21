@@ -4,7 +4,6 @@
  * Uses lookup objects instead of switch statements to reduce cognitive load.
  * Each status has a single, declarative configuration in one place.
  */
-
 import type { AgentState, IssueStatus } from "workhorse-core";
 
 import type { getTheme } from "../../theme.ts";

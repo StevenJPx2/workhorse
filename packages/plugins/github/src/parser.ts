@@ -8,7 +8,6 @@
  *
  * @module workhorse-plugin-github/parser
  */
-
 import type { IssueParserOptions } from "workhorse-core";
 
 import type { GitHubClient } from "./client.ts";

@@ -5,7 +5,6 @@
  * are single generic variants. Rendering logic is handled by the
  * plugin-based renderer registry.
  */
-
 import type { Notification } from "workhorse-core";
 
 /** Activity item types */

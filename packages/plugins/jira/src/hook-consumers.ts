@@ -11,7 +11,6 @@
  *
  * @module workhorse-plugin-jira/hook-consumers
  */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";

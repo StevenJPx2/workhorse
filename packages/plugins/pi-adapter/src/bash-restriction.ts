@@ -3,19 +3,17 @@
  * Ensures agents cannot execute commands outside their worktree or /tmp/.
  * @module workhorse-plugin-pi-adapter/bash-restriction
  */
-
-import { tmpdir } from "node:os";
-import { resolve, normalize } from "node:path";
-
 import {
-  createLocalBashOperations,
   type BashOperations,
   type BashSpawnHook,
+  createLocalBashOperations,
 } from "@earendil-works/pi-coding-agent";
+import { tmpdir } from "node:os";
+import { normalize, resolve } from "node:path";
 import {
+  type PathValidationOptions,
   assertPathAllowed,
   isPathAllowed,
-  type PathValidationOptions,
 } from "workhorse-core";
 
 import { GitOperationTracker } from "./git-operation-tracker.ts";

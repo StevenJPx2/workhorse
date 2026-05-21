@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, existsSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 

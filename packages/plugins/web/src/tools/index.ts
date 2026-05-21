@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-web/tools
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import { createWebReadTool } from "./read.ts";

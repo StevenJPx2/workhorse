@@ -12,12 +12,10 @@
  *
  * @module scripts/build-plugins
  */
-
-import { readdir, stat } from "node:fs/promises";
-import { resolve, join } from "node:path";
-import { parseArgs } from "node:util";
-
 import { $ } from "bun";
+import { readdir, stat } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { parseArgs } from "node:util";
 
 const PLUGINS_DIR = resolve(import.meta.dir, "../packages/plugins");
 

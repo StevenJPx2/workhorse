@@ -1,5 +1,4 @@
 /** Agent lifecycle management for HarnessOrchestrator. */
-
 import type { HarnessOrchestrator } from "./orchestrator.ts";
 import type { AgentAdapter, SpawnOptions } from "./types";
 

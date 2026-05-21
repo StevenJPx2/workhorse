@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-github/hook-metadata
  */
-
 import { registerHookMetadata } from "workhorse-core";
 
 /**

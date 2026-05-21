@@ -1,5 +1,5 @@
 import { useTerminalDimensions } from "@opentui/solid";
-import { createSignal, createMemo, onMount } from "solid-js";
+import { createMemo, createSignal, onMount } from "solid-js";
 
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
 import { ui } from "../../state/ui";

@@ -1,6 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-
 import { defu } from "defu";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 import { deepCamelKeys, deepSnakeKeys } from "string-ts";
 

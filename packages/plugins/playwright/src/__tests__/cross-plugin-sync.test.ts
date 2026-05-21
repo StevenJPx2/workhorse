@@ -1,11 +1,9 @@
 /**
  * Tests for Playwright cross-plugin sync with GitHub
  */
-
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Test directory for attachments

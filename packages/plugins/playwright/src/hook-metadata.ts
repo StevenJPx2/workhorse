@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-playwright/hook-metadata
  */
-
 import { registerHookMetadata } from "workhorse-core";
 
 /**

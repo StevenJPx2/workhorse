@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-figma/renderer
  */
-
 import type { Notification } from "workhorse-core";
 
 /** Activity input type for the unified renderer system */

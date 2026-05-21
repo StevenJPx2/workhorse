@@ -12,7 +12,6 @@
  *
  * @module workhorse-plugin-jira/auth
  */
-
 import {
   clearCredentials,
   isJiraAuthenticated,

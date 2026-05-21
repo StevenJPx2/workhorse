@@ -3,7 +3,6 @@
  *
  * @module services/memory/indexer/utils
  */
-
 import type {
   MemoryDocument,
   MemoryDocumentType,

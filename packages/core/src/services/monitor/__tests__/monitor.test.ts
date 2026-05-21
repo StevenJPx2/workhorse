@@ -2,7 +2,6 @@
  * Tests for the PollingMonitor class directly (not MonitorService).
  * Covers edge cases in the poll loop that are hard to hit via service.
  */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";

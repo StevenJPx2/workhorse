@@ -3,9 +3,7 @@
  *
  * @module cli
  */
-
 import { parseArgs } from "node:util";
-
 import type { HarnessOrchestrator, ModelInfo } from "workhorse-core";
 
 /** CLI argument definitions. */

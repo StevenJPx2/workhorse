@@ -1,5 +1,4 @@
 /** Text buffer management for streaming activity items. */
-
 import type { ActivityItem } from "../primitives/activity-types.ts";
 
 const MAX_ITEMS = 100;

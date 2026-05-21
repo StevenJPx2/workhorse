@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/skills/register
  */
-
 import { generateHooksReference } from "#lib";
 import type { SkillRegistry } from "#workflow";
 

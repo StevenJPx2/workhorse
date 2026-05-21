@@ -10,7 +10,6 @@
  *
  * @module workhorse-plugin-jira/sync
  */
-
 import type { IssueStatus, WorkhorseContext } from "workhorse-core";
 
 /** Mapping from internal Workhorse status to Jira status name */

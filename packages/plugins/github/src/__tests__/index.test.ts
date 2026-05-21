@@ -1,10 +1,9 @@
 /**
  * Tests for GitHub plugin entry point.
  */
-
 import { describe, expect, it } from "vitest";
 
-import { githubPlugin, GitHubConfigSchema } from "../index.ts";
+import { GitHubConfigSchema, githubPlugin } from "../index.ts";
 
 describe("githubPlugin", () => {
   it("has correct manifest", () => {

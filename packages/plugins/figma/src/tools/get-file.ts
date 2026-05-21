@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-figma/tools/get-file
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { FigmaClient } from "../client.ts";

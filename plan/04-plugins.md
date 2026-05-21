@@ -30,16 +30,16 @@ packages/core/src/
 Uses `unctx` with native `AsyncLocalStorage` for async-safe context.
 
 ```typescript
+// context/index.ts
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createContext } from "unctx";
+
 // context/types.ts
 interface WorkhorseContext {
   readonly config: Config;
   readonly hooks: typeof hooks;
   // Extended in later steps: db, memory, monitor, tracker
 }
-
-// context/index.ts
-import { createContext } from "unctx";
-import { AsyncLocalStorage } from "node:async_hooks";
 
 const ctx = createContext<WorkhorseContext>({
   asyncContext: true,

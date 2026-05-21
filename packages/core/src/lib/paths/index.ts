@@ -6,8 +6,7 @@
  *
  * @module lib/paths
  */
-
-import { normalize, resolve, relative, isAbsolute } from "node:path";
+import { isAbsolute, normalize, relative, resolve } from "node:path";
 
 /**
  * Options for path validation.

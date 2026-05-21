@@ -1,5 +1,4 @@
 /** Persistent Browser Connection Manager - manages long-lived Playwright browser connections. */
-
 import type {
   Browser,
   BrowserContext,

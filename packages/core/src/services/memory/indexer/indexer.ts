@@ -1,8 +1,7 @@
 /** Memory Indexer - Indexes session memories and codebase context to L2. */
+import { debounce } from "es-toolkit";
 import { readFile } from "node:fs/promises";
 import { basename, relative } from "node:path";
-
-import { debounce } from "es-toolkit";
 import { glob } from "tinyglobby";
 
 import type { Database } from "#db";

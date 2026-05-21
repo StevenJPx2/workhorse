@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-figma/tools/get-comments
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { FigmaClient } from "../client.ts";

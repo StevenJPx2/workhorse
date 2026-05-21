@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { Show, createEffect, createMemo, createSignal } from "solid-js";
 import type { AgentAdapter } from "workhorse-core";
 
 import { StatusBar } from "../components";

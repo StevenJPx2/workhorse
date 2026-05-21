@@ -1,12 +1,12 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   CORE_HOOK_METADATA,
-  getAllHookMetadata,
-  registerHookMetadata,
   clearPluginHookMetadata,
   generateHooksMarkdown,
   generateHooksReference,
+  getAllHookMetadata,
+  registerHookMetadata,
 } from "../metadata.ts";
 
 describe("CORE_HOOK_METADATA", () => {

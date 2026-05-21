@@ -2,7 +2,6 @@
  * Tests for SteeringContext (notifications and toolHistory).
  * Split from rule.test.ts to keep files under 500 lines.
  */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

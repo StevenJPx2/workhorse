@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/tools/add-comment
  */
-
 import { type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";

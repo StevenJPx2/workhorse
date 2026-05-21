@@ -1,8 +1,7 @@
 /**
  * Agent sidebar component - shows list of agents with status.
  */
-
-import { For, Show, type Accessor } from "solid-js";
+import { type Accessor, For, Show } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 
 import { ui } from "../../state/ui";

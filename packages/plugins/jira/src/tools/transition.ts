@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/tools/transition
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";

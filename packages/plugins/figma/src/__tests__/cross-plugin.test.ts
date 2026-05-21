@@ -1,16 +1,15 @@
 /**
  * Tests for cross-plugin integration (Figma link discovery from Jira/other sources).
  */
-
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HookEmitter } from "workhorse-core";
 
 import type { FigmaClient } from "../client.ts";
 import {
-  registerCrossPluginHandlers,
   buildLinkedDesignContextBlocks,
-  getLinkedDesigns,
   clearLinkedDesigns,
+  getLinkedDesigns,
+  registerCrossPluginHandlers,
 } from "../cross-plugin.ts";
 
 // Mock FigmaClient

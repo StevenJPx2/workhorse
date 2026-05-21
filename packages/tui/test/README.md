@@ -108,7 +108,7 @@ const snapshot = await captureWithKeys({
 Run a suite of tests:
 
 ```typescript
-import { runTests, printResults } from "./harness.ts";
+import { printResults, runTests } from "./harness.ts";
 
 const results = await runTests([
   {

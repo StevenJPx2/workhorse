@@ -3,7 +3,6 @@
  *
  * Provides idle-agent reminders for memory management and workflow best practices.
  */
-
 import type { WorkhorseContext } from "#context";
 
 /** Tools that represent meaningful work worth remembering. */

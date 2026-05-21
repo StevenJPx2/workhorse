@@ -6,7 +6,6 @@
  *
  * @module workflow/orchestrator/types/skills
  */
-
 import { z } from "zod";
 
 /**

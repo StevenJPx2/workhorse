@@ -7,13 +7,12 @@
  * 3. Agent response streams via hooks
  * 4. Response appears in messages()
  */
-
 import { createRoot, createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
 import type {
   AgentAdapter,
-  HookEmitter,
   HarnessOrchestrator,
+  HookEmitter,
   MemoryService,
 } from "workhorse-core";
 

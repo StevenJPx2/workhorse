@@ -1,11 +1,10 @@
 /** Session lifecycle operations for PlaywrightSessionManager. */
-
 import type { HookEmitter } from "workhorse-core";
 
 import {
+  type BrowserConnection,
   closeBrowser,
   launchBrowser,
-  type BrowserConnection,
 } from "./browser-connection.ts";
 import type { BrowserSession, BrowserType, Viewport } from "./types.ts";
 

@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-github/tools/get-attachments
  */
-
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 
 import {

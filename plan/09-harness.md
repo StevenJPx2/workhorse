@@ -205,6 +205,7 @@ Plugins register adapter classes via `ctx.orchestrator.registerAdapter()`:
 ```typescript
 // packages/plugins/pi-adapter/src/index.ts
 import { definePlugin } from "workhorse-core";
+
 import { PiAgentAdapter } from "./adapter.ts";
 
 export const piAdapterPlugin = definePlugin({
@@ -252,13 +253,14 @@ The builtin pi-adapter plugin shows the pattern for implementing an adapter:
 // plugins/builtin/pi-adapter/adapter.ts
 import {
   type AgentSession,
-  createAgentSession,
   DefaultResourceLoader,
   SessionManager,
+  createAgentSession,
 } from "@mariozechner/pi-coding-agent";
+
 import type {
-  AgentAdapter,
   AdapterContext,
+  AgentAdapter,
   AgentState,
 } from "#workflow/orchestrator";
 
@@ -368,13 +370,13 @@ export class PiAgentAdapter extends AgentAdapter {
 
 ```typescript
 // workhorse-opencode-adapter (hypothetical npm package)
+import { OpencodeSDK } from "opencode-sdk";
 import {
-  definePlugin,
   type AdapterContext,
   type AgentAdapter,
   type AgentState,
+  definePlugin,
 } from "workhorse-core";
-import { OpencodeSDK } from "opencode-sdk";
 
 class OpencodeAdapter extends AgentAdapter {
   readonly harness = "opencode";
@@ -437,6 +439,9 @@ export const corePlugin = definePlugin({
 Core only registers the corePlugin (tools). Adapter plugins are external packages:
 
 ```typescript
+// Application code registers adapter plugins
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
+
 // bootstrap.ts (inside workhorse-core)
 for (const plugin of CORE_PLUGINS) {
   // Only corePlugin
@@ -444,8 +449,6 @@ for (const plugin of CORE_PLUGINS) {
 }
 await plugins.setup();
 
-// Application code registers adapter plugins
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 jt.plugins.register(piAdapterPlugin);
 await jt.plugins.setup();
 ```

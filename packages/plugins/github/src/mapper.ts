@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/mapper
  */
-
 import type { IssueSource, IssueType, ParsedIssue } from "workhorse-core";
 
 import type { GitHubIssue } from "./types.ts";

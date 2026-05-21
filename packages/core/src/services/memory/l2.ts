@@ -1,4 +1,4 @@
-import { createRetriv, type SearchFilter } from "retriv";
+import { type SearchFilter, createRetriv } from "retriv";
 import { libsql } from "retriv/db/libsql";
 import { transformersJs } from "retriv/embeddings/transformers-js";
 

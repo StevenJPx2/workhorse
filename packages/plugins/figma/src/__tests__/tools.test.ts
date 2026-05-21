@@ -2,7 +2,6 @@
  * Tests for Figma agent tools:
  *   figma_get_file, figma_get_comments, figma_post_comment
  */
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { FigmaClient } from "../client.ts";

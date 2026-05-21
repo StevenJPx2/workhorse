@@ -1,7 +1,6 @@
 /**
  * Tests for GitHub → ParsedIssue mapper.
  */
-
 import { describe, expect, it } from "vitest";
 
 import { mapGitHubToIssue } from "../mapper.ts";

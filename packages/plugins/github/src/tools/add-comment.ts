@@ -7,10 +7,8 @@
  *
  * @module workhorse-plugin-github/tools/add-comment
  */
-
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 import { withWorkhorseFooter } from "workhorse-core";
 

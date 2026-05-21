@@ -1,7 +1,6 @@
 /**
  * Tests for FigmaClient — mocks globalThis.fetch.
  */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FigmaClient } from "../client.ts";

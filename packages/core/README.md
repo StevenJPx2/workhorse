@@ -526,6 +526,7 @@ export type IssueStatus = z.infer<typeof IssueStatusSchema>;
 
 ```typescript
 import { bootstrap } from "workhorse-core";
+
 import myPlugin from "./my-plugin";
 
 const workhorse = await bootstrap({

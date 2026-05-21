@@ -6,9 +6,8 @@
  *
  * @module workhorse-core/services/attachment
  */
-
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { readdir, readFile, stat, unlink } from "node:fs/promises";
+import { readFile, readdir, stat, unlink } from "node:fs/promises";
 import { basename, join } from "node:path";
 
 import type { DownloadOptions, StoredAttachment } from "./types.ts";

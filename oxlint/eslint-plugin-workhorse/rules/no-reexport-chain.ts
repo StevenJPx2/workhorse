@@ -10,7 +10,6 @@
  * - ✅ `export { Foo } from "./types"` (import from canonical source)
  * - ✅ `export { Foo } from "./agent"` when Foo is defined in agent.ts
  */
-
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 

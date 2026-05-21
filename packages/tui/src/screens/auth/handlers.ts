@@ -1,12 +1,11 @@
 /**
  * Auth handlers for OAuth, external, and API token flows.
  */
-
 import type { Setter } from "solid-js";
 import {
-  startOAuthFlow,
-  type OAuthProvider,
   type ApiTokenProvider,
+  type OAuthProvider,
+  startOAuthFlow,
 } from "workhorse-core";
 
 import type { PluginAuthRequirement } from "../../setup/auth.ts";

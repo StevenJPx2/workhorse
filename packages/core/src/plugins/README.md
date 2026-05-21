@@ -34,8 +34,9 @@ export default definePlugin({
 ### Plugin with Config Schema
 
 ```typescript
-import { definePlugin } from "#plugins";
 import { z } from "zod/v4";
+
+import { definePlugin } from "#plugins";
 
 export default definePlugin({
   manifest: { name: "jira", version: "1.0.0" },

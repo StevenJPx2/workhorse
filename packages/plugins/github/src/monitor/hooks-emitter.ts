@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/monitor-hooks
  */
-
 import type { MonitorContext } from "workhorse-core";
 
 import type { GitHubCheckRun, GitHubPR, GitHubReview } from "../types.ts";

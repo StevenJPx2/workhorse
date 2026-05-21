@@ -2,8 +2,7 @@
  * Activity feed component - shows agent activity (tool calls, text, file edits).
  * Displays items in a scrollable list with visual distinction by type.
  */
-
-import { For, Show, type Accessor } from "solid-js";
+import { type Accessor, For, Show } from "solid-js";
 
 import type { ActivityState } from "../state/activity-store.ts";
 import { ui } from "../state/ui";

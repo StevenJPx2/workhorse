@@ -1,14 +1,14 @@
 import {
   definePlugin,
-  useWorkhorse,
   registerHookMetadata,
+  useWorkhorse,
 } from "workhorse-core";
 
 import {
-  registerRenderer,
-  type RegisterRendererPayload,
   type ActivityInput,
+  type RegisterRendererPayload,
   type RenderedActivity,
+  registerRenderer,
 } from "./renderers";
 import { agentRenderer } from "./renderers/agent.ts";
 

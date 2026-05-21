@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-web/tools/screenshot
  */
-
 import type {
   OrchestratorTool,
   ToolExecutionContext,

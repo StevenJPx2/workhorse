@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/tools
  */
-
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";

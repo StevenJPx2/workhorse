@@ -41,7 +41,7 @@ const paths = resolveConfigPaths("/path/to/repo");
 ### Load Config
 
 ```typescript
-import { resolveConfigPaths, loadConfig } from "#config";
+import { loadConfig, resolveConfigPaths } from "#config";
 
 const paths = resolveConfigPaths();
 const config = loadConfig(paths);
@@ -51,7 +51,7 @@ const config = loadConfig(paths);
 ### Parse & Write TOML
 
 ```typescript
-import { parseTomlFile, writeTomlFile, configToToml } from "#config";
+import { configToToml, parseTomlFile, writeTomlFile } from "#config";
 
 // Read
 const data = parseTomlFile("/path/to/config.toml");
@@ -78,7 +78,7 @@ const merged = mergeConfigs(
 ### Credentials
 
 ```typescript
-import { storeCredential, getCredential, deleteCredential } from "#config";
+import { deleteCredential, getCredential, storeCredential } from "#config";
 
 await storeCredential("workhorse", "github_token", "ghp_xxx");
 const token = await getCredential("workhorse", "github_token");

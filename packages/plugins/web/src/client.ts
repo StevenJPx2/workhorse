@@ -11,7 +11,6 @@
  * @see https://github.com/jina-ai/cli
  * @module workhorse-plugin-web/client
  */
-
 import { spawn } from "node:child_process";
 
 /** Result from executing a jina command */

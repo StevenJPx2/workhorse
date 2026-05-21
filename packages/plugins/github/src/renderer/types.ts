@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/renderer/types
  */
-
 import type { Notification } from "workhorse-core";
 
 /**

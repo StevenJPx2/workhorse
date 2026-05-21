@@ -1,8 +1,7 @@
 /**
  * Tests for git operation timeout tracking.
  */
-
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GitOperationTracker } from "../git-operation-tracker.ts";
 

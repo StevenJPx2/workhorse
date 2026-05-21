@@ -1,7 +1,6 @@
 /**
  * Tests for session-operations module
  */
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock browser-connection module

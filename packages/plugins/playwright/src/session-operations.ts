@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-playwright/session-operations
  */
-
 import {
   clickElement,
   evaluateScript,

@@ -3,5 +3,9 @@
   "singleQuote": false,
   "tabWidth": 2,
   "printWidth": 80,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": ["^#", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }

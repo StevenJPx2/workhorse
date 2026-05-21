@@ -1,11 +1,11 @@
 import {
+  type MockInstance,
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
   vi,
-  type MockInstance,
 } from "vitest";
 import type { OrchestratorTool } from "workhorse-core";
 

@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-jira/pr-contribution
  */
-
 import type { Database, WorkhorseContext } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";

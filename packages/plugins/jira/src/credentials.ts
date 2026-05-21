@@ -2,7 +2,6 @@
  * Jira credential storage and loading.
  * @module workhorse-plugin-jira/credentials
  */
-
 import {
   deleteCredential,
   getCredential,

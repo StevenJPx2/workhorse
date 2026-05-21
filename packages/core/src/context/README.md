@@ -5,7 +5,7 @@ Async-safe dependency injection via `unctx` + `AsyncLocalStorage`.
 ## Usage
 
 ```typescript
-import { useWorkhorse, runWithContext } from "#context";
+import { runWithContext, useWorkhorse } from "#context";
 
 // Inside plugin setup or any code running in context:
 const { config, hooks } = useWorkhorse();

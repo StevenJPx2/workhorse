@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-github/tools/get-ci-check
  */
-
 import type { OrchestratorTool } from "workhorse-core";
 
 import type { GitHubClient } from "../client";

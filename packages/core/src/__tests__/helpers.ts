@@ -3,7 +3,6 @@
  *
  * @module __tests__/helpers
  */
-
 import mitt from "mitt";
 
 import type { HookEmitter, HookEventMap } from "../lib/hooks/types.ts";

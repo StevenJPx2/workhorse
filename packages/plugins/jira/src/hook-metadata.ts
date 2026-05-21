@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-jira/hook-metadata
  */
-
 import { registerHookMetadata } from "workhorse-core";
 
 /**

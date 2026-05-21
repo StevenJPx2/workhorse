@@ -1,7 +1,6 @@
 /**
  * PI tool renderer tests.
  */
-
 import { describe, expect, it } from "vitest";
 
 import { piToolRenderer } from "../renderers.ts";

@@ -2,9 +2,8 @@
  * Primitive for tracking file changes in an agent's worktree.
  * Uses git diff --stat to get actual line counts.
  */
-
 import { $ } from "bun";
-import { createSignal, onCleanup, createEffect, type Accessor } from "solid-js";
+import { type Accessor, createEffect, createSignal, onCleanup } from "solid-js";
 
 export interface FileChange {
   path: string;

@@ -1,9 +1,8 @@
 /** Steering rule setup for agent adapters. */
-
-import { SteeringRule } from "#workflow";
 import type { Issue } from "#db";
+import { SteeringRule } from "#workflow";
 
-import type { HarnessOrchestrator } from "./orchestrator.ts";
+import type { HarnessOrchestrator } from "../orchestrator.ts";
 
 export function createSteeringRules(
   orchestrator: HarnessOrchestrator,

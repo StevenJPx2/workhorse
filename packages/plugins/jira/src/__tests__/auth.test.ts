@@ -1,14 +1,13 @@
 /**
  * Tests for Jira credentials module.
  */
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as keychain from "workhorse-core";
 
 import {
+  createCredentialGetter,
   loadCredentials,
   saveCredentials,
-  createCredentialGetter,
 } from "../credentials.ts";
 
 vi.mock("workhorse-core", () => ({

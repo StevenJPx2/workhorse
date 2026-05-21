@@ -8,6 +8,7 @@ Location: `packages/core/src/lib/hooks/`
 
 ```typescript
 import mitt from "mitt";
+
 import type { HookEventMap } from "./types";
 
 export const hooks = mitt<HookEventMap>();

@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-figma/credentials
  */
-
 import type { FigmaCredentialGetter } from "./client.ts";
 import type { FigmaCredentials } from "./types.ts";
 

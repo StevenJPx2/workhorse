@@ -5,8 +5,7 @@
  *
  * @module workhorse/setup/auth
  */
-
-import type { Plugin, AuthProvider, AuthStatus } from "workhorse-core";
+import type { AuthProvider, AuthStatus, Plugin } from "workhorse-core";
 
 /**
  * Plugin with auth requirements for TUI display.

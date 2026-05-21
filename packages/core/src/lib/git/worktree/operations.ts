@@ -3,7 +3,6 @@
  *
  * @module lib/git/worktree/operations
  */
-
 import { existsSync } from "node:fs";
 
 import type { WorktreeInfo } from "./types.ts";

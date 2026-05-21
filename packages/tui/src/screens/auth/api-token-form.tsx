@@ -2,7 +2,6 @@
  * API Token form component for auth screen.
  * Displays fields from an ApiTokenProvider for user input.
  */
-
 import { For, Show } from "solid-js";
 import type { ApiTokenAuthField } from "workhorse-core";
 

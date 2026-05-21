@@ -1,26 +1,26 @@
-import { Match, Switch, Show, onMount, type JSX } from "solid-js";
+import { type JSX, Match, Show, Switch, onMount } from "solid-js";
 import type {
-  WorkhorseConfig,
   ConfigPaths,
+  HarnessOrchestrator,
   HookEmitter,
+  Issue,
   MemoryService,
   MonitorService,
   Tracker,
-  HarnessOrchestrator,
-  Issue,
+  WorkhorseConfig,
 } from "workhorse-core";
 
 import { useGlobalBindings } from "./bindings";
 import {
-  SpawnModal,
-  type SpawnConfig,
-  ModelSelectorModal,
   DeleteConfirmModal,
-  ToastContainer,
+  ModelSelectorModal,
   ShutdownOverlay,
+  type SpawnConfig,
+  SpawnModal,
+  ToastContainer,
 } from "./components";
 import { WorkhorseProvider } from "./context/workhorse.tsx";
-import { Overview, Agent, Help } from "./screens";
+import { Agent, Help, Overview } from "./screens";
 import { initActivityStore } from "./state/activity-store.ts";
 import { logError } from "./state/error-log.ts";
 import { ui } from "./state/ui";

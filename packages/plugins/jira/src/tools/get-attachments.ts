@@ -6,14 +6,13 @@
  *
  * @module workhorse-plugin-jira/tools/get-attachments
  */
-
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 
 import {
+  type AttachmentProcessResult,
   downloadAttachments,
   extractMediaRefsFromAdf,
   filterImageAttachments,
-  type AttachmentProcessResult,
 } from "../attachments.ts";
 import type { AtlassianClient } from "../client.ts";
 import type { JiraAttachment } from "../types.ts";

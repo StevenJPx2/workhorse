@@ -1,7 +1,7 @@
 /** Hook subscriptions for agent lifecycle events. */
-
 import type { Notification } from "#db";
 import type { HookEmitter } from "#lib";
+
 import type { AgentAdapter } from "./agent";
 
 export function subscribeAgentHooks(

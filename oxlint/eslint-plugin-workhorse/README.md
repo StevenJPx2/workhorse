@@ -90,16 +90,16 @@ Rule triggers at 2+ parent traversals (`../../`).
 
 ```typescript
 // ❌ Reaching into module internals
+import { baz } from "./utils/index";
 import { foo } from "./utils/string/helpers/formatter";
 import { bar } from "./utils/string/helpers/validator";
-import { baz } from "./utils/index";
 ```
 
 **Solution:** Every folder with multiple files has `index.ts`:
 
 ```typescript
 // ✅ Clean module boundary
-import { foo, bar, baz } from "./utils";
+import { bar, baz, foo } from "./utils";
 ```
 
 ### Async Style: `.then()` Over Parentheses

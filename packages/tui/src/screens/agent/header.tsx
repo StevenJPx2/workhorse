@@ -1,8 +1,7 @@
 /**
  * Agent header component - displays agent info and status.
  */
-
-import { Show, type Accessor } from "solid-js";
+import { type Accessor, Show } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 
 import { MonitorIndicator } from "../../components";

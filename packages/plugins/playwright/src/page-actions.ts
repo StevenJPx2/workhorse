@@ -1,5 +1,4 @@
 /** Page interaction actions for Playwright browser connections. */
-
 import type { BrowserConnection } from "./browser-connection.ts";
 import type { Viewport } from "./types.ts";
 

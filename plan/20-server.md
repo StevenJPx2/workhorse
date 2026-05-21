@@ -196,10 +196,10 @@ Nitro plugins run at server startup. We use one to inject the WorkhorseContext:
 
 ```typescript
 // plugins/workhorse.ts
-import { bootstrap, type WorkhorseContext } from "workhorse-core";
-import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
-import { jiraPlugin } from "workhorse-plugin-jira";
+import { type WorkhorseContext, bootstrap } from "workhorse-core";
 import { githubPlugin } from "workhorse-plugin-github";
+import { jiraPlugin } from "workhorse-plugin-jira";
+import { piAdapterPlugin } from "workhorse-plugin-pi-adapter";
 
 let workhorse: WorkhorseContext | null = null;
 
@@ -745,8 +745,9 @@ export type ServerMessage =
 
 ```typescript
 // ws/index.ts
-import type { WorkhorseContext } from "workhorse-core";
 import type { Context } from "hono";
+import type { WorkhorseContext } from "workhorse-core";
+
 import { ClientMessage, ServerMessage } from "./protocol";
 
 interface Connection {

@@ -4,9 +4,9 @@ import type { HookEmitter } from "#lib";
 import { createWorktree, removeWorktree } from "#lib";
 import type { MemoryService } from "#services";
 import { PromptEngineer, type SteeringRule } from "#workflow";
+
 import type { HarnessOrchestrator } from "../orchestrator.ts";
 import type { ModelRegistry } from "../registry.ts";
-import { createSteeringRules } from "./steering-setup.ts";
 import type {
   AgentHarness,
   AgentState,
@@ -15,6 +15,7 @@ import type {
 } from "../types/adapter.ts";
 import type { OrchestratorTool } from "../types/tools.ts";
 import { subscribeAgentHooks } from "./hooks.ts";
+import { createSteeringRules } from "./steering-setup.ts";
 
 /** Base class for agent adapters. Subclasses override doStart/doStop/sendMessage/isRunning. */
 export class AgentAdapter {

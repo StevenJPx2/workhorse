@@ -1,7 +1,6 @@
 /**
  * Tests for GitHub PR monitor.
  */
-
 import { describe, expect, it, vi } from "vitest";
 import type { Database, MonitorContext } from "workhorse-core";
 

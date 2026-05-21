@@ -3,9 +3,8 @@
  *
  * @module test/runner
  */
-
 import { captureSnapshot, captureWithKeys } from "./capture.ts";
-import type { TestResult, TestCase, HarnessOptions } from "./types.ts";
+import type { HarnessOptions, TestCase, TestResult } from "./types.ts";
 
 /**
  * Run a suite of TUI tests.

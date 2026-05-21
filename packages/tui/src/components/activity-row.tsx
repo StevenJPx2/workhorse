@@ -3,10 +3,9 @@
  *
  * Renders tool calls and notifications using the plugin-based renderer registry.
  */
-
 import { Show } from "solid-js";
 
-import { render, type ActivityInput } from "../renderers";
+import { type ActivityInput, render } from "../renderers";
 import { getTheme } from "../theme.ts";
 
 export function ActivityRow(props: { input: ActivityInput }) {

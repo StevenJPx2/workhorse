@@ -5,8 +5,7 @@
  *
  * @module workhorse-plugin-playwright/prompt
  */
-
-import type { WorkhorseContext, PromptBuildingContext } from "workhorse-core";
+import type { PromptBuildingContext, WorkhorseContext } from "workhorse-core";
 
 /**
  * Register Playwright prompt hooks.

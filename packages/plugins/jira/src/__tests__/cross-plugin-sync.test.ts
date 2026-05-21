@@ -1,8 +1,7 @@
 /**
  * Tests for Jira cross-plugin sync.
  */
-
-import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Database, WorkhorseContext } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";

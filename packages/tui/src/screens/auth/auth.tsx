@@ -5,9 +5,9 @@ import type { ApiTokenProvider } from "workhorse-core";
 import { getTheme } from "../../theme.ts";
 import { AuthContent } from "./content.tsx";
 import {
-  handleOAuth,
-  handleExternalAuth,
   handleApiTokenAuth,
+  handleExternalAuth,
+  handleOAuth,
   submitApiTokenForm,
 } from "./handlers.ts";
 import { AuthHeader } from "./header.tsx";

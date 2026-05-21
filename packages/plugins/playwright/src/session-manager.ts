@@ -9,9 +9,9 @@ import {
 } from "./browser-connection.ts";
 import { setViewport as setConnectionViewport } from "./page-actions.ts";
 import {
-  createSession,
-  closeSessionState,
   type SessionState,
+  closeSessionState,
+  createSession,
 } from "./session-lifecycle.ts";
 import type {
   BrowserSession,

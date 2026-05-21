@@ -27,7 +27,6 @@
  * - Test files
  * - Index/barrel files
  */
-
 import { isIndexFile, parseFileContext, shouldSkipFile } from "./utils.ts";
 
 interface ExportInfo {

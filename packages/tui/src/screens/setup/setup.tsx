@@ -2,8 +2,7 @@
  * Setup screen for configuring required plugin settings.
  * Shown on first run or when required config is missing.
  */
-
-import { createSignal, For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 
 import { getTheme } from "../../theme.ts";
 import { SetupField } from "./field.tsx";

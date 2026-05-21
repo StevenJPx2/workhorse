@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-jira/renderer
  */
-
 import type { Notification } from "workhorse-core";
 
 /**

@@ -1,9 +1,9 @@
 import {
-  createSignal,
-  createEffect,
-  onMount,
-  onCleanup,
   type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
 } from "solid-js";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";

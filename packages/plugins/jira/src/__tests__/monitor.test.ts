@@ -1,12 +1,11 @@
 /**
  * Tests for Jira comment monitor.
  */
-
 import { describe, expect, it, vi } from "vitest";
 import {
-  WORKHORSE_MARKER,
-  type MonitorContext,
   type Issue,
+  type MonitorContext,
+  WORKHORSE_MARKER,
 } from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";

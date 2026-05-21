@@ -2,9 +2,8 @@
  * Primitive for tracking running monitors for a specific issue.
  * Polls MonitorService.getRunningMonitors() at a fixed interval.
  */
-
-import { createSignal, onCleanup, createEffect, type Accessor } from "solid-js";
-import type { MonitorStatus, MonitorService } from "workhorse-core";
+import { type Accessor, createEffect, createSignal, onCleanup } from "solid-js";
+import type { MonitorService, MonitorStatus } from "workhorse-core";
 
 export interface MonitorsState {
   monitors: MonitorStatus[];

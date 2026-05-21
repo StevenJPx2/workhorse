@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-pi-adapter/events
  */
-
 import type {
   AgentSessionEvent,
   ExtensionAPI,

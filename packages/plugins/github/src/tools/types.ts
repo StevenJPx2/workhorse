@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/tools/types
  */
-
 import type { HookEmitter } from "workhorse-core";
 
 /** Monitor service interface (subset we need) */

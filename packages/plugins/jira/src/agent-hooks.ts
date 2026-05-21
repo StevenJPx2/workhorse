@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-jira/agent-hooks
  */
-
 import type { WorkhorseContext } from "workhorse-core";
 
 /** Register agent lifecycle hooks for Jira integration */

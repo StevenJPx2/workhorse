@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-pi-adapter/registry
  */
-
 import {
   AuthStorage,
   ModelRegistry as PiModelRegistry,

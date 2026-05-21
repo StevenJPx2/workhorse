@@ -5,7 +5,6 @@
  *
  * @module workhorse-plugin-jira/client
  */
-
 import { markdownToAdf } from "marklassian";
 
 import type {

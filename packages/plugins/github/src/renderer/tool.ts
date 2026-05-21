@@ -3,7 +3,6 @@
  *
  * @module workhorse-plugin-github/renderer/tool
  */
-
 import type { RenderedActivity } from "./types.ts";
 
 /**

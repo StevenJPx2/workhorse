@@ -2,9 +2,8 @@
  * Utility functions for the TUI build script.
  * @module scripts/build-tui-utils
  */
-
-import { existsSync, mkdirSync, readdirSync, copyFileSync } from "node:fs";
-import { resolve, extname } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { extname, resolve } from "node:path";
 
 /** Patch dynamic platform imports - currently a no-op since all native deps are external */
 export function patchDynamicImports(_root: string, _bundle: string): void {

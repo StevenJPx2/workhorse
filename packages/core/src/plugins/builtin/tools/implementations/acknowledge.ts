@@ -3,7 +3,6 @@
  *
  * @module plugins/builtin/tools/implementations/acknowledge
  */
-
 import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**

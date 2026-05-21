@@ -12,7 +12,6 @@
  * @see https://github.com/jina-ai/cli
  * @module workhorse-plugin-web
  */
-
 import { definePlugin } from "workhorse-core";
 import { z } from "zod/v4";
 

@@ -526,7 +526,7 @@ interface PluginContext {
 
 ```typescript
 // packages/plugins/jira/src/steering.ts
-import type { WorkhorseContext, SteeringRule } from "workhorse-core";
+import type { SteeringRule, WorkhorseContext } from "workhorse-core";
 
 export function registerJiraSteering(ctx: WorkhorseContext): void {
   // Remind to update Jira after implementation
@@ -599,7 +599,7 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
 
 ```typescript
 // packages/plugins/github/src/steering.ts
-import type { WorkhorseContext, SteeringRule } from "workhorse-core";
+import type { SteeringRule, WorkhorseContext } from "workhorse-core";
 
 export function registerGitHubSteering(ctx: WorkhorseContext): void {
   // Remind to create PR after implementation

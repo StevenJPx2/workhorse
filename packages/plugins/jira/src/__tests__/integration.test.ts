@@ -11,8 +11,7 @@
  * Run with:
  *   cd packages/plugins/jira && bun run vitest run src/__tests__/integration.test.ts
  */
-
-import { describe, it, expect, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { AtlassianClient } from "../client.ts";
 import { mapJiraToIssue } from "../mapper.ts";

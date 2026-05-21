@@ -6,7 +6,6 @@
  *
  * @module workhorse-plugin-jira/attachments
  */
-
 import type { AttachmentService, StoredAttachment } from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";

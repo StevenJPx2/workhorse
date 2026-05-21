@@ -2,7 +2,6 @@
  * Compact monitor status indicator for the agent screen header.
  * Shows running monitor count, type breakdown, and error state.
  */
-
 import { Show } from "solid-js";
 
 import type { MonitorsState } from "../primitives/create-monitors";

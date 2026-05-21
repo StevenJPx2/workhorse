@@ -14,7 +14,6 @@
  * Auto-fix: Removes the re-export from the non-barrel file. The user should
  * manually add it to the appropriate barrel file if needed.
  */
-
 import path from "node:path";
 
 interface ReExportInfo {

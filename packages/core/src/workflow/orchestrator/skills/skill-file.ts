@@ -1,9 +1,8 @@
 /** Skill file parsing and loading utilities. */
-
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ResolvedSkill } from "./types";
+import type { ResolvedSkill } from "../types";
 
 export interface SkillFileMetadata {
   name?: string;
