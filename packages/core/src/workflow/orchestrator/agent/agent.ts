@@ -78,11 +78,8 @@ export class AgentAdapter {
   }
 
   /** Factory method - creates and initializes an adapter instance. */
-  static async create(
-    this: new (options: CreateOptions) => AgentAdapter,
-    options: CreateOptions,
-  ): Promise<AgentAdapter> {
-    const adapter = new this(options);
+  static async create(options: CreateOptions): Promise<AgentAdapter> {
+    const adapter = new this(options) as AgentAdapter;
 
     adapter.hooks.emit("agent.create.pre", {
       issue: adapter.issue,
