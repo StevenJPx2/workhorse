@@ -1,5 +1,34 @@
 # @fdcn/workhorse
 
+## v0.1.24
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.23...v0.1.24)
+
+### 🚀 Enhancements
+
+- **tui:** Updates ([a6484b8](https://github.com/StevenJPx2/workhorse/commit/a6484b8))
+- **tui:** Improve sidebar ergo ([c6f4604](https://github.com/StevenJPx2/workhorse/commit/c6f4604))
+
+### 🩹 Fixes
+
+- Reactive sidebar ([16d29b4](https://github.com/StevenJPx2/workhorse/commit/16d29b4))
+- **jira:** Pr contribution ([b57d7e9](https://github.com/StevenJPx2/workhorse/commit/b57d7e9))
+- **tui:** Use reactive item() accessor in AgentSidebar Show child ([8b00c26](https://github.com/StevenJPx2/workhorse/commit/8b00c26))
+- Agent prompt ([c24b293](https://github.com/StevenJPx2/workhorse/commit/c24b293))
+- Certain things ([0ff4d69](https://github.com/StevenJPx2/workhorse/commit/0ff4d69))
+
+### 🏡 Chore
+
+- Refactor ([5628898](https://github.com/StevenJPx2/workhorse/commit/5628898))
+
+### 🎨 Styles
+
+- Sort imports ([88d1a45](https://github.com/StevenJPx2/workhorse/commit/88d1a45))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.23
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.22...v0.1.23)
