@@ -117,18 +117,17 @@ export function AgentSidebar(props: AgentSidebarProps) {
                         return status ? { status } : null;
                       })()}
                     >
-                      {(item: () => { status: IssueStatus }) => {
-                        const status = item().status;
-                        return (
-                          <>
-                            <text fg={theme.colors.dim}>·</text>
-                            <text fg={getWorkflowStatusColor(status, theme)}>
-                              {getWorkflowStatusIcon(status)}{" "}
-                              {formatWorkflowStatus(status)}
-                            </text>
-                          </>
-                        );
-                      }}
+                      {(item: () => { status: IssueStatus }) => (
+                        <>
+                          <text fg={theme.colors.dim}>·</text>
+                          <text
+                            fg={getWorkflowStatusColor(item().status, theme)}
+                          >
+                            {getWorkflowStatusIcon(item().status)}{" "}
+                            {formatWorkflowStatus(item().status)}
+                          </text>
+                        </>
+                      )}
                     </Show>
                   </box>
                   {/* Row 3: Model info */}
