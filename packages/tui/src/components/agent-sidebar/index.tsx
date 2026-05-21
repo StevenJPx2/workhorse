@@ -50,15 +50,23 @@ export function AgentSidebar(props: AgentSidebarProps) {
         paddingRight={1}
         paddingTop={1}
         paddingBottom={1}
+        flexDirection="row"
+        gap={1}
       >
         <text fg={theme.colors.success}>
           <b>● AGENTS</b>
         </text>
-        <text fg={theme.colors.dim}> ({agents().length})</text>
+        <text fg={theme.colors.dim}>({agents().length})</text>
       </box>
 
       {/* Agent list */}
-      <box flexDirection="column" flexGrow={1} paddingTop={1} overflow="scroll">
+      <box
+        flexDirection="column"
+        flexGrow={1}
+        paddingTop={1}
+        overflow="scroll"
+        gap={1}
+      >
         <For each={agents()}>
           {(agent: AgentAdapter, index) => {
             const isHighlighted = () =>
