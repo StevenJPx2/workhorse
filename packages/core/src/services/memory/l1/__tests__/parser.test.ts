@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { SessionMemory } from "#services/memory/types";
-
+import type { SessionMemory } from "../../types.ts";
 import { parseSessionMemory, serializeSessionMemory } from "../index.ts";
 
 describe("parseSessionMemory", () => {

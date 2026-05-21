@@ -1,10 +1,10 @@
 import type { ConfigPaths, WorkhorseConfig } from "#config";
 import type { Database } from "#db";
-import type { hooks } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
-import type { MonitorService } from "#services/monitor";
-import type { HarnessOrchestrator } from "#workflow/orchestrator";
-import type { Tracker } from "#workflow/tracker";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
+import type { MonitorService } from "#services";
+import type { HarnessOrchestrator } from "#workflow";
+import type { Tracker } from "#workflow";
 
 /**
  * The Workhorse context available everywhere within the app lifecycle.
@@ -12,7 +12,7 @@ import type { Tracker } from "#workflow/tracker";
 export interface WorkhorseContext {
   readonly config: WorkhorseConfig;
   readonly paths: ConfigPaths;
-  readonly hooks: typeof hooks;
+  readonly hooks: HookEmitter;
   /** Database access */
   readonly db: Database;
   /** Memory service for L1 session memory and L2 semantic search */

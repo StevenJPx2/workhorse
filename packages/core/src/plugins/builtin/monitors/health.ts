@@ -8,7 +8,7 @@
  * @module plugins/builtin/monitors/health
  */
 
-import type { MonitorContext, PollingMonitorOptions } from "#services/monitor";
+import type { MonitorContext, PollingMonitorOptions } from "#services";
 
 /**
  * Options for creating an agent health monitor.

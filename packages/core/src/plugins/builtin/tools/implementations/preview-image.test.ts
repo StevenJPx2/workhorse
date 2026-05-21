@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import type { ToolExecutionContext } from "#workflow/orchestrator";
+import type { ToolExecutionContext } from "#workflow";
 
 import { previewImageToolImpl } from "./preview-image.ts";
 

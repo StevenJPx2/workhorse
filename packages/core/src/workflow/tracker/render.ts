@@ -1,6 +1,6 @@
 import type { Issue } from "#db";
-import type { SearchResult, SessionMemory } from "#services/memory";
-import type { OrchestratorTool } from "#workflow/orchestrator";
+import type { SearchResult, SessionMemory } from "#services";
+import type { OrchestratorTool } from "#workflow";
 
 import type { PromptContextBlock } from "./types.ts";
 

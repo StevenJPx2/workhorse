@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import z from "zod";
+import { z } from "zod";
 
 import type { ConfigPaths, WorkhorseConfig } from "#config";
 import { DEFAULT_CONFIG } from "#config";
 import { setContext, unsetContext } from "#context";
-import { hooks } from "#lib/hooks";
+import { hooks } from "#lib";
 
 import { definePlugin } from "../define.ts";
 import { PluginRegistry } from "../registry.ts";

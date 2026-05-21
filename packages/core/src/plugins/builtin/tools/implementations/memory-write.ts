@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/implementations/memory-write
  */
 
-import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
  * Write a session summary, patterns, and learnings to L1 memory.

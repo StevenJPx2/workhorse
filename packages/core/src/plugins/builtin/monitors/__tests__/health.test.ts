@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
-import type { MonitorContext } from "#services/monitor";
+import type { MonitorContext } from "#services";
+import { createMockHooks } from "#test-helpers";
 
 import { createAgentHealthMonitor } from "../health.ts";
 

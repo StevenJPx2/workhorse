@@ -4,8 +4,8 @@
  * @module plugins/builtin/skills/register
  */
 
-import { generateHooksReference } from "#lib/hooks";
-import type { SkillRegistry } from "#workflow/orchestrator";
+import { generateHooksReference } from "#lib";
+import type { SkillRegistry } from "#workflow";
 
 // Import skill content as raw strings (bundled at build time)
 import pluginDevelopmentMd from "./plugin-development.md?raw";

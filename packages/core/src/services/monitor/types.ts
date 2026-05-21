@@ -1,6 +1,6 @@
 import type { WorkhorseConfig } from "#config";
-import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
 
 /**
  * Result returned by a monitor's poll function or event emission.

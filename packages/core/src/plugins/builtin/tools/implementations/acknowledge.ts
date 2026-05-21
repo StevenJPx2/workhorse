@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/implementations/acknowledge
  */
 
-import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
  * Mark notifications as read.

@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ConfigPaths } from "#config";
-import type { HookEmitter } from "#lib/hooks";
-import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
+import type { HookEmitter } from "#lib";
+import { createMockHooks } from "#test-helpers";
 
 import { SkillRegistry } from "../skills.ts";
 

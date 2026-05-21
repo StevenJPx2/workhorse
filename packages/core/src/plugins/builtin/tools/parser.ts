@@ -7,7 +7,7 @@
  * @module plugins/builtin/local-parser
  */
 
-import type { IssueParserOptions, ParsedIssue } from "#workflow/tracker";
+import type { IssueParserOptions, ParsedIssue } from "#workflow";
 
 /**
  * Create parser options for the local fallback parser.

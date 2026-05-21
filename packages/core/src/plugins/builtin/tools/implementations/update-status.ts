@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/implementations/update-status
  */
 
-import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
  * Update the issue status.

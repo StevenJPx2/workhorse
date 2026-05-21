@@ -1,5 +1,5 @@
 import type { Database } from "#db";
-import type { HookEmitter } from "#lib/hooks";
+import type { HookEmitter } from "#lib";
 
 import { MemoryIndexer } from "./indexer";
 import { L1Store } from "./l1/store.ts";

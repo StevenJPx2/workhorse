@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";
-import type { HookEmitter } from "#lib/hooks";
-import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
-import type { MemoryService } from "#services/memory";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
+import { createMockHooks } from "#test-helpers";
 
 import { MonitorService } from "../service.ts";
 import type {

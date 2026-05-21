@@ -1,6 +1,6 @@
 import type { WorkhorseConfig } from "#config";
-import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
 
 import type { BaseMonitor } from "./base-monitor.ts";
 import { EventMonitor } from "./event-monitor.ts";

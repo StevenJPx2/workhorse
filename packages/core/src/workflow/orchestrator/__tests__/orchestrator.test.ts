@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";
-import type { Issue } from "#db";
-import type { Database } from "#db/database";
-import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
-import { AgentAdapter, type OrchestratorTool } from "#workflow/orchestrator";
-import { HarnessOrchestrator } from "#workflow/orchestrator";
+import type { Database, Issue } from "#db";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
+import { AgentAdapter, type OrchestratorTool } from "#workflow";
+import { HarnessOrchestrator } from "#workflow";
 
 /** Creates minimal mock dependencies */
 function createMockDeps() {

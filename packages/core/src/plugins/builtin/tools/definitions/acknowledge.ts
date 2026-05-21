@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/definitions/acknowledge
  */
 
-import type { OrchestratorTool } from "#workflow/orchestrator";
+import type { OrchestratorTool } from "#workflow";
 
 import { acknowledgeToolImpl } from "../implementations";
 

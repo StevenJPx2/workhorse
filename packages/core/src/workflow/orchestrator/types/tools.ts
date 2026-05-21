@@ -4,9 +4,9 @@
  * @module workflow/orchestrator/types/tools
  */
 
-import type { Database } from "#db/database";
-import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
+import type { Database } from "#db";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
 
 /**
  * JSON Schema type for tool parameter definitions.

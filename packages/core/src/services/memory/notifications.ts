@@ -1,5 +1,5 @@
 import type { Database, Notification } from "#db";
-import type { HookEmitter } from "#lib/hooks";
+import type { HookEmitter } from "#lib";
 
 import { generateSystemInbox } from "./inbox.ts";
 import type { CreateNotificationInput } from "./types.ts";

@@ -1,14 +1,14 @@
 /** HarnessOrchestrator - Registry/factory for agent adapters. @module workflow/orchestrator/orchestrator */
 
 import type { WorkhorseConfig } from "#config";
-import type { Database } from "#db/database";
-import type { HookEmitter } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
+import type { Database } from "#db";
+import type { HookEmitter } from "#lib";
+import type { MemoryService } from "#services";
 import {
   type SteeringRuleConfig,
   type SteeringRuleConfigInput,
   SteeringRuleConfigSchema,
-} from "#workflow/steering";
+} from "#workflow";
 
 import { SkillRegistry } from "./skills.ts";
 import type { AdapterInfo, AgentAdapter, ModelInfo, OrchestratorTool, SpawnOptions } from "./types";

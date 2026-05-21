@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/definitions/escalate
  */
 
-import type { OrchestratorTool } from "#workflow/orchestrator";
+import type { OrchestratorTool } from "#workflow";
 
 import { escalateToolImpl } from "../implementations";
 

@@ -7,7 +7,7 @@
  * @module workflow/orchestrator/types/skills
  */
 
-import z from "zod";
+import { z } from "zod";
 
 /**
  * Zod schema for PluginSkill input - validates and sets defaults.

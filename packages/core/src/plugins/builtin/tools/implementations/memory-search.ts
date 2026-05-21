@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/implementations/memory-search
  */
 
-import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
  * Search the L2 semantic memory for relevant context.

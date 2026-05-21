@@ -1,12 +1,12 @@
 /**
- * Test helpers for creating mock HookEmitter instances.
+ * Shared test helpers for workhorse-core tests.
  *
- * @module lib/hooks/__tests__/test-helpers
+ * @module __tests__/helpers
  */
 
 import mitt from "mitt";
 
-import type { HookEmitter, HookEventMap } from "../types.ts";
+import type { HookEmitter, HookEventMap } from "../lib/hooks/types.ts";
 
 /**
  * Create a mock HookEmitter for testing.

@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
+import { createMockHooks } from "#test-helpers";
 
 describe("agent.stop.post hook behavior", () => {
   it("callHook awaits async handlers", async () => {

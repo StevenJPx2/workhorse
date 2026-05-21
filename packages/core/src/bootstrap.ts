@@ -2,14 +2,14 @@ import type { ConfigPaths, DeepPartial, WorkhorseConfig } from "#config";
 import { loadConfig, mergeConfigs, resolveConfigPaths } from "#config";
 import { runWithContext } from "#context";
 import { Database } from "#db";
-import { getGitRoot } from "#lib/git";
-import type { HookEmitter } from "#lib/hooks";
-import { deferredHooks, hooks } from "#lib/hooks";
+import { getGitRoot } from "#lib";
+import type { HookEmitter } from "#lib";
+import { deferredHooks, hooks } from "#lib";
 import { CORE_PLUGINS, type Plugin, PluginRegistry } from "#plugins";
-import { MemoryService } from "#services/memory";
-import { MonitorService } from "#services/monitor";
-import { HarnessOrchestrator } from "#workflow/orchestrator";
-import { Tracker } from "#workflow/tracker";
+import { MemoryService } from "#services";
+import { MonitorService } from "#services";
+import { HarnessOrchestrator } from "#workflow";
+import { Tracker } from "#workflow";
 
 /**
  * Callback for reporting bootstrap progress.

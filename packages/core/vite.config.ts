@@ -8,10 +8,13 @@ export default defineConfig({
     dts({
       include: ["src/**/*.ts"],
       exclude: ["src/**/*.test.ts", "src/**/__tests__/**"],
-      bundleTypes: true,
       tsconfigPath: "./tsconfig.json",
+      bundleTypes: true,
     }),
   ],
+  resolve: {
+    tsconfigPaths: true,
+  },
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.ts"),
@@ -47,10 +50,7 @@ export default defineConfig({
       ],
     },
     target: "esnext",
-    minify: false,
-    sourcemap: true,
-  },
-  resolve: {
-    tsconfigPaths: true,
+    minify: true,
+    sourcemap: false,
   },
 });

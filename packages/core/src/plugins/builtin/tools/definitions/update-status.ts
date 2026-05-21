@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/definitions/update-status
  */
 
-import type { OrchestratorTool } from "#workflow/orchestrator";
+import type { OrchestratorTool } from "#workflow";
 
 import { updateStatusToolImpl } from "../implementations";
 

@@ -27,9 +27,11 @@ export {
 } from "#db";
 export {
   type DiscoveredLink,
+  type HookCallbacks,
   type HookEmitter,
   type HookEventMap,
   type HookMetadata,
+  type HookPayload,
   hooks,
   type PromptBuildingContext,
   type PromptContextBlock,
@@ -39,7 +41,7 @@ export {
   CORE_HOOK_METADATA,
   generateHooksMarkdown,
   generateHooksReference,
-} from "#lib/hooks";
+} from "#lib";
 export {
   definePlugin,
   isPlugin,
@@ -50,67 +52,58 @@ export {
   PluginRegistry,
   PluginSymbol,
 } from "#plugins";
-// Orchestrator exports for plugin authors
-export { AgentAdapter, HarnessOrchestrator } from "#workflow/orchestrator";
-export type {
-  AdapterInfo,
-  AgentState,
-  CreateOptions,
-  ImageContent,
-  JSONSchema,
-  ModelInfo,
-  OrchestratorTool,
-  ToolExecutionContext,
-  ToolResult,
-} from "#workflow/orchestrator";
-// Model registry exports for plugin authors
-export { ModelRegistry } from "#workflow/orchestrator";
-// Steering exports for plugin authors
-export { SteeringRule } from "#workflow/orchestrator";
-export type {
-  SteeringCondition,
-  SteeringRuleConfig,
-  SteeringRuleConfigInput,
-} from "#workflow/orchestrator";
-// Tracker exports for plugin authors
-export { Tracker } from "#workflow/tracker";
-export type { IssueParserOptions } from "#workflow/tracker";
-export type { IssueSource, IssueType, ParsedIssue } from "#workflow/tracker";
-// Monitor exports for plugin authors
+// Workflow exports for plugin authors
 export {
+  AgentAdapter,
+  HarnessOrchestrator,
+  ModelRegistry,
+  SteeringRule,
+  Tracker,
+  type AdapterInfo,
+  type AgentState,
+  type CreateOptions,
+  type ImageContent,
+  type IssueParserOptions,
+  type IssueSource,
+  type IssueType,
+  type JSONSchema,
+  type ModelInfo,
+  type OrchestratorTool,
+  type ParsedIssue,
+  type SteeringCondition,
+  type SteeringRuleConfig,
+  type SteeringRuleConfigInput,
+  type ToolExecutionContext,
+  type ToolResult,
+} from "#workflow";
+// Services exports for plugin authors
+export {
+  AttachmentService,
+  L1Store,
+  L2Store,
+  MemoryService,
   MonitorService,
+  NotificationService,
+  generateSystemInbox,
+  parseSessionMemory,
+  serializeSessionMemory,
+  type CreateNotificationInput,
+  type DownloadOptions,
   type EventMonitorOptions,
+  type IssueEventType,
+  type MemoryDocument,
+  type MemoryDocumentType,
+  type MemorySearchOptions,
   type MonitorContext,
   type MonitorOptions,
   type MonitorResult,
   type MonitorStatus,
   type PollingMonitorOptions,
-} from "#services/monitor";
-// Attachment service exports
-export {
-  AttachmentService,
-  type DownloadOptions,
-  type StoredAttachment,
-} from "#services/attachment";
-// Memory service exports
-export {
-  // Types
-  type CreateNotificationInput,
-  generateSystemInbox,
-  type IssueEventType,
-  L1Store,
-  L2Store,
-  type MemoryDocument,
-  type MemoryDocumentType,
-  type MemorySearchOptions,
-  MemoryService,
-  NotificationService,
-  parseSessionMemory,
   type SearchResult,
   type SessionEntry,
   type SessionMemory,
-  serializeSessionMemory,
-} from "#services/memory";
+  type StoredAttachment,
+} from "#services";
 // Config exports for plugin authors
 export { deleteCredential, getCredential, storeCredential } from "#config";
 // Auth exports for plugin authors
@@ -148,11 +141,9 @@ export {
   type PathValidationResult,
   type PathValidator,
   validatePath,
-} from "#lib/paths";
-// Metadata footer for agent-generated content
-export {
+  // Metadata footer for agent-generated content
   isWorkhorseGenerated,
   METADATA_FOOTER,
   withWorkhorseFooter,
   WORKHORSE_MARKER,
-} from "#lib/metadata-footer";
+} from "#lib";

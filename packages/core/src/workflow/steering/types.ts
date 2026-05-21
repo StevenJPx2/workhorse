@@ -5,7 +5,7 @@
  * providing workflow-specific reminders.
  */
 
-import z from "zod";
+import { z } from "zod";
 
 import { IssueSchema, IssueStatusSchema, NotificationSchema } from "#db";
 

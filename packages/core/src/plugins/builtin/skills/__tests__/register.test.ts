@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type { SkillRegistry } from "#workflow/orchestrator";
+import type { SkillRegistry } from "#workflow";
 
 import { registerBuiltinSkills } from "../register.ts";
 

@@ -6,8 +6,8 @@ import { debounce } from "es-toolkit";
 import { glob } from "tinyglobby";
 
 import type { Database } from "#db";
-import type { HookEmitter } from "#lib/hooks";
-import type { AgentAdapter } from "#workflow/orchestrator";
+import type { HookEmitter } from "#lib";
+import type { AgentAdapter } from "#workflow";
 
 import type { L1Store } from "../l1/store.ts";
 import type { L2Store } from "../l2.ts";

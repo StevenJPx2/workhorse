@@ -1,6 +1,6 @@
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { AgentAdapter, CreateOptions, ResolvedSkill } from "#workflow/orchestrator";
-import type { PromptBuildingContext } from "#workflow/tracker";
+import type { AgentAdapter, CreateOptions, ResolvedSkill } from "#workflow";
+import type { PromptBuildingContext } from "#workflow";
 
 /**
  * Extracted link from issue content (description/comments).

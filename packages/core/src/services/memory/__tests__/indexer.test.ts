@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Database } from "#db";
-import type { HookEmitter } from "#lib/hooks";
-import { createMockHooks } from "#lib/hooks/__tests__/test-helpers";
+import type { HookEmitter } from "#lib";
+import { createMockHooks } from "#test-helpers";
 
 import { MemoryIndexer } from "../indexer";
 import { L1Store } from "../l1/store.ts";

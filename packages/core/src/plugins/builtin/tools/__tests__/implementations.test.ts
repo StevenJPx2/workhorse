@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type { ToolExecutionContext } from "#workflow/orchestrator";
+import type { ToolExecutionContext } from "#workflow";
 
 import { memorySearchToolImpl } from "../implementations";
 

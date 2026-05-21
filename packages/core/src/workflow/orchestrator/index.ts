@@ -15,8 +15,8 @@ export type {
   SteeringCondition,
   SteeringRuleConfig,
   SteeringRuleConfigInput,
-} from "#workflow/steering";
-export { SteeringRule } from "#workflow/steering";
+} from "../steering/index.ts";
+export { SteeringRule } from "../steering/index.ts";
 
 // Agent adapter base class and types
 export { AgentAdapter } from "./types";

@@ -1,10 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type {
-  HarnessOrchestrator,
-  ResolvedSkill,
-  ToolExecutionContext,
-} from "#workflow/orchestrator";
+import type { HarnessOrchestrator, ResolvedSkill, ToolExecutionContext } from "#workflow";
 
 import { createLoadSkillTool } from "../skill.ts";
 

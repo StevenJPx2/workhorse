@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";
 import { Database } from "#db";
-import { hooks } from "#lib/hooks";
-import type { MemoryService } from "#services/memory";
-import type { IssueParserOptions, ParsedIssue } from "#workflow/tracker";
-import { Tracker } from "#workflow/tracker";
+import { hooks } from "#lib";
+import type { MemoryService } from "#services";
+import type { IssueParserOptions, ParsedIssue } from "#workflow";
+import { Tracker } from "#workflow";
 
 // Mock MemoryService
 const createMockMemory = () => ({

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ToolExecutionContext } from "#workflow/orchestrator";
+import type { ToolExecutionContext } from "#workflow";
 
 import { memoryWriteToolImpl } from "./memory-write.ts";
 

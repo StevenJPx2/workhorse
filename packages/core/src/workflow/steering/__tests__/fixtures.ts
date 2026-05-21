@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
 import type { Issue, IssueStatus, Notification } from "#db";
-import type { HookEmitter } from "#lib/hooks";
+import type { HookEmitter } from "#lib";
 
 import { SteeringRule } from "../rule.ts";
 import { type SteeringRuleConfigInput, SteeringRuleConfigSchema } from "../types.ts";

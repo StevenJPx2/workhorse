@@ -10,7 +10,7 @@ import type {
   ResolvedSkill,
   ToolExecutionContext,
   ToolResult,
-} from "#workflow/orchestrator";
+} from "#workflow";
 
 /** Schema input for load_skill tool */
 interface LoadSkillArgs {

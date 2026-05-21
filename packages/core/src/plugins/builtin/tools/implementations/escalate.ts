@@ -4,7 +4,7 @@
  * @module plugins/builtin/tools/implementations/escalate
  */
 
-import type { ToolExecutionContext, ToolResult } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
  * Escalate to a human when blocked or need clarification.

@@ -10,7 +10,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, isAbsolute } from "node:path";
 
-import type { ToolExecutionContext, ToolResult, ImageContent } from "#workflow/orchestrator";
+import type { ToolExecutionContext, ToolResult, ImageContent } from "#workflow";
 
 /** Supported image extensions and their MIME types */
 const IMAGE_MIME_TYPES: Record<string, string> = {

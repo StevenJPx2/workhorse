@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Issue } from "#db";
-import { PromptEngineer } from "#workflow/tracker";
+import { PromptEngineer } from "#workflow";
 
 const createMockMemory = () => ({
   l1: {
