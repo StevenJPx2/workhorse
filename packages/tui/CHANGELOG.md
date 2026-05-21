@@ -1,5 +1,25 @@
 # @fdcn/workhorse
 
+## v0.1.23
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.22...v0.1.23)
+
+### 🚀 Enhancements
+
+- **core:** Add Fuse.js fuzzy search for skill lookup ([43a7f75](https://github.com/StevenJPx2/workhorse/commit/43a7f75))
+- **lint:** Add no-reexport-chain rule ([39ac9dc](https://github.com/StevenJPx2/workhorse/commit/39ac9dc))
+- Add notification for merged ([a458d53](https://github.com/StevenJPx2/workhorse/commit/a458d53))
+- Properly load skills ([a6df57b](https://github.com/StevenJPx2/workhorse/commit/a6df57b))
+
+### 🩹 Fixes
+
+- Add git restrictions to git ([37771aa](https://github.com/StevenJPx2/workhorse/commit/37771aa))
+- Types and bundle size ([574e563](https://github.com/StevenJPx2/workhorse/commit/574e563))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.22
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.21...v0.1.22)
