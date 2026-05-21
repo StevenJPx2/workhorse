@@ -9,7 +9,9 @@ import type { OrchestratorTool } from "workhorse-core";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 
 /** Create the playwright_close_session tool */
-export function createCloseSessionTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {
+export function createCloseSessionTool(
+  sessionManager: PlaywrightSessionManager,
+): OrchestratorTool {
   return {
     name: "playwright_close_session",
     description:

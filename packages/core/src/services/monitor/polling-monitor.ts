@@ -1,5 +1,9 @@
 import { BaseMonitor } from "./base-monitor.ts";
-import type { MonitorContext, MonitorResult, PollingMonitorOptions } from "./types.ts";
+import type {
+  MonitorContext,
+  MonitorResult,
+  PollingMonitorOptions,
+} from "./types.ts";
 
 /**
  * A polling-based monitor that calls poll() at a fixed interval.

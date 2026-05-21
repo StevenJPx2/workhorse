@@ -78,7 +78,9 @@ export function processCheckChanges(
 
   // Check if all checks now pass (were failing before)
   if (
-    checkRuns.every((c) => c.conclusion === "success" || c.conclusion === "skipped") &&
+    checkRuns.every(
+      (c) => c.conclusion === "success" || c.conclusion === "skipped",
+    ) &&
     Object.values(lastConclusions).some((c) => c === "failure") &&
     checkRuns.length > 0
   ) {

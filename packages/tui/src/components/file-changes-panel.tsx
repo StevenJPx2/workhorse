@@ -37,7 +37,9 @@ export function FileChangesPanel(props: FileChangesPanelProps) {
         </text>
         <Show when={props.state().files.length > 0}>
           <box flexDirection="row" gap={1}>
-            <text fg={theme.colors.success}>+{props.state().totalAdditions}</text>
+            <text fg={theme.colors.success}>
+              +{props.state().totalAdditions}
+            </text>
             <text fg={theme.colors.error}>-{props.state().totalDeletions}</text>
           </box>
         </Show>
@@ -105,7 +107,12 @@ function FileRow(props: FileRowProps) {
   };
 
   return (
-    <box flexDirection="row" justifyContent="space-between" paddingLeft={1} paddingRight={1}>
+    <box
+      flexDirection="row"
+      justifyContent="space-between"
+      paddingLeft={1}
+      paddingRight={1}
+    >
       <box flexShrink={1} overflow="hidden">
         <text fg={theme.colors.text}>{displayPath()}</text>
       </box>

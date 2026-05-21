@@ -93,12 +93,20 @@ describe("figmaRenderer — notifications", () => {
 
 describe("figmaRenderer — tool calls", () => {
   it("returns null for non-figma tools", () => {
-    const result = figmaRenderer({ kind: "tool", tool: "jira_add_comment", args: {} });
+    const result = figmaRenderer({
+      kind: "tool",
+      tool: "jira_add_comment",
+      args: {},
+    });
     expect(result).toBeNull();
   });
 
   it("renders figma_get_file inline", () => {
-    const result = figmaRenderer({ kind: "tool", tool: "figma_get_file", args: { depth: 3 } });
+    const result = figmaRenderer({
+      kind: "tool",
+      tool: "figma_get_file",
+      args: { depth: 3 },
+    });
     expect(result).not.toBeNull();
     expect(result!.style).toBe("inline");
     expect(result!.title).toContain("Figma file");
@@ -106,7 +114,11 @@ describe("figmaRenderer — tool calls", () => {
   });
 
   it("renders figma_get_file without subtitle when no depth arg", () => {
-    const result = figmaRenderer({ kind: "tool", tool: "figma_get_file", args: {} });
+    const result = figmaRenderer({
+      kind: "tool",
+      tool: "figma_get_file",
+      args: {},
+    });
     expect(result!.subtitle).toBeUndefined();
   });
 
@@ -133,7 +145,9 @@ describe("figmaRenderer — tool calls", () => {
     const result = figmaRenderer({
       kind: "tool",
       tool: "figma_post_comment",
-      args: { message: "Implementation looks good, small question about spacing." },
+      args: {
+        message: "Implementation looks good, small question about spacing.",
+      },
     });
     expect(result!.style).toBe("box");
     expect(result!.subtitle).toContain("Implementation looks good");

@@ -122,7 +122,9 @@ export async function runSetupIfNeeded(
 }
 
 /** Shows the auth screen and returns true if completed, false if skipped. */
-export async function runAuthIfNeeded(plugins: AuthScreenProps["plugins"]): Promise<boolean> {
+export async function runAuthIfNeeded(
+  plugins: AuthScreenProps["plugins"],
+): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     render(() => (
       <AuthWrapper

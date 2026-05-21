@@ -7,7 +7,8 @@ import { createSignal } from "solid-js";
 import type { HookEmitter } from "workhorse-core";
 
 import type { ActivityItem } from "../primitives/activity-types.ts";
-import { clearTextBuffers, subscribeActivityHooks } from "./activity-hooks.ts";
+import { subscribeActivityHooks } from "./activity-hooks.ts";
+import { clearTextBuffers } from "./activity-text-buffer.ts";
 
 export interface ActivityState {
   items: ActivityItem[];
@@ -39,7 +40,10 @@ export function getActivityState(issueId: string): ActivityState {
 }
 
 /** Update activity state for an issue */
-function updateState(issueId: string, updater: (prev: ActivityState) => ActivityState) {
+function updateState(
+  issueId: string,
+  updater: (prev: ActivityState) => ActivityState,
+) {
   activityMap.set(issueId, updater(getActivityState(issueId)));
   setVersion((v) => v + 1);
 }

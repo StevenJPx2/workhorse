@@ -55,7 +55,11 @@ export function StatusBar(props: StatusBarProps) {
       <box flexDirection="row" gap={3}>
         <For each={props.shortcuts}>
           {(shortcut) => (
-            <box flexDirection="row" gap={1} onMouseDown={() => handleShortcutClick(shortcut)}>
+            <box
+              flexDirection="row"
+              gap={1}
+              onMouseDown={() => handleShortcutClick(shortcut)}
+            >
               <text fg={theme.colors.accent}>
                 <b>{shortcut.key}</b>
               </text>

@@ -32,7 +32,8 @@ export function useAgentBindings(options: UseAgentBindingsOptions) {
 
     // Down/j: Move down in sidebar
     if (keyName === "down" || keyName === "j") {
-      if (maxIndex >= 0) options.setSidebarIndex((i) => Math.min(maxIndex, i + 1));
+      if (maxIndex >= 0)
+        options.setSidebarIndex((i) => Math.min(maxIndex, i + 1));
       return;
     }
 

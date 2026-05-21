@@ -33,7 +33,8 @@ export const memorySearchTool: OrchestratorTool = {
       },
       includeContent: {
         type: "boolean",
-        description: "Whether to include full document content in results. Defaults to true.",
+        description:
+          "Whether to include full document content in results. Defaults to true.",
       },
     },
     required: ["query"],

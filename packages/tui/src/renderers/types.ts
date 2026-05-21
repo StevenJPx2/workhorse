@@ -29,7 +29,9 @@ export interface RenderedActivity {
  * An activity renderer transforms an activity input into displayable output.
  * Return null to indicate "I don't handle this input, try the next renderer."
  */
-export type ActivityRenderer = (input: ActivityInput) => RenderedActivity | null;
+export type ActivityRenderer = (
+  input: ActivityInput,
+) => RenderedActivity | null;
 
 /**
  * Payload for the tui.register_renderer hook.

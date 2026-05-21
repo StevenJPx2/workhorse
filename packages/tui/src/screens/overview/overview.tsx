@@ -37,10 +37,14 @@ export function Overview() {
   );
 
   const { messages, send } = createChat(chatContextId);
-  const [currentRepo, setCurrentRepo] = createSignal<string | undefined>(undefined);
+  const [currentRepo, setCurrentRepo] = createSignal<string | undefined>(
+    undefined,
+  );
 
   onMount(async () => {
-    setCurrentRepo(await getRepoIdentifier(paths.worktreesRoot.replace(/-worktrees$/, "")));
+    setCurrentRepo(
+      await getRepoIdentifier(paths.worktreesRoot.replace(/-worktrees$/, "")),
+    );
   });
 
   // oxlint-disable-next-line workhorse/no-single-use-variable
@@ -92,7 +96,9 @@ export function Overview() {
             return;
           }
           try {
-            const issue = await tracker.parseInput(msg, { repository: currentRepo() });
+            const issue = await tracker.parseInput(msg, {
+              repository: currentRepo(),
+            });
             // Spawn in background - stay on overview
             ui.startSpawning(issue);
 
@@ -107,11 +113,16 @@ export function Overview() {
               })
               .catch((err) => {
                 ui.stopSpawning(issue.externalId);
-                ui.showError(`Spawn failed: ${err instanceof Error ? err.message : String(err)}`);
+                ui.showError(
+                  `Spawn failed: ${err instanceof Error ? err.message : String(err)}`,
+                );
               });
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("credentials not found") || message.includes("authenticate")) {
+            if (
+              message.includes("credentials not found") ||
+              message.includes("authenticate")
+            ) {
               ui.showError(
                 `${message}\n\nRestart workhorse to authenticate, or set up credentials manually.`,
               );
@@ -139,8 +150,10 @@ export function Overview() {
               if (!agentId) return;
               const agent = orchestrator.getAgent(agentId);
               if (!agent) return;
-              if (agent.state === "running" || agent.state === "starting") void agent.stop();
-              else if (agent.state === "stopped" || agent.state === "crashed") void agent.start();
+              if (agent.state === "running" || agent.state === "starting")
+                void agent.stop();
+              else if (agent.state === "stopped" || agent.state === "crashed")
+                void agent.start();
             },
           },
           { key: "Ctrl+X M", action: "model" },

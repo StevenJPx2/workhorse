@@ -11,7 +11,11 @@ import type { MemoryService } from "#services";
 import { createMockHooks } from "#test-helpers";
 
 import { EventMonitor } from "../event-monitor.ts";
-import type { EventEmitter, EventMonitorOptions, MonitorContext } from "../types.ts";
+import type {
+  EventEmitter,
+  EventMonitorOptions,
+  MonitorContext,
+} from "../types.ts";
 
 describe("EventMonitor", () => {
   let hooks: HookEmitter;
@@ -29,7 +33,9 @@ describe("EventMonitor", () => {
   });
 
   function createMonitor(
-    options: Partial<EventMonitorOptions> & { setup?: EventMonitorOptions["setup"] } = {},
+    options: Partial<EventMonitorOptions> & {
+      setup?: EventMonitorOptions["setup"];
+    } = {},
   ): EventMonitor {
     return new EventMonitor({
       id: options.id ?? "test-event-monitor",

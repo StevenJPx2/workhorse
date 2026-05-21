@@ -246,7 +246,9 @@ describe("Plugin configSchema", () => {
 
     registry.register(plugin);
 
-    await expect(registry.setup()).rejects.toThrow('Invalid config for plugin "jira"');
+    await expect(registry.setup()).rejects.toThrow(
+      'Invalid config for plugin "jira"',
+    );
   });
 
   it("throws when plugin config is missing entirely", async () => {
@@ -265,7 +267,9 @@ describe("Plugin configSchema", () => {
 
     registry.register(plugin);
 
-    await expect(registry.setup()).rejects.toThrow('Invalid config for plugin "jira"');
+    await expect(registry.setup()).rejects.toThrow(
+      'Invalid config for plugin "jira"',
+    );
   });
 
   it("calls setup with just context when no configSchema", async () => {

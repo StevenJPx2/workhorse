@@ -76,7 +76,9 @@ function parseSessionEntry(block: string): SessionEntry | null {
 
 /** Parse session header for timestamp */
 function parseSessionHeader(block: string): { timestamp: Date } | null {
-  const match = (block.split("\n")[0] ?? "").match(/^### (\d{4}-\d{2}-\d{2}T[\d:]+Z?) — .+$/);
+  const match = (block.split("\n")[0] ?? "").match(
+    /^### (\d{4}-\d{2}-\d{2}T[\d:]+Z?) — .+$/,
+  );
   if (!match?.[1]) return null;
   return { timestamp: new Date(match[1]) };
 }

@@ -3,7 +3,13 @@
  * Used by AgentList to show status for all agents.
  */
 
-import { createSignal, onMount, onCleanup, createEffect, type Accessor } from "solid-js";
+import {
+  createSignal,
+  onMount,
+  onCleanup,
+  createEffect,
+  type Accessor,
+} from "solid-js";
 import type { IssueStatus, Issue } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
@@ -22,7 +28,9 @@ export function createIssueStatuses(options: CreateIssueStatusesOptions) {
   const { tracker, hooks } = useWorkhorseContext();
 
   // Map of issueId -> status
-  const [statuses, setStatuses] = createSignal<Map<string, IssueStatus>>(new Map());
+  const [statuses, setStatuses] = createSignal<Map<string, IssueStatus>>(
+    new Map(),
+  );
 
   // Fetch when issueIds change
   createEffect(() => {
@@ -69,7 +77,8 @@ export function createIssueStatuses(options: CreateIssueStatusesOptions) {
 
   return {
     /** Get status for a specific issue ID */
-    getStatus: (issueId: string): IssueStatus | null => statuses().get(issueId) ?? null,
+    getStatus: (issueId: string): IssueStatus | null =>
+      statuses().get(issueId) ?? null,
     /** Refresh all statuses */
     refresh: () => {
       void (async () => {

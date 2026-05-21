@@ -52,8 +52,15 @@ export function registerPlaywrightCrossPluginSync(
       // List attachments from AttachmentService
       // Filter for screenshots (filename pattern: screenshot-*.png/jpeg)
       const screenshots = await attachmentService
-        .listForIssue((issue.repository as string) ?? "unknown", openingCtx.issueId)
-        .then((list) => list.filter((a) => /^screenshot-\d+_.*\.(png|jpe?g)$/i.test(a.filename)));
+        .listForIssue(
+          (issue.repository as string) ?? "unknown",
+          openingCtx.issueId,
+        )
+        .then((list) =>
+          list.filter((a) =>
+            /^screenshot-\d+_.*\.(png|jpe?g)$/i.test(a.filename),
+          ),
+        );
 
       if (screenshots.length === 0) {
         return; // No screenshots to add

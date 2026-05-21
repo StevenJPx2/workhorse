@@ -36,17 +36,25 @@ export function SetupField(props: SetupFieldProps) {
           when={props.isSelected && props.inputMode}
           fallback={
             <box
-              backgroundColor={props.isSelected ? theme.colors.selection : theme.colors.surface}
+              backgroundColor={
+                props.isSelected ? theme.colors.selection : theme.colors.surface
+              }
               paddingLeft={1}
               paddingRight={1}
             >
-              <text fg={props.fieldValue ? theme.colors.info : theme.colors.dim}>
+              <text
+                fg={props.fieldValue ? theme.colors.info : theme.colors.dim}
+              >
                 {props.fieldValue || "(not set)"}
               </text>
             </box>
           }
         >
-          <box backgroundColor={theme.colors.selection} paddingLeft={1} paddingRight={1}>
+          <box
+            backgroundColor={theme.colors.selection}
+            paddingLeft={1}
+            paddingRight={1}
+          >
             <text fg={theme.colors.info}>{props.inputBuffer}</text>
             <text fg={theme.colors.accent}>▋</text>
           </box>

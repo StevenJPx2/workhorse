@@ -128,7 +128,12 @@ ctx.orchestrator.registerSteeringRule({
 ```typescript
 // In AgentAdapter constructor:
 this.steering = this.orchestrator.getSteeringRules().map((rule) => {
-  return new SteeringRule(rule, this.hooks, this.issue, this.orchestrator.config.steering);
+  return new SteeringRule(
+    rule,
+    this.hooks,
+    this.issue,
+    this.orchestrator.config.steering,
+  );
 });
 
 // In stop():

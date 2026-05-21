@@ -16,4 +16,9 @@ export type ActivityItem =
   | { type: "steering"; reminder: string; timestamp: Date }
   | { type: "idle"; timestamp: Date }
   | { type: "user_message"; content: string; timestamp: Date }
-  | { type: "memory"; documentCount: number; trigger: "idle" | "stop"; timestamp: Date };
+  | {
+      type: "memory";
+      documentCount: number;
+      trigger: "idle" | "stop";
+      timestamp: Date;
+    };

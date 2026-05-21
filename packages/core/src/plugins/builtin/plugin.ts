@@ -7,7 +7,11 @@
 // oxlint-disable-next-line workhorse/prefer-path-alias -- Vite build doesn't resolve path aliases
 import { definePlugin } from "../define.ts";
 import { createAgentHealthMonitor } from "./monitors/health.ts";
-import { notificationRenderer, skillRenderer, workhorseToolRenderer } from "./renderers";
+import {
+  notificationRenderer,
+  skillRenderer,
+  workhorseToolRenderer,
+} from "./renderers";
 import { registerBuiltinSkills } from "./skills/register.ts";
 import { registerCoreSteering } from "./steering.ts";
 import {
@@ -25,7 +29,8 @@ export const corePlugin = definePlugin({
   manifest: {
     name: "builtin-tools",
     version: "1.0.0",
-    description: "Core Workhorse agent tools, local issue parser, and development skills",
+    description:
+      "Core Workhorse agent tools, local issue parser, and development skills",
     capabilities: {
       tools: [
         "workhorse_acknowledge",

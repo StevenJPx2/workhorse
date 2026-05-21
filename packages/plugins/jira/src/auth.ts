@@ -29,7 +29,8 @@ export function getJiraAuthFields() {
     {
       key: "siteUrl",
       label: "Jira Site URL",
-      description: "Your Atlassian site (e.g., yourcompany.atlassian.net) or $ENV_VAR",
+      description:
+        "Your Atlassian site (e.g., yourcompany.atlassian.net) or $ENV_VAR",
       required: true,
       placeholder: "yourcompany.atlassian.net",
     },
@@ -63,7 +64,11 @@ export function getJiraAuthFields() {
 export async function configureJiraAuth(
   values: Record<string, string>,
 ): Promise<{ success: boolean; error?: string }> {
-  const { email: rawEmail, apiToken: rawApiToken, siteUrl: rawSiteUrl } = values;
+  const {
+    email: rawEmail,
+    apiToken: rawApiToken,
+    siteUrl: rawSiteUrl,
+  } = values;
 
   if (!rawEmail || !rawApiToken || !rawSiteUrl) {
     return { success: false, error: "All fields are required" };
@@ -75,11 +80,20 @@ export async function configureJiraAuth(
   let siteUrl = resolveEnvVar(rawSiteUrl);
 
   if (!email)
-    return { success: false, error: `Environment variable ${rawEmail.slice(1)} not found` };
+    return {
+      success: false,
+      error: `Environment variable ${rawEmail.slice(1)} not found`,
+    };
   if (!apiToken)
-    return { success: false, error: `Environment variable ${rawApiToken.slice(1)} not found` };
+    return {
+      success: false,
+      error: `Environment variable ${rawApiToken.slice(1)} not found`,
+    };
   if (!siteUrl)
-    return { success: false, error: `Environment variable ${rawSiteUrl.slice(1)} not found` };
+    return {
+      success: false,
+      error: `Environment variable ${rawSiteUrl.slice(1)} not found`,
+    };
 
   // Normalize siteUrl - remove protocol if present
   siteUrl = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -94,9 +108,13 @@ export async function configureJiraAuth(
     });
 
     if (!response.ok) {
-      if (response.status === 401) return { success: false, error: "Invalid email or API token" };
+      if (response.status === 401)
+        return { success: false, error: "Invalid email or API token" };
       if (response.status === 404)
-        return { success: false, error: "Jira site not found. Check your site URL." };
+        return {
+          success: false,
+          error: "Jira site not found. Check your site URL.",
+        };
       return { success: false, error: `Jira API error: ${response.status}` };
     }
 
@@ -111,9 +129,15 @@ export async function configureJiraAuth(
     return { success: true };
   } catch (error) {
     if (error instanceof Error && error.message.includes("fetch")) {
-      return { success: false, error: "Could not connect to Jira. Check your site URL." };
+      return {
+        success: false,
+        error: "Could not connect to Jira. Check your site URL.",
+      };
     }
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 

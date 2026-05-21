@@ -82,15 +82,18 @@ describe("MonitorService", () => {
 
       service.registerMonitor(createEventMonitorOptions("test-event"));
 
-      expect(handler).toHaveBeenCalledWith({ name: "test-event", type: "event" });
+      expect(handler).toHaveBeenCalledWith({
+        name: "test-event",
+        type: "event",
+      });
     });
 
     it("throws if monitor id is already registered", () => {
       service.registerMonitor(createPollingMonitorOptions("test"));
 
-      expect(() => service.registerMonitor(createPollingMonitorOptions("test"))).toThrow(
-        'Monitor "test" is already registered',
-      );
+      expect(() =>
+        service.registerMonitor(createPollingMonitorOptions("test")),
+      ).toThrow('Monitor "test" is already registered');
     });
 
     it("allows registering multiple monitors with different ids", async () => {
@@ -158,14 +161,19 @@ describe("MonitorService", () => {
 
       const running = service.getRunningMonitors("AM-123");
       expect(running).toHaveLength(2);
-      expect(running.map((r) => r.id).sort()).toEqual(["monitor-a", "monitor-b"]);
+      expect(running.map((r) => r.id).sort()).toEqual([
+        "monitor-a",
+        "monitor-b",
+      ]);
     });
   });
 
   describe("poll loop", () => {
     it("calls poll() at configured interval", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       expect(pollFn).not.toHaveBeenCalled();
@@ -182,7 +190,9 @@ describe("MonitorService", () => {
 
     it("passes MonitorContext to poll()", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       await vi.advanceTimersByTimeAsync(100);
@@ -242,30 +252,41 @@ describe("MonitorService", () => {
       );
       await service.startMonitor("test", "AM-123");
 
-      expect(service.getRunningMonitors("AM-123")[0]!.lastActivity).toBeUndefined();
+      expect(
+        service.getRunningMonitors("AM-123")[0]!.lastActivity,
+      ).toBeUndefined();
 
       await vi.advanceTimersByTimeAsync(100);
 
-      expect(service.getRunningMonitors("AM-123")[0]!.lastActivity).toBeInstanceOf(Date);
+      expect(
+        service.getRunningMonitors("AM-123")[0]!.lastActivity,
+      ).toBeInstanceOf(Date);
     });
 
     it("updates lastResult after each poll", async () => {
       const result = { hasChanges: true, data: { foo: "bar" } };
       service.registerMonitor(
-        createPollingMonitorOptions("test", { interval: 100, pollResult: result }),
+        createPollingMonitorOptions("test", {
+          interval: 100,
+          pollResult: result,
+        }),
       );
       await service.startMonitor("test", "AM-123");
 
       await vi.advanceTimersByTimeAsync(100);
 
-      expect(service.getRunningMonitors("AM-123")[0]!.lastResult).toEqual(result);
+      expect(service.getRunningMonitors("AM-123")[0]!.lastResult).toEqual(
+        result,
+      );
     });
   });
 
   describe("event monitor", () => {
     it("calls setup() when started", async () => {
       const setupFn = vi.fn().mockResolvedValue(() => {});
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
       expect(setupFn).toHaveBeenCalledTimes(1);
@@ -282,7 +303,9 @@ describe("MonitorService", () => {
         return () => {};
       });
 
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
       // Emit an event
@@ -305,7 +328,9 @@ describe("MonitorService", () => {
         return () => {};
       });
 
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
       emitFn!({ hasChanges: false });
@@ -317,7 +342,9 @@ describe("MonitorService", () => {
       const cleanupFn = vi.fn();
       const setupFn = vi.fn().mockResolvedValue(cleanupFn);
 
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
       await service.stopMonitor("AM-123", "test-event");
@@ -332,14 +359,20 @@ describe("MonitorService", () => {
         return () => {};
       });
 
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
-      expect(service.getRunningMonitors("AM-123")[0]!.lastActivity).toBeUndefined();
+      expect(
+        service.getRunningMonitors("AM-123")[0]!.lastActivity,
+      ).toBeUndefined();
 
       emitFn!({ hasChanges: true, data: {} });
 
-      expect(service.getRunningMonitors("AM-123")[0]!.lastActivity).toBeInstanceOf(Date);
+      expect(
+        service.getRunningMonitors("AM-123")[0]!.lastActivity,
+      ).toBeInstanceOf(Date);
     });
   });
 

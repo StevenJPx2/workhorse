@@ -51,7 +51,10 @@ export interface PathValidationResult {
  * }
  * ```
  */
-export function validatePath(path: string, options: PathValidationOptions): PathValidationResult {
+export function validatePath(
+  path: string,
+  options: PathValidationOptions,
+): PathValidationResult {
   const { rootDir, additionalAllowedDirs = [] } = options;
 
   // Normalize the root directory
@@ -70,7 +73,8 @@ export function validatePath(path: string, options: PathValidationOptions): Path
   for (const allowedDir of additionalAllowedDirs) {
     const normalizedAllowed = normalize(resolve(allowedDir));
     const relativeToAllowed = relative(normalizedAllowed, normalizedPath);
-    const isWithinAllowed = !relativeToAllowed.startsWith("..") && !isAbsolute(relativeToAllowed);
+    const isWithinAllowed =
+      !relativeToAllowed.startsWith("..") && !isAbsolute(relativeToAllowed);
 
     if (isWithinAllowed) {
       return { valid: true, normalizedPath };
@@ -93,7 +97,10 @@ export function validatePath(path: string, options: PathValidationOptions): Path
  * @param options - Validation options
  * @returns true if the path is within allowed directories
  */
-export function isPathAllowed(path: string, options: PathValidationOptions): boolean {
+export function isPathAllowed(
+  path: string,
+  options: PathValidationOptions,
+): boolean {
   return validatePath(path, options).valid;
 }
 
@@ -115,7 +122,10 @@ export function isPathAllowed(path: string, options: PathValidationOptions): boo
  * await fs.writeFile(safePath, content);
  * ```
  */
-export function assertPathAllowed(path: string, options: PathValidationOptions): string {
+export function assertPathAllowed(
+  path: string,
+  options: PathValidationOptions,
+): string {
   const result = validatePath(path, options);
   if (!result.valid) {
     throw new Error(result.error);

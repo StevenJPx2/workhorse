@@ -118,7 +118,10 @@ export interface EventMonitorOptions extends MonitorOptionsBase {
    * @param emit - Call this to emit a MonitorResult when an event occurs
    * @returns Cleanup function (or Promise of one)
    */
-  setup: (ctx: MonitorContext, emit: EventEmitter) => Promise<EventCleanup> | EventCleanup;
+  setup: (
+    ctx: MonitorContext,
+    emit: EventEmitter,
+  ) => Promise<EventCleanup> | EventCleanup;
 }
 
 /**

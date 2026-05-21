@@ -79,7 +79,9 @@ export function AgentList(props: AgentListProps) {
     >
       {/* Header - highlighted when focused */}
       <box
-        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
+        backgroundColor={
+          isFocused() ? theme.colors.selection : theme.colors.surface
+        }
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
@@ -118,18 +120,23 @@ export function AgentList(props: AgentListProps) {
         <For each={agents()}>
           {(agent, index) => {
             // Only show selection highlight if this list is focused
-            const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
+            const isSelected = () =>
+              isFocused() && index() === (props.selectedIndex ?? 0);
             const state = () => getState(agent.issueId) ?? "stopped";
 
             return (
               <box
-                backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                backgroundColor={
+                  isSelected() ? theme.colors.selection : undefined
+                }
                 paddingLeft={2}
                 paddingRight={2}
                 flexDirection="column"
               >
                 <box flexDirection="row" justifyContent="space-between">
-                  <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                  <text
+                    fg={isSelected() ? theme.colors.accent : theme.colors.text}
+                  >
                     {isSelected() ? "▸ " : "  "}
                     <b>{agent.issueId}</b>
                   </text>
@@ -138,7 +145,10 @@ export function AgentList(props: AgentListProps) {
                   </text>
                 </box>
                 <box paddingLeft={2} flexDirection="row">
-                  <WorkhorseStatus status={getStatus(agent.issue.externalId)} compact />
+                  <WorkhorseStatus
+                    status={getStatus(agent.issue.externalId)}
+                    compact
+                  />
                   <Show when={agent.model}>
                     <text fg={theme.colors.dim}>
                       {" · "}

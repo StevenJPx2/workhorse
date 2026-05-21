@@ -31,10 +31,15 @@ type NodeType =
 function parseStatements(
   code: string,
 ): Array<{ type: NodeType; source?: string; declaration?: boolean }> {
-  const statements: Array<{ type: NodeType; source?: string; declaration?: boolean }> = [];
+  const statements: Array<{
+    type: NodeType;
+    source?: string;
+    declaration?: boolean;
+  }> = [];
 
   // Re-exports: export { x } from "./y" or export type { x } from "./y"
-  const namedReExport = /export\s+(?:type\s+)?{[^}]*}\s+from\s+["']([^"']+)["']/g;
+  const namedReExport =
+    /export\s+(?:type\s+)?{[^}]*}\s+from\s+["']([^"']+)["']/g;
   let match;
   while ((match = namedReExport.exec(code)) !== null) {
     statements.push({ type: "ExportNamedDeclaration", source: match[1] });

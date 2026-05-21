@@ -6,12 +6,16 @@ import { deepCamelKeys, deepSnakeKeys } from "string-ts";
 
 import type { DeepPartial, WorkhorseConfig } from "./types.ts";
 
-export function parseTomlFile(filePath: string | null): Partial<WorkhorseConfig> {
+export function parseTomlFile(
+  filePath: string | null,
+): Partial<WorkhorseConfig> {
   if (!filePath) return {};
   if (!existsSync(filePath)) return {};
 
   try {
-    return deepCamelKeys(parseToml(readFileSync(filePath, "utf-8"))) as Partial<WorkhorseConfig>;
+    return deepCamelKeys(
+      parseToml(readFileSync(filePath, "utf-8")),
+    ) as Partial<WorkhorseConfig>;
   } catch (err) {
     console.error(`Error parsing ${filePath}:`, err);
     return {};
@@ -34,6 +38,9 @@ export function configToToml(config: Partial<WorkhorseConfig>): string {
   return stringifyToml(deepSnakeKeys(config) as Record<string, unknown>);
 }
 
-export function writeTomlFile(filePath: string, config: Partial<WorkhorseConfig>): void {
+export function writeTomlFile(
+  filePath: string,
+  config: Partial<WorkhorseConfig>,
+): void {
   writeFileSync(filePath, configToToml(config), "utf-8");
 }

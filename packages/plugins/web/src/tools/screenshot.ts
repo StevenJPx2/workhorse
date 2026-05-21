@@ -6,7 +6,11 @@
  * @module workhorse-plugin-web/tools/screenshot
  */
 
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
+import type {
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "workhorse-core";
 
 import { execJina } from "../client.ts";
 
@@ -39,7 +43,8 @@ Wraps the \`jina screenshot\` CLI command.`,
         },
         output: {
           type: "string",
-          description: "Output file path (e.g., 'page.png'). If omitted, returns URL.",
+          description:
+            "Output file path (e.g., 'page.png'). If omitted, returns URL.",
         },
         fullPage: {
           type: "boolean",
@@ -48,7 +53,10 @@ Wraps the \`jina screenshot\` CLI command.`,
       },
       required: ["url"],
     },
-    execute: async (args: unknown, _ctx: ToolExecutionContext): Promise<ToolResult> => {
+    execute: async (
+      args: unknown,
+      _ctx: ToolExecutionContext,
+    ): Promise<ToolResult> => {
       const { url, output, fullPage } = args as ScreenshotArgs;
 
       const cliArgs = ["screenshot", url];
@@ -60,7 +68,9 @@ Wraps the \`jina screenshot\` CLI command.`,
       if (!result.success) {
         return {
           success: false,
-          error: result.stderr || `jina screenshot failed with exit code ${result.exitCode}`,
+          error:
+            result.stderr ||
+            `jina screenshot failed with exit code ${result.exitCode}`,
         };
       }
 

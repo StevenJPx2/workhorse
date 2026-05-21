@@ -77,7 +77,9 @@ describe("isPlugin", () => {
 
   it("returns false for plain objects", () => {
     expect(isPlugin({})).toBe(false);
-    expect(isPlugin({ manifest: { name: "test", version: "1.0.0" } })).toBe(false);
+    expect(isPlugin({ manifest: { name: "test", version: "1.0.0" } })).toBe(
+      false,
+    );
   });
 
   it("returns false for objects with wrong symbol", () => {
@@ -292,7 +294,9 @@ describe("PluginRegistry.discoverCustomPlugins", () => {
     // Should have discovered valid plugins but skipped invalid-plugin.ts
     expect(registry.has("valid-fixture-plugin")).toBe(true);
     // Invalid plugin should be skipped with a warning
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Skipping invalid plugin"));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Skipping invalid plugin"),
+    );
 
     consoleSpy.mockRestore();
   });

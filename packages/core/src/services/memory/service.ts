@@ -76,7 +76,12 @@ export class MemoryService {
     // Initialize indexer to start listening for agent.stop.post and agent.idle events
     indexer.initialize();
 
-    return new MemoryService(l1, l2, indexer, new NotificationService(options.db, options.hooks));
+    return new MemoryService(
+      l1,
+      l2,
+      indexer,
+      new NotificationService(options.db, options.hooks),
+    );
   }
 
   /**

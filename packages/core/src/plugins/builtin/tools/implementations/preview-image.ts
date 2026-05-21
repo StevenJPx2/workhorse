@@ -52,7 +52,9 @@ export async function previewImageToolImpl(
     }
 
     // Resolve the path (relative to worktree or absolute)
-    const absolutePath = isAbsolute(inputPath) ? inputPath : resolve(ctx.worktreePath, inputPath);
+    const absolutePath = isAbsolute(inputPath)
+      ? inputPath
+      : resolve(ctx.worktreePath, inputPath);
 
     // Check if file exists
     if (!existsSync(absolutePath)) {

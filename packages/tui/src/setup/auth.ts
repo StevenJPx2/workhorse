@@ -56,7 +56,9 @@ export async function checkPluginAuth(plugin: Plugin): Promise<AuthStatus> {
 /**
  * Check authentication status for multiple plugins.
  */
-export async function checkAllPluginsAuth(plugins: Plugin[]): Promise<AuthStatus[]> {
+export async function checkAllPluginsAuth(
+  plugins: Plugin[],
+): Promise<AuthStatus[]> {
   return Promise.all(plugins.map(checkPluginAuth));
 }
 
@@ -64,7 +66,9 @@ export async function checkAllPluginsAuth(plugins: Plugin[]): Promise<AuthStatus
  * Get plugins that need authentication.
  * Returns plugins where auth is required but not yet authenticated.
  */
-export async function getPluginsNeedingAuth(plugins: Plugin[]): Promise<PluginAuthRequirement[]> {
+export async function getPluginsNeedingAuth(
+  plugins: Plugin[],
+): Promise<PluginAuthRequirement[]> {
   const needsAuth: PluginAuthRequirement[] = [];
 
   for (const plugin of plugins) {
@@ -94,7 +98,9 @@ export async function getPluginsNeedingAuth(plugins: Plugin[]): Promise<PluginAu
 /**
  * Format auth instructions for display.
  */
-export function formatAuthInstructions(requirement: PluginAuthRequirement): string {
+export function formatAuthInstructions(
+  requirement: PluginAuthRequirement,
+): string {
   const { auth, name } = requirement;
 
   if (auth.type === "oauth") {

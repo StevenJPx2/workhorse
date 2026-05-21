@@ -19,7 +19,8 @@ import { mapJiraToIssue } from "../mapper.ts";
 import { canParseJira, createJiraParserOptions } from "../parser.ts";
 
 const EMAIL = process.env.JIRA_EMAIL ?? "steven@adeptmind.ai";
-const API_TOKEN = process.env.JIRA_API_TOKEN ?? process.env.ATLASSIAN_API_KEY ?? "";
+const API_TOKEN =
+  process.env.JIRA_API_TOKEN ?? process.env.ATLASSIAN_API_KEY ?? "";
 const SITE_URL = process.env.JIRA_SITE_URL ?? "adeptmind.atlassian.net";
 const TICKET = "ADEPT-37943";
 
@@ -61,7 +62,9 @@ describe.skipIf(SKIP_INTEGRATION)("AtlassianClient.fetchIssue", () => {
   });
 
   it("throws a descriptive error for a non-existent ticket", async () => {
-    await expect(client.fetchIssue("ADEPT-99999999")).rejects.toThrow(/Jira API error/);
+    await expect(client.fetchIssue("ADEPT-99999999")).rejects.toThrow(
+      /Jira API error/,
+    );
   });
 });
 
@@ -80,7 +83,9 @@ describe.skipIf(SKIP_INTEGRATION)("AtlassianClient.getTransitions", () => {
       });
     }
 
-    console.log(`  → transitions: ${transitions.map((t) => t.name).join(", ")}`);
+    console.log(
+      `  → transitions: ${transitions.map((t) => t.name).join(", ")}`,
+    );
   });
 });
 
@@ -93,7 +98,9 @@ describe.skipIf(SKIP_INTEGRATION)("AtlassianClient.addComment", () => {
     // Verify the comment landed (body is ADF object, search by serialised text)
     const issue = await client.fetchIssue(TICKET);
     const comments = issue.fields.comment?.comments ?? [];
-    const added = comments.find((c) => JSON.stringify(c.body).includes(body.slice(0, 40)));
+    const added = comments.find((c) =>
+      JSON.stringify(c.body).includes(body.slice(0, 40)),
+    );
     expect(added).toBeDefined();
     console.log(`  → comment added, id=${added?.id}`);
   });

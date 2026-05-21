@@ -37,8 +37,14 @@ export function createGetCICheckTool(client: GitHubClient): OrchestratorTool {
     schema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "Repository owner (e.g., 'octocat')" },
-        repo: { type: "string", description: "Repository name (e.g., 'hello-world')" },
+        owner: {
+          type: "string",
+          description: "Repository owner (e.g., 'octocat')",
+        },
+        repo: {
+          type: "string",
+          description: "Repository name (e.g., 'hello-world')",
+        },
         ref: {
           type: "string",
           description:

@@ -131,7 +131,8 @@ export function startOAuthFlow(provider: OAuthProvider): {
               headers: { "Content-Type": "text/html" },
             });
           } catch (err) {
-            const message = err instanceof Error ? err.message : "Token exchange failed";
+            const message =
+              err instanceof Error ? err.message : "Token exchange failed";
             resolve({ success: false, error: message });
             server?.stop();
             return new Response(errorHtml(message), {

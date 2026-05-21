@@ -133,7 +133,9 @@ describe("PluginSkillSchema", () => {
         instructions: "## How to do the thing\n\n1. Step one\n2. Step two",
       };
       const result = PluginSkillSchema.parse(input);
-      expect(result.instructions).toBe("## How to do the thing\n\n1. Step one\n2. Step two");
+      expect(result.instructions).toBe(
+        "## How to do the thing\n\n1. Step one\n2. Step two",
+      );
       expect(result.instructionsPath).toBeUndefined();
     });
 

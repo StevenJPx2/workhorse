@@ -31,22 +31,27 @@ const tests: GroupedTestCase[] = [
   {
     group: "render",
     name: "renders WORKHORSE header",
-    assert: (text) => text.includes("WORKHORSE") || "Missing 'WORKHORSE' header",
+    assert: (text) =>
+      text.includes("WORKHORSE") || "Missing 'WORKHORSE' header",
   },
   {
     group: "render",
     name: "renders ISSUES section",
-    assert: (text) => text.includes("ISSUES") || "Missing 'ISSUES' section heading",
+    assert: (text) =>
+      text.includes("ISSUES") || "Missing 'ISSUES' section heading",
   },
   {
     group: "render",
     name: "renders AGENTS section",
-    assert: (text) => text.includes("AGENTS") || "Missing 'AGENTS' section heading",
+    assert: (text) =>
+      text.includes("AGENTS") || "Missing 'AGENTS' section heading",
   },
   {
     group: "render",
     name: "renders status bar with quit hint",
-    assert: (text) => text.toLowerCase().includes("quit") || "Missing 'quit' hint in status bar",
+    assert: (text) =>
+      text.toLowerCase().includes("quit") ||
+      "Missing 'quit' hint in status bar",
   },
   {
     group: "render",
@@ -61,7 +66,10 @@ const tests: GroupedTestCase[] = [
     name: "has proper box borders in modal",
     keys: ["<CR>"],
     assert: (text) =>
-      (text.includes("╭") && text.includes("╰") && text.includes("╮") && text.includes("╯")) ||
+      (text.includes("╭") &&
+        text.includes("╰") &&
+        text.includes("╮") &&
+        text.includes("╯")) ||
       "Missing box border characters in modal",
   },
   {
@@ -87,7 +95,9 @@ const tests: GroupedTestCase[] = [
     name: "Tab twice focuses chat input",
     keys: ["<Tab>", "<Tab>"],
     assert: (text) =>
-      text.includes("Type a task") || text.includes("issue key") || "Chat input not visible",
+      text.includes("Type a task") ||
+      text.includes("issue key") ||
+      "Chat input not visible",
   },
   {
     group: "create-issue",
@@ -125,7 +135,8 @@ const tests: GroupedTestCase[] = [
     group: "create-issue",
     name: "Down navigates harness options",
     keys: ["<CR>", "<Down>"],
-    assert: (text) => text.includes("SPAWN AGENT") || "Modal closed unexpectedly",
+    assert: (text) =>
+      text.includes("SPAWN AGENT") || "Modal closed unexpectedly",
   },
   {
     group: "create-issue",
@@ -253,7 +264,9 @@ const tests: GroupedTestCase[] = [
     assert: (text) => {
       if (skipIfNoAdapters(text)) return true;
       // Check for prompt character or activity header (indicates agent screen)
-      return text.includes("❯") || text.includes("ACTIVITY") || "Missing prompt";
+      return (
+        text.includes("❯") || text.includes("ACTIVITY") || "Missing prompt"
+      );
     },
   },
   {
@@ -283,7 +296,11 @@ const tests: GroupedTestCase[] = [
         return text.includes("ISSUES") || "Didn't close modal";
       }
       // May still be on agent screen if ESC timing was off, or back to overview
-      return text.includes("WORKHORSE") || text.includes("ACTIVITY") || "Not on overview or agent";
+      return (
+        text.includes("WORKHORSE") ||
+        text.includes("ACTIVITY") ||
+        "Not on overview or agent"
+      );
     },
   },
   {
@@ -301,7 +318,11 @@ const tests: GroupedTestCase[] = [
     keys: ["<CR>", "<CR>", "<Esc>", "<Esc>", "<Esc>"],
     assert: (text) => {
       // May still be on agent screen if agent is starting, or back to overview
-      return text.includes("ISSUES") || text.includes("ACTIVITY") || "Not on overview or agent";
+      return (
+        text.includes("ISSUES") ||
+        text.includes("ACTIVITY") ||
+        "Not on overview or agent"
+      );
     },
   },
   {
@@ -311,7 +332,11 @@ const tests: GroupedTestCase[] = [
     assert: (text) => {
       if (skipIfNoAdapters(text)) return true;
       // Match various ID formats: PROJ-123, LOCAL-xxx, or any alphanumeric ID
-      return /[A-Z]+-[a-z0-9]+/i.test(text) || text.includes("Issue") || "No issue ID";
+      return (
+        /[A-Z]+-[a-z0-9]+/i.test(text) ||
+        text.includes("Issue") ||
+        "No issue ID"
+      );
     },
   },
   {
@@ -397,7 +422,9 @@ console.log(`Tests: ${filteredTests.length} total`);
 for (const [group, count] of Object.entries(groupCounts)) {
   if (count > 0) console.log(`  - ${group}: ${count}`);
 }
-console.log("\nNote: Each test starts a fresh TUI instance, so this may take a while.\n");
+console.log(
+  "\nNote: Each test starts a fresh TUI instance, so this may take a while.\n",
+);
 
 const results = await runTests(filteredTests, {
   cwd: process.cwd(),

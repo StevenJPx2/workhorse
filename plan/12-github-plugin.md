@@ -34,13 +34,36 @@ class GitHubClient {
   constructor();
   async connect(): Promise<void>; // Verifies gh auth status
   async disconnect(): Promise<void>;
-  async fetchIssue(owner: string, repo: string, number: number): Promise<GitHubIssue>;
+  async fetchIssue(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubIssue>;
   async fetchPR(owner: string, repo: string, number: number): Promise<GitHubPR>;
-  async createPR(opts: CreatePROptions): Promise<{ url: string; number: number }>;
-  async addComment(owner: string, repo: string, number: number, body: string): Promise<void>;
-  async getPRReviews(owner: string, repo: string, number: number): Promise<GitHubReview[]>;
-  async getPRComments(owner: string, repo: string, number: number): Promise<GitHubComment[]>;
-  async getCheckRuns(owner: string, repo: string, ref: string): Promise<GitHubCheckRun[]>;
+  async createPR(
+    opts: CreatePROptions,
+  ): Promise<{ url: string; number: number }>;
+  async addComment(
+    owner: string,
+    repo: string,
+    number: number,
+    body: string,
+  ): Promise<void>;
+  async getPRReviews(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubReview[]>;
+  async getPRComments(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubComment[]>;
+  async getCheckRuns(
+    owner: string,
+    repo: string,
+    ref: string,
+  ): Promise<GitHubCheckRun[]>;
 }
 ```
 
@@ -201,7 +224,10 @@ Hooks `issue.status_changed`. For GitHub issues with PRs:
 
 ```typescript
 // sync.ts
-export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void;
+export function registerStatusSync(
+  ctx: WorkhorseContext,
+  client: GitHubClient,
+): void;
 ```
 
 ## Domain Types (colocated)
@@ -239,7 +265,12 @@ export interface GitHubPR extends GitHubIssue {
 export interface GitHubReview {
   id: number;
   user: { login: string };
-  state: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING";
+  state:
+    | "APPROVED"
+    | "CHANGES_REQUESTED"
+    | "COMMENTED"
+    | "DISMISSED"
+    | "PENDING";
   body: string;
   submitted_at: string;
 }
@@ -338,7 +369,9 @@ export const githubPlugin = definePlugin({
     });
 
     // Register unified PR monitor (reviews, comments, checks, mergeable)
-    ctx.monitors.registerMonitor(createGitHubPRMonitor(client, config.pollInterval, ctx.db));
+    ctx.monitors.registerMonitor(
+      createGitHubPRMonitor(client, config.pollInterval, ctx.db),
+    );
 
     // Start monitor when agent spawns on a GitHub issue with PR
     ctx.hooks.on("orchestrator.spawn.post", ({ adapter }) => {
@@ -355,7 +388,12 @@ export const githubPlugin = definePlugin({
     registerStatusSync(ctx, client);
 
     // Register GitHub tools with orchestrator
-    for (const tool of createGitHubTools(client, ctx.db, ctx.hooks, ctx.monitors)) {
+    for (const tool of createGitHubTools(
+      client,
+      ctx.db,
+      ctx.hooks,
+      ctx.monitors,
+    )) {
       ctx.orchestrator.registerTool(tool);
     }
   },

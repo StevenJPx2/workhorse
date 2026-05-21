@@ -40,7 +40,11 @@ export type { GitHubPluginHooks } from "./hooks.ts";
 export { mapGitHubToIssue } from "./mapper.ts";
 export { canParseGitHub, parseGitHubRef } from "./parser.ts";
 export type { CICheckResult } from "./tools/get-ci-check.ts";
-export type { DetailedReview, PRReviewsResult, ReviewComment } from "./tools/get-pr-reviews.ts";
+export type {
+  DetailedReview,
+  PRReviewsResult,
+  ReviewComment,
+} from "./tools/get-pr-reviews.ts";
 // Export types for external use
 export type {
   GitHubCheckRun,
@@ -84,11 +88,15 @@ export const githubPlugin = definePlugin({
     ctx.tracker.registerParser(createGitHubParserOptions(client));
 
     // Register unified PR monitor (reviews, comments, checks, mergeable)
-    ctx.monitors.registerMonitor(createGitHubPRMonitor(client, config.pollInterval, ctx.db));
+    ctx.monitors.registerMonitor(
+      createGitHubPRMonitor(client, config.pollInterval, ctx.db),
+    );
 
     // Start monitor when agent spawns on an issue with PR metadata
     ctx.hooks.on("agent.create.post", ({ adapter }) => {
-      if (((adapter.issue.metadata ?? {}) as Record<string, unknown>).prNumber) {
+      if (
+        ((adapter.issue.metadata ?? {}) as Record<string, unknown>).prNumber
+      ) {
         ctx.monitors.startMonitor("github-pr", adapter.issue.id);
       }
     });

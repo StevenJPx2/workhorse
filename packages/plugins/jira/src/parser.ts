@@ -15,7 +15,8 @@ import { type ExtractedLink, mapJiraToIssue } from "./mapper.ts";
 const JIRA_KEY_REGEX = /^[A-Z][A-Z0-9]*-\d+$/;
 
 /** Regex for matching Jira URLs */
-const JIRA_URL_REGEX = /https:\/\/[a-z0-9-]+\.atlassian\.net\/browse\/[A-Z][A-Z0-9]*-\d+/;
+const JIRA_URL_REGEX =
+  /https:\/\/[a-z0-9-]+\.atlassian\.net\/browse\/[A-Z][A-Z0-9]*-\d+/;
 
 /** Check if input looks like a Jira ticket key or URL */
 export function canParseJira(input: string): boolean {

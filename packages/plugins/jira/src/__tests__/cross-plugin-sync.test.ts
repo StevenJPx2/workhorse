@@ -55,7 +55,11 @@ describe("registerCrossPluginSync", () => {
         },
       }),
       getTransitions: vi.fn().mockResolvedValue([
-        { id: "11", name: "Start Progress", to: { name: "In Progress", id: "3" } },
+        {
+          id: "11",
+          name: "Start Progress",
+          to: { name: "In Progress", id: "3" },
+        },
         { id: "21", name: "Move to QA", to: { name: "In QA", id: "4" } },
         { id: "31", name: "Done", to: { name: "Done", id: "5" } },
       ]),
@@ -85,7 +89,10 @@ describe("registerCrossPluginSync", () => {
 
     registerCrossPluginSync(mockCtx, mockClient, mockDb);
 
-    expect(onSpy).toHaveBeenCalledWith("github:pr.merged", expect.any(Function));
+    expect(onSpy).toHaveBeenCalledWith(
+      "github:pr.merged",
+      expect.any(Function),
+    );
   });
 
   it("transitions Jira issue to QA when PR is merged", async () => {

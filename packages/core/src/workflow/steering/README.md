@@ -68,7 +68,8 @@ ctx.orchestrator.registerSteeringRule({
   condition: {
     status: ["blocked"],
   },
-  reminder: "You are marked as blocked. Check your notifications for human responses.",
+  reminder:
+    "You are marked as blocked. Check your notifications for human responses.",
   once: true, // Only fires once per agent session
 });
 ```

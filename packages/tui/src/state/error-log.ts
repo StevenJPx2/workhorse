@@ -19,7 +19,10 @@ function writeToFile(entry: LogEntry) {
   try {
     if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
     const base = `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`;
-    appendFileSync(LOG_FILE, (entry.stack ? `${base}\n${entry.stack}` : base) + "\n");
+    appendFileSync(
+      LOG_FILE,
+      (entry.stack ? `${base}\n${entry.stack}` : base) + "\n",
+    );
   } catch {
     // Silently fail if we can't write to log
   }

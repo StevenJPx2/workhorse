@@ -13,5 +13,9 @@ import { createPostCommentTool } from "./post-comment.ts";
 
 /** Create all Figma tool definitions bound to a client */
 export function createFigmaTools(client: FigmaClient): OrchestratorTool[] {
-  return [createGetFileTool(client), createGetCommentsTool(client), createPostCommentTool(client)];
+  return [
+    createGetFileTool(client),
+    createGetCommentsTool(client),
+    createPostCommentTool(client),
+  ];
 }

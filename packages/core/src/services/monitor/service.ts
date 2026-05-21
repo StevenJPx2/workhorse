@@ -62,14 +62,18 @@ export class MonitorService {
   async startMonitor(id: string, issueId: string): Promise<void> {
     const options = this.registered.get(id);
     if (!options) {
-      throw new Error(`Monitor "${id}" is not registered. Call registerMonitor() first.`);
+      throw new Error(
+        `Monitor "${id}" is not registered. Call registerMonitor() first.`,
+      );
     }
 
     const key = this.makeKey(issueId, id);
     if (this.running.has(key)) return;
 
     const monitor =
-      options.type === "event" ? new EventMonitor(options) : new PollingMonitor(options);
+      options.type === "event"
+        ? new EventMonitor(options)
+        : new PollingMonitor(options);
 
     await monitor.start({
       issueId,
@@ -146,7 +150,9 @@ export class MonitorService {
    * Shutdown all monitors. Called during application shutdown.
    */
   async shutdown(): Promise<void> {
-    await Promise.all([...this.running.values()].map((m) => Promise.resolve(m.stop())));
+    await Promise.all(
+      [...this.running.values()].map((m) => Promise.resolve(m.stop())),
+    );
     this.running.clear();
   }
 

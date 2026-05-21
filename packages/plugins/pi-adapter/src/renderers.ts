@@ -52,7 +52,11 @@ export function piToolRenderer(input: ActivityInput): RenderedActivity | null {
 
   // Write tool
   if (tool.includes("write")) {
-    const path = getString(args.filePath) || getString(args.file) || getString(args.path) || "";
+    const path =
+      getString(args.filePath) ||
+      getString(args.file) ||
+      getString(args.path) ||
+      "";
     return {
       icon: "📄",
       title: "create",
@@ -64,7 +68,11 @@ export function piToolRenderer(input: ActivityInput): RenderedActivity | null {
 
   // Edit tool
   if (tool.includes("edit")) {
-    const path = getString(args.filePath) || getString(args.file) || getString(args.path) || "";
+    const path =
+      getString(args.filePath) ||
+      getString(args.file) ||
+      getString(args.path) ||
+      "";
     return {
       icon: "✏️",
       title: "edit",

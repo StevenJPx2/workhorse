@@ -25,7 +25,11 @@ export function emitReviewHooks(
     ctx.hooks.emit("github:review.submitted", {
       issueId: issue.id,
       review: {
-        state: review.state as "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED",
+        state: review.state as
+          | "APPROVED"
+          | "CHANGES_REQUESTED"
+          | "COMMENTED"
+          | "DISMISSED",
         author: review.user?.login ?? "unknown",
         body: review.body ?? "",
       },
@@ -51,7 +55,10 @@ export function emitCheckHooks(
     });
   }
   if (summary.allPassing) {
-    ctx.hooks.emit("github:checks.passed", { issueId: issue.id, pr: { number: prNumber } });
+    ctx.hooks.emit("github:checks.passed", {
+      issueId: issue.id,
+      pr: { number: prNumber },
+    });
   }
 }
 

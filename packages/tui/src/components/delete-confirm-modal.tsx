@@ -15,7 +15,9 @@ interface DeleteConfirmModalProps {
 export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
   const theme = getTheme();
   const dimensions = useTerminalDimensions();
-  const [selectedOption, setSelectedOption] = createSignal<"cancel" | "delete">("cancel");
+  const [selectedOption, setSelectedOption] = createSignal<"cancel" | "delete">(
+    "cancel",
+  );
 
   // Constrain modal to fit in terminal (max 80% height, cap at 14 rows)
   const modalHeight = () => Math.min(14, Math.floor(dimensions().height * 0.8));
@@ -75,7 +77,6 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
         borderStyle="rounded"
         borderColor={theme.colors.error}
       >
-        {/* Header - full width background */}
         <box
           backgroundColor={theme.colors.error}
           paddingLeft={2}
@@ -88,22 +89,24 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
             <b>🗑️ DELETE ISSUE</b>
           </text>
         </box>
-
-        {/* Issue ID and title */}
-        <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1} flexDirection="row">
+        <box
+          paddingLeft={2}
+          paddingRight={2}
+          paddingTop={1}
+          paddingBottom={1}
+          flexDirection="row"
+        >
           <text fg={theme.colors.info}>
             <b>{props.issue.externalId || props.issue.id}</b>
           </text>
           <text fg={theme.colors.dim}>{" · "}</text>
           <text fg={theme.colors.text}>{props.issue.title}</text>
         </box>
-
-        {/* Warning */}
         <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={2}>
-          <text fg={theme.colors.warning}>{"⚠️ This will be permanently removed."}</text>
+          <text fg={theme.colors.warning}>
+            {"⚠️ This will be permanently removed."}
+          </text>
         </box>
-
-        {/* Action buttons - clickable */}
         <box
           backgroundColor={theme.colors.background}
           paddingLeft={2}
@@ -116,11 +119,19 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
         >
           <box
             onMouseDown={handleCancel}
-            backgroundColor={selectedOption() === "cancel" ? theme.colors.selection : undefined}
+            backgroundColor={
+              selectedOption() === "cancel" ? theme.colors.selection : undefined
+            }
             paddingLeft={2}
             paddingRight={2}
           >
-            <text fg={selectedOption() === "cancel" ? theme.colors.success : theme.colors.dim}>
+            <text
+              fg={
+                selectedOption() === "cancel"
+                  ? theme.colors.success
+                  : theme.colors.dim
+              }
+            >
               {selectedOption() === "cancel" ? "▸ " : "  "}
               <b>Cancel</b>
             </text>
@@ -130,18 +141,24 @@ export function DeleteConfirmModal(props: DeleteConfirmModalProps) {
               setSelectedOption("delete");
               props.onConfirm(props.issue);
             }}
-            backgroundColor={selectedOption() === "delete" ? theme.colors.selection : undefined}
+            backgroundColor={
+              selectedOption() === "delete" ? theme.colors.selection : undefined
+            }
             paddingLeft={2}
             paddingRight={2}
           >
-            <text fg={selectedOption() === "delete" ? theme.colors.error : theme.colors.dim}>
+            <text
+              fg={
+                selectedOption() === "delete"
+                  ? theme.colors.error
+                  : theme.colors.dim
+              }
+            >
               {selectedOption() === "delete" ? "▸ " : "  "}
               <b>Delete</b>
             </text>
           </box>
         </box>
-
-        {/* Shortcuts - clickable */}
         <box
           paddingLeft={2}
           paddingRight={2}

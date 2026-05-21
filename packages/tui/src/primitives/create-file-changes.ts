@@ -89,7 +89,9 @@ export function createFileChanges(options: CreateFileChangesOptions) {
       }
 
       // Sort by most changes first
-      files.sort((a, b) => b.additions + b.deletions - (a.additions + a.deletions));
+      files.sort(
+        (a, b) => b.additions + b.deletions - (a.additions + a.deletions),
+      );
 
       setState({
         files,
@@ -102,7 +104,8 @@ export function createFileChanges(options: CreateFileChangesOptions) {
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: err instanceof Error ? err.message : "Failed to get file changes",
+        error:
+          err instanceof Error ? err.message : "Failed to get file changes",
       }));
     }
   };

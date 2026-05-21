@@ -6,7 +6,11 @@
  * @module workhorse-plugin-web/tools/search
  */
 
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
+import type {
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "workhorse-core";
 
 import { execJina } from "../client.ts";
 
@@ -66,7 +70,10 @@ Wraps the \`jina search\` CLI command. Requires JINA_API_KEY.`,
       },
       required: ["query"],
     },
-    execute: async (args: unknown, _ctx: ToolExecutionContext): Promise<ToolResult> => {
+    execute: async (
+      args: unknown,
+      _ctx: ToolExecutionContext,
+    ): Promise<ToolResult> => {
       const { query, count, arxiv, images, time, json } = args as WebSearchArgs;
 
       const cliArgs = ["search", query];
@@ -81,7 +88,9 @@ Wraps the \`jina search\` CLI command. Requires JINA_API_KEY.`,
       if (!result.success) {
         return {
           success: false,
-          error: result.stderr || `jina search failed with exit code ${result.exitCode}`,
+          error:
+            result.stderr ||
+            `jina search failed with exit code ${result.exitCode}`,
         };
       }
 

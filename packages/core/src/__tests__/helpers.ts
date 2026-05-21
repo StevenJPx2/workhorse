@@ -16,7 +16,10 @@ export function createMockHooks(): HookEmitter {
   const emitter = mitt<HookEventMap>();
 
   return {
-    on(name: string, handler: (payload: any) => void | Promise<void>): () => void {
+    on(
+      name: string,
+      handler: (payload: any) => void | Promise<void>,
+    ): () => void {
       emitter.on(name as keyof HookEventMap, handler);
       return () => emitter.off(name as keyof HookEventMap, handler);
     },
@@ -29,11 +32,13 @@ export function createMockHooks(): HookEmitter {
       // Call all handlers and wait for promises
       await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ((emitter.all.get(name as keyof HookEventMap) ?? []) as Array<(payload: any) => any>).map(
-          async (handler) => {
-            await handler(payload);
-          },
-        ),
+        (
+          (emitter.all.get(name as keyof HookEventMap) ?? []) as Array<
+            (payload: any) => any
+          >
+        ).map(async (handler) => {
+          await handler(payload);
+        }),
       );
     },
 

@@ -8,7 +8,11 @@
  */
 
 /** Patterns that start a new git operation that can have conflicts. */
-const GIT_START_PATTERNS = [/git\s+rebase\b/i, /git\s+merge\b/i, /git\s+cherry-pick\b/i];
+const GIT_START_PATTERNS = [
+  /git\s+rebase\b/i,
+  /git\s+merge\b/i,
+  /git\s+cherry-pick\b/i,
+];
 
 /** Patterns indicating we're still in an ongoing operation (conflict resolution). */
 const GIT_CONTINUE_PATTERNS = [
@@ -117,7 +121,9 @@ export class GitOperationTracker {
     return GIT_CONTINUE_PATTERNS.some((p) => p.test(command));
   }
 
-  private getOperationType(command: string): "rebase" | "merge" | "cherry-pick" {
+  private getOperationType(
+    command: string,
+  ): "rebase" | "merge" | "cherry-pick" {
     if (/rebase/i.test(command)) return "rebase";
     if (/merge/i.test(command)) return "merge";
     return "cherry-pick";

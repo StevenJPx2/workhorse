@@ -42,7 +42,9 @@ export function figmaRenderer(input: ActivityInput): RenderedActivity | null {
 
 // Notification rendering
 
-function renderNotification(notification: Notification): RenderedActivity | null {
+function renderNotification(
+  notification: Notification,
+): RenderedActivity | null {
   if (notification.source !== "figma") return null;
 
   const meta = notification.metadata as Record<string, unknown> | undefined;
@@ -106,7 +108,9 @@ function renderTool(tool: string, args: unknown): RenderedActivity | null {
       const message = (toolArgs.message as string | undefined) ?? "";
       return {
         icon: "✏️",
-        title: toolArgs.replyToId ? "Replying on Figma" : "Posting Figma comment",
+        title: toolArgs.replyToId
+          ? "Replying on Figma"
+          : "Posting Figma comment",
         subtitle: message.slice(0, 80) + (message.length > 80 ? "…" : ""),
         style: "box",
         color: "accent",

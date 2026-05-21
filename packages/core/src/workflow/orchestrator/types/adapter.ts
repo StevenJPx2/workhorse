@@ -16,7 +16,12 @@ export type AgentHarness = string;
 /**
  * Agent lifecycle states.
  */
-export type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed";
+export type AgentState =
+  | "starting"
+  | "running"
+  | "stopping"
+  | "stopped"
+  | "crashed";
 
 /**
  * Model information for UI display.

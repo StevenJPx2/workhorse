@@ -89,7 +89,8 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
       {/* Auth type indicator */}
       <box paddingLeft={3} paddingTop={1}>
         <text fg={theme.colors.dim}>
-          {getAuthTypeLabel()} {props.plugin.status.error && `(${props.plugin.status.error})`}
+          {getAuthTypeLabel()}{" "}
+          {props.plugin.status.error && `(${props.plugin.status.error})`}
         </text>
       </box>
 
@@ -104,7 +105,9 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
       <Show when={isCurrentPlugin()}>
         <box paddingLeft={3} paddingTop={1} flexDirection="column">
           <Show when={props.flowState.phase === "waiting-browser"}>
-            <text fg={theme.colors.warning}>Waiting for browser authentication...</text>
+            <text fg={theme.colors.warning}>
+              Waiting for browser authentication...
+            </text>
           </Show>
           <Show when={props.flowState.phase === "waiting-cli"}>
             <text fg={theme.colors.warning}>
@@ -113,7 +116,10 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
             <box paddingTop={1}>
               <text fg={theme.colors.dim}>
                 Run in another terminal:{" "}
-                {(props.plugin.auth as { config: { authCommand: string } }).config.authCommand}
+                {
+                  (props.plugin.auth as { config: { authCommand: string } })
+                    .config.authCommand
+                }
               </text>
             </box>
           </Show>
@@ -123,7 +129,11 @@ export function AuthPluginCard(props: AuthPluginCardProps) {
           <Show when={props.flowState.phase === "success"}>
             <text fg={theme.colors.success}>Authentication successful!</text>
           </Show>
-          <Show when={props.flowState.phase === "error" && "error" in props.flowState}>
+          <Show
+            when={
+              props.flowState.phase === "error" && "error" in props.flowState
+            }
+          >
             <text fg={theme.colors.error}>
               Error: {(props.flowState as { error: string }).error}
             </text>

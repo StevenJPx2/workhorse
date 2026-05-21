@@ -31,7 +31,9 @@ export interface RenderedActivity {
  * Playwright renderer for TUI display.
  * Handles Playwright tool calls; returns null for other inputs.
  */
-export function playwrightRenderer(input: ActivityInput): RenderedActivity | null {
+export function playwrightRenderer(
+  input: ActivityInput,
+): RenderedActivity | null {
   if (input.kind !== "tool") return null;
   if (!input.tool.startsWith("playwright_")) return null;
 
@@ -105,7 +107,9 @@ export function playwrightRenderer(input: ActivityInput): RenderedActivity | nul
         icon: "⚡",
         title: "Evaluate JS",
         subtitle:
-          expression && expression.length > 40 ? `${expression.slice(0, 40)}...` : expression,
+          expression && expression.length > 40
+            ? `${expression.slice(0, 40)}...`
+            : expression,
         style: "inline",
       };
     }

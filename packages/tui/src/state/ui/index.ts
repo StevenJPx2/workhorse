@@ -44,7 +44,9 @@ const [shuttingDown, setShuttingDown] = createSignal(false);
 
 // Spawning state - tracks issues that are currently being spawned
 // Maps issueId -> Issue for showing loading state in agent view
-const [spawningIssues, setSpawningIssues] = createSignal<Map<string, Issue>>(new Map());
+const [spawningIssues, setSpawningIssues] = createSignal<Map<string, Issue>>(
+  new Map(),
+);
 
 // Shutdown callback - set by index.tsx, called on quit
 let shutdownCallback: (() => Promise<void>) | null = null;

@@ -30,7 +30,9 @@ describe("PollingMonitor", () => {
   });
 
   function createMonitor(
-    options: Partial<PollingMonitorOptions> & { poll?: PollingMonitorOptions["poll"] } = {},
+    options: Partial<PollingMonitorOptions> & {
+      poll?: PollingMonitorOptions["poll"];
+    } = {},
   ): PollingMonitor {
     return new PollingMonitor({
       id: options.id ?? "test-monitor",

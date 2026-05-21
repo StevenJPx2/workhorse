@@ -74,7 +74,11 @@ export default definePlugin({
 Tools are functions that agents can invoke. They have a JSON Schema for parameters:
 
 ```typescript
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
+import type {
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "workhorse-core";
 
 const myTool: OrchestratorTool = {
   name: "my_action",
@@ -86,7 +90,10 @@ const myTool: OrchestratorTool = {
     },
     required: ["param"],
   },
-  execute: async (args: unknown, ctx: ToolExecutionContext): Promise<ToolResult> => {
+  execute: async (
+    args: unknown,
+    ctx: ToolExecutionContext,
+  ): Promise<ToolResult> => {
     const { param } = args as { param: string };
 
     // ctx provides: issueId, worktreePath, db, hooks, memory
@@ -165,7 +172,11 @@ const piModels = orchestrator.getModelsForAdapter("pi-coding-agent");
 const available = orchestrator.getAvailableModelsForAdapter("pi-coding-agent");
 
 // Find a specific model
-const model = orchestrator.findModelInAdapter("pi", "anthropic", "claude-sonnet-4");
+const model = orchestrator.findModelInAdapter(
+  "pi",
+  "anthropic",
+  "claude-sonnet-4",
+);
 ```
 
 ## Agent Lifecycle

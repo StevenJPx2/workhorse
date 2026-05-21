@@ -128,9 +128,9 @@ cloud_id = "company.atlassian.net"
     const config = loadConfig(paths);
 
     expect(config.plugins.disabled).toEqual([]);
-    expect((config.plugins["jira"] as Record<string, unknown>)?.["cloudId"]).toBe(
-      "company.atlassian.net",
-    );
+    expect(
+      (config.plugins["jira"] as Record<string, unknown>)?.["cloudId"],
+    ).toBe("company.atlassian.net");
   });
 
   it("applies defaults for missing sections", async () => {
@@ -164,32 +164,35 @@ harness = "custom"
     expect(config.ui.theme).toBe(DEFAULT_CONFIG.ui.theme);
   });
 
-  it.fails("TODO: loadConfig should throw on schema-invalid values", async () => {
-    // Currently loadConfig doesn't validate the merged config against the schema.
-    // Future enhancement: throw a meaningful error when config values are invalid.
-    const { loadConfig } = await import("../load.ts");
+  it.fails(
+    "TODO: loadConfig should throw on schema-invalid values",
+    async () => {
+      // Currently loadConfig doesn't validate the merged config against the schema.
+      // Future enhancement: throw a meaningful error when config values are invalid.
+      const { loadConfig } = await import("../load.ts");
 
-    writeTempToml(
-      tmpDir,
-      ".workhorse.toml",
-      `
+      writeTempToml(
+        tmpDir,
+        ".workhorse.toml",
+        `
 [behavior]
 poll_interval = -5000
 auto_resume = "not-a-boolean"
 `,
-    );
+      );
 
-    const paths = {
-      globalDir: tmpDir,
-      globalConfig: join(tmpDir, "nonexistent.toml"),
-      projectConfig: join(tmpDir, ".workhorse.toml"),
-      database: join(tmpDir, "workhorse.db"),
-      memoryDatabase: join(tmpDir, "memory.db"),
-      worktreesRoot: join(tmpDir, "worktrees"),
-      attachmentsDir: join(tmpDir, "attachments"),
-    };
+      const paths = {
+        globalDir: tmpDir,
+        globalConfig: join(tmpDir, "nonexistent.toml"),
+        projectConfig: join(tmpDir, ".workhorse.toml"),
+        database: join(tmpDir, "workhorse.db"),
+        memoryDatabase: join(tmpDir, "memory.db"),
+        worktreesRoot: join(tmpDir, "worktrees"),
+        attachmentsDir: join(tmpDir, "attachments"),
+      };
 
-    // This should throw a validation error
-    expect(() => loadConfig(paths)).toThrow();
-  });
+      // This should throw a validation error
+      expect(() => loadConfig(paths)).toThrow();
+    },
+  );
 });

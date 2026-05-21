@@ -14,8 +14,14 @@ class MemoryService {
 
   // L1: context.md
   readSessionMemory(worktreePath: string): Promise<SessionMemory | null>;
-  writeSessionMemory(worktreePath: string, memory: SessionMemory): Promise<void>;
-  createSessionMemory(worktreePath: string, issue: Issue): Promise<SessionMemory>;
+  writeSessionMemory(
+    worktreePath: string,
+    memory: SessionMemory,
+  ): Promise<void>;
+  createSessionMemory(
+    worktreePath: string,
+    issue: Issue,
+  ): Promise<SessionMemory>;
   hasSessionMemory(worktreePath: string): Promise<boolean>;
 
   // L2: retriv
@@ -75,7 +81,12 @@ type MemoryDocumentType =
 
 interface MemorySearchOptions {
   limit?: number;
-  filter?: { issueId?: string; type?: MemoryDocumentType; source?: string; [key: string]: unknown };
+  filter?: {
+    issueId?: string;
+    type?: MemoryDocumentType;
+    source?: string;
+    [key: string]: unknown;
+  };
   returnContent?: boolean;
 }
 ```

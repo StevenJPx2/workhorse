@@ -8,7 +8,7 @@ export {
   AttachmentService,
   type DownloadOptions,
   type StoredAttachment,
-} from "./attachment/index.ts";
+} from "./attachment";
 
 // Memory service
 export {
@@ -27,7 +27,7 @@ export {
   type SessionEntry,
   type SessionMemory,
   serializeSessionMemory,
-} from "./memory/index.ts";
+} from "./memory";
 
 // Monitor service
 export {
@@ -38,4 +38,4 @@ export {
   type MonitorResult,
   type MonitorStatus,
   type PollingMonitorOptions,
-} from "./monitor/index.ts";
+} from "./monitor";

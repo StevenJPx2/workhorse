@@ -23,12 +23,16 @@ export interface CreateIssuesOptions {
 export function createIssues(options?: CreateIssuesOptions): Accessor<Issue[]> {
   const { hooks, tracker, paths } = useWorkhorseContext();
   const [issues, setIssues] = createSignal<Issue[]>([]);
-  const [detectedRepo, setDetectedRepo] = createSignal<string | undefined>(undefined);
+  const [detectedRepo, setDetectedRepo] = createSignal<string | undefined>(
+    undefined,
+  );
 
   onMount(async () => {
     // If auto mode, detect repository from git remote
     if (options?.repository === "auto") {
-      setDetectedRepo(await getRepoIdentifier(paths.worktreesRoot.replace(/-worktrees$/, "")));
+      setDetectedRepo(
+        await getRepoIdentifier(paths.worktreesRoot.replace(/-worktrees$/, "")),
+      );
     }
 
     // Fetch function - handles filtering logic

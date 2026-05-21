@@ -93,7 +93,10 @@ describe("memoryWriteToolImpl", () => {
     it("uses 'Session checkpoint' when no summary items given but other data present", async () => {
       mockRead.mockResolvedValue({ latestStatus: "planning" });
 
-      await memoryWriteToolImpl({ learnings: ["Learned something"] }, mockContext);
+      await memoryWriteToolImpl(
+        { learnings: ["Learned something"] },
+        mockContext,
+      );
 
       expect(mockAppendSession).toHaveBeenCalledWith(
         expect.objectContaining({ summary: ["Session checkpoint"] }),
@@ -123,7 +126,10 @@ describe("memoryWriteToolImpl", () => {
     });
 
     it("allows updating patterns alone without a session entry", async () => {
-      const result = await memoryWriteToolImpl({ patterns: ["Pattern A"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { patterns: ["Pattern A"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(mockAppendSession).not.toHaveBeenCalled();
@@ -159,17 +165,26 @@ describe("memoryWriteToolImpl", () => {
       // After create(), read returns the created memory
       mockRead.mockResolvedValue({ latestStatus: "implementing" });
 
-      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { summary: ["Did work"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
-      expect(mockCreate).toHaveBeenCalledWith("TEST-123: Test Issue", "implementing");
+      expect(mockCreate).toHaveBeenCalledWith(
+        "TEST-123: Test Issue",
+        "implementing",
+      );
       expect(mockAppendSession).toHaveBeenCalled();
     });
 
     it("auto-creates then writes patterns", async () => {
       mockL1Exists.mockReturnValue(false);
 
-      const result = await memoryWriteToolImpl({ patterns: ["Pattern A"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { patterns: ["Pattern A"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(mockCreate).toHaveBeenCalled();
@@ -179,9 +194,14 @@ describe("memoryWriteToolImpl", () => {
 
   describe("error handling", () => {
     it("returns error when L1 context not registered (no worktree)", async () => {
-      (mockContext.memory.l1.get as ReturnType<typeof vi.fn>).mockReturnValue(null);
+      (mockContext.memory.l1.get as ReturnType<typeof vi.fn>).mockReturnValue(
+        null,
+      );
 
-      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { summary: ["Did work"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("No worktree registered");
@@ -191,7 +211,10 @@ describe("memoryWriteToolImpl", () => {
       mockL1Exists.mockReturnValue(false);
       mockGetByExternalId.mockResolvedValue(null);
 
-      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { summary: ["Did work"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("not found in database");
@@ -200,7 +223,10 @@ describe("memoryWriteToolImpl", () => {
     it("returns error when read fails", async () => {
       mockRead.mockResolvedValue(null);
 
-      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { summary: ["Did work"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Failed to read session memory");
@@ -210,7 +236,10 @@ describe("memoryWriteToolImpl", () => {
       mockRead.mockResolvedValue({ latestStatus: "implementing" });
       mockAppendSession.mockRejectedValue(new Error("Write failed"));
 
-      const result = await memoryWriteToolImpl({ summary: ["Did work"] }, mockContext);
+      const result = await memoryWriteToolImpl(
+        { summary: ["Did work"] },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Write failed");

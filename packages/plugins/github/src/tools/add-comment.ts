@@ -31,8 +31,14 @@ export function createAddCommentTool(
     schema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "Repository owner (e.g., 'octocat')" },
-        repo: { type: "string", description: "Repository name (e.g., 'hello-world')" },
+        owner: {
+          type: "string",
+          description: "Repository owner (e.g., 'octocat')",
+        },
+        repo: {
+          type: "string",
+          description: "Repository name (e.g., 'hello-world')",
+        },
         number: { type: "number", description: "Issue or PR number" },
         body: { type: "string", description: "Comment body in markdown" },
         attachments: {
@@ -40,7 +46,10 @@ export function createAddCommentTool(
           items: {
             type: "object",
             properties: {
-              path: { type: "string", description: "Local file path to attachment" },
+              path: {
+                type: "string",
+                description: "Local file path to attachment",
+              },
               alt: { type: "string", description: "Alt text for the image" },
             },
             required: ["path"],
@@ -74,7 +83,9 @@ export function createAddCommentTool(
             try {
               const stats = readFileSync(att.path);
               const sizeKB = Math.round(stats.length / 1024);
-              attachmentNotes.push(`- **${filename}** (${sizeKB}KB) - ${att.alt || "attachment"}`);
+              attachmentNotes.push(
+                `- **${filename}** (${sizeKB}KB) - ${att.alt || "attachment"}`,
+              );
             } catch {
               attachmentNotes.push(
                 `- **${filename}** - ${att.alt || "attachment"} (file not found)`,
@@ -90,10 +101,21 @@ export function createAddCommentTool(
           }
         }
 
-        await client.addComment(owner, repo, number, withWorkhorseFooter(finalBody));
-        return { success: true, output: `Comment added to ${owner}/${repo}#${number}` };
+        await client.addComment(
+          owner,
+          repo,
+          number,
+          withWorkhorseFooter(finalBody),
+        );
+        return {
+          success: true,
+          output: `Comment added to ${owner}/${repo}#${number}`,
+        };
       } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   };

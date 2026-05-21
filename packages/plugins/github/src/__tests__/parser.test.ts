@@ -5,7 +5,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { GitHubClient } from "../client.ts";
-import { canParseGitHub, createGitHubParserOptions, parseGitHubRef } from "../parser.ts";
+import {
+  canParseGitHub,
+  createGitHubParserOptions,
+  parseGitHubRef,
+} from "../parser.ts";
 
 describe("parseGitHubRef", () => {
   it("parses short form owner/repo#number", () => {
@@ -19,7 +23,9 @@ describe("parseGitHubRef", () => {
   });
 
   it("parses GitHub issue URL", () => {
-    const ref = parseGitHubRef("https://github.com/octocat/hello-world/issues/42");
+    const ref = parseGitHubRef(
+      "https://github.com/octocat/hello-world/issues/42",
+    );
     expect(ref).toEqual({
       owner: "octocat",
       repo: "hello-world",
@@ -29,7 +35,9 @@ describe("parseGitHubRef", () => {
   });
 
   it("parses GitHub PR URL", () => {
-    const ref = parseGitHubRef("https://github.com/octocat/hello-world/pull/123");
+    const ref = parseGitHubRef(
+      "https://github.com/octocat/hello-world/pull/123",
+    );
     expect(ref).toEqual({
       owner: "octocat",
       repo: "hello-world",
@@ -96,7 +104,11 @@ describe("createGitHubParserOptions", () => {
     expect(options.canParse("octocat/hello-world#42")).toBe(true);
 
     const parsed = await options.parse("octocat/hello-world#42");
-    expect(mockClient.fetchIssue).toHaveBeenCalledWith("octocat", "hello-world", 42);
+    expect(mockClient.fetchIssue).toHaveBeenCalledWith(
+      "octocat",
+      "hello-world",
+      42,
+    );
     expect(parsed.externalId).toBe("octocat/hello-world#42");
     expect(parsed.source).toBe("github");
     expect(parsed.title).toBe("Test issue");
@@ -120,7 +132,9 @@ describe("createGitHubParserOptions", () => {
     } as unknown as GitHubClient;
 
     const options = createGitHubParserOptions(mockClient);
-    const parsed = await options.parse("https://github.com/org/project/issues/123");
+    const parsed = await options.parse(
+      "https://github.com/org/project/issues/123",
+    );
     expect(mockClient.fetchIssue).toHaveBeenCalledWith("org", "project", 123);
     expect(parsed.externalId).toBe("org/project#123");
   });

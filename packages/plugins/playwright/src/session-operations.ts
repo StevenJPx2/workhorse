@@ -14,7 +14,7 @@ import {
   getElementInfo,
   getPageContent,
   takeScreenshot,
-} from "./browser-connection.ts";
+} from "./page-actions.ts";
 import type { PlaywrightSessionManager } from "./session-manager.ts";
 import type { ElementInfo, ScreenshotOptions } from "./types.ts";
 
@@ -41,7 +41,10 @@ export async function screenshot(
     });
     return { success: true, path: outputPath };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -54,10 +57,15 @@ export async function click(
   const state = manager.getSessionState(issueId);
   if ("error" in state) return { success: false, error: state.error };
   try {
-    await clickElement(state.connection, selector, { timeout: manager.getDefaultTimeout() });
+    await clickElement(state.connection, selector, {
+      timeout: manager.getDefaultTimeout(),
+    });
     return { success: true };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -71,10 +79,15 @@ export async function fill(
   const state = manager.getSessionState(issueId);
   if ("error" in state) return { success: false, error: state.error };
   try {
-    await fillField(state.connection, selector, value, { timeout: manager.getDefaultTimeout() });
+    await fillField(state.connection, selector, value, {
+      timeout: manager.getDefaultTimeout(),
+    });
     return { success: true };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -88,7 +101,8 @@ export async function getElement(
   if ("error" in state) return { success: false, error: state.error };
   try {
     const info = await getElementInfo(state.connection, selector);
-    if (!info.found) return { success: false, error: `Element not found: ${selector}` };
+    if (!info.found)
+      return { success: false, error: `Element not found: ${selector}` };
     return {
       success: true,
       element: {
@@ -99,7 +113,10 @@ export async function getElement(
       },
     };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -113,7 +130,10 @@ export async function getContent(
   try {
     return { success: true, content: await getPageContent(state.connection) };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -126,8 +146,14 @@ export async function evaluate(
   const state = manager.getSessionState(issueId);
   if ("error" in state) return { success: false, error: state.error };
   try {
-    return { success: true, result: await evaluateScript(state.connection, expression) };
+    return {
+      success: true,
+      result: await evaluateScript(state.connection, expression),
+    };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }

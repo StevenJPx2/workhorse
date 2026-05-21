@@ -16,7 +16,9 @@ async function cleanup(name: string): Promise<void> {
   }
 }
 
-async function startSession(options: HarnessOptions): Promise<{ name: string }> {
+async function startSession(
+  options: HarnessOptions,
+): Promise<{ name: string }> {
   const name = `jt-test-${Math.random().toString(36).slice(2, 10)}`;
 
   const raw =
@@ -37,7 +39,9 @@ async function takeSnapshot(name: string): Promise<string> {
 /**
  * Run the TUI and capture a snapshot.
  */
-export async function captureSnapshot(options: HarnessOptions = {}): Promise<Snapshot> {
+export async function captureSnapshot(
+  options: HarnessOptions = {},
+): Promise<Snapshot> {
   const { name } = await startSession(options);
 
   try {

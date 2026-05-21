@@ -94,7 +94,10 @@ const rule = {
       let chain = "";
 
       while (current) {
-        const suffix = getOperationSuffix(current, current === startNode ? awaitNode : current);
+        const suffix = getOperationSuffix(
+          current,
+          current === startNode ? awaitNode : current,
+        );
 
         if (suffix === null) {
           // Check if current's parent continues the chain

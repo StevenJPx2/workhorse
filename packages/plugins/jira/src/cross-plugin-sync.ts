@@ -10,7 +10,11 @@
  * @module workhorse-plugin-jira/cross-plugin-sync
  */
 
-import { type Database, type WorkhorseContext, withWorkhorseFooter } from "workhorse-core";
+import {
+  type Database,
+  type WorkhorseContext,
+  withWorkhorseFooter,
+} from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";
 // Import Jira hooks for emitting
@@ -70,7 +74,9 @@ export function registerCrossPluginSync(
       const reporterAccountId = jiraIssue.fields.reporter?.accountId;
 
       // Get available transitions and find "In QA" or similar
-      const qaTransition = findQATransition(await client.getTransitions(ticketKey));
+      const qaTransition = findQATransition(
+        await client.getTransitions(ticketKey),
+      );
 
       // Transition to QA status if available
       if (qaTransition) {
@@ -122,7 +128,11 @@ export function registerCrossPluginSync(
  * Checks for common naming patterns across different Jira workflows.
  */
 function findQATransition(
-  transitions: Array<{ id: string; name: string; to: { name: string; id: string } }>,
+  transitions: Array<{
+    id: string;
+    name: string;
+    to: { name: string; id: string };
+  }>,
 ): { id: string; name: string; to: { name: string; id: string } } | undefined {
   // Common QA-related status names (case-insensitive)
   const qaPatterns = [

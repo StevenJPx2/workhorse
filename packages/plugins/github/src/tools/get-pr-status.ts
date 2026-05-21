@@ -19,8 +19,14 @@ export function createGetPRStatusTool(client: GitHubClient): OrchestratorTool {
     schema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "Repository owner (e.g., 'octocat')" },
-        repo: { type: "string", description: "Repository name (e.g., 'hello-world')" },
+        owner: {
+          type: "string",
+          description: "Repository owner (e.g., 'octocat')",
+        },
+        repo: {
+          type: "string",
+          description: "Repository name (e.g., 'hello-world')",
+        },
         number: { type: "number", description: "PR number" },
       },
       required: ["owner", "repo", "number"],
@@ -49,15 +55,21 @@ export function createGetPRStatusTool(client: GitHubClient): OrchestratorTool {
               mergeableState: pr.mergeable_state,
               reviews: {
                 approved: reviews.filter((r) => r.state === "APPROVED").length,
-                changesRequested: reviews.filter((r) => r.state === "CHANGES_REQUESTED").length,
-                commented: reviews.filter((r) => r.state === "COMMENTED").length,
+                changesRequested: reviews.filter(
+                  (r) => r.state === "CHANGES_REQUESTED",
+                ).length,
+                commented: reviews.filter((r) => r.state === "COMMENTED")
+                  .length,
                 pending: reviews.filter((r) => r.state === "PENDING").length,
               },
               checks: {
                 total: checkRuns.length,
-                passing: checkRuns.filter((c) => c.conclusion === "success").length,
-                failing: checkRuns.filter((c) => c.conclusion === "failure").length,
-                pending: checkRuns.filter((c) => c.status !== "completed").length,
+                passing: checkRuns.filter((c) => c.conclusion === "success")
+                  .length,
+                failing: checkRuns.filter((c) => c.conclusion === "failure")
+                  .length,
+                pending: checkRuns.filter((c) => c.status !== "completed")
+                  .length,
               },
               additions: pr.additions,
               deletions: pr.deletions,
@@ -68,7 +80,10 @@ export function createGetPRStatusTool(client: GitHubClient): OrchestratorTool {
           ),
         };
       } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   };

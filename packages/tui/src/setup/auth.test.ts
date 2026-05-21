@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Plugin } from "workhorse-core";
 
-import { checkAllPluginsAuth, checkPluginAuth, getPluginsNeedingAuth } from "./auth";
+import {
+  checkAllPluginsAuth,
+  checkPluginAuth,
+  getPluginsNeedingAuth,
+} from "./auth";
 
-function mockPlugin(authType: "oauth" | "external" | "none", authenticated: boolean): Plugin {
+function mockPlugin(
+  authType: "oauth" | "external" | "none",
+  authenticated: boolean,
+): Plugin {
   let auth: Plugin["auth"];
   if (authType === "none") {
     auth = { type: "none" };
@@ -30,7 +37,11 @@ function mockPlugin(authType: "oauth" | "external" | "none", authenticated: bool
   }
 
   return {
-    manifest: { name: `test-${authType}`, version: "1.0.0", description: "Test plugin" },
+    manifest: {
+      name: `test-${authType}`,
+      version: "1.0.0",
+      description: "Test plugin",
+    },
     auth,
     [Symbol.for("workhorse.plugin")]: true,
   } as unknown as Plugin;
@@ -65,7 +76,9 @@ describe("checkPluginAuth", () => {
   it("returns unauthenticated when isAuthenticated throws", async () => {
     const plugin = mockPlugin("oauth", false);
     if (plugin.auth && plugin.auth.type === "oauth") {
-      plugin.auth.isAuthenticated = vi.fn().mockRejectedValue(new Error("Keychain locked"));
+      plugin.auth.isAuthenticated = vi
+        .fn()
+        .mockRejectedValue(new Error("Keychain locked"));
     }
 
     const result = await checkPluginAuth(plugin);
@@ -115,7 +128,9 @@ describe("getPluginsNeedingAuth", () => {
   it("includes error in status when auth check fails", async () => {
     const plugin = mockPlugin("oauth", false);
     if (plugin.auth && plugin.auth.type === "oauth") {
-      plugin.auth.isAuthenticated = vi.fn().mockRejectedValue(new Error("Network error"));
+      plugin.auth.isAuthenticated = vi
+        .fn()
+        .mockRejectedValue(new Error("Network error"));
     }
 
     const needsAuth = await getPluginsNeedingAuth([plugin]);

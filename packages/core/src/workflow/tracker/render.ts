@@ -54,7 +54,9 @@ export function renderSearchResults(results: SearchResult[]): string {
 /**
  * Sort context blocks by priority (lower = earlier).
  */
-export function sortContextBlocks(blocks: PromptContextBlock[]): PromptContextBlock[] {
+export function sortContextBlocks(
+  blocks: PromptContextBlock[],
+): PromptContextBlock[] {
   return [...blocks].sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
 }
 
@@ -75,15 +77,24 @@ Please analyze the requirements and begin implementation.`;
  * Render tools section for system prompt.
  */
 export function renderToolsSection(tools: OrchestratorTool[]): string {
-  const lines = ["## Workhorse Tools", "", "The following tools are available:", ""];
-  for (const tool of tools) lines.push(`### ${tool.name}`, tool.description, "");
+  const lines = [
+    "## Workhorse Tools",
+    "",
+    "The following tools are available:",
+    "",
+  ];
+  for (const tool of tools)
+    lines.push(`### ${tool.name}`, tool.description, "");
   return lines.join("\n");
 }
 
 /**
  * Build the resume prompt for continuing work.
  */
-export function buildResumePrompt(issue: Issue, sessionMemory?: SessionMemory): string {
+export function buildResumePrompt(
+  issue: Issue,
+  sessionMemory?: SessionMemory,
+): string {
   const parts: string[] = [];
 
   parts.push(`## Resuming Work
@@ -97,7 +108,9 @@ Current status: **${issue.status}**`);
     const { sessions, patterns } = sessionMemory;
 
     if (patterns.length > 0) {
-      parts.push(`### Codebase Patterns\n\n${patterns.map((p) => `- ${p}`).join("\n")}`);
+      parts.push(
+        `### Codebase Patterns\n\n${patterns.map((p) => `- ${p}`).join("\n")}`,
+      );
     }
 
     const lastSession = sessions.at(-1);

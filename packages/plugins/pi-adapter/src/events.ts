@@ -31,10 +31,12 @@ export interface EventHandlerContext {
 }
 
 /** Handle events from the pi session. */
-export function handleSessionEvent(event: AgentSessionEvent, ctx: EventHandlerContext): void {
+export function handleSessionEvent(
+  event: AgentSessionEvent,
+  ctx: EventHandlerContext,
+): void {
   switch (event.type) {
     case "agent_start": {
-      // Agent has started processing - set state to running
       ctx.setState("running");
       break;
     }
@@ -110,7 +112,9 @@ export function createExtensionFromTools(
           const result = await tool.execute(args, execCtx);
           if (!result.success) {
             return {
-              content: [{ type: "text", text: result.error ?? "Tool execution failed" }],
+              content: [
+                { type: "text", text: result.error ?? "Tool execution failed" },
+              ],
               details: {},
               isError: true,
             };
@@ -122,12 +126,10 @@ export function createExtensionFromTools(
             | { type: "image"; data: string; mimeType: string }
           )[] = [];
 
-          // Add text output if present
           if (result.output) {
             content.push({ type: "text", text: result.output });
           }
 
-          // Add images if present (for vision-capable models)
           if (result.images && result.images.length > 0) {
             for (const img of result.images) {
               content.push({

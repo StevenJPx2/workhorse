@@ -30,7 +30,12 @@ describe("getMonitorDisplayInfo", () => {
       monitors: [makeStatus({ id: "ci", type: "polling" })],
       loading: false,
     });
-    expect(result).toEqual({ count: 1, hasErrors: false, pollingCount: 1, eventCount: 0 });
+    expect(result).toEqual({
+      count: 1,
+      hasErrors: false,
+      pollingCount: 1,
+      eventCount: 0,
+    });
   });
 
   it("detects errors when any monitor has error state", () => {
@@ -66,10 +71,13 @@ describe("getMonitorDisplayInfo", () => {
     expect(result?.count).toBe(3);
   });
 
-  it.fails("TODO: test MonitorIndicator component rendering with opentui test renderer", () => {
-    // Terminal UI components require a headless terminal context to render.
-    // Extracted helper logic is covered above; component-level rendering
-    // needs @opentui/solid test utilities which are not yet available.
-    throw new Error("Not implemented");
-  });
+  it.fails(
+    "TODO: test MonitorIndicator component rendering with opentui test renderer",
+    () => {
+      // Terminal UI components require a headless terminal context to render.
+      // Extracted helper logic is covered above; component-level rendering
+      // needs @opentui/solid test utilities which are not yet available.
+      throw new Error("Not implemented");
+    },
+  );
 });

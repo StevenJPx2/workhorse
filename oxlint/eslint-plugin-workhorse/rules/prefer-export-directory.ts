@@ -165,7 +165,10 @@ const rule = {
             name: node.declaration.id.name,
             startLine: lines.start,
             endLine: lines.end,
-            kind: node.declaration.type === "FunctionDeclaration" ? "function" : "class",
+            kind:
+              node.declaration.type === "FunctionDeclaration"
+                ? "function"
+                : "class",
             node,
           });
         }
@@ -174,7 +177,10 @@ const rule = {
       "Program:exit"() {
         // Only count CODE exports (functions, classes, consts) - not types/interfaces
         const codeExports = exports.filter(
-          (exp) => exp.kind === "function" || exp.kind === "class" || exp.kind === "const",
+          (exp) =>
+            exp.kind === "function" ||
+            exp.kind === "class" ||
+            exp.kind === "const",
         );
 
         // Check if we meet thresholds for code exports

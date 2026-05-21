@@ -37,12 +37,18 @@ export function createGetFileTool(client: FigmaClient): OrchestratorTool {
       try {
         const issue = await ctx.db.issues.getByExternalId(ctx.issueId, "figma");
         if (!issue) {
-          return { success: false, error: "This tool only works for Figma-sourced issues." };
+          return {
+            success: false,
+            error: "This tool only works for Figma-sourced issues.",
+          };
         }
 
         const fileKey = issue.externalId.split("#")[0];
         if (!fileKey) {
-          return { success: false, error: "Could not determine Figma file key." };
+          return {
+            success: false,
+            error: "Could not determine Figma file key.",
+          };
         }
 
         const file = await client.fetchFile(fileKey, depth);
@@ -70,12 +76,14 @@ export function createGetFileTool(client: FigmaClient): OrchestratorTool {
                     childCount: f.children?.length ?? 0,
                   })),
               })),
-              components: Object.entries(file.components ?? {}).map(([id, c]) => ({
-                id,
-                key: c.key,
-                name: c.name,
-                description: c.description,
-              })),
+              components: Object.entries(file.components ?? {}).map(
+                ([id, c]) => ({
+                  id,
+                  key: c.key,
+                  name: c.name,
+                  description: c.description,
+                }),
+              ),
               styles: Object.entries(file.styles ?? {}).map(([id, s]) => ({
                 id,
                 key: s.key,

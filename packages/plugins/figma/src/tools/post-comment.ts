@@ -43,21 +43,34 @@ export function createPostCommentTool(client: FigmaClient): OrchestratorTool {
       };
 
       if (!message?.trim()) {
-        return { success: false, error: "message is required and cannot be empty." };
+        return {
+          success: false,
+          error: "message is required and cannot be empty.",
+        };
       }
 
       try {
         const issue = await ctx.db.issues.getByExternalId(ctx.issueId, "figma");
         if (!issue) {
-          return { success: false, error: "This tool only works for Figma-sourced issues." };
+          return {
+            success: false,
+            error: "This tool only works for Figma-sourced issues.",
+          };
         }
 
         const fileKey = issue.externalId.split("#")[0];
         if (!fileKey) {
-          return { success: false, error: "Could not determine Figma file key." };
+          return {
+            success: false,
+            error: "Could not determine Figma file key.",
+          };
         }
 
-        const posted = await client.postComment(fileKey, withWorkhorseFooter(message), replyToId);
+        const posted = await client.postComment(
+          fileKey,
+          withWorkhorseFooter(message),
+          replyToId,
+        );
 
         return {
           success: true,

@@ -1,14 +1,4 @@
-/**
- * Figma prompt enrichment for the PromptEngineer.
- *
- * Hooks `prompt.building` to inject a concise Figma design context block
- * into the agent's system prompt so it has the relevant design information
- * at hand without needing to call `figma_get_file` on every turn.
- *
- * Also injects context for Figma designs linked from other sources (e.g., Jira tickets).
- *
- * @module workhorse-plugin-figma/prompt
- */
+/** Figma prompt enrichment - hooks `prompt.building` to inject design context. */
 
 import type { WorkhorseContext } from "workhorse-core";
 
@@ -17,7 +7,10 @@ import { buildLinkedDesignContextBlocks } from "./cross-plugin.ts";
 import type { FigmaFile, FigmaNode } from "./types.ts";
 
 /** Register prompt enrichment hooks */
-export function registerPromptHooks(ctx: WorkhorseContext, client: FigmaClient): void {
+export function registerPromptHooks(
+  ctx: WorkhorseContext,
+  client: FigmaClient,
+): void {
   ctx.hooks.on("prompt.building", async (buildingCtx) => {
     const issue = await ctx.db.issues.getById(buildingCtx.issueId);
     if (!issue) return;
@@ -31,7 +24,9 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: FigmaClient):
           buildingCtx.contextBlocks.push(
             ...buildFigmaContextBlocks(
               await client.fetchFile(fileKey, 2),
-              issue.externalId.includes("#") ? issue.externalId.split("#")[1] : undefined,
+              issue.externalId.includes("#")
+                ? issue.externalId.split("#")[1]
+                : undefined,
             ),
           );
         } catch {
@@ -50,7 +45,10 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: FigmaClient):
 }
 
 /** Build context blocks to inject into the agent prompt */
-function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefined) {
+function buildFigmaContextBlocks(
+  file: FigmaFile,
+  focusNodeId: string | undefined,
+) {
   const blocks = [];
 
   // --- File overview ---
@@ -96,7 +94,10 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
         title: `Top Frames — ${firstPage.name}`,
         priority: 15,
         content: frames
-          .map((f) => `- **${f.name}** (${f.type})${f.description ? `: ${f.description}` : ""}`)
+          .map(
+            (f) =>
+              `- **${f.name}** (${f.type})${f.description ? `: ${f.description}` : ""}`,
+          )
           .join("\n"),
       });
     }
@@ -110,7 +111,9 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
       title: "Components",
       priority: 20,
       content: componentEntries
-        .map((c) => `- **${c.name}**${c.description ? `: ${c.description}` : ""}`)
+        .map(
+          (c) => `- **${c.name}**${c.description ? `: ${c.description}` : ""}`,
+        )
         .join("\n"),
     });
   }
@@ -123,7 +126,10 @@ function buildFigmaContextBlocks(file: FigmaFile, focusNodeId: string | undefine
       title: "Design Tokens / Styles",
       priority: 25,
       content: styleEntries
-        .map((s) => `- **${s.name}** (${s.styleType})${s.description ? `: ${s.description}` : ""}`)
+        .map(
+          (s) =>
+            `- **${s.name}** (${s.styleType})${s.description ? `: ${s.description}` : ""}`,
+        )
         .join("\n"),
     });
   }

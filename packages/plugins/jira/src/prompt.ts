@@ -12,7 +12,10 @@ import { extractMediaRefsFromAdf } from "./attachments.ts";
 import type { AtlassianClient } from "./client.ts";
 
 /** Register prompt enrichment hooks */
-export function registerPromptHooks(ctx: WorkhorseContext, client: AtlassianClient): void {
+export function registerPromptHooks(
+  ctx: WorkhorseContext,
+  client: AtlassianClient,
+): void {
   // Hook receives PromptBuildingContext directly (issueId is internal UUID)
   ctx.hooks.on("prompt.building", async (buildingCtx) => {
     const issue = await ctx.db.issues.getById(buildingCtx.issueId);
@@ -21,7 +24,9 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: AtlassianClie
     try {
       // Fetch with attachments to show attachment info in prompt
       buildingCtx.contextBlocks.push(
-        ...buildJiraContextBlocks(await client.fetchIssueWithAttachments(issue.externalId)),
+        ...buildJiraContextBlocks(
+          await client.fetchIssueWithAttachments(issue.externalId),
+        ),
       );
     } catch {
       // Silently skip if Jira API fails
@@ -38,8 +43,11 @@ function buildJiraContextBlocks(jiraIssue: {
   const contextBlocks: PromptContextBlock[] = [];
 
   // Build attachment summary with filenames
-  const attachments = (fields.attachment as { filename: string; mimeType: string }[]) ?? [];
-  const imageCount = attachments.filter((a) => a.mimeType?.startsWith("image/")).length;
+  const attachments =
+    (fields.attachment as { filename: string; mimeType: string }[]) ?? [];
+  const imageCount = attachments.filter((a) =>
+    a.mimeType?.startsWith("image/"),
+  ).length;
   let attachmentSummary = "None";
   if (attachments.length > 0) {
     attachmentSummary = `${attachments.length} (${imageCount} images, ${attachments.length - imageCount} other): ${attachments.map((a) => a.filename).join(", ")}`;
@@ -62,7 +70,8 @@ function buildJiraContextBlocks(jiraIssue: {
   });
 
   // Process comments - extract text from ADF and detect embedded media
-  const comments = (fields.comment as { comments: unknown[] } | undefined)?.comments ?? [];
+  const comments =
+    (fields.comment as { comments: unknown[] } | undefined)?.comments ?? [];
   const recentComments = comments.slice(-3);
   let totalCommentMedia = 0;
 
@@ -98,8 +107,10 @@ function buildJiraContextBlocks(jiraIssue: {
   ];
   if (attachments.length > 0 || totalCommentMedia > 0) {
     const parts: string[] = [];
-    if (attachments.length > 0) parts.push(`${attachments.length} issue attachment(s)`);
-    if (totalCommentMedia > 0) parts.push(`${totalCommentMedia} embedded in comments`);
+    if (attachments.length > 0)
+      parts.push(`${attachments.length} issue attachment(s)`);
+    if (totalCommentMedia > 0)
+      parts.push(`${totalCommentMedia} embedded in comments`);
     workflowLines.push(
       `- Use \`jira_get_attachments\` to download and view media (${parts.join(", ")})`,
     );

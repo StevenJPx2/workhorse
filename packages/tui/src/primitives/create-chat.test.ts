@@ -10,7 +10,12 @@
 
 import { createRoot, createSignal } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import type { AgentAdapter, HookEmitter, HarnessOrchestrator, MemoryService } from "workhorse-core";
+import type {
+  AgentAdapter,
+  HookEmitter,
+  HarnessOrchestrator,
+  MemoryService,
+} from "workhorse-core";
 
 import type { WorkhorseContextValue } from "../context/workhorse";
 
@@ -88,16 +93,30 @@ function createChatWithContext(
   ctx: Pick<WorkhorseContextValue, "hooks" | "orchestrator">,
 ) {
   const [messages, setMessages] = createSignal<
-    Array<{ id: string; role: "user" | "agent"; content: string; timestamp: Date }>
+    Array<{
+      id: string;
+      role: "user" | "agent";
+      content: string;
+      timestamp: Date;
+    }>
   >([]);
 
   // Set up agent.output listener
-  const handleOutput = ({ issueId: id, delta }: { issueId: string; delta: string }) => {
+  const handleOutput = ({
+    issueId: id,
+    delta,
+  }: {
+    issueId: string;
+    delta: string;
+  }) => {
     if (id === issueId()) {
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "agent") {
-          return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
+          return [
+            ...prev.slice(0, -1),
+            { ...last, content: last.content + delta },
+          ];
         }
         return [
           ...prev,
@@ -135,7 +154,12 @@ function createChatWithContext(
     // Add user message
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "user" as const, content, timestamp: new Date() },
+      {
+        id: crypto.randomUUID(),
+        role: "user" as const,
+        content,
+        timestamp: new Date(),
+      },
     ]);
 
     // Check agent state
@@ -197,7 +221,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         // Send a message
         await send("Hello agent!");
@@ -230,7 +257,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks); // No adapter
 
         const [getIssueId] = createSignal<string | null>("AM-123");
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello?");
 
@@ -251,7 +281,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello!");
 
@@ -274,11 +307,16 @@ describe("createChat", () => {
       await createRoot(async (dispose) => {
         const hooks = createMockHooks();
         const issueId = "AM-123";
-        const adapter = createMockAdapter(hooks, issueId, { state: "starting" });
+        const adapter = createMockAdapter(hooks, issueId, {
+          state: "starting",
+        });
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello!");
 
@@ -302,7 +340,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello!");
 
@@ -327,12 +368,18 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello!");
 
         // Emit output for a different issue
-        hooks.emit("agent.output", { issueId: "OTHER-456", delta: "Wrong issue" });
+        hooks.emit("agent.output", {
+          issueId: "OTHER-456",
+          delta: "Wrong issue",
+        });
 
         // Should only have user message, no agent response
         expect(messages()).toHaveLength(1);
@@ -349,7 +396,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks);
 
         const [getIssueId] = createSignal<string | null>(null);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Hello!");
 
@@ -370,7 +420,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         await send("Explain something");
 
@@ -395,7 +448,10 @@ describe("createChat", () => {
         const ctx = createMockContext(hooks, adapter, issueId);
 
         const [getIssueId] = createSignal<string | null>(issueId);
-        const { messages, send, cleanup } = createChatWithContext(getIssueId, ctx);
+        const { messages, send, cleanup } = createChatWithContext(
+          getIssueId,
+          ctx,
+        );
 
         // First exchange
         await send("Question 1");

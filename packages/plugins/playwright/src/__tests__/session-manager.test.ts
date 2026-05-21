@@ -17,10 +17,13 @@ vi.mock("../browser-connection.ts", () => ({
   launchBrowser: mockLaunchBrowser,
   closeBrowser: mockCloseBrowser,
   navigateTo: mockNavigateTo,
-  setViewport: mockSetViewport,
   getCurrentUrl: mockGetCurrentUrl,
   hasNavigated: mockHasNavigated,
   addInitScript: mockAddInitScript,
+}));
+
+vi.mock("../page-actions.ts", () => ({
+  setViewport: mockSetViewport,
 }));
 
 // Import after mocking
@@ -125,11 +128,14 @@ describe("PlaywrightSessionManager", () => {
 
       const session = await sessionManager.getOrCreateSession("issue-1");
 
-      expect(mockHooks.emit).toHaveBeenCalledWith("playwright:session.started", {
-        issueId: "issue-1",
-        sessionId: session.id,
-        browserType: "chromium",
-      });
+      expect(mockHooks.emit).toHaveBeenCalledWith(
+        "playwright:session.started",
+        {
+          issueId: "issue-1",
+          sessionId: session.id,
+          browserType: "chromium",
+        },
+      );
     });
 
     it("returns existing session if active", async () => {
@@ -153,7 +159,10 @@ describe("PlaywrightSessionManager", () => {
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
 
-      const session = await sessionManager.getOrCreateSession("issue-1", "firefox");
+      const session = await sessionManager.getOrCreateSession(
+        "issue-1",
+        "firefox",
+      );
 
       expect(session.browserType).toBe("firefox");
       expect(mockLaunchBrowser).toHaveBeenCalledWith(
@@ -219,7 +228,9 @@ describe("PlaywrightSessionManager", () => {
     it("returns error when no session exists", () => {
       const state = sessionManager.getSessionState("issue-1");
 
-      expect(state).toEqual({ error: "No active browser session. Call navigate first." });
+      expect(state).toEqual({
+        error: "No active browser session. Call navigate first.",
+      });
     });
 
     it("returns error when page not navigated", async () => {
@@ -233,7 +244,9 @@ describe("PlaywrightSessionManager", () => {
       await sessionManager.getOrCreateSession("issue-1");
       const state = sessionManager.getSessionState("issue-1");
 
-      expect(state).toEqual({ error: "No page loaded. Call navigate with a URL first." });
+      expect(state).toEqual({
+        error: "No page loaded. Call navigate with a URL first.",
+      });
     });
 
     it("returns session state when ready", async () => {
@@ -260,9 +273,15 @@ describe("PlaywrightSessionManager", () => {
         initScripts: [],
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
-      mockNavigateTo.mockResolvedValue({ url: "https://example.com", title: "Example" });
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
 
-      const result = await sessionManager.navigate("issue-1", "https://example.com");
+      const result = await sessionManager.navigate(
+        "issue-1",
+        "https://example.com",
+      );
 
       expect(result.success).toBe(true);
       expect(result.pageInfo).toEqual({
@@ -278,7 +297,10 @@ describe("PlaywrightSessionManager", () => {
         initScripts: [],
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
-      mockNavigateTo.mockResolvedValue({ url: "https://example.com", title: "Example" });
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
 
       await sessionManager.navigate("issue-1", "https://example.com");
 
@@ -306,7 +328,10 @@ describe("PlaywrightSessionManager", () => {
         initScripts: [],
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
-      mockNavigateTo.mockResolvedValue({ url: "https://example.com", title: "Example" });
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
 
       // Simulate hook adding init script
       mockHooks.emit.mockImplementation((event, ctx) => {
@@ -317,7 +342,10 @@ describe("PlaywrightSessionManager", () => {
 
       await sessionManager.navigate("issue-1", "https://example.com");
 
-      expect(mockAddInitScript).toHaveBeenCalledWith(mockConnection, "window.TEST = true;");
+      expect(mockAddInitScript).toHaveBeenCalledWith(
+        mockConnection,
+        "window.TEST = true;",
+      );
     });
 
     it("handles navigation errors", async () => {
@@ -328,7 +356,10 @@ describe("PlaywrightSessionManager", () => {
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockRejectedValue(new Error("Navigation timeout"));
 
-      const result = await sessionManager.navigate("issue-1", "https://example.com");
+      const result = await sessionManager.navigate(
+        "issue-1",
+        "https://example.com",
+      );
 
       expect(result).toEqual({ success: false, error: "Navigation timeout" });
     });
@@ -339,25 +370,38 @@ describe("PlaywrightSessionManager", () => {
         initScripts: [],
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
-      mockNavigateTo.mockResolvedValue({ url: "https://example.com", title: "Example" });
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
 
       await sessionManager.navigate("issue-1", "https://example.com", {
         waitUntil: "networkidle",
         timeout: 5000,
       });
 
-      expect(mockNavigateTo).toHaveBeenCalledWith(mockConnection, "https://example.com", {
-        waitUntil: "networkidle",
-        timeout: 5000,
-      });
+      expect(mockNavigateTo).toHaveBeenCalledWith(
+        mockConnection,
+        "https://example.com",
+        {
+          waitUntil: "networkidle",
+          timeout: 5000,
+        },
+      );
     });
   });
 
   describe("setViewport", () => {
     it("returns error when no active session", async () => {
-      const result = await sessionManager.setViewport("issue-1", { width: 1920, height: 1080 });
+      const result = await sessionManager.setViewport("issue-1", {
+        width: 1920,
+        height: 1080,
+      });
 
-      expect(result).toEqual({ success: false, error: "No active browser session" });
+      expect(result).toEqual({
+        success: false,
+        error: "No active browser session",
+      });
     });
 
     it("sets viewport and emits event", async () => {
@@ -369,10 +413,16 @@ describe("PlaywrightSessionManager", () => {
       mockSetViewport.mockResolvedValue(undefined);
 
       await sessionManager.getOrCreateSession("issue-1");
-      const result = await sessionManager.setViewport("issue-1", { width: 1920, height: 1080 });
+      const result = await sessionManager.setViewport("issue-1", {
+        width: 1920,
+        height: 1080,
+      });
 
       expect(result).toEqual({ success: true });
-      expect(mockSetViewport).toHaveBeenCalledWith(mockConnection, { width: 1920, height: 1080 });
+      expect(mockSetViewport).toHaveBeenCalledWith(mockConnection, {
+        width: 1920,
+        height: 1080,
+      });
       expect(mockHooks.emit).toHaveBeenCalledWith(
         "playwright:viewport.changed",
         expect.objectContaining({
@@ -429,7 +479,9 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("returns network requests from connection", async () => {
-      const requests = [{ url: "https://api.example.com", method: "GET", status: 200 }];
+      const requests = [
+        { url: "https://api.example.com", method: "GET", status: 200 },
+      ];
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],

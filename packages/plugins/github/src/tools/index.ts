@@ -4,7 +4,11 @@
  * @module workhorse-plugin-github/tools
  */
 
-import type { AttachmentService, Database, OrchestratorTool } from "workhorse-core";
+import type {
+  AttachmentService,
+  Database,
+  OrchestratorTool,
+} from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
 import { createAddCommentTool } from "./add-comment";

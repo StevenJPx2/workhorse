@@ -8,7 +8,12 @@
 
 import { markdownToAdf } from "marklassian";
 
-import type { JiraAttachment, JiraCredentials, JiraIssue, JiraTransition } from "./types.ts";
+import type {
+  JiraAttachment,
+  JiraCredentials,
+  JiraIssue,
+  JiraTransition,
+} from "./types.ts";
 
 export class AtlassianClient {
   private readonly getCredentials: () => Promise<JiraCredentials>;
@@ -43,7 +48,9 @@ export class AtlassianClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Jira API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Jira API error: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json() as Promise<T>;
@@ -58,7 +65,9 @@ export class AtlassianClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Jira API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Jira API error: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json() as Promise<T>;
@@ -73,23 +82,31 @@ export class AtlassianClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Jira API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Jira API error: ${response.status} ${response.statusText}`,
+      );
     }
   }
 
   /** Fetch a Jira issue by key (excludes attachments for performance) */
   async fetchIssue(ticketKey: string): Promise<JiraIssue> {
-    return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`);
+    return this.get<JiraIssue>(
+      `/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`,
+    );
   }
 
   /** Fetch a Jira issue by key with attachments included */
   async fetchIssueWithAttachments(ticketKey: string): Promise<JiraIssue> {
-    return this.get<JiraIssue>(`/issue/${encodeURIComponent(ticketKey)}?fields=*all`);
+    return this.get<JiraIssue>(
+      `/issue/${encodeURIComponent(ticketKey)}?fields=*all`,
+    );
   }
 
   /** Get attachments for an issue */
   async getAttachments(ticketKey: string): Promise<JiraAttachment[]> {
-    return this.fetchIssueWithAttachments(ticketKey).then((r) => r.fields.attachment ?? []);
+    return this.fetchIssueWithAttachments(ticketKey).then(
+      (r) => r.fields.attachment ?? [],
+    );
   }
 
   /** Download attachment content as a Buffer */
@@ -103,7 +120,9 @@ export class AtlassianClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to download attachment: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to download attachment: ${response.status} ${response.statusText}`,
+      );
     }
 
     return Buffer.from(await response.arrayBuffer());
@@ -112,12 +131,18 @@ export class AtlassianClient {
   /** Add a comment to an issue, optionally as a reply to another comment.
    *  The body is markdown; it is converted to Atlassian Document Format (ADF)
    *  automatically because Jira REST API v3 requires ADF for comment bodies. */
-  async addComment(ticketKey: string, body: string, replyToId?: string): Promise<void> {
+  async addComment(
+    ticketKey: string,
+    body: string,
+    replyToId?: string,
+  ): Promise<void> {
     const payload: Record<string, unknown> = {
       body: markdownToAdf(body),
     };
     if (replyToId) {
-      payload.properties = [{ key: "sd.public.comment", value: { internal: false } }];
+      payload.properties = [
+        { key: "sd.public.comment", value: { internal: false } },
+      ];
       payload.parentId = replyToId;
     }
     await this.post(`/issue/${encodeURIComponent(ticketKey)}/comment`, payload);
@@ -131,14 +156,20 @@ export class AtlassianClient {
   }
 
   /** Transition an issue */
-  async transitionIssue(ticketKey: string, transitionId: string): Promise<void> {
+  async transitionIssue(
+    ticketKey: string,
+    transitionId: string,
+  ): Promise<void> {
     await this.post(`/issue/${encodeURIComponent(ticketKey)}/transitions`, {
       transition: { id: transitionId },
     });
   }
 
   /** Edit issue fields */
-  async editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void> {
+  async editIssue(
+    ticketKey: string,
+    fields: Record<string, unknown>,
+  ): Promise<void> {
     await this.put(`/issue/${encodeURIComponent(ticketKey)}`, { fields });
   }
 

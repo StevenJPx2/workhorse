@@ -24,13 +24,19 @@ export function SetupPluginTabs(props: SetupPluginTabsProps) {
         {(plugin, index) => (
           <box
             backgroundColor={
-              index() === props.currentPluginIndex() ? theme.colors.selection : undefined
+              index() === props.currentPluginIndex()
+                ? theme.colors.selection
+                : undefined
             }
             paddingLeft={1}
             paddingRight={1}
           >
             <text
-              fg={index() === props.currentPluginIndex() ? theme.colors.accent : theme.colors.dim}
+              fg={
+                index() === props.currentPluginIndex()
+                  ? theme.colors.accent
+                  : theme.colors.dim
+              }
             >
               {index() === props.currentPluginIndex() ? "▸ " : "  "}
               <b>{plugin.name}</b>

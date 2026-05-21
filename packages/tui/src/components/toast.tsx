@@ -9,14 +9,30 @@ function ToastItem(props: { toast: ToastType }) {
   const style = () => {
     switch (props.toast.type) {
       case "error":
-        return { icon: "✖", color: theme.colors.error, bg: theme.colors.surface };
+        return {
+          icon: "✖",
+          color: theme.colors.error,
+          bg: theme.colors.surface,
+        };
       case "success":
-        return { icon: "✓", color: theme.colors.success, bg: theme.colors.surface };
+        return {
+          icon: "✓",
+          color: theme.colors.success,
+          bg: theme.colors.surface,
+        };
       case "warning":
-        return { icon: "⚠", color: theme.colors.warning, bg: theme.colors.surface };
+        return {
+          icon: "⚠",
+          color: theme.colors.warning,
+          bg: theme.colors.surface,
+        };
       case "info":
       default:
-        return { icon: "ℹ", color: theme.colors.info, bg: theme.colors.surface };
+        return {
+          icon: "ℹ",
+          color: theme.colors.info,
+          bg: theme.colors.surface,
+        };
     }
   };
 
@@ -50,7 +66,13 @@ function ToastItem(props: { toast: ToastType }) {
 export function ToastContainer() {
   return (
     <Show when={ui.toasts().length > 0}>
-      <box position="absolute" bottom={2} right={2} flexDirection="column" zIndex={2000}>
+      <box
+        position="absolute"
+        bottom={2}
+        right={2}
+        flexDirection="column"
+        zIndex={2000}
+      >
         <For each={ui.toasts()}>{(toast) => <ToastItem toast={toast} />}</For>
       </box>
     </Show>

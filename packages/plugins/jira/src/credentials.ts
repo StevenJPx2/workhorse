@@ -3,7 +3,11 @@
  * @module workhorse-plugin-jira/credentials
  */
 
-import { deleteCredential, getCredential, storeCredential } from "workhorse-core";
+import {
+  deleteCredential,
+  getCredential,
+  storeCredential,
+} from "workhorse-core";
 import { z } from "zod/v4";
 
 import type { JiraCredentials } from "./types.ts";
@@ -64,7 +68,11 @@ export async function loadCredentials(): Promise<JiraCredentials | null> {
 
   if (!email || !apiToken || !siteUrl) return null;
 
-  const result = StoredCredentialsSchema.safeParse({ email, apiToken, siteUrl });
+  const result = StoredCredentialsSchema.safeParse({
+    email,
+    apiToken,
+    siteUrl,
+  });
   return result.success ? result.data : null;
 }
 
@@ -91,7 +99,9 @@ export function createCredentialGetter(): () => Promise<JiraCredentials> {
   return async () => {
     const creds = await loadCredentials();
     if (!creds) {
-      throw new Error("Jira credentials not found. Please configure Jira in the setup wizard.");
+      throw new Error(
+        "Jira credentials not found. Please configure Jira in the setup wizard.",
+      );
     }
     return creds;
   };

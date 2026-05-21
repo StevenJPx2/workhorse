@@ -6,7 +6,11 @@ interface Report {
   node: unknown;
 }
 
-function createContext(filename: string, lineCount: number, options?: object[]) {
+function createContext(
+  filename: string,
+  lineCount: number,
+  options?: object[],
+) {
   const reports: Report[] = [];
 
   return {
@@ -54,7 +58,10 @@ function runRule(
       visitor.ExportDefaultDeclaration?.({
         loc,
         declaration: {
-          type: exp.kind === "function" ? "FunctionDeclaration" : "ClassDeclaration",
+          type:
+            exp.kind === "function"
+              ? "FunctionDeclaration"
+              : "ClassDeclaration",
           id: { name: exp.name },
         },
       });
@@ -112,8 +119,18 @@ describe("prefer-export-directory", () => {
     it("reports file with exported functions", () => {
       const exports: MockExport[] = [
         { name: "parseConfig", kind: "function", startLine: 1, endLine: 50 },
-        { name: "validateConfig", kind: "function", startLine: 52, endLine: 100 },
-        { name: "serializeConfig", kind: "function", startLine: 102, endLine: 150 },
+        {
+          name: "validateConfig",
+          kind: "function",
+          startLine: 52,
+          endLine: 100,
+        },
+        {
+          name: "serializeConfig",
+          kind: "function",
+          startLine: 102,
+          endLine: 150,
+        },
         { name: "loadConfig", kind: "function", startLine: 152, endLine: 200 },
       ];
 
@@ -165,7 +182,9 @@ describe("prefer-export-directory", () => {
       expect(reports1).toHaveLength(0);
 
       // With minExports: 3, should report (avg 50 lines > 30)
-      const reports2 = runRule("/project/src/utils.ts", 200, exports, [{ minExports: 3 }]);
+      const reports2 = runRule("/project/src/utils.ts", 200, exports, [
+        { minExports: 3 },
+      ]);
       expect(reports2).toHaveLength(1);
     });
 
@@ -182,7 +201,9 @@ describe("prefer-export-directory", () => {
       expect(reports1).toHaveLength(0);
 
       // With minLines: 150, should report
-      const reports2 = runRule("/project/src/utils.ts", 160, exports, [{ minLines: 150 }]);
+      const reports2 = runRule("/project/src/utils.ts", 160, exports, [
+        { minLines: 150 },
+      ]);
       expect(reports2).toHaveLength(1);
     });
 
@@ -199,7 +220,9 @@ describe("prefer-export-directory", () => {
       expect(reports1).toHaveLength(0);
 
       // With minAvgExportLines: 20, should report
-      const reports2 = runRule("/project/src/utils.ts", 200, exports, [{ minAvgExportLines: 20 }]);
+      const reports2 = runRule("/project/src/utils.ts", 200, exports, [
+        { minAvgExportLines: 20 },
+      ]);
       expect(reports2).toHaveLength(1);
     });
   });
@@ -343,7 +366,12 @@ describe("prefer-export-directory", () => {
         { name: "FooType", kind: "type", startLine: 1, endLine: 40 },
         { name: "BarInterface", kind: "interface", startLine: 42, endLine: 80 },
         { name: "BazType", kind: "type", startLine: 82, endLine: 120 },
-        { name: "QuxInterface", kind: "interface", startLine: 122, endLine: 160 },
+        {
+          name: "QuxInterface",
+          kind: "interface",
+          startLine: 122,
+          endLine: 160,
+        },
       ];
 
       // Types-only file should NOT be flagged
@@ -383,7 +411,13 @@ describe("prefer-export-directory", () => {
   describe("handles default exports", () => {
     it("counts default exported functions", () => {
       const exports: MockExport[] = [
-        { name: "mainFunction", kind: "function", startLine: 1, endLine: 50, isDefault: true },
+        {
+          name: "mainFunction",
+          kind: "function",
+          startLine: 1,
+          endLine: 50,
+          isDefault: true,
+        },
         { name: "helper1", kind: "function", startLine: 52, endLine: 100 },
         { name: "helper2", kind: "function", startLine: 102, endLine: 150 },
         { name: "helper3", kind: "function", startLine: 152, endLine: 200 },

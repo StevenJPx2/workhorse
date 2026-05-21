@@ -17,7 +17,9 @@ export function Setup(props: SetupScreenProps) {
   const theme = getTheme();
   const [currentPluginIndex, setCurrentPluginIndex] = createSignal(0);
   const [currentFieldIndex, setCurrentFieldIndex] = createSignal(0);
-  const [values, setValues] = createSignal<Record<string, Record<string, string>>>({});
+  const [values, setValues] = createSignal<
+    Record<string, Record<string, string>>
+  >({});
   const [inputMode, setInputMode] = createSignal(false);
   const [inputBuffer, setInputBuffer] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
@@ -61,10 +63,19 @@ export function Setup(props: SetupScreenProps) {
       backgroundColor={theme.colors.background}
     >
       <SetupHeader />
-      <SetupPluginTabs plugins={props.plugins} currentPluginIndex={currentPluginIndex} />
+      <SetupPluginTabs
+        plugins={props.plugins}
+        currentPluginIndex={currentPluginIndex}
+      />
 
       {/* Current plugin fields */}
-      <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
+      <box
+        flexDirection="column"
+        paddingTop={2}
+        paddingLeft={2}
+        paddingRight={2}
+        flexGrow={1}
+      >
         <Show when={currentPlugin()}>
           {(plugin: () => SetupPluginConfig) => (
             <For each={plugin().fields}>
@@ -75,7 +86,10 @@ export function Setup(props: SetupScreenProps) {
                   inputMode={inputMode()}
                   inputBuffer={inputBuffer()}
                   fieldValue={
-                    values()[plugin().name]?.[field.key] ?? field.value ?? field.default ?? ""
+                    values()[plugin().name]?.[field.key] ??
+                    field.value ??
+                    field.default ??
+                    ""
                   }
                 />
               )}
@@ -85,7 +99,12 @@ export function Setup(props: SetupScreenProps) {
 
         {/* Error message */}
         <Show when={error()}>
-          <box backgroundColor={theme.colors.error} paddingLeft={2} paddingRight={2} marginTop={2}>
+          <box
+            backgroundColor={theme.colors.error}
+            paddingLeft={2}
+            paddingRight={2}
+            marginTop={2}
+          >
             <text fg={theme.colors.background}>
               <b>⚠ {error()}</b>
             </text>

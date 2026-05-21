@@ -21,7 +21,8 @@ function createContext(filename: string) {
 function parseExports(code: string): Array<{ type: string; source?: string }> {
   // Simple parser for export statements
   const exports: Array<{ type: string; source?: string }> = [];
-  const namedExportMatch = /export\s+(?:type\s+)?{[^}]*}\s+from\s+["']([^"']+)["']/g;
+  const namedExportMatch =
+    /export\s+(?:type\s+)?{[^}]*}\s+from\s+["']([^"']+)["']/g;
   const starExportMatch = /export\s+\*\s+from\s+["']([^"']+)["']/g;
 
   let match;
@@ -41,7 +42,10 @@ function runRule(filename: string, code: string): Report[] {
   const exports = parseExports(code);
 
   for (const exp of exports) {
-    if (exp.type === "ExportNamedDeclaration" && visitor.ExportNamedDeclaration) {
+    if (
+      exp.type === "ExportNamedDeclaration" &&
+      visitor.ExportNamedDeclaration
+    ) {
       visitor.ExportNamedDeclaration({
         source: exp.source ? { value: exp.source } : null,
       });
@@ -53,50 +57,77 @@ function runRule(filename: string, code: string): Report[] {
 
 describe("enforce-barrel-exports", () => {
   it("allows selective exports from non-index files", () => {
-    const reports = runRule("/project/src/index.ts", `export { foo } from "./foo.ts";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export { foo } from "./foo.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 
   it("allows selective exports from files with extensions", () => {
-    const reports = runRule("/project/src/index.ts", `export type { Bar } from "./bar.ts";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export type { Bar } from "./bar.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 
   it("reports when re-exporting from explicit index.ts", () => {
-    const reports = runRule("/project/src/index.ts", `export { foo } from "./config/index.ts";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export { foo } from "./config/index.ts";`,
+    );
     expect(reports).toHaveLength(1);
     expect(reports[0]!.messageId).toBe("useExportStar");
   });
 
   it("reports when re-exporting from index without extension", () => {
-    const reports = runRule("/project/src/index.ts", `export type { Bar } from "./types/index";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export type { Bar } from "./types/index";`,
+    );
     expect(reports).toHaveLength(1);
     expect(reports[0]!.messageId).toBe("useExportStar");
   });
 
   it("reports when re-exporting from directory with trailing slash", () => {
-    const reports = runRule("/project/src/index.ts", `export { a } from "./lib/";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export { a } from "./lib/";`,
+    );
     expect(reports).toHaveLength(1);
     expect(reports[0]!.messageId).toBe("useExportStar");
   });
 
   it("allows export * from barrels", () => {
-    const reports = runRule("/project/src/index.ts", `export * from "./config/index.ts";`);
+    const reports = runRule(
+      "/project/src/index.ts",
+      `export * from "./config/index.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 
   it("ignores non-index files", () => {
-    const reports = runRule("/project/src/utils.ts", `export { foo } from "./other/index.ts";`);
+    const reports = runRule(
+      "/project/src/utils.ts",
+      `export { foo } from "./other/index.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 
   it("ignores node_modules", () => {
-    const reports = runRule("/node_modules/foo/index.ts", `export { a } from "./bar/index.ts";`);
+    const reports = runRule(
+      "/node_modules/foo/index.ts",
+      `export { a } from "./bar/index.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 
   it("ignores dist", () => {
-    const reports = runRule("/dist/index.ts", `export { a } from "./bar/index.ts";`);
+    const reports = runRule(
+      "/dist/index.ts",
+      `export { a } from "./bar/index.ts";`,
+    );
     expect(reports).toHaveLength(0);
   });
 

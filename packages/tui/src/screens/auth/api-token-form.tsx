@@ -59,7 +59,9 @@ export function ApiTokenForm(props: ApiTokenFormProps) {
             <box flexDirection="column" marginBottom={1}>
               {/* Field label with required indicator */}
               <box flexDirection="row">
-                <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                <text
+                  fg={isSelected() ? theme.colors.accent : theme.colors.text}
+                >
                   {isSelected() ? "▸ " : "  "}
                   <b>{field.label}</b>
                   {field.required ? " " : ""}
@@ -80,11 +82,21 @@ export function ApiTokenForm(props: ApiTokenFormProps) {
                   when={isInputMode()}
                   fallback={
                     <box
-                      backgroundColor={isSelected() ? theme.colors.selection : theme.colors.surface}
+                      backgroundColor={
+                        isSelected()
+                          ? theme.colors.selection
+                          : theme.colors.surface
+                      }
                       paddingLeft={1}
                       paddingRight={1}
                     >
-                      <text fg={props.values[field.key] ? theme.colors.info : theme.colors.dim}>
+                      <text
+                        fg={
+                          props.values[field.key]
+                            ? theme.colors.info
+                            : theme.colors.dim
+                        }
+                      >
                         {displayValue(field, index())}
                       </text>
                     </box>
@@ -97,7 +109,9 @@ export function ApiTokenForm(props: ApiTokenFormProps) {
                     paddingRight={1}
                   >
                     <text fg={theme.colors.info}>
-                      {field.secret ? "•".repeat(props.inputBuffer.length) : props.inputBuffer}
+                      {field.secret
+                        ? "•".repeat(props.inputBuffer.length)
+                        : props.inputBuffer}
                     </text>
                     <text fg={theme.colors.accent}>▋</text>
                   </box>
@@ -110,7 +124,12 @@ export function ApiTokenForm(props: ApiTokenFormProps) {
 
       {/* Error message */}
       <Show when={props.error}>
-        <box backgroundColor={theme.colors.error} paddingLeft={2} paddingRight={2} marginTop={2}>
+        <box
+          backgroundColor={theme.colors.error}
+          paddingLeft={2}
+          paddingRight={2}
+          marginTop={2}
+        >
           <text fg={theme.colors.background}>
             <b>⚠ {props.error}</b>
           </text>

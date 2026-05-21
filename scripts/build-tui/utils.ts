@@ -19,7 +19,8 @@ export function copyTreeSitterAssets(tuiDir: string, outdir: string): void {
   const dest = resolve(outdir, "tree-sitter");
   if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
   for (const f of readdirSync(src)) {
-    if ([".wasm", ".scm"].includes(extname(f))) copyFileSync(resolve(src, f), resolve(dest, f));
+    if ([".wasm", ".scm"].includes(extname(f)))
+      copyFileSync(resolve(src, f), resolve(dest, f));
   }
 }
 

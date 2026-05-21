@@ -34,7 +34,8 @@ const rule = {
           !e.endsWith(".test.tsx"),
       );
 
-      const hasIndex = entries.includes("index.ts") || entries.includes("index.tsx");
+      const hasIndex =
+        entries.includes("index.ts") || entries.includes("index.tsx");
 
       if (sourceFiles.length > 1 && !hasIndex) {
         context.report({

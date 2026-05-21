@@ -37,7 +37,10 @@ export class IssueController {
    * Get an issue by its external ID, optionally filtered by source.
    * If source is omitted, returns the first issue matching the externalId.
    */
-  async getByExternalId(externalId: string, source?: string): Promise<Issue | undefined> {
+  async getByExternalId(
+    externalId: string,
+    source?: string,
+  ): Promise<Issue | undefined> {
     return await this.db
       .select()
       .from(issues)
@@ -61,7 +64,10 @@ export class IssueController {
    * @param repository - Repository identifier (e.g., "owner/repo" for GitHub, "PROJ" for Jira)
    */
   async getByRepository(repository: string): Promise<Issue[]> {
-    return this.db.select().from(issues).where(eq(issues.repository, repository));
+    return this.db
+      .select()
+      .from(issues)
+      .where(eq(issues.repository, repository));
   }
 
   /**
@@ -70,13 +76,19 @@ export class IssueController {
   async getByStatus(...statuses: IssueStatus[]): Promise<Issue[]> {
     if (statuses.length === 0) return [];
 
-    return this.db.select().from(issues).where(inArray(issues.status, statuses));
+    return this.db
+      .select()
+      .from(issues)
+      .where(inArray(issues.status, statuses));
   }
 
   /**
    * Update an issue
    */
-  async update(id: string, updates: Partial<Omit<Issue, "id" | "createdAt">>): Promise<Issue> {
+  async update(
+    id: string,
+    updates: Partial<Omit<Issue, "id" | "createdAt">>,
+  ): Promise<Issue> {
     await this.db
       .update(issues)
       .set({ ...updates, updatedAt: new Date() })

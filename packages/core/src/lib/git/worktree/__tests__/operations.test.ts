@@ -60,10 +60,17 @@ describe("syncWorktree", () => {
       .mockResolvedValueOnce(ok()) // fetch
       .mockResolvedValueOnce(ok("Already up to date.")); // ff merge
 
-    const result = await syncWorktree("/repo", "/repo-worktrees/PROJ-123", "main");
+    const result = await syncWorktree(
+      "/repo",
+      "/repo-worktrees/PROJ-123",
+      "main",
+    );
 
     expect(result).toBe(true);
-    expect(mockExecGit).toHaveBeenCalledWith(["git", "fetch", "origin"], "/repo");
+    expect(mockExecGit).toHaveBeenCalledWith(
+      ["git", "fetch", "origin"],
+      "/repo",
+    );
     expect(mockExecGit).toHaveBeenCalledWith(
       ["git", "merge", "--ff-only", "origin/main"],
       "/repo-worktrees/PROJ-123",
@@ -76,7 +83,11 @@ describe("syncWorktree", () => {
       .mockResolvedValueOnce(fail("fatal: Not possible to fast-forward")) // ff merge fails
       .mockResolvedValueOnce(ok("Merge made by the 'ort' strategy.")); // regular merge
 
-    const result = await syncWorktree("/repo", "/repo-worktrees/PROJ-123", "main");
+    const result = await syncWorktree(
+      "/repo",
+      "/repo-worktrees/PROJ-123",
+      "main",
+    );
 
     expect(result).toBe(true);
     expect(mockExecGit).toHaveBeenCalledWith(
@@ -89,10 +100,16 @@ describe("syncWorktree", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockExecGit.mockResolvedValueOnce(fail("network error")); // fetch fails
 
-    const result = await syncWorktree("/repo", "/repo-worktrees/PROJ-123", "main");
+    const result = await syncWorktree(
+      "/repo",
+      "/repo-worktrees/PROJ-123",
+      "main",
+    );
 
     expect(result).toBe(false);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to fetch from origin"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to fetch from origin"),
+    );
     errorSpy.mockRestore();
   });
 
@@ -103,10 +120,16 @@ describe("syncWorktree", () => {
       .mockResolvedValueOnce(fail()) // ff merge fails
       .mockResolvedValueOnce(fail("CONFLICT")); // regular merge fails
 
-    const result = await syncWorktree("/repo", "/repo-worktrees/PROJ-123", "main");
+    const result = await syncWorktree(
+      "/repo",
+      "/repo-worktrees/PROJ-123",
+      "main",
+    );
 
     expect(result).toBe(false);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to sync worktree"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to sync worktree"),
+    );
     errorSpy.mockRestore();
   });
 
@@ -149,7 +172,9 @@ describe("createWorktree — existing worktree", () => {
 
   it("syncs and returns existing worktree when path exists on disk", async () => {
     // getWorktree: worktree list returns a matching entry
-    mockExecGit.mockResolvedValueOnce(ok(porcelainEntry(worktreePath, "feat/PROJ-123"))); // git worktree list
+    mockExecGit.mockResolvedValueOnce(
+      ok(porcelainEntry(worktreePath, "feat/PROJ-123")),
+    ); // git worktree list
     mockExistsSync.mockReturnValue(true); // path exists on disk
 
     // syncWorktree calls: fetch + ff merge
@@ -157,7 +182,12 @@ describe("createWorktree — existing worktree", () => {
       .mockResolvedValueOnce(ok()) // fetch
       .mockResolvedValueOnce(ok("Already up to date.")); // ff merge
 
-    const result = await createWorktree(repoPath, "PROJ-123", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-123",
+      undefined,
+      "main",
+    );
 
     expect(result).not.toBeNull();
     expect(result?.path).toBe(worktreePath);
@@ -165,7 +195,10 @@ describe("createWorktree — existing worktree", () => {
     expect(result?.issueId).toBe("PROJ-123");
 
     // fetch should have been called as part of syncWorktree
-    expect(mockExecGit).toHaveBeenCalledWith(["git", "fetch", "origin"], repoPath);
+    expect(mockExecGit).toHaveBeenCalledWith(
+      ["git", "fetch", "origin"],
+      repoPath,
+    );
     // merge should target the existing worktree directory
     expect(mockExecGit).toHaveBeenCalledWith(
       ["git", "merge", "--ff-only", "origin/main"],
@@ -176,13 +209,20 @@ describe("createWorktree — existing worktree", () => {
   it("continues (doesn't abort) even if sync fails for existing worktree", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    mockExecGit.mockResolvedValueOnce(ok(porcelainEntry(worktreePath, "feat/PROJ-123"))); // git worktree list
+    mockExecGit.mockResolvedValueOnce(
+      ok(porcelainEntry(worktreePath, "feat/PROJ-123")),
+    ); // git worktree list
     mockExistsSync.mockReturnValue(true);
 
     // syncWorktree: fetch fails
     mockExecGit.mockResolvedValueOnce(fail("network error")); // fetch
 
-    const result = await createWorktree(repoPath, "PROJ-123", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-123",
+      undefined,
+      "main",
+    );
 
     // createWorktree still returns the existing worktree even if sync failed
     expect(result).not.toBeNull();
@@ -193,7 +233,9 @@ describe("createWorktree — existing worktree", () => {
 
   it("prunes stale git record and creates fresh worktree when path is missing on disk", async () => {
     // getWorktree: stale record exists
-    mockExecGit.mockResolvedValueOnce(ok(porcelainEntry(worktreePath, "feat/PROJ-123"))); // git worktree list
+    mockExecGit.mockResolvedValueOnce(
+      ok(porcelainEntry(worktreePath, "feat/PROJ-123")),
+    ); // git worktree list
     // existsSync: path NOT on disk
     mockExistsSync
       .mockReturnValueOnce(false) // existing.path check (prune path)
@@ -205,11 +247,22 @@ describe("createWorktree — existing worktree", () => {
       .mockResolvedValueOnce(ok()) // git worktree add -b
       .mockResolvedValueOnce(ok("deadbeef")); // git rev-parse HEAD
 
-    const result = await createWorktree(repoPath, "PROJ-123", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-123",
+      undefined,
+      "main",
+    );
 
     expect(result).not.toBeNull();
-    expect(mockExecGit).toHaveBeenCalledWith(["git", "worktree", "prune"], repoPath);
-    expect(mockExecGit).toHaveBeenCalledWith(["git", "fetch", "origin"], repoPath);
+    expect(mockExecGit).toHaveBeenCalledWith(
+      ["git", "worktree", "prune"],
+      repoPath,
+    );
+    expect(mockExecGit).toHaveBeenCalledWith(
+      ["git", "fetch", "origin"],
+      repoPath,
+    );
   });
 });
 
@@ -238,7 +291,15 @@ describe("createWorktree — new worktree", () => {
     expect(result?.branch).toBe("fix/PROJ-456");
     expect(result?.head).toBe("cafebabe");
     expect(mockExecGit).toHaveBeenCalledWith(
-      ["git", "worktree", "add", "-b", "fix/PROJ-456", worktreePath, "origin/main"],
+      [
+        "git",
+        "worktree",
+        "add",
+        "-b",
+        "fix/PROJ-456",
+        worktreePath,
+        "origin/main",
+      ],
       repoPath,
     );
   });
@@ -253,7 +314,12 @@ describe("createWorktree — new worktree", () => {
       .mockResolvedValueOnce(ok()) // git worktree add (without -b)
       .mockResolvedValueOnce(ok("1a2b3c4d")); // git rev-parse HEAD
 
-    const result = await createWorktree(repoPath, "PROJ-456", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-456",
+      undefined,
+      "main",
+    );
 
     expect(result).not.toBeNull();
     expect(mockExecGit).toHaveBeenCalledWith(
@@ -272,10 +338,17 @@ describe("createWorktree — new worktree", () => {
       .mockResolvedValueOnce(fail("cannot create")) // git worktree add -b fails
       .mockResolvedValueOnce(fail("also fails")); // git worktree add without -b fails
 
-    const result = await createWorktree(repoPath, "PROJ-456", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-456",
+      undefined,
+      "main",
+    );
 
     expect(result).toBeNull();
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to create worktree"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to create worktree"),
+    );
     errorSpy.mockRestore();
   });
 
@@ -285,11 +358,18 @@ describe("createWorktree — new worktree", () => {
     // Orphaned directory on disk
     mockExistsSync.mockReturnValue(true);
 
-    const result = await createWorktree(repoPath, "PROJ-456", undefined, "main");
+    const result = await createWorktree(
+      repoPath,
+      "PROJ-456",
+      undefined,
+      "main",
+    );
 
     expect(result).toBeNull();
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Worktree directory exists but is not registered with git"),
+      expect.stringContaining(
+        "Worktree directory exists but is not registered with git",
+      ),
     );
     errorSpy.mockRestore();
   });
@@ -336,7 +416,10 @@ describe("removeWorktree", () => {
     const result = await removeWorktree(repoPath, "PROJ-123", true);
 
     expect(result).toBe(true);
-    expect(mockExecGit).toHaveBeenCalledWith(["git", "branch", "-D", "feat/PROJ-123"], repoPath);
+    expect(mockExecGit).toHaveBeenCalledWith(
+      ["git", "branch", "-D", "feat/PROJ-123"],
+      repoPath,
+    );
   });
 
   it("returns false and logs when remove fails", async () => {
@@ -348,7 +431,9 @@ describe("removeWorktree", () => {
     const result = await removeWorktree(repoPath, "PROJ-123");
 
     expect(result).toBe(false);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to remove worktree"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to remove worktree"),
+    );
     errorSpy.mockRestore();
   });
 });

@@ -12,7 +12,8 @@ interface UseKeyboardNavOptions {
 
 /** Keyboard navigation handler for the model selector modal. */
 export function useModelSelectorKeyboard(options: UseKeyboardNavOptions) {
-  const { isSearchFocused, setIsSearchFocused, filteredModelsLength, onClose } = options;
+  const { isSearchFocused, setIsSearchFocused, filteredModelsLength, onClose } =
+    options;
 
   useKeyboard((key) => {
     if (ui.modal() !== "model") return;
@@ -44,7 +45,11 @@ export function useModelSelectorKeyboard(options: UseKeyboardNavOptions) {
       }
 
       // Single printable character - just focus search, input will receive the key
-      if (key.sequence && key.sequence.length === 1 && /^[a-zA-Z0-9\-_. ]$/.test(key.sequence)) {
+      if (
+        key.sequence &&
+        key.sequence.length === 1 &&
+        /^[a-zA-Z0-9\-_. ]$/.test(key.sequence)
+      ) {
         setIsSearchFocused(true);
         return;
       }

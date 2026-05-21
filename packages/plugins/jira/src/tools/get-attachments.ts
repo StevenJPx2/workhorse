@@ -43,7 +43,8 @@ export function createGetAttachmentsTool(
       properties: {
         imagesOnly: {
           type: "boolean",
-          description: "If true, only return image attachments (png, jpg, gif, etc.)",
+          description:
+            "If true, only return image attachments (png, jpg, gif, etc.)",
         },
       },
       required: [],
@@ -62,12 +63,15 @@ export function createGetAttachmentsTool(
         }
 
         // Fetch full issue with attachments and comments
-        const jiraIssue = await client.fetchIssueWithAttachments(issue.externalId);
+        const jiraIssue = await client.fetchIssueWithAttachments(
+          issue.externalId,
+        );
         let attachments: JiraAttachment[] = jiraIssue.fields.attachment ?? [];
 
         // Extract media refs from comments
-        const comments = (jiraIssue.fields.comment as { comments: unknown[] } | undefined)
-          ?.comments;
+        const comments = (
+          jiraIssue.fields.comment as { comments: unknown[] } | undefined
+        )?.comments;
         const commentMedia = extractCommentMedia(comments ?? []);
 
         // Filter to images if requested
@@ -83,7 +87,10 @@ export function createGetAttachmentsTool(
 
         // Download attachments to local storage
         const repoIdentifier = issue.repository ?? "unknown";
-        let result: AttachmentProcessResult = { attachments: [], idToPath: new Map() };
+        let result: AttachmentProcessResult = {
+          attachments: [],
+          idToPath: new Map(),
+        };
 
         if (attachments.length > 0) {
           result = await downloadAttachments(
@@ -107,7 +114,10 @@ export function createGetAttachmentsTool(
         };
 
         if (result.attachments.length > 0) {
-          response.directory = attachmentService.getIssueDir(repoIdentifier, issue.id);
+          response.directory = attachmentService.getIssueDir(
+            repoIdentifier,
+            issue.id,
+          );
         }
 
         // Include comment media info if there's embedded media
@@ -152,7 +162,8 @@ function extractCommentMedia(comments: unknown[]): CommentMediaInfo[] {
     if (mediaRefs.length > 0) {
       result.push({
         commentId: String(comment.id ?? "unknown"),
-        author: (comment.author as { displayName: string })?.displayName ?? "Unknown",
+        author:
+          (comment.author as { displayName: string })?.displayName ?? "Unknown",
         mediaCount: mediaRefs.length,
         mediaIds: mediaRefs.map((r) => r.id),
       });

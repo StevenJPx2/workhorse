@@ -87,7 +87,11 @@ const exportNamed = (decl) => ({
 const exportSpecifiers = (names: string[]) => ({
   type: "ExportNamedDeclaration",
   declaration: null,
-  specifiers: names.map((n) => ({ type: "ExportSpecifier", local: id(n), exported: id(n) })),
+  specifiers: names.map((n) => ({
+    type: "ExportSpecifier",
+    local: id(n),
+    exported: id(n),
+  })),
 });
 
 const assignExpr = (name: string, value = literal(1)) => ({
@@ -140,7 +144,10 @@ describe("no-single-use-variable", () => {
   // ── Should report ────────────────────────────────────────────────────────
 
   it("reports a const variable used exactly once in the same scope", () => {
-    const program = makeProgram([constDecl("foo"), callExpr("doSomething", "foo")]);
+    const program = makeProgram([
+      constDecl("foo"),
+      callExpr("doSomething", "foo"),
+    ]);
     const reports = runRule(program);
     expect(reports).toHaveLength(1);
     expect(reports[0]!.message).toContain("foo");
@@ -194,7 +201,10 @@ describe("no-single-use-variable", () => {
   });
 
   it("does not report an exported variable", () => {
-    const program = makeProgram([exportNamed(constDecl("exported")), callExpr("use", "exported")]);
+    const program = makeProgram([
+      exportNamed(constDecl("exported")),
+      callExpr("use", "exported"),
+    ]);
     expect(runRule(program)).toHaveLength(0);
   });
 
@@ -217,12 +227,17 @@ describe("no-single-use-variable", () => {
   });
 
   it("does not report a variable declared inside a loop", () => {
-    const program = makeProgram([forLoop([constDecl("loopVar"), callExpr("use", "loopVar")])]);
+    const program = makeProgram([
+      forLoop([constDecl("loopVar"), callExpr("use", "loopVar")]),
+    ]);
     expect(runRule(program)).toHaveLength(0);
   });
 
   it("does not report destructuring patterns", () => {
-    const program = makeProgram([destructuringDecl(["a", "b"], id("obj")), callExpr("use", "a")]);
+    const program = makeProgram([
+      destructuringDecl(["a", "b"], id("obj")),
+      callExpr("use", "a"),
+    ]);
     expect(runRule(program)).toHaveLength(0);
   });
 
@@ -231,7 +246,9 @@ describe("no-single-use-variable", () => {
       {
         type: "VariableDeclaration",
         kind: "let",
-        declarations: [{ type: "VariableDeclarator", id: id("noInit"), init: null }],
+        declarations: [
+          { type: "VariableDeclarator", id: id("noInit"), init: null },
+        ],
       },
       callExpr("use", "noInit"),
     ]);
@@ -256,6 +273,8 @@ describe("no-single-use-variable", () => {
   // ── Metadata ─────────────────────────────────────────────────────────────
 
   it("has correct rule metadata", () => {
-    expect(rule.meta.docs.description).toContain("declared and used exactly once");
+    expect(rule.meta.docs.description).toContain(
+      "declared and used exactly once",
+    );
   });
 });

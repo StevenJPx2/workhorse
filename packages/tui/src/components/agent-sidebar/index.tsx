@@ -38,7 +38,11 @@ export function AgentSidebar(props: AgentSidebarProps) {
   const isFocused = () => props.focused ?? !ui.inputMode();
 
   return (
-    <box flexDirection="column" width={SIDEBAR_WIDTH} backgroundColor={theme.colors.background}>
+    <box
+      flexDirection="column"
+      width={SIDEBAR_WIDTH}
+      backgroundColor={theme.colors.background}
+    >
       {/* Sidebar header */}
       <box
         backgroundColor={theme.colors.surface}
@@ -57,14 +61,17 @@ export function AgentSidebar(props: AgentSidebarProps) {
       <box flexDirection="column" flexGrow={1} paddingTop={1} overflow="scroll">
         <For each={agents()}>
           {(agent: AgentAdapter, index) => {
-            const isHighlighted = () => isFocused() && index() === selectedIndex();
+            const isHighlighted = () =>
+              isFocused() && index() === selectedIndex();
             const isCurrentAgent = () => agent.issueId === selectedId();
             const state = () => getState(agent.issueId);
 
             return (
               <box
                 onMouseDown={() => onSelect(agent)}
-                backgroundColor={isHighlighted() ? theme.colors.selection : undefined}
+                backgroundColor={
+                  isHighlighted() ? theme.colors.selection : undefined
+                }
                 paddingRight={1}
                 paddingTop={0}
                 paddingBottom={0}
@@ -78,18 +85,35 @@ export function AgentSidebar(props: AgentSidebarProps) {
                 <box flexDirection="column" flexGrow={1}>
                   {/* Row 1: Agent ID with selection indicator */}
                   <box flexDirection="row" justifyContent="space-between">
-                    <text fg={isHighlighted() ? theme.colors.accent : theme.colors.text}>
+                    <text
+                      fg={
+                        isHighlighted()
+                          ? theme.colors.accent
+                          : theme.colors.text
+                      }
+                    >
                       {isHighlighted() ? "▸ " : "  "}
                       <b>{agent.issueId}</b>
                     </text>
-                    <text fg={getStatusColor(state(), theme)}>{getStatusIcon(state())}</text>
+                    <text fg={getStatusColor(state(), theme)}>
+                      {getStatusIcon(state())}
+                    </text>
                   </box>
                   {/* Row 2: Agent state + workflow status */}
-                  <box paddingLeft={2} flexDirection="row" gap={1} flexWrap="no-wrap">
-                    <text fg={getStatusColor(state(), theme)}>{getStatusText(state())}</text>
+                  <box
+                    paddingLeft={2}
+                    flexDirection="row"
+                    gap={1}
+                    flexWrap="no-wrap"
+                  >
+                    <text fg={getStatusColor(state(), theme)}>
+                      {getStatusText(state())}
+                    </text>
                     <Show when={agent.issue.status}>
                       <text fg={theme.colors.dim}>·</text>
-                      <text fg={getWorkflowStatusColor(agent.issue.status, theme)}>
+                      <text
+                        fg={getWorkflowStatusColor(agent.issue.status, theme)}
+                      >
                         {getWorkflowStatusIcon(agent.issue.status)}{" "}
                         {formatWorkflowStatus(agent.issue.status)}
                       </text>

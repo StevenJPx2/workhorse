@@ -91,7 +91,11 @@ Additional helpers for plugins: `parseTomlFile`, `mergeConfigs`, `configToToml`,
 Sensitive values in system keychain via `keytar`, not TOML files.
 
 ```typescript
-function storeCredential(service: string, key: string, value: string): Promise<void>;
+function storeCredential(
+  service: string,
+  key: string,
+  value: string,
+): Promise<void>;
 function getCredential(service: string, key: string): Promise<string | null>;
 function deleteCredential(service: string, key: string): Promise<void>;
 ```

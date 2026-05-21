@@ -3,7 +3,13 @@
  * Listens to issue.status_changed hook for real-time updates.
  */
 
-import { createSignal, onMount, onCleanup, createEffect, type Accessor } from "solid-js";
+import {
+  createSignal,
+  onMount,
+  onCleanup,
+  createEffect,
+  type Accessor,
+} from "solid-js";
 import type { IssueStatus, Issue } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
@@ -47,7 +53,9 @@ export function createIssueStatus(options: CreateIssueStatusOptions) {
         setState({
           status: await tracker
             .fetchAll()
-            .then((r) => r.find((i: Issue) => i.externalId === id)?.status ?? null),
+            .then(
+              (r) => r.find((i: Issue) => i.externalId === id)?.status ?? null,
+            ),
           loading: false,
         });
       } catch {
@@ -91,7 +99,10 @@ export function createIssueStatus(options: CreateIssueStatusOptions) {
           setState({
             status: await tracker
               .fetchAll()
-              .then((r) => r.find((i: Issue) => i.externalId === id)?.status ?? null),
+              .then(
+                (r) =>
+                  r.find((i: Issue) => i.externalId === id)?.status ?? null,
+              ),
             loading: false,
           });
         } catch {

@@ -18,7 +18,9 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
     condition: {
       status: "implementing",
       when: (steerCtx) => {
-        return !steerCtx.toolHistory.some((t: { name: string }) => t.name === "github_open_pr");
+        return !steerCtx.toolHistory.some(
+          (t: { name: string }) => t.name === "github_open_pr",
+        );
       },
     },
     reminder: `You've made code changes but haven't created a PR yet. When ready:
@@ -66,7 +68,12 @@ Note: You must push before creating the PR - the tool does not push automaticall
       status: "in_review",
       when: (steerCtx) =>
         steerCtx.notifications.some(
-          (n: { source: string; title: string; priority: string; status: string }) =>
+          (n: {
+            source: string;
+            title: string;
+            priority: string;
+            status: string;
+          }) =>
             n.source === "github" &&
             n.title.startsWith("PR Review: changes requested") &&
             n.priority === "high" &&

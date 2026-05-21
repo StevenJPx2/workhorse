@@ -7,7 +7,11 @@
  * - load_skill
  */
 
-import type { ActivityColor, ActivityInput, RenderedActivity } from "./types.ts";
+import type {
+  ActivityColor,
+  ActivityInput,
+  RenderedActivity,
+} from "./types.ts";
 
 /** Skill loading renderer for TUI display. */
 export function skillRenderer(input: ActivityInput): RenderedActivity | null {
@@ -23,7 +27,9 @@ export function skillRenderer(input: ActivityInput): RenderedActivity | null {
 }
 
 /** Workhorse tool renderer for TUI display. */
-export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | null {
+export function workhorseToolRenderer(
+  input: ActivityInput,
+): RenderedActivity | null {
   if (input.kind !== "tool") return null;
   if (!input.tool.startsWith("workhorse_")) return null;
 
@@ -60,7 +66,12 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
   }
 
   if (input.tool === "workhorse_acknowledge") {
-    return { icon: "✓", title: "acknowledged notifications", style: "inline", color: "success" };
+    return {
+      icon: "✓",
+      title: "acknowledged notifications",
+      style: "inline",
+      color: "success",
+    };
   }
 
   if (input.tool === "workhorse_memory_search") {
@@ -75,9 +86,12 @@ export function workhorseToolRenderer(input: ActivityInput): RenderedActivity | 
 
   if (input.tool === "workhorse_memory_write") {
     const parts: string[] = [];
-    if (Array.isArray(args.summary) && args.summary.length > 0) parts.push("summary");
-    if (Array.isArray(args.learnings) && args.learnings.length > 0) parts.push("learnings");
-    if (Array.isArray(args.patterns) && args.patterns.length > 0) parts.push("patterns");
+    if (Array.isArray(args.summary) && args.summary.length > 0)
+      parts.push("summary");
+    if (Array.isArray(args.learnings) && args.learnings.length > 0)
+      parts.push("learnings");
+    if (Array.isArray(args.patterns) && args.patterns.length > 0)
+      parts.push("patterns");
     return {
       icon: "💾",
       title: `saved to memory: ${parts.join(", ") || "checkpoint"}`,

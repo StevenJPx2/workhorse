@@ -66,14 +66,19 @@ function AppContent(props: AppProps & { children?: JSX.Element }) {
   };
 
   // Get effective model: TUI selection > config
-  const currentModel = () => ui.selectedModel() || props.config.agent.model || "";
+  const currentModel = () =>
+    ui.selectedModel() || props.config.agent.model || "";
 
   return (
     <box flexDirection="column" width="100%" height="100%">
       {/* Modal layer - rendered first but with higher zIndex to overlay */}
       <Show when={ui.modal() === "spawn" && ui.spawnIssue()}>
         {(issue: () => Issue) => (
-          <SpawnModal issue={issue()} onSpawn={handleSpawn} onClose={ui.closeModal} />
+          <SpawnModal
+            issue={issue()}
+            onSpawn={handleSpawn}
+            onClose={ui.closeModal}
+          />
         )}
       </Show>
       <Show when={ui.modal() === "model"}>

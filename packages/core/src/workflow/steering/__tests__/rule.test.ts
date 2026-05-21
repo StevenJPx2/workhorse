@@ -7,7 +7,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { baseIssue, createMockHooks, createRule, defaultSteeringConfig } from "./fixtures.ts";
+import {
+  baseIssue,
+  createMockHooks,
+  createRule,
+  defaultSteeringConfig,
+} from "./fixtures.ts";
 
 describe("SteeringRule", () => {
   beforeEach(() => {
@@ -19,7 +24,10 @@ describe("SteeringRule", () => {
   });
 
   /** Helper to trigger evaluation by emitting idle event and advancing timers */
-  async function triggerEvaluation(hooks: ReturnType<typeof createMockHooks>, issueId = "AM-123") {
+  async function triggerEvaluation(
+    hooks: ReturnType<typeof createMockHooks>,
+    issueId = "AM-123",
+  ) {
     hooks.emit("agent.idle", {
       issueId,
       status: "implementing",
@@ -101,7 +109,10 @@ describe("SteeringRule", () => {
         hooks,
       );
 
-      expect(hooks.on).toHaveBeenCalledWith("test:custom.event", expect.any(Function));
+      expect(hooks.on).toHaveBeenCalledWith(
+        "test:custom.event",
+        expect.any(Function),
+      );
 
       rule.dispose();
     });
@@ -137,7 +148,10 @@ describe("SteeringRule", () => {
 
       await triggerEvaluation(hooks, "OTHER-456");
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -174,9 +188,9 @@ describe("SteeringRule", () => {
       await vi.advanceTimersByTimeAsync(defaultSteeringConfig.debounceMs + 10);
 
       // Should only emit once
-      const reminderCalls = (hooks.emit as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c) => c[0] === "steering.reminder",
-      );
+      const reminderCalls = (
+        hooks.emit as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c) => c[0] === "steering.reminder");
       expect(reminderCalls).toHaveLength(1);
 
       rule.dispose();
@@ -198,7 +212,10 @@ describe("SteeringRule", () => {
 
       await triggerEvaluation(hooks);
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -219,7 +236,10 @@ describe("SteeringRule", () => {
 
       await triggerEvaluation(hooks);
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -240,7 +260,10 @@ describe("SteeringRule", () => {
       // No hook fired, just idle
       await triggerEvaluation(hooks);
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -287,7 +310,10 @@ describe("SteeringRule", () => {
 
       await triggerEvaluation(hooks);
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -365,7 +391,10 @@ describe("SteeringRule", () => {
       await vi.advanceTimersByTimeAsync(defaultSteeringConfig.cooldownMs);
       await triggerEvaluation(hooks);
 
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -387,7 +416,10 @@ describe("SteeringRule", () => {
 
       // Fire once
       await triggerEvaluation(hooks);
-      expect(hooks.emit).toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       // Clear mocks and advance past cooldown
       (hooks.emit as ReturnType<typeof vi.fn>).mockClear();
@@ -398,7 +430,10 @@ describe("SteeringRule", () => {
 
       // Trigger again - should fire because reset cleared fired flag
       await triggerEvaluation(hooks);
-      expect(hooks.emit).toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -424,7 +459,10 @@ describe("SteeringRule", () => {
 
       // Trigger evaluation - should NOT fire because recent hooks cleared
       await triggerEvaluation(hooks);
-      expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+      expect(hooks.emit).not.toHaveBeenCalledWith(
+        "steering.reminder",
+        expect.anything(),
+      );
 
       rule.dispose();
     });
@@ -446,8 +484,14 @@ describe("SteeringRule", () => {
 
       rule.dispose();
 
-      expect(hooks.off).toHaveBeenCalledWith("test:custom.event", expect.any(Function));
-      expect(hooks.off).toHaveBeenCalledWith("agent.idle", expect.any(Function));
+      expect(hooks.off).toHaveBeenCalledWith(
+        "test:custom.event",
+        expect.any(Function),
+      );
+      expect(hooks.off).toHaveBeenCalledWith(
+        "agent.idle",
+        expect.any(Function),
+      );
     });
   });
 });

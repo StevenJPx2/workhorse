@@ -54,7 +54,13 @@ export class IssueParser {
     memory: MemoryService,
     config: Readonly<WorkhorseConfig>,
   ): IssueParser {
-    return new IssueParser(options.source, options.canParse, options.parse, memory, config);
+    return new IssueParser(
+      options.source,
+      options.canParse,
+      options.parse,
+      memory,
+      config,
+    );
   }
 
   /**
@@ -62,6 +68,10 @@ export class IssueParser {
    * Creates a per-issue PromptEngineer to build the prompt.
    */
   buildPrompt(issue: Issue, options: BuildPromptOptions = {}): Promise<string> {
-    return new PromptEngineer(issue, this.memory, this.config.prompt.custom).buildPrompt(options);
+    return new PromptEngineer(
+      issue,
+      this.memory,
+      this.config.prompt.custom,
+    ).buildPrompt(options);
   }
 }

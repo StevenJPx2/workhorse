@@ -3,7 +3,11 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { WORKHORSE_MARKER, type MonitorContext, type Issue } from "workhorse-core";
+import {
+  WORKHORSE_MARKER,
+  type MonitorContext,
+  type Issue,
+} from "workhorse-core";
 
 import type { AtlassianClient } from "../client.ts";
 import { createJiraCommentMonitor } from "../monitor.ts";

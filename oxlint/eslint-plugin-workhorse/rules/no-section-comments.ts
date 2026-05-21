@@ -73,14 +73,20 @@ const rule = {
                 let removeEnd = end;
 
                 // Walk back to remove leading whitespace on the line
-                while (removeStart > 0 && /[ \t]/.test(sourceText[removeStart - 1])) {
+                while (
+                  removeStart > 0 &&
+                  /[ \t]/.test(sourceText[removeStart - 1])
+                ) {
                   removeStart--;
                 }
 
                 // Remove trailing newline if present
                 if (sourceText[removeEnd] === "\n") {
                   removeEnd++;
-                } else if (sourceText[removeEnd] === "\r" && sourceText[removeEnd + 1] === "\n") {
+                } else if (
+                  sourceText[removeEnd] === "\r" &&
+                  sourceText[removeEnd + 1] === "\n"
+                ) {
                   removeEnd += 2;
                 }
 

@@ -29,7 +29,9 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
         <ActivityRow
           input={{
             kind: "notification",
-            notification: (props.item as ActivityItem & { type: "notification" }).notification,
+            notification: (
+              props.item as ActivityItem & { type: "notification" }
+            ).notification,
           }}
         />
       </Match>
@@ -40,7 +42,9 @@ export function ActivityItemRow(props: { item: ActivityItem }) {
         <IdleRow timestamp={props.item.timestamp} />
       </Match>
       <Match when={props.item.type === "user_message"}>
-        <UserMessageRow item={props.item as ActivityItem & { type: "user_message" }} />
+        <UserMessageRow
+          item={props.item as ActivityItem & { type: "user_message" }}
+        />
       </Match>
       <Match when={props.item.type === "memory"}>
         <MemoryRow item={props.item as ActivityItem & { type: "memory" }} />
@@ -61,7 +65,11 @@ function TextBubbleRow(props: { item: ActivityItem & { type: "text" } }) {
         </text>
         <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>
       </box>
-      <box backgroundColor={theme.colors.surface} paddingLeft={1} paddingRight={1}>
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={1}
+        paddingRight={1}
+      >
         <markdown
           content={props.item.content}
           syntaxStyle={getSyntaxStyle()}
@@ -86,7 +94,12 @@ function SteeringRow(props: { item: ActivityItem & { type: "steering" } }) {
         </text>
         <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>
       </box>
-      <box borderStyle="rounded" borderColor={theme.colors.info} marginLeft={2} paddingX={1}>
+      <box
+        borderStyle="rounded"
+        borderColor={theme.colors.info}
+        marginLeft={2}
+        paddingX={1}
+      >
         <text fg={theme.colors.text}>
           <i>{truncate(props.item.reminder, 80)}</i>
         </text>
@@ -96,7 +109,9 @@ function SteeringRow(props: { item: ActivityItem & { type: "steering" } }) {
 }
 
 /** User message bubble - aligned to the right */
-function UserMessageRow(props: { item: ActivityItem & { type: "user_message" } }) {
+function UserMessageRow(props: {
+  item: ActivityItem & { type: "user_message" };
+}) {
   const theme = getTheme();
 
   return (
@@ -107,7 +122,11 @@ function UserMessageRow(props: { item: ActivityItem & { type: "user_message" } }
           <b>You</b>
         </text>
       </box>
-      <box backgroundColor={theme.colors.selection} paddingLeft={1} paddingRight={1}>
+      <box
+        backgroundColor={theme.colors.selection}
+        paddingLeft={1}
+        paddingRight={1}
+      >
         <text fg={theme.colors.info}>{props.item.content}</text>
       </box>
     </box>
@@ -139,8 +158,8 @@ function MemoryRow(props: { item: ActivityItem & { type: "memory" } }) {
       <text fg={theme.colors.dim}>🧠</text>
       <text fg={theme.colors.dim}>
         <i>
-          memory {props.item.trigger === "idle" ? "indexed (idle)" : "indexed"} (
-          {props.item.documentCount} docs)
+          memory {props.item.trigger === "idle" ? "indexed (idle)" : "indexed"}{" "}
+          ({props.item.documentCount} docs)
         </i>
       </text>
       <text fg={theme.colors.dim}>{formatTime(props.item.timestamp)}</text>

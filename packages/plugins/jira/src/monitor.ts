@@ -6,7 +6,11 @@
  * @module workhorse-plugin-jira/monitor
  */
 
-import { isWorkhorseGenerated, type Database, type PollingMonitorOptions } from "workhorse-core";
+import {
+  isWorkhorseGenerated,
+  type Database,
+  type PollingMonitorOptions,
+} from "workhorse-core";
 
 import type { AtlassianClient } from "./client.ts";
 import { mapJiraComment } from "./mapper.ts";
@@ -38,7 +42,9 @@ export function createJiraCommentMonitor(
 
       // Get previously seen comment IDs from issue metadata
       const metadata = (issue.metadata ?? {}) as Record<string, unknown>;
-      const lastSeenIds = new Set((metadata[LAST_SEEN_COMMENTS_KEY] as string[]) ?? []);
+      const lastSeenIds = new Set(
+        (metadata[LAST_SEEN_COMMENTS_KEY] as string[]) ?? [],
+      );
 
       // Find new comments
       const newComments = comments.filter((c) => !lastSeenIds.has(c.id));

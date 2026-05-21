@@ -13,7 +13,7 @@
  */
 
 // Agent types (base class and options)
-export { AgentAdapter } from "../agent.ts";
+export { AgentAdapter } from "../agent/agent.ts";
 export type {
   AdapterInfo,
   AgentHarness,

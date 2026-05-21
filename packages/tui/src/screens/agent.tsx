@@ -56,7 +56,9 @@ export function Agent() {
     onAgentSelect: (agent) => ui.enterAgentView(agent.issueId),
   });
 
-  const selectedAgent = createMemo(() => agents().find((a) => a.issueId === selectedId()));
+  const selectedAgent = createMemo(() =>
+    agents().find((a) => a.issueId === selectedId()),
+  );
 
   const { state: monitorState } = createMonitors({
     monitors,
@@ -118,7 +120,9 @@ export function Agent() {
           {/* Chat input */}
           <box
             flexDirection="row"
-            backgroundColor={isChatFocused() ? theme.colors.selection : theme.colors.surface}
+            backgroundColor={
+              isChatFocused() ? theme.colors.selection : theme.colors.surface
+            }
             paddingX={1}
             paddingY={1}
             gap={1}
@@ -159,7 +163,9 @@ export function Agent() {
             key: "s",
             action: (() => {
               const state = getState(selectedId());
-              return state === "running" || state === "starting" ? "stop" : "start";
+              return state === "running" || state === "starting"
+                ? "stop"
+                : "start";
             })(),
             onActivate: () => {
               const agentId = selectedId();
@@ -168,7 +174,10 @@ export function Agent() {
               if (!agent) return;
               if (agent.state === "running" || agent.state === "starting") {
                 void agent.stop();
-              } else if (agent.state === "stopped" || agent.state === "crashed") {
+              } else if (
+                agent.state === "stopped" ||
+                agent.state === "crashed"
+              ) {
                 void agent.start();
               }
             },

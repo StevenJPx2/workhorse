@@ -24,7 +24,10 @@ describe("metadata-footer", () => {
 
       expect(withFooterAgain).toBe(withFooter);
       // Should only have one occurrence of the marker
-      const markerRegex = new RegExp(WORKHORSE_MARKER.replace(/[[\]]/g, "\\$&"), "g");
+      const markerRegex = new RegExp(
+        WORKHORSE_MARKER.replace(/[[\]]/g, "\\$&"),
+        "g",
+      );
       expect(withFooterAgain.match(markerRegex)?.length).toBe(1);
     });
 

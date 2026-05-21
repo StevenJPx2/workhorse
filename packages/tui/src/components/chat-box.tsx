@@ -32,7 +32,13 @@ export function ChatBox(props: ChatBoxProps) {
       }}
     >
       {/* Chat messages - disable focus when modal is open */}
-      <scrollbox flexGrow={1} paddingLeft={2} paddingRight={2} paddingTop={1} focused={!ui.modal()}>
+      <scrollbox
+        flexGrow={1}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        focused={!ui.modal()}
+      >
         <For each={props.messages()}>
           {(msg) => (
             <box flexDirection="column" marginBottom={1}>
@@ -75,7 +81,9 @@ export function ChatBox(props: ChatBoxProps) {
         </For>
         {props.messages().length === 0 && (
           <box justifyContent="center" alignItems="center" flexGrow={1}>
-            <text fg={theme.colors.dim}>No messages yet. Start typing below...</text>
+            <text fg={theme.colors.dim}>
+              No messages yet. Start typing below...
+            </text>
           </box>
         )}
       </scrollbox>
@@ -85,7 +93,9 @@ export function ChatBox(props: ChatBoxProps) {
         flexDirection="row"
         width="100%"
         alignItems="stretch"
-        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
+        backgroundColor={
+          isFocused() ? theme.colors.selection : theme.colors.surface
+        }
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}

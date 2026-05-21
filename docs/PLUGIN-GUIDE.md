@@ -472,7 +472,8 @@ export default definePlugin({
     orchestrator.skillRegistry.registerPluginSkill("my-plugin", {
       id: "database-migrations",
       name: "Database Migrations",
-      description: "Step-by-step guide for creating and running database migrations",
+      description:
+        "Step-by-step guide for creating and running database migrations",
       content: `
 # Database Migration Guide
 
@@ -739,7 +740,12 @@ hooks.on("github:pr.merged", async ({ issueId, pr }) => {
 ## Example: Full Plugin
 
 ```typescript
-import { definePlugin, useWorkhorse, type OrchestratorTool, type ToolResult } from "workhorse-core";
+import {
+  definePlugin,
+  useWorkhorse,
+  type OrchestratorTool,
+  type ToolResult,
+} from "workhorse-core";
 import { z } from "zod/v4";
 
 export const SlackConfigSchema = z.object({
@@ -787,7 +793,10 @@ export default definePlugin({
         required: ["message"],
       },
       execute: async (args) => {
-        const { message, channel } = args as { message: string; channel?: string };
+        const { message, channel } = args as {
+          message: string;
+          channel?: string;
+        };
         await sendSlackMessage(config.webhookUrl, {
           channel: channel || config.channel,
           text: message,
@@ -806,7 +815,8 @@ export default definePlugin({
         hook: ["issue.status_changed"],
         when: async (ctx) => ctx.issue.status === "blocked",
       },
-      reminder: "You are blocked. Check for human responses in your notifications.",
+      reminder:
+        "You are blocked. Check for human responses in your notifications.",
     });
   },
 

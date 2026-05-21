@@ -46,7 +46,9 @@ import { assertPathAllowed, type PathValidationOptions } from "workhorse-core";
  * const writeTool = createWriteTool(worktreePath, { operations: writeOps });
  * ```
  */
-export function createRestrictedWriteOperations(options: PathValidationOptions): WriteOperations {
+export function createRestrictedWriteOperations(
+  options: PathValidationOptions,
+): WriteOperations {
   return {
     writeFile: async (absolutePath: string, content: string) => {
       assertPathAllowed(absolutePath, options);
@@ -71,7 +73,9 @@ export function createRestrictedWriteOperations(options: PathValidationOptions):
  * const readTool = createReadTool(worktreePath, { operations: readOps });
  * ```
  */
-export function createRestrictedReadOperations(options: PathValidationOptions): ReadOperations {
+export function createRestrictedReadOperations(
+  options: PathValidationOptions,
+): ReadOperations {
   return {
     readFile: async (absolutePath: string) => {
       assertPathAllowed(absolutePath, options);
@@ -96,7 +100,9 @@ export function createRestrictedReadOperations(options: PathValidationOptions): 
  * const editTool = createEditTool(worktreePath, { operations: editOps });
  * ```
  */
-export function createRestrictedEditOperations(options: PathValidationOptions): EditOperations {
+export function createRestrictedEditOperations(
+  options: PathValidationOptions,
+): EditOperations {
   return {
     readFile: async (absolutePath: string) => {
       assertPathAllowed(absolutePath, options);

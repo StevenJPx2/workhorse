@@ -58,7 +58,9 @@ export class NotificationService {
   async create(input: CreateNotificationInput): Promise<Notification> {
     // Check for duplicate via sourceId
     if (input.sourceId) {
-      const existing = await this.db.notifications.findBySourceId(input.sourceId);
+      const existing = await this.db.notifications.findBySourceId(
+        input.sourceId,
+      );
       if (existing) {
         return existing;
       }

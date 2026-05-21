@@ -8,13 +8,22 @@
  * @module workhorse-plugin-github/monitor
  */
 
-import { type Database, isWorkhorseGenerated, type PollingMonitorOptions } from "workhorse-core";
+import {
+  type Database,
+  isWorkhorseGenerated,
+  type PollingMonitorOptions,
+} from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
 import "../hooks.ts";
 import type { GitHubPRMonitorState } from "../types.ts";
 import { processCheckChanges } from "./checks";
-import { emitCheckHooks, emitCloseHook, emitMergeHook, emitReviewHooks } from "./hooks-emitter";
+import {
+  emitCheckHooks,
+  emitCloseHook,
+  emitMergeHook,
+  emitReviewHooks,
+} from "./hooks-emitter";
 import {
   createCommentNotifications,
   createMergeableNotification,
@@ -44,7 +53,9 @@ export function createGitHubPRMonitor(
       const prNumber = metadata.prNumber as number | undefined;
       if (!owner || !repo || !prNumber) return { hasChanges: false };
 
-      const state: GitHubPRMonitorState = (metadata[MONITOR_STATE_KEY] as GitHubPRMonitorState) ?? {
+      const state: GitHubPRMonitorState = (metadata[
+        MONITOR_STATE_KEY
+      ] as GitHubPRMonitorState) ?? {
         lastSeenReviewIds: [],
         lastSeenCommentIds: [],
         lastCheckConclusions: {},
@@ -63,11 +74,15 @@ export function createGitHubPRMonitor(
       const [reviews, comments, checkRuns] = await Promise.all([
         client.getPRReviews(owner, repo, prNumber),
         client.getPRComments(owner, repo, prNumber),
-        headSha ? client.getCheckRuns(owner, repo, headSha) : Promise.resolve([]),
+        headSha
+          ? client.getCheckRuns(owner, repo, headSha)
+          : Promise.resolve([]),
       ]);
 
       // Process new reviews
-      const newReviews = reviews.filter((r) => !state.lastSeenReviewIds.includes(r.id));
+      const newReviews = reviews.filter(
+        (r) => !state.lastSeenReviewIds.includes(r.id),
+      );
       if (newReviews.length > 0) {
         hasChanges = true;
         changes.newReviews = newReviews.length;
@@ -77,7 +92,9 @@ export function createGitHubPRMonitor(
 
       // Process new comments (filter out bot-generated)
       const newComments = comments.filter(
-        (c) => !state.lastSeenCommentIds.includes(c.id) && !isWorkhorseGenerated(c.body),
+        (c) =>
+          !state.lastSeenCommentIds.includes(c.id) &&
+          !isWorkhorseGenerated(c.body),
       );
       if (newComments.length > 0) {
         hasChanges = true;
@@ -90,7 +107,10 @@ export function createGitHubPRMonitor(
         checkRuns,
         state.lastCheckConclusions,
         ctx.memory.notifications,
-        { issueId: ctx.issueId, ...meta },
+        {
+          issueId: ctx.issueId,
+          ...meta,
+        },
       );
       if (checkChanges.hasChanges) {
         hasChanges = true;
@@ -99,9 +119,15 @@ export function createGitHubPRMonitor(
       }
 
       // Process mergeable state changes
-      if (state.lastMergeableState && pr.mergeable_state !== state.lastMergeableState) {
+      if (
+        state.lastMergeableState &&
+        pr.mergeable_state !== state.lastMergeableState
+      ) {
         hasChanges = true;
-        changes.mergeableStateChanged = { from: state.lastMergeableState, to: pr.mergeable_state };
+        changes.mergeableStateChanged = {
+          from: state.lastMergeableState,
+          to: pr.mergeable_state,
+        };
         createMergeableNotification(ctx, pr.mergeable_state, meta);
       }
 

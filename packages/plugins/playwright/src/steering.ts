@@ -23,11 +23,17 @@ export function registerPlaywrightSteering(ctx: WorkhorseContext): void {
         // Only remind if they've used Playwright but haven't taken a screenshot recently
         // and haven't already opened a PR
         return (
-          steerCtx.toolHistory.some((t: { name: string }) => t.name.startsWith("playwright_")) &&
+          steerCtx.toolHistory.some((t: { name: string }) =>
+            t.name.startsWith("playwright_"),
+          ) &&
           !steerCtx.toolHistory
             .slice(-5)
-            .some((t: { name: string }) => t.name === "playwright_screenshot") &&
-          !steerCtx.toolHistory.some((t: { name: string }) => t.name === "github_open_pr")
+            .some(
+              (t: { name: string }) => t.name === "playwright_screenshot",
+            ) &&
+          !steerCtx.toolHistory.some(
+            (t: { name: string }) => t.name === "github_open_pr",
+          )
         );
       },
     },

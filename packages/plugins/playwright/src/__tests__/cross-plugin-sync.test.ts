@@ -81,7 +81,8 @@ describe("registerPlaywrightCrossPluginSync", () => {
   });
 
   it("registers github:pr.opening hook handler", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -92,11 +93,15 @@ describe("registerPlaywrightCrossPluginSync", () => {
       attachmentService as never,
     );
 
-    expect(ctx.hooks.on).toHaveBeenCalledWith("github:pr.opening", expect.any(Function));
+    expect(ctx.hooks.on).toHaveBeenCalledWith(
+      "github:pr.opening",
+      expect.any(Function),
+    );
   });
 
   it("adds screenshots section when screenshots exist", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -168,7 +173,8 @@ describe("registerPlaywrightCrossPluginSync", () => {
   });
 
   it("does not add section when no screenshots exist", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -207,7 +213,8 @@ describe("registerPlaywrightCrossPluginSync", () => {
   });
 
   it("filters out non-screenshot attachments", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -256,14 +263,21 @@ describe("registerPlaywrightCrossPluginSync", () => {
 
     // Should only include the screenshot (not PDF or jira-image)
     expect(prOpeningEvent.contributions.length).toBe(1);
-    expect(prOpeningEvent.contributions[0]!.content).toContain("1 screenshot captured");
+    expect(prOpeningEvent.contributions[0]!.content).toContain(
+      "1 screenshot captured",
+    );
     expect(prOpeningEvent.contributions[0]!.content).toContain("test.png");
-    expect(prOpeningEvent.contributions[0]!.content).not.toContain("document.pdf");
-    expect(prOpeningEvent.contributions[0]!.content).not.toContain("diagram.png");
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain(
+      "document.pdf",
+    );
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain(
+      "diagram.png",
+    );
   });
 
   it("handles issue not found gracefully", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -291,7 +305,8 @@ describe("registerPlaywrightCrossPluginSync", () => {
   });
 
   it("handles attachment service errors gracefully", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -333,7 +348,8 @@ describe("registerPlaywrightCrossPluginSync", () => {
   });
 
   it("uses singular 'screenshot' for single screenshot", async () => {
-    const { registerPlaywrightCrossPluginSync } = await import("../cross-plugin-sync.ts");
+    const { registerPlaywrightCrossPluginSync } =
+      await import("../cross-plugin-sync.ts");
 
     const ctx = createMockContext();
     const attachmentService = createMockAttachmentService();
@@ -367,7 +383,11 @@ describe("registerPlaywrightCrossPluginSync", () => {
     const handlers = hookHandlers.get("github:pr.opening") ?? [];
     await handlers[0]!(prOpeningEvent);
 
-    expect(prOpeningEvent.contributions[0]!.content).toContain("1 screenshot captured");
-    expect(prOpeningEvent.contributions[0]!.content).not.toContain("screenshots");
+    expect(prOpeningEvent.contributions[0]!.content).toContain(
+      "1 screenshot captured",
+    );
+    expect(prOpeningEvent.contributions[0]!.content).not.toContain(
+      "screenshots",
+    );
   });
 });

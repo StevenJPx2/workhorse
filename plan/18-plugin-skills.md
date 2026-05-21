@@ -152,7 +152,9 @@ class HarnessOrchestrator {
     // Resolve instructions if path provided
     const resolved: ResolvedSkill = {
       ...validated,
-      instructions: validated.instructions ?? this.loadSkillFile(validated.instructionsPath!),
+      instructions:
+        validated.instructions ??
+        this.loadSkillFile(validated.instructionsPath!),
     };
 
     // Check for duplicates

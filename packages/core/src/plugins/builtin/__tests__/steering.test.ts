@@ -6,7 +6,11 @@ import { registerCoreSteering } from "../steering.ts";
 
 describe("registerCoreSteering", () => {
   let mockContext: WorkhorseContext;
-  let registeredRules: Array<{ id: string; condition: { when: Function }; reminder: string }>;
+  let registeredRules: Array<{
+    id: string;
+    condition: { when: Function };
+    reminder: string;
+  }>;
 
   beforeEach(() => {
     registeredRules = [];
@@ -20,7 +24,9 @@ describe("registerCoreSteering", () => {
   it("registers both steering rules", () => {
     registerCoreSteering(mockContext);
 
-    expect(mockContext.orchestrator.registerSteeringRule).toHaveBeenCalledTimes(2);
+    expect(mockContext.orchestrator.registerSteeringRule).toHaveBeenCalledTimes(
+      2,
+    );
     expect(registeredRules.map((r) => r.id)).toEqual([
       "core:memory-write-reminder",
       "core:git-conflict-loop",
@@ -67,7 +73,15 @@ describe("registerCoreSteering", () => {
       const when = getWhenFn();
 
       // 15+ tools with 3+ work tools, no memory write
-      const tools = [...Array(10).fill("read"), "edit", "write", "bash", "read", "grep", "read"];
+      const tools = [
+        ...Array(10).fill("read"),
+        "edit",
+        "write",
+        "bash",
+        "read",
+        "grep",
+        "read",
+      ];
       const result = when({
         issue: { id: "TEST-1", status: "implementing" },
         notifications: [],
@@ -81,7 +95,13 @@ describe("registerCoreSteering", () => {
       const when = getWhenFn();
 
       // Memory write in the middle, not enough work since
-      const tools = [...Array(10).fill("read"), "edit", "workhorse_memory_write", "read", "edit"];
+      const tools = [
+        ...Array(10).fill("read"),
+        "edit",
+        "workhorse_memory_write",
+        "read",
+        "edit",
+      ];
       const result = when({
         issue: { id: "TEST-1", status: "implementing" },
         notifications: [],
@@ -95,7 +115,13 @@ describe("registerCoreSteering", () => {
       const when = getWhenFn();
 
       // Memory write early, lots of work after
-      const tools = ["workhorse_memory_write", ...Array(12).fill("read"), "edit", "write", "bash"];
+      const tools = [
+        "workhorse_memory_write",
+        ...Array(12).fill("read"),
+        "edit",
+        "write",
+        "bash",
+      ];
       const result = when({
         issue: { id: "TEST-1", status: "implementing" },
         notifications: [],
@@ -110,7 +136,11 @@ describe("registerCoreSteering", () => {
     // Use fresh timestamps relative to when the test runs
     const createBashHistory = (commands: string[], minutesAgo = 1) => {
       const timestamp = Date.now() - minutesAgo * 60_000;
-      return commands.map((cmd) => ({ name: "bash", args: { command: cmd }, timestamp }));
+      return commands.map((cmd) => ({
+        name: "bash",
+        args: { command: cmd },
+        timestamp,
+      }));
     };
 
     const getWhenFn = () => {
@@ -241,10 +271,22 @@ describe("registerCoreSteering", () => {
 
       const toolHistory = [
         // These should be ignored (not bash)
-        { name: "read", args: { path: "file.txt" }, timestamp: recentTimestamp },
-        { name: "edit", args: { path: "file.txt" }, timestamp: recentTimestamp },
+        {
+          name: "read",
+          args: { path: "file.txt" },
+          timestamp: recentTimestamp,
+        },
+        {
+          name: "edit",
+          args: { path: "file.txt" },
+          timestamp: recentTimestamp,
+        },
         // Only 3 bash conflict commands (not enough)
-        ...createBashHistory(["git rebase origin/main", "git add .", "git rebase --continue"]),
+        ...createBashHistory([
+          "git rebase origin/main",
+          "git add .",
+          "git rebase --continue",
+        ]),
       ];
 
       const result = when({

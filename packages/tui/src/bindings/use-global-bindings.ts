@@ -81,7 +81,13 @@ export function useGlobalBindings() {
     }
 
     // s: toggle agent start/stop (agent screen only, not while typing)
-    if (key.name !== "s" || ui.inputMode() || ui.modal() || ui.screen() !== "agent") return;
+    if (
+      key.name !== "s" ||
+      ui.inputMode() ||
+      ui.modal() ||
+      ui.screen() !== "agent"
+    )
+      return;
 
     const agentId = ui.selectedAgentId();
     const agent = agentId ? orchestrator.getAgent(agentId) : null;

@@ -23,10 +23,10 @@ export {
   type SteeringRuleConfigInput,
   type ToolExecutionContext,
   type ToolResult,
-} from "./orchestrator/index.ts";
+} from "./orchestrator";
 
 // Steering (internal exports for orchestrator)
-export { SteeringRuleConfigSchema } from "./steering/index.ts";
+export { SteeringRuleConfigSchema } from "./steering";
 
 // Tracker
 export {
@@ -38,7 +38,7 @@ export {
   type ParsedIssue,
   type PromptBuildingContext,
   type PromptContextBlock,
-} from "./tracker/index.ts";
+} from "./tracker";
 
 // Steering (re-exported from orchestrator but also available directly)
-export type { SteeringCondition as SteeringConditionType } from "./steering/index.ts";
+export type { SteeringCondition as SteeringConditionType } from "./steering";

@@ -5,10 +5,14 @@
  */
 
 /** Result of a git operation */
-export type GitResult<T> = { ok: true; value: T } | { ok: false; error: string };
+export type GitResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string };
 
 /** Parse owner/repo from a GitHub remote URL */
-export function parseGitHubRemote(remoteUrl: string): { owner: string; repo: string } | null {
+export function parseGitHubRemote(
+  remoteUrl: string,
+): { owner: string; repo: string } | null {
   // Parse GitHub URL: https://github.com/owner/repo.git or git@github.com:owner/repo.git
   const match =
     remoteUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/) ??
@@ -40,14 +44,19 @@ export async function getOwnerRepoFromRemote(
 
   const parsed = parseGitHubRemote(out.trim());
   if (!parsed) {
-    return { ok: false, error: "Could not parse GitHub owner/repo from remote URL" };
+    return {
+      ok: false,
+      error: "Could not parse GitHub owner/repo from remote URL",
+    };
   }
 
   return { ok: true, value: parsed };
 }
 
 /** Get the current branch name */
-export async function getCurrentBranch(cwd: string): Promise<GitResult<string>> {
+export async function getCurrentBranch(
+  cwd: string,
+): Promise<GitResult<string>> {
   const proc = Bun.spawn(["git", "branch", "--show-current"], {
     cwd,
     stdout: "pipe",
@@ -67,7 +76,10 @@ export async function getCurrentBranch(cwd: string): Promise<GitResult<string>> 
 }
 
 /** Push branch to origin with upstream tracking */
-export async function pushBranch(cwd: string, branch: string): Promise<GitResult<void>> {
+export async function pushBranch(
+  cwd: string,
+  branch: string,
+): Promise<GitResult<void>> {
   const proc = Bun.spawn(["git", "push", "-u", "origin", branch], {
     cwd,
     stdout: "pipe",

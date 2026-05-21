@@ -62,7 +62,12 @@ export function ActivityRow(props: { input: ActivityInput }) {
           </box>
         </Show>
         <Show when={rendered().body}>
-          <box borderStyle="rounded" borderColor={color()} marginLeft={2} paddingX={1}>
+          <box
+            borderStyle="rounded"
+            borderColor={color()}
+            marginLeft={2}
+            paddingX={1}
+          >
             <text fg={theme.colors.text}>{rendered().body}</text>
           </box>
         </Show>

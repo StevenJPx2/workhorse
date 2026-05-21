@@ -82,7 +82,9 @@ export interface Workhorse {
  * await jt.shutdown();
  * ```
  */
-export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhorse> {
+export async function bootstrap(
+  options: BootstrapOptions = {},
+): Promise<Workhorse> {
   const { plugins: extraPlugins = [], overrides, onProgress } = options;
   const progress = onProgress ?? (() => {});
 

@@ -9,7 +9,11 @@
  * @module workhorse-plugin-figma/cross-plugin
  */
 
-import type { DiscoveredLink, HookEmitter, PromptContextBlock } from "workhorse-core";
+import type {
+  DiscoveredLink,
+  HookEmitter,
+  PromptContextBlock,
+} from "workhorse-core";
 
 import type { FigmaClient } from "./client.ts";
 import { canParseFigma, extractFigmaRef } from "./parser.ts";
@@ -43,10 +47,15 @@ export interface LinkedDesignContext {
  * When another plugin (e.g., Jira) discovers a Figma URL in an issue,
  * we fetch the design context and make it available for prompt enrichment.
  */
-export function registerCrossPluginHandlers(hooks: HookEmitter, client: FigmaClient): () => void {
+export function registerCrossPluginHandlers(
+  hooks: HookEmitter,
+  client: FigmaClient,
+): () => void {
   return hooks.on("issue.links.discovered", async ({ issue, links }) => {
     // Filter for Figma URLs
-    const figmaLinks = links.filter((link: DiscoveredLink) => canParseFigma(link.href));
+    const figmaLinks = links.filter((link: DiscoveredLink) =>
+      canParseFigma(link.href),
+    );
 
     if (figmaLinks.length === 0) return;
 
@@ -65,13 +74,20 @@ export function registerCrossPluginHandlers(hooks: HookEmitter, client: FigmaCli
           ref,
           name: file.name,
           lastModified: file.lastModified,
-          pages: Object.values(file.document.children ?? {}).map((p: any) => p.name),
-          components: Object.values(file.components ?? {}).map((c: any) => c.name),
+          pages: Object.values(file.document.children ?? {}).map(
+            (p: any) => p.name,
+          ),
+          components: Object.values(file.components ?? {}).map(
+            (c: any) => c.name,
+          ),
           source: link.source,
         });
       } catch (err) {
         // Log but don't fail — design might be inaccessible
-        console.warn(`[figma] Failed to fetch linked design ${link.href}:`, err);
+        console.warn(
+          `[figma] Failed to fetch linked design ${link.href}:`,
+          err,
+        );
       }
     }
 
@@ -85,7 +101,9 @@ export function registerCrossPluginHandlers(hooks: HookEmitter, client: FigmaCli
  * Build prompt context blocks for linked Figma designs.
  * Called during prompt.building to inject design context.
  */
-export function buildLinkedDesignContextBlocks(externalId: string): PromptContextBlock[] {
+export function buildLinkedDesignContextBlocks(
+  externalId: string,
+): PromptContextBlock[] {
   const contexts = linkedDesignCache.get(externalId);
   if (!contexts || contexts.length === 0) return [];
 

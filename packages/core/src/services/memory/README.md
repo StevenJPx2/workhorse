@@ -73,7 +73,10 @@ await ctx.appendSession({
 });
 
 // Update patterns
-await ctx.updatePatterns(["Uses Zod for validation", "Database migrations via drizzle-kit"]);
+await ctx.updatePatterns([
+  "Uses Zod for validation",
+  "Database migrations via drizzle-kit",
+]);
 
 // Re-scan worktrees directory
 memory.l1.refresh();
@@ -196,7 +199,8 @@ const indexed = await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
 console.log(`Indexed ${indexed} new files`);
 
 // Second call skips already-indexed files
-const reindexed = await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
+const reindexed =
+  await memory.indexer.indexCodebaseIntelligence("/path/to/repo");
 console.log(`Indexed ${reindexed} new files`); // 0
 ```
 

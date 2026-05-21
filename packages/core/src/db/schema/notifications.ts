@@ -24,8 +24,14 @@ export const notifications = sqliteTable("notifications", {
     .references(() => issues.id),
   source: text("source").notNull(),
   sourceId: text("source_id").unique(),
-  priority: text("priority").notNull().default("normal").$type<NotificationPriority>(),
-  status: text("status").notNull().default("unread").$type<NotificationStatus>(),
+  priority: text("priority")
+    .notNull()
+    .default("normal")
+    .$type<NotificationPriority>(),
+  status: text("status")
+    .notNull()
+    .default("unread")
+    .$type<NotificationStatus>(),
   title: text("title").notNull(),
   body: text("body").notNull(),
   metadata: customJsonb("metadata"),
@@ -43,10 +49,19 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
 
 /** Zod schema for validating notification priority */
-export const NotificationPrioritySchema = z.enum(["blocking", "high", "normal", "low"]);
+export const NotificationPrioritySchema = z.enum([
+  "blocking",
+  "high",
+  "normal",
+  "low",
+]);
 
 /** Zod schema for validating notification status */
-export const NotificationStatusSchema = z.enum(["unread", "read", "acknowledged"]);
+export const NotificationStatusSchema = z.enum([
+  "unread",
+  "read",
+  "acknowledged",
+]);
 
 /** Zod schema for validating Notification objects (generated from Drizzle table) */
 export const NotificationSchema = createSelectSchema(notifications);

@@ -1,11 +1,17 @@
 import rule from "./enforce-colocated-exports";
 
 function createContext(filename: string) {
-  const reports: Array<{ message: string; loc: { line: number; column: number } }> = [];
+  const reports: Array<{
+    message: string;
+    loc: { line: number; column: number };
+  }> = [];
 
   return {
     filename,
-    report: (data: { message: string; loc: { line: number; column: number } }) => {
+    report: (data: {
+      message: string;
+      loc: { line: number; column: number };
+    }) => {
       reports.push(data);
     },
     reports,
@@ -35,17 +41,20 @@ describe("enforce-colocated-exports", () => {
     expect(runRule("/src/hooks/use-interactive/index.ts").length).toBe(0);
   });
 
-  it.fails("TODO: implement validation of export sources match directory contents", () => {
-    // This test documents planned behavior that is not yet implemented.
-    // The rule should validate that exports from an index file actually reference
-    // files that exist in the same directory or subdirectories.
-    // This would catch typos in export paths.
+  it.fails(
+    "TODO: implement validation of export sources match directory contents",
+    () => {
+      // This test documents planned behavior that is not yet implemented.
+      // The rule should validate that exports from an index file actually reference
+      // files that exist in the same directory or subdirectories.
+      // This would catch typos in export paths.
 
-    // Expected: rule should check that exported modules actually exist
-    // and report when they don't
-    const reports = runRule("/src/hooks/index.ts");
-    // Currently, the rule doesn't validate export paths exist
-    expect(reports.length).toBeGreaterThanOrEqual(0);
-    expect(true).toBe(false);
-  });
+      // Expected: rule should check that exported modules actually exist
+      // and report when they don't
+      const reports = runRule("/src/hooks/index.ts");
+      // Currently, the rule doesn't validate export paths exist
+      expect(reports.length).toBeGreaterThanOrEqual(0);
+      expect(true).toBe(false);
+    },
+  );
 });

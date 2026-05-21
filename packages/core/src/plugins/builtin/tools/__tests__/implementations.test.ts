@@ -41,7 +41,10 @@ describe("memorySearchToolImpl", () => {
         },
       ]);
 
-      const result = await memorySearchToolImpl({ query: "authentication" }, mockContext);
+      const result = await memorySearchToolImpl(
+        { query: "authentication" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("Found 2 result(s)");
@@ -56,7 +59,10 @@ describe("memorySearchToolImpl", () => {
     it("returns no results message when empty", async () => {
       mockL2Search.mockResolvedValue([]);
 
-      const result = await memorySearchToolImpl({ query: "nonexistent" }, mockContext);
+      const result = await memorySearchToolImpl(
+        { query: "nonexistent" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toBe("No matching documents found in memory.");

@@ -52,7 +52,8 @@ export function registerPlaywrightHookMetadata(): void {
     name: "playwright:page.navigated",
     category: "Playwright",
     description: "Emitted when a page navigation completes",
-    payload: "{ issueId: string, sessionId: string, url: string, title: string }",
+    payload:
+      "{ issueId: string, sessionId: string, url: string, title: string }",
     plugin: "playwright",
   });
 
@@ -60,7 +61,8 @@ export function registerPlaywrightHookMetadata(): void {
     name: "playwright:screenshot.taken",
     category: "Playwright",
     description: "Emitted when a screenshot is captured",
-    payload: "{ issueId: string, sessionId: string, path: string, options: ScreenshotOptions }",
+    payload:
+      "{ issueId: string, sessionId: string, path: string, options: ScreenshotOptions }",
     plugin: "playwright",
   });
 
@@ -77,7 +79,8 @@ export function registerPlaywrightHookMetadata(): void {
     name: "playwright:network.failed",
     category: "Playwright",
     description: "Emitted when a network request fails",
-    payload: "{ issueId: string, sessionId: string, url: string, error: string }",
+    payload:
+      "{ issueId: string, sessionId: string, url: string, error: string }",
     plugin: "playwright",
   });
 
@@ -85,7 +88,8 @@ export function registerPlaywrightHookMetadata(): void {
     name: "playwright:viewport.changed",
     category: "Playwright",
     description: "Emitted when the viewport is resized",
-    payload: "{ issueId: string, sessionId: string, viewport: { width: number, height: number } }",
+    payload:
+      "{ issueId: string, sessionId: string, viewport: { width: number, height: number } }",
     plugin: "playwright",
   });
 }

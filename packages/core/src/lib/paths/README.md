@@ -82,7 +82,11 @@ validatePath("/tmp/workhorse-cache/data.json", options); // valid: true
 The Pi adapter wraps the SDK's built-in tools with path-restricted operations:
 
 ```typescript
-import { createReadTool, createWriteTool, createEditTool } from "@mariozechner/pi-coding-agent";
+import {
+  createReadTool,
+  createWriteTool,
+  createEditTool,
+} from "@mariozechner/pi-coding-agent";
 import {
   createRestrictedReadOperations,
   createRestrictedWriteOperations,

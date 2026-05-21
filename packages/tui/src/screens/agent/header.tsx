@@ -6,7 +6,10 @@ import { Show, type Accessor } from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 
 import { MonitorIndicator } from "../../components";
-import { getStatusColor, getStatusIcon } from "../../components/agent-sidebar/status-utils.ts";
+import {
+  getStatusColor,
+  getStatusIcon,
+} from "../../components/agent-sidebar/status-utils.ts";
 import { WorkhorseStatus } from "../../components/workhorse-status.tsx";
 import type { IssueStatusState } from "../../primitives/create-issue-status.ts";
 import type { MonitorsState } from "../../primitives/create-monitors.ts";

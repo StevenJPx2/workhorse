@@ -81,7 +81,9 @@ describe("no-section-comments", () => {
     });
 
     it("reports long divider lines", () => {
-      const reports = runRule([createLineComment(" ----------------------------------------")]);
+      const reports = runRule([
+        createLineComment(" ----------------------------------------"),
+      ]);
       expect(reports.length).toBe(1);
     });
 
@@ -91,7 +93,9 @@ describe("no-section-comments", () => {
     });
 
     it("reports long equals separator", () => {
-      const reports = runRule([createLineComment(" ================================")]);
+      const reports = runRule([
+        createLineComment(" ================================"),
+      ]);
       expect(reports.length).toBe(1);
     });
   });
@@ -127,7 +131,9 @@ describe("no-section-comments", () => {
     });
 
     it("allows comments explaining code", () => {
-      const reports = runRule([createLineComment(" Calculate the sum of all values")]);
+      const reports = runRule([
+        createLineComment(" Calculate the sum of all values"),
+      ]);
       expect(reports.length).toBe(0);
     });
 
@@ -137,18 +143,24 @@ describe("no-section-comments", () => {
     });
 
     it("allows numbers in middle of comment", () => {
-      const reports = runRule([createLineComment(" Returns value + 1. Always positive.")]);
+      const reports = runRule([
+        createLineComment(" Returns value + 1. Always positive."),
+      ]);
       expect(reports.length).toBe(0);
     });
 
     it("allows block comments", () => {
-      const reports = runRule([createBlockComment(" This is a block comment ")]);
+      const reports = runRule([
+        createBlockComment(" This is a block comment "),
+      ]);
       expect(reports.length).toBe(0);
     });
 
     it("allows JSDoc-style block comments with separators", () => {
       // Block comments are allowed to have dashes/equals for formatting
-      const reports = runRule([createBlockComment("*\n * Description\n * ---\n * 1. Item\n ")]);
+      const reports = runRule([
+        createBlockComment("*\n * Description\n * ---\n * 1. Item\n "),
+      ]);
       expect(reports.length).toBe(0);
     });
 

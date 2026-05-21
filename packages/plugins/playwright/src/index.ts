@@ -95,7 +95,10 @@ export const playwrightPlugin = definePlugin({
     const attachmentService = new AttachmentService(ctx.paths.attachmentsDir);
 
     // Register all Playwright tools with orchestrator
-    for (const tool of createPlaywrightTools(sessionManager, attachmentService)) {
+    for (const tool of createPlaywrightTools(
+      sessionManager,
+      attachmentService,
+    )) {
       ctx.orchestrator.registerTool(tool);
     }
 

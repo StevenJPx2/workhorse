@@ -103,7 +103,9 @@ export interface ApiTokenProvider {
   /** Get fields to display in setup wizard */
   getFields: () => ApiTokenAuthField[];
   /** Configure auth with user-provided values */
-  configure: (values: Record<string, string>) => Promise<{ success: boolean; error?: string }>;
+  configure: (
+    values: Record<string, string>,
+  ) => Promise<{ success: boolean; error?: string }>;
   /** Clear stored credentials */
   clearTokens: () => Promise<void>;
 }
@@ -118,7 +120,11 @@ export interface NoAuthProvider {
 /**
  * Union of all auth provider types.
  */
-export type AuthProvider = OAuthProvider | ExternalProvider | ApiTokenProvider | NoAuthProvider;
+export type AuthProvider =
+  | OAuthProvider
+  | ExternalProvider
+  | ApiTokenProvider
+  | NoAuthProvider;
 
 /**
  * Auth status for a plugin.

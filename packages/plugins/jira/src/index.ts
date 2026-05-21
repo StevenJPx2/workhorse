@@ -39,6 +39,14 @@ export type JiraConfig = z.infer<typeof JiraConfigSchema>;
 // fallow-ignore-next-line unused-exports
 export type { JiraCredentials } from "./types.ts";
 
+// Export ADF utilities and mapper for consumers
+export { extractDescription, extractLinksFromAdf } from "./adf.ts";
+export {
+  mapJiraToIssue,
+  mapJiraComment,
+  type ExtractedLink,
+} from "./mapper.ts";
+
 // Export plugin hook types for cross-plugin coordination
 export type { JiraPluginHooks } from "./hooks.ts";
 
@@ -77,7 +85,9 @@ export const jiraPlugin = definePlugin({
     ctx.tracker.registerParser(createJiraParserOptions(client, ctx.hooks));
 
     // Register comment monitor (started per-issue when agent spawns)
-    ctx.monitors.registerMonitor(createJiraCommentMonitor(client, config.pollInterval, ctx.db));
+    ctx.monitors.registerMonitor(
+      createJiraCommentMonitor(client, config.pollInterval, ctx.db),
+    );
 
     // Register agent lifecycle hooks (starts comment monitor on agent create)
     registerAgentHooks(ctx);

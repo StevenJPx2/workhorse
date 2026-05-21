@@ -67,14 +67,16 @@ export const PLUGIN_REQUIREMENTS: PluginConfigRequirement[] = [
       {
         key: "commentPollInterval",
         label: "Comment Poll Interval (ms)",
-        description: "How often to check for new Figma comments (default: 60000)",
+        description:
+          "How often to check for new Figma comments (default: 60000)",
         required: false,
         default: "60000",
       },
       {
         key: "filePollInterval",
         label: "File Poll Interval (ms)",
-        description: "How often to check for Figma file updates (default: 120000)",
+        description:
+          "How often to check for Figma file updates (default: 120000)",
         required: false,
         default: "120000",
       },
@@ -99,7 +101,10 @@ export function loadExistingConfig(
 /**
  * Save plugin config to a TOML file.
  */
-export function savePluginConfig(configPath: string, newConfig: Partial<WorkhorseConfig>): void {
+export function savePluginConfig(
+  configPath: string,
+  newConfig: Partial<WorkhorseConfig>,
+): void {
   // Ensure directory exists
   const dir = dirname(configPath);
   if (!existsSync(dir)) {
@@ -108,7 +113,8 @@ export function savePluginConfig(configPath: string, newConfig: Partial<Workhors
 
   // Load existing config, merge, and write only the plugin section
   writeTomlFile(configPath, {
-    plugins: mergeConfigs(DEFAULT_CONFIG, parseTomlFile(configPath), newConfig).plugins,
+    plugins: mergeConfigs(DEFAULT_CONFIG, parseTomlFile(configPath), newConfig)
+      .plugins,
   });
 }
 
@@ -124,10 +130,8 @@ export function getPluginsNeedingSetup(
   const needsSetup: SetupPluginConfig[] = [];
 
   for (const requirement of requirements) {
-    const pluginConfig = (existingConfig.plugins[requirement.name] ?? {}) as Record<
-      string,
-      unknown
-    >;
+    const pluginConfig = (existingConfig.plugins[requirement.name] ??
+      {}) as Record<string, unknown>;
     const missingRequired = requirement.fields.filter(
       (field) => field.required && !pluginConfig[field.key],
     );
@@ -138,7 +142,10 @@ export function getPluginsNeedingSetup(
         name: requirement.name,
         fields: requirement.fields.map((field) => ({
           ...field,
-          value: pluginConfig[field.key] != null ? String(pluginConfig[field.key]) : undefined,
+          value:
+            pluginConfig[field.key] != null
+              ? String(pluginConfig[field.key])
+              : undefined,
         })),
       });
     }

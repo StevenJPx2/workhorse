@@ -6,7 +6,9 @@ interface Report {
   node: unknown;
   messageId: string;
   data?: Record<string, string>;
-  fix?: (fixer: { replaceText: (node: unknown, text: string) => string }) => string;
+  fix?: (fixer: {
+    replaceText: (node: unknown, text: string) => string;
+  }) => string;
 }
 
 function createContext(filename: string) {
@@ -26,7 +28,10 @@ function parseImportsAndExports(code: string): Array<{
   source: { value: string; raw: string };
 }> {
   const result: Array<{
-    type: "ImportDeclaration" | "ExportNamedDeclaration" | "ExportAllDeclaration";
+    type:
+      | "ImportDeclaration"
+      | "ExportNamedDeclaration"
+      | "ExportAllDeclaration";
     source: { value: string; raw: string };
   }> = [];
 
@@ -44,7 +49,8 @@ function parseImportsAndExports(code: string): Array<{
   }
 
   // Match named exports
-  const namedExportMatch = /export\s+(?:type\s+)?{[^}]*}\s+from\s+(["'])([^"']+)\1/g;
+  const namedExportMatch =
+    /export\s+(?:type\s+)?{[^}]*}\s+from\s+(["'])([^"']+)\1/g;
   while ((match = namedExportMatch.exec(code)) !== null) {
     const quote = match[1];
     const value = match[2];
@@ -106,91 +112,133 @@ function getFix(filename: string, code: string): string | null {
 describe("no-index-imports", () => {
   describe("valid cases", () => {
     it("allows directory imports without /index", () => {
-      expect(runRule("/project/src/foo.ts", `import { bar } from "./utils";`).length).toBe(0);
+      expect(
+        runRule("/project/src/foo.ts", `import { bar } from "./utils";`).length,
+      ).toBe(0);
     });
 
     it("allows relative imports to files", () => {
       expect(
-        runRule("/project/src/foo.ts", `import { bar } from "./utils/helper.ts";`).length,
+        runRule(
+          "/project/src/foo.ts",
+          `import { bar } from "./utils/helper.ts";`,
+        ).length,
       ).toBe(0);
     });
 
     it("allows package imports", () => {
-      expect(runRule("/project/src/foo.ts", `import React from "react";`).length).toBe(0);
+      expect(
+        runRule("/project/src/foo.ts", `import React from "react";`).length,
+      ).toBe(0);
     });
 
     it("allows scoped package imports", () => {
-      expect(runRule("/project/src/foo.ts", `import { z } from "zod/v4";`).length).toBe(0);
+      expect(
+        runRule("/project/src/foo.ts", `import { z } from "zod/v4";`).length,
+      ).toBe(0);
     });
 
     it("allows hash imports", () => {
-      expect(runRule("/project/src/foo.ts", `import { config } from "#config";`).length).toBe(0);
+      expect(
+        runRule("/project/src/foo.ts", `import { config } from "#config";`)
+          .length,
+      ).toBe(0);
     });
 
     it("allows ./index.ts (current directory index)", () => {
       expect(
-        runRule("/project/src/utils/helper.ts", `import { foo } from "./index.ts";`).length,
+        runRule(
+          "/project/src/utils/helper.ts",
+          `import { foo } from "./index.ts";`,
+        ).length,
       ).toBe(0);
     });
 
     it("allows ./index (current directory index without extension)", () => {
-      expect(runRule("/project/src/utils/helper.ts", `import { foo } from "./index";`).length).toBe(
-        0,
-      );
+      expect(
+        runRule(
+          "/project/src/utils/helper.ts",
+          `import { foo } from "./index";`,
+        ).length,
+      ).toBe(0);
     });
 
     it("allows ../index.ts (parent directory index)", () => {
       expect(
-        runRule("/project/src/utils/helper.ts", `import { foo } from "../index.ts";`).length,
+        runRule(
+          "/project/src/utils/helper.ts",
+          `import { foo } from "../index.ts";`,
+        ).length,
       ).toBe(0);
     });
 
     it("allows ../../index.ts (grandparent directory index)", () => {
       expect(
-        runRule("/project/src/utils/deep/helper.ts", `import { foo } from "../../index.ts";`)
-          .length,
+        runRule(
+          "/project/src/utils/deep/helper.ts",
+          `import { foo } from "../../index.ts";`,
+        ).length,
       ).toBe(0);
     });
 
     it("allows ../index (parent directory index without extension)", () => {
       expect(
-        runRule("/project/src/utils/helper.ts", `import { foo } from "../index";`).length,
+        runRule(
+          "/project/src/utils/helper.ts",
+          `import { foo } from "../index";`,
+        ).length,
       ).toBe(0);
     });
 
     it("skips '.' in node_modules", () => {
-      expect(runRule("/project/node_modules/pkg/foo.ts", `import { a } from ".";`).length).toBe(0);
+      expect(
+        runRule("/project/node_modules/pkg/foo.ts", `import { a } from ".";`)
+          .length,
+      ).toBe(0);
     });
 
     it("skips node_modules", () => {
       expect(
-        runRule("/project/node_modules/pkg/index.ts", `import { a } from "./foo/index.ts";`).length,
+        runRule(
+          "/project/node_modules/pkg/index.ts",
+          `import { a } from "./foo/index.ts";`,
+        ).length,
       ).toBe(0);
     });
 
     it("skips dist", () => {
-      expect(runRule("/project/dist/index.ts", `import { a } from "./foo/index.ts";`).length).toBe(
-        0,
-      );
+      expect(
+        runRule("/project/dist/index.ts", `import { a } from "./foo/index.ts";`)
+          .length,
+      ).toBe(0);
     });
   });
 
   describe("invalid cases", () => {
     it("reports /index.ts imports", () => {
-      const reports = runRule("/project/src/foo.ts", `import { bar } from "./utils/index.ts";`);
+      const reports = runRule(
+        "/project/src/foo.ts",
+        `import { bar } from "./utils/index.ts";`,
+      );
       expect(reports.length).toBe(1);
       expect(reports[0]!.messageId).toBe("noIndexImport");
       expect(reports[0]!.data?.suggested).toBe("./utils");
     });
 
     it("reports /index imports without extension", () => {
-      const reports = runRule("/project/src/foo.ts", `import { bar } from "./utils/index";`);
+      const reports = runRule(
+        "/project/src/foo.ts",
+        `import { bar } from "./utils/index";`,
+      );
       expect(reports.length).toBe(1);
       expect(reports[0]!.data?.suggested).toBe("./utils");
     });
 
     it("reports /index.js imports", () => {
-      const reports = runRule("/project/src/foo.ts", `import { bar } from "./utils/index.js";`);
+      const reports = runRule(
+        "/project/src/foo.ts",
+        `import { bar } from "./utils/index.js";`,
+      );
       expect(reports.length).toBe(1);
     });
 
@@ -220,23 +268,35 @@ describe("no-index-imports", () => {
     });
 
     it("reports export from /index.ts", () => {
-      const reports = runRule("/project/src/index.ts", `export { foo } from "./utils/index.ts";`);
+      const reports = runRule(
+        "/project/src/index.ts",
+        `export { foo } from "./utils/index.ts";`,
+      );
       expect(reports.length).toBe(1);
     });
 
     it("reports export * from /index.ts", () => {
-      const reports = runRule("/project/src/index.ts", `export * from "./utils/index.ts";`);
+      const reports = runRule(
+        "/project/src/index.ts",
+        `export * from "./utils/index.ts";`,
+      );
       expect(reports.length).toBe(1);
     });
 
     it("reports '.' imports - should use ./index instead", () => {
-      const reports = runRule("/project/src/utils/helper.ts", `import { foo } from ".";`);
+      const reports = runRule(
+        "/project/src/utils/helper.ts",
+        `import { foo } from ".";`,
+      );
       expect(reports.length).toBe(1);
       expect(reports[0]!.messageId).toBe("useDotIndex");
     });
 
     it("reports '.' exports - should use ./index instead", () => {
-      const reports = runRule("/project/src/utils/helper.ts", `export { foo } from ".";`);
+      const reports = runRule(
+        "/project/src/utils/helper.ts",
+        `export { foo } from ".";`,
+      );
       expect(reports.length).toBe(1);
       expect(reports[0]!.messageId).toBe("useDotIndex");
     });
@@ -244,32 +304,50 @@ describe("no-index-imports", () => {
 
   describe("autofix", () => {
     it("fixes /index.ts to directory import", () => {
-      const fixed = getFix("/project/src/foo.ts", `import { bar } from "./utils/index.ts";`);
+      const fixed = getFix(
+        "/project/src/foo.ts",
+        `import { bar } from "./utils/index.ts";`,
+      );
       expect(fixed).toBe(`import { bar } from "./utils";`);
     });
 
     it("fixes /index to directory import", () => {
-      const fixed = getFix("/project/src/foo.ts", `import { bar } from "./utils/index";`);
+      const fixed = getFix(
+        "/project/src/foo.ts",
+        `import { bar } from "./utils/index";`,
+      );
       expect(fixed).toBe(`import { bar } from "./utils";`);
     });
 
     it("fixes nested paths", () => {
-      const fixed = getFix("/project/src/foo.ts", `import { bar } from "../lib/utils/index.ts";`);
+      const fixed = getFix(
+        "/project/src/foo.ts",
+        `import { bar } from "../lib/utils/index.ts";`,
+      );
       expect(fixed).toBe(`import { bar } from "../lib/utils";`);
     });
 
     it("fixes export statements", () => {
-      const fixed = getFix("/project/src/index.ts", `export { foo } from "./utils/index.ts";`);
+      const fixed = getFix(
+        "/project/src/index.ts",
+        `export { foo } from "./utils/index.ts";`,
+      );
       expect(fixed).toBe(`export { foo } from "./utils";`);
     });
 
     it("preserves single quotes", () => {
-      const fixed = getFix("/project/src/foo.ts", `import { bar } from './utils/index.ts';`);
+      const fixed = getFix(
+        "/project/src/foo.ts",
+        `import { bar } from './utils/index.ts';`,
+      );
       expect(fixed).toBe(`import { bar } from './utils';`);
     });
 
     it("fixes '.' to ./index", () => {
-      const fixed = getFix("/project/src/utils/helper.ts", `import { foo } from ".";`);
+      const fixed = getFix(
+        "/project/src/utils/helper.ts",
+        `import { foo } from ".";`,
+      );
       expect(fixed).toBe(`import { foo } from "./index";`);
     });
   });

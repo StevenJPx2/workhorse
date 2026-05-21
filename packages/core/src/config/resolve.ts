@@ -17,7 +17,9 @@ import type { ConfigPaths } from "./types.ts";
  *
  * Worktrees root: ../repo-worktrees/ (sibling to repo)
  */
-export function resolveConfigPaths(repoRoot: string = process.cwd()): ConfigPaths {
+export function resolveConfigPaths(
+  repoRoot: string = process.cwd(),
+): ConfigPaths {
   const home = homedir();
   const xdgConfig = process.env["XDG_CONFIG_HOME"] ?? join(home, ".config");
   const globalDir = join(

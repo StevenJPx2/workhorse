@@ -28,9 +28,14 @@ const WorkhorseContext = createContext<WorkhorseContextValue>();
 /**
  * Provider component that makes Workhorse services available to the TUI.
  */
-export function WorkhorseProvider(props: { value: WorkhorseContextValue; children: JSX.Element }) {
+export function WorkhorseProvider(props: {
+  value: WorkhorseContextValue;
+  children: JSX.Element;
+}) {
   return (
-    <WorkhorseContext.Provider value={props.value}>{props.children}</WorkhorseContext.Provider>
+    <WorkhorseContext.Provider value={props.value}>
+      {props.children}
+    </WorkhorseContext.Provider>
   );
 }
 
@@ -41,7 +46,9 @@ export function WorkhorseProvider(props: { value: WorkhorseContextValue; childre
 export function useWorkhorseContext(): WorkhorseContextValue {
   const ctx = useContext(WorkhorseContext);
   if (!ctx) {
-    throw new Error("useWorkhorseContext must be used within WorkhorseProvider");
+    throw new Error(
+      "useWorkhorseContext must be used within WorkhorseProvider",
+    );
   }
   return ctx;
 }

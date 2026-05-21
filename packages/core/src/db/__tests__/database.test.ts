@@ -1,5 +1,9 @@
 import { Database } from "../database.ts";
-import { makeEventInput, makeIssueInput, makeNotificationInput } from "./factories.ts";
+import {
+  makeEventInput,
+  makeIssueInput,
+  makeNotificationInput,
+} from "./factories.ts";
 
 describe("Database", () => {
   let db: Database;
@@ -49,8 +53,12 @@ describe("Database", () => {
     });
 
     it("allows same external_id with different source", async () => {
-      await db.issues.insert(makeIssueInput({ externalId: "123", source: "jira" }));
-      await db.issues.insert(makeIssueInput({ externalId: "123", source: "github" }));
+      await db.issues.insert(
+        makeIssueInput({ externalId: "123", source: "jira" }),
+      );
+      await db.issues.insert(
+        makeIssueInput({ externalId: "123", source: "github" }),
+      );
 
       expect(await db.issues.getAll()).toHaveLength(2);
     });
@@ -64,11 +72,15 @@ describe("Database", () => {
 
       expect(updated.title).toBe("Updated title");
       expect(updated.assignee).toBe("bob");
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(issue.updatedAt.getTime());
+      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        issue.updatedAt.getTime(),
+      );
     });
 
     it("updates issue status", async () => {
-      const issue = await db.issues.insert(makeIssueInput({ status: "pending" }));
+      const issue = await db.issues.insert(
+        makeIssueInput({ status: "pending" }),
+      );
       const updated = await db.issues.updateStatus(issue.id, "implementing");
 
       expect(updated.status).toBe("implementing");
@@ -122,7 +134,9 @@ describe("Database", () => {
     });
 
     it("filters issues by status", async () => {
-      await db.issues.insert(makeIssueInput({ externalId: "1", source: "a", status: "pending" }));
+      await db.issues.insert(
+        makeIssueInput({ externalId: "1", source: "a", status: "pending" }),
+      );
       await db.issues.insert(
         makeIssueInput({
           externalId: "2",
@@ -130,8 +144,12 @@ describe("Database", () => {
           status: "implementing",
         }),
       );
-      await db.issues.insert(makeIssueInput({ externalId: "3", source: "c", status: "done" }));
-      await db.issues.insert(makeIssueInput({ externalId: "4", source: "d", status: "pending" }));
+      await db.issues.insert(
+        makeIssueInput({ externalId: "3", source: "c", status: "done" }),
+      );
+      await db.issues.insert(
+        makeIssueInput({ externalId: "4", source: "d", status: "pending" }),
+      );
 
       const pending = await db.issues.getByStatus("pending");
       expect(pending).toHaveLength(2);
@@ -195,7 +213,9 @@ describe("Database", () => {
   describe("events", () => {
     it("inserts event linked to issue", async () => {
       const issue = await db.issues.insert(makeIssueInput());
-      const event = await db.events.insert(makeEventInput({ issueId: issue.id }));
+      const event = await db.events.insert(
+        makeEventInput({ issueId: issue.id }),
+      );
 
       expect(event.id).toBeDefined();
       expect(event.issueId).toBe(issue.id);
@@ -261,7 +281,9 @@ describe("Database", () => {
 
     it("handles event without metadata", async () => {
       const issue = await db.issues.insert(makeIssueInput());
-      await db.events.insert(makeEventInput({ issueId: issue.id, metadata: null }));
+      await db.events.insert(
+        makeEventInput({ issueId: issue.id, metadata: null }),
+      );
 
       const events = await db.events.getForIssue(issue.id);
       expect(events).toHaveLength(1);
@@ -274,7 +296,9 @@ describe("Database", () => {
   describe("notifications", () => {
     it("creates notification with generated id", async () => {
       const issue = await db.issues.insert(makeIssueInput());
-      const notif = await db.notifications.create(makeNotificationInput({ issueId: issue.id }));
+      const notif = await db.notifications.create(
+        makeNotificationInput({ issueId: issue.id }),
+      );
 
       expect(notif.id).toBeDefined();
       expect(notif.issueId).toBe(issue.id);
@@ -337,7 +361,9 @@ describe("Database", () => {
 
     it("marks notification as read", async () => {
       const issue = await db.issues.insert(makeIssueInput());
-      const notif = await db.notifications.create(makeNotificationInput({ issueId: issue.id }));
+      const notif = await db.notifications.create(
+        makeNotificationInput({ issueId: issue.id }),
+      );
 
       await db.notifications.markRead(notif.id);
 
@@ -347,7 +373,9 @@ describe("Database", () => {
 
     it("marks notification as acknowledged", async () => {
       const issue = await db.issues.insert(makeIssueInput());
-      const notif = await db.notifications.create(makeNotificationInput({ issueId: issue.id }));
+      const notif = await db.notifications.create(
+        makeNotificationInput({ issueId: issue.id }),
+      );
 
       await db.notifications.markAcknowledged(notif.id);
 
@@ -383,7 +411,9 @@ describe("Database", () => {
     it("round-trips notification metadata as JSON", async () => {
       const issue = await db.issues.insert(makeIssueInput());
       const metadata = { author: "alice", mentionedUsers: ["bob", "charlie"] };
-      await db.notifications.create(makeNotificationInput({ issueId: issue.id, metadata }));
+      await db.notifications.create(
+        makeNotificationInput({ issueId: issue.id, metadata }),
+      );
 
       const unread = await db.notifications.getUnread(issue.id);
       expect(unread).toHaveLength(1);
@@ -407,8 +437,12 @@ describe("Database", () => {
       const db1 = await Database.create(":memory:");
       const db2 = await Database.create(":memory:");
 
-      const issue1 = await db1.issues.insert(makeIssueInput({ externalId: "1", source: "a" }));
-      const issue2 = await db2.issues.insert(makeIssueInput({ externalId: "2", source: "b" }));
+      const issue1 = await db1.issues.insert(
+        makeIssueInput({ externalId: "1", source: "a" }),
+      );
+      const issue2 = await db2.issues.insert(
+        makeIssueInput({ externalId: "2", source: "b" }),
+      );
 
       expect(issue1.id).toBeDefined();
       expect(issue2.id).toBeDefined();
@@ -419,13 +453,15 @@ describe("Database", () => {
 
     it("returns undefined for non-existent issue", async () => {
       expect(await db.issues.getById("non-existent")).toBeUndefined();
-      expect(await db.issues.getByExternalId("non-existent", "jira")).toBeUndefined();
+      expect(
+        await db.issues.getByExternalId("non-existent", "jira"),
+      ).toBeUndefined();
     });
 
     it("throws when updating non-existent issue", async () => {
-      await expect(db.issues.update("non-existent", { title: "New" })).rejects.toThrow(
-        "Issue not found",
-      );
+      await expect(
+        db.issues.update("non-existent", { title: "New" }),
+      ).rejects.toThrow("Issue not found");
     });
   });
 

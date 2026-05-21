@@ -1,11 +1,17 @@
 import rule from "./enforce-kebab-case-filenames";
 
 function createContext(filename: string) {
-  const reports: Array<{ message: string; loc: { line: number; column: number } }> = [];
+  const reports: Array<{
+    message: string;
+    loc: { line: number; column: number };
+  }> = [];
 
   return {
     filename,
-    report: (data: { message: string; loc: { line: number; column: number } }) => {
+    report: (data: {
+      message: string;
+      loc: { line: number; column: number };
+    }) => {
       reports.push(data);
     },
     reports,

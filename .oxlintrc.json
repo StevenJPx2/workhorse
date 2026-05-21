@@ -1,7 +1,12 @@
 {
   "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
   "jsPlugins": ["./oxlint/eslint-plugin-workhorse"],
-  "ignorePatterns": ["oxlint/**", "dist/**", "node_modules/**", "packages/tui-worktrees/**"],
+  "ignorePatterns": [
+    "oxlint/**",
+    "dist/**",
+    "node_modules/**",
+    "packages/tui-worktrees/**"
+  ],
   "rules": {
     "workhorse/max-lines-per-file": ["error", 200],
     "workhorse/enforce-kebab-case-filenames": "warn",

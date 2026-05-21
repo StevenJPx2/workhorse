@@ -12,9 +12,15 @@ describe("githubPlugin", () => {
     expect(githubPlugin.manifest.version).toBe("1.0.0");
     expect(githubPlugin.manifest.capabilities?.parsers).toContain("github");
     expect(githubPlugin.manifest.capabilities?.monitors).toContain("github-pr");
-    expect(githubPlugin.manifest.capabilities?.tools).toContain("github_open_pr");
-    expect(githubPlugin.manifest.capabilities?.tools).toContain("github_add_comment");
-    expect(githubPlugin.manifest.capabilities?.tools).toContain("github_get_pr_status");
+    expect(githubPlugin.manifest.capabilities?.tools).toContain(
+      "github_open_pr",
+    );
+    expect(githubPlugin.manifest.capabilities?.tools).toContain(
+      "github_add_comment",
+    );
+    expect(githubPlugin.manifest.capabilities?.tools).toContain(
+      "github_get_pr_status",
+    );
   });
 });
 

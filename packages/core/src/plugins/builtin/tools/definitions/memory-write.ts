@@ -20,7 +20,8 @@ export const memoryWriteTool: OrchestratorTool = {
       summary: {
         type: "array",
         items: { type: "string" },
-        description: "Bullet points describing what was accomplished in this session.",
+        description:
+          "Bullet points describing what was accomplished in this session.",
       },
       patterns: {
         type: "array",

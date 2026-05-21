@@ -45,17 +45,29 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
       backgroundColor={theme.colors.background}
     >
       {/* Header */}
-      <box paddingLeft={2} paddingTop={1} paddingBottom={1} backgroundColor={theme.colors.surface}>
+      <box
+        paddingLeft={2}
+        paddingTop={1}
+        paddingBottom={1}
+        backgroundColor={theme.colors.surface}
+      >
         <text fg={theme.colors.warning}>
           <b>⚠️ {props.pluginName} OAuth Not Configured</b>
         </text>
       </box>
 
       {/* Content */}
-      <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
+      <box
+        flexDirection="column"
+        paddingTop={2}
+        paddingLeft={2}
+        paddingRight={2}
+        flexGrow={1}
+      >
         <box flexDirection="column" paddingBottom={1}>
           <text fg={theme.colors.text}>
-            The following environment variables are required for {props.pluginName} OAuth:
+            The following environment variables are required for{" "}
+            {props.pluginName} OAuth:
           </text>
         </box>
 
@@ -66,7 +78,9 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
         </box>
 
         <box flexDirection="column" paddingBottom={2}>
-          <text fg={theme.colors.dim}>To enable {props.pluginName} integration:</text>
+          <text fg={theme.colors.dim}>
+            To enable {props.pluginName} integration:
+          </text>
           <box paddingLeft={2} paddingTop={1} flexDirection="column">
             <text fg={theme.colors.dim}>
               1. Create an OAuth 2.0 app in your Atlassian Developer Console
@@ -80,7 +94,8 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
 
         <box paddingTop={1} flexDirection="column">
           <text fg={theme.colors.accent}>
-            See: https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
+            See:
+            https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
           </text>
         </box>
       </box>
@@ -95,7 +110,8 @@ export function OAuthConfigMissing(props: OAuthConfigMissingProps) {
         borderColor={theme.colors.border}
       >
         <text fg={theme.colors.dim}>
-          <b>[C]</b>ontinue without {props.pluginName} • <b>[Q]</b>uit to configure
+          <b>[C]</b>ontinue without {props.pluginName} • <b>[Q]</b>uit to
+          configure
         </text>
       </box>
     </box>

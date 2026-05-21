@@ -16,7 +16,7 @@ const rule = {
     const maxLines = context.options?.[0] ?? 200;
     const filename = context.filename ?? context.getFilename?.() ?? "";
     const isTestFile = /\.test\.(ts|tsx|js|jsx)$/.test(filename);
-    const effectiveMax = isTestFile ? 500 : maxLines;
+    const effectiveMax = isTestFile ? Math.round(maxLines * 2.5) : maxLines;
 
     return {
       Program(node) {

@@ -56,7 +56,10 @@ describe("previewImageToolImpl", () => {
 
   describe("successful image loading", () => {
     it("loads a PNG image and returns base64 data", async () => {
-      const result = await previewImageToolImpl({ path: "test.png" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "test.png" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("Image loaded: test.png");
@@ -71,7 +74,10 @@ describe("previewImageToolImpl", () => {
     });
 
     it("loads a JPEG image (.jpg extension)", async () => {
-      const result = await previewImageToolImpl({ path: "test.jpg" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "test.jpg" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.images).toBeDefined();
@@ -80,7 +86,10 @@ describe("previewImageToolImpl", () => {
     });
 
     it("loads a JPEG image (.jpeg extension)", async () => {
-      const result = await previewImageToolImpl({ path: "test.jpeg" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "test.jpeg" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.images).toBeDefined();
@@ -88,7 +97,10 @@ describe("previewImageToolImpl", () => {
     });
 
     it("resolves relative paths from worktree", async () => {
-      const result = await previewImageToolImpl({ path: "./test.png" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "./test.png" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.images).toBeDefined();
@@ -96,7 +108,10 @@ describe("previewImageToolImpl", () => {
     });
 
     it("handles absolute paths", async () => {
-      const result = await previewImageToolImpl({ path: join(testDir, "test.png") }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: join(testDir, "test.png") },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.images).toBeDefined();
@@ -114,14 +129,20 @@ describe("previewImageToolImpl", () => {
     });
 
     it("returns error for non-existent file", async () => {
-      const result = await previewImageToolImpl({ path: "nonexistent.png" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "nonexistent.png" },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("File not found");
     });
 
     it("returns error for unsupported file format", async () => {
-      const result = await previewImageToolImpl({ path: "test.txt" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "test.txt" },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Unsupported image format");
@@ -145,7 +166,10 @@ describe("previewImageToolImpl", () => {
       const largeBuffer = Buffer.alloc(11 * 1024 * 1024); // 11MB
       writeFileSync(largePath, largeBuffer);
 
-      const result = await previewImageToolImpl({ path: "large.png" }, mockContext);
+      const result = await previewImageToolImpl(
+        { path: "large.png" },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Image too large");

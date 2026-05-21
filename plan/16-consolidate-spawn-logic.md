@@ -109,11 +109,17 @@ export class PromptEngineer {
   ) {}
 
   /** Build hybrid prompt - no issue param needed */
-  async buildHybridPrompt(options: HybridPromptOptions = {}): Promise<HybridPrompt> {
+  async buildHybridPrompt(
+    options: HybridPromptOptions = {},
+  ): Promise<HybridPrompt> {
     const { sessionMemory, searchResults, contextBlocks, isResume } =
       await this.gatherContext(options);
     return {
-      systemPrompt: this.buildSystemPrompt(contextBlocks, searchResults, options.tools ?? []),
+      systemPrompt: this.buildSystemPrompt(
+        contextBlocks,
+        searchResults,
+        options.tools ?? [],
+      ),
       initialMessage: isResume
         ? buildResumePrompt(this.issue, sessionMemory)
         : buildInitialPrompt(this.issue),
@@ -167,7 +173,11 @@ export class SteeringService {
     this.hooks.on("agent.idle", this.handleIdle.bind(this));
   }
 
-  private handleIdle({ issueId, status, source }: HookEventMap["agent.idle"]): void {
+  private handleIdle({
+    issueId,
+    status,
+    source,
+  }: HookEventMap["agent.idle"]): void {
     // Only handle if it's for our issue
     if (issueId !== this.issue.externalId) return;
     if (!this.config.enabled) return;
@@ -219,7 +229,12 @@ import type { PromptEngineer } from "#workflow/tracker";
 import type { OrchestratorTool } from "./tools.ts";
 
 export type AgentHarness = string;
-export type AgentState = "starting" | "running" | "stopping" | "stopped" | "crashed";
+export type AgentState =
+  | "starting"
+  | "running"
+  | "stopping"
+  | "stopped"
+  | "crashed";
 
 // CreateOptions = SpawnOptions + orchestrator (no separate interface needed)
 // Adapter.create() receives SpawnOptions & { orchestrator }
@@ -356,10 +371,11 @@ export class AgentAdapter {
 
     // Detect resume and build prompt (engineer is per-issue, no issue param needed)
     const isResume = existsSync(join(worktree.path, ".workhorse", "session"));
-    const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
-      isResume,
-      tools: this.tools,
-    });
+    const { systemPrompt, initialMessage } =
+      await this.engineer.buildHybridPrompt({
+        isResume,
+        tools: this.tools,
+      });
     this.systemPrompt = systemPrompt;
     this.initialMessage = initialMessage;
 
@@ -402,7 +418,9 @@ export class AgentAdapter {
    */
   async sendMessage(_content: string): Promise<void> {
     if (this.state !== "running") {
-      throw new Error(`Agent for ${this.issueId} is not running (state: ${this.state})`);
+      throw new Error(
+        `Agent for ${this.issueId} is not running (state: ${this.state})`,
+      );
     }
     throw new Error("Subclass must implement sendMessage()");
   }
@@ -497,9 +515,14 @@ export class HarnessOrchestrator {
       const agent = this.agents.get(issueId);
       if (agent?.state === "running") {
         try {
-          await agent.sendMessage(this.memory.notifications.generateInbox([notification]));
+          await agent.sendMessage(
+            this.memory.notifications.generateInbox([notification]),
+          );
         } catch (err) {
-          console.error(`Failed to push notification to agent ${issueId}:`, err);
+          console.error(
+            `Failed to push notification to agent ${issueId}:`,
+            err,
+          );
         }
       }
     });
@@ -511,7 +534,9 @@ export class HarnessOrchestrator {
   /** Register an adapter class. Plugins call this during setup. */
   registerAdapter(harness: string, adapterClass: typeof AgentAdapter): void {
     if (this.adapters.has(harness)) {
-      console.warn(`Adapter for harness "${harness}" already registered, overwriting`);
+      console.warn(
+        `Adapter for harness "${harness}" already registered, overwriting`,
+      );
     }
     this.adapters.set(harness, adapterClass);
   }
@@ -523,7 +548,8 @@ export class HarnessOrchestrator {
 
   /** Register a tool. Plugins call this during setup. */
   registerTool(tool: OrchestratorTool): void {
-    if (this.tools.has(tool.name)) console.warn(`Tool "${tool.name}" already registered`);
+    if (this.tools.has(tool.name))
+      console.warn(`Tool "${tool.name}" already registered`);
     this.tools.set(tool.name, tool);
   }
 
@@ -604,7 +630,11 @@ export class HarnessOrchestrator {
   async shutdown(): Promise<void> {
     await Promise.all(
       Array.from(this.agents.values()).map((agent) =>
-        agent.stop().catch((err) => console.error(`Error stopping agent ${agent.issueId}:`, err)),
+        agent
+          .stop()
+          .catch((err) =>
+            console.error(`Error stopping agent ${agent.issueId}:`, err),
+          ),
       ),
     );
     this.agents.clear();
@@ -635,8 +665,15 @@ export class HarnessOrchestrator {
 
 ```typescript
 // packages/plugins/pi-adapter/src/adapter.ts
-import { AgentAdapter, type CreateOptions, type StopOptions } from "workhorse-core";
-import { type AgentSession, createAgentSession } from "@mariozechner/pi-coding-agent";
+import {
+  AgentAdapter,
+  type CreateOptions,
+  type StopOptions,
+} from "workhorse-core";
+import {
+  type AgentSession,
+  createAgentSession,
+} from "@mariozechner/pi-coding-agent";
 
 export class PiAgentAdapter extends AgentAdapter {
   readonly harness = "pi-coding-agent";

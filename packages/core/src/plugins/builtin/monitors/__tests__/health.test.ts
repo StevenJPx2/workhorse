@@ -6,7 +6,9 @@ import { createMockHooks } from "#test-helpers";
 import { createAgentHealthMonitor } from "../health.ts";
 
 describe("createAgentHealthMonitor", () => {
-  function createMockContext(overrides: Partial<MonitorContext> = {}): MonitorContext {
+  function createMockContext(
+    overrides: Partial<MonitorContext> = {},
+  ): MonitorContext {
     return {
       issueId: "AM-123",
       hooks: createMockHooks(),
@@ -17,7 +19,12 @@ describe("createAgentHealthMonitor", () => {
         prompt: {},
         ui: { theme: "default" },
         plugins: { disabled: [] },
-        steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
+        steering: {
+          enabled: false,
+          debounceMs: 500,
+          maxReminders: 3,
+          cooldownMs: 60000,
+        },
       },
       ...overrides,
     };

@@ -16,21 +16,28 @@ describe("github_get_attachments", () => {
 
   const createMockService = () => ({
     exists: vi.fn().mockResolvedValue(null),
-    store: vi.fn(async (_repo: string, _issue: string, _content: Buffer, metadata: unknown) => {
-      const m = metadata as {
-        filename: string;
-        mimeType: string;
-        size: number;
-        originalUrl: string;
-      };
-      return {
-        filename: m.filename,
-        mimeType: m.mimeType,
-        size: m.size,
-        localPath: `/attachments/${m.filename}`,
-        originalUrl: m.originalUrl,
-      };
-    }),
+    store: vi.fn(
+      async (
+        _repo: string,
+        _issue: string,
+        _content: Buffer,
+        metadata: unknown,
+      ) => {
+        const m = metadata as {
+          filename: string;
+          mimeType: string;
+          size: number;
+          originalUrl: string;
+        };
+        return {
+          filename: m.filename,
+          mimeType: m.mimeType,
+          size: m.size,
+          localPath: `/attachments/${m.filename}`,
+          originalUrl: m.originalUrl,
+        };
+      },
+    ),
     getIssueDir: vi.fn(() => "/attachments"),
     list: vi.fn(),
     delete: vi.fn(),
@@ -58,9 +65,12 @@ describe("github_get_attachments", () => {
     );
 
     try {
-      const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-        issueId: "issue-1",
-      } as never);
+      const result = await tool.execute(
+        { owner: "octocat", repo: "hello-world", number: 1 },
+        {
+          issueId: "issue-1",
+        } as never,
+      );
 
       expect(result.success).toBe(true);
       const output = JSON.parse(result.output!);
@@ -101,9 +111,12 @@ describe("github_get_attachments", () => {
     );
 
     try {
-      const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-        issueId: "issue-1",
-      } as never);
+      const result = await tool.execute(
+        { owner: "octocat", repo: "hello-world", number: 1 },
+        {
+          issueId: "issue-1",
+        } as never,
+      );
 
       expect(result.success).toBe(true);
       const output = JSON.parse(result.output!);
@@ -131,9 +144,12 @@ describe("github_get_attachments", () => {
       mockService as unknown as AttachmentService,
     );
 
-    const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-      issueId: "issue-1",
-    } as never);
+    const result = await tool.execute(
+      { owner: "octocat", repo: "hello-world", number: 1 },
+      {
+        issueId: "issue-1",
+      } as never,
+    );
 
     expect(result.success).toBe(true);
     const output = JSON.parse(result.output!);
@@ -148,7 +164,9 @@ describe("github_get_attachments", () => {
     const mockClient = createMockClient();
     const mockService = createMockService();
 
-    mockClient.fetchIssue.mockResolvedValue({ body: "No images here, just text." });
+    mockClient.fetchIssue.mockResolvedValue({
+      body: "No images here, just text.",
+    });
     mockClient.getPRComments.mockResolvedValue([]);
 
     const tool = createGetAttachmentsTool(
@@ -156,9 +174,12 @@ describe("github_get_attachments", () => {
       mockService as unknown as AttachmentService,
     );
 
-    const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-      issueId: "issue-1",
-    } as never);
+    const result = await tool.execute(
+      { owner: "octocat", repo: "hello-world", number: 1 },
+      {
+        issueId: "issue-1",
+      } as never,
+    );
 
     expect(result.success).toBe(true);
     const output = JSON.parse(result.output!);
@@ -189,9 +210,12 @@ describe("github_get_attachments", () => {
     );
 
     try {
-      const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-        issueId: "issue-1",
-      } as never);
+      const result = await tool.execute(
+        { owner: "octocat", repo: "hello-world", number: 1 },
+        {
+          issueId: "issue-1",
+        } as never,
+      );
 
       expect(result.success).toBe(true);
       const output = JSON.parse(result.output!);
@@ -208,16 +232,21 @@ describe("github_get_attachments", () => {
     const mockClient = createMockClient();
     const mockService = createMockService();
 
-    mockClient.fetchIssue.mockRejectedValue(new Error("API rate limit exceeded"));
+    mockClient.fetchIssue.mockRejectedValue(
+      new Error("API rate limit exceeded"),
+    );
 
     const tool = createGetAttachmentsTool(
       mockClient as unknown as GitHubClient,
       mockService as unknown as AttachmentService,
     );
 
-    const result = await tool.execute({ owner: "octocat", repo: "hello-world", number: 1 }, {
-      issueId: "issue-1",
-    } as never);
+    const result = await tool.execute(
+      { owner: "octocat", repo: "hello-world", number: 1 },
+      {
+        issueId: "issue-1",
+      } as never,
+    );
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("API rate limit exceeded");

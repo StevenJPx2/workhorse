@@ -10,7 +10,10 @@ import type { RenderedActivity } from "./types.ts";
  * Render GitHub tool calls.
  * Returns null for non-GitHub tools.
  */
-export function renderGithubTool(tool: string, args: unknown): RenderedActivity | null {
+export function renderGithubTool(
+  tool: string,
+  args: unknown,
+): RenderedActivity | null {
   if (!tool.startsWith("github_")) return null;
 
   const toolArgs = (args ?? {}) as Record<string, unknown>;
@@ -38,7 +41,8 @@ export function renderGithubTool(tool: string, args: unknown): RenderedActivity 
       return {
         icon: "💬",
         title: "Adding GitHub comment",
-        subtitle: owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
+        subtitle:
+          owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
         style: "inline",
         color: "accent",
       };
@@ -51,7 +55,8 @@ export function renderGithubTool(tool: string, args: unknown): RenderedActivity 
       return {
         icon: "📊",
         title: "Checking PR status",
-        subtitle: owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
+        subtitle:
+          owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
         style: "inline",
         color: "dim",
       };
@@ -92,7 +97,8 @@ export function renderGithubTool(tool: string, args: unknown): RenderedActivity 
       return {
         icon: "📎",
         title: "Downloading GitHub attachments",
-        subtitle: owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
+        subtitle:
+          owner && repo && number ? `${owner}/${repo}#${number}` : undefined,
         style: "inline",
         color: "dim",
       };

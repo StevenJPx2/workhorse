@@ -3,10 +3,16 @@
  * Generic renderer that works with any notification source.
  */
 
-import type { ActivityColor, ActivityInput, RenderedActivity } from "./types.ts";
+import type {
+  ActivityColor,
+  ActivityInput,
+  RenderedActivity,
+} from "./types.ts";
 
 /** Notification renderer for TUI display. */
-export function notificationRenderer(input: ActivityInput): RenderedActivity | null {
+export function notificationRenderer(
+  input: ActivityInput,
+): RenderedActivity | null {
   if (input.kind !== "notification") return null;
 
   const { notification } = input;

@@ -53,12 +53,16 @@ describe("registerBuiltinSkills", () => {
     const calls = mockRegistry.registerSkill.mock.calls;
 
     // Plugin development skill should contain plugin-related content
-    const pluginSkill = calls.find((call) => call[0].id === "builtin:plugin-development")?.[0];
+    const pluginSkill = calls.find(
+      (call) => call[0].id === "builtin:plugin-development",
+    )?.[0];
     expect(pluginSkill?.instructions).toContain("definePlugin");
     expect(pluginSkill?.instructions).toContain("useWorkhorse");
 
     // Skill development skill should contain skill-related content
-    const skillSkill = calls.find((call) => call[0].id === "builtin:skill-development")?.[0];
+    const skillSkill = calls.find(
+      (call) => call[0].id === "builtin:skill-development",
+    )?.[0];
     expect(skillSkill?.instructions).toContain("load_skill");
     expect(skillSkill?.instructions).toContain(".workhorse/skills");
   });
@@ -67,7 +71,9 @@ describe("registerBuiltinSkills", () => {
     registerBuiltinSkills(mockRegistry as unknown as SkillRegistry);
 
     const calls = mockRegistry.registerSkill.mock.calls;
-    const pluginSkill = calls.find((call) => call[0].id === "builtin:plugin-development")?.[0];
+    const pluginSkill = calls.find(
+      (call) => call[0].id === "builtin:plugin-development",
+    )?.[0];
 
     // Should include the dynamically generated hooks reference
     expect(pluginSkill?.instructions).toContain("## Hooks Reference");

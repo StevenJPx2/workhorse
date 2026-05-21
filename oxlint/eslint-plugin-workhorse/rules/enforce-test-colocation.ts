@@ -43,7 +43,9 @@ const rule = {
       // sibling, the test must live inside __tests__/ instead.
       if (isTestFile(path.basename(filename))) {
         const hasTestsDir = entries.some(
-          (entry) => entry === "__tests__" && fs.statSync(path.join(dirname, entry)).isDirectory(),
+          (entry) =>
+            entry === "__tests__" &&
+            fs.statSync(path.join(dirname, entry)).isDirectory(),
         );
 
         if (hasTestsDir) {

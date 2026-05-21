@@ -1,7 +1,12 @@
 // workhorse-core — main entry point
 
 export * from "#config";
-export { type WorkhorseContext, runWithContext, tryUseWorkhorse, useWorkhorse } from "#context";
+export {
+  type WorkhorseContext,
+  runWithContext,
+  tryUseWorkhorse,
+  useWorkhorse,
+} from "#context";
 export type {
   Issue,
   IssueEvent,

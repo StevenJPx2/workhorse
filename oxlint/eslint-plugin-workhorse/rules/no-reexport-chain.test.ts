@@ -32,8 +32,14 @@ beforeAll(() => {
 
   // submodule/index.ts - a barrel that re-exports (should be allowed to chain from)
   mkdirSync(path.join(testDir, "submodule"), { recursive: true });
-  writeFileSync(path.join(testDir, "submodule", "core.ts"), `export class Core { }\n`);
-  writeFileSync(path.join(testDir, "submodule", "index.ts"), `export { Core } from "./core";\n`);
+  writeFileSync(
+    path.join(testDir, "submodule", "core.ts"),
+    `export class Core { }\n`,
+  );
+  writeFileSync(
+    path.join(testDir, "submodule", "index.ts"),
+    `export { Core } from "./core";\n`,
+  );
 });
 
 afterAll(() => {
@@ -42,11 +48,18 @@ afterAll(() => {
 
 /** Create a mock ESLint context */
 function createContext(filename: string) {
-  const reports: Array<{ node: unknown; messageId: string; data: Record<string, string> }> = [];
+  const reports: Array<{
+    node: unknown;
+    messageId: string;
+    data: Record<string, string>;
+  }> = [];
   return {
     filename,
-    report: (data: { node: unknown; messageId: string; data: Record<string, string> }) =>
-      reports.push(data),
+    report: (data: {
+      node: unknown;
+      messageId: string;
+      data: Record<string, string>;
+    }) => reports.push(data),
     reports,
   };
 }
@@ -74,41 +87,55 @@ function runRule(filename: string, source: string, specifiers: string[]) {
 describe("no-reexport-chain", () => {
   describe("valid cases", () => {
     it("skips non-barrel files", () => {
-      const reports = runRule(path.join(testDir, "other.ts"), "./agent", ["Foo"]);
+      const reports = runRule(path.join(testDir, "other.ts"), "./agent", [
+        "Foo",
+      ]);
       expect(reports).toHaveLength(0);
     });
 
     it("allows re-export from canonical source", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "./utils", ["helper"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./utils", [
+        "helper",
+      ]);
       expect(reports).toHaveLength(0);
     });
 
     it("allows re-export of locally defined symbol", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "./agent", ["Agent"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./agent", [
+        "Agent",
+      ]);
       expect(reports).toHaveLength(0);
     });
 
     it("skips non-relative imports (npm packages)", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "react", ["useState"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "react", [
+        "useState",
+      ]);
       expect(reports).toHaveLength(0);
     });
 
     it("skips non-TypeScript files", () => {
-      const reports = runRule(path.join(testDir, "index.js"), "./agent", ["Foo"]);
+      const reports = runRule(path.join(testDir, "index.js"), "./agent", [
+        "Foo",
+      ]);
       expect(reports).toHaveLength(0);
     });
 
     it("allows re-export from sub-barrel (folder with index.ts)", () => {
       // Even though submodule/index.ts re-exports Core from ./core.ts,
       // we should allow re-exporting from ./submodule since it's a barrel
-      const reports = runRule(path.join(testDir, "index.ts"), "./submodule", ["Core"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./submodule", [
+        "Core",
+      ]);
       expect(reports).toHaveLength(0);
     });
   });
 
   describe("invalid cases", () => {
     it("reports chained re-export (Foo via agent.ts from types.ts)", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "./agent", ["Foo"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./agent", [
+        "Foo",
+      ]);
       expect(reports).toHaveLength(1);
       expect(reports[0]!.messageId).toBe("chainedReexport");
       expect(reports[0]!.data.name).toBe("Foo");
@@ -117,14 +144,20 @@ describe("no-reexport-chain", () => {
     });
 
     it("reports multiple chained re-exports", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "./agent", ["Foo", "Bar"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./agent", [
+        "Foo",
+        "Bar",
+      ]);
       expect(reports).toHaveLength(2);
       expect(reports[0]!.data.name).toBe("Foo");
       expect(reports[1]!.data.name).toBe("Bar");
     });
 
     it("reports only chained re-exports, not local definitions", () => {
-      const reports = runRule(path.join(testDir, "index.ts"), "./agent", ["Agent", "Foo"]);
+      const reports = runRule(path.join(testDir, "index.ts"), "./agent", [
+        "Agent",
+        "Foo",
+      ]);
       expect(reports).toHaveLength(1);
       expect(reports[0]!.data.name).toBe("Foo");
     });

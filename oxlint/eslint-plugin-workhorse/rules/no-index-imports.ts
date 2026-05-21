@@ -10,13 +10,15 @@ const rule = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "Disallow explicit /index.ts imports. Use directory imports instead.",
+      description:
+        "Disallow explicit /index.ts imports. Use directory imports instead.",
     },
     fixable: "code",
     messages: {
       noIndexImport:
         'Import from directory instead of index file. Use "{{suggested}}" instead of "{{source}}"',
-      useDotIndex: 'Use "./index" or "./index.ts" instead of "." for current directory imports',
+      useDotIndex:
+        'Use "./index" or "./index.ts" instead of "." for current directory imports',
     },
   },
 
@@ -58,7 +60,9 @@ const rule = {
       }
 
       // Check for explicit index imports: ./foo/index, ./foo/index.ts, ./foo/index.js, etc.
-      const indexMatch = source.match(/^(.+)\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/);
+      const indexMatch = source.match(
+        /^(.+)\/index(\.tsx?|\.jsx?|\.mts|\.mjs)?$/,
+      );
       if (indexMatch) {
         const suggested = indexMatch[1];
 
@@ -70,7 +74,10 @@ const rule = {
             // Replace the source string, keeping the quotes
             const raw = node.source.raw;
             const quote = raw[0];
-            return fixer.replaceText(node.source, `${quote}${suggested}${quote}`);
+            return fixer.replaceText(
+              node.source,
+              `${quote}${suggested}${quote}`,
+            );
           },
         });
       }

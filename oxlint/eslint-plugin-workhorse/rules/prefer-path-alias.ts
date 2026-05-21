@@ -63,7 +63,10 @@ function countParentTraversals(importPath: string): number {
  * @param importPath - The relative import (e.g., ../../services/memory/index.ts)
  * @returns The resolved path relative to src/ (e.g., services/memory)
  */
-function resolveImportPath(filename: string, importPath: string): string | null {
+function resolveImportPath(
+  filename: string,
+  importPath: string,
+): string | null {
   // Extract the directory of the importing file
   const srcIndex = filename.indexOf("/src/");
   if (srcIndex === -1) return null;
@@ -96,7 +99,9 @@ function resolveImportPath(filename: string, importPath: string): string | null 
 /**
  * Find the best matching alias for a resolved path
  */
-function findMatchingAlias(resolvedPath: string): { alias: string; suffix: string } | null {
+function findMatchingAlias(
+  resolvedPath: string,
+): { alias: string; suffix: string } | null {
   // Try exact match first
   if (ALIAS_LOOKUP.has(resolvedPath)) {
     return { alias: ALIAS_LOOKUP.get(resolvedPath)!, suffix: "" };
@@ -119,11 +124,13 @@ const rule = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "Prefer path aliases over deep relative imports (2+ parent traversals)",
+      description:
+        "Prefer path aliases over deep relative imports (2+ parent traversals)",
     },
     fixable: "code",
     messages: {
-      preferAlias: 'Use path alias "{{suggested}}" instead of deep relative import "{{source}}"',
+      preferAlias:
+        'Use path alias "{{suggested}}" instead of deep relative import "{{source}}"',
     },
   },
 

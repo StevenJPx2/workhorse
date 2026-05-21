@@ -15,7 +15,9 @@ export function mapGitHubToIssue(gh: GitHubIssue): ParsedIssue {
   let issueType: IssueType = "task";
   if (labelNames.some((l) => l.includes("bug") || l.includes("defect"))) {
     issueType = "bug";
-  } else if (labelNames.some((l) => l.includes("feature") || l.includes("enhancement"))) {
+  } else if (
+    labelNames.some((l) => l.includes("feature") || l.includes("enhancement"))
+  ) {
     issueType = "story";
   } else if (labelNames.some((l) => l.includes("epic"))) {
     issueType = "epic";

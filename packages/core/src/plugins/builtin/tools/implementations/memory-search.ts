@@ -50,12 +50,17 @@ export async function memorySearchToolImpl(
       success: true,
       output: `Found ${results.length} result(s):\n\n${results
         .map((r, i) => {
-          const parts = [`## Result ${i + 1} (score: ${r.score.toFixed(3)})`, `**ID:** ${r.id}`];
+          const parts = [
+            `## Result ${i + 1} (score: ${r.score.toFixed(3)})`,
+            `**ID:** ${r.id}`,
+          ];
 
           if (r.metadata) {
             if (r.metadata.type) parts.push(`**Type:** ${r.metadata.type}`);
-            if (r.metadata.issueId) parts.push(`**Issue:** ${r.metadata.issueId}`);
-            if (r.metadata.source) parts.push(`**Source:** ${r.metadata.source}`);
+            if (r.metadata.issueId)
+              parts.push(`**Issue:** ${r.metadata.issueId}`);
+            if (r.metadata.source)
+              parts.push(`**Source:** ${r.metadata.source}`);
           }
 
           if (r.content) {

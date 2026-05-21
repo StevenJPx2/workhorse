@@ -1,21 +1,23 @@
 /** Agent adapter base class. Lifecycle: create() → start() → sendMessage() → stop() */
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-
 import type { Database, Issue } from "#db";
-import { createWorktree, removeWorktree } from "#lib";
 import type { HookEmitter } from "#lib";
+import { createWorktree, removeWorktree } from "#lib";
 import type { MemoryService } from "#services";
-import { SteeringRule } from "#workflow";
-import { PromptEngineer } from "#workflow";
-
-import type { HarnessOrchestrator } from "./orchestrator.ts";
-import type { ModelRegistry } from "./registry.ts";
-import type { AgentHarness, AgentState, CreateOptions, StopOptions } from "./types/adapter.ts";
-import type { OrchestratorTool } from "./types/tools.ts";
+import { PromptEngineer, type SteeringRule } from "#workflow";
+import type { HarnessOrchestrator } from "../orchestrator.ts";
+import type { ModelRegistry } from "../registry.ts";
+import { createSteeringRules } from "./steering-setup.ts";
+import type {
+  AgentHarness,
+  AgentState,
+  CreateOptions,
+  StopOptions,
+} from "../types/adapter.ts";
+import type { OrchestratorTool } from "../types/tools.ts";
+import { subscribeAgentHooks } from "./hooks.ts";
 
 /** Base class for agent adapters. Subclasses override doStart/doStop/sendMessage/isRunning. */
-export abstract class AgentAdapter {
+export class AgentAdapter {
   readonly harness: AgentHarness = "base";
   static readonly displayName: string = "Base Agent";
   static readonly icon: string = "🤖";
@@ -46,21 +48,14 @@ export abstract class AgentAdapter {
       this.hooks,
     );
 
-    this.steering = this.orchestrator.getSteeringRules().map((config) => {
-      return new SteeringRule({
-        config,
-        hooks: this.hooks,
-        issue: this.issue,
-        steeringConfig: this.orchestrator.config.steering,
-        // Notifications are stored with internal issue.id (UUID)
-        getNotifications: () => this.memory.notifications.getUnread(this.issue.id),
-      });
-    });
+    this.steering = createSteeringRules(this.orchestrator, this.issue);
   }
   get tools(): OrchestratorTool[] {
     return this.orchestrator
       .getTools()
-      .filter((t) => !t.sources?.length || t.sources.includes(this.issue.source));
+      .filter(
+        (t) => !t.sources?.length || t.sources.includes(this.issue.source),
+      );
   }
   get db(): Database {
     return this.orchestrator.db;
@@ -80,57 +75,45 @@ export abstract class AgentAdapter {
 
   /** Factory method - creates and initializes an adapter instance. */
   static async create(options: CreateOptions): Promise<AgentAdapter> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const adapter = new (this as any)(options) as AgentAdapter;
-    await adapter.initialize(options);
-    return adapter;
-  }
+    const adapter = new AgentAdapter(options);
 
-  /** Initialize worktree and build prompt. Called by create() after construction. */
-  protected async initialize(options: CreateOptions): Promise<void> {
-    this.hooks.emit("agent.create.pre", { issue: this.issue, options });
+    adapter.hooks.emit("agent.create.pre", {
+      issue: adapter.issue,
+      options,
+    });
     const worktree = await createWorktree(
       options.repoPath,
-      this.issue.externalId,
-      this.issue.issueType,
+      adapter.issue.externalId,
+      adapter.issue.issueType,
       options.baseBranch ?? "main",
     );
-    if (!worktree) throw new Error(`Failed to create worktree for ${this.issue.externalId}`);
+    if (!worktree)
+      throw new Error(
+        `Failed to create worktree for ${adapter.issue.externalId}`,
+      );
 
-    this.worktreePath = worktree.path;
-    await this.db.issues.update(this.issue.id, { worktreePath: worktree.path });
+    adapter.worktreePath = worktree.path;
+    await adapter.db.issues.update(adapter.issue.id, {
+      worktreePath: worktree.path,
+    });
 
     // Register L1 context for session memory
-    const l1Context = this.memory.l1.register(this.issue.externalId, worktree.path);
+    const l1Context = adapter.memory.l1.register(
+      adapter.issue.externalId,
+      worktree.path,
+    );
     if (!l1Context.exists()) {
-      await l1Context.create(`${this.issue.externalId}: ${this.issue.title}`, this.issue.status);
+      await l1Context.create(
+        `${adapter.issue.externalId}: ${adapter.issue.title}`,
+        adapter.issue.status,
+      );
     }
 
-    const { systemPrompt, initialMessage } = await this.engineer.buildHybridPrompt({
-      isResume: existsSync(join(this.worktreePath, ".workhorse", "session")),
-      tools: this.tools,
-      skills: this.skills,
-    });
-    this.systemPrompt = systemPrompt;
-    this.initialMessage = initialMessage;
+    subscribeAgentHooks(adapter.hooks, adapter);
 
-    // Push notifications to agent (issueId is external ID for TUI consistency)
-    this.hooks.on("notification.created", async ({ notification, issueId }) => {
-      if (this.issueId !== issueId || this.state !== "running") return;
-      await this.sendMessage(this.memory.notifications.generateInbox([notification])).catch((err) =>
-        console.error(`Failed to push notification to agent ${this.issueId}:`, err),
-      );
-    });
+    adapter.hooks.emit("agent.create.post", { adapter });
 
-    // Deliver steering reminders to agent
-    this.hooks.on("steering.reminder", async ({ issueId, reminder }) => {
-      if (this.issueId !== issueId || this.state !== "running") return;
-      await this.sendMessage(reminder).catch((err) => {
-        console.error(`Failed to deliver steering reminder to agent ${issueId}:`, err);
-      });
-    });
-
-    this.hooks.emit("agent.create.post", { adapter: this });
+    return adapter;
   }
 
   /** Start the agent. Subclasses override doStart(). */
@@ -158,7 +141,9 @@ export abstract class AgentAdapter {
   /** Send message to agent. Subclasses must override. */
   async sendMessage(_content: string): Promise<void> {
     if (this.state !== "running")
-      throw new Error(`Agent for ${this.issueId} is not running (state: ${this.state})`);
+      throw new Error(
+        `Agent for ${this.issueId} is not running (state: ${this.state})`,
+      );
     throw new Error("Subclass must implement sendMessage()");
   }
 

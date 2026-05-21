@@ -45,18 +45,31 @@ export function SpawningState(props: SpawningStateProps) {
       </box>
 
       {/* Main content - centered loading state */}
-      <box flexDirection="column" flexGrow={1} alignItems="center" justifyContent="center" gap={2}>
+      <box
+        flexDirection="column"
+        flexGrow={1}
+        alignItems="center"
+        justifyContent="center"
+        gap={2}
+      >
         <box flexDirection="row" gap={1}>
           <Spinner color={theme.colors.accent} />
           <text fg={theme.colors.text}>
             <b>Spawning agent...</b>
           </text>
         </box>
-        <text fg={theme.colors.dim}>Creating worktree and preparing environment</text>
+        <text fg={theme.colors.dim}>
+          Creating worktree and preparing environment
+        </text>
       </box>
 
       {/* Status bar placeholder */}
-      <box flexDirection="row" backgroundColor={theme.colors.surface} paddingX={2} paddingY={1}>
+      <box
+        flexDirection="row"
+        backgroundColor={theme.colors.surface}
+        paddingX={2}
+        paddingY={1}
+      >
         <text fg={theme.colors.dim}>Press ESC to cancel and go back</text>
       </box>
     </box>

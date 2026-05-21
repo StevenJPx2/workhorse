@@ -10,7 +10,9 @@ import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { getElement } from "../session-operations.ts";
 
 /** Create the playwright_get_element tool */
-export function createGetElementTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {
+export function createGetElementTool(
+  sessionManager: PlaywrightSessionManager,
+): OrchestratorTool {
   return {
     name: "playwright_get_element",
     description:

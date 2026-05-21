@@ -7,9 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FigmaClient } from "../client.ts";
 
 const originalFetch = globalThis.fetch;
-const mockFetch = vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
+const mockFetch =
+  vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
 
-const testClient = () => new FigmaClient(async () => ({ accessToken: "test-token-abc" }));
+const testClient = () =>
+  new FigmaClient(async () => ({ accessToken: "test-token-abc" }));
 
 describe("FigmaClient", () => {
   beforeEach(() => {
@@ -59,7 +61,11 @@ describe("FigmaClient", () => {
     });
 
     it("returns the parsed JSON response", async () => {
-      const fixture = { name: "Design System", version: "v99", lastModified: "2024-01-01" };
+      const fixture = {
+        name: "Design System",
+        version: "v99",
+        lastModified: "2024-01-01",
+      };
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => fixture,
@@ -89,7 +95,9 @@ describe("FigmaClient", () => {
     it("URL-encodes the node ID and hits the /nodes endpoint", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ nodes: { "5:10": { document: { id: "5:10", name: "Frame" } } } }),
+        json: async () => ({
+          nodes: { "5:10": { document: { id: "5:10", name: "Frame" } } },
+        }),
       } as Response);
 
       await testClient().fetchNode("fileKey1", "5:10");
@@ -102,7 +110,9 @@ describe("FigmaClient", () => {
     });
 
     it("returns the nodes map", async () => {
-      const fixture = { nodes: { "1:2": { document: { id: "1:2", name: "Hero" } } } };
+      const fixture = {
+        nodes: { "1:2": { document: { id: "1:2", name: "Hero" } } },
+      };
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => fixture,
@@ -164,7 +174,9 @@ describe("FigmaClient", () => {
         text: async () => "",
       } as Response);
 
-      await expect(testClient().fetchComments("no-such-file")).rejects.toThrow(/404/);
+      await expect(testClient().fetchComments("no-such-file")).rejects.toThrow(
+        /404/,
+      );
     });
   });
 
@@ -225,7 +237,9 @@ describe("FigmaClient", () => {
         text: async () => "Invalid comment",
       } as Response);
 
-      await expect(testClient().postComment("fileKey1", "")).rejects.toThrow(/400/);
+      await expect(testClient().postComment("fileKey1", "")).rejects.toThrow(
+        /400/,
+      );
     });
   });
 
@@ -235,13 +249,20 @@ describe("FigmaClient", () => {
     it("returns the version string from the file", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: "App", version: "v77", lastModified: "2024-06-01" }),
+        json: async () => ({
+          name: "App",
+          version: "v77",
+          lastModified: "2024-06-01",
+        }),
       } as Response);
 
       const version = await testClient().fetchFileVersion("fileKey1");
       expect(version).toBe("v77");
       // Uses depth=1 for cheapness
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("depth=1"), expect.anything());
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("depth=1"),
+        expect.anything(),
+      );
     });
   });
 });

@@ -44,7 +44,9 @@ export class PluginRegistry {
       // ~/.workhorse/plugins/
       this.discover(join(paths.globalDir, "plugins")),
       // .workhorse/plugins/ (relative to project root)
-      this.discover(join(dirname(paths.projectConfig), ".workhorse", "plugins")),
+      this.discover(
+        join(dirname(paths.projectConfig), ".workhorse", "plugins"),
+      ),
     ]);
   }
 
@@ -57,7 +59,9 @@ export class PluginRegistry {
     }
 
     if (this.has(plugin.manifest.name)) {
-      console.warn(`Plugin "${plugin.manifest.name}" is already registered, skipping`);
+      console.warn(
+        `Plugin "${plugin.manifest.name}" is already registered, skipping`,
+      );
       return;
     }
 
@@ -71,7 +75,8 @@ export class PluginRegistry {
       const fullPath = join(directory, entry.name);
 
       if (entry.isFile() && !/\.(ts|js|mjs|mts)$/.test(entry.name)) continue;
-      if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts"))) continue;
+      if (entry.isDirectory() && !existsSync(join(fullPath, "index.ts")))
+        continue;
 
       await this.load(fullPath).catch((error) => {
         console.warn(`Skipping invalid plugin "${fullPath}": ${error.message}`);

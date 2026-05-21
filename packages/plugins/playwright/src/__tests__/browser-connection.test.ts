@@ -40,7 +40,11 @@ const mockChromium = {
 };
 
 vi.mock("playwright", () => ({
-  default: { chromium: mockChromium, firefox: mockChromium, webkit: mockChromium },
+  default: {
+    chromium: mockChromium,
+    firefox: mockChromium,
+    webkit: mockChromium,
+  },
   chromium: mockChromium,
   firefox: mockChromium,
   webkit: mockChromium,
@@ -51,6 +55,12 @@ const {
   launchBrowser,
   addInitScript,
   navigateTo,
+  closeBrowser,
+  getCurrentUrl,
+  hasNavigated,
+} = await import("../browser-connection.ts");
+
+const {
   clickElement,
   fillField,
   takeScreenshot,
@@ -58,10 +68,7 @@ const {
   getPageContent,
   evaluateScript,
   setViewport,
-  closeBrowser,
-  getCurrentUrl,
-  hasNavigated,
-} = await import("../browser-connection.ts");
+} = await import("../page-actions.ts");
 
 describe("browser-connection", () => {
   const defaultConfig: BrowserConnectionConfig = {
@@ -95,7 +102,10 @@ describe("browser-connection", () => {
 
       expect(mockPage.on).toHaveBeenCalledWith("console", expect.any(Function));
       expect(mockPage.on).toHaveBeenCalledWith("request", expect.any(Function));
-      expect(mockPage.on).toHaveBeenCalledWith("response", expect.any(Function));
+      expect(mockPage.on).toHaveBeenCalledWith(
+        "response",
+        expect.any(Function),
+      );
     });
 
     it("initializes empty arrays for messages and requests", async () => {
@@ -152,7 +162,9 @@ describe("browser-connection", () => {
     it("uses custom waitUntil option", async () => {
       const conn = await launchBrowser(defaultConfig);
 
-      await navigateTo(conn, "https://example.com", { waitUntil: "networkidle" });
+      await navigateTo(conn, "https://example.com", {
+        waitUntil: "networkidle",
+      });
 
       expect(mockPage.goto).toHaveBeenCalledWith("https://example.com", {
         waitUntil: "networkidle",
@@ -178,7 +190,9 @@ describe("browser-connection", () => {
 
       await clickElement(conn, "button.submit");
 
-      expect(mockPage.click).toHaveBeenCalledWith("button.submit", { timeout: 30000 });
+      expect(mockPage.click).toHaveBeenCalledWith("button.submit", {
+        timeout: 30000,
+      });
     });
 
     it("uses custom timeout", async () => {
@@ -196,9 +210,13 @@ describe("browser-connection", () => {
 
       await fillField(conn, "input[name=email]", "test@example.com");
 
-      expect(mockPage.fill).toHaveBeenCalledWith("input[name=email]", "test@example.com", {
-        timeout: 30000,
-      });
+      expect(mockPage.fill).toHaveBeenCalledWith(
+        "input[name=email]",
+        "test@example.com",
+        {
+          timeout: 30000,
+        },
+      );
     });
   });
 
@@ -222,13 +240,18 @@ describe("browser-connection", () => {
 
       await takeScreenshot(conn, "/tmp/full.png", { fullPage: true });
 
-      expect(mockPage.screenshot).toHaveBeenCalledWith(expect.objectContaining({ fullPage: true }));
+      expect(mockPage.screenshot).toHaveBeenCalledWith(
+        expect.objectContaining({ fullPage: true }),
+      );
     });
 
     it("takes JPEG with quality", async () => {
       const conn = await launchBrowser(defaultConfig);
 
-      await takeScreenshot(conn, "/tmp/photo.jpeg", { type: "jpeg", quality: 80 });
+      await takeScreenshot(conn, "/tmp/photo.jpeg", {
+        type: "jpeg",
+        quality: 80,
+      });
 
       expect(mockPage.screenshot).toHaveBeenCalledWith(
         expect.objectContaining({ type: "jpeg", quality: 80 }),
@@ -250,7 +273,9 @@ describe("browser-connection", () => {
       const mockElement = {
         evaluate: vi.fn(() => Promise.resolve("button")),
         textContent: vi.fn(() => Promise.resolve("Click me")),
-        boundingBox: vi.fn(() => Promise.resolve({ x: 10, y: 20, width: 100, height: 50 })),
+        boundingBox: vi.fn(() =>
+          Promise.resolve({ x: 10, y: 20, width: 100, height: 50 }),
+        ),
       };
       mockPage.$.mockResolvedValueOnce(mockElement);
       const conn = await launchBrowser(defaultConfig);
@@ -260,7 +285,12 @@ describe("browser-connection", () => {
       expect(info.found).toBe(true);
       expect(info.tagName).toBe("button");
       expect(info.textContent).toBe("Click me");
-      expect(info.boundingBox).toEqual({ x: 10, y: 20, width: 100, height: 50 });
+      expect(info.boundingBox).toEqual({
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 50,
+      });
     });
 
     it("truncates long text content", async () => {

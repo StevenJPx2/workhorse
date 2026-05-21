@@ -10,7 +10,11 @@
  * - Rules are fully autonomous: subscribe to hooks, evaluate, emit reminders
  */
 
-export { SteeringRule, type SteeringConfig, type SteeringRuleOptions } from "./rule.ts";
+export {
+  SteeringRule,
+  type SteeringConfig,
+  type SteeringRuleOptions,
+} from "./rule.ts";
 export {
   type HookHistoryEntry,
   type ToolHistoryEntry,

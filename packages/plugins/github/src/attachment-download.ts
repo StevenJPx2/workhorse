@@ -44,7 +44,11 @@ export async function downloadAttachments(
 
   for (const att of attachments) {
     // Check if already downloaded
-    const existingPath = await attachmentService.exists(repoIdentifier, issueId, att.id);
+    const existingPath = await attachmentService.exists(
+      repoIdentifier,
+      issueId,
+      att.id,
+    );
     if (existingPath) {
       result.cached.push(existingPath);
       continue;
@@ -52,14 +56,19 @@ export async function downloadAttachments(
 
     try {
       const content = await downloadImage(att.url);
-      const stored = await attachmentService.store(repoIdentifier, issueId, content, {
-        source: "github",
-        sourceId: att.id,
-        filename: att.filename,
-        mimeType: att.mimeType,
-        size: content.length,
-        originalUrl: att.url,
-      });
+      const stored = await attachmentService.store(
+        repoIdentifier,
+        issueId,
+        content,
+        {
+          source: "github",
+          sourceId: att.id,
+          filename: att.filename,
+          mimeType: att.mimeType,
+          size: content.length,
+          originalUrl: att.url,
+        },
+      );
       result.downloaded.push(stored);
     } catch (error) {
       result.failed.push({
@@ -91,7 +100,11 @@ export async function downloadDirectUrl(
   const repoIdentifier = "direct-download";
 
   // Check if already downloaded
-  const existingPath = await attachmentService.exists(repoIdentifier, issueId, urlHash);
+  const existingPath = await attachmentService.exists(
+    repoIdentifier,
+    issueId,
+    urlHash,
+  );
   if (existingPath) {
     return {
       success: true,
@@ -107,14 +120,19 @@ export async function downloadDirectUrl(
   const content = await downloadImage(url);
 
   // Store it
-  const stored = await attachmentService.store(repoIdentifier, issueId, content, {
-    source: "github",
-    sourceId: urlHash,
-    filename: `github-image-${urlHash}.png`,
-    mimeType: "image/png", // Default, could be improved with content-type detection
-    size: content.length,
-    originalUrl: url,
-  });
+  const stored = await attachmentService.store(
+    repoIdentifier,
+    issueId,
+    content,
+    {
+      source: "github",
+      sourceId: urlHash,
+      filename: `github-image-${urlHash}.png`,
+      mimeType: "image/png", // Default, could be improved with content-type detection
+      size: content.length,
+      originalUrl: url,
+    },
+  );
 
   return {
     success: true,

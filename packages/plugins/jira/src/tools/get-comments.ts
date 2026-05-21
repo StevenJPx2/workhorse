@@ -10,7 +10,9 @@ import { extractMediaRefsFromAdf } from "../attachments.ts";
 import type { AtlassianClient } from "../client.ts";
 
 /** Tool: Get all comments from a Jira issue */
-export function createGetCommentsTool(client: AtlassianClient): OrchestratorTool {
+export function createGetCommentsTool(
+  client: AtlassianClient,
+): OrchestratorTool {
   return {
     name: "jira_get_comments",
     description:

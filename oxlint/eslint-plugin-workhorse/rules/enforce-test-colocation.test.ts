@@ -22,11 +22,17 @@ const { default: rule } = await import("./enforce-test-colocation");
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function createContext(filename: string) {
-  const reports: Array<{ message: string; loc: { line: number; column: number } }> = [];
+  const reports: Array<{
+    message: string;
+    loc: { line: number; column: number };
+  }> = [];
 
   return {
     filename,
-    report: (data: { message: string; loc: { line: number; column: number } }) => {
+    report: (data: {
+      message: string;
+      loc: { line: number; column: number };
+    }) => {
       reports.push(data);
     },
     reports,
@@ -54,7 +60,9 @@ describe("enforce-test-colocation", () => {
   });
 
   it("should skip files in __tests__ directories", () => {
-    expect(runRule("/project/src/hooks/__tests__/use-interactive.test.ts").length).toBe(0);
+    expect(
+      runRule("/project/src/hooks/__tests__/use-interactive.test.ts").length,
+    ).toBe(0);
   });
 
   it("should skip files in dist", () => {
@@ -79,7 +87,9 @@ describe("enforce-test-colocation", () => {
     fakeEntries = ["a.ts", "b.ts", "c.ts", "a.test.ts", "b.test.ts"];
     const reports = runRule("/project/src/hooks/a.ts");
     expect(reports.length).toBe(1);
-    expect(reports[0]!.message).toContain("Move tests to a __tests__/ directory");
+    expect(reports[0]!.message).toContain(
+      "Move tests to a __tests__/ directory",
+    );
   });
 
   // ── __tests__/ directory already exists ─────────────────────────────────
@@ -90,8 +100,12 @@ describe("enforce-test-colocation", () => {
 
     const reports = runRule("/project/src/hooks/index.test.ts");
     expect(reports.length).toBe(1);
-    expect(reports[0]!.message).toContain("A __tests__/ directory already exists");
-    expect(reports[0]!.message).toContain("Move this test file inside __tests__/ instead");
+    expect(reports[0]!.message).toContain(
+      "A __tests__/ directory already exists",
+    );
+    expect(reports[0]!.message).toContain(
+      "Move this test file inside __tests__/ instead",
+    );
   });
 
   it("should not report a non-test file when __tests__/ exists as a sibling", () => {
@@ -115,7 +129,9 @@ describe("enforce-test-colocation", () => {
     fakeEntries = ["use-interactive.test.ts"];
     fakeDirs.add("/project/src/hooks/__tests__");
 
-    expect(runRule("/project/src/hooks/__tests__/use-interactive.test.ts").length).toBe(0);
+    expect(
+      runRule("/project/src/hooks/__tests__/use-interactive.test.ts").length,
+    ).toBe(0);
   });
 
   it("should include the folder name in the __tests__/ violation message", () => {
@@ -130,7 +146,9 @@ describe("enforce-test-colocation", () => {
 
   it("should have correct rule metadata", () => {
     expect(rule.meta.docs.description).toContain("test file colocation");
-    expect(rule.meta.docs.description).toContain("__tests__/ directory already exists");
+    expect(rule.meta.docs.description).toContain(
+      "__tests__/ directory already exists",
+    );
   });
 
   it.fails("TODO: implement configurable test directory pattern", () => {

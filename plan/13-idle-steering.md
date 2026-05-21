@@ -190,7 +190,10 @@ ctx.hooks.on("github:pr.merged", async ({ issueId, pr }) => {
   const jiraIssue = await fetchIssue(issueId);
   await transitionToStatus(issueId, "In QA");
   await assignTo(issueId, jiraIssue.fields.reporter.accountId);
-  await addComment(issueId, `✅ PR #${pr.number} merged. Assigned to reporter for QA.`);
+  await addComment(
+    issueId,
+    `✅ PR #${pr.number} merged. Assigned to reporter for QA.`,
+  );
 });
 ```
 
@@ -360,7 +363,9 @@ class SteeringService {
 
       // Generate reminder
       const reminder =
-        typeof rule.reminder === "function" ? await rule.reminder(ctx) : rule.reminder;
+        typeof rule.reminder === "function"
+          ? await rule.reminder(ctx)
+          : rule.reminder;
 
       matching.push({ rule, reminder });
 
@@ -385,20 +390,28 @@ class SteeringService {
   ): Promise<boolean> {
     // Check status
     if (condition.status) {
-      const statuses = Array.isArray(condition.status) ? condition.status : [condition.status];
+      const statuses = Array.isArray(condition.status)
+        ? condition.status
+        : [condition.status];
       if (!statuses.includes(ctx.issue.status)) return false;
     }
 
     // Check source
     if (condition.source) {
-      const sources = Array.isArray(condition.source) ? condition.source : [condition.source];
+      const sources = Array.isArray(condition.source)
+        ? condition.source
+        : [condition.source];
       if (!sources.includes(ctx.issue.source)) return false;
     }
 
     // Check hook events
     if (condition.hook) {
-      const hooks = Array.isArray(condition.hook) ? condition.hook : [condition.hook];
-      const hasRecentHook = hooks.some((h) => ctx.recentHooks.some((r) => r.name === h));
+      const hooks = Array.isArray(condition.hook)
+        ? condition.hook
+        : [condition.hook];
+      const hasRecentHook = hooks.some((h) =>
+        ctx.recentHooks.some((r) => r.name === h),
+      );
       if (!hasRecentHook) return false;
     }
 
@@ -520,7 +533,8 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:update-after-implementation",
     name: "Update Jira after implementation",
-    description: "Remind to add a comment or transition Jira after implementing",
+    description:
+      "Remind to add a comment or transition Jira after implementing",
     condition: {
       source: "jira",
       status: "in_progress",
@@ -529,7 +543,9 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
         const hasEdits = steerCtx.recentTools.some((t) =>
           ["edit", "write", "create_file"].includes(t.name),
         );
-        const hasJiraUpdate = steerCtx.recentTools.some((t) => t.name.startsWith("jira_"));
+        const hasJiraUpdate = steerCtx.recentTools.some((t) =>
+          t.name.startsWith("jira_"),
+        );
         return hasEdits && !hasJiraUpdate;
       },
     },
@@ -561,7 +577,8 @@ export function registerJiraSteering(ctx: WorkhorseContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "jira:address-feedback",
     name: "Address review feedback",
-    description: "Remind to address comments when there are unacknowledged notifications",
+    description:
+      "Remind to address comments when there are unacknowledged notifications",
     condition: {
       source: "jira",
       when: async (steerCtx) => {
@@ -636,7 +653,9 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
       },
     },
     reminder: (steerCtx) => {
-      const ciFailure = steerCtx.notifications.find((n) => n.type === "ci_failure");
+      const ciFailure = steerCtx.notifications.find(
+        (n) => n.type === "ci_failure",
+      );
       return `CI checks are failing. Review the error and fix the issue:\n\n${ciFailure?.message ?? "Check the PR for details."}`;
     },
     priority: 25,
@@ -652,7 +671,8 @@ export function registerGitHubSteering(ctx: WorkhorseContext): void {
       status: "pr_created",
       when: async (steerCtx) => {
         const reviewRequest = steerCtx.notifications.find(
-          (n) => n.type === "review" && n.priority === "high" && !n.acknowledged,
+          (n) =>
+            n.type === "review" && n.priority === "high" && !n.acknowledged,
         );
         return Boolean(reviewRequest);
       },

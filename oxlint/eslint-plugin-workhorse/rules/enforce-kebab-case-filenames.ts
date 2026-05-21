@@ -7,7 +7,12 @@ function hasUpperCase(filename: string): boolean {
   return /[A-Z]/.test(name);
 }
 
-const ALLOWED_SPECIAL_FILES = new Set(["index.ts", "index.tsx", "index.js", "index.jsx"]);
+const ALLOWED_SPECIAL_FILES = new Set([
+  "index.ts",
+  "index.tsx",
+  "index.js",
+  "index.jsx",
+]);
 
 const rule = {
   meta: {

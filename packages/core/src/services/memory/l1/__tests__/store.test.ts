@@ -29,7 +29,10 @@ describe("L1Store", () => {
   it("scans worktrees root and finds existing contexts", async () => {
     // Create a context.md file first
     mkdirSync(WORKHORSE_DIR, { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n",
+    );
 
     const store = new L1Store(WORKTREES_ROOT);
     const ctx = store.get("AM-123");
@@ -63,7 +66,10 @@ describe("L1Store", () => {
 
     // Create context.md after store construction
     mkdirSync(WORKHORSE_DIR, { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n",
+    );
 
     store.refresh();
     expect(store.get("AM-123")).toBeDefined();
@@ -74,7 +80,10 @@ describe("L1Store", () => {
     const worktreeB = join(WORKTREES_ROOT, "AM-456");
     mkdirSync(WORKHORSE_DIR, { recursive: true });
     mkdirSync(join(worktreeB, ".workhorse"), { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Issue A\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Issue A\n\n## Patterns\n\n## Sessions\n",
+    );
     writeFileSync(
       join(worktreeB, ".workhorse/context.md"),
       "# AM-456: Issue B\n\n## Patterns\n\n## Sessions\n",
@@ -94,7 +103,10 @@ describe("L1Store", () => {
 
     // Also create a valid worktree
     mkdirSync(WORKHORSE_DIR, { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n",
+    );
 
     const store = new L1Store(WORKTREES_ROOT);
 
@@ -110,7 +122,10 @@ describe("L1Store", () => {
 
     // Also create a valid worktree
     mkdirSync(WORKHORSE_DIR, { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n",
+    );
 
     const store = new L1Store(WORKTREES_ROOT);
 
@@ -130,7 +145,10 @@ describe("L1Store", () => {
 
     // Also create a valid worktree
     mkdirSync(WORKHORSE_DIR, { recursive: true });
-    writeFileSync(CONTEXT_FILE, "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n");
+    writeFileSync(
+      CONTEXT_FILE,
+      "# AM-123: Test Issue\n\n## Patterns\n\n## Sessions\n",
+    );
 
     const store = new L1Store(WORKTREES_ROOT);
 

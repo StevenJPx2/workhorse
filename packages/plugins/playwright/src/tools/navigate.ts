@@ -9,7 +9,9 @@ import type { OrchestratorTool } from "workhorse-core";
 import type { PlaywrightSessionManager } from "../session-manager.ts";
 
 /** Create the playwright_navigate tool */
-export function createNavigateTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {
+export function createNavigateTool(
+  sessionManager: PlaywrightSessionManager,
+): OrchestratorTool {
   return {
     name: "playwright_navigate",
     description:
@@ -20,7 +22,8 @@ export function createNavigateTool(sessionManager: PlaywrightSessionManager): Or
       properties: {
         url: {
           type: "string",
-          description: "The URL to navigate to (must be a valid http:// or https:// URL)",
+          description:
+            "The URL to navigate to (must be a valid http:// or https:// URL)",
         },
         waitUntil: {
           type: "string",
@@ -48,7 +51,10 @@ export function createNavigateTool(sessionManager: PlaywrightSessionManager): Or
         return { success: false, error: `Invalid URL: ${url}` };
       }
 
-      const result = await sessionManager.navigate(ctx.issueId, url, { waitUntil, timeout });
+      const result = await sessionManager.navigate(ctx.issueId, url, {
+        waitUntil,
+        timeout,
+      });
 
       if (!result.success) {
         return { success: false, error: result.error };

@@ -13,12 +13,14 @@ import { createGetAttachmentsTool } from "../tools/get-attachments.ts";
 function createMockDb(externalId: string, source: string = "jira") {
   return {
     issues: {
-      getByExternalId: vi.fn().mockImplementation((extId: string, src: string) => {
-        if (extId === externalId && src === source) {
-          return { id: "uuid-123", externalId, source };
-        }
-        return undefined;
-      }),
+      getByExternalId: vi
+        .fn()
+        .mockImplementation((extId: string, src: string) => {
+          if (extId === externalId && src === source) {
+            return { id: "uuid-123", externalId, source };
+          }
+          return undefined;
+        }),
     },
   };
 }
@@ -27,12 +29,14 @@ function createMockDb(externalId: string, source: string = "jira") {
 function createMockDbWithRepo(externalId: string, repository: string) {
   return {
     issues: {
-      getByExternalId: vi.fn().mockImplementation((extId: string, src: string) => {
-        if (extId === externalId && src === "jira") {
-          return { id: "uuid-123", externalId, source: "jira", repository };
-        }
-        return undefined;
-      }),
+      getByExternalId: vi
+        .fn()
+        .mockImplementation((extId: string, src: string) => {
+          if (extId === externalId && src === "jira") {
+            return { id: "uuid-123", externalId, source: "jira", repository };
+          }
+          return undefined;
+        }),
     },
   };
 }
@@ -41,12 +45,14 @@ function createMockDbWithRepo(externalId: string, repository: string) {
 function createMockAttachmentService() {
   return {
     exists: vi.fn().mockResolvedValue(null),
-    store: vi.fn().mockImplementation(async (_repo, _issue, _content, meta) => ({
-      filename: meta.filename,
-      mimeType: meta.mimeType,
-      size: meta.size,
-      localPath: `/attachments/${meta.sourceId}_${meta.filename}`,
-    })),
+    store: vi
+      .fn()
+      .mockImplementation(async (_repo, _issue, _content, meta) => ({
+        filename: meta.filename,
+        mimeType: meta.mimeType,
+        size: meta.size,
+        localPath: `/attachments/${meta.sourceId}_${meta.filename}`,
+      })),
     getIssueDir: vi.fn().mockReturnValue("/attachments"),
   } as unknown as AttachmentService;
 }
@@ -106,7 +112,13 @@ describe("jira_get_attachments tool", () => {
         key: "AM-123",
         fields: {
           attachment: [
-            { id: "att-1", filename: "image.png", mimeType: "image/png", size: 100, content: "u1" },
+            {
+              id: "att-1",
+              filename: "image.png",
+              mimeType: "image/png",
+              size: 100,
+              content: "u1",
+            },
             {
               id: "att-2",
               filename: "doc.pdf",
@@ -148,10 +160,9 @@ describe("jira_get_attachments tool", () => {
     const output = JSON.parse(result.output!);
     // Should only have 2 images, not the PDF
     expect(output.total).toBe(2);
-    expect(output.attachments.map((a: { filename: string }) => a.filename)).toEqual([
-      "image.png",
-      "photo.jpg",
-    ]);
+    expect(
+      output.attachments.map((a: { filename: string }) => a.filename),
+    ).toEqual(["image.png", "photo.jpg"]);
   });
 
   it("returns no attachments message when empty", async () => {
@@ -211,7 +222,12 @@ describe("jira_get_attachments tool", () => {
                   content: [
                     {
                       type: "mediaSingle",
-                      content: [{ type: "media", attrs: { id: "media-123", type: "file" } }],
+                      content: [
+                        {
+                          type: "media",
+                          attrs: { id: "media-123", type: "file" },
+                        },
+                      ],
                     },
                   ],
                 },
@@ -265,7 +281,10 @@ describe("jira_get_attachments tool", () => {
                     {
                       type: "mediaSingle",
                       content: [
-                        { type: "media", attrs: { id: "external-media-456", type: "file" } },
+                        {
+                          type: "media",
+                          attrs: { id: "external-media-456", type: "file" },
+                        },
                       ],
                     },
                   ],
@@ -296,7 +315,9 @@ describe("jira_get_attachments tool", () => {
     expect(result.success).toBe(true);
     const output = JSON.parse(result.output!);
     expect(output.unmatchedMediaIds).toContain("external-media-456");
-    expect(output.commentMediaNote).toContain("require viewing the Jira ticket");
+    expect(output.commentMediaNote).toContain(
+      "require viewing the Jira ticket",
+    );
   });
 
   it("returns error for non-Jira issues", async () => {
@@ -327,7 +348,9 @@ describe("jira_get_attachments tool", () => {
 
   it("returns error on API failure", async () => {
     const mockClient = {
-      fetchIssueWithAttachments: vi.fn().mockRejectedValue(new Error("API timeout")),
+      fetchIssueWithAttachments: vi
+        .fn()
+        .mockRejectedValue(new Error("API timeout")),
     } as unknown as AtlassianClient;
 
     const mockDb = createMockDbWithRepo("AM-123", "owner/repo");
@@ -356,7 +379,13 @@ describe("jira_get_attachments tool", () => {
         key: "AM-123",
         fields: {
           attachment: [
-            { id: "att-1", filename: "img.png", mimeType: "image/png", size: 100, content: "u1" },
+            {
+              id: "att-1",
+              filename: "img.png",
+              mimeType: "image/png",
+              size: 100,
+              content: "u1",
+            },
           ],
           comment: { comments: [] },
         },

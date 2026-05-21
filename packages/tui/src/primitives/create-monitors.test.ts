@@ -26,7 +26,11 @@ describe("createMonitors", () => {
       const monitors = mockMonitorService();
       const [issueId] = createSignal<string | null>(null);
 
-      const { state } = createMonitors({ monitors, issueId, pollInterval: 100 });
+      const { state } = createMonitors({
+        monitors,
+        issueId,
+        pollInterval: 100,
+      });
 
       expect(state().monitors).toEqual([]);
       expect(state().loading).toBe(false);
@@ -63,7 +67,11 @@ describe("createMonitors", () => {
       const monitors = mockMonitorService(statuses);
       const [issueId] = createSignal<string | null>("AM-123");
 
-      const { state } = createMonitors({ monitors, issueId, pollInterval: 100 });
+      const { state } = createMonitors({
+        monitors,
+        issueId,
+        pollInterval: 100,
+      });
 
       expect(monitors.getRunningMonitors).toHaveBeenCalledWith("AM-123");
       expect(state().monitors).toEqual(statuses);
@@ -99,15 +107,17 @@ describe("createMonitors", () => {
       createMonitors({ monitors, issueId, pollInterval: 100 });
 
       vi.advanceTimersByTime(100);
-      const countBefore = (monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls
-        .length;
+      const countBefore = (
+        monitors.getRunningMonitors as ReturnType<typeof vi.fn>
+      ).mock.calls.length;
 
       setIssueId(null);
       vi.advanceTimersByTime(200);
 
-      expect((monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
-        countBefore,
-      );
+      expect(
+        (monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls
+          .length,
+      ).toBe(countBefore);
 
       dispose();
     });
@@ -144,11 +154,17 @@ describe("createMonitors", () => {
       ];
       let callIndex = 0;
       const monitors = {
-        getRunningMonitors: vi.fn().mockImplementation(() => monitorResults[callIndex++] ?? []),
+        getRunningMonitors: vi
+          .fn()
+          .mockImplementation(() => monitorResults[callIndex++] ?? []),
       } as unknown as MonitorService;
 
       const [issueId] = createSignal<string | null>("AM-123");
-      const { state } = createMonitors({ monitors, issueId, pollInterval: 100 });
+      const { state } = createMonitors({
+        monitors,
+        issueId,
+        pollInterval: 100,
+      });
 
       expect(state().monitors).toHaveLength(1);
 
@@ -168,7 +184,11 @@ describe("createMonitors", () => {
       } as unknown as MonitorService;
 
       const [issueId] = createSignal<string | null>("AM-123");
-      const { state } = createMonitors({ monitors, issueId, pollInterval: 100 });
+      const { state } = createMonitors({
+        monitors,
+        issueId,
+        pollInterval: 100,
+      });
 
       expect(state().monitors).toEqual([]);
       expect(state().loading).toBe(false);
@@ -182,13 +202,19 @@ describe("createMonitors", () => {
       const monitors = mockMonitorService([]);
       const [issueId] = createSignal<string | null>("AM-123");
 
-      const { refresh } = createMonitors({ monitors, issueId, pollInterval: 100 });
+      const { refresh } = createMonitors({
+        monitors,
+        issueId,
+        pollInterval: 100,
+      });
 
-      const before = (monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls.length;
+      const before = (monitors.getRunningMonitors as ReturnType<typeof vi.fn>)
+        .mock.calls.length;
       refresh();
-      expect((monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
-        before + 1,
-      );
+      expect(
+        (monitors.getRunningMonitors as ReturnType<typeof vi.fn>).mock.calls
+          .length,
+      ).toBe(before + 1);
 
       dispose();
     });

@@ -19,7 +19,8 @@ export function registerBuiltinSkills(registry: SkillRegistry): void {
   registry.registerSkill({
     id: "builtin:plugin-development",
     name: "Plugin Development",
-    description: "How to create Workhorse plugins with tools, parsers, monitors, and hooks",
+    description:
+      "How to create Workhorse plugins with tools, parsers, monitors, and hooks",
     instructions: `${pluginDevelopmentMd}\n\n${generateHooksReference()}`,
     priority: 60,
   });
@@ -28,7 +29,8 @@ export function registerBuiltinSkills(registry: SkillRegistry): void {
   registry.registerSkill({
     id: "builtin:skill-development",
     name: "Skill Development",
-    description: "How to create Workhorse skills for on-demand agent instructions",
+    description:
+      "How to create Workhorse skills for on-demand agent instructions",
     instructions: skillDevelopmentMd,
     priority: 60,
   });

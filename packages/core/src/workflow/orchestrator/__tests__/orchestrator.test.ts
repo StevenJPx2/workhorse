@@ -76,7 +76,8 @@ function createMockAdapterClass() {
     };
 
     harness = "test" as const;
-    state: "stopped" | "starting" | "running" | "stopping" | "crashed" = "stopped";
+    state: "stopped" | "starting" | "running" | "stopping" | "crashed" =
+      "stopped";
     issue: Issue;
     worktreePath = "/test/worktree";
     repoPath: string;
@@ -99,7 +100,8 @@ function createMockAdapterClass() {
       this.state = "running";
     }
     async sendMessage(_content: string) {
-      if (this.state !== "running") throw new Error(`Agent not running (state: ${this.state})`);
+      if (this.state !== "running")
+        throw new Error(`Agent not running (state: ${this.state})`);
     }
     async stop() {
       this.state = "stopped";
@@ -116,7 +118,12 @@ describe("HarnessOrchestrator", () => {
 
   beforeEach(() => {
     deps = createMockDeps();
-    orchestrator = new HarnessOrchestrator(deps.db, deps.hooks, deps.memory, deps.config);
+    orchestrator = new HarnessOrchestrator(
+      deps.db,
+      deps.hooks,
+      deps.memory,
+      deps.config,
+    );
   });
 
   describe("registerTool", () => {
@@ -269,7 +276,11 @@ describe("HarnessOrchestrator", () => {
     it("throws if no adapter registered for harness", async () => {
       const issue = createMockIssue();
       await expect(
-        orchestrator.spawn({ issue, repoPath: "/test/repo", harness: "unknown" }),
+        orchestrator.spawn({
+          issue,
+          repoPath: "/test/repo",
+          harness: "unknown",
+        }),
       ).rejects.toThrow("No adapter registered for harness: unknown");
     });
 
@@ -281,9 +292,9 @@ describe("HarnessOrchestrator", () => {
       const agent = await orchestrator.spawn({ issue, repoPath: "/test/repo" });
       agent.state = "running";
 
-      await expect(orchestrator.spawn({ issue, repoPath: "/test/repo" })).rejects.toThrow(
-        "Agent for issue TEST-123 is already running",
-      );
+      await expect(
+        orchestrator.spawn({ issue, repoPath: "/test/repo" }),
+      ).rejects.toThrow("Agent for issue TEST-123 is already running");
     });
 
     it("replaces stopped agent for same issue", async () => {
@@ -291,10 +302,16 @@ describe("HarnessOrchestrator", () => {
       orchestrator.registerAdapter("test", MockAdapter);
 
       const issue = createMockIssue();
-      const agent1 = await orchestrator.spawn({ issue, repoPath: "/test/repo" });
+      const agent1 = await orchestrator.spawn({
+        issue,
+        repoPath: "/test/repo",
+      });
       agent1.state = "stopped";
 
-      const agent2 = await orchestrator.spawn({ issue, repoPath: "/test/repo" });
+      const agent2 = await orchestrator.spawn({
+        issue,
+        repoPath: "/test/repo",
+      });
 
       expect(agent2).not.toBe(agent1);
       expect(orchestrator.getAgent("TEST-123")).toBe(agent2);
@@ -317,9 +334,9 @@ describe("HarnessOrchestrator", () => {
     });
 
     it("throws if no agent for issue", async () => {
-      await expect(orchestrator.sendMessage("UNKNOWN-123", "Hello")).rejects.toThrow(
-        "No agent found for issue UNKNOWN-123",
-      );
+      await expect(
+        orchestrator.sendMessage("UNKNOWN-123", "Hello"),
+      ).rejects.toThrow("No agent found for issue UNKNOWN-123");
     });
 
     it("throws if agent not running", async () => {
@@ -329,9 +346,9 @@ describe("HarnessOrchestrator", () => {
       const issue = createMockIssue();
       await orchestrator.spawn({ issue, repoPath: "/test/repo" });
 
-      await expect(orchestrator.sendMessage("TEST-123", "Hello")).rejects.toThrow(
-        "Agent for TEST-123 is not running (state: stopped)",
-      );
+      await expect(
+        orchestrator.sendMessage("TEST-123", "Hello"),
+      ).rejects.toThrow("Agent for TEST-123 is not running (state: stopped)");
     });
   });
 
@@ -379,8 +396,14 @@ describe("HarnessOrchestrator", () => {
       const issue1 = createMockIssue("TEST-1");
       const issue2 = createMockIssue("TEST-2");
 
-      const agent1 = await orchestrator.spawn({ issue: issue1, repoPath: "/test/repo" });
-      const agent2 = await orchestrator.spawn({ issue: issue2, repoPath: "/test/repo" });
+      const agent1 = await orchestrator.spawn({
+        issue: issue1,
+        repoPath: "/test/repo",
+      });
+      const agent2 = await orchestrator.spawn({
+        issue: issue2,
+        repoPath: "/test/repo",
+      });
 
       const stop1 = vi.spyOn(agent1, "stop");
       const stop2 = vi.spyOn(agent2, "stop");
@@ -425,7 +448,9 @@ describe("HarnessOrchestrator", () => {
       orchestrator.registerTool(tool);
       orchestrator.registerTool({ ...tool, description: "Second" });
 
-      expect(warnSpy).toHaveBeenCalledWith('Tool "duplicate" already registered');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Tool "duplicate" already registered',
+      );
       warnSpy.mockRestore();
     });
   });

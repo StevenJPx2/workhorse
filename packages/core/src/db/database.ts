@@ -6,7 +6,11 @@ import { type Client, createClient } from "@libsql/client";
 import { type LibSQLDatabase, drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 
-import { EventController, IssueController, NotificationController } from "./controllers";
+import {
+  EventController,
+  IssueController,
+  NotificationController,
+} from "./controllers";
 import * as schema from "./schema";
 
 // oxlint-disable-next-line workhorse/no-single-reference-function
@@ -84,7 +88,9 @@ export class Database {
     }
 
     // libsql uses file: prefix for local files
-    const client = createClient({ url: path === ":memory:" ? ":memory:" : `file:${path}` });
+    const client = createClient({
+      url: path === ":memory:" ? ":memory:" : `file:${path}`,
+    });
 
     // Set pragmas
     await client.execute("PRAGMA journal_mode = WAL;");

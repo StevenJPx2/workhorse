@@ -4,7 +4,11 @@
  * @module workhorse-plugin-github/tools/open-pr
  */
 
-import { type Database, type OrchestratorTool, withWorkhorseFooter } from "workhorse-core";
+import {
+  type Database,
+  type OrchestratorTool,
+  withWorkhorseFooter,
+} from "workhorse-core";
 
 import type { GitHubClient } from "../client";
 import type { PROpeningContext } from "../hooks";
@@ -34,7 +38,10 @@ export function createOpenPRTool(
           type: "string",
           description: "Target branch to merge into (e.g., 'main', 'develop')",
         },
-        draft: { type: "boolean", description: "Create as draft PR (default: false)" },
+        draft: {
+          type: "boolean",
+          description: "Create as draft PR (default: false)",
+        },
       },
       required: ["title", "base"],
     },
@@ -129,7 +136,11 @@ export function createOpenPRTool(
 
         // Emit status changed hook with updated issue (including new metadata)
         hooks.emit("issue.status_changed", {
-          issue: { ...issue, status: "in_review" as const, metadata: updatedMetadata },
+          issue: {
+            ...issue,
+            status: "in_review" as const,
+            metadata: updatedMetadata,
+          },
           from: issue.status,
           to: "in_review",
         });
@@ -143,9 +154,15 @@ export function createOpenPRTool(
         // Start PR monitor for this issue (use internal ID, not externalId)
         monitors.startMonitor("github-pr", issue.id);
 
-        return { success: true, output: `Created PR #${result.number}: ${result.url}` };
+        return {
+          success: true,
+          output: `Created PR #${result.number}: ${result.url}`,
+        };
       } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   };

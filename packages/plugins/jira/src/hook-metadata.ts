@@ -32,7 +32,8 @@ export function registerJiraHookMetadata(): void {
   registerHookMetadata({
     name: "jira:assign.requested",
     category: "Jira",
-    description: "Request assignment of a Jira issue. Use 'self' to assign to current user.",
+    description:
+      "Request assignment of a Jira issue. Use 'self' to assign to current user.",
     payload: '{ issueId: string, assignee: "self" | string }',
     plugin: "jira",
   });
@@ -62,7 +63,8 @@ export function registerJiraHookMetadata(): void {
     name: "jira:comment.added",
     category: "Jira",
     description: "Emitted when a comment is added to a Jira issue",
-    payload: "{ issueId: string, comment: { id: string, author: string, body: string } }",
+    payload:
+      "{ issueId: string, comment: { id: string, author: string, body: string } }",
     plugin: "jira",
   });
 }

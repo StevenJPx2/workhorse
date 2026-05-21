@@ -186,7 +186,9 @@ hooks.on("github:pr.opening", async (event) => {
   if (screenshots.length > 0) {
     event.contributions.push({
       section: "Screenshots",
-      content: screenshots.map((file) => `![${basename(file)}](./${file})`).join("\n\n"),
+      content: screenshots
+        .map((file) => `![${basename(file)}](./${file})`)
+        .join("\n\n"),
       priority: 80, // After code changes, before footer
     });
   }

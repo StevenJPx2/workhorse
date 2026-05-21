@@ -56,8 +56,11 @@ export class FuzzySearcher<T extends FuzzySearchItem> {
     this.itemsById = new Map(items.map((item) => [item.id, item]));
     this.itemsByBaseName = new Map();
     for (const item of items) {
-      const baseName = item.id.includes(":") ? item.id.split(":").slice(1).join(":") : item.id;
-      if (!this.itemsByBaseName.has(baseName)) this.itemsByBaseName.set(baseName, item);
+      const baseName = item.id.includes(":")
+        ? item.id.split(":").slice(1).join(":")
+        : item.id;
+      if (!this.itemsByBaseName.has(baseName))
+        this.itemsByBaseName.set(baseName, item);
     }
   }
 

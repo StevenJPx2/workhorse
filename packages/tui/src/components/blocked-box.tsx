@@ -13,7 +13,11 @@ export function BlockedBox(props: BlockedBoxProps) {
   return (
     <box flexDirection="column" marginBottom={1}>
       {/* Header */}
-      <box backgroundColor={theme.colors.warning} paddingLeft={2} paddingRight={2}>
+      <box
+        backgroundColor={theme.colors.warning}
+        paddingLeft={2}
+        paddingRight={2}
+      >
         <text fg={theme.colors.background}>
           <b>⚠ BLOCKED — Need your help</b>
         </text>

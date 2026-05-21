@@ -15,7 +15,8 @@ describe("registerStatusSync", () => {
     registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
-      ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
+      ([event]: [string, (...args: unknown[]) => unknown]) =>
+        event === "issue.status_changed",
     )![1];
 
     handler({
@@ -34,7 +35,8 @@ describe("registerStatusSync", () => {
     registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
-      ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
+      ([event]: [string, (...args: unknown[]) => unknown]) =>
+        event === "issue.status_changed",
     )![1];
 
     handler({
@@ -57,7 +59,8 @@ describe("registerStatusSync", () => {
     registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
-      ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
+      ([event]: [string, (...args: unknown[]) => unknown]) =>
+        event === "issue.status_changed",
     )![1];
 
     handler({
@@ -85,7 +88,8 @@ describe("registerStatusSync", () => {
     registerStatusSync(ctx);
 
     const handler = hooks.on.mock.calls.find(
-      ([event]: [string, (...args: unknown[]) => unknown]) => event === "issue.status_changed",
+      ([event]: [string, (...args: unknown[]) => unknown]) =>
+        event === "issue.status_changed",
     )![1];
 
     handler({

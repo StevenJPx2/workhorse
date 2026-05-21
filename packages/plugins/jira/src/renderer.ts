@@ -46,7 +46,9 @@ export function jiraRenderer(input: ActivityInput): RenderedActivity | null {
 
 // Notification rendering
 
-function renderNotification(notification: Notification): RenderedActivity | null {
+function renderNotification(
+  notification: Notification,
+): RenderedActivity | null {
   if (notification.source !== "jira") return null;
 
   const meta = notification.metadata as Record<string, unknown> | undefined;

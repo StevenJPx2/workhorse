@@ -2,7 +2,11 @@ import { createRetriv, type SearchFilter } from "retriv";
 import { libsql } from "retriv/db/libsql";
 import { transformersJs } from "retriv/embeddings/transformers-js";
 
-import type { MemoryDocument, MemorySearchOptions, SearchResult } from "./types.ts";
+import type {
+  MemoryDocument,
+  MemorySearchOptions,
+  SearchResult,
+} from "./types.ts";
 
 /** Type for the retriv instance */
 type RetrivInstance = Awaited<ReturnType<typeof createRetriv>>;
@@ -85,7 +89,10 @@ export class L2Store {
    * @param options - Search options (limit, filter, returnContent)
    * @returns Array of search results with scores
    */
-  async search(query: string, options: MemorySearchOptions = {}): Promise<SearchResult[]> {
+  async search(
+    query: string,
+    options: MemorySearchOptions = {},
+  ): Promise<SearchResult[]> {
     const { limit = 10, filter, returnContent = false } = options;
 
     return await this.retriv
@@ -136,13 +143,17 @@ export class L2Store {
  *
  * Converts our simple filter object to retriv's filter format.
  */
-function buildFilter(filter: NonNullable<MemorySearchOptions["filter"]>): SearchFilter {
+function buildFilter(
+  filter: NonNullable<MemorySearchOptions["filter"]>,
+): SearchFilter {
   const result: SearchFilter = {};
 
   for (const [key, value] of Object.entries(filter)) {
     if (
       value !== undefined &&
-      (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+      (typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean")
     ) {
       result[key] = value;
     }

@@ -36,7 +36,8 @@ export function registerGitHubHookMetadata(): void {
     name: "github:pr.created",
     category: "GitHub",
     description: "Emitted when a PR is created for an issue",
-    payload: "{ issueId: string, pr: { number: number, url: string, title: string } }",
+    payload:
+      "{ issueId: string, pr: { number: number, url: string, title: string } }",
     plugin: "github",
   });
 

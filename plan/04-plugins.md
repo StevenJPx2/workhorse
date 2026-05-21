@@ -100,7 +100,11 @@ function definePlugin(options: PluginOptions): Plugin {
 ```typescript
 // registry.ts
 function isPlugin(value: unknown): value is Plugin {
-  return typeof value === "object" && value !== null && Symbol.for("workhorse.plugin") in value;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Symbol.for("workhorse.plugin") in value
+  );
 }
 ```
 

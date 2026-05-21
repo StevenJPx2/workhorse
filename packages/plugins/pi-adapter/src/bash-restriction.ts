@@ -12,7 +12,11 @@ import {
   type BashOperations,
   type BashSpawnHook,
 } from "@earendil-works/pi-coding-agent";
-import { assertPathAllowed, isPathAllowed, type PathValidationOptions } from "workhorse-core";
+import {
+  assertPathAllowed,
+  isPathAllowed,
+  type PathValidationOptions,
+} from "workhorse-core";
 
 import { GitOperationTracker } from "./git-operation-tracker.ts";
 
@@ -46,7 +50,9 @@ const DEFAULT_TMP_DIR = tmpdir();
 const DEFAULT_BASH_TIMEOUT_MS = 5 * 60 * 1000;
 
 /** Creates a spawn hook that validates cwd before command execution. */
-export function createPathValidatingSpawnHook(options: RestrictedBashOptions): BashSpawnHook {
+export function createPathValidatingSpawnHook(
+  options: RestrictedBashOptions,
+): BashSpawnHook {
   const { rootDir, allowTmp = true, additionalEnv } = options;
 
   // Build the list of allowed directories
@@ -77,8 +83,15 @@ export function createPathValidatingSpawnHook(options: RestrictedBashOptions): B
 }
 
 /** Creates bash operations that validate paths and track git operations. */
-export function createRestrictedBashOperations(options: RestrictedBashOptions): BashOperations {
-  const { rootDir, allowTmp = true, shellPath, gitOperationTimeoutMs } = options;
+export function createRestrictedBashOperations(
+  options: RestrictedBashOptions,
+): BashOperations {
+  const {
+    rootDir,
+    allowTmp = true,
+    shellPath,
+    gitOperationTimeoutMs,
+  } = options;
 
   // Build the list of allowed directories
   const additionalAllowedDirs = [...(options.additionalAllowedDirs ?? [])];
@@ -95,7 +108,12 @@ export function createRestrictedBashOperations(options: RestrictedBashOptions): 
       // Check if git operation has timed out before executing
       const gitError = gitTracker.checkCommand(command);
       if (gitError) {
-        return { stdout: "", stderr: gitError, exitCode: 1, interrupted: false };
+        return {
+          stdout: "",
+          stderr: gitError,
+          exitCode: 1,
+          interrupted: false,
+        };
       }
 
       // assertPathAllowed throws if cwd is outside allowed directories
@@ -126,7 +144,12 @@ export function createRestrictedBashConfig(config: RestrictedBashToolConfig): {
   spawnHook: BashSpawnHook;
   pathOptions: PathValidationOptions;
 } {
-  const { worktreePath, allowTmp = true, additionalAllowedDirs = [], shellPath } = config;
+  const {
+    worktreePath,
+    allowTmp = true,
+    additionalAllowedDirs = [],
+    shellPath,
+  } = config;
 
   // Build the list of allowed directories
   const allAllowedDirs = [...additionalAllowedDirs];

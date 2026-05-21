@@ -10,7 +10,9 @@ import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { fill } from "../session-operations.ts";
 
 /** Create the playwright_fill tool */
-export function createFillTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {
+export function createFillTool(
+  sessionManager: PlaywrightSessionManager,
+): OrchestratorTool {
   return {
     name: "playwright_fill",
     description:

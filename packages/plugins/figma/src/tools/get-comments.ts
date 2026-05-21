@@ -32,23 +32,33 @@ export function createGetCommentsTool(client: FigmaClient): OrchestratorTool {
       required: [],
     },
     execute: async (args, ctx) => {
-      const { includeResolved = false } = (args ?? {}) as { includeResolved?: boolean };
+      const { includeResolved = false } = (args ?? {}) as {
+        includeResolved?: boolean;
+      };
 
       try {
         const issue = await ctx.db.issues.getByExternalId(ctx.issueId, "figma");
         if (!issue) {
-          return { success: false, error: "This tool only works for Figma-sourced issues." };
+          return {
+            success: false,
+            error: "This tool only works for Figma-sourced issues.",
+          };
         }
 
         const fileKey = issue.externalId.split("#")[0];
         if (!fileKey) {
-          return { success: false, error: "Could not determine Figma file key." };
+          return {
+            success: false,
+            error: "Could not determine Figma file key.",
+          };
         }
 
         const allComments = await client.fetchComments(fileKey);
 
         // Filter by resolution status
-        const comments = includeResolved ? allComments : allComments.filter((c) => !c.resolved_at);
+        const comments = includeResolved
+          ? allComments
+          : allComments.filter((c) => !c.resolved_at);
 
         if (comments.length === 0) {
           return {

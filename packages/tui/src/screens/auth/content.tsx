@@ -23,7 +23,13 @@ export interface AuthContentProps {
 
 export function AuthContent(props: AuthContentProps) {
   return (
-    <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
+    <box
+      flexDirection="column"
+      paddingTop={2}
+      paddingLeft={2}
+      paddingRight={2}
+      flexGrow={1}
+    >
       <Show
         when={props.isApiTokenForm}
         fallback={

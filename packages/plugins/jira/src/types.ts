@@ -4,41 +4,44 @@
  * @module workhorse-plugin-jira/types
  */
 
+/** Fields object from Jira REST API response */
+export interface JiraFields extends Record<string, unknown> {
+  summary: string;
+  description?: string;
+  status: {
+    name: string;
+    id: string;
+  };
+  priority?: {
+    name: string;
+    id: string;
+  };
+  assignee?: {
+    displayName: string;
+    accountId: string;
+  } | null;
+  reporter?: {
+    displayName: string;
+    accountId: string;
+  };
+  issuetype?: {
+    name: string;
+  };
+  labels?: string[];
+  comment?: {
+    comments: JiraComment[];
+    total: number;
+  };
+  attachment?: JiraAttachment[];
+  created?: string;
+  updated?: string;
+}
+
 /** Jira issue as returned by the REST API */
 export interface JiraIssue {
   key: string;
   self: string;
-  fields: {
-    summary: string;
-    description?: string;
-    status: {
-      name: string;
-      id: string;
-    };
-    priority?: {
-      name: string;
-      id: string;
-    };
-    assignee?: {
-      displayName: string;
-      accountId: string;
-    } | null;
-    reporter?: {
-      displayName: string;
-      accountId: string;
-    };
-    issuetype?: {
-      name: string;
-    };
-    labels?: string[];
-    comment?: {
-      comments: JiraComment[];
-      total: number;
-    };
-    attachment?: JiraAttachment[];
-    created?: string;
-    updated?: string;
-  };
+  fields: JiraFields;
 }
 
 /** Jira attachment as returned by the REST API */

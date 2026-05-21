@@ -12,7 +12,7 @@ const mockGetElementInfo = vi.fn();
 const mockGetPageContent = vi.fn();
 const mockEvaluateScript = vi.fn();
 
-vi.mock("../browser-connection.ts", () => ({
+vi.mock("../page-actions.ts", () => ({
   takeScreenshot: mockTakeScreenshot,
   clickElement: mockClickElement,
   fillField: mockFillField,
@@ -27,7 +27,9 @@ const { screenshot, click, fill, getElement, getContent, evaluate } =
 
 // Create mock session manager
 const createMockSessionManager = (
-  sessionState: { error: string } | { session: { id: string }; connection: object },
+  sessionState:
+    | { error: string }
+    | { session: { id: string }; connection: object },
 ) => ({
   getSessionState: vi.fn(() => sessionState),
   getDefaultTimeout: vi.fn(() => 30000),
@@ -44,7 +46,11 @@ describe("session-operations", () => {
       const manager = createMockSessionManager({ error: "No active session" });
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await screenshot(manager as any, "issue-1", "/tmp/shot.png");
+      const result = await screenshot(
+        manager as any,
+        "issue-1",
+        "/tmp/shot.png",
+      );
 
       expect(result).toEqual({ success: false, error: "No active session" });
       expect(mockTakeScreenshot).not.toHaveBeenCalled();
@@ -59,16 +65,25 @@ describe("session-operations", () => {
       mockTakeScreenshot.mockResolvedValue("/tmp/shot.png");
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await screenshot(manager as any, "issue-1", "/tmp/shot.png", {
-        fullPage: true,
-      });
+      const result = await screenshot(
+        manager as any,
+        "issue-1",
+        "/tmp/shot.png",
+        {
+          fullPage: true,
+        },
+      );
 
       expect(result).toEqual({ success: true, path: "/tmp/shot.png" });
-      expect(mockTakeScreenshot).toHaveBeenCalledWith(mockConnection, "/tmp/shot.png", {
-        fullPage: true,
-        type: "png",
-        quality: undefined,
-      });
+      expect(mockTakeScreenshot).toHaveBeenCalledWith(
+        mockConnection,
+        "/tmp/shot.png",
+        {
+          fullPage: true,
+          type: "png",
+          quality: undefined,
+        },
+      );
     });
 
     it("converts jpeg format correctly", async () => {
@@ -85,11 +100,15 @@ describe("session-operations", () => {
         quality: 80,
       });
 
-      expect(mockTakeScreenshot).toHaveBeenCalledWith(mockConnection, "/tmp/shot.jpeg", {
-        fullPage: undefined,
-        type: "jpeg",
-        quality: 80,
-      });
+      expect(mockTakeScreenshot).toHaveBeenCalledWith(
+        mockConnection,
+        "/tmp/shot.jpeg",
+        {
+          fullPage: undefined,
+          type: "jpeg",
+          quality: 80,
+        },
+      );
     });
 
     it("emits screenshot.taken event", async () => {
@@ -125,7 +144,11 @@ describe("session-operations", () => {
       mockTakeScreenshot.mockRejectedValue(new Error("Screenshot failed"));
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await screenshot(manager as any, "issue-1", "/tmp/shot.png");
+      const result = await screenshot(
+        manager as any,
+        "issue-1",
+        "/tmp/shot.png",
+      );
 
       expect(result).toEqual({ success: false, error: "Screenshot failed" });
     });
@@ -153,9 +176,13 @@ describe("session-operations", () => {
       const result = await click(manager as any, "issue-1", "button.submit");
 
       expect(result).toEqual({ success: true });
-      expect(mockClickElement).toHaveBeenCalledWith(mockConnection, "button.submit", {
-        timeout: 30000,
-      });
+      expect(mockClickElement).toHaveBeenCalledWith(
+        mockConnection,
+        "button.submit",
+        {
+          timeout: 30000,
+        },
+      );
     });
 
     it("handles click errors", async () => {
@@ -183,7 +210,12 @@ describe("session-operations", () => {
       mockFillField.mockResolvedValue(undefined);
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await fill(manager as any, "issue-1", "input[name=email]", "test@example.com");
+      const result = await fill(
+        manager as any,
+        "issue-1",
+        "input[name=email]",
+        "test@example.com",
+      );
 
       expect(result).toEqual({ success: true });
       expect(mockFillField).toHaveBeenCalledWith(
@@ -207,7 +239,10 @@ describe("session-operations", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
       const result = await getElement(manager as any, "issue-1", ".missing");
 
-      expect(result).toEqual({ success: false, error: "Element not found: .missing" });
+      expect(result).toEqual({
+        success: false,
+        error: "Element not found: .missing",
+      });
     });
 
     it("returns element info when found", async () => {
@@ -248,7 +283,10 @@ describe("session-operations", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
       const result = await getContent(manager as any, "issue-1");
 
-      expect(result).toEqual({ success: true, content: "<html><body>Hello</body></html>" });
+      expect(result).toEqual({
+        success: true,
+        content: "<html><body>Hello</body></html>",
+      });
     });
   });
 
@@ -262,10 +300,17 @@ describe("session-operations", () => {
       mockEvaluateScript.mockResolvedValue({ count: 42 });
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await evaluate(manager as any, "issue-1", "return { count: 42 }");
+      const result = await evaluate(
+        manager as any,
+        "issue-1",
+        "return { count: 42 }",
+      );
 
       expect(result).toEqual({ success: true, result: { count: 42 } });
-      expect(mockEvaluateScript).toHaveBeenCalledWith(mockConnection, "return { count: 42 }");
+      expect(mockEvaluateScript).toHaveBeenCalledWith(
+        mockConnection,
+        "return { count: 42 }",
+      );
     });
 
     it("handles evaluation errors", async () => {
@@ -277,7 +322,11 @@ describe("session-operations", () => {
       mockEvaluateScript.mockRejectedValue(new Error("Syntax error"));
 
       // biome-ignore lint/suspicious/noExplicitAny: Test mock
-      const result = await evaluate(manager as any, "issue-1", "invalid syntax {{{");
+      const result = await evaluate(
+        manager as any,
+        "issue-1",
+        "invalid syntax {{{",
+      );
 
       expect(result).toEqual({ success: false, error: "Syntax error" });
     });

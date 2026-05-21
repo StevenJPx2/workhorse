@@ -12,7 +12,11 @@ describe("registerHookConsumers", () => {
     it("transitions issue and emits completion event", async () => {
       const mockClient = {
         getTransitions: vi.fn().mockResolvedValue([
-          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
+          {
+            id: "31",
+            name: "In Progress",
+            to: { name: "In Progress", id: "3" },
+          },
           { id: "41", name: "Done", to: { name: "Done", id: "6" } },
         ]),
         transitionIssue: vi.fn().mockResolvedValue(undefined),
@@ -45,15 +49,19 @@ describe("registerHookConsumers", () => {
 
     it("handles missing transition gracefully", async () => {
       const mockClient = {
-        getTransitions: vi
-          .fn()
-          .mockResolvedValue([
-            { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
-          ]),
+        getTransitions: vi.fn().mockResolvedValue([
+          {
+            id: "31",
+            name: "In Progress",
+            to: { name: "In Progress", id: "3" },
+          },
+        ]),
         transitionIssue: vi.fn(),
       } as unknown as AtlassianClient;
 
-      const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const consoleWarn = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
       const hooks = { on: vi.fn(), emit: vi.fn() } as any;
       const ctx = { hooks } as any;
 
@@ -96,7 +104,8 @@ describe("registerHookConsumers", () => {
       registerHookConsumers(ctx, mockClient);
 
       const handler = hooks.on.mock.calls.find(
-        ([event]: [string, (...args: unknown[]) => unknown]) => event === "jira:assign.requested",
+        ([event]: [string, (...args: unknown[]) => unknown]) =>
+          event === "jira:assign.requested",
       )![1];
 
       await handler({
@@ -126,7 +135,8 @@ describe("registerHookConsumers", () => {
       registerHookConsumers(ctx, mockClient);
 
       const handler = hooks.on.mock.calls.find(
-        ([event]: [string, (...args: unknown[]) => unknown]) => event === "jira:assign.requested",
+        ([event]: [string, (...args: unknown[]) => unknown]) =>
+          event === "jira:assign.requested",
       )![1];
 
       await handler({
@@ -149,14 +159,17 @@ describe("registerHookConsumers", () => {
         getCurrentUser: vi.fn().mockRejectedValue(new Error("API error")),
       } as unknown as AtlassianClient;
 
-      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       const hooks = { on: vi.fn(), emit: vi.fn() } as any;
       const ctx = { hooks } as any;
 
       registerHookConsumers(ctx, mockClient);
 
       const handler = hooks.on.mock.calls.find(
-        ([event]: [string, (...args: unknown[]) => unknown]) => event === "jira:assign.requested",
+        ([event]: [string, (...args: unknown[]) => unknown]) =>
+          event === "jira:assign.requested",
       )![1];
 
       await handler({

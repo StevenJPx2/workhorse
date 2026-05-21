@@ -178,7 +178,8 @@ export default defineNitroConfig({
       cors: true,
       headers: {
         "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Authorization, X-API-Key, Content-Type",
+        "Access-Control-Allow-Headers":
+          "Authorization, X-API-Key, Content-Type",
       },
     },
   },
@@ -295,12 +296,16 @@ export default defineWebSocketHandler({
     switch (msg.type) {
       case "subscribe":
         wsManager.subscribe(connId, msg.channels);
-        peer.send(JSON.stringify({ type: "subscribed", channels: msg.channels }));
+        peer.send(
+          JSON.stringify({ type: "subscribed", channels: msg.channels }),
+        );
         break;
 
       case "unsubscribe":
         wsManager.unsubscribe(connId, msg.channels);
-        peer.send(JSON.stringify({ type: "unsubscribed", channels: msg.channels }));
+        peer.send(
+          JSON.stringify({ type: "unsubscribed", channels: msg.channels }),
+        );
         break;
 
       case "ping":
@@ -310,15 +315,17 @@ export default defineWebSocketHandler({
       case "send_message":
         // Get workhorse from global (set by plugin)
         const workhorse = (globalThis as any).__workhorse;
-        workhorse?.orchestrator.sendMessage(msg.issueId, msg.content).catch((err: Error) => {
-          peer.send(
-            JSON.stringify({
-              type: "error",
-              code: "SEND_FAILED",
-              message: err.message,
-            }),
-          );
-        });
+        workhorse?.orchestrator
+          .sendMessage(msg.issueId, msg.content)
+          .catch((err: Error) => {
+            peer.send(
+              JSON.stringify({
+                type: "error",
+                code: "SEND_FAILED",
+                message: err.message,
+              }),
+            );
+          });
         break;
     }
   },
@@ -654,7 +661,9 @@ export default defineEventHandler((event) => {
   };
 });
 
-function redactSensitive(obj: Record<string, unknown>): Record<string, unknown> {
+function redactSensitive(
+  obj: Record<string, unknown>,
+): Record<string, unknown> {
   const sensitiveKeys = ["token", "secret", "key", "password", "apiKey"];
   return Object.fromEntries(
     Object.entries(obj).map(([k, v]) => [
@@ -789,13 +798,15 @@ export function createWebSocketHandler(workhorse: WorkhorseContext) {
         break;
 
       case "send_message":
-        workhorse.orchestrator.sendMessage(msg.issueId, msg.content).catch((err) => {
-          send(conn, {
-            type: "error",
-            code: "SEND_FAILED",
-            message: err.message,
+        workhorse.orchestrator
+          .sendMessage(msg.issueId, msg.content)
+          .catch((err) => {
+            send(conn, {
+              type: "error",
+              code: "SEND_FAILED",
+              message: err.message,
+            });
           });
-        });
         break;
     }
   }
@@ -960,7 +971,12 @@ export function createProblemError(
 
 export function handleError(err: unknown) {
   if (err instanceof WorkhorseError) {
-    throw createProblemError(err.status ?? 500, err.code, err.message, err.hint);
+    throw createProblemError(
+      err.status ?? 500,
+      err.code,
+      err.message,
+      err.hint,
+    );
   }
   throw err;
 }

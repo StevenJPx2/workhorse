@@ -27,7 +27,9 @@ export function ActivityFeed(props: ActivityFeedProps) {
         focused={!ui.modal() && ui.focusedComponent() !== "chat"}
       >
         <box flexDirection="column" gap={1}>
-          <For each={props.state().items}>{(item) => <ActivityItemRow item={item} />}</For>
+          <For each={props.state().items}>
+            {(item) => <ActivityItemRow item={item} />}
+          </For>
           <Show when={props.state().isStreaming}>
             <box paddingLeft={1}>
               <text fg={getTheme().colors.dim}>

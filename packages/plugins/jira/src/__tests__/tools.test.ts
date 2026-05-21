@@ -21,12 +21,14 @@ function createMockDb(externalId: string, source: string = "jira") {
   return {
     issues: {
       // getByExternalId(externalId, source) - only returns issue if both match
-      getByExternalId: vi.fn().mockImplementation((extId: string, src: string) => {
-        if (extId === externalId && src === source) {
-          return { id: "uuid-123", externalId, source };
-        }
-        return undefined;
-      }),
+      getByExternalId: vi
+        .fn()
+        .mockImplementation((extId: string, src: string) => {
+          if (extId === externalId && src === source) {
+            return { id: "uuid-123", externalId, source };
+          }
+          return undefined;
+        }),
     },
   };
 }
@@ -80,7 +82,8 @@ describe("jira_add_comment tool", () => {
       undefined,
     );
     // Also verify the footer is appended
-    const callArgs = (mockClient.addComment as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    const callArgs = (mockClient.addComment as ReturnType<typeof vi.fn>).mock
+      .calls[0]!;
     expect(callArgs[1]).toContain("Posted by Workhorse");
     expect(result.success).toBe(true);
   });
@@ -186,7 +189,9 @@ describe("jira_transition_issue tool", () => {
     const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
-    const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
+    const transitionTool = tools.find(
+      (t) => t.name === "jira_transition_issue",
+    )!;
 
     const result = await transitionTool.execute(
       { status: "Done" },
@@ -211,17 +216,21 @@ describe("jira_transition_issue tool", () => {
         key: "AM-123",
         fields: { status: { name: "To Do", id: "1" } },
       }),
-      getTransitions: vi
-        .fn()
-        .mockResolvedValue([
-          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
-        ]),
+      getTransitions: vi.fn().mockResolvedValue([
+        {
+          id: "31",
+          name: "In Progress",
+          to: { name: "In Progress", id: "3" },
+        },
+      ]),
       transitionIssue: vi.fn(),
     } as unknown as AtlassianClient;
     const mockDb = createMockDb("AM-123");
 
     const tools = createJiraTools(mockClient, mockHooks);
-    const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
+    const transitionTool = tools.find(
+      (t) => t.name === "jira_transition_issue",
+    )!;
 
     const result = await transitionTool.execute(
       { status: "Blocked" },
@@ -245,7 +254,9 @@ describe("jira_transition_issue tool", () => {
     const mockDb = createMockDb("owner/repo#123", "github");
 
     const tools = createJiraTools(mockClient, mockHooks);
-    const transitionTool = tools.find((t) => t.name === "jira_transition_issue")!;
+    const transitionTool = tools.find(
+      (t) => t.name === "jira_transition_issue",
+    )!;
 
     const result = await transitionTool.execute(
       { status: "Done" },

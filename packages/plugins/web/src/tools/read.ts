@@ -6,7 +6,11 @@
  * @module workhorse-plugin-web/tools/read
  */
 
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
+import type {
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "workhorse-core";
 
 import { execJina } from "../client.ts";
 
@@ -59,7 +63,10 @@ Wraps the \`jina read\` CLI command.`,
       },
       required: ["url"],
     },
-    execute: async (args: unknown, _ctx: ToolExecutionContext): Promise<ToolResult> => {
+    execute: async (
+      args: unknown,
+      _ctx: ToolExecutionContext,
+    ): Promise<ToolResult> => {
       const { url, links, images, json, timeout } = args as WebReadArgs;
 
       const cliArgs = ["read", url];
@@ -67,12 +74,16 @@ Wraps the \`jina read\` CLI command.`,
       if (images) cliArgs.push("--images");
       if (json) cliArgs.push("--json");
 
-      const result = await execJina(cliArgs, { timeout: (timeout ?? 60) * 1000 });
+      const result = await execJina(cliArgs, {
+        timeout: (timeout ?? 60) * 1000,
+      });
 
       if (!result.success) {
         return {
           success: false,
-          error: result.stderr || `jina read failed with exit code ${result.exitCode}`,
+          error:
+            result.stderr ||
+            `jina read failed with exit code ${result.exitCode}`,
         };
       }
 

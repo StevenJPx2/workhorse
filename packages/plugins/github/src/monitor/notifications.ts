@@ -9,7 +9,10 @@ import type { MonitorContext } from "workhorse-core";
 import type { GitHubComment, GitHubReview } from "../types.ts";
 
 /** Priority mapping for review states */
-export const REVIEW_PRIORITIES: Record<GitHubReview["state"], "high" | "normal" | "low"> = {
+export const REVIEW_PRIORITIES: Record<
+  GitHubReview["state"],
+  "high" | "normal" | "low"
+> = {
   CHANGES_REQUESTED: "high",
   APPROVED: "normal",
   COMMENTED: "low",
@@ -72,7 +75,11 @@ export async function createCommentNotifications(
         author: comment.user.login,
         ...meta,
         ...(isReviewComment
-          ? { path: comment.path, line: comment.line, diffHunk: comment.diff_hunk }
+          ? {
+              path: comment.path,
+              line: comment.line,
+              diffHunk: comment.diff_hunk,
+            }
           : {}),
       },
     });

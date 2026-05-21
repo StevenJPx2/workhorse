@@ -1,10 +1,4 @@
-/**
- * SteeringRule class - Fully autonomous rule evaluation.
- *
- * Rules subscribe to agent.idle, evaluate conditions, and emit reminders directly.
- * Builds a SteeringContext for condition/reminder callbacks.
- */
-
+/** SteeringRule - Autonomous rule that subscribes to agent.idle, evaluates conditions, and emits reminders. */
 import { debounce } from "es-toolkit";
 
 import type { Issue, Notification } from "#db";
@@ -89,7 +83,8 @@ export class SteeringRule {
     this.subscribe(
       "agent.idle",
       debounce((payload: unknown) => {
-        if ((payload as { issueId?: string }).issueId !== this.issue.externalId) return;
+        if ((payload as { issueId?: string }).issueId !== this.issue.externalId)
+          return;
         this.evaluate();
       }, this.steeringConfig.debounceMs),
     );
@@ -129,7 +124,10 @@ export class SteeringRule {
 
   // ─── Private ───────────────────────────────────────────────────────────────
 
-  private subscribe(name: HookEventName, handler?: (payload: unknown) => void): void {
+  private subscribe(
+    name: HookEventName,
+    handler?: (payload: unknown) => void,
+  ): void {
     const handlerWrapper = (payload: unknown) => {
       const issueId = (payload as { issueId?: string }).issueId;
 
@@ -146,9 +144,12 @@ export class SteeringRule {
   }
 
   private async evaluate(): Promise<void> {
+    // Skip if rule already fired (for once-only rules)
     if (this.once && this.fired) return;
 
-    if (Date.now() - this.lastReminderTime < this.steeringConfig.cooldownMs) return;
+    // Skip if in cooldown period
+    if (Date.now() - this.lastReminderTime < this.steeringConfig.cooldownMs)
+      return;
 
     // Never send reminders when agent is blocked (waiting for human response)
     if (this.issue.status === "blocked") return;
@@ -156,10 +157,18 @@ export class SteeringRule {
     const { condition, reminder } = this.config;
 
     // Empty array = no filter (always pass), non-empty = must match
-    if (condition.status.length > 0 && !condition.status.includes(this.issue.status)) return;
+    if (
+      condition.status.length > 0 &&
+      !condition.status.includes(this.issue.status)
+    )
+      return;
+    if (
+      condition.source.length > 0 &&
+      !condition.source.includes(this.issue.source)
+    )
+      return;
 
-    if (condition.source.length > 0 && !condition.source.includes(this.issue.source)) return;
-
+    // Check if any of the required hooks have fired
     if (
       condition.hook.length > 0 &&
       !condition.hook.some((hookName) =>
@@ -169,11 +178,10 @@ export class SteeringRule {
       return;
 
     const ctx = await this.buildContext();
-
     if (!(await condition.when(ctx))) return;
 
+    // Fire the reminder
     if (this.once) this.fired = true;
-
     this.lastReminderTime = Date.now();
 
     this.hooks.emit("steering.reminder", {

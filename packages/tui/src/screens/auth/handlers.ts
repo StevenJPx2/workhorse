@@ -3,7 +3,11 @@
  */
 
 import type { Setter } from "solid-js";
-import { startOAuthFlow, type OAuthProvider, type ApiTokenProvider } from "workhorse-core";
+import {
+  startOAuthFlow,
+  type OAuthProvider,
+  type ApiTokenProvider,
+} from "workhorse-core";
 
 import type { PluginAuthRequirement } from "../../setup/auth.ts";
 import type { AuthFlowState } from "./types.ts";
@@ -16,24 +20,37 @@ export interface AuthHandlersOptions {
   setCancelOAuth: (fn: (() => void) | null) => void;
 }
 
-export function handleOAuth(plugin: PluginAuthRequirement, opts: AuthHandlersOptions) {
+export function handleOAuth(
+  plugin: PluginAuthRequirement,
+  opts: AuthHandlersOptions,
+) {
   if (plugin.auth.type !== "oauth") return;
   opts.setFlowState({ phase: "authenticating", pluginName: plugin.name });
 
-  const { authUrl, waitForCallback, cancel } = startOAuthFlow(plugin.auth as OAuthProvider);
+  const { authUrl, waitForCallback, cancel } = startOAuthFlow(
+    plugin.auth as OAuthProvider,
+  );
   opts.setCancelOAuth(cancel);
   opts.setFlowState({
     phase: "waiting-browser",
     pluginName: plugin.name,
     authUrl: authUrl.toString(),
   });
-  Bun.spawn([process.platform === "darwin" ? "open" : "xdg-open", authUrl.toString()]);
+  Bun.spawn([
+    process.platform === "darwin" ? "open" : "xdg-open",
+    authUrl.toString(),
+  ]);
 
   waitForCallback
     .then((result) => {
       opts.setCancelOAuth(null);
       if (result.success) opts.markAuthenticated(plugin.name);
-      else opts.setFlowState({ phase: "error", pluginName: plugin.name, error: result.error });
+      else
+        opts.setFlowState({
+          phase: "error",
+          pluginName: plugin.name,
+          error: result.error,
+        });
     })
     .catch((error) => {
       opts.setFlowState({
@@ -44,7 +61,10 @@ export function handleOAuth(plugin: PluginAuthRequirement, opts: AuthHandlersOpt
     });
 }
 
-export async function handleExternalAuth(plugin: PluginAuthRequirement, opts: AuthHandlersOptions) {
+export async function handleExternalAuth(
+  plugin: PluginAuthRequirement,
+  opts: AuthHandlersOptions,
+) {
   if (plugin.auth.type !== "external") return;
   const auth = plugin.auth;
 
@@ -63,7 +83,10 @@ export async function handleExternalAuth(plugin: PluginAuthRequirement, opts: Au
   opts.setCancelOAuth(() => clearInterval(checkInterval));
 }
 
-export async function handleApiTokenAuth(plugin: PluginAuthRequirement, opts: AuthHandlersOptions) {
+export async function handleApiTokenAuth(
+  plugin: PluginAuthRequirement,
+  opts: AuthHandlersOptions,
+) {
   if (plugin.auth.type !== "apitoken") return;
   const auth = plugin.auth as ApiTokenProvider;
 
@@ -81,11 +104,16 @@ export async function handleApiTokenAuth(plugin: PluginAuthRequirement, opts: Au
   opts.setFlowState({ phase: "apitoken-form", pluginName: plugin.name });
 }
 
-export async function submitApiTokenForm(plugin: PluginAuthRequirement, opts: AuthHandlersOptions) {
+export async function submitApiTokenForm(
+  plugin: PluginAuthRequirement,
+  opts: AuthHandlersOptions,
+) {
   if (plugin.auth.type !== "apitoken") return;
   opts.setFlowState({ phase: "authenticating", pluginName: plugin.name });
 
-  const result = await (plugin.auth as ApiTokenProvider).configure(opts.apiTokenForm.values());
+  const result = await (plugin.auth as ApiTokenProvider).configure(
+    opts.apiTokenForm.values(),
+  );
   if (result.success) opts.markAuthenticated(plugin.name);
   else
     opts.setFlowState({

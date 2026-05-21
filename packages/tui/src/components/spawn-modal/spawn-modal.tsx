@@ -24,7 +24,9 @@ export function SpawnModal(props: SpawnModalProps) {
 
   const [harnessIndex, setHarnessIndex] = createSignal(0);
   const [baseBranch, _setBaseBranch] = createSignal("main");
-  const [focusedField, setFocusedField] = createSignal<"harness" | "branch">("harness");
+  const [focusedField, setFocusedField] = createSignal<"harness" | "branch">(
+    "harness",
+  );
 
   // Smaller modal - just enough for content
   const modalHeight = () => Math.min(16, Math.floor(dimensions().height * 0.8));
@@ -72,7 +74,8 @@ export function SpawnModal(props: SpawnModalProps) {
   });
 
   const isHarnessFocused = () => focusedField() === "harness";
-  const fieldLabel = (field: "harness" | "branch") => (focusedField() === field ? "▸ " : "  ");
+  const fieldLabel = (field: "harness" | "branch") =>
+    focusedField() === field ? "▸ " : "  ";
   const fieldColor = (field: "harness" | "branch") =>
     focusedField() === field ? theme.colors.accent : theme.colors.dim;
 
@@ -120,7 +123,9 @@ export function SpawnModal(props: SpawnModalProps) {
         {/* Agent Harness field */}
         <box
           onMouseDown={() => setFocusedField("harness")}
-          backgroundColor={isHarnessFocused() ? theme.colors.background : undefined}
+          backgroundColor={
+            isHarnessFocused() ? theme.colors.background : undefined
+          }
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
@@ -144,7 +149,9 @@ export function SpawnModal(props: SpawnModalProps) {
         {/* Base Branch field */}
         <box
           onMouseDown={() => setFocusedField("branch")}
-          backgroundColor={focusedField() === "branch" ? theme.colors.background : undefined}
+          backgroundColor={
+            focusedField() === "branch" ? theme.colors.background : undefined
+          }
           paddingLeft={2}
           paddingRight={2}
           paddingTop={1}
@@ -157,13 +164,21 @@ export function SpawnModal(props: SpawnModalProps) {
             </text>
           </box>
           <box paddingLeft={4}>
-            <box backgroundColor={theme.colors.selection} paddingLeft={1} paddingRight={1}>
+            <box
+              backgroundColor={theme.colors.selection}
+              paddingLeft={1}
+              paddingRight={1}
+            >
               <text fg={theme.colors.info}>{baseBranch()}</text>
             </box>
           </box>
         </box>
 
-        <ModalFooter onConfirm={handleConfirm} onCancel={props.onClose} onToggle={toggleField} />
+        <ModalFooter
+          onConfirm={handleConfirm}
+          onCancel={props.onClose}
+          onToggle={toggleField}
+        />
       </box>
     </box>
   );

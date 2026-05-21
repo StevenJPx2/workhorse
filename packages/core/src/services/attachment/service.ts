@@ -42,7 +42,9 @@ export class AttachmentService {
   /** Generate a unique filename to avoid conflicts.
    *  Format: {sourceId}_{originalName} - uses underscore to separate ID from name */
   private generateFilename(sourceId: string, originalFilename: string): string {
-    const ext = originalFilename.includes(".") ? `.${originalFilename.split(".").pop()}` : "";
+    const ext = originalFilename.includes(".")
+      ? `.${originalFilename.split(".").pop()}`
+      : "";
     return `${sourceId}_${basename(originalFilename, ext).slice(0, 50)}${ext}`;
   }
 
@@ -73,11 +75,17 @@ export class AttachmentService {
   }
 
   /** Check if an attachment is already downloaded */
-  async exists(repoIdentifier: string, issueId: string, sourceId: string): Promise<string | null> {
+  async exists(
+    repoIdentifier: string,
+    issueId: string,
+    sourceId: string,
+  ): Promise<string | null> {
     const dir = this.getIssueDir(repoIdentifier, issueId);
     if (!existsSync(dir)) return null;
 
-    const match = await readdir(dir).then((r) => r.find((f) => f.startsWith(`${sourceId}_`)));
+    const match = await readdir(dir).then((r) =>
+      r.find((f) => f.startsWith(`${sourceId}_`)),
+    );
     return match ? join(dir, match) : null;
   }
 
@@ -87,7 +95,10 @@ export class AttachmentService {
   }
 
   /** List all attachments for an issue */
-  async listForIssue(repoIdentifier: string, issueId: string): Promise<StoredAttachment[]> {
+  async listForIssue(
+    repoIdentifier: string,
+    issueId: string,
+  ): Promise<StoredAttachment[]> {
     const dir = this.getIssueDir(repoIdentifier, issueId);
     if (!existsSync(dir)) return [];
 
@@ -99,7 +110,8 @@ export class AttachmentService {
 
       // Parse sourceId from filename (format: {sourceId}_{originalName})
       const firstUnderscore = file.indexOf("_");
-      const sourceId = firstUnderscore > 0 ? file.slice(0, firstUnderscore) : file;
+      const sourceId =
+        firstUnderscore > 0 ? file.slice(0, firstUnderscore) : file;
 
       attachments.push({
         sourceId,
@@ -123,7 +135,10 @@ export class AttachmentService {
   }
 
   /** Delete all attachments for an issue */
-  async deleteForIssue(repoIdentifier: string, issueId: string): Promise<number> {
+  async deleteForIssue(
+    repoIdentifier: string,
+    issueId: string,
+  ): Promise<number> {
     const attachments = await this.listForIssue(repoIdentifier, issueId);
     for (const attachment of attachments) {
       await this.delete(attachment.localPath);
@@ -149,6 +164,7 @@ function guessMimeType(filename: string): string {
         xml: "application/xml",
         zip: "application/zip",
       } as Record<string, string>
-    )[filename.split(".").pop()?.toLowerCase() ?? ""] ?? "application/octet-stream"
+    )[filename.split(".").pop()?.toLowerCase() ?? ""] ??
+    "application/octet-stream"
   );
 }

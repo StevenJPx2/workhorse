@@ -29,7 +29,12 @@ export class NotificationController {
     return this.db
       .select()
       .from(notifications)
-      .where(and(eq(notifications.issueId, issueId), eq(notifications.status, "unread")));
+      .where(
+        and(
+          eq(notifications.issueId, issueId),
+          eq(notifications.status, "unread"),
+        ),
+      );
   }
 
   /**
@@ -81,6 +86,8 @@ export class NotificationController {
    * Used when deleting an issue to clean up related data.
    */
   async deleteByIssueId(issueId: string): Promise<void> {
-    await this.db.delete(notifications).where(eq(notifications.issueId, issueId));
+    await this.db
+      .delete(notifications)
+      .where(eq(notifications.issueId, issueId));
   }
 }

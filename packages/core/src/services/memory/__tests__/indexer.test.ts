@@ -54,7 +54,10 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
 
   describe("indexCodebaseIntelligence", () => {
     it("indexes README.md if present", async () => {
-      writeFileSync(join(REPO_ROOT, "README.md"), "# My Project\n\nThis is a test project.");
+      writeFileSync(
+        join(REPO_ROOT, "README.md"),
+        "# My Project\n\nThis is a test project.",
+      );
 
       const indexed = await indexer.indexCodebaseIntelligence(REPO_ROOT);
 
@@ -68,7 +71,10 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
 
     it("indexes multiple intelligence files", async () => {
       writeFileSync(join(REPO_ROOT, "README.md"), "# Project README");
-      writeFileSync(join(REPO_ROOT, "ARCHITECTURE.md"), "# Architecture Overview");
+      writeFileSync(
+        join(REPO_ROOT, "ARCHITECTURE.md"),
+        "# Architecture Overview",
+      );
 
       const indexed = await indexer.indexCodebaseIntelligence(REPO_ROOT);
 
@@ -100,15 +106,18 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       const indexed = await indexer.indexCodebaseIntelligence(REPO_ROOT);
 
       expect(indexed).toBe(1);
-      await expect(l2.search("Documentation").then((r) => r[0]!.id)).resolves.toBe(
-        "codebase:docs/README.md",
-      );
+      await expect(
+        l2.search("Documentation").then((r) => r[0]!.id),
+      ).resolves.toBe("codebase:docs/README.md");
     });
 
     it("indexes nested README files in subdirectories", async () => {
       mkdirSync(join(REPO_ROOT, "packages", "core"), { recursive: true });
       writeFileSync(join(REPO_ROOT, "README.md"), "# Root README");
-      writeFileSync(join(REPO_ROOT, "packages", "core", "README.md"), "# Core Package");
+      writeFileSync(
+        join(REPO_ROOT, "packages", "core", "README.md"),
+        "# Core Package",
+      );
 
       const indexed = await indexer.indexCodebaseIntelligence(REPO_ROOT);
 
@@ -120,8 +129,13 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
     });
 
     it("excludes node_modules directory", async () => {
-      mkdirSync(join(REPO_ROOT, "node_modules", "some-package"), { recursive: true });
-      writeFileSync(join(REPO_ROOT, "node_modules", "some-package", "README.md"), "# Package");
+      mkdirSync(join(REPO_ROOT, "node_modules", "some-package"), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(REPO_ROOT, "node_modules", "some-package", "README.md"),
+        "# Package",
+      );
 
       const indexed = await indexer.indexCodebaseIntelligence(REPO_ROOT);
 
@@ -184,7 +198,9 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       expect(results.length).toBeGreaterThan(0);
 
       // Check that session summary was indexed
-      const summaryResult = results.find((r) => r.id === `session:${issueId}:summary`);
+      const summaryResult = results.find(
+        (r) => r.id === `session:${issueId}:summary`,
+      );
       expect(summaryResult).toBeDefined();
       expect(summaryResult!.metadata?.type).toBe("session_memory");
       expect(summaryResult!.metadata?.externalId).toBe(issueId);
@@ -209,8 +225,12 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
 
       await new Promise((r) => setTimeout(r, 100));
 
-      const results = await l2.search("Zod validation", { returnContent: true });
-      const patternResult = results.find((r) => r.id === `session:${issueId}:patterns`);
+      const results = await l2.search("Zod validation", {
+        returnContent: true,
+      });
+      const patternResult = results.find(
+        (r) => r.id === `session:${issueId}:patterns`,
+      );
       expect(patternResult).toBeDefined();
       expect(patternResult!.metadata?.type).toBe("code_context");
     });
@@ -240,8 +260,12 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
 
       await new Promise((r) => setTimeout(r, 100));
 
-      const results = await l2.search("async/await discovery", { returnContent: true });
-      const learningResult = results.find((r) => r.id === `session:${issueId}:learnings`);
+      const results = await l2.search("async/await discovery", {
+        returnContent: true,
+      });
+      const learningResult = results.find(
+        (r) => r.id === `session:${issueId}:learnings`,
+      );
       expect(learningResult).toBeDefined();
       expect(learningResult!.metadata?.type).toBe("decision");
     });
@@ -289,7 +313,11 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       indexer.initialize();
 
       // Emit the idle hook
-      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      hooks.emit("agent.idle", {
+        issueId,
+        status: "implementing",
+        source: "jira",
+      });
 
       // Advance timers past the debounce window (5 seconds)
       await vi.advanceTimersByTimeAsync(5100);
@@ -300,7 +328,9 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       await new Promise((r) => setTimeout(r, 100));
 
       // Verify session was indexed
-      const results = await l2.search("Idle test feature", { returnContent: true });
+      const results = await l2.search("Idle test feature", {
+        returnContent: true,
+      });
       expect(results.length).toBeGreaterThan(0);
       expect(results[0]!.metadata?.externalId).toBe(issueId);
     });
@@ -353,15 +383,29 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       });
 
       // Create indexer with very short debounce for testing
-      const shortDebounceIndexer = new MemoryIndexer(l1, l2, hooks, db, { debounceMs: 50 });
+      const shortDebounceIndexer = new MemoryIndexer(l1, l2, hooks, db, {
+        debounceMs: 50,
+      });
       shortDebounceIndexer.initialize();
 
       // Emit multiple idle events rapidly (within debounce window)
-      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      hooks.emit("agent.idle", {
+        issueId,
+        status: "implementing",
+        source: "jira",
+      });
       await new Promise((r) => setTimeout(r, 20));
-      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      hooks.emit("agent.idle", {
+        issueId,
+        status: "implementing",
+        source: "jira",
+      });
       await new Promise((r) => setTimeout(r, 20));
-      hooks.emit("agent.idle", { issueId, status: "implementing", source: "jira" });
+      hooks.emit("agent.idle", {
+        issueId,
+        status: "implementing",
+        source: "jira",
+      });
 
       // Should not have indexed yet (still within debounce window)
       expect(indexCount).toBe(0);

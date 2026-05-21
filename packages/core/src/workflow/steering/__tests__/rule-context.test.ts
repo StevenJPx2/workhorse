@@ -14,7 +14,10 @@ import {
 } from "./fixtures.ts";
 
 /** Helper to trigger evaluation by emitting idle event and advancing timers */
-async function triggerEvaluation(hooks: ReturnType<typeof createMockHooks>, issueId = "AM-123") {
+async function triggerEvaluation(
+  hooks: ReturnType<typeof createMockHooks>,
+  issueId = "AM-123",
+) {
   hooks.emit("agent.idle", {
     issueId,
     status: "implementing",
@@ -80,8 +83,16 @@ describe("SteeringContext.notifications", () => {
   it("can filter notifications in when() condition", async () => {
     const hooks = createMockHooks();
     const mockNotifications = [
-      createMockNotification({ id: "notif-1", source: "github", status: "unread" }),
-      createMockNotification({ id: "notif-2", source: "jira", status: "acknowledged" }),
+      createMockNotification({
+        id: "notif-1",
+        source: "github",
+        status: "unread",
+      }),
+      createMockNotification({
+        id: "notif-2",
+        source: "jira",
+        status: "acknowledged",
+      }),
     ];
 
     const rule = createRule(
@@ -91,7 +102,9 @@ describe("SteeringContext.notifications", () => {
         description: "",
         condition: {
           when: (ctx) =>
-            ctx.notifications.some((n) => n.source === "github" && n.status === "unread"),
+            ctx.notifications.some(
+              (n) => n.source === "github" && n.status === "unread",
+            ),
         },
         reminder: "Check GitHub notifications",
       },
@@ -116,7 +129,11 @@ describe("SteeringContext.notifications", () => {
   it("does not emit when notification filter fails", async () => {
     const hooks = createMockHooks();
     const mockNotifications = [
-      createMockNotification({ id: "notif-1", source: "jira", status: "acknowledged" }),
+      createMockNotification({
+        id: "notif-1",
+        source: "jira",
+        status: "acknowledged",
+      }),
     ];
 
     const rule = createRule(
@@ -126,7 +143,9 @@ describe("SteeringContext.notifications", () => {
         description: "",
         condition: {
           when: (ctx) =>
-            ctx.notifications.some((n) => n.source === "github" && n.status === "unread"),
+            ctx.notifications.some(
+              (n) => n.source === "github" && n.status === "unread",
+            ),
         },
         reminder: "x",
       },
@@ -138,7 +157,10 @@ describe("SteeringContext.notifications", () => {
 
     await triggerEvaluation(hooks);
 
-    expect(hooks.emit).not.toHaveBeenCalledWith("steering.reminder", expect.anything());
+    expect(hooks.emit).not.toHaveBeenCalledWith(
+      "steering.reminder",
+      expect.anything(),
+    );
 
     rule.dispose();
   });
@@ -169,8 +191,16 @@ describe("SteeringContext.toolHistory", () => {
     );
 
     // Simulate tool calls
-    hooks.emit("agent.tool_call", { issueId: "AM-123", tool: "edit", args: { file: "test.ts" } });
-    hooks.emit("agent.tool_call", { issueId: "AM-123", tool: "write", args: { file: "new.ts" } });
+    hooks.emit("agent.tool_call", {
+      issueId: "AM-123",
+      tool: "edit",
+      args: { file: "test.ts" },
+    });
+    hooks.emit("agent.tool_call", {
+      issueId: "AM-123",
+      tool: "write",
+      args: { file: "new.ts" },
+    });
 
     await triggerEvaluation(hooks);
 
@@ -227,7 +257,8 @@ describe("SteeringContext.toolHistory", () => {
         name: "Tools Filter",
         description: "",
         condition: {
-          when: (ctx) => ctx.toolHistory.some((t) => ["edit", "write"].includes(t.name)),
+          when: (ctx) =>
+            ctx.toolHistory.some((t) => ["edit", "write"].includes(t.name)),
         },
         reminder: "Code changes detected",
       },
@@ -235,7 +266,11 @@ describe("SteeringContext.toolHistory", () => {
     );
 
     // Simulate tool call
-    hooks.emit("agent.tool_call", { issueId: "AM-123", tool: "edit", args: {} });
+    hooks.emit("agent.tool_call", {
+      issueId: "AM-123",
+      tool: "edit",
+      args: {},
+    });
 
     await triggerEvaluation(hooks);
 
@@ -266,12 +301,18 @@ describe("SteeringContext.toolHistory", () => {
 
     // Simulate 25 tool calls
     for (let i = 0; i < 25; i++) {
-      hooks.emit("agent.tool_call", { issueId: "AM-123", tool: `tool-${i}`, args: {} });
+      hooks.emit("agent.tool_call", {
+        issueId: "AM-123",
+        tool: `tool-${i}`,
+        args: {},
+      });
     }
 
     await triggerEvaluation(hooks);
 
-    const ctx = whenFn.mock.calls[0]?.[0] as { toolHistory: Array<{ name: string }> };
+    const ctx = whenFn.mock.calls[0]?.[0] as {
+      toolHistory: Array<{ name: string }>;
+    };
     expect(ctx).toBeDefined();
     // All 25 tools should be present (no pruning)
     expect(ctx.toolHistory).toHaveLength(25);

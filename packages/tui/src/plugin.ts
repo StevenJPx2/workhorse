@@ -1,4 +1,8 @@
-import { definePlugin, useWorkhorse, registerHookMetadata } from "workhorse-core";
+import {
+  definePlugin,
+  useWorkhorse,
+  registerHookMetadata,
+} from "workhorse-core";
 
 import {
   registerRenderer,
@@ -29,7 +33,8 @@ export default definePlugin({
     registerHookMetadata({
       name: "tui.register_renderer",
       category: "TUI",
-      description: "Fired to register a custom TUI renderer for tools or notifications",
+      description:
+        "Fired to register a custom TUI renderer for tools or notifications",
       payload: "{ id: string, renderer: ActivityRenderer, priority?: number }",
       plugin: "tui",
       example: `hooks.emit("tui.register_renderer", {
@@ -50,7 +55,11 @@ export default definePlugin({
     // Allow plugins to register their own renderers via hook
     hooks.on("tui.register_renderer", (payload) => {
       const { id, renderer, priority } = payload as RegisterRendererPayload;
-      registerRenderer(id, renderer as (input: ActivityInput) => RenderedActivity | null, priority);
+      registerRenderer(
+        id,
+        renderer as (input: ActivityInput) => RenderedActivity | null,
+        priority,
+      );
     });
   },
 });

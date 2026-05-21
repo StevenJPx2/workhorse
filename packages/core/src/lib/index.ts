@@ -12,7 +12,12 @@ export {
 } from "./fuzzy-search.ts";
 
 // Git utilities
-export { createWorktree, getGitRoot, removeWorktree, syncWorktree } from "./git/index.ts";
+export {
+  createWorktree,
+  getGitRoot,
+  removeWorktree,
+  syncWorktree,
+} from "./git";
 
 // Hooks - re-export everything
 export {
@@ -33,7 +38,7 @@ export {
   type HookPayload,
   type PromptBuildingContext,
   type PromptContextBlock,
-} from "./hooks/index.ts";
+} from "./hooks";
 
 // Metadata footer
 export {
@@ -52,4 +57,4 @@ export {
   type PathValidationOptions,
   type PathValidationResult,
   type PathValidator,
-} from "./paths/index.ts";
+} from "./paths";

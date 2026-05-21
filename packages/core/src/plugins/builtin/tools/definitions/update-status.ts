@@ -19,7 +19,15 @@ export const updateStatusTool: OrchestratorTool = {
     properties: {
       status: {
         type: "string",
-        enum: ["pending", "queued", "planning", "implementing", "blocked", "in_review", "done"],
+        enum: [
+          "pending",
+          "queued",
+          "planning",
+          "implementing",
+          "blocked",
+          "in_review",
+          "done",
+        ],
         description: "The new status for the issue",
       },
     },

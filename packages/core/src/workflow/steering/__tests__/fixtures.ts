@@ -4,7 +4,10 @@ import type { Issue, IssueStatus, Notification } from "#db";
 import type { HookEmitter } from "#lib";
 
 import { SteeringRule } from "../rule.ts";
-import { type SteeringRuleConfigInput, SteeringRuleConfigSchema } from "../types.ts";
+import {
+  type SteeringRuleConfigInput,
+  SteeringRuleConfigSchema,
+} from "../types.ts";
 
 export function createMockHooks(): HookEmitter {
   const handlers = new Map<string, Array<(payload: unknown) => void>>();
@@ -81,7 +84,8 @@ export const defaultSteeringConfig = {
 
 /** Create a mock notification with required fields */
 export function createMockNotification(
-  overrides: Partial<Notification> & Pick<Notification, "id" | "source" | "status">,
+  overrides: Partial<Notification> &
+    Pick<Notification, "id" | "source" | "status">,
 ): Notification {
   return {
     issueId: "uuid-1",

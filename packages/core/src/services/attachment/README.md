@@ -82,7 +82,10 @@ if (existingPath) {
 ### Listing Attachments for an Issue
 
 ```typescript
-const attachments = await attachmentService.listForIssue("owner/repo", "issue-uuid-123");
+const attachments = await attachmentService.listForIssue(
+  "owner/repo",
+  "issue-uuid-123",
+);
 
 for (const att of attachments) {
   console.log(`${att.filename} (${att.mimeType}): ${att.localPath}`);
@@ -109,7 +112,10 @@ const content = await attachmentService.getContent(stored.localPath);
 await attachmentService.delete(stored.localPath);
 
 // Delete all attachments for an issue
-const count = await attachmentService.deleteForIssue("owner/repo", "issue-uuid-123");
+const count = await attachmentService.deleteForIssue(
+  "owner/repo",
+  "issue-uuid-123",
+);
 console.log(`Deleted ${count} attachments`);
 ```
 

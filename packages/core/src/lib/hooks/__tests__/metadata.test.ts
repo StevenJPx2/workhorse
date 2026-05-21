@@ -38,7 +38,9 @@ describe("CORE_HOOK_METADATA", () => {
   });
 
   it("includes prompt.building hook with example", () => {
-    const promptHook = CORE_HOOK_METADATA.find((h) => h.name === "prompt.building");
+    const promptHook = CORE_HOOK_METADATA.find(
+      (h) => h.name === "prompt.building",
+    );
 
     expect(promptHook).toBeDefined();
     expect(promptHook?.example).toBeTruthy();

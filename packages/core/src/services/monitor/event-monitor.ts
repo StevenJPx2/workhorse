@@ -1,5 +1,9 @@
 import { BaseMonitor } from "./base-monitor.ts";
-import type { EventCleanup, EventMonitorOptions, MonitorContext } from "./types.ts";
+import type {
+  EventCleanup,
+  EventMonitorOptions,
+  MonitorContext,
+} from "./types.ts";
 
 /**
  * An event-driven monitor that sets up a listener once and emits results
@@ -46,7 +50,9 @@ export class EventMonitor extends BaseMonitor {
     if (!this.initStart(ctx)) return;
 
     try {
-      this._cleanup = await this.setup(ctx, (result) => this.handleResult(result));
+      this._cleanup = await this.setup(ctx, (result) =>
+        this.handleResult(result),
+      );
     } catch (error) {
       this.handleError(error as Error);
       // If setup fails immediately, stop the monitor

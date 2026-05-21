@@ -35,7 +35,10 @@ export function createDeferredHooks(hooks: Hookable<HookCallbacks>) {
   const originalCallHook = hooks.callHook.bind(hooks);
 
   // Override callHook to intercept deferred hooks
-  hooks.callHook = (<K extends keyof HookCallbacks>(type: K, payload: HookPayload<K>) => {
+  hooks.callHook = (<K extends keyof HookCallbacks>(
+    type: K,
+    payload: HookPayload<K>,
+  ) => {
     if (isBuffering && DEFERRED_HOOKS.has(type)) {
       buffer.push({ type, payload } as BufferedEvent);
       return;

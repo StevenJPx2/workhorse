@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+// oxlint-disable-next-line workhorse/prefer-path-alias -- no #services/* alias defined
 import type { SessionMemory } from "../../types.ts";
 import { parseSessionMemory, serializeSessionMemory } from "../index.ts";
 
@@ -13,7 +14,8 @@ describe("parseSessionMemory", () => {
   });
 
   it("parses title", () => {
-    const content = "# AM-123: Fix authentication bug\n\n## Patterns\n\n## Sessions\n";
+    const content =
+      "# AM-123: Fix authentication bug\n\n## Patterns\n\n## Sessions\n";
     const memory = parseSessionMemory(content);
     expect(memory.title).toBe("AM-123: Fix authentication bug");
   });
@@ -59,12 +61,18 @@ Status: implementing
     const session = memory.sessions[0]!;
     expect(session.timestamp).toEqual(new Date("2025-07-15T10:30:00Z"));
     expect(session.status).toBe("implementing");
-    expect(session.summary).toEqual(["Analyzed requirements", "Created migration"]);
+    expect(session.summary).toEqual([
+      "Analyzed requirements",
+      "Created migration",
+    ]);
     expect(session.learnings).toEqual([
       "Migrations need db:generate first",
       "Schema changes require restart",
     ]);
-    expect(session.filesChanged).toEqual(["src/db/schema.ts", "migrations/0001.sql"]);
+    expect(session.filesChanged).toEqual([
+      "src/db/schema.ts",
+      "migrations/0001.sql",
+    ]);
   });
 
   it("parses multiple sessions", () => {

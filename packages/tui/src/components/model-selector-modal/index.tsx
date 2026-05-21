@@ -52,7 +52,8 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
     })),
   );
 
-  const modalMaxHeight = () => Math.max(14, Math.floor(dimensions().height * 0.8));
+  const modalMaxHeight = () =>
+    Math.max(14, Math.floor(dimensions().height * 0.8));
   const selectHeight = () => Math.max(4, modalMaxHeight() - 11);
 
   useModelSelectorKeyboard({
@@ -92,14 +93,20 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
           <text fg={theme.colors.accent}>
             <b>🤖 SELECT MODEL</b>
           </text>
-          <text fg={theme.colors.dim}>{` (${filteredModels().length}/${allModels().length})`}</text>
+          <text
+            fg={theme.colors.dim}
+          >{` (${filteredModels().length}/${allModels().length})`}</text>
         </box>
 
         {/* Search input */}
         <box paddingLeft={2} paddingRight={2} paddingTop={1}>
           <box
             flexDirection="row"
-            backgroundColor={isSearchFocused() ? theme.colors.selection : theme.colors.background}
+            backgroundColor={
+              isSearchFocused()
+                ? theme.colors.selection
+                : theme.colors.background
+            }
             paddingLeft={1}
             paddingRight={1}
             width="100%"
@@ -141,7 +148,9 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
             />
           ) : (
             <box paddingTop={2}>
-              <text fg={theme.colors.dim}>No models match "{searchQuery()}"</text>
+              <text fg={theme.colors.dim}>
+                No models match "{searchQuery()}"
+              </text>
             </box>
           )}
         </box>
@@ -154,7 +163,9 @@ export function ModelSelectorModal(props: ModelSelectorModalProps) {
           paddingTop={1}
           paddingBottom={1}
         >
-          <text fg={theme.colors.dim}>Tab switch | Enter select | Esc cancel | ↑↓ navigate</text>
+          <text fg={theme.colors.dim}>
+            Tab switch | Enter select | Esc cancel | ↑↓ navigate
+          </text>
         </box>
       </box>
     </box>

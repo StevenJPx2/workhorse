@@ -34,7 +34,9 @@ export function IssueList(props: IssueListProps) {
     >
       {/* Header - highlighted when focused */}
       <box
-        backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
+        backgroundColor={
+          isFocused() ? theme.colors.selection : theme.colors.surface
+        }
         paddingLeft={2}
         paddingRight={2}
         paddingTop={1}
@@ -49,15 +51,23 @@ export function IssueList(props: IssueListProps) {
       </box>
 
       {/* Issue list - disable focus when modal is open to prevent scroll bleeding */}
-      <scrollbox flexGrow={1} stickyScroll stickyStart="top" focused={!ui.modal()}>
+      <scrollbox
+        flexGrow={1}
+        stickyScroll
+        stickyStart="top"
+        focused={!ui.modal()}
+      >
         <box flexDirection="column" paddingTop={1}>
           <For each={issues()}>
             {(issue, index) => {
-              const isSelected = () => isFocused() && index() === (props.selectedIndex ?? 0);
+              const isSelected = () =>
+                isFocused() && index() === (props.selectedIndex ?? 0);
               return (
                 <box
                   flexDirection="column"
-                  backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                  backgroundColor={
+                    isSelected() ? theme.colors.selection : undefined
+                  }
                   paddingLeft={2}
                   paddingRight={2}
                   paddingTop={1}
@@ -66,11 +76,17 @@ export function IssueList(props: IssueListProps) {
                   {/* First row: ID + status */}
                   <box flexDirection="row" justifyContent="space-between">
                     <box flexDirection="row" gap={1}>
-                      <text fg={isSelected() ? theme.colors.accent : theme.colors.text}>
+                      <text
+                        fg={
+                          isSelected() ? theme.colors.accent : theme.colors.text
+                        }
+                      >
                         {isSelected() ? "▸ " : "  "}
                         <b>{issue.externalId || issue.id.slice(0, 8)}</b>
                       </text>
-                      <text fg={getStatusColor(issue.status, theme)}>[{issue.status}]</text>
+                      <text fg={getStatusColor(issue.status, theme)}>
+                        [{issue.status}]
+                      </text>
                     </box>
                     <Show when={isSelected()}>
                       <box

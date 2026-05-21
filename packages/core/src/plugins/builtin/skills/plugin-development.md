@@ -90,7 +90,8 @@ Parse custom issue formats (URLs, keys):
 ```typescript
 tracker.registerParser({
   source: "my-service",
-  canParse: (input) => input.startsWith("MY-") || input.includes("my-service.com"),
+  canParse: (input) =>
+    input.startsWith("MY-") || input.includes("my-service.com"),
   parse: async (input) => ({
     externalId: extractKey(input),
     source: "my-service",
@@ -147,7 +148,11 @@ hooks.on("agent.stop.post", ({ adapter }) => {
 Add functions agents can invoke:
 
 ```typescript
-import type { OrchestratorTool, ToolExecutionContext, ToolResult } from "workhorse-core";
+import type {
+  OrchestratorTool,
+  ToolExecutionContext,
+  ToolResult,
+} from "workhorse-core";
 
 const myTool: OrchestratorTool = {
   name: "my_action",
@@ -159,7 +164,10 @@ const myTool: OrchestratorTool = {
     },
     required: ["target"],
   },
-  execute: async (args: unknown, ctx: ToolExecutionContext): Promise<ToolResult> => {
+  execute: async (
+    args: unknown,
+    ctx: ToolExecutionContext,
+  ): Promise<ToolResult> => {
     const { target } = args as { target: string };
     try {
       const result = await performAction(target);

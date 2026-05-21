@@ -1,6 +1,10 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type { HarnessOrchestrator, ResolvedSkill, ToolExecutionContext } from "#workflow";
+import type {
+  HarnessOrchestrator,
+  ResolvedSkill,
+  ToolExecutionContext,
+} from "#workflow";
 
 import { createLoadSkillTool } from "../skill.ts";
 
@@ -45,12 +49,16 @@ describe("load_skill tool", () => {
         id: "github:pr-workflow",
         name: "PR Workflow",
         description: "How to create PRs",
-        instructions: "## Creating PRs\n\n1. Create branch\n2. Make changes\n3. Push",
+        instructions:
+          "## Creating PRs\n\n1. Create branch\n2. Make changes\n3. Push",
         priority: 50,
       });
 
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "github:pr-workflow" }, mockContext);
+      const result = await tool.execute(
+        { skillId: "github:pr-workflow" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toBe(
@@ -68,7 +76,10 @@ describe("load_skill tool", () => {
       });
 
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "pr-workflow" }, mockContext);
+      const result = await tool.execute(
+        { skillId: "pr-workflow" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("PR Workflow");
@@ -178,7 +189,10 @@ describe("load_skill tool", () => {
       });
 
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "pull requests" }, mockContext);
+      const result = await tool.execute(
+        { skillId: "pull requests" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("github:pr-workflow");
@@ -194,7 +208,10 @@ describe("load_skill tool", () => {
       });
 
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "nonexistent" }, mockContext);
+      const result = await tool.execute(
+        { skillId: "nonexistent" },
+        mockContext,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain('No skills found matching "nonexistent"');
@@ -203,7 +220,10 @@ describe("load_skill tool", () => {
 
     it("returns error when no skills registered and search fails", async () => {
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "nonexistent" }, mockContext);
+      const result = await tool.execute(
+        { skillId: "nonexistent" },
+        mockContext,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("No skills are currently registered");

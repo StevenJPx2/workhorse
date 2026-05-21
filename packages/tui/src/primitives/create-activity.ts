@@ -5,7 +5,10 @@
 
 import { createMemo, type Accessor } from "solid-js";
 
-import { getActivityState, type ActivityState } from "../state/activity-store.ts";
+import {
+  getActivityState,
+  type ActivityState,
+} from "../state/activity-store.ts";
 
 export interface CreateActivityOptions {
   issueId: Accessor<string | null | undefined>;

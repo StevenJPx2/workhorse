@@ -8,15 +8,15 @@
 export { HarnessOrchestrator } from "./orchestrator.ts";
 
 // Skill registry
-export { SkillRegistry } from "./skills.ts";
+export { SkillRegistry } from "./skills";
 
 // Steering (re-exported from workflow/steering)
 export type {
   SteeringCondition,
   SteeringRuleConfig,
   SteeringRuleConfigInput,
-} from "../steering/index.ts";
-export { SteeringRule } from "../steering/index.ts";
+} from "../steering";
+export { SteeringRule } from "../steering";
 
 // Agent adapter base class and types
 export { AgentAdapter } from "./types";

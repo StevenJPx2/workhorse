@@ -3,14 +3,16 @@ import type { HookEmitter } from "workhorse-core";
 
 import {
   addInitScript,
-  closeBrowser,
   getCurrentUrl,
   hasNavigated,
-  launchBrowser,
   navigateTo,
-  setViewport,
-  type BrowserConnection,
 } from "./browser-connection.ts";
+import { setViewport as setConnectionViewport } from "./page-actions.ts";
+import {
+  createSession,
+  closeSessionState,
+  type SessionState,
+} from "./session-lifecycle.ts";
 import type {
   BrowserSession,
   BrowserType,
@@ -20,12 +22,6 @@ import type {
   PageInfo,
   Viewport,
 } from "./types.ts";
-
-/** Internal session state with browser connection */
-export interface SessionState {
-  session: BrowserSession;
-  connection: BrowserConnection;
-}
 
 /** Manages Playwright browser sessions. One session per issue, lazy creation, auto-cleanup on agent stop. */
 export class PlaywrightSessionManager {
@@ -47,41 +43,31 @@ export class PlaywrightSessionManager {
     const existing = this.sessions.get(issueId);
     if (existing?.session.isActive) return existing.session;
 
-    const sessionId = `playwright-${++this.sessionCounter}-${Date.now()}`;
-    const session: BrowserSession = {
-      id: sessionId,
+    const state = await createSession(
+      this.hooks,
       issueId,
+      `playwright-${++this.sessionCounter}-${Date.now()}`,
       browserType,
-      isActive: true,
-      startedAt: Date.now(),
-    };
-
-    this.sessions.set(issueId, {
-      session,
-      connection: await launchBrowser({
-        browserType,
-        headless: true,
-        viewport: this.defaultViewport,
-        timeout: this.defaultTimeout,
-      }),
-    });
-    this.hooks.emit("playwright:session.started", { issueId, sessionId, browserType });
-    return session;
+      this.defaultViewport,
+      this.defaultTimeout,
+    );
+    this.sessions.set(issueId, state);
+    return state.session;
   }
 
   /** Close and cleanup a session for the given issue. */
   async closeSession(issueId: string): Promise<void> {
     const state = this.sessions.get(issueId);
     if (!state) return;
-    state.session.isActive = false;
-    await closeBrowser(state.connection);
+    await closeSessionState(this.hooks, state);
     this.sessions.delete(issueId);
-    this.hooks.emit("playwright:session.closed", { issueId, sessionId: state.session.id });
   }
 
   /** Close all active sessions. Called during agent shutdown. */
   async closeAllSessions(): Promise<void> {
-    await Promise.all(Array.from(this.sessions.keys()).map((id) => this.closeSession(id)));
+    await Promise.all(
+      Array.from(this.sessions.keys()).map((id) => this.closeSession(id)),
+    );
   }
 
   /** Check if a session is active for the given issue. */
@@ -152,7 +138,10 @@ export class PlaywrightSessionManager {
         },
       };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 
@@ -162,9 +151,10 @@ export class PlaywrightSessionManager {
     viewport: Viewport,
   ): Promise<{ success: boolean; error?: string }> {
     const state = this.sessions.get(issueId);
-    if (!state?.session.isActive) return { success: false, error: "No active browser session" };
+    if (!state?.session.isActive)
+      return { success: false, error: "No active browser session" };
     try {
-      await setViewport(state.connection, viewport);
+      await setConnectionViewport(state.connection, viewport);
       this.hooks.emit("playwright:viewport.changed", {
         issueId,
         sessionId: state.session.id,
@@ -172,7 +162,10 @@ export class PlaywrightSessionManager {
       });
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 

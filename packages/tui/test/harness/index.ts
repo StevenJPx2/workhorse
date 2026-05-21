@@ -7,6 +7,11 @@
  * @module test/harness
  */
 
-export type { Snapshot, HarnessOptions, TestResult, TestCase } from "./types.ts";
+export type {
+  Snapshot,
+  HarnessOptions,
+  TestResult,
+  TestCase,
+} from "./types.ts";
 export { captureSnapshot, captureWithKeys } from "./capture.ts";
 export { runTests, printResults } from "./runner.ts";

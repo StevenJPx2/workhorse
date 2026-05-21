@@ -53,7 +53,9 @@ describe("resolveConfigPaths", () => {
       const { resolveConfigPaths } = await import("../resolve.ts");
       const paths = resolveConfigPaths();
 
-      expect(paths.globalDir).toBe(join(homedir(), ".local", "share", "workhorse"));
+      expect(paths.globalDir).toBe(
+        join(homedir(), ".local", "share", "workhorse"),
+      );
     } finally {
       if (originalXdgData) process.env["XDG_DATA_HOME"] = originalXdgData;
       if (originalXdgConfig) process.env["XDG_CONFIG_HOME"] = originalXdgConfig;
@@ -74,12 +76,17 @@ describe("resolveConfigPaths", () => {
     expect(paths.projectConfig).toBe("/my/project/.workhorse.toml");
   });
 
-  it.fails("TODO: resolveConfigPaths should validate repoRoot exists", async () => {
-    // Currently resolveConfigPaths doesn't check if the provided repoRoot
-    // actually exists on the filesystem. Future enhancement: validate and
-    // throw a meaningful error.
-    const { resolveConfigPaths } = await import("../resolve.ts");
+  it.fails(
+    "TODO: resolveConfigPaths should validate repoRoot exists",
+    async () => {
+      // Currently resolveConfigPaths doesn't check if the provided repoRoot
+      // actually exists on the filesystem. Future enhancement: validate and
+      // throw a meaningful error.
+      const { resolveConfigPaths } = await import("../resolve.ts");
 
-    expect(() => resolveConfigPaths("/nonexistent/repo/path/xyz123")).toThrow();
-  });
+      expect(() =>
+        resolveConfigPaths("/nonexistent/repo/path/xyz123"),
+      ).toThrow();
+    },
+  );
 });

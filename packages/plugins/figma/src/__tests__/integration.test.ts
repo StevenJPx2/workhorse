@@ -43,7 +43,9 @@ describe.skipIf(SKIP)("FigmaClient.fetchFile", () => {
   });
 
   it("throws a descriptive error for a non-existent file", async () => {
-    await expect(client.fetchFile("00000000000000NOTREAL")).rejects.toThrow(/Figma API error/);
+    await expect(client.fetchFile("00000000000000NOTREAL")).rejects.toThrow(
+      /Figma API error/,
+    );
   });
 });
 
@@ -79,7 +81,9 @@ describe.skipIf(SKIP)("FigmaClient.fetchComments", () => {
 
 describe.skipIf(SKIP)("canParseFigma", () => {
   it("recognises the test file URL", () => {
-    expect(canParseFigma(`https://www.figma.com/file/${FILE_KEY}/Test`)).toBe(true);
+    expect(canParseFigma(`https://www.figma.com/file/${FILE_KEY}/Test`)).toBe(
+      true,
+    );
   });
 
   it("rejects a plain string", () => {
@@ -91,7 +95,9 @@ describe.skipIf(SKIP)("canParseFigma", () => {
 
 describe.skipIf(SKIP)("extractFigmaRef", () => {
   it("extracts the correct fileKey from the test URL", () => {
-    const ref = extractFigmaRef(`https://www.figma.com/file/${FILE_KEY}/Test-File`);
+    const ref = extractFigmaRef(
+      `https://www.figma.com/file/${FILE_KEY}/Test-File`,
+    );
     expect(ref).not.toBeNull();
     expect(ref!.fileKey).toBe(FILE_KEY);
   });

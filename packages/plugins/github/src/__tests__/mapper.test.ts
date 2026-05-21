@@ -151,7 +151,9 @@ describe("mapGitHubToIssue", () => {
       html_url: "https://github.com/org/project/pull/10",
       assignee: null,
       labels: [],
-      pull_request: { url: "https://api.github.com/repos/org/project/pulls/10" },
+      pull_request: {
+        url: "https://api.github.com/repos/org/project/pulls/10",
+      },
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-02T00:00:00Z",
     };

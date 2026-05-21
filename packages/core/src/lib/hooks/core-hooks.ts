@@ -17,7 +17,8 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
   {
     name: "issue.parsed",
     category: "Issues",
-    description: "Fired after an issue is parsed from external source (URL, key, etc.)",
+    description:
+      "Fired after an issue is parsed from external source (URL, key, etc.)",
     payload: "{ issue: Issue, raw: unknown }",
   },
   {
@@ -117,7 +118,8 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
   {
     name: "agent.idle",
     category: "Agent Events",
-    description: "Fired when an agent becomes idle (no pending work). Used by steering system.",
+    description:
+      "Fired when an agent becomes idle (no pending work). Used by steering system.",
     payload: "{ issueId: string, status: IssueStatus, source: string }",
   },
 
@@ -125,7 +127,8 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
   {
     name: "steering.reminder",
     category: "Steering",
-    description: "Fired when a steering rule triggers a reminder message to the agent",
+    description:
+      "Fired when a steering rule triggers a reminder message to the agent",
     payload: "{ issueId: string, reminder: string }",
   },
 
@@ -161,8 +164,10 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
   {
     name: "monitor.error",
     category: "Monitors",
-    description: "Fired when a monitor poll throws an error. Monitors auto-stop after 5 errors.",
-    payload: "{ id: string, issueId: string, error: Error, errorCount: number }",
+    description:
+      "Fired when a monitor poll throws an error. Monitors auto-stop after 5 errors.",
+    payload:
+      "{ id: string, issueId: string, error: Error, errorCount: number }",
   },
 
   // Plugins
@@ -183,7 +188,8 @@ export const CORE_HOOK_METADATA: HookMetadata[] = [
   {
     name: "skill.registered",
     category: "Skills",
-    description: "Fired when a skill is registered (from plugin or local directory)",
+    description:
+      "Fired when a skill is registered (from plugin or local directory)",
     payload: "{ skill: ResolvedSkill }",
   },
 ];

@@ -37,7 +37,10 @@ class AtlassianClient {
   async addComment(ticketKey: string, body: string): Promise<void>;
   async transitionIssue(ticketKey: string, transitionId: string): Promise<void>;
   async getTransitions(ticketKey: string): Promise<JiraTransition[]>;
-  async editIssue(ticketKey: string, fields: Record<string, unknown>): Promise<void>;
+  async editIssue(
+    ticketKey: string,
+    fields: Record<string, unknown>,
+  ): Promise<void>;
   async getCurrentUser(): Promise<{ accountId: string; displayName: string }>;
 }
 ```

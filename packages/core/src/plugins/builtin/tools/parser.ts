@@ -33,7 +33,10 @@ export function createLocalParserOptions(): IssueParserOptions {
       if (firstLine.length > 80) {
         const truncated = firstLine.substring(0, 77);
         const lastSpace = truncated.lastIndexOf(" ");
-        title = lastSpace > 40 ? `${truncated.substring(0, lastSpace)}...` : `${truncated}...`;
+        title =
+          lastSpace > 40
+            ? `${truncated.substring(0, lastSpace)}...`
+            : `${truncated}...`;
       }
 
       return {

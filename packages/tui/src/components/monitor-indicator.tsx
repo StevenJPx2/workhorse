@@ -21,12 +21,18 @@ export function MonitorIndicator(props: MonitorIndicatorProps) {
     <Show when={info()}>
       {(data: () => NonNullable<ReturnType<typeof getMonitorDisplayInfo>>) => (
         <box flexDirection="row" flexShrink={0} gap={1}>
-          <text fg={data().hasErrors ? theme.colors.error : theme.colors.success}>{"●"}</text>
+          <text
+            fg={data().hasErrors ? theme.colors.error : theme.colors.success}
+          >
+            {"●"}
+          </text>
           <text fg={theme.colors.dim}>
             {data().count} {data().count === 1 ? "monitor" : "monitors"}
           </text>
           <Show when={data().pollingCount > 0 && data().eventCount > 0}>
-            <text fg={theme.colors.dim}>({`${data().pollingCount}p${data().eventCount}e`})</text>
+            <text fg={theme.colors.dim}>
+              ({`${data().pollingCount}p${data().eventCount}e`})
+            </text>
           </Show>
         </box>
       )}

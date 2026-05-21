@@ -92,7 +92,9 @@ export function showModels(orchestrator: HarnessOrchestrator): void {
   const models: ExtendedModelInfo[] = orchestrator.getAllModels();
 
   if (models.length === 0) {
-    console.log("No models available. Make sure adapter plugins are registered.");
+    console.log(
+      "No models available. Make sure adapter plugins are registered.",
+    );
     return;
   }
 
@@ -109,8 +111,12 @@ export function showModels(orchestrator: HarnessOrchestrator): void {
   }
 
   for (const [harness, providerMap] of byHarness) {
-    const adapterInfo = orchestrator.getAdapterInfoList().find((a) => a.harness === harness);
-    const displayName = adapterInfo ? `${adapterInfo.icon} ${adapterInfo.displayName}` : harness;
+    const adapterInfo = orchestrator
+      .getAdapterInfoList()
+      .find((a) => a.harness === harness);
+    const displayName = adapterInfo
+      ? `${adapterInfo.icon} ${adapterInfo.displayName}`
+      : harness;
     console.log(`${displayName}:`);
 
     for (const [provider, providerModels] of providerMap) {

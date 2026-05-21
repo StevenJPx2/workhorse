@@ -149,13 +149,17 @@ export class PiAgentAdapter extends AgentAdapter {
         this.model.slice(slashIndex + 1),
       ];
       const model = modelRegistry.find(provider, modelId);
-      if (!model) throw new Error(`Model "${modelId}" not found for provider "${provider}".`);
+      if (!model)
+        throw new Error(
+          `Model "${modelId}" not found for provider "${provider}".`,
+        );
       return model;
     }
     const matches = modelRegistry
       .getAll()
       .filter((m) => m.id === this.model || m.id.includes(this.model!));
-    if (matches.length === 0) throw new Error(`Model "${this.model}" not found.`);
+    if (matches.length === 0)
+      throw new Error(`Model "${this.model}" not found.`);
     if (matches.length > 1) {
       throw new Error(
         `Model "${this.model}" is ambiguous. Found: ${matches.map((m) => `${m.provider}/${m.id}`).join(", ")}`,

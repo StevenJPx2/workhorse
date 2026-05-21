@@ -96,12 +96,14 @@ describe.skipIf(isCI)("L2: Semantic Search (retriv)", () => {
       const docs: MemoryDocument[] = [
         {
           id: "auth-1",
-          content: "Authentication uses bcrypt for password hashing with 12 salt rounds",
+          content:
+            "Authentication uses bcrypt for password hashing with 12 salt rounds",
           metadata: { type: "decision", issueId: "AM-100" },
         },
         {
           id: "auth-2",
-          content: "JWT tokens expire after 24 hours, refresh tokens last 7 days",
+          content:
+            "JWT tokens expire after 24 hours, refresh tokens last 7 days",
           metadata: { type: "decision", issueId: "AM-100" },
         },
         {

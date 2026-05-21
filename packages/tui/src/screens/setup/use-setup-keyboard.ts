@@ -51,14 +51,18 @@ export function useSetupKeyboard(options: UseSetupKeyboardOptions) {
     const plugin = currentPlugin();
     if (!plugin) return false;
     const pluginValues = values()[plugin.name] ?? {};
-    return plugin.fields.some((f) => f.required && !pluginValues[f.key] && !f.value);
+    return plugin.fields.some(
+      (f) => f.required && !pluginValues[f.key] && !f.value,
+    );
   };
 
   const loadFieldValue = () => {
     const plugin = currentPlugin();
     const field = currentField();
     if (!plugin || !field) return;
-    setInputBuffer(values()[plugin.name]?.[field.key] ?? field.value ?? field.default ?? "");
+    setInputBuffer(
+      values()[plugin.name]?.[field.key] ?? field.value ?? field.default ?? "",
+    );
     setError(null);
   };
 

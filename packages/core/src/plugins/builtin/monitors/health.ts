@@ -41,7 +41,9 @@ export interface AgentHealthOptions {
  * ctx.monitors.startMonitor("agent-health", issueId);
  * ```
  */
-export function createAgentHealthMonitor(options: AgentHealthOptions): PollingMonitorOptions {
+export function createAgentHealthMonitor(
+  options: AgentHealthOptions,
+): PollingMonitorOptions {
   return {
     id: "agent-health",
     type: "polling",

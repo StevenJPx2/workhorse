@@ -9,4 +9,9 @@ export type {
   RegisterRendererPayload,
 } from "./types.ts";
 
-export { registerRenderer, render, getRegisteredIds, clearRenderers } from "./registry.ts";
+export {
+  registerRenderer,
+  render,
+  getRegisteredIds,
+  clearRenderers,
+} from "./registry.ts";

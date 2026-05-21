@@ -27,10 +27,17 @@ const mockConfig: WorkhorseConfig = {
   prompt: { custom: undefined },
   ui: { theme: "default" },
   plugins: { disabled: [] },
-  steering: { enabled: false, debounceMs: 500, maxReminders: 3, cooldownMs: 60000 },
+  steering: {
+    enabled: false,
+    debounceMs: 500,
+    maxReminders: 3,
+    cooldownMs: 60000,
+  },
 };
 
-function createParserOptions(overrides: Partial<IssueParserOptions> = {}): IssueParserOptions {
+function createParserOptions(
+  overrides: Partial<IssueParserOptions> = {},
+): IssueParserOptions {
   return {
     source: overrides.source ?? "test-source",
     canParse: overrides.canParse ?? ((input) => /^[A-Z]+-\d+$/.test(input)),
@@ -38,7 +45,10 @@ function createParserOptions(overrides: Partial<IssueParserOptions> = {}): Issue
   };
 }
 
-const testIssue = (externalId: string, overrides: Record<string, unknown> = {}) => ({
+const testIssue = (
+  externalId: string,
+  overrides: Record<string, unknown> = {},
+) => ({
   externalId,
   source: "test-source",
   title: `Issue ${externalId}`,
@@ -62,7 +72,12 @@ describe("Tracker", () => {
     hooks.all.clear();
     db = await Database.create(":memory:");
     mockMemory = createMockMemory();
-    tracker = new Tracker(db, hooks, mockMemory as unknown as MemoryService, mockConfig);
+    tracker = new Tracker(
+      db,
+      hooks,
+      mockMemory as unknown as MemoryService,
+      mockConfig,
+    );
     vi.clearAllMocks();
   });
 
@@ -258,7 +273,9 @@ describe("Tracker", () => {
     });
 
     it("throws if no parser for source", async () => {
-      const issue = await db.issues.insert(testIssue("AM-100", { source: "unknown-source" }));
+      const issue = await db.issues.insert(
+        testIssue("AM-100", { source: "unknown-source" }),
+      );
       await expect(tracker.buildPrompt(issue.id)).rejects.toThrow(
         'No parser found for source: "unknown-source"',
       );
@@ -267,7 +284,10 @@ describe("Tracker", () => {
     it("builds prompt for existing issue", async () => {
       tracker.registerParser(createParserOptions());
       const issue = await db.issues.insert(
-        testIssue("AM-100", { title: "Build Test Issue", description: "Testing prompt building" }),
+        testIssue("AM-100", {
+          title: "Build Test Issue",
+          description: "Testing prompt building",
+        }),
       );
       const prompt = await tracker.buildPrompt(issue.id);
       expect(prompt).toContain("AM-100");
@@ -277,12 +297,17 @@ describe("Tracker", () => {
 
     it("emits prompt.built hook", async () => {
       tracker.registerParser(createParserOptions());
-      const issue = await db.issues.insert(testIssue("AM-101", { title: "Hook Test" }));
+      const issue = await db.issues.insert(
+        testIssue("AM-101", { title: "Hook Test" }),
+      );
       const builtHandler = vi.fn();
       hooks.on("prompt.built", builtHandler);
       await tracker.buildPrompt(issue.id);
       expect(builtHandler).toHaveBeenCalledWith(
-        expect.objectContaining({ issueId: issue.id, prompt: expect.any(String) }),
+        expect.objectContaining({
+          issueId: issue.id,
+          prompt: expect.any(String),
+        }),
       );
     });
 
@@ -290,32 +315,12 @@ describe("Tracker", () => {
       const customMemory = {
         ...mockMemory,
         notifications: {
-          getUnread: vi.fn().mockReturnValue([{ id: "notif-1", title: "Test notification" }]),
-          generateInbox: vi.fn().mockReturnValue("<system_inbox>Test</system_inbox>"),
-        },
-      };
-      const customTracker = new Tracker(
-        db,
-        hooks,
-        customMemory as unknown as MemoryService,
-        mockConfig,
-      );
-      customTracker.registerParser(createParserOptions());
-      const issue = await db.issues.insert(testIssue("AM-102", { title: "Notification Test" }));
-      const prompt = await customTracker.buildPrompt(issue.id);
-      expect(prompt).toContain("Pending Notifications");
-      expect(customMemory.notifications.generateInbox).toHaveBeenCalled();
-    });
-
-    it("queries L2 memory for context", async () => {
-      const customMemory = {
-        ...mockMemory,
-        l2: {
-          search: vi
+          getUnread: vi
             .fn()
-            .mockResolvedValue([
-              { id: "doc-1", score: 0.85, content: "Related doc", metadata: { type: "decision" } },
-            ]),
+            .mockReturnValue([{ id: "notif-1", title: "Test notification" }]),
+          generateInbox: vi
+            .fn()
+            .mockReturnValue("<system_inbox>Test</system_inbox>"),
         },
       };
       const customTracker = new Tracker(
@@ -326,7 +331,39 @@ describe("Tracker", () => {
       );
       customTracker.registerParser(createParserOptions());
       const issue = await db.issues.insert(
-        testIssue("AM-103", { title: "L2 Search Test", description: "Find related context" }),
+        testIssue("AM-102", { title: "Notification Test" }),
+      );
+      const prompt = await customTracker.buildPrompt(issue.id);
+      expect(prompt).toContain("Pending Notifications");
+      expect(customMemory.notifications.generateInbox).toHaveBeenCalled();
+    });
+
+    it("queries L2 memory for context", async () => {
+      const customMemory = {
+        ...mockMemory,
+        l2: {
+          search: vi.fn().mockResolvedValue([
+            {
+              id: "doc-1",
+              score: 0.85,
+              content: "Related doc",
+              metadata: { type: "decision" },
+            },
+          ]),
+        },
+      };
+      const customTracker = new Tracker(
+        db,
+        hooks,
+        customMemory as unknown as MemoryService,
+        mockConfig,
+      );
+      customTracker.registerParser(createParserOptions());
+      const issue = await db.issues.insert(
+        testIssue("AM-103", {
+          title: "L2 Search Test",
+          description: "Find related context",
+        }),
       );
       const prompt = await customTracker.buildPrompt(issue.id);
       expect(customMemory.l2.search).toHaveBeenCalledWith(
@@ -338,7 +375,10 @@ describe("Tracker", () => {
     });
 
     it("includes custom instructions from config", async () => {
-      const customConfig: WorkhorseConfig = { ...mockConfig, prompt: { custom: "Best practices" } };
+      const customConfig: WorkhorseConfig = {
+        ...mockConfig,
+        prompt: { custom: "Best practices" },
+      };
       const customTracker = new Tracker(
         db,
         hooks,
@@ -346,33 +386,45 @@ describe("Tracker", () => {
         customConfig,
       );
       customTracker.registerParser(createParserOptions());
-      const issue = await db.issues.insert(testIssue("AM-104", { title: "Custom Instructions" }));
+      const issue = await db.issues.insert(
+        testIssue("AM-104", { title: "Custom Instructions" }),
+      );
       const prompt = await customTracker.buildPrompt(issue.id);
       expect(prompt).toContain("Custom Instructions");
       expect(prompt).toContain("Best practices");
     });
 
-    it.fails("TODO: buildPrompt should handle L2 search errors gracefully", async () => {
-      const customMemory = {
-        ...mockMemory,
-        l2: { search: vi.fn().mockRejectedValue(new Error()) },
-      };
-      const customTracker = new Tracker(
-        db,
-        hooks,
-        customMemory as unknown as MemoryService,
-        mockConfig,
-      );
-      customTracker.registerParser(createParserOptions());
-      const issue = await db.issues.insert(testIssue("AM-105", { title: "Error Handling Test" }));
-      const prompt = await customTracker.buildPrompt(issue.id);
-      expect(prompt).toContain("AM-105");
-    });
+    it.fails(
+      "TODO: buildPrompt should handle L2 search errors gracefully",
+      async () => {
+        const customMemory = {
+          ...mockMemory,
+          l2: { search: vi.fn().mockRejectedValue(new Error()) },
+        };
+        const customTracker = new Tracker(
+          db,
+          hooks,
+          customMemory as unknown as MemoryService,
+          mockConfig,
+        );
+        customTracker.registerParser(createParserOptions());
+        const issue = await db.issues.insert(
+          testIssue("AM-105", { title: "Error Handling Test" }),
+        );
+        const prompt = await customTracker.buildPrompt(issue.id);
+        expect(prompt).toContain("AM-105");
+      },
+    );
 
-    it.fails("TODO: buildPrompt should validate issue data before building", async () => {
-      tracker.registerParser(createParserOptions());
-      const issue = await db.issues.insert(testIssue("AM-999", { title: "" }));
-      await expect(tracker.buildPrompt(issue.id)).rejects.toThrow();
-    });
+    it.fails(
+      "TODO: buildPrompt should validate issue data before building",
+      async () => {
+        tracker.registerParser(createParserOptions());
+        const issue = await db.issues.insert(
+          testIssue("AM-999", { title: "" }),
+        );
+        await expect(tracker.buildPrompt(issue.id)).rejects.toThrow();
+      },
+    );
   });
 });

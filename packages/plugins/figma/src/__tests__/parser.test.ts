@@ -13,19 +13,27 @@ import { canParseFigma, extractFigmaRef } from "../parser.ts";
 
 describe("canParseFigma", () => {
   it("matches /file/ URLs", () => {
-    expect(canParseFigma("https://www.figma.com/file/abc123XYZ/My-App")).toBe(true);
+    expect(canParseFigma("https://www.figma.com/file/abc123XYZ/My-App")).toBe(
+      true,
+    );
   });
 
   it("matches /design/ URLs", () => {
-    expect(canParseFigma("https://www.figma.com/design/abc123XYZ/My-App")).toBe(true);
+    expect(canParseFigma("https://www.figma.com/design/abc123XYZ/My-App")).toBe(
+      true,
+    );
   });
 
   it("matches /proto/ URLs", () => {
-    expect(canParseFigma("https://www.figma.com/proto/abc123XYZ/My-App")).toBe(true);
+    expect(canParseFigma("https://www.figma.com/proto/abc123XYZ/My-App")).toBe(
+      true,
+    );
   });
 
   it("matches URLs with node-id query param", () => {
-    expect(canParseFigma("https://www.figma.com/file/abc123XYZ/My-App?node-id=1-23")).toBe(true);
+    expect(
+      canParseFigma("https://www.figma.com/file/abc123XYZ/My-App?node-id=1-23"),
+    ).toBe(true);
   });
 
   it("matches URLs without a trailing slug", () => {
@@ -61,34 +69,46 @@ describe("extractFigmaRef", () => {
   });
 
   it("extracts fileKey from a /design/ URL", () => {
-    const ref = extractFigmaRef("https://www.figma.com/design/XYZabc123/Dashboard");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/design/XYZabc123/Dashboard",
+    );
     expect(ref!.fileKey).toBe("XYZabc123");
   });
 
   it("extracts nodeId from the node-id query param", () => {
-    const ref = extractFigmaRef("https://www.figma.com/file/abc123XYZ/My-App?node-id=5-10");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/file/abc123XYZ/My-App?node-id=5-10",
+    );
     expect(ref!.fileKey).toBe("abc123XYZ");
     expect(ref!.nodeId).toBe("5:10"); // hyphens normalised to colons
   });
 
   it("normalises node-id with multiple segments", () => {
-    const ref = extractFigmaRef("https://www.figma.com/file/abc123XYZ/My-App?node-id=123-456");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/file/abc123XYZ/My-App?node-id=123-456",
+    );
     expect(ref!.nodeId).toBe("123:456");
   });
 
   it("decodes the display name from the URL slug", () => {
-    const ref = extractFigmaRef("https://www.figma.com/file/abc123XYZ/My-Cool-App");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/file/abc123XYZ/My-Cool-App",
+    );
     expect(ref!.displayName).toBe("My Cool App");
   });
 
   it("builds a canonical file-level URL (no node-id)", () => {
-    const ref = extractFigmaRef("https://www.figma.com/design/abc123XYZ/My-App");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/design/abc123XYZ/My-App",
+    );
     expect(ref!.url).toContain("figma.com/file/abc123XYZ");
     expect(ref!.url).not.toContain("node-id");
   });
 
   it("builds a canonical URL containing node-id when present", () => {
-    const ref = extractFigmaRef("https://www.figma.com/file/abc123XYZ/My-App?node-id=5-10");
+    const ref = extractFigmaRef(
+      "https://www.figma.com/file/abc123XYZ/My-App?node-id=5-10",
+    );
     expect(ref!.url).toContain("node-id=5:10");
   });
 

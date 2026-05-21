@@ -16,7 +16,9 @@ function makeDb(externalId: string, source = "figma") {
       getByExternalId: vi
         .fn()
         .mockImplementation((extId: string, src: string) =>
-          extId === externalId && src === source ? { id: "uuid-1", externalId, source } : undefined,
+          extId === externalId && src === source
+            ? { id: "uuid-1", externalId, source }
+            : undefined,
         ),
     },
   };
@@ -46,7 +48,9 @@ const mockFile = {
         id: "1:1",
         name: "Page 1",
         type: "PAGE",
-        children: [{ id: "2:1", name: "Hero Frame", type: "FRAME", children: [] }],
+        children: [
+          { id: "2:1", name: "Hero Frame", type: "FRAME", children: [] },
+        ],
       },
     ],
   },
@@ -54,7 +58,12 @@ const mockFile = {
     "comp-1": { key: "k1", name: "Button", description: "Primary button" },
   },
   styles: {
-    "style-1": { key: "s1", name: "Primary/500", description: "", styleType: "FILL" as const },
+    "style-1": {
+      key: "s1",
+      name: "Primary/500",
+      description: "",
+      styleType: "FILL" as const,
+    },
   },
 };
 
@@ -170,7 +179,10 @@ describe("figma_get_file", () => {
     } as unknown as FigmaClient;
     const tool = getTool(mockClient);
 
-    const result = await tool.execute({}, makeCtx("abc123XYZ", makeDb("abc123XYZ")));
+    const result = await tool.execute(
+      {},
+      makeCtx("abc123XYZ", makeDb("abc123XYZ")),
+    );
     expect(result.success).toBe(false);
     expect(result.error).toBe("Rate limited");
   });
@@ -180,7 +192,9 @@ describe("figma_get_file", () => {
 
 describe("figma_get_comments", () => {
   function getTool(client: FigmaClient) {
-    return createFigmaTools(client).find((t) => t.name === "figma_get_comments")!;
+    return createFigmaTools(client).find(
+      (t) => t.name === "figma_get_comments",
+    )!;
   }
 
   it("returns only open comments by default", async () => {
@@ -189,7 +203,10 @@ describe("figma_get_comments", () => {
     } as unknown as FigmaClient;
     const tool = getTool(mockClient);
 
-    const result = await tool.execute({}, makeCtx("abc123XYZ", makeDb("abc123XYZ")));
+    const result = await tool.execute(
+      {},
+      makeCtx("abc123XYZ", makeDb("abc123XYZ")),
+    );
     expect(result.success).toBe(true);
     // c3 is resolved — should be excluded by default
     expect(result.output).not.toContain("Resolved issue");
@@ -215,7 +232,10 @@ describe("figma_get_comments", () => {
     } as unknown as FigmaClient;
     const tool = getTool(mockClient);
 
-    const result = await tool.execute({}, makeCtx("abc123XYZ", makeDb("abc123XYZ")));
+    const result = await tool.execute(
+      {},
+      makeCtx("abc123XYZ", makeDb("abc123XYZ")),
+    );
     // bob's reply should appear after alice's root comment
     expect(result.output).toContain("alice");
     expect(result.output).toContain("bob");
@@ -230,7 +250,10 @@ describe("figma_get_comments", () => {
     } as unknown as FigmaClient;
     const tool = getTool(mockClient);
 
-    const result = await tool.execute({}, makeCtx("abc123XYZ", makeDb("abc123XYZ")));
+    const result = await tool.execute(
+      {},
+      makeCtx("abc123XYZ", makeDb("abc123XYZ")),
+    );
     expect(result.success).toBe(true);
     expect(result.output).toMatch(/no (open )?comments/i);
   });
@@ -247,7 +270,10 @@ describe("figma_get_comments", () => {
     const mockClient = {
       fetchComments: vi.fn().mockRejectedValue(new Error("API error")),
     } as unknown as FigmaClient;
-    const result = await getTool(mockClient).execute({}, makeCtx("abc123XYZ", makeDb("abc123XYZ")));
+    const result = await getTool(mockClient).execute(
+      {},
+      makeCtx("abc123XYZ", makeDb("abc123XYZ")),
+    );
     expect(result.success).toBe(false);
     expect(result.error).toBe("API error");
   });
@@ -257,7 +283,9 @@ describe("figma_get_comments", () => {
 
 describe("figma_post_comment", () => {
   function getTool(client: FigmaClient) {
-    return createFigmaTools(client).find((t) => t.name === "figma_post_comment")!;
+    return createFigmaTools(client).find(
+      (t) => t.name === "figma_post_comment",
+    )!;
   }
 
   it("posts a top-level comment and returns success", async () => {
@@ -307,7 +335,11 @@ describe("figma_post_comment", () => {
 
     expect(result.success).toBe(true);
     expect(result.output).toContain("c1");
-    expect(mockClient.postComment).toHaveBeenCalledWith("abc123XYZ", expect.any(String), "c1");
+    expect(mockClient.postComment).toHaveBeenCalledWith(
+      "abc123XYZ",
+      expect.any(String),
+      "c1",
+    );
   });
 
   it("returns error when message is empty", async () => {
@@ -323,7 +355,10 @@ describe("figma_post_comment", () => {
   it("returns error for non-Figma issue", async () => {
     const db = makeDb("PROJ-1", "jira");
     const mockClient = { postComment: vi.fn() } as unknown as FigmaClient;
-    const result = await getTool(mockClient).execute({ message: "Hello" }, makeCtx("PROJ-1", db));
+    const result = await getTool(mockClient).execute(
+      { message: "Hello" },
+      makeCtx("PROJ-1", db),
+    );
     expect(result.success).toBe(false);
     expect(mockClient.postComment).not.toHaveBeenCalled();
   });

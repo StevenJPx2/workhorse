@@ -6,7 +6,10 @@ import type { MemoryService } from "#services";
 import { createMockHooks } from "#test-helpers";
 
 import { MonitorService } from "../service.ts";
-import { createEventMonitorOptions, createPollingMonitorOptions } from "./service.test.ts";
+import {
+  createEventMonitorOptions,
+  createPollingMonitorOptions,
+} from "./service.test.ts";
 
 describe("MonitorService - lifecycle and error handling", () => {
   let service: MonitorService;
@@ -30,7 +33,9 @@ describe("MonitorService - lifecycle and error handling", () => {
   describe("error handling", () => {
     it("increments errorCount on poll failure", async () => {
       const pollFn = vi.fn().mockRejectedValue(new Error("Poll failed"));
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       await vi.advanceTimersByTimeAsync(100);
@@ -44,7 +49,9 @@ describe("MonitorService - lifecycle and error handling", () => {
 
       const error = new Error("Something went wrong");
       const pollFn = vi.fn().mockRejectedValue(error);
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       await vi.advanceTimersByTimeAsync(100);
@@ -59,7 +66,9 @@ describe("MonitorService - lifecycle and error handling", () => {
 
     it("stops monitor after ERROR_THRESHOLD (5) consecutive errors", async () => {
       const pollFn = vi.fn().mockRejectedValue(new Error("Persistent failure"));
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       for (let i = 0; i < 5; i++) {
@@ -76,7 +85,9 @@ describe("MonitorService - lifecycle and error handling", () => {
         return { hasChanges: false };
       });
 
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       await vi.advanceTimersByTimeAsync(100);
@@ -92,7 +103,9 @@ describe("MonitorService - lifecycle and error handling", () => {
       hooks.on("monitor.error", errorHandler);
 
       const pollFn = vi.fn().mockRejectedValue(new Error("Failure"));
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       for (let i = 0; i < 5; i++) {
@@ -110,7 +123,9 @@ describe("MonitorService - lifecycle and error handling", () => {
       const error = new Error("Setup failed");
       const setupFn = vi.fn().mockRejectedValue(error);
 
-      service.registerMonitor(createEventMonitorOptions("test-event", { setupFn }));
+      service.registerMonitor(
+        createEventMonitorOptions("test-event", { setupFn }),
+      );
       await service.startMonitor("test-event", "AM-123");
 
       expect(handler).toHaveBeenCalledWith({
@@ -139,7 +154,9 @@ describe("MonitorService - lifecycle and error handling", () => {
 
     it("clears the timeout", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
 
       await service.stopMonitor("AM-123", "test");
@@ -200,7 +217,9 @@ describe("MonitorService - lifecycle and error handling", () => {
   describe("shutdown", () => {
     it("stops all running monitors", async () => {
       const pollFn = vi.fn().mockResolvedValue({ hasChanges: false });
-      service.registerMonitor(createPollingMonitorOptions("test", { interval: 100, pollFn }));
+      service.registerMonitor(
+        createPollingMonitorOptions("test", { interval: 100, pollFn }),
+      );
       await service.startMonitor("test", "AM-123");
       await service.startMonitor("test", "AM-456");
 

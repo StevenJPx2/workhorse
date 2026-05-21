@@ -62,7 +62,10 @@ export function registerPRContribution(
       });
     } catch (error) {
       // Best effort - don't fail PR creation if Jira lookup fails
-      console.error(`[jira] Failed to add Related Tickets to PR for ${ticketKey}:`, error);
+      console.error(
+        `[jira] Failed to add Related Tickets to PR for ${ticketKey}:`,
+        error,
+      );
     }
   });
 }

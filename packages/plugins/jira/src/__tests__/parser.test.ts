@@ -15,7 +15,9 @@ describe("canParseJira", () => {
   });
 
   it("matches Jira URLs", () => {
-    expect(canParseJira("https://company.atlassian.net/browse/AM-123")).toBe(true);
+    expect(canParseJira("https://company.atlassian.net/browse/AM-123")).toBe(
+      true,
+    );
     expect(canParseJira("https://jira.example.com/browse/PROJ-42")).toBe(false); // Not atlassian.net
   });
 
@@ -61,7 +63,9 @@ describe("createJiraParserOptions", () => {
     } as unknown as AtlassianClient;
 
     const options = createJiraParserOptions(mockClient);
-    const parsed = await options.parse("https://company.atlassian.net/browse/AM-456");
+    const parsed = await options.parse(
+      "https://company.atlassian.net/browse/AM-456",
+    );
     expect(mockClient.fetchIssue).toHaveBeenCalledWith("AM-456");
     expect(parsed.externalId).toBe("AM-456");
   });

@@ -92,11 +92,24 @@ export const spawnCommand = defineCommand({
       description: "Issue identifier (e.g., AM-123, owner/repo#45)",
       required: true,
     },
-    harness: { type: "string", alias: "h", description: "Agent harness to use" },
+    harness: {
+      type: "string",
+      alias: "h",
+      description: "Agent harness to use",
+    },
     model: { type: "string", alias: "m", description: "Model to use" },
-    base: { type: "string", alias: "b", default: "main", description: "Base branch" },
+    base: {
+      type: "string",
+      alias: "b",
+      default: "main",
+      description: "Base branch",
+    },
     repo: { type: "string", alias: "r", description: "Repository path" },
-    prompt: { type: "string", alias: "p", description: "Custom initial prompt" },
+    prompt: {
+      type: "string",
+      alias: "p",
+      description: "Custom initial prompt",
+    },
     json: { type: "boolean", description: "Output JSON" },
   },
   async run({ args }) {

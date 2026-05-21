@@ -134,7 +134,9 @@ describe("edge cases and error handling", () => {
     };
 
     const result = mergeConfigs(DEFAULT_CONFIG, override);
-    const jiraConfig = result.plugins["jira"] as { nested: { value: number; extra: boolean } };
+    const jiraConfig = result.plugins["jira"] as {
+      nested: { value: number; extra: boolean };
+    };
     expect(jiraConfig.nested.value).toBe(2);
     expect(jiraConfig.nested.extra).toBe(true);
   });

@@ -18,7 +18,12 @@ import type {
 } from "../types";
 
 // Re-export types for consumers
-export type { ConversationComment, DetailedReview, PRReviewsResult, ReviewComment };
+export type {
+  ConversationComment,
+  DetailedReview,
+  PRReviewsResult,
+  ReviewComment,
+};
 
 /** Create the github_get_pr_reviews tool */
 export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
@@ -32,12 +37,25 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
     schema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "Repository owner (e.g., 'octocat')" },
-        repo: { type: "string", description: "Repository name (e.g., 'hello-world')" },
+        owner: {
+          type: "string",
+          description: "Repository owner (e.g., 'octocat')",
+        },
+        repo: {
+          type: "string",
+          description: "Repository name (e.g., 'hello-world')",
+        },
         number: { type: "number", description: "PR number" },
         state: {
           type: "string",
-          enum: ["all", "approved", "changes_requested", "commented", "dismissed", "pending"],
+          enum: [
+            "all",
+            "approved",
+            "changes_requested",
+            "commented",
+            "dismissed",
+            "pending",
+          ],
           description:
             "Filter reviews by state. Defaults to 'all'. Use 'changes_requested' to focus on blocking reviews.",
         },
@@ -60,7 +78,13 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
         owner: string;
         repo: string;
         number: number;
-        state?: "all" | "approved" | "changes_requested" | "commented" | "dismissed" | "pending";
+        state?:
+          | "all"
+          | "approved"
+          | "changes_requested"
+          | "commented"
+          | "dismissed"
+          | "pending";
         includeComments?: boolean;
       };
 
@@ -73,39 +97,42 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
         const stateFilter = state.toUpperCase();
 
         const detailedReviews: DetailedReview[] = await Promise.all(
-          (state === "all" ? reviews : reviews.filter((r) => r.state === stateFilter)).map(
-            async (review) => {
-              let comments: ReviewComment[] = [];
-              if (includeComments) {
-                try {
-                  comments = await client
-                    .getReviewComments(owner, repo, number, review.id)
-                    .then((r) =>
-                      r.map((c: GitHubComment) => ({
-                        path: c.path ?? "unknown",
-                        line: c.line ?? null,
-                        diffHunk: c.diff_hunk ?? null,
-                        body: c.body,
-                      })),
-                    );
-                } catch {
-                  comments = [];
-                }
+          (state === "all"
+            ? reviews
+            : reviews.filter((r) => r.state === stateFilter)
+          ).map(async (review) => {
+            let comments: ReviewComment[] = [];
+            if (includeComments) {
+              try {
+                comments = await client
+                  .getReviewComments(owner, repo, number, review.id)
+                  .then((r) =>
+                    r.map((c: GitHubComment) => ({
+                      path: c.path ?? "unknown",
+                      line: c.line ?? null,
+                      diffHunk: c.diff_hunk ?? null,
+                      body: c.body,
+                    })),
+                  );
+              } catch {
+                comments = [];
               }
-              return {
-                id: review.id,
-                author: review.user.login,
-                state: review.state,
-                body: review.body,
-                submittedAt: review.submitted_at,
-                comments,
-              };
-            },
-          ),
+            }
+            return {
+              id: review.id,
+              author: review.user.login,
+              state: review.state,
+              body: review.body,
+              submittedAt: review.submitted_at,
+              comments,
+            };
+          }),
         );
 
         detailedReviews.sort(
-          (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+          (a, b) =>
+            new Date(b.submittedAt).getTime() -
+            new Date(a.submittedAt).getTime(),
         );
 
         const conversationComments: ConversationComment[] = issueComments
@@ -120,17 +147,28 @@ export function createGetPRReviewsTool(client: GitHubClient): OrchestratorTool {
               ...(imageCount > 0 && { imageCount }),
             };
           })
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
 
         // Count total images across all comments
-        const totalImages = conversationComments.reduce((sum, c) => sum + (c.imageCount ?? 0), 0);
+        const totalImages = conversationComments.reduce(
+          (sum, c) => sum + (c.imageCount ?? 0),
+          0,
+        );
 
-        const result: PRReviewsResult & { totalImages?: number; imageNote?: string } = {
+        const result: PRReviewsResult & {
+          totalImages?: number;
+          imageNote?: string;
+        } = {
           totalReviews: reviews.length,
           totalConversationComments: conversationComments.length,
           summary: {
             approved: reviews.filter((r) => r.state === "APPROVED").length,
-            changesRequested: reviews.filter((r) => r.state === "CHANGES_REQUESTED").length,
+            changesRequested: reviews.filter(
+              (r) => r.state === "CHANGES_REQUESTED",
+            ).length,
             commented: reviews.filter((r) => r.state === "COMMENTED").length,
             dismissed: reviews.filter((r) => r.state === "DISMISSED").length,
             pending: reviews.filter((r) => r.state === "PENDING").length,

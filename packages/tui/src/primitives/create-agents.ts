@@ -1,4 +1,10 @@
-import { createSignal, createMemo, onMount, onCleanup, type Accessor } from "solid-js";
+import {
+  createSignal,
+  createMemo,
+  onMount,
+  onCleanup,
+  type Accessor,
+} from "solid-js";
 import type { AgentAdapter, AgentState } from "workhorse-core";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";

@@ -37,7 +37,9 @@ export interface RenderedActivity {
 ### Renderer Function
 
 ```typescript
-export type ActivityRenderer = (input: ActivityInput) => RenderedActivity | null;
+export type ActivityRenderer = (
+  input: ActivityInput,
+) => RenderedActivity | null;
 ```
 
 Returning `null` means "I don't handle this input, try the next renderer."
@@ -64,12 +66,15 @@ function jiraRenderer(input: ActivityInput): RenderedActivity | null {
   if (input.kind !== "notification") return null;
   if (input.notification.source !== "jira") return null;
 
-  const meta = input.notification.metadata as Record<string, unknown> | undefined;
+  const meta = input.notification.metadata as
+    | Record<string, unknown>
+    | undefined;
   const jiraKey = meta?.jiraKey as string | undefined;
 
   let icon = "🎫";
   if (input.notification.title.toLowerCase().includes("comment")) icon = "💬";
-  if (input.notification.title.toLowerCase().includes("transition")) icon = "➡️";
+  if (input.notification.title.toLowerCase().includes("transition"))
+    icon = "➡️";
 
   return {
     icon,
@@ -220,7 +225,11 @@ ctx.hooks.emit("tui.register_renderer", {
 ```typescript
 // packages/tui/src/renderers/registry.ts
 
-import type { ActivityInput, ActivityRenderer, RenderedActivity } from "./types.ts";
+import type {
+  ActivityInput,
+  ActivityRenderer,
+  RenderedActivity,
+} from "./types.ts";
 
 interface RegisteredRenderer {
   id: string;
@@ -230,7 +239,11 @@ interface RegisteredRenderer {
 
 const renderers: RegisteredRenderer[] = [];
 
-export function registerRenderer(id: string, renderer: ActivityRenderer, priority = 0): void {
+export function registerRenderer(
+  id: string,
+  renderer: ActivityRenderer,
+  priority = 0,
+): void {
   // Remove existing renderer with same id
   const idx = renderers.findIndex((r) => r.id === id);
   if (idx !== -1) renderers.splice(idx, 1);

@@ -53,7 +53,8 @@ export async function memoryWriteToolImpl(
     }
 
     // Append a session entry if there's anything to record
-    const hasSummary = summary.length > 0 || learnings.length > 0 || filesChanged.length > 0;
+    const hasSummary =
+      summary.length > 0 || learnings.length > 0 || filesChanged.length > 0;
     if (hasSummary) {
       await l1.appendSession({
         timestamp: new Date(),

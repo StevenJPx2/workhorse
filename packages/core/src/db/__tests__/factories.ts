@@ -43,9 +43,15 @@ export function makeEventInput(
 // oxlint-disable-next-line workhorse/no-single-reference-function -- test factory
 export function makeNotificationInput(
   overrides?: Partial<
-    Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status">
+    Omit<
+      Notification,
+      "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status"
+    >
   >,
-): Omit<Notification, "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status"> {
+): Omit<
+  Notification,
+  "id" | "createdAt" | "readAt" | "acknowledgedAt" | "status"
+> {
   return {
     issueId: "", // Must be set by test
     source: "jira_comment",

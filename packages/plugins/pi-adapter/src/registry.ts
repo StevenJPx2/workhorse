@@ -7,7 +7,10 @@
  * @module workhorse-plugin-pi-adapter/registry
  */
 
-import { AuthStorage, ModelRegistry as PiModelRegistry } from "@earendil-works/pi-coding-agent";
+import {
+  AuthStorage,
+  ModelRegistry as PiModelRegistry,
+} from "@earendil-works/pi-coding-agent";
 import { type ModelInfo, ModelRegistry } from "workhorse-core";
 
 type Model = ReturnType<PiModelRegistry["getAll"]>[number];

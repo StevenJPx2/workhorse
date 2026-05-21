@@ -4,7 +4,12 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buildBranchName, buildWorktreePath, getGitRoot, parseWorktreeList } from "../utils.ts";
+import {
+  buildBranchName,
+  buildWorktreePath,
+  getGitRoot,
+  parseWorktreeList,
+} from "../utils.ts";
 
 describe("buildWorktreePath", () => {
   it("builds path from repo path and issue ID", () => {

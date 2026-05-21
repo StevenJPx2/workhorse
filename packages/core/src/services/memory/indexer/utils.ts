@@ -4,7 +4,11 @@
  * @module services/memory/indexer/utils
  */
 
-import type { MemoryDocument, MemoryDocumentType, SessionMemory } from "../types.ts";
+import type {
+  MemoryDocument,
+  MemoryDocumentType,
+  SessionMemory,
+} from "../types.ts";
 
 /** Document ID prefix for session memory documents */
 const SESSION_DOC_PREFIX = "session:";
@@ -54,7 +58,9 @@ export function buildSessionDocuments(
   }
 
   // Index significant learnings from sessions
-  const learnings = memory.sessions.flatMap((s) => s.learnings).filter((l) => l.length > 0);
+  const learnings = memory.sessions
+    .flatMap((s) => s.learnings)
+    .filter((l) => l.length > 0);
 
   if (learnings.length > 0) {
     documents.push({
@@ -76,18 +82,27 @@ export function buildSessionDocuments(
  * Build a summary of the session memory for indexing.
  */
 export function buildSessionSummaryContent(memory: SessionMemory): string {
-  const parts: string[] = [`# ${memory.title}`, "", `Status: ${memory.latestStatus}`, ""];
+  const parts: string[] = [
+    `# ${memory.title}`,
+    "",
+    `Status: ${memory.latestStatus}`,
+    "",
+  ];
 
   // Add session summaries
   for (const session of memory.sessions) {
-    const summaryText = session.summary.filter((s) => s !== "Session initialized").join("; ");
+    const summaryText = session.summary
+      .filter((s) => s !== "Session initialized")
+      .join("; ");
     if (summaryText) {
       parts.push(`- ${summaryText}`);
     }
   }
 
   // Add files changed
-  const filesChanged = [...new Set(memory.sessions.flatMap((s) => s.filesChanged))];
+  const filesChanged = [
+    ...new Set(memory.sessions.flatMap((s) => s.filesChanged)),
+  ];
   if (filesChanged.length > 0) {
     parts.push("", "Files modified:", ...filesChanged.map((f) => `- ${f}`));
   }

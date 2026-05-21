@@ -20,7 +20,9 @@ describe("createGitHubPRMonitor", () => {
     };
   }
 
-  function createMockDb(issue: Record<string, unknown> | null = null): Database {
+  function createMockDb(
+    issue: Record<string, unknown> | null = null,
+  ): Database {
     return {
       issues: {
         getById: vi.fn().mockReturnValue(issue),
@@ -29,7 +31,9 @@ describe("createGitHubPRMonitor", () => {
     } as unknown as Database;
   }
 
-  function createMockClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
+  function createMockClient(
+    overrides: Partial<GitHubClient> = {},
+  ): GitHubClient {
     return {
       fetchPR: vi.fn().mockResolvedValue({
         number: 42,
@@ -265,7 +269,9 @@ describe("createGitHubPRMonitor", () => {
     const client = createMockClient({
       getPRReviews: vi
         .fn()
-        .mockResolvedValue([{ id: 1, user: { login: "r" }, state: "APPROVED", body: "" }]),
+        .mockResolvedValue([
+          { id: 1, user: { login: "r" }, state: "APPROVED", body: "" },
+        ]),
     });
     const monitor = createGitHubPRMonitor(client, 30000, db);
     const ctx = createMockContext();
@@ -369,7 +375,10 @@ describe("createGitHubPRMonitor", () => {
     await monitor.poll(ctx);
 
     // Should not emit the hook since we already knew it was merged
-    expect(ctx.hooks.emit).not.toHaveBeenCalledWith("github:pr.merged", expect.anything());
+    expect(ctx.hooks.emit).not.toHaveBeenCalledWith(
+      "github:pr.merged",
+      expect.anything(),
+    );
   });
 
   it("updates lastMerged state after detecting merge", async () => {

@@ -10,7 +10,8 @@ import { AtlassianClient } from "../client.ts";
 const originalFetch = globalThis.fetch;
 
 // Mock fetch function
-const mockFetch = vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
+const mockFetch =
+  vi.fn<(...args: Parameters<typeof fetch>) => Promise<Response>>();
 
 // Create a credential getter that returns test credentials
 const createTestCredentialGetter = () => async () => ({
@@ -66,7 +67,9 @@ describe("AtlassianClient", () => {
       statusText: "Not Found",
     } as Response);
 
-    await expect(client.fetchIssue("AM-999")).rejects.toThrow("Jira API error: 404 Not Found");
+    await expect(client.fetchIssue("AM-999")).rejects.toThrow(
+      "Jira API error: 404 Not Found",
+    );
   });
 
   it("adds a comment successfully", async () => {
@@ -88,7 +91,9 @@ describe("AtlassianClient", () => {
           body: {
             version: 1,
             type: "doc",
-            content: [{ type: "paragraph", content: [{ type: "text", text: "LGTM" }] }],
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "LGTM" }] },
+            ],
           },
         }),
       }),
@@ -102,7 +107,11 @@ describe("AtlassianClient", () => {
       ok: true,
       json: async () => ({
         transitions: [
-          { id: "31", name: "In Progress", to: { name: "In Progress", id: "3" } },
+          {
+            id: "31",
+            name: "In Progress",
+            to: { name: "In Progress", id: "3" },
+          },
           { id: "41", name: "Done", to: { name: "Done", id: "6" } },
         ],
       }),

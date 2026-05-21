@@ -10,7 +10,10 @@ import type { AtlassianClient } from "../client.ts";
 import type { Hooks } from "./types.ts";
 
 /** Tool: Transition a Jira issue to a new status */
-export function createTransitionTool(client: AtlassianClient, hooks: Hooks): OrchestratorTool {
+export function createTransitionTool(
+  client: AtlassianClient,
+  hooks: Hooks,
+): OrchestratorTool {
   return {
     name: "jira_transition_issue",
     description:
@@ -23,7 +26,8 @@ export function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orc
       properties: {
         status: {
           type: "string",
-          description: "The target status name (e.g., 'In Progress', 'Done', 'In Review')",
+          description:
+            "The target status name (e.g., 'In Progress', 'Done', 'In Review')",
         },
       },
       required: ["status"],
@@ -61,7 +65,9 @@ export function createTransitionTool(client: AtlassianClient, hooks: Hooks): Orc
         // Emit hook for cross-plugin coordination
         hooks.emit("jira:issue.transitioned", {
           issueId: ticketKey,
-          from: await client.fetchIssue(ticketKey).then((r) => r.fields.status.name),
+          from: await client
+            .fetchIssue(ticketKey)
+            .then((r) => r.fields.status.name),
           to: transition.to.name,
         });
 

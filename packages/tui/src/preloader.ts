@@ -19,7 +19,9 @@ export function startPreloader(initialMessage = "Starting Workhorse...") {
 
   // Start spinner animation
   interval = setInterval(() => {
-    process.stdout.write(`\r${SPINNER_FRAMES[frameIndex++ % SPINNER_FRAMES.length]} ${message}`);
+    process.stdout.write(
+      `\r${SPINNER_FRAMES[frameIndex++ % SPINNER_FRAMES.length]} ${message}`,
+    );
   }, 80);
 }
 

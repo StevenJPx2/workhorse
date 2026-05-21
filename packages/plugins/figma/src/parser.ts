@@ -62,7 +62,9 @@ export function extractFigmaRef(url: string): FigmaRef | null {
   return {
     fileKey,
     nodeId,
-    displayName: rawSlug ? decodeURIComponent(rawSlug.replace(/-/g, " ")) : undefined,
+    displayName: rawSlug
+      ? decodeURIComponent(rawSlug.replace(/-/g, " "))
+      : undefined,
     url: nodeId
       ? `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}?node-id=${nodeId}`
       : `https://www.figma.com/file/${fileKey}/${rawSlug ?? ""}`,

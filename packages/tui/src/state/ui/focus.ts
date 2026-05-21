@@ -17,11 +17,14 @@ const FOCUS_ORDER: FocusTarget[] = ["issues", "agents", "chat"];
 const [inputMode, setInputMode] = createSignal(false);
 
 // Currently focused component
-const [focusedComponent, setFocusedComponent] = createSignal<FocusTarget>("issues");
+const [focusedComponent, setFocusedComponent] =
+  createSignal<FocusTarget>("issues");
 
 // Track which list (issues or agents) was last focused before entering chat
 // This determines whether chat input creates a new issue or messages an agent
-const [lastFocusedList, setLastFocusedList] = createSignal<"issues" | "agents">("issues");
+const [lastFocusedList, setLastFocusedList] = createSignal<"issues" | "agents">(
+  "issues",
+);
 
 /**
  * Enter input mode (blocks global shortcuts).
@@ -44,7 +47,8 @@ export function exitInputMode() {
  */
 export function focusNext() {
   const current = focusedComponent();
-  const next = FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) + 1) % FOCUS_ORDER.length]!;
+  const next =
+    FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) + 1) % FOCUS_ORDER.length]!;
 
   // Track the list we're leaving if moving to chat
   if (next === "chat" && (current === "issues" || current === "agents")) {
@@ -64,7 +68,10 @@ export function focusNext() {
 export function focusPrev() {
   const current = focusedComponent();
   const prev =
-    FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) - 1 + FOCUS_ORDER.length) % FOCUS_ORDER.length]!;
+    FOCUS_ORDER[
+      (FOCUS_ORDER.indexOf(current) - 1 + FOCUS_ORDER.length) %
+        FOCUS_ORDER.length
+    ]!;
 
   // Track the list we're leaving if moving to chat
   if (prev === "chat" && (current === "issues" || current === "agents")) {

@@ -68,7 +68,11 @@ export function useApiTokenForm() {
         setInputBuffer((b) => b.slice(0, -1));
         return;
       }
-      if (event.raw && event.raw.length === 1 && event.raw.charCodeAt(0) >= 32) {
+      if (
+        event.raw &&
+        event.raw.length === 1 &&
+        event.raw.charCodeAt(0) >= 32
+      ) {
         setInputBuffer((b) => b + event.raw);
       }
       return;

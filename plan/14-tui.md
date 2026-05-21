@@ -180,7 +180,9 @@ hooks.emit("tui.register_renderer", {
   renderer: (notification) => ({
     icon: "💬",
     title: `PR Comment from @${notification.author} on PR #${notification.prNumber}`,
-    subtitle: notification.file ? `${notification.file}:${notification.line}` : undefined,
+    subtitle: notification.file
+      ? `${notification.file}:${notification.line}`
+      : undefined,
     body: notification.body,
     style: "box",
   }),
@@ -191,7 +193,9 @@ hooks.emit("tui.register_renderer", {
   renderer: (notification) => ({
     icon: "🔴",
     title: `Changes Requested by @${notification.author} on PR #${notification.prNumber}`,
-    body: notification.comments.map((c) => `${c.file}:${c.line}\n"${c.body}"`).join("\n\n"),
+    body: notification.comments
+      .map((c) => `${c.file}:${c.line}\n"${c.body}"`)
+      .join("\n\n"),
     style: "box",
   }),
 });
@@ -576,7 +580,9 @@ export function ChatBox(props: ChatBoxProps) {
         <For each={props.messages()}>
           {(msg) => (
             <box flexDirection="column" marginBottom={1}>
-              <text fg={msg.role === "user" ? theme.colors.info : theme.colors.text}>
+              <text
+                fg={msg.role === "user" ? theme.colors.info : theme.colors.text}
+              >
                 {msg.role === "user" ? "> " : ""}
                 {msg.content}
               </text>
@@ -615,7 +621,9 @@ export interface RenderedNotification {
   style: "box" | "inline";
 }
 
-export type NotificationRenderer = (notification: Notification) => RenderedNotification;
+export type NotificationRenderer = (
+  notification: Notification,
+) => RenderedNotification;
 
 // Registry of renderers by notification type
 export const renderers = new Map<string, NotificationRenderer>();
@@ -653,7 +661,8 @@ interface NotificationBoxProps {
 }
 
 export function NotificationBox(props: NotificationBoxProps) {
-  const rendered = () => getRenderer(props.notification.type)(props.notification);
+  const rendered = () =>
+    getRenderer(props.notification.type)(props.notification);
 
   return (
     <Show
@@ -666,7 +675,12 @@ export function NotificationBox(props: NotificationBoxProps) {
       }
     >
       {/* Box style */}
-      <box flexDirection="column" borderStyle="rounded" padding={1} marginBottom={1}>
+      <box
+        flexDirection="column"
+        borderStyle="rounded"
+        padding={1}
+        marginBottom={1}
+      >
         <text>
           {rendered().icon} <b>{rendered().title}</b>
         </text>
@@ -841,7 +855,9 @@ export function AgentSidebar(props: AgentSidebarProps) {
           <box
             onClick={() => props.onSelect(agent)}
             backgroundColor={
-              agent.issueId === props.selectedId() ? theme.colors.selection : undefined
+              agent.issueId === props.selectedId()
+                ? theme.colors.selection
+                : undefined
             }
           >
             <text>
@@ -849,9 +865,12 @@ export function AgentSidebar(props: AgentSidebarProps) {
               {agent.issueId}
             </text>
             <text fg={theme.colors.dim}>
-              {agent.state === "running" ? "●" : "○"} {formatDuration(agent.startedAt)}
+              {agent.state === "running" ? "●" : "○"}{" "}
+              {formatDuration(agent.startedAt)}
             </text>
-            {agent.hasBlockingNotification && <text fg={theme.colors.warning}>⚠ blocked</text>}
+            {agent.hasBlockingNotification && (
+              <text fg={theme.colors.warning}>⚠ blocked</text>
+            )}
           </box>
         )}
       </For>
@@ -964,7 +983,10 @@ export function SpawnModal(props: SpawnModalProps) {
 
         <box marginTop={1}>
           <text>Base branch:</text>
-          <input value={baseBranch()} onInput={(e) => setBaseBranch(e.target.value)} />
+          <input
+            value={baseBranch()}
+            onInput={(e) => setBaseBranch(e.target.value)}
+          />
         </box>
 
         <box flexDirection="row" gap={2} marginTop={2}>
@@ -1065,7 +1087,9 @@ import { useWorkhorse } from "../context/workhorse.tsx";
 
 export function createAgents(): Accessor<AgentAdapter[]> {
   const { orchestrator, hooks } = useWorkhorse();
-  const [agents, setAgents] = createSignal<AgentAdapter[]>(orchestrator.getAll());
+  const [agents, setAgents] = createSignal<AgentAdapter[]>(
+    orchestrator.getAll(),
+  );
 
   onMount(() => {
     const refresh = () => setAgents(orchestrator.getAll());
@@ -1091,7 +1115,13 @@ Chat state for the selected issue/agent:
 
 ```typescript
 // primitives/create-chat.ts
-import { createSignal, createEffect, onMount, onCleanup, type Accessor } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  onMount,
+  onCleanup,
+  type Accessor,
+} from "solid-js";
 import { useWorkhorse } from "../context/workhorse.tsx";
 
 export interface ChatMessage {
@@ -1119,18 +1149,32 @@ export function createChat(issueId: Accessor<string | null>) {
 
   onMount(() => {
     // Listen for new agent output
-    const handleOutput = ({ issueId: id, delta }: { issueId: string; delta: string }) => {
+    const handleOutput = ({
+      issueId: id,
+      delta,
+    }: {
+      issueId: string;
+      delta: string;
+    }) => {
       if (id === issueId()) {
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "agent") {
             // Append to existing agent message
-            return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
+            return [
+              ...prev.slice(0, -1),
+              { ...last, content: last.content + delta },
+            ];
           }
           // New agent message
           return [
             ...prev,
-            { id: crypto.randomUUID(), role: "agent", content: delta, timestamp: new Date() },
+            {
+              id: crypto.randomUUID(),
+              role: "agent",
+              content: delta,
+              timestamp: new Date(),
+            },
           ];
         });
       }
@@ -1253,7 +1297,13 @@ export const ui = {
 ```tsx
 // context/workhorse.tsx
 import { createContext, useContext, type JSX } from "solid-js";
-import type { Orchestrator, Hooks, Memory, Tracker, Config } from "workhorse-core";
+import type {
+  Orchestrator,
+  Hooks,
+  Memory,
+  Tracker,
+  Config,
+} from "workhorse-core";
 
 interface WorkhorseContextValue {
   orchestrator: Orchestrator;
@@ -1267,7 +1317,8 @@ const WorkhorseContext = createContext<WorkhorseContextValue>();
 
 export function useWorkhorse(): WorkhorseContextValue {
   const ctx = useContext(WorkhorseContext);
-  if (!ctx) throw new Error("useWorkhorse must be used within WorkhorseProvider");
+  if (!ctx)
+    throw new Error("useWorkhorse must be used within WorkhorseProvider");
   return ctx;
 }
 
@@ -1284,7 +1335,11 @@ export function WorkhorseProvider(props: WorkhorseProviderProps) {
     config: props.config,
   };
 
-  return <WorkhorseContext.Provider value={value}>{props.children}</WorkhorseContext.Provider>;
+  return (
+    <WorkhorseContext.Provider value={value}>
+      {props.children}
+    </WorkhorseContext.Provider>
+  );
 }
 ```
 
@@ -1301,7 +1356,13 @@ import { Help } from "./screens/help.tsx";
 import { SpawnModal } from "./components/spawn-modal.tsx";
 import { ui } from "./state/ui.ts";
 import { createKeyboardHandler } from "./primitives/create-keyboard.ts";
-import type { Orchestrator, Hooks, Memory, Tracker, Config } from "workhorse-core";
+import type {
+  Orchestrator,
+  Hooks,
+  Memory,
+  Tracker,
+  Config,
+} from "workhorse-core";
 
 interface AppProps {
   orchestrator: Orchestrator;
@@ -1450,7 +1511,8 @@ export function Agent() {
   const agents = createAgents();
   const chat = createChat(ui.selectedAgentId);
 
-  const selectedAgent = () => agents().find((a) => a.issueId === ui.selectedAgentId());
+  const selectedAgent = () =>
+    agents().find((a) => a.issueId === ui.selectedAgentId());
 
   const handleAgentSelect = (agent: AgentAdapter) => {
     ui.enterAgentView(agent.issueId);
@@ -1469,10 +1531,18 @@ export function Agent() {
   return (
     <box flexDirection="column" width="100%" height="100%">
       {/* Header with agent info */}
-      <box borderStyle="single" padding={1} flexDirection="row" justifyContent="space-between">
+      <box
+        borderStyle="single"
+        padding={1}
+        flexDirection="row"
+        justifyContent="space-between"
+      >
         <text>
           <b>{selectedAgent()?.issueId ?? "Agent"}</b>
-          <span fg={theme.colors.dim}> — {selectedAgent()?.issue?.title ?? ""}</span>
+          <span fg={theme.colors.dim}>
+            {" "}
+            — {selectedAgent()?.issue?.title ?? ""}
+          </span>
         </text>
         <text fg={theme.colors.success}>
           {selectedAgent()?.state === "running" ? "● running" : "○ stopped"}
@@ -1482,7 +1552,10 @@ export function Agent() {
       {/* Main content: sidebar + chat */}
       <box flexDirection="row" flexGrow={1}>
         {/* Agent sidebar */}
-        <AgentSidebar selectedId={ui.selectedAgentId} onSelect={handleAgentSelect} />
+        <AgentSidebar
+          selectedId={ui.selectedAgentId}
+          onSelect={handleAgentSelect}
+        />
 
         {/* Chat area */}
         <ChatBox
@@ -1779,12 +1852,22 @@ export class HeadlessTerminal {
   private proc: Subprocess;
   private stdout: ReadableStreamDefaultReader<string>;
 
-  static async start(command: string[], options?: { cols?: number; rows?: number }) {
+  static async start(
+    command: string[],
+    options?: { cols?: number; rows?: number },
+  ) {
     const cols = options?.cols ?? 80;
     const rows = options?.rows ?? 24;
 
     const proc = spawn(
-      ["ht", "--size", `${cols}x${rows}`, "--subscribe", "snapshot,init", ...command],
+      [
+        "ht",
+        "--size",
+        `${cols}x${rows}`,
+        "--subscribe",
+        "snapshot,init",
+        ...command,
+      ],
       {
         stdin: "pipe",
         stdout: "pipe",

@@ -9,7 +9,9 @@ import type { IssueStatus, WorkhorseContext } from "workhorse-core";
 import type { GitHubClient } from "./client.ts";
 
 /** Status to label mapping */
-const STATUS_LABELS: Partial<Record<IssueStatus, { add?: string; remove?: string[] }>> = {
+const STATUS_LABELS: Partial<
+  Record<IssueStatus, { add?: string; remove?: string[] }>
+> = {
   blocked: {
     add: "blocked",
     remove: ["ready-for-review"],
@@ -24,7 +26,10 @@ const STATUS_LABELS: Partial<Record<IssueStatus, { add?: string; remove?: string
 };
 
 /** Register status sync hook */
-export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient): void {
+export function registerStatusSync(
+  ctx: WorkhorseContext,
+  client: GitHubClient,
+): void {
   ctx.hooks.on("issue.status_changed", async ({ issue, to }) => {
     if (issue.source !== "github") return;
 
@@ -43,7 +48,9 @@ export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient):
       // Add new label if specified
       if (labelConfig.add) {
         await client.addLabel(owner, repo, prNumber, labelConfig.add);
-        console.log(`[github] Added label "${labelConfig.add}" to ${owner}/${repo}#${prNumber}`);
+        console.log(
+          `[github] Added label "${labelConfig.add}" to ${owner}/${repo}#${prNumber}`,
+        );
       }
 
       // Remove old labels if specified
@@ -56,7 +63,10 @@ export function registerStatusSync(ctx: WorkhorseContext, client: GitHubClient):
         );
       }
     } catch (error) {
-      console.error(`[github] Failed to sync labels for ${owner}/${repo}#${prNumber}:`, error);
+      console.error(
+        `[github] Failed to sync labels for ${owner}/${repo}#${prNumber}:`,
+        error,
+      );
     }
   });
 }

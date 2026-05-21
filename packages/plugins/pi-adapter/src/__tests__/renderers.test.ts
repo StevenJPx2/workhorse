@@ -150,7 +150,9 @@ describe("piToolRenderer", () => {
       const result = piToolRenderer({
         kind: "tool",
         tool: "read",
-        args: { path: "packages/core/src/plugins/builtin/tools/definitions/memory-write.ts" },
+        args: {
+          path: "packages/core/src/plugins/builtin/tools/definitions/memory-write.ts",
+        },
       });
       expect(result?.subtitle).toBe(".../definitions/memory-write.ts");
     });

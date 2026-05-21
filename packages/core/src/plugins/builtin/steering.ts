@@ -37,7 +37,8 @@ export function registerCoreSteering(ctx: WorkhorseContext): void {
   ctx.orchestrator.registerSteeringRule({
     id: "core:memory-write-reminder",
     name: "Record progress to memory",
-    description: "Remind agent to write learnings/patterns to memory after significant work",
+    description:
+      "Remind agent to write learnings/patterns to memory after significant work",
     condition: {
       status: ["implementing", "debugging"],
       when: (steerCtx) => {
@@ -50,15 +51,17 @@ export function registerCoreSteering(ctx: WorkhorseContext): void {
         );
 
         // Tools since last write (or all if never written)
-        const recentTools = lastWriteIdx === -1 ? history : history.slice(lastWriteIdx + 1);
+        const recentTools =
+          lastWriteIdx === -1 ? history : history.slice(lastWriteIdx + 1);
 
         // Need enough tools since last write
         if (recentTools.length < MIN_TOOLS_SINCE_WRITE) return false;
 
         // Need meaningful work tools, not just reads/searches
         return (
-          recentTools.filter((t: { name: string }) => WORK_TOOLS.includes(t.name)).length >=
-          MIN_WORK_TOOLS
+          recentTools.filter((t: { name: string }) =>
+            WORK_TOOLS.includes(t.name),
+          ).length >= MIN_WORK_TOOLS
         );
       },
     },
@@ -81,7 +84,8 @@ This helps future sessions understand what was done and avoid repeating mistakes
   ctx.orchestrator.registerSteeringRule({
     id: "core:git-conflict-loop",
     name: "Git conflict loop detection",
-    description: "Detect and abort when stuck in repeated git rebase/merge conflict resolution",
+    description:
+      "Detect and abort when stuck in repeated git rebase/merge conflict resolution",
     condition: {
       status: ["implementing", "debugging"],
       when: (steerCtx) => {
@@ -89,13 +93,17 @@ This helps future sessions understand what was done and avoid repeating mistakes
 
         // Count conflict-related bash calls within the time window
         return (
-          steerCtx.toolHistory.filter((t: { name: string; args: unknown; timestamp: number }) => {
-            if (t.name !== "bash" || t.timestamp < windowStart) return false;
-            if (typeof t.args !== "object" || t.args === null) return false;
-            const args = t.args as Record<string, unknown>;
-            if (typeof args.command !== "string") return false;
-            return GIT_CONFLICT_PATTERNS.some((p) => p.test(args.command as string));
-          }).length >= MAX_CONFLICT_ATTEMPTS
+          steerCtx.toolHistory.filter(
+            (t: { name: string; args: unknown; timestamp: number }) => {
+              if (t.name !== "bash" || t.timestamp < windowStart) return false;
+              if (typeof t.args !== "object" || t.args === null) return false;
+              const args = t.args as Record<string, unknown>;
+              if (typeof args.command !== "string") return false;
+              return GIT_CONFLICT_PATTERNS.some((p) =>
+                p.test(args.command as string),
+              );
+            },
+          ).length >= MAX_CONFLICT_ATTEMPTS
         );
       },
     },

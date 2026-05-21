@@ -18,19 +18,27 @@ import { useApiTokenForm } from "./use-api-token-form.ts";
 export function Auth(props: AuthScreenProps) {
   const renderer = useRenderer();
   const [selectedIndex, setSelectedIndex] = createSignal(0);
-  const [flowState, setFlowState] = createSignal<AuthFlowState>({ phase: "idle" });
-  const [authenticatedPlugins, setAuthenticatedPlugins] = createSignal<Set<string>>(new Set());
+  const [flowState, setFlowState] = createSignal<AuthFlowState>({
+    phase: "idle",
+  });
+  const [authenticatedPlugins, setAuthenticatedPlugins] = createSignal<
+    Set<string>
+  >(new Set());
   const apiTokenForm = useApiTokenForm();
   let cancelOAuth: (() => void) | null = null;
   onCleanup(() => cancelOAuth?.());
 
-  const remainingPlugins = () => props.plugins.filter((p) => !authenticatedPlugins().has(p.name));
+  const remainingPlugins = () =>
+    props.plugins.filter((p) => !authenticatedPlugins().has(p.name));
   const currentPlugin = () => remainingPlugins()[selectedIndex()];
-  const isAuthenticating = () => flowState().phase !== "idle" && flowState().phase !== "success";
+  const isAuthenticating = () =>
+    flowState().phase !== "idle" && flowState().phase !== "success";
   const isApiTokenForm = () => flowState().phase === "apitoken-form";
   const getApiTokenFields = () => {
     const plugin = currentPlugin();
-    return plugin?.auth.type === "apitoken" ? (plugin.auth as ApiTokenProvider).getFields() : [];
+    return plugin?.auth.type === "apitoken"
+      ? (plugin.auth as ApiTokenProvider).getFields()
+      : [];
   };
 
   function checkCompletion() {
@@ -60,8 +68,10 @@ export function Auth(props: AuthScreenProps) {
     const plugin = currentPlugin();
     if (!plugin) return;
     if (plugin.auth.type === "oauth") handleOAuth(plugin, handlerOpts);
-    else if (plugin.auth.type === "external") handleExternalAuth(plugin, handlerOpts);
-    else if (plugin.auth.type === "apitoken") handleApiTokenAuth(plugin, handlerOpts);
+    else if (plugin.auth.type === "external")
+      handleExternalAuth(plugin, handlerOpts);
+    else if (plugin.auth.type === "apitoken")
+      handleApiTokenAuth(plugin, handlerOpts);
   }
 
   function cancelAuth() {
@@ -77,7 +87,8 @@ export function Auth(props: AuthScreenProps) {
         event,
         getApiTokenFields(),
         cancelAuth,
-        () => currentPlugin() && submitApiTokenForm(currentPlugin()!, handlerOpts),
+        () =>
+          currentPlugin() && submitApiTokenForm(currentPlugin()!, handlerOpts),
       );
       return;
     }
@@ -128,7 +139,10 @@ export function Auth(props: AuthScreenProps) {
         inputBuffer={apiTokenForm.inputBuffer()}
         formError={apiTokenForm.error() || ""}
       />
-      <AuthStatusBar showSkip={!!props.onSkip} isAuthenticating={isAuthenticating()} />
+      <AuthStatusBar
+        showSkip={!!props.onSkip}
+        isAuthenticating={isAuthenticating()}
+      />
     </box>
   );
 }

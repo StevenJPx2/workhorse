@@ -44,7 +44,8 @@ describe("extractImagesFromMarkdown", () => {
   });
 
   it("extracts HTML img tags", () => {
-    const markdown = 'See <img src="https://github.githubassets.com/images/logo.jpg" alt="logo">';
+    const markdown =
+      'See <img src="https://github.githubassets.com/images/logo.jpg" alt="logo">';
     const result = extractImagesFromMarkdown(markdown, "comment-1");
 
     expect(result).toHaveLength(1);
@@ -66,7 +67,11 @@ describe("extractImagesFromMarkdown", () => {
 
     expect(result).toHaveLength(3);
     expect(result.map((r) => r.filename)).toEqual(["a.png", "b.gif", "c.webp"]);
-    expect(result.map((r) => r.mimeType)).toEqual(["image/png", "image/gif", "image/webp"]);
+    expect(result.map((r) => r.mimeType)).toEqual([
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ]);
   });
 
   it("deduplicates same URL appearing multiple times", () => {
@@ -109,7 +114,8 @@ describe("extractImagesFromMarkdown", () => {
   });
 
   it("generates stable IDs from URL hashes", () => {
-    const markdown = "![img](https://user-images.githubusercontent.com/123/test.png)";
+    const markdown =
+      "![img](https://user-images.githubusercontent.com/123/test.png)";
     const result1 = extractImagesFromMarkdown(markdown, "body");
     const result2 = extractImagesFromMarkdown(markdown, "body");
 
@@ -157,10 +163,17 @@ describe("extractImagesFromMarkdown", () => {
 
 describe("extractAllAttachments", () => {
   it("extracts from body and comments", () => {
-    const body = "Body image: ![body](https://user-images.githubusercontent.com/1/body.png)";
+    const body =
+      "Body image: ![body](https://user-images.githubusercontent.com/1/body.png)";
     const comments: GitHubComment[] = [
-      makeComment(100, "Comment image: ![c1](https://user-images.githubusercontent.com/2/c1.png)"),
-      makeComment(200, "Another: ![c2](https://user-images.githubusercontent.com/3/c2.jpg)"),
+      makeComment(
+        100,
+        "Comment image: ![c1](https://user-images.githubusercontent.com/2/c1.png)",
+      ),
+      makeComment(
+        200,
+        "Another: ![c2](https://user-images.githubusercontent.com/3/c2.jpg)",
+      ),
     ];
 
     const result = extractAllAttachments(body, comments);
@@ -173,7 +186,10 @@ describe("extractAllAttachments", () => {
 
   it("handles empty body", () => {
     const comments: GitHubComment[] = [
-      makeComment(1, "![img](https://user-images.githubusercontent.com/1/img.png)"),
+      makeComment(
+        1,
+        "![img](https://user-images.githubusercontent.com/1/img.png)",
+      ),
     ];
 
     const result = extractAllAttachments(null, comments);
@@ -195,9 +211,27 @@ describe("extractAllAttachments", () => {
 describe("filterImageAttachments", () => {
   it("filters to image mime types only", () => {
     const attachments = [
-      { id: "1", url: "a.png", source: "body", mimeType: "image/png", filename: "a.png" },
-      { id: "2", url: "b.svg", source: "body", mimeType: "image/svg+xml", filename: "b.svg" },
-      { id: "3", url: "c.txt", source: "body", mimeType: "text/plain", filename: "c.txt" },
+      {
+        id: "1",
+        url: "a.png",
+        source: "body",
+        mimeType: "image/png",
+        filename: "a.png",
+      },
+      {
+        id: "2",
+        url: "b.svg",
+        source: "body",
+        mimeType: "image/svg+xml",
+        filename: "b.svg",
+      },
+      {
+        id: "3",
+        url: "c.txt",
+        source: "body",
+        mimeType: "text/plain",
+        filename: "c.txt",
+      },
     ];
 
     const result = filterImageAttachments(attachments);
@@ -258,9 +292,9 @@ describe("downloadImage", () => {
     }) as unknown as typeof fetch;
 
     try {
-      await expect(downloadImage("https://example.com/missing.png")).rejects.toThrow(
-        "Failed to download: 404 Not Found",
-      );
+      await expect(
+        downloadImage("https://example.com/missing.png"),
+      ).rejects.toThrow("Failed to download: 404 Not Found");
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -269,14 +303,24 @@ describe("downloadImage", () => {
 
 describe("downloadAttachments", () => {
   const createMockService = (existingPaths: Record<string, string> = {}) => ({
-    exists: vi.fn(async (_repo: string, _issue: string, id: string) => existingPaths[id] || null),
-    store: vi.fn(async (_repo: string, _issue: string, _content: Buffer, metadata: any) => ({
-      filename: metadata.filename,
-      mimeType: metadata.mimeType,
-      size: metadata.size,
-      localPath: `/attachments/${metadata.filename}`,
-      originalUrl: metadata.originalUrl,
-    })),
+    exists: vi.fn(
+      async (_repo: string, _issue: string, id: string) =>
+        existingPaths[id] || null,
+    ),
+    store: vi.fn(
+      async (
+        _repo: string,
+        _issue: string,
+        _content: Buffer,
+        metadata: any,
+      ) => ({
+        filename: metadata.filename,
+        mimeType: metadata.mimeType,
+        size: metadata.size,
+        localPath: `/attachments/${metadata.filename}`,
+        originalUrl: metadata.originalUrl,
+      }),
+    ),
     getIssueDir: vi.fn(() => "/attachments"),
     list: vi.fn(),
     delete: vi.fn(),
@@ -288,7 +332,8 @@ describe("downloadAttachments", () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      arrayBuffer: () => Promise.resolve(mockData.buffer.slice(0, mockData.length)),
+      arrayBuffer: () =>
+        Promise.resolve(mockData.buffer.slice(0, mockData.length)),
     }) as unknown as typeof fetch;
 
     const attachments = [
@@ -312,14 +357,19 @@ describe("downloadAttachments", () => {
       expect(result.downloaded).toHaveLength(1);
       expect(result.cached).toHaveLength(0);
       expect(result.failed).toHaveLength(0);
-      expect(service.store).toHaveBeenCalledWith("owner/repo", "issue-1", expect.any(Buffer), {
-        source: "github",
-        sourceId: "abc123",
-        filename: "new.png",
-        mimeType: "image/png",
-        size: mockData.length,
-        originalUrl: "https://user-images.githubusercontent.com/1/new.png",
-      });
+      expect(service.store).toHaveBeenCalledWith(
+        "owner/repo",
+        "issue-1",
+        expect.any(Buffer),
+        {
+          source: "github",
+          sourceId: "abc123",
+          filename: "new.png",
+          mimeType: "image/png",
+          size: mockData.length,
+          originalUrl: "https://user-images.githubusercontent.com/1/new.png",
+        },
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }

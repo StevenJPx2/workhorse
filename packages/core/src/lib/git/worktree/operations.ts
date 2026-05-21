@@ -7,20 +7,14 @@
 import { existsSync } from "node:fs";
 
 import type { WorktreeInfo } from "./types.ts";
-import { buildBranchName, buildWorktreePath, execGit, parseWorktreeList } from "./utils.ts";
+import {
+  buildBranchName,
+  buildWorktreePath,
+  execGit,
+  parseWorktreeList,
+} from "./utils.ts";
 
-/**
- * Sync an existing worktree branch with the latest commits from its parent branch.
- *
- * Fetches from origin then merges `origin/{baseBranch}` into the worktree's current
- * branch. If the merge produces conflicts the worktree is left in a conflicted state
- * and the function returns `false` so callers can surface the error to the user.
- *
- * @param repoPath  - Path to the main git repository
- * @param worktreePath - Path to the existing worktree
- * @param baseBranch - Parent branch to pull from (default: "main")
- * @returns true if sync succeeded (including already up-to-date), false on failure
- */
+/** Sync worktree branch with latest from parent. Returns true on success, false on failure. */
 export async function syncWorktree(
   repoPath: string,
   worktreePath: string,
@@ -35,9 +29,10 @@ export async function syncWorktree(
 
   // Merge parent branch into the worktree branch (fast-forward when possible)
   if (
-    await execGit(["git", "merge", "--ff-only", `origin/${baseBranch}`], worktreePath).then(
-      (r) => r.success,
-    )
+    await execGit(
+      ["git", "merge", "--ff-only", `origin/${baseBranch}`],
+      worktreePath,
+    ).then((r) => r.success)
   ) {
     return true;
   }
@@ -58,19 +53,7 @@ export async function syncWorktree(
   return true;
 }
 
-/**
- * Create a git worktree for the given issue.
- *
- * If a worktree already exists for this issue, syncs it with the latest commits
- * from the parent branch and returns it.
- * Creates a new branch from the base branch if one doesn't exist.
- *
- * @param repoPath - Path to the main git repository
- * @param issueId - Issue identifier (e.g., "PROJ-123")
- * @param issueType - Optional issue type for branch prefix (Story, Bug, Task, etc.)
- * @param baseBranch - Branch to create worktree from (default: "main")
- * @returns WorktreeInfo or null if creation failed
- */
+/** Create or reuse a git worktree for an issue. Returns WorktreeInfo or null on failure. */
 export async function createWorktree(
   repoPath: string,
   issueId: string,
@@ -112,7 +95,15 @@ export async function createWorktree(
   // Try to create worktree with new branch
   if (
     !(await execGit(
-      ["git", "worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`],
+      [
+        "git",
+        "worktree",
+        "add",
+        "-b",
+        branchName,
+        worktreePath,
+        `origin/${baseBranch}`,
+      ],
       repoPath,
     ).then((r) => r.success))
   ) {
@@ -144,11 +135,18 @@ export async function createWorktree(
  * Used by createWorktree and removeWorktree.
  */
 // oxlint-disable-next-line workhorse/no-single-reference-function
-async function getWorktree(repoPath: string, issueId: string): Promise<WorktreeInfo | null> {
-  const result = await execGit(["git", "worktree", "list", "--porcelain"], repoPath);
+async function getWorktree(
+  repoPath: string,
+  issueId: string,
+): Promise<WorktreeInfo | null> {
+  const result = await execGit(
+    ["git", "worktree", "list", "--porcelain"],
+    repoPath,
+  );
   return (
-    (result.success ? parseWorktreeList(result.output) : []).find((wt) => wt.issueId === issueId) ||
-    null
+    (result.success ? parseWorktreeList(result.output) : []).find(
+      (wt) => wt.issueId === issueId,
+    ) || null
   );
 }
 

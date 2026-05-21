@@ -84,7 +84,11 @@ const constFuncExpr = (name: string) => ({
     {
       type: "VariableDeclarator",
       id: id(name),
-      init: { type: "FunctionExpression", params: [], body: { type: "BlockStatement", body: [] } },
+      init: {
+        type: "FunctionExpression",
+        params: [],
+        body: { type: "BlockStatement", body: [] },
+      },
     },
   ],
 });
@@ -96,7 +100,11 @@ const exportNamed = (decl) => ({
 const exportSpecifiers = (names: string[]) => ({
   type: "ExportNamedDeclaration",
   declaration: null,
-  specifiers: names.map((n) => ({ type: "ExportSpecifier", local: id(n), exported: id(n) })),
+  specifiers: names.map((n) => ({
+    type: "ExportSpecifier",
+    local: id(n),
+    exported: id(n),
+  })),
 });
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -134,7 +142,11 @@ describe("no-single-reference-function", () => {
   });
 
   it("does not report a function used more than once", () => {
-    const program = makeProgram([funcDecl("multi"), callExpr("multi"), callExpr("multi")]);
+    const program = makeProgram([
+      funcDecl("multi"),
+      callExpr("multi"),
+      callExpr("multi"),
+    ]);
     expect(runRule(program)).toHaveLength(0);
   });
 
@@ -165,7 +177,11 @@ describe("no-single-reference-function", () => {
         type: "VariableDeclaration",
         kind: "const",
         declarations: [
-          { type: "VariableDeclarator", id: id("VALUE"), init: { type: "Literal", value: 42 } },
+          {
+            type: "VariableDeclarator",
+            id: id("VALUE"),
+            init: { type: "Literal", value: 42 },
+          },
         ],
       },
       callExpr("VALUE"),
@@ -233,7 +249,9 @@ describe("no-single-reference-function", () => {
   // ── Metadata ─────────────────────────────────────────────────────────────
 
   it("has correct rule metadata", () => {
-    expect(rule.meta.docs.description).toContain("only referenced in a single place");
+    expect(rule.meta.docs.description).toContain(
+      "only referenced in a single place",
+    );
   });
 
   it.fails("TODO: implement minimum lines threshold option", () => {
@@ -241,7 +259,10 @@ describe("no-single-reference-function", () => {
     // The rule should support a minLines option to only flag functions
     // that are below a certain line count (very short helpers).
     // Long functions with a single reference may be intentional for readability.
-    const program = makeProgram([funcDecl("shortHelper"), callExpr("shortHelper")]);
+    const program = makeProgram([
+      funcDecl("shortHelper"),
+      callExpr("shortHelper"),
+    ]);
     const reports: Report[] = [];
     const context = {
       report: (r: Report) => reports.push(r),

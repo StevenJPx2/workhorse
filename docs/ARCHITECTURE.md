@@ -79,7 +79,8 @@ Uses `unctx` + `AsyncLocalStorage` for async context propagation:
 
 ```typescript
 // Inside plugin setup or any code running in context
-const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } = useWorkhorse();
+const { db, hooks, memory, config, monitors, tracker, orchestrator, paths } =
+  useWorkhorse();
 
 // Safe access (returns undefined if not in context)
 const ctx = tryUseWorkhorse();
@@ -220,7 +221,9 @@ if (ctx) {
 **L2 Store** — Semantic search via `retriv` (BM25 FTS5 + vector embeddings):
 
 ```typescript
-await memory.l2.index([{ id: "doc-1", content: "...", metadata: { type: "decision" } }]);
+await memory.l2.index([
+  { id: "doc-1", content: "...", metadata: { type: "decision" } },
+]);
 const results = await memory.l2.search("authentication flow", { limit: 5 });
 ```
 
@@ -263,10 +266,17 @@ const stored = await attachmentService.store(
 );
 
 // Check if already downloaded (deduplication)
-const existing = await attachmentService.exists("owner/repo", "issue-uuid", "att-123");
+const existing = await attachmentService.exists(
+  "owner/repo",
+  "issue-uuid",
+  "att-123",
+);
 
 // List all attachments for an issue
-const attachments = await attachmentService.listForIssue("owner/repo", "issue-uuid");
+const attachments = await attachmentService.listForIssue(
+  "owner/repo",
+  "issue-uuid",
+);
 ```
 
 **Storage Location:** `~/.local/share/workhorse/attachments/{repo}/{issueId}/`
@@ -319,7 +329,8 @@ orchestrator.registerSteeringRule({
     hook: ["agent.idle"],
     when: async (ctx) => ctx.notifications.some((n) => n.source === "github"),
   },
-  reminder: async (ctx) => `You have ${ctx.notifications.length} pending reviews.`,
+  reminder: async (ctx) =>
+    `You have ${ctx.notifications.length} pending reviews.`,
   once: false,
 });
 ```

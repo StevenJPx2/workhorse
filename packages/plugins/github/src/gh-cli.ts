@@ -42,7 +42,9 @@ export async function api<T>(
   const proc = Bun.spawn(["gh", ...args], {
     stdout: "pipe",
     stderr: "pipe",
-    stdin: options?.body ? new Response(JSON.stringify(options.body)).body : undefined,
+    stdin: options?.body
+      ? new Response(JSON.stringify(options.body)).body
+      : undefined,
   });
 
   const [stdout, stderr, exitCode] = await Promise.all([
@@ -90,7 +92,9 @@ export async function downloadWithAuth(url: string): Promise<Buffer> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to download: ${response.status} ${response.statusText}`,
+    );
   }
 
   return Buffer.from(await response.arrayBuffer());

@@ -7,7 +7,15 @@ import { dateText } from "./custom-types.ts";
 
 /** Zod schema for validating issue status */
 export const IssueStatusSchema = z.union([
-  z.enum(["pending", "queued", "planning", "implementing", "blocked", "in_review", "done"]),
+  z.enum([
+    "pending",
+    "queued",
+    "planning",
+    "implementing",
+    "blocked",
+    "in_review",
+    "done",
+  ]),
   z.string<string & {}>(),
 ]);
 
@@ -46,7 +54,12 @@ export const issues = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (table) => [uniqueIndex("issues_external_source_idx").on(table.externalId, table.source)],
+  (table) => [
+    uniqueIndex("issues_external_source_idx").on(
+      table.externalId,
+      table.source,
+    ),
+  ],
 );
 
 /** Issue type derived from schema */

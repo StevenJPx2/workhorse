@@ -5,7 +5,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as keychain from "workhorse-core";
 
-import { loadCredentials, saveCredentials, createCredentialGetter } from "../credentials.ts";
+import {
+  loadCredentials,
+  saveCredentials,
+  createCredentialGetter,
+} from "../credentials.ts";
 
 vi.mock("workhorse-core", () => ({
   getCredential: vi.fn(),
@@ -89,8 +93,16 @@ describe("saveCredentials", () => {
       siteUrl: "company.atlassian.net",
     });
 
-    expect(keychain.storeCredential).toHaveBeenCalledWith("jira", "email", "user@example.com");
-    expect(keychain.storeCredential).toHaveBeenCalledWith("jira", "api_token", "token123");
+    expect(keychain.storeCredential).toHaveBeenCalledWith(
+      "jira",
+      "email",
+      "user@example.com",
+    );
+    expect(keychain.storeCredential).toHaveBeenCalledWith(
+      "jira",
+      "api_token",
+      "token123",
+    );
     expect(keychain.storeCredential).toHaveBeenCalledWith(
       "jira",
       "site_url",

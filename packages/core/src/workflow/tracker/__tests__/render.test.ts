@@ -79,7 +79,12 @@ describe("render", () => {
 
     it("renders results with metadata type", () => {
       const results: SearchResult[] = [
-        { id: "1", score: 0.95, content: "Result content", metadata: { type: "decision" } },
+        {
+          id: "1",
+          score: 0.95,
+          content: "Result content",
+          metadata: { type: "decision" },
+        },
       ];
       const result = renderSearchResults(results);
 
@@ -89,7 +94,9 @@ describe("render", () => {
     });
 
     it("uses 'context' as fallback when metadata type is missing", () => {
-      const results: SearchResult[] = [{ id: "1", score: 0.8, content: "Result content" }];
+      const results: SearchResult[] = [
+        { id: "1", score: 0.8, content: "Result content" },
+      ];
       const result = renderSearchResults(results);
 
       expect(result).toContain("### context (score: 0.80)");
@@ -106,7 +113,12 @@ describe("render", () => {
 
     it("filters out results without content", () => {
       const results: SearchResult[] = [
-        { id: "1", score: 0.9, content: "Has content", metadata: { type: "a" } },
+        {
+          id: "1",
+          score: 0.9,
+          content: "Has content",
+          metadata: { type: "a" },
+        },
         { id: "2", score: 0.8, metadata: { type: "b" } }, // no content
         { id: "3", score: 0.7, content: "", metadata: { type: "c" } }, // empty content (falsy)
       ];
@@ -162,7 +174,9 @@ describe("render", () => {
       const result = buildInitialPrompt(issue);
 
       expect(result).toContain("## Task");
-      expect(result).toContain("You are starting work on issue **AM-123**: Test Issue Title");
+      expect(result).toContain(
+        "You are starting work on issue **AM-123**: Test Issue Title",
+      );
       expect(result).toContain("Test issue description");
     });
 
@@ -187,7 +201,9 @@ describe("render", () => {
       const result = buildResumePrompt(issue);
 
       expect(result).toContain("## Resuming Work");
-      expect(result).toContain("You are resuming work on issue **AM-123**: Test Issue Title");
+      expect(result).toContain(
+        "You are resuming work on issue **AM-123**: Test Issue Title",
+      );
       expect(result).toContain("Current status: **implementing**");
     });
 
@@ -288,28 +304,31 @@ describe("render", () => {
       expect(result).not.toContain("### Codebase Patterns");
     });
 
-    it.fails("TODO: buildResumePrompt should validate session timestamps", () => {
-      // Currently buildResumePrompt doesn't validate that session timestamps
-      // are valid dates. Future enhancement: validate and handle invalid dates.
-      const issue = createMockIssue();
-      const memory: SessionMemory = {
-        title: "AM-123: Test",
-        patterns: [],
-        sessions: [
-          {
-            timestamp: new Date("invalid"), // Invalid date
-            status: "planning",
-            summary: ["Did work"],
-            learnings: [],
-            filesChanged: [],
-          },
-        ],
-        latestStatus: "implementing",
-      };
+    it.fails(
+      "TODO: buildResumePrompt should validate session timestamps",
+      () => {
+        // Currently buildResumePrompt doesn't validate that session timestamps
+        // are valid dates. Future enhancement: validate and handle invalid dates.
+        const issue = createMockIssue();
+        const memory: SessionMemory = {
+          title: "AM-123: Test",
+          patterns: [],
+          sessions: [
+            {
+              timestamp: new Date("invalid"), // Invalid date
+              status: "planning",
+              summary: ["Did work"],
+              learnings: [],
+              filesChanged: [],
+            },
+          ],
+          latestStatus: "implementing",
+        };
 
-      // This should either throw or handle gracefully (not produce "Invalid Date")
-      const result = buildResumePrompt(issue, memory);
-      expect(result).not.toContain("Invalid Date");
-    });
+        // This should either throw or handle gracefully (not produce "Invalid Date")
+        const result = buildResumePrompt(issue, memory);
+        expect(result).not.toContain("Invalid Date");
+      },
+    );
   });
 });

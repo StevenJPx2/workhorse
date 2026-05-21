@@ -10,7 +10,12 @@ export function Help() {
 
   const Section = (props: { title: string; children: any }) => (
     <box flexDirection="column" marginBottom={2}>
-      <box backgroundColor={theme.colors.surface} paddingLeft={2} paddingRight={2} marginBottom={1}>
+      <box
+        backgroundColor={theme.colors.surface}
+        paddingLeft={2}
+        paddingRight={2}
+        marginBottom={1}
+      >
         <text fg={theme.colors.accent}>
           <b>{props.title}</b>
         </text>
@@ -55,7 +60,13 @@ export function Help() {
       </box>
 
       {/* Content */}
-      <box flexDirection="column" paddingTop={2} paddingLeft={2} paddingRight={2} flexGrow={1}>
+      <box
+        flexDirection="column"
+        paddingTop={2}
+        paddingLeft={2}
+        paddingRight={2}
+        flexGrow={1}
+      >
         <Section title="Command Mode (Ctrl+X, then...)">
           <Shortcut keys="Ctrl+X Q" description="Quit application" />
           <Shortcut keys="Ctrl+X H" description="Show this help screen" />

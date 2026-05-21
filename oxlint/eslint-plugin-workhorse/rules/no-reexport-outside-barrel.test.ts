@@ -26,7 +26,10 @@ function createContext(filename: string, sourceText = "") {
 function createExportNode(
   source: string,
   options: {
-    specifiers?: Array<{ exported?: { name: string }; local?: { name: string } }>;
+    specifiers?: Array<{
+      exported?: { name: string };
+      local?: { name: string };
+    }>;
     exportKind?: "value" | "type";
     range?: [number, number];
   } = {},
@@ -39,7 +42,10 @@ function createExportNode(
   };
 }
 
-function createExportAllNode(source: string, range: [number, number] = [0, 30]) {
+function createExportAllNode(
+  source: string,
+  range: [number, number] = [0, 30],
+) {
   return {
     source: { value: source },
     range,
@@ -48,7 +54,12 @@ function createExportAllNode(source: string, range: [number, number] = [0, 30]) 
 
 function runRule(
   filename: string,
-  nodes: Array<{ type: "named" | "all"; source: string; specifiers?: string[]; isType?: boolean }>,
+  nodes: Array<{
+    type: "named" | "all";
+    source: string;
+    specifiers?: string[];
+    isType?: boolean;
+  }>,
 ): Report[] {
   const context = createContext(filename);
   const visitor = rule.create(context);
@@ -84,14 +95,21 @@ describe("no-reexport-outside-barrel", () => {
 
     it("reports type re-export in non-index file", () => {
       const reports = runRule("/project/src/types.ts", [
-        { type: "named", source: "./other", specifiers: ["SomeType"], isType: true },
+        {
+          type: "named",
+          source: "./other",
+          specifiers: ["SomeType"],
+          isType: true,
+        },
       ]);
       expect(reports).toHaveLength(1);
       expect(reports[0]!.messageId).toBe("noReexport");
     });
 
     it("reports export * in non-index file", () => {
-      const reports = runRule("/project/src/service.ts", [{ type: "all", source: "./utils" }]);
+      const reports = runRule("/project/src/service.ts", [
+        { type: "all", source: "./utils" },
+      ]);
       expect(reports).toHaveLength(1);
       expect(reports[0]!.messageId).toBe("noReexportNamespace");
     });
@@ -130,7 +148,9 @@ describe("no-reexport-outside-barrel", () => {
     });
 
     it("allows re-export in index.tsx", () => {
-      const reports = runRule("/project/src/index.tsx", [{ type: "named", source: "./component" }]);
+      const reports = runRule("/project/src/index.tsx", [
+        { type: "named", source: "./component" },
+      ]);
       expect(reports).toHaveLength(0);
     });
 
@@ -165,7 +185,9 @@ describe("no-reexport-outside-barrel", () => {
     });
 
     it("skips dist", () => {
-      const reports = runRule("/dist/utils.ts", [{ type: "named", source: "./internal" }]);
+      const reports = runRule("/dist/utils.ts", [
+        { type: "named", source: "./internal" },
+      ]);
       expect(reports).toHaveLength(0);
     });
 
@@ -204,7 +226,8 @@ describe("no-reexport-outside-barrel", () => {
     });
 
     it("fixer removes the line", () => {
-      const sourceText = 'export type { Foo } from "workhorse-core";\n\nconst x = 1;';
+      const sourceText =
+        'export type { Foo } from "workhorse-core";\n\nconst x = 1;';
       const context = createContext("/project/src/models.ts", sourceText);
       const visitor = rule.create(context);
 
@@ -229,14 +252,17 @@ describe("no-reexport-outside-barrel", () => {
   describe("real-world examples", () => {
     it("catches the models.ts re-export pattern", () => {
       // This is the exact pattern from packages/plugins/pi-adapter/src/models.ts:15
-      const reports = runRule("/project/packages/plugins/pi-adapter/src/models.ts", [
-        {
-          type: "named",
-          source: "workhorse-core",
-          specifiers: ["ModelInfo"],
-          isType: true,
-        },
-      ]);
+      const reports = runRule(
+        "/project/packages/plugins/pi-adapter/src/models.ts",
+        [
+          {
+            type: "named",
+            source: "workhorse-core",
+            specifiers: ["ModelInfo"],
+            isType: true,
+          },
+        ],
+      );
       expect(reports).toHaveLength(1);
     });
 

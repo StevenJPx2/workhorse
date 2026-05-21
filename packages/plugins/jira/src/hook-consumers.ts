@@ -18,7 +18,10 @@ import type { AtlassianClient } from "./client.ts";
 import type { JiraPluginHooks } from "./hooks.ts";
 
 /** Register consumers for Jira action hooks */
-export function registerHookConsumers(ctx: WorkhorseContext, client: AtlassianClient): void {
+export function registerHookConsumers(
+  ctx: WorkhorseContext,
+  client: AtlassianClient,
+): void {
   // Handle transition requests
   ctx.hooks.on("jira:transition.requested", async (event: unknown) => {
     const { issueId, targetStatus, fromStatus } =
@@ -28,11 +31,15 @@ export function registerHookConsumers(ctx: WorkhorseContext, client: AtlassianCl
       const transition = await client
         .getTransitions(issueId)
         .then((transitions) =>
-          transitions.find((t) => t.to.name.toLowerCase().includes(targetStatus.toLowerCase())),
+          transitions.find((t) =>
+            t.to.name.toLowerCase().includes(targetStatus.toLowerCase()),
+          ),
         );
 
       if (!transition) {
-        console.warn(`[jira] No transition to "${targetStatus}" found for ${issueId}`);
+        console.warn(
+          `[jira] No transition to "${targetStatus}" found for ${issueId}`,
+        );
         return;
       }
 
@@ -51,7 +58,8 @@ export function registerHookConsumers(ctx: WorkhorseContext, client: AtlassianCl
 
   // Handle assignment requests
   ctx.hooks.on("jira:assign.requested", async (event: unknown) => {
-    const { issueId, assignee } = event as JiraPluginHooks["jira:assign.requested"];
+    const { issueId, assignee } =
+      event as JiraPluginHooks["jira:assign.requested"];
 
     try {
       let accountId: string;

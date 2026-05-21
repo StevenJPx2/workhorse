@@ -11,8 +11,17 @@ import { bootstrap, resolveConfigPaths, type Workhorse } from "workhorse-core";
 import { App } from "./app.tsx";
 import { parseCliArgs, showHelp, showModels } from "./cli.ts";
 import { LoadingScreen } from "./components";
-import { getPluginsNeedingAuth, getPluginsNeedingSetup, loadExistingConfig } from "./setup";
-import { loadAuthPlugins, loadPlugins, runAuthIfNeeded, runSetupIfNeeded } from "./startup.tsx";
+import {
+  getPluginsNeedingAuth,
+  getPluginsNeedingSetup,
+  loadExistingConfig,
+} from "./setup";
+import {
+  loadAuthPlugins,
+  loadPlugins,
+  runAuthIfNeeded,
+  runSetupIfNeeded,
+} from "./startup.tsx";
 import { installErrorHandler, getLogPath, logInfo } from "./state/error-log.ts";
 import { ui } from "./state/ui";
 import { setTheme } from "./theme.ts";
@@ -49,7 +58,10 @@ export async function startTUI() {
 
   // Check if setup is needed before bootstrapping
   const paths = resolveConfigPaths();
-  const existingConfig = loadExistingConfig(paths.globalConfig, paths.projectConfig);
+  const existingConfig = loadExistingConfig(
+    paths.globalConfig,
+    paths.projectConfig,
+  );
 
   // Set theme early so loading/setup/auth screens match the app theme
   setTheme(existingConfig.ui.theme);
@@ -59,7 +71,9 @@ export async function startTUI() {
   if (pluginsNeedingSetup.length > 0) {
     stopPreloader(); // Stop preloader before showing setup UI
     if (!(await runSetupIfNeeded(pluginsNeedingSetup, paths.globalConfig))) {
-      console.log("Setup skipped. Please configure plugins manually in ~/.workhorse.toml");
+      console.log(
+        "Setup skipped. Please configure plugins manually in ~/.workhorse.toml",
+      );
       process.exit(1);
     }
     startPreloader(); // Restart preloader after setup
@@ -68,7 +82,9 @@ export async function startTUI() {
   // Check if any plugins need authentication before bootstrapping
   // Auth providers are self-contained (keychain, CLI checks) so this works pre-bootstrap
   updatePreloader("Checking authentication...");
-  const pluginsNeedingAuth = await getPluginsNeedingAuth(await loadAuthPlugins());
+  const pluginsNeedingAuth = await getPluginsNeedingAuth(
+    await loadAuthPlugins(),
+  );
 
   if (pluginsNeedingAuth.length > 0) {
     stopPreloader(); // Stop preloader before showing auth UI

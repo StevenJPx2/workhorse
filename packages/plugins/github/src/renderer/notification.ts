@@ -12,7 +12,9 @@ import type { RenderedActivity } from "./types.ts";
  * Render GitHub notifications.
  * Returns null for non-GitHub notifications.
  */
-export function renderGithubNotification(notification: Notification): RenderedActivity | null {
+export function renderGithubNotification(
+  notification: Notification,
+): RenderedActivity | null {
   if (notification.source !== "github") return null;
 
   const meta = notification.metadata as Record<string, unknown> | undefined;

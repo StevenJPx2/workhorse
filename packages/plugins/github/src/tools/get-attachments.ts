@@ -9,8 +9,14 @@
 
 import type { AttachmentService, OrchestratorTool } from "workhorse-core";
 
-import { downloadAttachments, downloadDirectUrl } from "../attachment-download.ts";
-import { extractAllAttachments, filterImageAttachments } from "../attachments.ts";
+import {
+  downloadAttachments,
+  downloadDirectUrl,
+} from "../attachment-download.ts";
+import {
+  extractAllAttachments,
+  filterImageAttachments,
+} from "../attachments.ts";
 import type { GitHubClient } from "../client.ts";
 
 /** Create the github_get_attachments tool */
@@ -29,8 +35,14 @@ export function createGetAttachmentsTool(
     schema: {
       type: "object",
       properties: {
-        owner: { type: "string", description: "Repository owner (e.g., 'octocat')" },
-        repo: { type: "string", description: "Repository name (e.g., 'hello-world')" },
+        owner: {
+          type: "string",
+          description: "Repository owner (e.g., 'octocat')",
+        },
+        repo: {
+          type: "string",
+          description: "Repository name (e.g., 'hello-world')",
+        },
         number: { type: "number", description: "Issue or PR number" },
         url: {
           type: "string",
@@ -134,7 +146,10 @@ export function createGetAttachmentsTool(
         }
 
         if (result.downloaded.length > 0) {
-          response.directory = attachmentService.getIssueDir(repoIdentifier, ctx.issueId);
+          response.directory = attachmentService.getIssueDir(
+            repoIdentifier,
+            ctx.issueId,
+          );
         }
 
         return {

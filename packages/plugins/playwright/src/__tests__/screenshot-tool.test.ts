@@ -55,12 +55,18 @@ describe("playwright_screenshot tool", () => {
 
   describe("without AttachmentService (legacy behavior)", () => {
     it("saves screenshot to worktree path", async () => {
-      mockScreenshot.mockResolvedValue({ success: true, path: join(testDir, "screenshot.png") });
+      mockScreenshot.mockResolvedValue({
+        success: true,
+        path: join(testDir, "screenshot.png"),
+      });
 
       const tool = createScreenshotTool(mockSessionManager as never);
       const ctx = createMockContext();
 
-      const result = await tool.execute({ filename: "screenshot.png" }, ctx as never);
+      const result = await tool.execute(
+        { filename: "screenshot.png" },
+        ctx as never,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("Screenshot saved to: screenshot.png");
@@ -68,24 +74,37 @@ describe("playwright_screenshot tool", () => {
         mockSessionManager,
         "TEST-123",
         join(testDir, "screenshot.png"),
-        { fullPage: undefined, format: undefined, quality: undefined },
+        {
+          fullPage: undefined,
+          format: undefined,
+          quality: undefined,
+        },
       );
     });
 
     it("includes full page indicator in output", async () => {
-      mockScreenshot.mockResolvedValue({ success: true, path: join(testDir, "full.png") });
+      mockScreenshot.mockResolvedValue({
+        success: true,
+        path: join(testDir, "full.png"),
+      });
 
       const tool = createScreenshotTool(mockSessionManager as never);
       const ctx = createMockContext();
 
-      const result = await tool.execute({ filename: "full.png", fullPage: true }, ctx as never);
+      const result = await tool.execute(
+        { filename: "full.png", fullPage: true },
+        ctx as never,
+      );
 
       expect(result.success).toBe(true);
       expect(result.output).toContain("(full page)");
     });
 
     it("returns error when screenshot fails", async () => {
-      mockScreenshot.mockResolvedValue({ success: false, error: "No page loaded" });
+      mockScreenshot.mockResolvedValue({
+        success: false,
+        error: "No page loaded",
+      });
 
       const tool = createScreenshotTool(mockSessionManager as never);
       const ctx = createMockContext();
@@ -104,7 +123,12 @@ describe("playwright_screenshot tool", () => {
 
       await tool.execute({}, ctx as never);
 
-      const call = mockScreenshot.mock.calls[0] as [unknown, unknown, string, unknown];
+      const call = mockScreenshot.mock.calls[0] as [
+        unknown,
+        unknown,
+        string,
+        unknown,
+      ];
       const filepath = call[2];
       expect(filepath).toMatch(/screenshot-\d+\.png$/);
     });
@@ -117,7 +141,12 @@ describe("playwright_screenshot tool", () => {
 
       await tool.execute({ format: "jpeg" }, ctx as never);
 
-      const call = mockScreenshot.mock.calls[0] as [unknown, unknown, string, unknown];
+      const call = mockScreenshot.mock.calls[0] as [
+        unknown,
+        unknown,
+        string,
+        unknown,
+      ];
       const filepath = call[2];
       expect(filepath).toMatch(/\.jpeg$/);
     });
@@ -149,7 +178,10 @@ describe("playwright_screenshot tool", () => {
         return { success: true, path: tempPath };
       });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
       const result = await tool.execute({ filename: "test.png" }, ctx as never);
@@ -157,7 +189,9 @@ describe("playwright_screenshot tool", () => {
       expect(result.success).toBe(true);
       const output = JSON.parse(result.output as string);
       expect(output.message).toContain("Screenshot saved");
-      expect(output.localPath).toBe("/attachments/org/repo/TEST-123/screenshot_test.png");
+      expect(output.localPath).toBe(
+        "/attachments/org/repo/TEST-123/screenshot_test.png",
+      );
       expect(output.filename).toBe("test.png");
 
       // Verify attachment service was called
@@ -184,10 +218,16 @@ describe("playwright_screenshot tool", () => {
         mimeType: "image/jpeg",
       });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
-      await tool.execute({ filename: "photo.jpeg", format: "jpeg" }, ctx as never);
+      await tool.execute(
+        { filename: "photo.jpeg", format: "jpeg" },
+        ctx as never,
+      );
 
       expect(mockAttachmentService.store).toHaveBeenCalledWith(
         "org/repo",
@@ -205,7 +245,10 @@ describe("playwright_screenshot tool", () => {
         return { success: true, path: tempPath };
       });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
       const result = await tool.execute({ fullPage: true }, ctx as never);
@@ -220,7 +263,10 @@ describe("playwright_screenshot tool", () => {
         return { success: true, path: tempPath };
       });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
       ctx.db.issues.getById = vi.fn().mockResolvedValue(null);
 
@@ -235,9 +281,15 @@ describe("playwright_screenshot tool", () => {
     });
 
     it("returns error when screenshot operation fails", async () => {
-      mockScreenshot.mockResolvedValue({ success: false, error: "Browser closed" });
+      mockScreenshot.mockResolvedValue({
+        success: false,
+        error: "Browser closed",
+      });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
       const result = await tool.execute({}, ctx as never);
@@ -254,7 +306,10 @@ describe("playwright_screenshot tool", () => {
       });
       mockAttachmentServiceFns.store.mockRejectedValue(new Error("Disk full"));
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
       const result = await tool.execute({}, ctx as never);
@@ -271,7 +326,10 @@ describe("playwright_screenshot tool", () => {
         return { success: true, path: tempPath };
       });
 
-      const tool = createScreenshotTool(mockSessionManager as never, mockAttachmentService);
+      const tool = createScreenshotTool(
+        mockSessionManager as never,
+        mockAttachmentService,
+      );
       const ctx = createMockContext();
 
       await tool.execute({}, ctx as never);

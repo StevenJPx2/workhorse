@@ -56,7 +56,11 @@ const rule = {
         return true;
       }
       // { foo: value } — foo as key is not a reference
-      if (parentType === "Property" && node.parent?.key === node && !node.parent?.computed) {
+      if (
+        parentType === "Property" &&
+        node.parent?.key === node &&
+        !node.parent?.computed
+      ) {
         return true;
       }
       return false;

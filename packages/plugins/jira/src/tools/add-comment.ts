@@ -10,7 +10,10 @@ import type { AtlassianClient } from "../client.ts";
 import type { Hooks } from "./types.ts";
 
 /** Tool: Add a comment to a Jira issue */
-export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): OrchestratorTool {
+export function createAddCommentTool(
+  client: AtlassianClient,
+  hooks: Hooks,
+): OrchestratorTool {
   return {
     name: "jira_add_comment",
     description:
@@ -53,7 +56,11 @@ export function createAddCommentTool(client: AtlassianClient, hooks: Hooks): Orc
         }
 
         const ticketKey = issue.externalId;
-        await client.addComment(ticketKey, withWorkhorseFooter(body), replyToId);
+        await client.addComment(
+          ticketKey,
+          withWorkhorseFooter(body),
+          replyToId,
+        );
 
         // Emit hook for cross-plugin coordination
         // Note: We don't have the comment ID from addComment response, so we use a timestamp-based ID

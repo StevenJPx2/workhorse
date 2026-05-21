@@ -57,7 +57,9 @@ export function canParseGitHub(input: string): boolean {
 }
 
 /** Create parser options for registering with the Tracker */
-export function createGitHubParserOptions(client: GitHubClient): IssueParserOptions {
+export function createGitHubParserOptions(
+  client: GitHubClient,
+): IssueParserOptions {
   return {
     source: "github",
     canParse: canParseGitHub,
@@ -68,7 +70,9 @@ export function createGitHubParserOptions(client: GitHubClient): IssueParserOpti
       }
 
       // Fetch the issue/PR and map to ParsedIssue
-      return mapGitHubToIssue(await client.fetchIssue(ref.owner, ref.repo, ref.number));
+      return mapGitHubToIssue(
+        await client.fetchIssue(ref.owner, ref.repo, ref.number),
+      );
     },
   };
 }

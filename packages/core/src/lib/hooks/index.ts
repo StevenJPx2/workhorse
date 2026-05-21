@@ -20,7 +20,10 @@ export const hooks: HookEmitter = {
    * Register a hook handler.
    * @returns Unregister function
    */
-  on<K extends keyof HookCallbacks>(name: K, handler: HookCallbacks[K]): () => void {
+  on<K extends keyof HookCallbacks>(
+    name: K,
+    handler: HookCallbacks[K],
+  ): () => void {
     return hookable.hook(name as HookKeys<HookCallbacks>, handler as any);
   },
 
@@ -37,8 +40,14 @@ export const hooks: HookEmitter = {
    * Awaitable emit - waits for all handlers (including async) to complete.
    * Use this when you need to wait for handlers to finish (e.g., prompt.building).
    */
-  callHook<K extends keyof HookCallbacks>(name: K, payload: HookPayload<K>): Promise<void> {
-    return hookable.callHook(name as HookKeys<HookCallbacks>, payload as any) as Promise<void>;
+  callHook<K extends keyof HookCallbacks>(
+    name: K,
+    payload: HookPayload<K>,
+  ): Promise<void> {
+    return hookable.callHook(
+      name as HookKeys<HookCallbacks>,
+      payload as any,
+    ) as Promise<void>;
   },
 
   /** Remove a specific handler */
@@ -66,7 +75,7 @@ export type {
   HookEmitter,
   DiscoveredLink,
 } from "./types.ts";
-export type { PromptBuildingContext, PromptContextBlock } from "../../workflow/tracker/index.ts";
+export type { PromptBuildingContext, PromptContextBlock } from "#workflow";
 
 // Hook metadata for documentation generation
 export {

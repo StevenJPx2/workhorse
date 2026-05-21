@@ -25,7 +25,12 @@ import { createFigmaTools } from "./tools";
 
 // Re-exports for consumers
 
-export type { FigmaCredentials, FigmaFile, FigmaComment, FigmaRef } from "./types.ts";
+export type {
+  FigmaCredentials,
+  FigmaFile,
+  FigmaComment,
+  FigmaRef,
+} from "./types.ts";
 export { canParseFigma, extractFigmaRef } from "./parser.ts";
 export { isFigmaAuthenticated } from "./credentials.ts";
 

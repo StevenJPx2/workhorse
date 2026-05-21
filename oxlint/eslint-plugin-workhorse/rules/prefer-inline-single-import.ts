@@ -123,7 +123,11 @@ const rule = {
           const siblingFiles = getSiblingSourceFiles(ctx.dirname, ctx.basename);
 
           // Check which siblings import this file
-          const importers = findImportersOfFile(ctx.dirname, ctx.nameWithoutExt, siblingFiles);
+          const importers = findImportersOfFile(
+            ctx.dirname,
+            ctx.nameWithoutExt,
+            siblingFiles,
+          );
 
           // Only flag if exactly one non-index file imports this file
           if (importers.length !== 1) return;
@@ -170,7 +174,10 @@ const rule = {
 /**
  * Get all sibling source files in the same directory (excluding the current file)
  */
-function getSiblingSourceFiles(dirname: string, currentBasename: string): string[] {
+function getSiblingSourceFiles(
+  dirname: string,
+  currentBasename: string,
+): string[] {
   const entries = fs.readdirSync(dirname);
   return entries.filter((entry) => {
     if (entry === currentBasename) return false;

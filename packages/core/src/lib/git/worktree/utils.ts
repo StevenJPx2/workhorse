@@ -28,7 +28,10 @@ export interface GitResult {
   error: string;
 }
 
-export async function execGit(args: string[], cwd?: string): Promise<GitResult> {
+export async function execGit(
+  args: string[],
+  cwd?: string,
+): Promise<GitResult> {
   try {
     const proc = Bun.spawn(args, {
       cwd,

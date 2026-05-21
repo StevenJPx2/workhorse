@@ -6,7 +6,11 @@
  * First renderer to return non-null wins; fallback to defaultRenderer.
  */
 
-import type { ActivityInput, ActivityRenderer, RenderedActivity } from "./types.ts";
+import type {
+  ActivityInput,
+  ActivityRenderer,
+  RenderedActivity,
+} from "./types.ts";
 
 interface RegisteredRenderer {
   id: string;
@@ -21,7 +25,11 @@ const renderers: RegisteredRenderer[] = [];
  * If a renderer with the same id already exists, it is replaced.
  * Renderers are sorted by priority (highest first).
  */
-export function registerRenderer(id: string, renderer: ActivityRenderer, priority = 0): void {
+export function registerRenderer(
+  id: string,
+  renderer: ActivityRenderer,
+  priority = 0,
+): void {
   // Remove existing renderer with same id
   const idx = renderers.findIndex((r) => r.id === id);
   if (idx !== -1) renderers.splice(idx, 1);

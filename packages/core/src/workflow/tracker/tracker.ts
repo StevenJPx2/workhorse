@@ -70,7 +70,10 @@ export class Tracker {
    * @param options - Optional parsing options (e.g., repository context)
    * @throws Error if no parser can handle the input
    */
-  async parseInput(input: string, options?: { repository?: string }): Promise<Issue> {
+  async parseInput(
+    input: string,
+    options?: { repository?: string },
+  ): Promise<Issue> {
     const trimmed = input.trim();
 
     // Find matching parser
@@ -88,7 +91,10 @@ export class Tracker {
     }
 
     // Check for existing issue
-    const existing = await this.db.issues.getByExternalId(parsed.externalId, parsed.source);
+    const existing = await this.db.issues.getByExternalId(
+      parsed.externalId,
+      parsed.source,
+    );
     if (existing) {
       this.hooks.emit("issue.parsed", { issue: existing, raw: parsed });
       return existing;
@@ -169,12 +175,16 @@ export class Tracker {
   }
 
   /** Build a prompt for an issue. Delegates to the parser for this issue's source. */
-  async buildPrompt(issueId: string, options: BuildPromptOptions = {}): Promise<string> {
+  async buildPrompt(
+    issueId: string,
+    options: BuildPromptOptions = {},
+  ): Promise<string> {
     const issue = await this.db.issues.getById(issueId);
     if (!issue) throw new Error(`Issue not found: ${issueId}`);
 
     const parser = this.parsers.find((p) => p.source === issue.source);
-    if (!parser) throw new Error(`No parser found for source: "${issue.source}"`);
+    if (!parser)
+      throw new Error(`No parser found for source: "${issue.source}"`);
 
     const prompt = await parser.buildPrompt(issue, options);
     this.hooks.emit("prompt.built", { issueId: issue.id, prompt });

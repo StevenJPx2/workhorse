@@ -15,7 +15,11 @@ let toastId = 0;
 export { toasts, setToasts };
 
 /** Show a toast notification. Auto-dismisses after duration (default 5s). */
-export function toast(type: ToastType, message: string, duration = 5000): number {
+export function toast(
+  type: ToastType,
+  message: string,
+  duration = 5000,
+): number {
   const id = ++toastId;
   const t: Toast = { id, type, message, timestamp: Date.now() };
   setToasts((prev) => [...prev, t]);

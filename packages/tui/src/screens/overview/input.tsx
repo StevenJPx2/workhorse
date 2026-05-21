@@ -18,7 +18,9 @@ export function OverviewInput(props: OverviewInputProps) {
   return (
     <box
       flexDirection="column"
-      backgroundColor={isFocused() ? theme.colors.selection : theme.colors.surface}
+      backgroundColor={
+        isFocused() ? theme.colors.selection : theme.colors.surface
+      }
       paddingLeft={2}
       paddingRight={2}
       paddingTop={1}
@@ -34,7 +36,11 @@ export function OverviewInput(props: OverviewInputProps) {
             .messages()
             .slice(-3)
             .map((msg) => (
-              <text fg={msg.role === "user" ? theme.colors.info : theme.colors.success}>
+              <text
+                fg={
+                  msg.role === "user" ? theme.colors.info : theme.colors.success
+                }
+              >
                 {msg.role === "user" ? "You: " : "Agent: "}
                 {msg.content.slice(0, 60)}
                 {msg.content.length > 60 ? "..." : ""}
@@ -42,7 +48,12 @@ export function OverviewInput(props: OverviewInputProps) {
             ))}
         </box>
       )}
-      <box flexDirection="row" width="100%" alignItems="stretch" paddingBottom={1}>
+      <box
+        flexDirection="row"
+        width="100%"
+        alignItems="stretch"
+        paddingBottom={1}
+      >
         <box flexShrink={0}>
           <text fg={theme.colors.accent}>
             {props.chatContextId() ? `[${props.chatContextId()}] ❯ ` : "❯ "}

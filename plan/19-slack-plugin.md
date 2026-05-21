@@ -65,7 +65,11 @@ monitors.registerMonitor({
 
     const newReplies: SlackReply[] = [];
     for (const threadTs of threads) {
-      const replies = await fetchThreadReplies(config.botToken, config.channel, threadTs);
+      const replies = await fetchThreadReplies(
+        config.botToken,
+        config.channel,
+        threadTs,
+      );
       newReplies.push(...replies);
     }
 
@@ -98,12 +102,16 @@ monitors.registerMonitor({
 ```typescript
 const slackTool: OrchestratorTool = {
   name: "send_slack_message",
-  description: "Send a message to Slack. Returns thread_ts for tracking replies.",
+  description:
+    "Send a message to Slack. Returns thread_ts for tracking replies.",
   schema: {
     type: "object",
     properties: {
       message: { type: "string", description: "Message text" },
-      channel: { type: "string", description: "Channel (defaults to configured)" },
+      channel: {
+        type: "string",
+        description: "Channel (defaults to configured)",
+      },
       threadTs: { type: "string", description: "Reply to existing thread" },
     },
     required: ["message"],
@@ -180,14 +188,18 @@ async function fetchThreadReplies(
 ): Promise<SlackReply[]> {
   const response = await fetch(
     `https://slack.com/api/conversations.replies?channel=${channel}&ts=${threadTs}`,
-    { headers: { Authorization: `Bearer ${botToken}` } },
+    {
+      headers: { Authorization: `Bearer ${botToken}` },
+    },
   );
   const data = await response.json();
   if (!data.ok) throw new Error(data.error);
 
   // Filter: skip parent, skip bot messages, skip already-seen
   return data.messages
-    .filter((msg) => msg.ts !== threadTs && !msg.bot_id && isNew(msg.ts, threadTs))
+    .filter(
+      (msg) => msg.ts !== threadTs && !msg.bot_id && isNew(msg.ts, threadTs),
+    )
     .map((msg) => ({
       ts: msg.ts,
       threadTs,

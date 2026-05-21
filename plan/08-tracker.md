@@ -49,11 +49,19 @@ interface PromptContext {
 class Tracker {
   private parsers: IssueParser[] = [];
 
-  constructor(db: Database, memory: MemoryService, hooks: Hooks, config: Readonly<WorkhorseConfig>);
+  constructor(
+    db: Database,
+    memory: MemoryService,
+    hooks: Hooks,
+    config: Readonly<WorkhorseConfig>,
+  );
 
   registerParser(parser: IssueParser): void;
   async parseInput(input: string): Promise<Issue>;
-  async buildPrompt(issueId: string, options?: { isResume?: boolean }): Promise<string>;
+  async buildPrompt(
+    issueId: string,
+    options?: { isResume?: boolean },
+  ): Promise<string>;
 }
 ```
 

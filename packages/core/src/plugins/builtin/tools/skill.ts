@@ -26,7 +26,9 @@ function formatSkillSummary(skill: ResolvedSkill): string {
  * Creates the load_skill tool.
  * Needs orchestrator reference to access registered skills.
  */
-export function createLoadSkillTool(orchestrator: HarnessOrchestrator): OrchestratorTool {
+export function createLoadSkillTool(
+  orchestrator: HarnessOrchestrator,
+): OrchestratorTool {
   return {
     name: "load_skill",
     description:
@@ -45,14 +47,20 @@ export function createLoadSkillTool(orchestrator: HarnessOrchestrator): Orchestr
         },
       },
     },
-    execute: async (args: unknown, _ctx: ToolExecutionContext): Promise<ToolResult> => {
+    execute: async (
+      args: unknown,
+      _ctx: ToolExecutionContext,
+    ): Promise<ToolResult> => {
       const { skillId } = (args as LoadSkillArgs) || {};
       const allSkills = orchestrator.skillRegistry.getSkills();
 
       // No skillId provided - list all skills
       if (!skillId || skillId.trim() === "") {
         if (allSkills.length === 0) {
-          return { success: true, output: "No skills are currently registered." };
+          return {
+            success: true,
+            output: "No skills are currently registered.",
+          };
         }
         return {
           success: true,

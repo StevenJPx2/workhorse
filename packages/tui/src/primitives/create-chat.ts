@@ -1,4 +1,10 @@
-import { createSignal, createEffect, onMount, onCleanup, type Accessor } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  onMount,
+  onCleanup,
+  type Accessor,
+} from "solid-js";
 
 import { useWorkhorseContext } from "../context/workhorse.tsx";
 
@@ -35,13 +41,22 @@ export function createChat(issueId: Accessor<string | null>) {
 
   onMount(() => {
     // Listen for new agent output
-    const handleOutput = ({ issueId: id, delta }: { issueId: string; delta: string }) => {
+    const handleOutput = ({
+      issueId: id,
+      delta,
+    }: {
+      issueId: string;
+      delta: string;
+    }) => {
       if (id === issueId()) {
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "agent") {
             // Append to existing agent message
-            return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
+            return [
+              ...prev.slice(0, -1),
+              { ...last, content: last.content + delta },
+            ];
           }
           // New agent message
           return [
@@ -80,7 +95,8 @@ export function createChat(issueId: Accessor<string | null>) {
         {
           id: crypto.randomUUID(),
           role: "agent",
-          content: "⚠️ No agent found for this issue. Please spawn an agent first.",
+          content:
+            "⚠️ No agent found for this issue. Please spawn an agent first.",
           timestamp: new Date(),
         },
       ]);

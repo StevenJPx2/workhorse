@@ -26,7 +26,8 @@ function getReexportsFromFile(filePath: string): Map<string, string> {
 
   // Match: export { Foo, Bar } from "./source"
   // Match: export type { Foo } from "./source"
-  const namedReexportRegex = /export\s+(?:type\s+)?{\s*([^}]+)\s*}\s*from\s*["']([^"']+)["']/g;
+  const namedReexportRegex =
+    /export\s+(?:type\s+)?{\s*([^}]+)\s*}\s*from\s*["']([^"']+)["']/g;
   let match;
   while ((match = namedReexportRegex.exec(content)) !== null) {
     const names = match[1].split(",").map((n) =>
@@ -54,7 +55,10 @@ interface ResolvedImport {
 }
 
 /** Resolve a relative import path to an absolute file path */
-function resolveImportPath(importPath: string, fromFile: string): ResolvedImport | null {
+function resolveImportPath(
+  importPath: string,
+  fromFile: string,
+): ResolvedImport | null {
   const dir = path.dirname(fromFile);
 
   // Try direct file extensions first (not barrels)

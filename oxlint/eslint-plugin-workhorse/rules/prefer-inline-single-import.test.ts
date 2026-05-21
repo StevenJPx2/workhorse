@@ -64,11 +64,15 @@ describe("prefer-inline-single-import", () => {
   });
 
   it("suggests folder/newName format", () => {
-    expect(rule.meta.messages.preferColocate).toContain("{{baseName}}/{{newName}}");
+    expect(rule.meta.messages.preferColocate).toContain(
+      "{{baseName}}/{{newName}}",
+    );
   });
 
   it("has removeParentPrefix message", () => {
-    expect(rule.meta.messages.removeParentPrefix).toContain("parent folder name");
+    expect(rule.meta.messages.removeParentPrefix).toContain(
+      "parent folder name",
+    );
     expect(rule.meta.messages.removeParentPrefix).toContain("{{parentName}}");
     expect(rule.meta.messages.removeParentPrefix).toContain("{{newName}}");
   });

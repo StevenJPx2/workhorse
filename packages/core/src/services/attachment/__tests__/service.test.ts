@@ -56,13 +56,18 @@ describe("AttachmentService", () => {
 
     it("creates nested directories", async () => {
       const content = Buffer.from("data");
-      const result = await service.store("deep/nested/repo", "issue-99", content, {
-        source: "jira",
-        sourceId: "att-1",
-        filename: "file.txt",
-        mimeType: "text/plain",
-        size: content.length,
-      });
+      const result = await service.store(
+        "deep/nested/repo",
+        "issue-99",
+        content,
+        {
+          source: "jira",
+          sourceId: "att-1",
+          filename: "file.txt",
+          mimeType: "text/plain",
+          size: content.length,
+        },
+      );
 
       expect(existsSync(result.localPath)).toBe(true);
     });
@@ -135,7 +140,9 @@ describe("AttachmentService", () => {
     });
 
     it("does not throw for nonexistent file", async () => {
-      await expect(service.delete("/nonexistent/path.txt")).resolves.toBeUndefined();
+      await expect(
+        service.delete("/nonexistent/path.txt"),
+      ).resolves.toBeUndefined();
     });
   });
 

@@ -165,8 +165,12 @@ Examples:
 
   const failed = results.filter((r) => !r.success).length;
 
-  console.log(`\nBuild complete in ${formatDuration(performance.now() - start)}`);
-  console.log(`  ${results.filter((r) => r.success).length} succeeded, ${failed} failed`);
+  console.log(
+    `\nBuild complete in ${formatDuration(performance.now() - start)}`,
+  );
+  console.log(
+    `  ${results.filter((r) => r.success).length} succeeded, ${failed} failed`,
+  );
 
   if (failed > 0) {
     process.exit(1);

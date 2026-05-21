@@ -219,7 +219,10 @@ const rule = {
         }
 
         // Skip function callee position (fn() — fn is not a variable reference we care about)
-        if (node.parent?.type === "CallExpression" && node.parent?.callee === node) {
+        if (
+          node.parent?.type === "CallExpression" &&
+          node.parent?.callee === node
+        ) {
           return;
         }
 

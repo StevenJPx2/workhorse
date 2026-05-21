@@ -46,7 +46,9 @@ function createMockClient(overrides: Partial<FigmaClient> = {}): FigmaClient {
 type HandlerFn = (payload: any) => void | Promise<void>;
 
 // Mock HookEmitter
-function createMockHooks(): HookEmitter & { handlers: Map<string, HandlerFn[]> } {
+function createMockHooks(): HookEmitter & {
+  handlers: Map<string, HandlerFn[]>;
+} {
   const handlers = new Map<string, HandlerFn[]>();
 
   return {
@@ -70,7 +72,10 @@ function createMockHooks(): HookEmitter & { handlers: Map<string, HandlerFn[]> }
 }
 
 /** Get the registered handler for a hook name */
-function getHandler(hooks: ReturnType<typeof createMockHooks>, name: string): HandlerFn {
+function getHandler(
+  hooks: ReturnType<typeof createMockHooks>,
+  name: string,
+): HandlerFn {
   const arr = hooks.handlers.get(name);
   if (!arr || arr.length === 0) throw new Error(`No handler for ${name}`);
   return arr[0]!;
@@ -90,7 +95,10 @@ describe("cross-plugin", () => {
 
       registerCrossPluginHandlers(hooks, client);
 
-      expect(hooks.on).toHaveBeenCalledWith("issue.links.discovered", expect.any(Function));
+      expect(hooks.on).toHaveBeenCalledWith(
+        "issue.links.discovered",
+        expect.any(Function),
+      );
     });
 
     it("returns unsubscribe function", () => {
@@ -322,7 +330,10 @@ describe("cross-plugin", () => {
 
     it("truncates long component lists", async () => {
       const hooks = createMockHooks();
-      const manyComponents: Record<string, { name: string; description: string }> = {};
+      const manyComponents: Record<
+        string,
+        { name: string; description: string }
+      > = {};
       for (let i = 0; i < 20; i++) {
         manyComponents[`c:${i}`] = { name: `Component${i}`, description: "" };
       }

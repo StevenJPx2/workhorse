@@ -42,7 +42,11 @@ export async function runTests(
       const result = test.assert(snapshot.text);
 
       if (result === true) {
-        results.push({ name: test.name, passed: true, snapshot: snapshot.text });
+        results.push({
+          name: test.name,
+          passed: true,
+          snapshot: snapshot.text,
+        });
       } else {
         results.push({
           name: test.name,
@@ -81,7 +85,9 @@ export function printResults(results: TestResult[]): void {
       console.log(`  Error: ${result.error}`);
       if (result.snapshot) {
         console.log(`  Snapshot preview (first 500 chars):`);
-        console.log(`  ${result.snapshot.slice(0, 500).replace(/\n/g, "\n  ")}`);
+        console.log(
+          `  ${result.snapshot.slice(0, 500).replace(/\n/g, "\n  ")}`,
+        );
       }
       failed++;
     }

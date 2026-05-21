@@ -37,7 +37,8 @@ function hashUrl(url: string): string {
 function guessMimeType(url: string): string {
   const pathname = new URL(url).pathname.toLowerCase();
   if (pathname.endsWith(".png")) return "image/png";
-  if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) return "image/jpeg";
+  if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg"))
+    return "image/jpeg";
   if (pathname.endsWith(".gif")) return "image/gif";
   if (pathname.endsWith(".webp")) return "image/webp";
   if (pathname.endsWith(".svg")) return "image/svg+xml";
@@ -142,14 +143,18 @@ export function extractAllAttachments(
 
   // Extract from comments
   for (const comment of comments) {
-    attachments.push(...extractImagesFromMarkdown(comment.body, `comment-${comment.id}`));
+    attachments.push(
+      ...extractImagesFromMarkdown(comment.body, `comment-${comment.id}`),
+    );
   }
 
   return attachments;
 }
 
 /** Filter to only image attachments */
-export function filterImageAttachments(attachments: GitHubAttachment[]): GitHubAttachment[] {
+export function filterImageAttachments(
+  attachments: GitHubAttachment[],
+): GitHubAttachment[] {
   return attachments.filter((a) => a.mimeType.startsWith("image/"));
 }
 

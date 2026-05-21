@@ -1,12 +1,7 @@
-/**
- * GitHubClient - Wrapper around `gh` CLI for GitHub API access.
- *
- * All operations use `gh api` for consistency. Requires `gh auth login` to be run first.
- *
- * @module workhorse-plugin-github/client
- */
+/** GitHubClient - Wrapper around `gh` CLI for GitHub API access. Requires `gh auth login` first. */
 
 import { api, gh } from "./gh-cli";
+import { addLabel, removeLabel } from "./label-operations.ts";
 import type {
   CreatePROptions,
   GitHubCheckRun,
@@ -29,12 +24,14 @@ export class GitHubClient {
   }
 
   /** Disconnect (no-op for gh CLI) */
-  async disconnect(): Promise<void> {
-    // No-op - gh CLI manages its own session
-  }
+  async disconnect(): Promise<void> {}
 
   /** Fetch a GitHub issue */
-  async fetchIssue(owner: string, repo: string, number: number): Promise<GitHubIssue> {
+  async fetchIssue(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubIssue> {
     return {
       ...(await api<Omit<GitHubIssue, "owner" | "repo">>(
         `/repos/${owner}/${repo}/issues/${number}`,
@@ -45,16 +42,24 @@ export class GitHubClient {
   }
 
   /** Fetch a GitHub PR */
-  async fetchPR(owner: string, repo: string, number: number): Promise<GitHubPR> {
+  async fetchPR(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubPR> {
     return {
-      ...(await api<Omit<GitHubPR, "owner" | "repo">>(`/repos/${owner}/${repo}/pulls/${number}`)),
+      ...(await api<Omit<GitHubPR, "owner" | "repo">>(
+        `/repos/${owner}/${repo}/pulls/${number}`,
+      )),
       owner,
       repo,
     };
   }
 
   /** Create a PR using gh CLI */
-  async createPR(opts: CreatePROptions): Promise<{ url: string; number: number }> {
+  async createPR(
+    opts: CreatePROptions,
+  ): Promise<{ url: string; number: number }> {
     const args = [
       "pr",
       "create",
@@ -90,7 +95,12 @@ export class GitHubClient {
   }
 
   /** Add a comment to an issue or PR */
-  async addComment(owner: string, repo: string, number: number, body: string): Promise<void> {
+  async addComment(
+    owner: string,
+    repo: string,
+    number: number,
+    body: string,
+  ): Promise<void> {
     await api(`/repos/${owner}/${repo}/issues/${number}/comments`, {
       method: "POST",
       body: { body },
@@ -98,12 +108,22 @@ export class GitHubClient {
   }
 
   /** Get reviews on a PR */
-  async getPRReviews(owner: string, repo: string, number: number): Promise<GitHubReview[]> {
-    return api<GitHubReview[]>(`/repos/${owner}/${repo}/pulls/${number}/reviews`);
+  async getPRReviews(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubReview[]> {
+    return api<GitHubReview[]>(
+      `/repos/${owner}/${repo}/pulls/${number}/reviews`,
+    );
   }
 
   /** Get comments on a PR (both issue comments and review comments) */
-  async getPRComments(owner: string, repo: string, number: number): Promise<GitHubComment[]> {
+  async getPRComments(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubComment[]> {
     // Fetch both issue comments and review comments
     const [issueComments, reviewComments] = await Promise.all([
       api<GitHubComment[]>(`/repos/${owner}/${repo}/issues/${number}/comments`),
@@ -114,8 +134,14 @@ export class GitHubClient {
   }
 
   /** Get only conversation comments on a PR (not code review comments) */
-  async getIssueComments(owner: string, repo: string, number: number): Promise<GitHubComment[]> {
-    return api<GitHubComment[]>(`/repos/${owner}/${repo}/issues/${number}/comments`);
+  async getIssueComments(
+    owner: string,
+    repo: string,
+    number: number,
+  ): Promise<GitHubComment[]> {
+    return api<GitHubComment[]>(
+      `/repos/${owner}/${repo}/issues/${number}/comments`,
+    );
   }
 
   /** Get comments for a specific review */
@@ -131,28 +157,19 @@ export class GitHubClient {
   }
 
   /** Get check runs for a commit ref */
-  async getCheckRuns(owner: string, repo: string, ref: string): Promise<GitHubCheckRun[]> {
+  async getCheckRuns(
+    owner: string,
+    repo: string,
+    ref: string,
+  ): Promise<GitHubCheckRun[]> {
     return await api<{ check_runs: GitHubCheckRun[] }>(
       `/repos/${owner}/${repo}/commits/${ref}/check-runs`,
     ).then((r) => r.check_runs);
   }
 
   /** Add a label to an issue/PR */
-  async addLabel(owner: string, repo: string, number: number, label: string): Promise<void> {
-    await api(`/repos/${owner}/${repo}/issues/${number}/labels`, {
-      method: "POST",
-      body: { labels: [label] },
-    });
-  }
+  addLabel = addLabel;
 
   /** Remove a label from an issue/PR */
-  async removeLabel(owner: string, repo: string, number: number, label: string): Promise<void> {
-    try {
-      await api(`/repos/${owner}/${repo}/issues/${number}/labels/${encodeURIComponent(label)}`, {
-        method: "DELETE",
-      });
-    } catch {
-      // Label might not exist, ignore
-    }
-  }
+  removeLabel = removeLabel;
 }

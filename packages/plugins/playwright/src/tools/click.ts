@@ -10,7 +10,9 @@ import type { PlaywrightSessionManager } from "../session-manager.ts";
 import { click } from "../session-operations.ts";
 
 /** Create the playwright_click tool */
-export function createClickTool(sessionManager: PlaywrightSessionManager): OrchestratorTool {
+export function createClickTool(
+  sessionManager: PlaywrightSessionManager,
+): OrchestratorTool {
   return {
     name: "playwright_click",
     description:

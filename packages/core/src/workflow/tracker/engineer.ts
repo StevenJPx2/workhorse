@@ -31,11 +31,7 @@ export interface HybridPrompt {
   initialMessage: string;
 }
 
-/**
- * PromptEngineer - Builds prompts for a specific issue with memory enrichment.
- *
- * Instantiated per-issue and bound to that issue at construction time.
- */
+/** PromptEngineer - Builds prompts for a specific issue with memory enrichment. */
 export class PromptEngineer {
   constructor(
     /** The issue this engineer builds prompts for */
@@ -51,9 +47,7 @@ export class PromptEngineer {
     private readonly hooks?: HookEmitter,
   ) {}
 
-  /**
-   * Build a complete prompt for the issue.
-   */
+  /** Build a complete prompt for the issue. */
   async buildPrompt(options: BuildPromptOptions = {}): Promise<string> {
     const { sessionMemory, searchResults, contextBlocks, isResume } =
       await this.gatherContext(options);
@@ -67,11 +61,10 @@ export class PromptEngineer {
     return `${systemPrompt}\n\n${buildInitialPrompt(this.issue)}`;
   }
 
-  /**
-   * Build hybrid prompt split into system prompt and initial message.
-   * Skills are listed by name/description only — full instructions loaded on-demand via tool.
-   */
-  async buildHybridPrompt(options: HybridPromptOptions = {}): Promise<HybridPrompt> {
+  /** Build hybrid prompt (system + initial message). Skills listed by name only. */
+  async buildHybridPrompt(
+    options: HybridPromptOptions = {},
+  ): Promise<HybridPrompt> {
     const { sessionMemory, searchResults, contextBlocks, isResume } =
       await this.gatherContext(options);
 
@@ -87,7 +80,11 @@ export class PromptEngineer {
     }
 
     return {
-      systemPrompt: this.buildSystemPrompt(contextBlocks, searchResults, options.tools ?? []),
+      systemPrompt: this.buildSystemPrompt(
+        contextBlocks,
+        searchResults,
+        options.tools ?? [],
+      ),
       initialMessage: isResume
         ? buildResumePrompt(this.issue, sessionMemory)
         : buildInitialPrompt(this.issue),
@@ -107,9 +104,7 @@ export class PromptEngineer {
     return lines.join("\n");
   }
 
-  /**
-   * Gather context from memory and notifications.
-   */
+  /** Gather context from memory and notifications. */
   private async gatherContext(options: BuildPromptOptions): Promise<{
     sessionMemory?: SessionMemory;
     searchResults: SearchResult[];
@@ -129,7 +124,9 @@ export class PromptEngineer {
     }
 
     // Get unread notifications and add as context block
-    const notifications = await this.memory.notifications.getUnread(this.issue.id);
+    const notifications = await this.memory.notifications.getUnread(
+      this.issue.id,
+    );
     const contextBlocks: PromptContextBlock[] = [];
 
     if (notifications.length > 0) {
@@ -178,8 +175,10 @@ ${this.memory.notifications.generateInbox(notifications)}`,
   ): string {
     const sections: string[] = [renderIssueSection(this.issue)];
     if (tools.length > 0) sections.push(renderToolsSection(tools));
-    for (const block of sortContextBlocks(contextBlocks)) sections.push(renderContextBlock(block));
-    if (searchResults.length > 0) sections.push(renderSearchResults(searchResults));
+    for (const block of sortContextBlocks(contextBlocks))
+      sections.push(renderContextBlock(block));
+    if (searchResults.length > 0)
+      sections.push(renderSearchResults(searchResults));
     if (this.customInstructions)
       sections.push(`## Custom Instructions\n\n${this.customInstructions}`);
     return sections.join("\n\n");
@@ -187,6 +186,8 @@ ${this.memory.notifications.generateInbox(notifications)}`,
 
   /** Search L2 memory for relevant context. */
   private async searchL2Memory(query: string): Promise<SearchResult[]> {
-    return query ? this.memory.l2.search(query, { limit: 5, returnContent: true }) : [];
+    return query
+      ? this.memory.l2.search(query, { limit: 5, returnContent: true })
+      : [];
   }
 }

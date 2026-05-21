@@ -98,7 +98,11 @@ function isPathAllowed(path: string, options: PathValidationOptions): boolean {
   if (normalizedPath.startsWith(options.rootDir)) return true;
 
   // Or in additional allowed directories
-  return options.additionalAllowedDirs?.some((dir) => normalizedPath.startsWith(dir)) ?? false;
+  return (
+    options.additionalAllowedDirs?.some((dir) =>
+      normalizedPath.startsWith(dir),
+    ) ?? false
+  );
 }
 ```
 

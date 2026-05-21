@@ -21,11 +21,15 @@ export function HarnessList(props: HarnessListProps) {
             const isSelected = () => index() === props.selectedIndex;
             return (
               <box
-                backgroundColor={isSelected() ? theme.colors.selection : undefined}
+                backgroundColor={
+                  isSelected() ? theme.colors.selection : undefined
+                }
                 paddingLeft={1}
                 paddingRight={1}
               >
-                <text fg={isSelected() ? theme.colors.success : theme.colors.dim}>
+                <text
+                  fg={isSelected() ? theme.colors.success : theme.colors.dim}
+                >
                   {isSelected() ? "● " : "○ "}
                   {option.icon} {option.displayName}
                 </text>

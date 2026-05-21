@@ -5,7 +5,15 @@
  * Run with `bun test` to execute these tests.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 
 import { GitHubClient } from "../client.ts";
 
@@ -48,7 +56,10 @@ describe.skipIf(!isBun)("GitHubClient", () => {
       mockGhCommand("github.com\n  ✓ Logged in to github.com\n");
       const client = new GitHubClient();
       await expect(client.connect()).resolves.toBeUndefined();
-      expect(mockSpawn).toHaveBeenCalledWith(["gh", "auth", "status"], expect.any(Object));
+      expect(mockSpawn).toHaveBeenCalledWith(
+        ["gh", "auth", "status"],
+        expect.any(Object),
+      );
     });
 
     it("throws when not authenticated", async () => {
@@ -153,7 +164,9 @@ describe.skipIf(!isBun)("GitHubClient", () => {
         ],
         expect.any(Object),
       );
-      expect(result.url).toBe("https://github.com/octocat/hello-world/pull/456");
+      expect(result.url).toBe(
+        "https://github.com/octocat/hello-world/pull/456",
+      );
       expect(result.number).toBe(456);
     });
 
@@ -218,7 +231,11 @@ describe.skipIf(!isBun)("GitHubClient", () => {
       mockGhCommand(JSON.stringify(response));
 
       const client = new GitHubClient();
-      const result = await client.getCheckRuns("octocat", "hello-world", "abc123");
+      const result = await client.getCheckRuns(
+        "octocat",
+        "hello-world",
+        "abc123",
+      );
 
       expect(mockSpawn).toHaveBeenCalledWith(
         ["gh", "api", "/repos/octocat/hello-world/commits/abc123/check-runs"],

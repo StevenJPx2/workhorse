@@ -7,7 +7,12 @@ export { generateSystemInbox } from "./inbox.ts";
 export { MemoryIndexer } from "./indexer";
 
 // L1: Session memory store
-export { L1Context, L1Store, parseSessionMemory, serializeSessionMemory } from "./l1";
+export {
+  L1Context,
+  L1Store,
+  parseSessionMemory,
+  serializeSessionMemory,
+} from "./l1";
 
 // L2: Semantic search store
 export { L2Store } from "./l2.ts";

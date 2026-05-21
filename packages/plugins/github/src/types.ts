@@ -38,7 +38,12 @@ export interface GitHubPR extends GitHubIssue {
 export interface GitHubReview {
   id: number;
   user: { login: string };
-  state: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED" | "PENDING";
+  state:
+    | "APPROVED"
+    | "CHANGES_REQUESTED"
+    | "COMMENTED"
+    | "DISMISSED"
+    | "PENDING";
   body: string;
   submitted_at: string;
 }

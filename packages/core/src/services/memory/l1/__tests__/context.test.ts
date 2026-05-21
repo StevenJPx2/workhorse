@@ -136,7 +136,9 @@ describe("L1Context", () => {
     });
 
     it("throws when no context.md exists", async () => {
-      await expect(ctx.updatePatterns(["Pattern"])).rejects.toThrow("No session memory found");
+      await expect(ctx.updatePatterns(["Pattern"])).rejects.toThrow(
+        "No session memory found",
+      );
     });
   });
 });

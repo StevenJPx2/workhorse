@@ -1,7 +1,16 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import type { ConfigPaths } from "#config";
 import { DEFAULT_CONFIG } from "#config";
@@ -44,7 +53,10 @@ describe("Local plugin discovery (.workhorse/plugins)", () => {
   beforeAll(() => {
     // Create temp plugin directory structure
     mkdirSync(TEST_WORKHORSE_PLUGINS, { recursive: true });
-    writeFileSync(join(TEST_WORKHORSE_PLUGINS, "hello-plugin.ts"), HELLO_PLUGIN_SOURCE);
+    writeFileSync(
+      join(TEST_WORKHORSE_PLUGINS, "hello-plugin.ts"),
+      HELLO_PLUGIN_SOURCE,
+    );
   });
 
   afterAll(() => {
@@ -129,7 +141,9 @@ describe("Local plugin discovery (.workhorse/plugins)", () => {
     await registry.discoverCustomPlugins();
     await registry.setup();
 
-    expect(consoleSpy).toHaveBeenCalledWith("🎉 Hello plugin loaded from .workhorse/plugins!");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "🎉 Hello plugin loaded from .workhorse/plugins!",
+    );
 
     await registry.teardown();
     expect(consoleSpy).toHaveBeenCalledWith("👋 Hello plugin teardown");

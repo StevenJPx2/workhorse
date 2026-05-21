@@ -6,7 +6,12 @@ import { resolve } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
-import { validatePath, isPathAllowed, assertPathAllowed, createPathValidator } from "../index.ts";
+import {
+  validatePath,
+  isPathAllowed,
+  assertPathAllowed,
+  createPathValidator,
+} from "../index.ts";
 
 describe("validatePath", () => {
   const rootDir = "/test/worktree";
@@ -23,7 +28,9 @@ describe("validatePath", () => {
   });
 
   it("allows nested paths within root directory", () => {
-    const result = validatePath("./src/components/Button/index.tsx", { rootDir });
+    const result = validatePath("./src/components/Button/index.tsx", {
+      rootDir,
+    });
     expect(result.valid).toBe(true);
   });
 
@@ -45,7 +52,9 @@ describe("validatePath", () => {
 
   it("rejects hidden path traversal", () => {
     // Even if starts with valid path, traversal should be caught
-    const result = validatePath("/test/worktree/src/../../other/file.ts", { rootDir });
+    const result = validatePath("/test/worktree/src/../../other/file.ts", {
+      rootDir,
+    });
     expect(result.valid).toBe(false);
   });
 
@@ -152,7 +161,9 @@ describe("edge cases", () => {
 
   it("handles mixed traversal that stays in bounds", () => {
     // Goes up to src, then back into components - should be allowed
-    const result = validatePath("./src/components/../utils/helper.ts", { rootDir });
+    const result = validatePath("./src/components/../utils/helper.ts", {
+      rootDir,
+    });
     expect(result.valid).toBe(true);
     expect(result.normalizedPath).toBe(resolve(rootDir, "src/utils/helper.ts"));
   });

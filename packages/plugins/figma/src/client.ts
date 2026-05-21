@@ -78,9 +78,13 @@ export class FigmaClient {
   async fetchNode(
     fileKey: string,
     nodeId: string,
-  ): Promise<{ nodes: Record<string, { document: import("./types.ts").FigmaNode }> }> {
+  ): Promise<{
+    nodes: Record<string, { document: import("./types.ts").FigmaNode }>;
+  }> {
     // Figma node IDs use colons but the API expects them URL-encoded as %3A
-    return this.get(`/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}`);
+    return this.get(
+      `/files/${fileKey}/nodes?ids=${encodeURIComponent(nodeId)}`,
+    );
   }
 
   // Comments
@@ -89,9 +93,9 @@ export class FigmaClient {
    * Fetch all comments for a Figma file.
    */
   async fetchComments(fileKey: string): Promise<FigmaComment[]> {
-    return this.get<{ comments: FigmaComment[] }>(`/files/${fileKey}/comments`).then(
-      (r) => r.comments,
-    );
+    return this.get<{ comments: FigmaComment[] }>(
+      `/files/${fileKey}/comments`,
+    ).then((r) => r.comments);
   }
 
   /**
@@ -100,7 +104,11 @@ export class FigmaClient {
    * @param message   - Comment body text
    * @param replyToId - If set, creates a reply inside that thread
    */
-  async postComment(fileKey: string, message: string, replyToId?: string): Promise<FigmaComment> {
+  async postComment(
+    fileKey: string,
+    message: string,
+    replyToId?: string,
+  ): Promise<FigmaComment> {
     const body: Record<string, unknown> = { message };
     if (replyToId) {
       body.comment_id = replyToId;
@@ -115,9 +123,9 @@ export class FigmaClient {
    * @param teamId - Figma team ID (found in your Figma URL: figma.com/files/team/<teamId>)
    */
   async fetchTeamProjects(teamId: string): Promise<FigmaProject[]> {
-    return this.get<{ projects: FigmaProject[] }>(`/teams/${teamId}/projects`).then(
-      (r) => r.projects,
-    );
+    return this.get<{ projects: FigmaProject[] }>(
+      `/teams/${teamId}/projects`,
+    ).then((r) => r.projects);
   }
 
   /**
@@ -125,9 +133,9 @@ export class FigmaClient {
    * @param projectId - Figma project ID
    */
   async fetchProjectFiles(projectId: string): Promise<FigmaProjectFile[]> {
-    return this.get<{ files: FigmaProjectFile[] }>(`/projects/${projectId}/files`).then(
-      (r) => r.files,
-    );
+    return this.get<{ files: FigmaProjectFile[] }>(
+      `/projects/${projectId}/files`,
+    ).then((r) => r.files);
   }
 
   // Version / metadata

@@ -16,7 +16,8 @@ export const PluginSkillSchema = z
   .object({
     /** Unique identifier: "pluginName:skillName" (e.g., "github:pr-workflow") */
     id: z.string().regex(/^[a-z0-9-]+:[a-z0-9-]+$/, {
-      message: "Skill ID must be in format 'plugin:skill' using lowercase alphanumeric and hyphens",
+      message:
+        "Skill ID must be in format 'plugin:skill' using lowercase alphanumeric and hyphens",
     }),
 
     /** Human-readable name for logging/debugging */
@@ -35,7 +36,8 @@ export const PluginSkillSchema = z
     priority: z.number().int().min(0).max(100).optional().default(50),
   })
   .refine((s) => Boolean(s.instructions) !== Boolean(s.instructionsPath), {
-    message: "Exactly one of 'instructions' or 'instructionsPath' must be provided",
+    message:
+      "Exactly one of 'instructions' or 'instructionsPath' must be provided",
   });
 
 /**

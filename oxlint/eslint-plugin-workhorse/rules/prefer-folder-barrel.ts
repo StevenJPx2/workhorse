@@ -42,7 +42,8 @@ const rule = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "Suggest converting non-index barrel files to folder structure with index.ts",
+      description:
+        "Suggest converting non-index barrel files to folder structure with index.ts",
     },
     messages: {
       preferFolderBarrel:
@@ -97,7 +98,10 @@ const rule = {
           if (entryExt !== ".ts" && entryExt !== ".tsx") return false;
           const entryBase = entry.slice(0, -entryExt.length);
           // Match "base-<something>" but not "base" itself
-          return entryBase.startsWith(`${base}-`) && entryBase.length > base.length + 1;
+          return (
+            entryBase.startsWith(`${base}-`) &&
+            entryBase.length > base.length + 1
+          );
         });
       } catch {
         return [];
@@ -162,7 +166,11 @@ const rule = {
         if (!programNode) return;
 
         // Pattern 1: barrel-only file (only sibling re-exports, nothing else)
-        if (hasSiblingReExports && !hasNonSiblingReExports && !hasOtherStatements) {
+        if (
+          hasSiblingReExports &&
+          !hasNonSiblingReExports &&
+          !hasOtherStatements
+        ) {
           context.report({
             node: programNode,
             messageId: "preferFolderBarrel",

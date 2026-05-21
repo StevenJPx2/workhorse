@@ -94,7 +94,9 @@ export const SteeringRuleConfigSchema = z.object({
         output: z.union([z.string(), z.promise(z.string())]),
       }),
     ])
-    .transform((val) => (typeof val === "function" ? val : (_: SteeringContext) => val)),
+    .transform((val) =>
+      typeof val === "function" ? val : (_: SteeringContext) => val,
+    ),
   priority: z.number().optional().default(0),
   once: z.boolean().optional().default(false),
 });

@@ -12,7 +12,10 @@ import type { GitHubClient } from "./client.ts";
 import type { GitHubCheckRun, GitHubPR, GitHubReview } from "./types.ts";
 
 /** Register prompt enrichment hooks */
-export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient): void {
+export function registerPromptHooks(
+  ctx: WorkhorseContext,
+  client: GitHubClient,
+): void {
   // Hook receives PromptBuildingContext directly (issueId is internal UUID)
   ctx.hooks.on("prompt.building", async (buildingCtx) => {
     const issue = await ctx.db.issues.getById(buildingCtx.issueId);
@@ -37,7 +40,9 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient)
       // For GitHub-sourced issues, fetch and add issue context
       if (isGitHubIssue && typeof metadata.number === "number") {
         buildingCtx.contextBlocks.push(
-          buildGitHubIssueBlock(await client.fetchIssue(owner, repo, metadata.number)),
+          buildGitHubIssueBlock(
+            await client.fetchIssue(owner, repo, metadata.number),
+          ),
         );
       }
 
@@ -48,14 +53,20 @@ export function registerPromptHooks(ctx: WorkhorseContext, client: GitHubClient)
 
         const [reviews, checkRuns] = await Promise.all([
           client.getPRReviews(owner, repo, prNumber),
-          headSha ? client.getCheckRuns(owner, repo, headSha).catch(() => []) : Promise.resolve([]),
+          headSha
+            ? client.getCheckRuns(owner, repo, headSha).catch(() => [])
+            : Promise.resolve([]),
         ]);
 
-        buildingCtx.contextBlocks.push(buildPRStateBlock(pr, reviews, checkRuns));
+        buildingCtx.contextBlocks.push(
+          buildPRStateBlock(pr, reviews, checkRuns),
+        );
       }
 
       // Add workflow instructions
-      buildingCtx.contextBlocks.push(buildGitHubWorkflowBlock(prNumber !== undefined));
+      buildingCtx.contextBlocks.push(
+        buildGitHubWorkflowBlock(prNumber !== undefined),
+      );
     } catch {
       // Silently skip if GitHub API fails
     }
@@ -94,7 +105,9 @@ function buildPRStateBlock(
 ): PromptContextBlock {
   // Summarize reviews
   const approved = reviews.filter((r) => r.state === "APPROVED").length;
-  const changesRequested = reviews.filter((r) => r.state === "CHANGES_REQUESTED").length;
+  const changesRequested = reviews.filter(
+    (r) => r.state === "CHANGES_REQUESTED",
+  ).length;
 
   // Build check status summary
   let checkStatus = "no checks";
@@ -114,7 +127,8 @@ function buildPRStateBlock(
   if (reviews.length > 0) {
     const parts: string[] = [];
     if (approved > 0) parts.push(`${approved} approved`);
-    if (changesRequested > 0) parts.push(`${changesRequested} changes requested`);
+    if (changesRequested > 0)
+      parts.push(`${changesRequested} changes requested`);
     reviewStatus = parts.join(", ") || "commented only";
   }
 
@@ -134,7 +148,10 @@ function buildPRStateBlock(
 }
 
 /** Build repository context block */
-function buildRepoContextBlock(owner: string, repo: string): PromptContextBlock {
+function buildRepoContextBlock(
+  owner: string,
+  repo: string,
+): PromptContextBlock {
   return {
     id: "github-repo",
     title: "GitHub Repository",

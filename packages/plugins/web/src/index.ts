@@ -49,14 +49,18 @@ export const webPlugin = definePlugin({
     // Check if jina-cli is installed
     if (!(await checkJinaInstalled())) {
       if (config.warnIfMissing) {
-        console.warn("[web] jina-cli not found. Install with: pip install jina-cli");
+        console.warn(
+          "[web] jina-cli not found. Install with: pip install jina-cli",
+        );
       }
       // Don't fail - tools will return helpful errors when invoked
     }
 
     // Warn if no API key for search
     if (!hasApiKey()) {
-      console.warn("[web] JINA_API_KEY not set. web_search requires an API key.");
+      console.warn(
+        "[web] JINA_API_KEY not set. web_search requires an API key.",
+      );
     }
 
     // Register tools

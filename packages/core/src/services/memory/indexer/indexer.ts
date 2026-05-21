@@ -15,8 +15,21 @@ import type { MemoryDocument, MemoryDocumentType } from "../types.ts";
 import { buildSessionDocuments } from "./utils.ts";
 
 /** Glob patterns for codebase intelligence files */
-const CODEBASE_PATTERNS = ["**/README.md", "**/ARCHITECTURE.md", "docs/**/*.md", ".github/**/*.md"];
-const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build", "coverage", ".next", ".nuxt"];
+const CODEBASE_PATTERNS = [
+  "**/README.md",
+  "**/ARCHITECTURE.md",
+  "docs/**/*.md",
+  ".github/**/*.md",
+];
+const EXCLUDED_DIRS = [
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  ".nuxt",
+];
 const MAX_FILE_SIZE = 100 * 1024;
 const CODEBASE_DOC_PREFIX = "codebase:";
 const DEFAULT_IDLE_DEBOUNCE_MS = 5000;
@@ -47,11 +60,17 @@ export class MemoryIndexer {
         await this.indexSessionMemory(adapter);
       }),
     );
-    const debouncedIdleIndex = debounce(async (payload: { issueId: string; source: string }) => {
-      await this.indexSessionMemoryByIssueId(payload.issueId, payload.source);
-    }, this.debounceMs);
+    const debouncedIdleIndex = debounce(
+      async (payload: { issueId: string; source: string }) => {
+        await this.indexSessionMemoryByIssueId(payload.issueId, payload.source);
+      },
+      this.debounceMs,
+    );
     this.unsubscribers.push(
-      this.hooks.on("agent.idle", (payload) => void debouncedIdleIndex(payload)),
+      this.hooks.on(
+        "agent.idle",
+        (payload) => void debouncedIdleIndex(payload),
+      ),
     );
   }
 
@@ -96,10 +115,17 @@ export class MemoryIndexer {
   }
 
   private async indexSessionMemory(adapter: AgentAdapter): Promise<void> {
-    await this.indexSessionMemoryForIssue(adapter.issue.externalId, adapter.issue.id, "stop");
+    await this.indexSessionMemoryForIssue(
+      adapter.issue.externalId,
+      adapter.issue.id,
+      "stop",
+    );
   }
 
-  private async indexSessionMemoryByIssueId(externalId: string, source: string): Promise<void> {
+  private async indexSessionMemoryByIssueId(
+    externalId: string,
+    source: string,
+  ): Promise<void> {
     const issue = await this.db.issues.getByExternalId(externalId, source);
     if (!issue) return;
     await this.indexSessionMemoryForIssue(externalId, issue.id, "idle");
@@ -114,7 +140,11 @@ export class MemoryIndexer {
     if (!l1Context?.exists()) return;
     const sessionMemory = await l1Context.read();
     if (!sessionMemory) return;
-    const documents = buildSessionDocuments(externalId, internalId, sessionMemory);
+    const documents = buildSessionDocuments(
+      externalId,
+      internalId,
+      sessionMemory,
+    );
     if (documents.length > 0) {
       await this.l2.index(documents);
       this.hooks.emit("memory.indexed", {
@@ -125,7 +155,9 @@ export class MemoryIndexer {
     }
   }
 
-  private async readFileIfSmallEnough(filePath: string): Promise<string | null> {
+  private async readFileIfSmallEnough(
+    filePath: string,
+  ): Promise<string | null> {
     try {
       const content = await readFile(filePath, "utf-8");
       return content.length > MAX_FILE_SIZE ? null : content;

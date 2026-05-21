@@ -2,13 +2,19 @@ import rule from "./max-lines-per-file";
 
 function createContext(code: string, options: number[] = []) {
   const lines = code.split("\n");
-  const reports: Array<{ message: string; loc: { line: number; column: number } }> = [];
+  const reports: Array<{
+    message: string;
+    loc: { line: number; column: number };
+  }> = [];
 
   return {
     options,
     sourceCode: { lines },
     filename: "test-file.ts",
-    report: (data: { message: string; loc: { line: number; column: number } }) => {
+    report: (data: {
+      message: string;
+      loc: { line: number; column: number };
+    }) => {
       reports.push(data);
     },
     reports,

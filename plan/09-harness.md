@@ -256,7 +256,11 @@ import {
   DefaultResourceLoader,
   SessionManager,
 } from "@mariozechner/pi-coding-agent";
-import type { AgentAdapter, AdapterContext, AgentState } from "#workflow/orchestrator";
+import type {
+  AgentAdapter,
+  AdapterContext,
+  AgentState,
+} from "#workflow/orchestrator";
 
 export class PiAgentAdapter extends AgentAdapter {
   readonly harness = "pi-coding-agent";
@@ -328,7 +332,8 @@ export class PiAgentAdapter extends AgentAdapter {
           schema: tool.schema,
           execute: async (args) => {
             const result = await tool.execute(args, execCtx);
-            if (!result.success) throw new Error(result.error ?? "Tool execution failed");
+            if (!result.success)
+              throw new Error(result.error ?? "Tool execution failed");
             return result.output ?? "";
           },
         });
@@ -341,7 +346,10 @@ export class PiAgentAdapter extends AgentAdapter {
       if (event.type === "message_update") {
         const delta = event.assistantMessageEvent;
         if (delta.type === "text_delta") {
-          this.ctx.hooks.emit("agent.output", { issueId: this.issueId, delta: delta.delta });
+          this.ctx.hooks.emit("agent.output", {
+            issueId: this.issueId,
+            delta: delta.delta,
+          });
         }
       }
       if (event.type === "tool_execution_start") {
@@ -409,7 +417,11 @@ export const corePlugin = definePlugin({
     version: "1.0.0",
     description: "Core Workhorse agent tools",
     capabilities: {
-      tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"],
+      tools: [
+        "workhorse_acknowledge",
+        "workhorse_update_status",
+        "workhorse_escalate",
+      ],
     },
   },
   setup(ctx) {

@@ -2,25 +2,20 @@ import type { Issue, IssueStatus, Notification } from "#db";
 import type { AgentAdapter, CreateOptions, ResolvedSkill } from "#workflow";
 import type { PromptBuildingContext } from "#workflow";
 
-/**
- * Extracted link from issue content (description/comments).
- */
+/** Extracted link from issue content (description/comments). */
 export interface DiscoveredLink {
-  /** Display text of the link */
-  text: string;
-  /** URL href */
-  href: string;
-  /** Source location within the issue */
-  source: "description" | "comment";
+  text: string; /** Display text */
+  href: string; /** URL href */
+  source: "description" | "comment"; /** Source location */
 }
 
-/**
- * All known hook events with their payload types.
- * Plugins can register additional hooks via string keys.
- */
+/** All known hook events with their payload types. Plugins can register additional hooks via string keys. */
 export type HookCallbacks = {
   // Issues
-  "issue.parsed": (payload: { issue: Issue; raw: unknown }) => void | Promise<void>;
+  "issue.parsed": (payload: {
+    issue: Issue;
+    raw: unknown;
+  }) => void | Promise<void>;
   "issue.status_changed": (payload: {
     issue: Issue;
     from: IssueStatus;
@@ -34,24 +29,46 @@ export type HookCallbacks = {
 
   // Prompts
   "prompt.building": (payload: PromptBuildingContext) => void | Promise<void>;
-  "prompt.built": (payload: { issueId: string; prompt: string }) => void | Promise<void>;
+  "prompt.built": (payload: {
+    issueId: string;
+    prompt: string;
+  }) => void | Promise<void>;
 
   // Agent lifecycle
-  "agent.create.pre": (payload: { issue: Issue; options: CreateOptions }) => void | Promise<void>;
-  "agent.create.post": (payload: { adapter: AgentAdapter }) => void | Promise<void>;
-  "agent.start.pre": (payload: { adapter: AgentAdapter }) => void | Promise<void>;
-  "agent.start.post": (payload: { adapter: AgentAdapter }) => void | Promise<void>;
-  "agent.stop.pre": (payload: { adapter: AgentAdapter }) => void | Promise<void>;
-  "agent.stop.post": (payload: { adapter: AgentAdapter }) => void | Promise<void>;
+  "agent.create.pre": (payload: {
+    issue: Issue;
+    options: CreateOptions;
+  }) => void | Promise<void>;
+  "agent.create.post": (payload: {
+    adapter: AgentAdapter;
+  }) => void | Promise<void>;
+  "agent.start.pre": (payload: {
+    adapter: AgentAdapter;
+  }) => void | Promise<void>;
+  "agent.start.post": (payload: {
+    adapter: AgentAdapter;
+  }) => void | Promise<void>;
+  "agent.stop.pre": (payload: {
+    adapter: AgentAdapter;
+  }) => void | Promise<void>;
+  "agent.stop.post": (payload: {
+    adapter: AgentAdapter;
+  }) => void | Promise<void>;
 
   // Agent events (bridged from harness session.subscribe())
-  "agent.output": (payload: { issueId: string; delta: string }) => void | Promise<void>;
+  "agent.output": (payload: {
+    issueId: string;
+    delta: string;
+  }) => void | Promise<void>;
   "agent.tool_call": (payload: {
     issueId: string;
     tool: string;
     args: unknown;
   }) => void | Promise<void>;
-  "agent.crashed": (payload: { issueId: string; error: Error }) => void | Promise<void>;
+  "agent.crashed": (payload: {
+    issueId: string;
+    error: Error;
+  }) => void | Promise<void>;
   "agent.idle": (payload: {
     issueId: string;
     status: IssueStatus;
@@ -59,10 +76,16 @@ export type HookCallbacks = {
   }) => void | Promise<void>;
 
   // Steering (idle steering system)
-  "steering.reminder": (payload: { issueId: string; reminder: string }) => void | Promise<void>;
+  "steering.reminder": (payload: {
+    issueId: string;
+    reminder: string;
+  }) => void | Promise<void>;
 
   // User interactions
-  "user.message": (payload: { issueId: string; content: string }) => void | Promise<void>;
+  "user.message": (payload: {
+    issueId: string;
+    content: string;
+  }) => void | Promise<void>;
 
   // Notifications
   "notification.created": (payload: {
@@ -89,10 +112,15 @@ export type HookCallbacks = {
 
   // Plugins
   "plugin.loaded": (payload: { name: string }) => void | Promise<void>;
-  "plugin.error": (payload: { name: string; error: Error }) => void | Promise<void>;
+  "plugin.error": (payload: {
+    name: string;
+    error: Error;
+  }) => void | Promise<void>;
 
   // Skills
-  "skill.registered": (payload: { skill: ResolvedSkill }) => void | Promise<void>;
+  "skill.registered": (payload: {
+    skill: ResolvedSkill;
+  }) => void | Promise<void>;
 
   // Memory indexing
   "memory.indexed": (payload: {
@@ -109,68 +137,47 @@ export type HookCallbacks = {
   }) => void | Promise<void>;
 };
 
-/**
- * Extract the payload type from a hook callback.
- */
-export type HookPayload<K extends keyof HookCallbacks> = HookCallbacks[K] extends (
-  payload: infer P,
-) => void | Promise<void>
-  ? P
-  : never;
+/** Extract the payload type from a hook callback. */
+export type HookPayload<K extends keyof HookCallbacks> =
+  HookCallbacks[K] extends (payload: infer P) => void | Promise<void>
+    ? P
+    : never;
 
 /**
  * Hook event names - includes known events plus allows arbitrary string keys for plugins.
  */
 export type HookEventName = keyof HookCallbacks | (string & {});
 
-/**
- * Legacy type alias for backwards compatibility.
- * Maps hook names to their payload types (not callback types).
- */
+/** Legacy type alias for backwards compatibility. Maps hook names to their payload types. */
 export type HookEventMap = {
   [K in keyof HookCallbacks]: HookPayload<K>;
 };
 
-/**
- * The hook emitter interface exposed to plugins and consumers.
- * Wraps hookable to provide a consistent API.
- *
- * Supports both known hooks (type-safe) and arbitrary plugin hooks (via string keys).
- */
+/** The hook emitter interface exposed to plugins and consumers. Supports known (type-safe) and plugin hooks. */
 export interface HookEmitter {
-  /**
-   * Register a hook handler.
-   * For known hooks: type-safe payload.
-   * For plugin hooks: use `as` to cast or use unknown payload.
-   * @returns Unregister function
-   */
-  on<K extends keyof HookCallbacks>(name: K, handler: HookCallbacks[K]): () => void;
+  /** Register a hook handler. Returns unregister function. */
+  on<K extends keyof HookCallbacks>(
+    name: K,
+    handler: HookCallbacks[K],
+  ): () => void;
   on(name: string, handler: (payload: any) => void | Promise<void>): () => void;
 
-  /**
-   * Fire-and-forget emit - does NOT wait for async handlers.
-   * Use this for events where you don't need to wait for handlers to complete.
-   */
+  /** Fire-and-forget emit - does NOT wait for async handlers. */
   emit<K extends keyof HookCallbacks>(name: K, payload: HookPayload<K>): void;
   emit(name: string, payload: any): void;
 
-  /**
-   * Awaitable emit - waits for all handlers (including async) to complete.
-   * Use this when you need to wait for handlers to finish (e.g., prompt.building).
-   */
-  callHook<K extends keyof HookCallbacks>(name: K, payload: HookPayload<K>): Promise<void>;
+  /** Awaitable emit - waits for all handlers (including async) to complete. */
+  callHook<K extends keyof HookCallbacks>(
+    name: K,
+    payload: HookPayload<K>,
+  ): Promise<void>;
   callHook(name: string, payload: any): Promise<void>;
 
-  /**
-   * Remove a specific handler.
-   */
+  /** Remove a specific handler. */
   off<K extends keyof HookCallbacks>(name: K, handler: HookCallbacks[K]): void;
   off(name: string, handler: (payload: any) => void | Promise<void>): void;
 
-  /**
-   * Access to internal handlers map for clearing all hooks.
-   * Mimics mitt's `all` property for backwards compatibility.
-   */
+  /** Access to internal handlers map for clearing all hooks. */
   all: {
     clear: () => void;
   };

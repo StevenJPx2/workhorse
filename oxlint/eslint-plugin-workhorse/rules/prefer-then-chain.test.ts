@@ -53,8 +53,14 @@ type Report = {
   node: BaseNode;
   message: string;
   fix?: (fixer: {
-    replaceText: (node: BaseNode, text: string) => { range: [number, number]; text: string };
-  }) => { range: [number, number]; text: string };
+    replaceText: (
+      node: BaseNode,
+      text: string,
+    ) => { range: [number, number]; text: string };
+  }) => {
+    range: [number, number];
+    text: string;
+  };
 };
 
 function createContext(sourceText: string) {
@@ -131,7 +137,9 @@ describe("prefer-then-chain", () => {
 
       expect(context.reports.length).toBe(1);
       expect(context.reports[0]!.message).toContain(".then()");
-      expect(context.reports[0]!.message).toContain("this.db.insert(x).returning()");
+      expect(context.reports[0]!.message).toContain(
+        "this.db.insert(x).returning()",
+      );
     });
 
     it("reports (await fetch(url)).json()", () => {
@@ -624,7 +632,9 @@ describe("prefer-then-chain", () => {
         };
         const fixResult = report.fix(fixer);
         // The fix should include ?? [] inside the .then() callback
-        expect(fixResult.text).toBe("await getComments().then((r) => r.comments ?? [])");
+        expect(fixResult.text).toBe(
+          "await getComments().then((r) => r.comments ?? [])",
+        );
       }
     });
 
@@ -698,7 +708,9 @@ describe("prefer-then-chain", () => {
         };
         const fixResult = report.fix(fixer);
         // The fix should include || defaultValue inside the .then() callback
-        expect(fixResult.text).toBe("await getData().then((r) => r.value || defaultValue)");
+        expect(fixResult.text).toBe(
+          "await getData().then((r) => r.value || defaultValue)",
+        );
       }
     });
   });
