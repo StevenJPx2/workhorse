@@ -1,4 +1,7 @@
 /** Agent adapter base class. Lifecycle: create() → start() → sendMessage() → stop() */
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import type { Database, Issue } from "#db";
 import type { HookEmitter } from "#lib";
 import { createWorktree, removeWorktree } from "#lib";
@@ -75,8 +78,11 @@ export class AgentAdapter {
   }
 
   /** Factory method - creates and initializes an adapter instance. */
-  static async create(options: CreateOptions): Promise<AgentAdapter> {
-    const adapter = new AgentAdapter(options);
+  static async create(
+    this: new (options: CreateOptions) => AgentAdapter,
+    options: CreateOptions,
+  ): Promise<AgentAdapter> {
+    const adapter = new this(options);
 
     adapter.hooks.emit("agent.create.pre", {
       issue: adapter.issue,
@@ -109,6 +115,17 @@ export class AgentAdapter {
         adapter.issue.status,
       );
     }
+
+    const { systemPrompt, initialMessage } =
+      await adapter.engineer.buildHybridPrompt({
+        isResume: existsSync(
+          join(adapter.worktreePath, ".workhorse", "session"),
+        ),
+        tools: adapter.tools,
+        skills: adapter.skills,
+      });
+    adapter.systemPrompt = systemPrompt;
+    adapter.initialMessage = initialMessage;
 
     subscribeAgentHooks(adapter.hooks, adapter);
 
