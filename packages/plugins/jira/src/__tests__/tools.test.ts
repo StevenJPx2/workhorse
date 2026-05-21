@@ -57,7 +57,7 @@ describe("createJiraTools", () => {
 describe("jira_add_comment tool", () => {
   it("adds a comment successfully", async () => {
     const mockClient = {
-      addComment: vi.fn().mockResolvedValue(undefined),
+      addComment: vi.fn().mockResolvedValue({ wasReply: false }),
     } as unknown as AtlassianClient;
     const mockDb = createMockDb("AM-123");
 

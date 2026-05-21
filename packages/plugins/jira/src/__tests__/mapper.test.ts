@@ -106,5 +106,21 @@ describe("mapJiraComment", () => {
     expect(mapped.id).toBe("10001");
     expect(mapped.author).toBe("Alice");
     expect(mapped.body).toBe("Looks good!");
+    expect(mapped.parentId).toBeUndefined();
+  });
+
+  it("includes parentId for reply comments", () => {
+    const replyComment: JiraComment = {
+      id: "10002",
+      author: { displayName: "Bob", accountId: "def456" },
+      body: "Thanks!",
+      created: "2024-01-01T11:00:00.000Z",
+      updated: "2024-01-01T11:00:00.000Z",
+      parentId: "10001",
+    };
+
+    const mapped = mapJiraComment(replyComment);
+    expect(mapped.id).toBe("10002");
+    expect(mapped.parentId).toBe("10001");
   });
 });

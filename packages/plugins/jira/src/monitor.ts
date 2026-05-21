@@ -67,7 +67,7 @@ export function createJiraCommentMonitor(
           body: mapped.body as string,
           priority: "normal",
           metadata: {
-            commentId: comment.id,
+            replyToId: comment.parentId ?? comment.id,
             author: comment.author.displayName,
             jiraKey: issue.externalId,
           },

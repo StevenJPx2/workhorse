@@ -18,8 +18,8 @@ export function createAddCommentTool(
     description:
       "Add a comment to a Jira issue. Use this to provide updates, ask questions, " +
       "or share findings with the Jira ticket stakeholders. " +
-      "IMPORTANT: When responding to a notification that has a comment_id attribute, " +
-      "you MUST use replyToId to reply in the same thread instead of creating a new top-level comment. " +
+      "When responding to a Jira comment notification, use reply_to_id from the notification " +
+      "metadata as replyToId to reply in the same thread. " +
       "Do NOT include any footer or signature - one is added automatically.",
     sources: ["jira"],
     schema: {
@@ -32,8 +32,8 @@ export function createAddCommentTool(
         replyToId: {
           type: "string",
           description:
-            "The ID of the comment to reply to. REQUIRED when responding to a Jira comment notification " +
-            "(use the comment_id from the notification). Creates a threaded reply instead of a new comment.",
+            "The ID of the parent comment to reply to. Use reply_to_id from the notification " +
+            "metadata to reply in the same thread. Omit for a new top-level comment.",
         },
       },
       required: ["body"],

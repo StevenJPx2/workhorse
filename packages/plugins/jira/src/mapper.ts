@@ -65,5 +65,6 @@ export function mapJiraComment(comment: JiraComment): Record<string, unknown> {
     body: extractDescription(comment.body),
     created: comment.created,
     updated: comment.updated,
+    parentId: comment.parentId,
   };
 }

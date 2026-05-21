@@ -112,6 +112,88 @@ describe("createJiraCommentMonitor", () => {
         sourceId: "jira-comment-10001",
         title: "New comment from Alice",
         body: "New comment",
+        // For top-level comments, replyToId equals the comment's own id
+        metadata: expect.objectContaining({
+          replyToId: "10001",
+        }),
+      }),
+    );
+  });
+
+  it("sets replyToId to parentId for reply comments", async () => {
+    const issue = {
+      id: "issue-123",
+      externalId: "AM-123",
+      source: "jira",
+      repository: null,
+      title: "Test",
+      description: "",
+      status: "pending",
+      issueType: "task",
+      url: null,
+      assignee: null,
+      labels: null,
+      metadata: { jira_last_seen_comment_ids: ["10001"] }, // Parent already seen
+      worktreePath: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Issue;
+
+    const mockClient = {
+      fetchIssue: vi.fn().mockResolvedValue({
+        key: "AM-123",
+        fields: {
+          comment: {
+            comments: [
+              {
+                id: "10001",
+                author: { displayName: "Alice", accountId: "abc" },
+                body: "Parent comment",
+                created: "2024-01-01T10:00:00Z",
+                updated: "2024-01-01T10:00:00Z",
+              },
+              {
+                id: "10002",
+                author: { displayName: "Bob", accountId: "def" },
+                body: "Reply to parent",
+                created: "2024-01-01T11:00:00Z",
+                updated: "2024-01-01T11:00:00Z",
+                parentId: "10001", // This is a reply to comment 10001
+              },
+            ],
+          },
+        },
+      }),
+    } as unknown as AtlassianClient;
+
+    const mockNotifications = { create: vi.fn() };
+    const mockDb = {
+      issues: {
+        getById: vi.fn().mockReturnValue(issue),
+        update: vi.fn(),
+      },
+    };
+
+    const monitor = createJiraCommentMonitor(mockClient, 30_000, mockDb as any);
+
+    const ctx: MonitorContext = {
+      issueId: "issue-123",
+      hooks: { emit: vi.fn() } as any,
+      memory: { notifications: mockNotifications } as any,
+      config: {} as any,
+    };
+
+    const result = await monitor.poll(ctx);
+    expect(result.hasChanges).toBe(true);
+    // Only the reply (10002) is new
+    expect(mockNotifications.create).toHaveBeenCalledTimes(1);
+    expect(mockNotifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: "jira-comment-10002",
+        // When replying to a reply, use the parent's ID so we stay in the thread
+        metadata: expect.objectContaining({
+          replyToId: "10001", // Should be the parent, not the comment itself
+        }),
       }),
     );
   });
