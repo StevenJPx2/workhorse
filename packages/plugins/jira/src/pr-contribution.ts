@@ -38,8 +38,9 @@ export function registerPRContribution(
     const openingCtx = event as PROpeningPayload;
 
     // Find the issue to get Jira ticket info
-    const issue = await db.issues.getById(openingCtx.issueId);
-    if (!issue || issue.source !== "jira") {
+    // Note: issueId in PROpeningContext is the externalId (e.g., "PROJ-123")
+    const issue = await db.issues.getByExternalId(openingCtx.issueId, "jira");
+    if (!issue) {
       return;
     }
 

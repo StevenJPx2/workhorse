@@ -77,7 +77,7 @@ export function createScreenshotTool(
           // Read the screenshot and store via attachment service
           const content = readFileSync(tempPath);
           const stored = await ctx.db.issues
-            .getById(ctx.issueId)
+            .getByExternalId(ctx.issueId)
             .then((issue) => issue?.repository ?? "unknown")
             .then((repoIdentifier) =>
               attachmentService.store(repoIdentifier, ctx.issueId, content, {

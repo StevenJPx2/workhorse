@@ -33,7 +33,7 @@ describe("playwright_screenshot tool", () => {
     worktreePath: testDir,
     db: {
       issues: {
-        getById: vi.fn().mockResolvedValue({ repository: "org/repo" }),
+        getByExternalId: vi.fn().mockResolvedValue({ repository: "org/repo" }),
       },
     },
   });
@@ -266,7 +266,7 @@ describe("playwright_screenshot tool", () => {
         mockAttachmentService,
       );
       const ctx = createMockContext();
-      ctx.db.issues.getById = vi.fn().mockResolvedValue(null);
+      ctx.db.issues.getByExternalId = vi.fn().mockResolvedValue(null);
 
       await tool.execute({}, ctx as never);
 

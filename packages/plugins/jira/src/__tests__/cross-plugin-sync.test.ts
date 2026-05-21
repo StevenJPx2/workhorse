@@ -47,7 +47,9 @@ describe("registerCrossPluginSync", () => {
     mockClient = {
       fetchIssue: vi.fn().mockResolvedValue({
         key: "PROJ-123",
+        self: "https://company.atlassian.net/rest/api/2/issue/PROJ-123",
         fields: {
+          summary: "Implement login feature",
           status: { name: "In Progress", id: "3" },
           reporter: { displayName: "John Doe", accountId: "abc123" },
           assignee: { displayName: "Jane Dev", accountId: "xyz789" },
@@ -70,6 +72,11 @@ describe("registerCrossPluginSync", () => {
     mockDb = {
       issues: {
         getById: vi.fn().mockReturnValue({
+          id: "issue-1",
+          externalId: "PROJ-123",
+          source: "jira",
+        }),
+        getByExternalId: vi.fn().mockReturnValue({
           id: "issue-1",
           externalId: "PROJ-123",
           source: "jira",
@@ -293,5 +300,117 @@ describe("registerCrossPluginSync", () => {
     );
 
     consoleSpy.mockRestore();
+  });
+
+  describe("PR contribution (github:pr.opening)", () => {
+    it("registers listener for github:pr.opening event", () => {
+      const onSpy = vi.spyOn(hooks, "on");
+
+      registerCrossPluginSync(mockCtx, mockClient, mockDb);
+
+      expect(onSpy).toHaveBeenCalledWith(
+        "github:pr.opening",
+        expect.any(Function),
+      );
+    });
+
+    it("adds Related Tickets contribution for Jira issues", async () => {
+      registerCrossPluginSync(mockCtx, mockClient, mockDb);
+
+      const openingCtx = {
+        issueId: "PROJ-123",
+        title: "feat: implement login",
+        body: "Implements OAuth login flow",
+        base: "main",
+        head: "feat/login",
+        draft: false,
+        worktreePath: "/tmp/repo",
+        contributions: [] as Array<{
+          section: string;
+          content: string;
+          priority?: number;
+        }>,
+      };
+
+      hooks.emit("github:pr.opening", openingCtx);
+      await hooks.flush();
+
+      expect(mockDb.issues.getByExternalId).toHaveBeenCalledWith(
+        "PROJ-123",
+        "jira",
+      );
+      expect(openingCtx.contributions).toHaveLength(1);
+      expect(openingCtx.contributions[0]).toMatchObject({
+        section: "Related Tickets",
+        priority: 10,
+      });
+      expect(openingCtx.contributions[0]!.content).toContain("PROJ-123");
+      expect(openingCtx.contributions[0]!.content).toContain("In Progress");
+    });
+
+    it("ignores github:pr.opening for non-Jira issues", async () => {
+      (mockDb.issues.getByExternalId as Mock).mockReturnValue(null);
+
+      registerCrossPluginSync(mockCtx, mockClient, mockDb);
+
+      const openingCtx = {
+        issueId: "octocat/hello-world#42",
+        title: "feat: implement login",
+        body: "Implements OAuth login flow",
+        base: "main",
+        head: "feat/login",
+        draft: false,
+        worktreePath: "/tmp/repo",
+        contributions: [] as Array<{
+          section: string;
+          content: string;
+          priority?: number;
+        }>,
+      };
+
+      hooks.emit("github:pr.opening", openingCtx);
+      await hooks.flush();
+
+      expect(openingCtx.contributions).toHaveLength(0);
+      expect(mockClient.fetchIssue).not.toHaveBeenCalled();
+    });
+
+    it("handles Jira API errors gracefully during PR opening", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      (mockClient.fetchIssue as Mock).mockRejectedValue(
+        new Error("Jira API down"),
+      );
+
+      registerCrossPluginSync(mockCtx, mockClient, mockDb);
+
+      const openingCtx = {
+        issueId: "PROJ-123",
+        title: "feat: implement login",
+        body: "Implements OAuth login flow",
+        base: "main",
+        head: "feat/login",
+        draft: false,
+        worktreePath: "/tmp/repo",
+        contributions: [] as Array<{
+          section: string;
+          content: string;
+          priority?: number;
+        }>,
+      };
+
+      hooks.emit("github:pr.opening", openingCtx);
+      await hooks.flush();
+
+      // Should not add contribution on error
+      expect(openingCtx.contributions).toHaveLength(0);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to add Related Tickets"),
+        expect.any(Error),
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 });
