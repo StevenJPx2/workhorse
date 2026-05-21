@@ -43,7 +43,7 @@ describe("load_skill tool", () => {
     };
   });
 
-  describe("execute", () => {
+  describe("execute - load skill", () => {
     it("returns skill content when skill exists", async () => {
       mockSkills.set("github:pr-workflow", {
         id: "github:pr-workflow",
@@ -62,15 +62,25 @@ describe("load_skill tool", () => {
       );
     });
 
-    it("returns error when skill not found", async () => {
+    it("finds skill by base name (fuzzy match)", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create PRs",
+        instructions: "Instructions here",
+        priority: 50,
+      });
+
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "nonexistent:skill" }, mockContext);
+      const result = await tool.execute({ skillId: "pr-workflow" }, mockContext);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Skill "nonexistent:skill" not found');
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("PR Workflow");
     });
+  });
 
-    it("lists available skills in error message", async () => {
+  describe("execute - list skills", () => {
+    it("lists all skills when no skillId provided", async () => {
       mockSkills.set("github:pr-workflow", {
         id: "github:pr-workflow",
         name: "PR Workflow",
@@ -87,19 +97,120 @@ describe("load_skill tool", () => {
       });
 
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "nonexistent:skill" }, mockContext);
+      const result = await tool.execute({}, mockContext);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("github:pr-workflow");
-      expect(result.error).toContain("jira:ticket-workflow");
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("Available Skills (2)");
+      expect(result.output).toContain("github:pr-workflow");
+      expect(result.output).toContain("jira:ticket-workflow");
     });
 
-    it("shows 'none' when no skills available", async () => {
+    it("lists all skills when skillId is empty string", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create PRs",
+        instructions: "Instructions",
+        priority: 50,
+      });
+
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
-      const result = await tool.execute({ skillId: "nonexistent:skill" }, mockContext);
+      const result = await tool.execute({ skillId: "" }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("Available Skills (1)");
+    });
+
+    it("handles no registered skills", async () => {
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute({}, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toBe("No skills are currently registered.");
+    });
+
+    it("handles undefined args", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create PRs",
+        instructions: "Instructions",
+        priority: 50,
+      });
+
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute(undefined, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("Available Skills (1)");
+    });
+  });
+
+  describe("execute - search fallback", () => {
+    it("shows partial matches when no exact match found", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create pull requests",
+        instructions: "Instructions",
+        priority: 50,
+      });
+      mockSkills.set("jira:ticket-workflow", {
+        id: "jira:ticket-workflow",
+        name: "Ticket Workflow",
+        description: "How to handle tickets",
+        instructions: "Instructions",
+        priority: 50,
+      });
+
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute({ skillId: "github" }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("No exact match");
+      expect(result.output).toContain("github:pr-workflow");
+      expect(result.output).not.toContain("jira:ticket-workflow");
+    });
+
+    it("searches in description", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create pull requests",
+        instructions: "Instructions",
+        priority: 50,
+      });
+
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute({ skillId: "pull requests" }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("github:pr-workflow");
+    });
+
+    it("shows all skills when no matches at all", async () => {
+      mockSkills.set("github:pr-workflow", {
+        id: "github:pr-workflow",
+        name: "PR Workflow",
+        description: "How to create PRs",
+        instructions: "Instructions",
+        priority: 50,
+      });
+
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute({ skillId: "nonexistent" }, mockContext);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain('No skills found matching "nonexistent"');
+      expect(result.output).toContain("github:pr-workflow");
+    });
+
+    it("returns error when no skills registered and search fails", async () => {
+      const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
+      const result = await tool.execute({ skillId: "nonexistent" }, mockContext);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("Available: none");
+      expect(result.error).toContain("No skills are currently registered");
     });
   });
 
@@ -109,21 +220,22 @@ describe("load_skill tool", () => {
       expect(tool.name).toBe("load_skill");
     });
 
-    it("has description explaining usage", () => {
+    it("has description explaining both load and list functionality", () => {
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
       expect(tool.description).toContain("Load a skill's full instructions");
-      expect(tool.description).toContain("Available Skills");
+      expect(tool.description).toContain("list available skills");
     });
 
-    it("has schema with skillId parameter", () => {
+    it("has schema with optional skillId parameter", () => {
       const tool = createLoadSkillTool(mockOrchestrator as HarnessOrchestrator);
       expect(tool.schema).toMatchObject({
         type: "object",
         properties: {
           skillId: { type: "string" },
         },
-        required: ["skillId"],
       });
+      // skillId is now optional
+      expect(tool.schema.required).toBeUndefined();
     });
   });
 });

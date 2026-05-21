@@ -122,6 +122,9 @@ export async function bootstrap(options: BootstrapOptions = {}): Promise<Workhor
   // Initialize orchestrator for agent lifecycle management
   const orchestrator = new HarnessOrchestrator(db, hooks, memory, config);
 
+  // Discover local skills from ~/.workhorse/skills/, .workhorse/skills/, .claude/skills/
+  orchestrator.skillRegistry.discoverLocalSkills(paths);
+
   return runWithContext(
     { config, paths, hooks, db, memory, monitors, tracker, orchestrator },
     async () => {
