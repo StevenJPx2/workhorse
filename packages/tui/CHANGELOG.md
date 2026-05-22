@@ -1,5 +1,28 @@
 # @fdcn/workhorse
 
+## v0.1.25
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.24...v0.1.25)
+
+### 🚀 Enhancements
+
+- **gh:** Add steering rule to change status ([b5dbcf3](https://github.com/StevenJPx2/workhorse/commit/b5dbcf3))
+- Add rate limits ([692c6ed](https://github.com/StevenJPx2/workhorse/commit/692c6ed))
+- Ui updates ([5347ae1](https://github.com/StevenJPx2/workhorse/commit/5347ae1))
+
+### 🩹 Fixes
+
+- **jira:** Get top-level comment id when replying to nested comment ([f71b2ae](https://github.com/StevenJPx2/workhorse/commit/f71b2ae))
+- Use pause strategies for rate limits ([2ec5fd5](https://github.com/StevenJPx2/workhorse/commit/2ec5fd5))
+
+### 📖 Documentation
+
+- Add docs for ratelimits ([5483ea8](https://github.com/StevenJPx2/workhorse/commit/5483ea8))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.24
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.23...v0.1.24)
