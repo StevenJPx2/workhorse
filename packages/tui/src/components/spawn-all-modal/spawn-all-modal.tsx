@@ -28,7 +28,8 @@ export function SpawnAllModal(props: SpawnAllModalProps) {
     "harness",
   );
 
-  const modalHeight = () => Math.min(20, Math.floor(dimensions().height * 0.8));
+  const modalHeight = () =>
+    Math.min(20, Math.floor(dimensions().height * 0.8) + 40);
   const harnessListHeight = () => Math.max(1, harnessOptions().length);
   const issueCount = () => props.issues.length;
 

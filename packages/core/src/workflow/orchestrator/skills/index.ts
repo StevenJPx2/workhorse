@@ -95,13 +95,14 @@ export class SkillRegistry {
 
   /**
    * Discover and register skills from local directories.
-   * Searches: ~/.workhorse/skills/, .workhorse/skills/, .claude/skills/
+   * Searches: ~/.workhorse/skills/, .workhorse/skills/, .agents/skills/, .claude/skills/
    * Earlier registrations take precedence.
    */
   discoverLocalSkills(paths: ConfigPaths): void {
     const projectRoot = dirname(paths.projectConfig);
     this.discoverFromDir(join(paths.globalDir, "skills"), "global");
     this.discoverFromDir(join(projectRoot, ".workhorse", "skills"), "local");
+    this.discoverFromDir(join(projectRoot, ".agents", "skills"), "agents");
     this.discoverFromDir(join(projectRoot, ".claude", "skills"), "claude");
   }
 
