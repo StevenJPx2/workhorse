@@ -82,4 +82,22 @@ Note: You must push before creating the PR - the tool does not push automaticall
     reminder: `A reviewer has requested changes on your PR. Address the feedback and push updates.`,
     priority: 20,
   });
+
+  // Remind to update status to in_review after PR is created
+  ctx.orchestrator.registerSteeringRule({
+    id: "github:update-status-in-review",
+    name: "Update status to in_review after PR",
+    description:
+      "Remind to change status to in_review when a PR has been opened",
+    condition: {
+      status: "implementing",
+      when: (steerCtx) =>
+        steerCtx.toolHistory.some(
+          (t: { name: string }) => t.name === "github_open_pr",
+        ),
+    },
+    reminder: `You've created a PR but your status is still "implementing". Update your status to "in_review" using \`workhorse_update_status\` to reflect that your code is now awaiting review.`,
+    priority: 18,
+    once: true,
+  });
 }
