@@ -63,7 +63,6 @@ export function Agent() {
 
   const { state: monitorState } = createMonitors({
     monitors,
-    // Monitors are keyed by internal issue.id (UUID), not externalId
     issueId: () => selectedAgent()?.issue.id ?? null,
   });
 
@@ -71,7 +70,6 @@ export function Agent() {
     issueId: () => selectedAgent()?.issue.externalId ?? null,
   });
 
-  // Track live issue statuses for all agents in the sidebar
   const { getStatus: getIssueStatus } = createIssueStatuses({
     issueIds: createMemo(() => agents().map((a) => a.issue.externalId)),
   });
@@ -92,7 +90,6 @@ export function Agent() {
       height="100%"
       backgroundColor={theme.colors.background}
     >
-      {/* Header with agent info */}
       <Show when={selectedAgent()}>
         {(agent: () => AgentAdapter) => (
           <AgentHeader
@@ -104,7 +101,6 @@ export function Agent() {
         )}
       </Show>
 
-      {/* Main content: sidebar + activity (center) + files (right) */}
       <box flexDirection="row" flexGrow={1}>
         <AgentSidebar
           agents={agents}
@@ -116,15 +112,19 @@ export function Agent() {
         />
         <box width={1} backgroundColor={theme.colors.surface} />
 
-        {/* Activity feed + chat input */}
-        <box flexDirection="column" flexGrow={1} marginBottom={1}>
-          <box backgroundColor={theme.colors.surface} paddingX={1} zIndex={2}>
+        <box flexDirection="column" flexGrow={1}>
+          <box
+            backgroundColor={theme.colors.surface}
+            paddingX={1}
+            zIndex={2}
+            paddingTop={1}
+            paddingBottom={2}
+          >
             <text fg={theme.colors.info}>
               <b>⚡ ACTIVITY</b>
             </text>
           </box>
           <ActivityFeed state={activityState} />
-          {/* Chat input */}
           <box
             flexDirection="row"
             backgroundColor={

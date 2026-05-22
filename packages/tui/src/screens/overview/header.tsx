@@ -9,7 +9,7 @@ export function OverviewHeader() {
       paddingLeft={2}
       paddingRight={2}
       paddingTop={1}
-      paddingBottom={1}
+      paddingBottom={2}
       justifyContent="space-between"
       flexDirection="row"
     >

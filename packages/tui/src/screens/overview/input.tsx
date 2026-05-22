@@ -1,12 +1,9 @@
-import type { Accessor } from "solid-js";
+import { createSignal } from "solid-js";
 
-import type { ChatMessage } from "../../primitives/create-chat.ts";
 import { ui } from "../../state/ui";
 import { getTheme } from "../../theme.ts";
 
 interface OverviewInputProps {
-  messages: Accessor<ChatMessage[]>;
-  chatContextId: Accessor<string | null>;
   onSubmit: (msg: string) => void;
   onEmptySubmit: () => void;
 }
@@ -14,6 +11,7 @@ interface OverviewInputProps {
 export function OverviewInput(props: OverviewInputProps) {
   const theme = getTheme();
   const isFocused = () => ui.focusedComponent() === "chat";
+  const [inputValue, setInputValue] = createSignal("");
 
   return (
     <box
@@ -30,24 +28,6 @@ export function OverviewInput(props: OverviewInputProps) {
         ui.enterInputMode();
       }}
     >
-      {props.messages().length > 0 && (
-        <box flexDirection="column" marginBottom={1}>
-          {props
-            .messages()
-            .slice(-3)
-            .map((msg) => (
-              <text
-                fg={
-                  msg.role === "user" ? theme.colors.info : theme.colors.success
-                }
-              >
-                {msg.role === "user" ? "You: " : "Agent: "}
-                {msg.content.slice(0, 60)}
-                {msg.content.length > 60 ? "..." : ""}
-              </text>
-            ))}
-        </box>
-      )}
       <box
         flexDirection="row"
         width="100%"
@@ -55,25 +35,22 @@ export function OverviewInput(props: OverviewInputProps) {
         paddingBottom={1}
       >
         <box flexShrink={0}>
-          <text fg={theme.colors.accent}>
-            {props.chatContextId() ? `[${props.chatContextId()}] ❯ ` : "❯ "}
-          </text>
+          <text fg={theme.colors.accent}>❯ </text>
         </box>
         <box flexGrow={1} flexBasis={0}>
           {!ui.modal() && (
             <input
               width="100%"
               focused={isFocused()}
+              value={inputValue()}
+              onInput={(v) => setInputValue(v)}
               onSubmit={(value) => {
                 const msg = typeof value === "string" ? value.trim() : "";
                 if (msg) props.onSubmit(msg);
                 else props.onEmptySubmit();
+                setInputValue("");
               }}
-              placeholder={
-                props.chatContextId()
-                  ? `Message agent ${props.chatContextId()}...`
-                  : "Type a task or issue key..."
-              }
+              placeholder="Type a task or issue key..."
             />
           )}
         </box>

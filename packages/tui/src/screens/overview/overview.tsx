@@ -3,7 +3,6 @@ import type { AgentAdapter, Issue } from "workhorse-core";
 
 import { AgentList, IssueList, StatusBar } from "../../components";
 import { useWorkhorseContext } from "../../context/workhorse.tsx";
-import { createChat } from "../../primitives";
 import { createAgents } from "../../primitives/create-agents.ts";
 import { createIssues } from "../../primitives/create-issues.ts";
 import { getRepoIdentifier } from "../../primitives/get-repo-identifier.ts";
@@ -31,12 +30,6 @@ export function Overview() {
       : null,
   );
 
-  // oxlint-disable-next-line workhorse/no-single-use-variable
-  const chatContextId = createMemo(() =>
-    ui.lastFocusedList() === "agents" ? selectedAgentId() : null,
-  );
-
-  const { messages, send } = createChat(chatContextId);
   const [currentRepo, setCurrentRepo] = createSignal<string | undefined>(
     undefined,
   );
@@ -97,14 +90,7 @@ export function Overview() {
         />
       </box>
       <OverviewInput
-        messages={messages}
-        chatContextId={chatContextId}
         onSubmit={async (msg: string) => {
-          if (ui.lastFocusedList() === "agents" && selectedAgentId()) {
-            send(msg);
-            ui.enterAgentView(selectedAgentId()!);
-            return;
-          }
           try {
             ui.openSpawnModal(
               await tracker.parseInput(msg, { repository: currentRepo() }),

@@ -10,8 +10,6 @@ import {
   focusedComponent,
   inputMode,
   isFocused,
-  lastFocusedList,
-  resetChatContext,
   setFocusedComponent,
   setInputMode,
 } from "./focus.ts";
@@ -67,7 +65,6 @@ export const ui = {
   focusedComponent,
   selectedModel,
   toasts,
-  lastFocusedList,
   shuttingDown,
   spawningIssues,
 
@@ -88,7 +85,6 @@ export const ui = {
   focusNext,
   focusPrev,
   isFocused,
-  resetChatContext,
 
   /**
    * Open the spawn modal for a specific issue.

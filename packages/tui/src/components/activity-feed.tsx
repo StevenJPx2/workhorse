@@ -18,7 +18,7 @@ interface ActivityFeedProps {
 /** Activity feed showing tool calls, text output, and file edits. */
 export function ActivityFeed(props: ActivityFeedProps) {
   return (
-    <box flexDirection="column" flexGrow={1}>
+    <box flexDirection="column" flexGrow={1} paddingTop={1}>
       <scrollbox
         flexGrow={1}
         stickyScroll

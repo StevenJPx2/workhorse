@@ -189,7 +189,7 @@ const ui = {
   focusedComponent: Accessor<"issues" | "agents" | "chat">,
 
   // Actions
-  enterAgentView(agentId: string),
+  enterAgentView(agentId: string),  // Navigate to agent view to message
   openSpawnModal(issue: Issue),
   openModelSelector(),
   focusNext(),  // Tab navigation
