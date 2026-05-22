@@ -131,7 +131,8 @@ export function Agent() {
               isChatFocused() ? theme.colors.selection : theme.colors.surface
             }
             paddingX={1}
-            paddingY={1}
+            paddingTop={1}
+            paddingBottom={2}
             gap={1}
             onMouseDown={() => {
               ui.setFocusedComponent("chat");

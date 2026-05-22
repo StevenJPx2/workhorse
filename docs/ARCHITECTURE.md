@@ -351,14 +351,14 @@ monitors.registerMonitor({
 
 **Pause strategies** (`workhorse-core`):
 
-| Function                     | Description                                            |
-| ---------------------------- | ------------------------------------------------------ |
-| `parseRetryAfter(headers)`   | Parse `Retry-After` / `x-ratelimit-reset` from Headers |
-| `extractRetryAfter(error)`   | Read `error.retryAfterMs` property (set by API client) |
-| `createRateLimitChecker(patterns)` | Factory for rate limit error detection           |
-| `exponentialBackoff(count)`  | Calculate backoff with jitter (0.7-1.3x)               |
-| `withRetryAfterOrBackoff()`  | Try Retry-After first, fall back to backoff            |
-| `fixedPause(ms)`             | Simple fixed-duration pause                            |
+| Function                           | Description                                            |
+| ---------------------------------- | ------------------------------------------------------ |
+| `parseRetryAfter(headers)`         | Parse `Retry-After` / `x-ratelimit-reset` from Headers |
+| `extractRetryAfter(error)`         | Read `error.retryAfterMs` property (set by API client) |
+| `createRateLimitChecker(patterns)` | Factory for rate limit error detection                 |
+| `exponentialBackoff(count)`        | Calculate backoff with jitter (0.7-1.3x)               |
+| `withRetryAfterOrBackoff()`        | Try Retry-After first, fall back to backoff            |
+| `fixedPause(ms)`                   | Simple fixed-duration pause                            |
 
 **Monitor states:** `stopped` → `running` ↔ `paused` → `stopped`
 

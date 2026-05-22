@@ -50,7 +50,7 @@ export function StatusBar(props: StatusBarProps) {
       paddingLeft={2}
       paddingRight={2}
       paddingTop={1}
-      paddingBottom={1}
+      paddingBottom={2}
     >
       <box flexDirection="row" gap={3}>
         <For each={props.shortcuts}>
