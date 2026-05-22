@@ -1,5 +1,17 @@
 # @fdcn/workhorse
 
+## v0.1.26
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.25...v0.1.26)
+
+### 🩹 Fixes
+
+- **ui:** Slight ui updates ([132bd25](https://github.com/StevenJPx2/workhorse/commit/132bd25))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.25
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.24...v0.1.25)
