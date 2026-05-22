@@ -178,12 +178,71 @@ setup(config) {
 
 **Monitor events:**
 
-| Event           | When                                         |
-| --------------- | -------------------------------------------- |
-| `monitor.tick`  | Poll returns `hasChanges: true`              |
-| `monitor.error` | Poll throws an error (includes `errorCount`) |
+| Event             | When                                         |
+| ----------------- | -------------------------------------------- |
+| `monitor.tick`    | Poll returns `hasChanges: true`              |
+| `monitor.error`   | Poll throws an error (includes `errorCount`) |
+| `monitor.paused`  | Monitor paused (rate limit, etc.)            |
+| `monitor.resumed` | Monitor resumed after pause                  |
 
 Monitors self-stop after 5 consecutive errors.
+
+**Rate limit handling:**
+
+Monitors can pause and auto-resume when rate limited using `onError`:
+
+```typescript
+import {
+  createRateLimitChecker,
+  withRetryAfterOrBackoff,
+} from "workhorse-core";
+
+const isRateLimitError = createRateLimitChecker([
+  "429",
+  "rate limit",
+  "too many requests",
+]);
+
+monitors.registerMonitor({
+  id: "my-service-poll",
+  type: "remote",
+  interval: 60000,
+  poll: async (ctx) => {
+    const updates = await fetchUpdates(ctx.issueId);
+    return { hasChanges: updates.length > 0, data: updates };
+  },
+  onError: (error, errorCount) => {
+    if (isRateLimitError(error)) {
+      const pauseMs = withRetryAfterOrBackoff()({ error, errorCount });
+      return { pauseMs, reason: "Rate limited" };
+    }
+    // Return undefined for default error handling
+  },
+});
+```
+
+**Pause strategy utilities** (from `workhorse-core`):
+
+| Function                          | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| `createRateLimitChecker(patterns)` | Factory for rate limit error detection                |
+| `parseRetryAfter(headers)`        | Parse `Retry-After` / `x-ratelimit-reset` from Headers |
+| `extractRetryAfter(error)`        | Read `error.retryAfterMs` property                     |
+| `exponentialBackoff(count)`       | Calculate backoff with jitter (0.7-1.3x)               |
+| `withRetryAfterOrBackoff()`       | Try Retry-After first, fall back to backoff            |
+| `fixedPause(ms)`                  | Simple fixed-duration pause                            |
+
+To attach `retryAfterMs` to errors in your API client:
+
+```typescript
+const response = await fetch(url);
+if (response.status === 429) {
+  const retryAfterMs = parseRetryAfter(response.headers);
+  const error = new Error("Rate limited");
+  if (retryAfterMs) (error as any).retryAfterMs = retryAfterMs;
+  throw error;
+}
+```
 
 ### 4. Register Tools
 

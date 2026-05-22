@@ -315,6 +315,55 @@ monitors.stopMonitors(issueId);
 
 Monitors self-stop after 5 consecutive errors. Error count resets on successful poll.
 
+**Rate Limit Handling:**
+
+Monitors support pause-and-resume for rate limits via `onError` and `pauseMs`:
+
+```typescript
+import {
+  createRateLimitChecker,
+  withRetryAfterOrBackoff,
+} from "workhorse-core";
+
+const isRateLimitError = createRateLimitChecker([
+  "429",
+  "rate limit",
+  "too many requests",
+]);
+
+monitors.registerMonitor({
+  id: "api-poll",
+  type: "remote",
+  interval: 30000,
+  poll: async (ctx) => {
+    /* ... */
+  },
+  onError: (error, errorCount) => {
+    if (isRateLimitError(error)) {
+      // Dynamic pause using Retry-After header or exponential backoff
+      const pauseMs = withRetryAfterOrBackoff()({ error, errorCount });
+      return { pauseMs, reason: "Rate limited" };
+    }
+    // Return undefined to use default error handling
+  },
+});
+```
+
+**Pause strategies** (`workhorse-core`):
+
+| Function                     | Description                                            |
+| ---------------------------- | ------------------------------------------------------ |
+| `parseRetryAfter(headers)`   | Parse `Retry-After` / `x-ratelimit-reset` from Headers |
+| `extractRetryAfter(error)`   | Read `error.retryAfterMs` property (set by API client) |
+| `createRateLimitChecker(patterns)` | Factory for rate limit error detection           |
+| `exponentialBackoff(count)`  | Calculate backoff with jitter (0.7-1.3x)               |
+| `withRetryAfterOrBackoff()`  | Try Retry-After first, fall back to backoff            |
+| `fixedPause(ms)`             | Simple fixed-duration pause                            |
+
+**Monitor states:** `stopped` → `running` ↔ `paused` → `stopped`
+
+Hooks emitted: `monitor.paused`, `monitor.resumed`
+
 ### 9. SteeringRule (`workflow/steering/`)
 
 Autonomous rules for agent behavior when idle:
@@ -361,7 +410,7 @@ hooks.off("issue.status_changed", handler);
 - Agent: `agent.create.pre`, `agent.create.post`, `agent.start.pre`, `agent.start.post`, `agent.stop.pre`, `agent.stop.post`, `agent.idle`, `agent.tool_call`
 - Issue: `issue.parsed`, `issue.status_changed`, `issue.deleted`
 - Prompt: `prompt.building`, `prompt.built`
-- Monitor: `monitor.registered`, `monitor.tick`, `monitor.error`
+- Monitor: `monitor.registered`, `monitor.tick`, `monitor.error`, `monitor.paused`, `monitor.resumed`
 - Notification: `notification.created`
 - Steering: `steering.reminder`
 - Plugin: `plugin.loaded`, `plugin.error`
