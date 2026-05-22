@@ -9,8 +9,8 @@ import type { HookEmitter } from "#lib";
 import type { MemoryService } from "#services";
 import { createMockHooks } from "#test-helpers";
 
-import { PollingMonitor } from "../polling-monitor.ts";
-import type { MonitorContext, PollingMonitorOptions } from "../types.ts";
+import { PollingMonitor } from "..";
+import type { MonitorContext, PollingMonitorOptions } from "../../types.ts";
 
 describe("PollingMonitor", () => {
   let hooks: HookEmitter;

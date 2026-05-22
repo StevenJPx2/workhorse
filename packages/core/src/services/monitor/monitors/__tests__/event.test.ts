@@ -9,12 +9,12 @@ import type { HookEmitter } from "#lib";
 import type { MemoryService } from "#services";
 import { createMockHooks } from "#test-helpers";
 
-import { EventMonitor } from "../event-monitor.ts";
+import { EventMonitor } from "..";
 import type {
   EventEmitter,
   EventMonitorOptions,
   MonitorContext,
-} from "../types.ts";
+} from "../../types.ts";
 
 describe("EventMonitor", () => {
   let hooks: HookEmitter;

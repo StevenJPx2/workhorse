@@ -14,6 +14,20 @@ import type {
   JiraTransition,
 } from "./types.ts";
 
+/**
+ * Check if an error is a Jira API rate limit error.
+ * Jira returns 429 with "Too Many Requests" for rate limit errors.
+ */
+export function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("429") ||
+    message.includes("rate limit") ||
+    message.includes("too many requests")
+  );
+}
+
 export class AtlassianClient {
   private readonly getCredentials: () => Promise<JiraCredentials>;
 

@@ -1,4 +1,4 @@
-import type { MonitorContext, MonitorResult, MonitorStatus } from "./types.ts";
+import type { MonitorContext, MonitorResult, MonitorStatus } from "../types.ts";
 
 /** Number of consecutive errors before a monitor stops itself */
 export const ERROR_THRESHOLD = 5;

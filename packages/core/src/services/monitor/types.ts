@@ -71,6 +71,16 @@ interface MonitorOptionsBase {
 }
 
 /**
+ * Result from onError callback indicating how to handle the error.
+ */
+export interface ErrorHandlingResult {
+  /** If true, stop the monitor immediately (don't wait for error threshold) */
+  stop?: boolean;
+  /** Optional message explaining why the monitor was stopped */
+  reason?: string;
+}
+
+/**
  * Options for polling-based monitors.
  *
  * Polling monitors call poll() at a fixed interval to check for changes.
@@ -83,6 +93,18 @@ export interface PollingMonitorOptions extends MonitorOptionsBase {
   interval: number;
   /** Poll function - receives full context on each call */
   poll: (ctx: MonitorContext) => Promise<MonitorResult>;
+  /**
+   * Optional error handler. Return { stop: true } to stop the monitor immediately.
+   * Use this for rate limits, auth failures, or other unrecoverable errors.
+   *
+   * @param error - The error that occurred
+   * @param ctx - Monitor context
+   * @returns Error handling result, or void to use default behavior
+   */
+  onError?: (
+    error: Error,
+    ctx: MonitorContext,
+  ) => ErrorHandlingResult | void | Promise<ErrorHandlingResult | void>;
 }
 
 /**

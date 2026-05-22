@@ -14,6 +14,7 @@ import {
 } from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
+import { isRateLimitError } from "../gh-cli.ts";
 import "../hooks.ts";
 import type { GitHubPRMonitorState } from "../types.ts";
 import { processCheckChanges } from "./checks";
@@ -164,6 +165,14 @@ export function createGitHubPRMonitor(
       });
 
       return { hasChanges, data: hasChanges ? changes : undefined };
+    },
+    onError: (error) => {
+      if (isRateLimitError(error)) {
+        return {
+          stop: true,
+          reason: "GitHub API rate limit exceeded. Monitor stopped.",
+        };
+      }
     },
   };
 }

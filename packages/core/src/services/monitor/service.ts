@@ -2,9 +2,7 @@ import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib";
 import type { MemoryService } from "#services";
 
-import type { BaseMonitor } from "./base-monitor.ts";
-import { EventMonitor } from "./event-monitor.ts";
-import { PollingMonitor } from "./polling-monitor.ts";
+import { type BaseMonitor, createMonitor } from "./monitors";
 import type { MonitorOptions, MonitorStatus } from "./types.ts";
 
 /**
@@ -70,11 +68,7 @@ export class MonitorService {
     const key = this.makeKey(issueId, id);
     if (this.running.has(key)) return;
 
-    const monitor =
-      options.type === "event"
-        ? new EventMonitor(options)
-        : new PollingMonitor(options);
-
+    const monitor = createMonitor(options);
     await monitor.start({
       issueId,
       hooks: this.hooks,

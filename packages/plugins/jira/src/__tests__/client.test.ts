@@ -3,7 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AtlassianClient } from "../client.ts";
+import { AtlassianClient, isRateLimitError } from "../client.ts";
 
 // Save original fetch
 const originalFetch = globalThis.fetch;
@@ -138,5 +138,37 @@ describe("AtlassianClient", () => {
         body: JSON.stringify({ transition: { id: "31" } }),
       }),
     );
+  });
+});
+
+describe("isRateLimitError", () => {
+  it("returns true for 429 status code errors", () => {
+    expect(
+      isRateLimitError(new Error("Jira API error: 429 Too Many Requests")),
+    ).toBe(true);
+  });
+
+  it("returns true for rate limit message variations", () => {
+    expect(isRateLimitError(new Error("Rate limit exceeded"))).toBe(true);
+    expect(isRateLimitError(new Error("RATE LIMIT exceeded"))).toBe(true);
+    expect(isRateLimitError(new Error("Too many requests"))).toBe(true);
+    expect(isRateLimitError(new Error("TOO MANY REQUESTS"))).toBe(true);
+  });
+
+  it("returns false for non-Error values", () => {
+    expect(isRateLimitError("string error")).toBe(false);
+    expect(isRateLimitError(null)).toBe(false);
+    expect(isRateLimitError(undefined)).toBe(false);
+    expect(isRateLimitError({ message: "429" })).toBe(false);
+  });
+
+  it("returns false for other API errors", () => {
+    expect(isRateLimitError(new Error("Jira API error: 404 Not Found"))).toBe(
+      false,
+    );
+    expect(
+      isRateLimitError(new Error("Jira API error: 500 Server Error")),
+    ).toBe(false);
+    expect(isRateLimitError(new Error("Network error"))).toBe(false);
   });
 });

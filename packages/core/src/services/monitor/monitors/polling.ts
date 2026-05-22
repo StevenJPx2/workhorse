@@ -1,15 +1,16 @@
-import { BaseMonitor } from "./base-monitor.ts";
 import type {
   MonitorContext,
   MonitorResult,
   PollingMonitorOptions,
-} from "./types.ts";
+} from "../types.ts";
+import { BaseMonitor } from "./base.ts";
 
 /**
  * A polling-based monitor that calls poll() at a fixed interval.
  *
  * Use for external APIs without webhooks (Jira comments, GitHub PR status).
- * The monitor self-stops after 5 consecutive errors.
+ * The monitor self-stops after 5 consecutive errors, or immediately if
+ * the onError callback returns { stop: true }.
  *
  * @example
  * ```typescript
@@ -21,6 +22,11 @@ import type {
  *     const comments = await fetchNewComments(ctx.issueId);
  *     return { hasChanges: comments.length > 0, data: comments };
  *   },
+ *   onError: (error) => {
+ *     if (error.message.includes("rate limit")) {
+ *       return { stop: true, reason: "Rate limited" };
+ *     }
+ *   },
  * });
  * monitor.start(ctx);
  * ```
@@ -30,12 +36,14 @@ export class PollingMonitor extends BaseMonitor {
 
   private readonly interval: number;
   private readonly poll: (ctx: MonitorContext) => Promise<MonitorResult>;
+  private readonly onError: NonNullable<PollingMonitorOptions["onError"]>;
   private _timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  constructor({ id, interval, poll }: PollingMonitorOptions) {
+  constructor({ id, interval, poll, onError }: PollingMonitorOptions) {
     super(id, "polling");
     this.interval = interval;
     this.poll = poll;
+    this.onError = onError ?? (() => undefined);
   }
 
   /**
@@ -70,10 +78,10 @@ export class PollingMonitor extends BaseMonitor {
       try {
         this.handleResult(await this.poll(this._ctx));
       } catch (error) {
-        this.handleError(error as Error);
+        await this._handlePollError(error as Error);
       }
 
-      // Schedule next poll unless stopped by error threshold
+      // Schedule next poll unless stopped by error threshold or onError
       if (this.status.state === "running") {
         this._schedulePoll();
       } else {
@@ -81,8 +89,31 @@ export class PollingMonitor extends BaseMonitor {
       }
     }, this.interval);
   }
-}
 
-// Re-export as Monitor for backward compatibility during migration
-// TODO: Remove this alias once all consumers are updated
-export { PollingMonitor as Monitor };
+  /**
+   * Handle a poll error, checking onError callback first.
+   * If onError returns { stop: true }, stops immediately.
+   * Otherwise, delegates to base handleError for threshold tracking.
+   */
+  private async _handlePollError(error: Error): Promise<void> {
+    if (!this._ctx) return;
+
+    // Check if onError callback wants to stop immediately
+    const result = await this.onError(error, this._ctx);
+
+    if (result?.stop) {
+      this.status.state = "error";
+      this._ctx.hooks.emit("monitor.error", {
+        id: this.id,
+        issueId: this._ctx.issueId,
+        error,
+        errorCount: this.status.errorCount + 1,
+        reason: result.reason,
+      });
+      return;
+    }
+
+    // Default behavior: track errors and stop after threshold
+    this.handleError(error);
+  }
+}

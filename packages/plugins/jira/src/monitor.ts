@@ -11,7 +11,7 @@ import {
   isWorkhorseGenerated,
 } from "workhorse-core";
 
-import type { AtlassianClient } from "./client.ts";
+import { type AtlassianClient, isRateLimitError } from "./client.ts";
 import { mapJiraComment } from "./mapper.ts";
 
 /** Metadata key for storing last seen comment IDs */
@@ -27,6 +27,14 @@ export function createJiraCommentMonitor(
     id: "jira-comments",
     type: "polling",
     interval,
+    onError: (error) => {
+      if (isRateLimitError(error)) {
+        return {
+          stop: true,
+          reason: "Jira API rate limit exceeded. Monitor stopped.",
+        };
+      }
+    },
     poll: async (ctx) => {
       // ctx.issueId is the internal UUID (monitors are started with issue.id)
       // Only poll for Jira-sourced issues (comments only make sense for Jira tickets)

@@ -1,9 +1,9 @@
-import { BaseMonitor } from "./base-monitor.ts";
 import type {
   EventCleanup,
   EventMonitorOptions,
   MonitorContext,
-} from "./types.ts";
+} from "../types.ts";
+import { BaseMonitor } from "./base.ts";
 
 /**
  * An event-driven monitor that sets up a listener once and emits results
