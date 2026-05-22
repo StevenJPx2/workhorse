@@ -3,20 +3,13 @@
  *
  * @module workhorse-plugin-github/gh-cli
  */
+import { createRateLimitChecker } from "workhorse-core";
 
-/**
- * Check if an error is a GitHub API rate limit error.
- * GitHub returns 403 with "rate limit" or "API rate limit exceeded" messages.
- */
-export function isRateLimitError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("rate limit") ||
-    message.includes("api rate limit exceeded") ||
-    message.includes("secondary rate limit")
-  );
-}
+export const isRateLimitError = createRateLimitChecker([
+  "rate limit",
+  "api rate limit exceeded",
+  "secondary rate limit",
+]);
 
 /** Run a gh CLI command and return stdout */
 export async function gh(args: string[]): Promise<string> {

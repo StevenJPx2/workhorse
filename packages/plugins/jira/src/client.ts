@@ -6,6 +6,7 @@
  * @module workhorse-plugin-jira/client
  */
 import { markdownToAdf } from "marklassian";
+import { createRateLimitChecker, parseRetryAfter } from "workhorse-core";
 
 import type {
   JiraAttachment,
@@ -14,18 +15,22 @@ import type {
   JiraTransition,
 } from "./types.ts";
 
-/**
- * Check if an error is a Jira API rate limit error.
- * Jira returns 429 with "Too Many Requests" for rate limit errors.
- */
-export function isRateLimitError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const message = error.message.toLowerCase();
-  return (
-    message.includes("429") ||
-    message.includes("rate limit") ||
-    message.includes("too many requests")
-  );
+export const isRateLimitError = createRateLimitChecker([
+  "429",
+  "rate limit",
+  "too many requests",
+]);
+
+function throwApiError(response: Response): never {
+  const error = new Error(
+    `Jira API error: ${response.status} ${response.statusText}`,
+  ) as Error & { retryAfterMs?: number };
+
+  if (response.status === 429) {
+    error.retryAfterMs = parseRetryAfter(response.headers);
+  }
+
+  throw error;
 }
 
 export class AtlassianClient {
@@ -35,7 +40,6 @@ export class AtlassianClient {
     this.getCredentials = getCredentials;
   }
 
-  /** Get the base URL from credentials */
   private async getBaseUrl(): Promise<string> {
     return this.getCredentials().then(
       (creds) =>
@@ -43,7 +47,6 @@ export class AtlassianClient {
     );
   }
 
-  /** Build request headers with Basic Auth (email:apiToken) */
   private async headers(): Promise<Record<string, string>> {
     const { email, apiToken } = await this.getCredentials();
     return {
@@ -53,23 +56,17 @@ export class AtlassianClient {
     };
   }
 
-  /** GET helper */
   private async get<T>(path: string): Promise<T> {
     const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "GET",
       headers: await this.headers(),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Jira API error: ${response.status} ${response.statusText}`,
-      );
-    }
+    if (!response.ok) throwApiError(response);
 
     return response.json() as Promise<T>;
   }
 
-  /** POST helper */
   private async post<T>(path: string, body: unknown): Promise<T> {
     const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "POST",
@@ -77,16 +74,11 @@ export class AtlassianClient {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Jira API error: ${response.status} ${response.statusText}`,
-      );
-    }
+    if (!response.ok) throwApiError(response);
 
     return response.json() as Promise<T>;
   }
 
-  /** PUT helper */
   private async put(path: string, body: unknown): Promise<void> {
     const response = await fetch(`${await this.getBaseUrl()}${path}`, {
       method: "PUT",
@@ -94,35 +86,27 @@ export class AtlassianClient {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Jira API error: ${response.status} ${response.statusText}`,
-      );
-    }
+    if (!response.ok) throwApiError(response);
   }
 
-  /** Fetch a Jira issue by key (excludes attachments for performance) */
   async fetchIssue(ticketKey: string): Promise<JiraIssue> {
     return this.get<JiraIssue>(
       `/issue/${encodeURIComponent(ticketKey)}?fields=*all,-attachment`,
     );
   }
 
-  /** Fetch a Jira issue by key with attachments included */
   async fetchIssueWithAttachments(ticketKey: string): Promise<JiraIssue> {
     return this.get<JiraIssue>(
       `/issue/${encodeURIComponent(ticketKey)}?fields=*all`,
     );
   }
 
-  /** Get attachments for an issue */
   async getAttachments(ticketKey: string): Promise<JiraAttachment[]> {
     return this.fetchIssueWithAttachments(ticketKey).then(
       (r) => r.fields.attachment ?? [],
     );
   }
 
-  /** Download attachment content as a Buffer */
   async downloadAttachment(contentUrl: string): Promise<Buffer> {
     const { email, apiToken } = await this.getCredentials();
     const response = await fetch(contentUrl, {
@@ -141,9 +125,6 @@ export class AtlassianClient {
     return Buffer.from(await response.arrayBuffer());
   }
 
-  /** Add a comment to an issue, optionally as a reply to another comment.
-   *  The body is markdown; it is converted to Atlassian Document Format (ADF)
-   *  automatically because Jira REST API v3 requires ADF for comment bodies. */
   async addComment(
     ticketKey: string,
     body: string,
@@ -161,14 +142,12 @@ export class AtlassianClient {
     await this.post(`/issue/${encodeURIComponent(ticketKey)}/comment`, payload);
   }
 
-  /** Get available transitions for an issue */
   async getTransitions(ticketKey: string): Promise<JiraTransition[]> {
     return await this.get<{ transitions: JiraTransition[] }>(
       `/issue/${encodeURIComponent(ticketKey)}/transitions`,
     ).then((r) => r.transitions);
   }
 
-  /** Transition an issue */
   async transitionIssue(
     ticketKey: string,
     transitionId: string,
@@ -178,7 +157,6 @@ export class AtlassianClient {
     });
   }
 
-  /** Edit issue fields */
   async editIssue(
     ticketKey: string,
     fields: Record<string, unknown>,
@@ -186,7 +164,6 @@ export class AtlassianClient {
     await this.put(`/issue/${encodeURIComponent(ticketKey)}`, { fields });
   }
 
-  /** Get current user profile (using Jira's myself endpoint with Basic Auth) */
   async getCurrentUser(): Promise<{ accountId: string; displayName: string }> {
     return this.get<{ accountId: string; displayName: string }>("/myself");
   }

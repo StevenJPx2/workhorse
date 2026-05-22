@@ -1,16 +1,9 @@
-/**
- * Services barrel export
- * @module services
- */
-
-// Attachment service
 export {
   AttachmentService,
   type DownloadOptions,
   type StoredAttachment,
 } from "./attachment";
 
-// Memory service
 export {
   type CreateNotificationInput,
   generateSystemInbox,
@@ -29,13 +22,22 @@ export {
   serializeSessionMemory,
 } from "./memory";
 
-// Monitor service
 export {
   MonitorService,
+  createRateLimitChecker,
+  exponentialBackoff,
+  extractRetryAfter,
+  fixedPause,
+  parseRetryAfter,
+  withRetryAfterOrBackoff,
+  type EventCleanup,
+  type EventEmitter,
   type EventMonitorOptions,
   type MonitorContext,
   type MonitorOptions,
   type MonitorResult,
   type MonitorStatus,
+  type PauseContext,
+  type PauseDurationFn,
   type PollingMonitorOptions,
 } from "./monitor";

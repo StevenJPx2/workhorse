@@ -6,15 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib";
-import type { MemoryService } from "#services";
-import { createMockHooks } from "#test-helpers";
-
-import { EventMonitor } from "..";
 import type {
   EventEmitter,
   EventMonitorOptions,
+  MemoryService,
   MonitorContext,
-} from "../../types.ts";
+} from "#services";
+import { createMockHooks } from "#test-helpers";
+
+import { EventMonitor } from "..";
 
 describe("EventMonitor", () => {
   let hooks: HookEmitter;

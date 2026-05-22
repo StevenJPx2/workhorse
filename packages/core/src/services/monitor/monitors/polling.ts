@@ -10,7 +10,8 @@ import { BaseMonitor } from "./base.ts";
  *
  * Use for external APIs without webhooks (Jira comments, GitHub PR status).
  * The monitor self-stops after 5 consecutive errors, or immediately if
- * the onError callback returns { stop: true }.
+ * the onError callback returns { stop: true }. Use { pauseMs } to temporarily
+ * pause and auto-resume after a backoff period (useful for rate limits).
  *
  * @example
  * ```typescript
@@ -24,7 +25,8 @@ import { BaseMonitor } from "./base.ts";
  *   },
  *   onError: (error) => {
  *     if (error.message.includes("rate limit")) {
- *       return { stop: true, reason: "Rate limited" };
+ *       // Pause for 60 seconds, then resume
+ *       return { pauseMs: 60_000, reason: "Rate limited" };
  *     }
  *   },
  * });
@@ -93,12 +95,13 @@ export class PollingMonitor extends BaseMonitor {
   /**
    * Handle a poll error, checking onError callback first.
    * If onError returns { stop: true }, stops immediately.
+   * If onError returns { pauseMs }, pauses and resumes after the delay.
    * Otherwise, delegates to base handleError for threshold tracking.
    */
   private async _handlePollError(error: Error): Promise<void> {
     if (!this._ctx) return;
 
-    // Check if onError callback wants to stop immediately
+    // Check if onError callback wants to stop or pause
     const result = await this.onError(error, this._ctx);
 
     if (result?.stop) {
@@ -113,7 +116,51 @@ export class PollingMonitor extends BaseMonitor {
       return;
     }
 
+    if (result?.pauseMs !== undefined) {
+      const ms =
+        typeof result.pauseMs === "function"
+          ? result.pauseMs({ error, errorCount: this.status.errorCount + 1 })
+          : result.pauseMs;
+
+      if (ms && ms > 0) {
+        this._pause(ms, result.reason);
+        return;
+      }
+    }
+
     // Default behavior: track errors and stop after threshold
     this.handleError(error);
+  }
+
+  /**
+   * Pause the monitor for the specified duration, then resume.
+   */
+  private _pause(ms: number, reason?: string): void {
+    if (!this._ctx) return;
+
+    this.status.state = "paused";
+    this.status.resumesAt = new Date(Date.now() + ms);
+
+    this._ctx.hooks.emit("monitor.paused", {
+      id: this.id,
+      issueId: this._ctx.issueId,
+      pauseMs: ms,
+      resumesAt: this.status.resumesAt,
+      reason,
+    });
+
+    this._timeoutId = setTimeout(() => {
+      if (this.status.state !== "paused" || !this._ctx) return;
+
+      this.status.state = "running";
+      this.status.resumesAt = undefined;
+
+      this._ctx.hooks.emit("monitor.resumed", {
+        id: this.id,
+        issueId: this._ctx.issueId,
+      });
+
+      this._schedulePoll();
+    }, ms);
   }
 }

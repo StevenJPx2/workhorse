@@ -11,6 +11,7 @@ import {
   type Database,
   type PollingMonitorOptions,
   isWorkhorseGenerated,
+  withRetryAfterOrBackoff,
 } from "workhorse-core";
 
 import type { GitHubClient } from "../client.ts";
@@ -169,8 +170,8 @@ export function createGitHubPRMonitor(
     onError: (error) => {
       if (isRateLimitError(error)) {
         return {
-          stop: true,
-          reason: "GitHub API rate limit exceeded. Monitor stopped.",
+          pauseMs: withRetryAfterOrBackoff(),
+          reason: "GitHub API rate limit exceeded. Pausing until reset.",
         };
       }
     },

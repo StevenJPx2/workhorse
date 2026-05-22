@@ -9,6 +9,7 @@ import {
   type Database,
   type PollingMonitorOptions,
   isWorkhorseGenerated,
+  withRetryAfterOrBackoff,
 } from "workhorse-core";
 
 import { type AtlassianClient, isRateLimitError } from "./client.ts";
@@ -30,8 +31,8 @@ export function createJiraCommentMonitor(
     onError: (error) => {
       if (isRateLimitError(error)) {
         return {
-          stop: true,
-          reason: "Jira API rate limit exceeded. Monitor stopped.",
+          pauseMs: withRetryAfterOrBackoff(),
+          reason: "Jira API rate limit exceeded. Pausing until reset.",
         };
       }
     },

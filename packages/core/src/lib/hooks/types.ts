@@ -108,6 +108,18 @@ export type HookCallbacks = {
     issueId: string;
     error: Error;
     errorCount: number;
+    reason?: string;
+  }) => void | Promise<void>;
+  "monitor.paused": (payload: {
+    id: string;
+    issueId: string;
+    pauseMs: number;
+    resumesAt: Date;
+    reason?: string;
+  }) => void | Promise<void>;
+  "monitor.resumed": (payload: {
+    id: string;
+    issueId: string;
   }) => void | Promise<void>;
 
   // Plugins

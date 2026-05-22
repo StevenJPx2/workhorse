@@ -6,11 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkhorseConfig } from "#config";
 import type { HookEmitter } from "#lib";
-import type { MemoryService } from "#services";
+import type {
+  MemoryService,
+  MonitorContext,
+  PollingMonitorOptions,
+} from "#services";
 import { createMockHooks } from "#test-helpers";
 
 import { PollingMonitor } from "..";
-import type { MonitorContext, PollingMonitorOptions } from "../../types.ts";
 
 describe("PollingMonitor", () => {
   let hooks: HookEmitter;
@@ -117,6 +120,127 @@ describe("PollingMonitor", () => {
 
       // Second poll should not occur
       await vi.advanceTimersByTimeAsync(100);
+      expect(pollFn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("onError with pauseMs", () => {
+    it("pauses and resumes after specified delay", async () => {
+      const pollFn = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("rate limit exceeded"))
+        .mockResolvedValue({ hasChanges: false });
+
+      const monitor = new PollingMonitor({
+        id: "test-pause",
+        type: "polling",
+        interval: 100,
+        poll: pollFn,
+        onError: (error) => {
+          if (error.message.includes("rate limit")) {
+            return { pauseMs: 500, reason: "Rate limited" };
+          }
+        },
+      });
+
+      monitor.start(createContext());
+
+      // First poll fails with rate limit
+      await vi.advanceTimersByTimeAsync(100);
+      expect(pollFn).toHaveBeenCalledTimes(1);
+      expect(monitor.status.state).toBe("paused");
+      expect(monitor.status.resumesAt).toBeDefined();
+
+      // Advance halfway through pause - should still be paused
+      await vi.advanceTimersByTimeAsync(250);
+      expect(monitor.status.state).toBe("paused");
+      expect(pollFn).toHaveBeenCalledTimes(1);
+
+      // Complete the pause
+      await vi.advanceTimersByTimeAsync(250);
+      expect(monitor.status.state).toBe("running");
+      expect(monitor.status.resumesAt).toBeUndefined();
+
+      // Next poll should be scheduled after the interval
+      await vi.advanceTimersByTimeAsync(100);
+      expect(pollFn).toHaveBeenCalledTimes(2);
+
+      monitor.stop();
+    });
+
+    it("emits monitor.paused and monitor.resumed hooks", async () => {
+      const pausedHandler = vi.fn();
+      const resumedHandler = vi.fn();
+      hooks.on("monitor.paused", pausedHandler);
+      hooks.on("monitor.resumed", resumedHandler);
+
+      const pollFn = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("rate limit"))
+        .mockResolvedValue({ hasChanges: false });
+
+      const monitor = new PollingMonitor({
+        id: "test-hooks",
+        type: "polling",
+        interval: 100,
+        poll: pollFn,
+        onError: () => ({ pauseMs: 200, reason: "Testing" }),
+      });
+
+      monitor.start(createContext());
+
+      // Trigger pause
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(pausedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "test-hooks",
+          issueId: "AM-123",
+          pauseMs: 200,
+          reason: "Testing",
+        }),
+      );
+      expect(resumedHandler).not.toHaveBeenCalled();
+
+      // Resume
+      await vi.advanceTimersByTimeAsync(200);
+
+      expect(resumedHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "test-hooks",
+          issueId: "AM-123",
+        }),
+      );
+
+      monitor.stop();
+    });
+
+    it("can be stopped while paused", async () => {
+      const pollFn = vi.fn().mockRejectedValue(new Error("rate limit"));
+
+      const monitor = new PollingMonitor({
+        id: "test-stop-while-paused",
+        type: "polling",
+        interval: 100,
+        poll: pollFn,
+        onError: () => ({ pauseMs: 1000 }),
+      });
+
+      monitor.start(createContext());
+
+      // Trigger pause
+      await vi.advanceTimersByTimeAsync(100);
+      expect(monitor.status.state).toBe("paused");
+
+      // Stop while paused
+      monitor.stop();
+      expect(monitor.status.state).toBe("stopped");
+
+      // Advance past when it would have resumed
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Should still be stopped, not resumed
+      expect(monitor.status.state).toBe("stopped");
       expect(pollFn).toHaveBeenCalledTimes(1);
     });
   });

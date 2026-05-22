@@ -37,13 +37,15 @@ export interface MonitorStatus {
   /** Issue ID being monitored */
   issueId: string;
   /** Current state */
-  state: "running" | "stopped" | "error";
+  state: "running" | "stopped" | "error" | "paused";
   /** When the last activity occurred (poll or event) */
   lastActivity?: Date;
   /** Result from the last poll/event */
   lastResult?: MonitorResult;
   /** Number of consecutive errors */
   errorCount: number;
+  /** When the monitor will resume (if paused) */
+  resumesAt?: Date;
 }
 
 // Event Monitor Types
@@ -71,12 +73,33 @@ interface MonitorOptionsBase {
 }
 
 /**
+ * Context passed to pause duration calculator functions.
+ */
+export interface PauseContext {
+  /** The error that triggered the pause */
+  error: Error;
+  /** Number of consecutive errors (including this one) */
+  errorCount: number;
+}
+
+/**
+ * Function that calculates how long to pause before resuming.
+ * Return milliseconds to pause, or 0/undefined to use default error handling.
+ */
+export type PauseDurationFn = (ctx: PauseContext) => number | undefined;
+
+/**
  * Result from onError callback indicating how to handle the error.
  */
 export interface ErrorHandlingResult {
   /** If true, stop the monitor immediately (don't wait for error threshold) */
   stop?: boolean;
-  /** Optional message explaining why the monitor was stopped */
+  /**
+   * Pause duration in milliseconds, or a function that calculates it.
+   * Use a function to extract Retry-After headers or implement backoff.
+   */
+  pauseMs?: number | PauseDurationFn;
+  /** Optional message explaining why the monitor was stopped/paused */
   reason?: string;
 }
 
