@@ -129,14 +129,14 @@ export function createGitHubPRMonitor(
           from: state.lastMergeableState,
           to: pr.mergeable_state,
         };
-        createMergeableNotification(ctx, pr.mergeable_state, meta);
+        await createMergeableNotification(ctx, pr.mergeable_state, meta);
       }
 
       // Detect PR merge
       if (pr.merged && !state.lastMerged) {
         hasChanges = true;
         changes.merged = true;
-        createMergedNotification(ctx, pr.merged_by?.login, meta);
+        await createMergedNotification(ctx, pr.merged_by?.login, meta);
         emitMergeHook(ctx, issue, prNumber, pr);
       }
 

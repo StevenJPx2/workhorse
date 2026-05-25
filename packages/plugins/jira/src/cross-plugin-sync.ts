@@ -96,7 +96,7 @@ export function registerCrossPluginSync(
             reporterAccountId
               ? "Assigned to reporter for QA verification."
               : "Ready for QA verification."
-          }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\nPR URL: ${pr.url}`,
+          }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\n\nPR URL: ${pr.url}`,
         ),
       );
 
@@ -114,6 +114,17 @@ export function registerCrossPluginSync(
           to: reporterAccountId,
         });
       }
+
+      await ctx.memory.notifications.create({
+        source: "jira",
+        issueId: ticketKey,
+        title: "PR Merged",
+        body: `✅ PR #${pr.number} has been merged.\n\n${
+          reporterAccountId
+            ? "Assigned to reporter for QA verification."
+            : "Ready for QA verification."
+        }\n\nMerged by: ${pr.mergedBy ?? "unknown"}\n\nPR URL: ${pr.url}\n\nNo action required.`,
+      });
     } catch (error) {
       // Log error but don't crash - cross-plugin sync is best-effort
       console.error(`[jira] Cross-plugin sync failed for ${ticketKey}:`, error);

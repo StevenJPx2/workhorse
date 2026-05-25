@@ -86,12 +86,12 @@ export async function createCommentNotifications(
 }
 
 /** Create notification for PR merge */
-export function createMergedNotification(
+export async function createMergedNotification(
   ctx: Pick<MonitorContext, "issueId" | "memory">,
   mergedBy: string | undefined,
   meta: PRMeta,
-): void {
-  ctx.memory.notifications.create({
+): Promise<void> {
+  await ctx.memory.notifications.create({
     issueId: ctx.issueId,
     source: "github",
     sourceId: `github-merged-${meta.prNumber}`,
@@ -103,13 +103,13 @@ export function createMergedNotification(
 }
 
 /** Create notification for mergeable state changes */
-export function createMergeableNotification(
+export async function createMergeableNotification(
   ctx: Pick<MonitorContext, "issueId" | "memory">,
   mergeableState: string,
   meta: PRMeta,
-): void {
+): Promise<void> {
   if (mergeableState === "dirty") {
-    ctx.memory.notifications.create({
+    await ctx.memory.notifications.create({
       issueId: ctx.issueId,
       source: "github",
       sourceId: `github-mergeable-${Date.now()}`,
@@ -119,7 +119,7 @@ export function createMergeableNotification(
       metadata: { ...meta, mergeableState },
     });
   } else if (mergeableState === "behind") {
-    ctx.memory.notifications.create({
+    await ctx.memory.notifications.create({
       issueId: ctx.issueId,
       source: "github",
       sourceId: `github-mergeable-${Date.now()}`,

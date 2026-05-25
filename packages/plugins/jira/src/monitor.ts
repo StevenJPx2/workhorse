@@ -68,7 +68,7 @@ export function createJiraCommentMonitor(
         if (isWorkhorseGenerated(mapped.body as string)) {
           continue;
         }
-        ctx.memory.notifications.create({
+        await ctx.memory.notifications.create({
           issueId: ctx.issueId,
           source: "jira",
           sourceId: `jira-comment-${comment.id}`,
