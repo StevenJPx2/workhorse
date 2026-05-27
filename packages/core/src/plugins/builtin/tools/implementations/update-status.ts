@@ -3,6 +3,7 @@
  *
  * @module plugins/builtin/tools/implementations/update-status
  */
+import { type IssueStatus, STATUSES } from "#db";
 import type { ToolExecutionContext, ToolResult } from "#workflow";
 
 /**
@@ -13,24 +14,12 @@ export async function updateStatusToolImpl(
   ctx: ToolExecutionContext,
 ): Promise<ToolResult> {
   try {
-    const { status } = args as { status: string };
+    const { status } = args as { status: IssueStatus };
 
-    // Validate status (basic validation, could be more strict)
-    // Note: VCS plugins can register additional statuses via hooks
-    const validStatuses = [
-      "pending",
-      "queued",
-      "planning",
-      "implementing",
-      "blocked",
-      "in_review",
-      "done",
-    ];
-
-    if (!validStatuses.includes(status)) {
+    if (!STATUSES.includes(status)) {
       return {
         success: false,
-        error: `Invalid status "${status}". Valid statuses: ${validStatuses.join(", ")}`,
+        error: `Invalid status "${status}". Valid statuses: ${STATUSES.join(", ")}`,
       };
     }
 

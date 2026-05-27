@@ -39,7 +39,7 @@ export function registerCoreSteering(ctx: WorkhorseContext): void {
     description:
       "Remind agent to write learnings/patterns to memory after significant work",
     condition: {
-      status: ["implementing", "debugging"],
+      status: ["implementing"],
       when: (steerCtx) => {
         const history = steerCtx.toolHistory;
         if (history.length < MIN_TOOLS_SINCE_WRITE) return false;
@@ -86,7 +86,7 @@ This helps future sessions understand what was done and avoid repeating mistakes
     description:
       "Detect and abort when stuck in repeated git rebase/merge conflict resolution",
     condition: {
-      status: ["implementing", "debugging"],
+      status: ["implementing"],
       when: (steerCtx) => {
         const windowStart = Date.now() - CONFLICT_WINDOW_MS;
 

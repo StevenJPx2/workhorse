@@ -29,55 +29,81 @@ Workhorse already has issue statuses. We extend this to control tool availabilit
 | Status | Description | Example Tools Available |
 |--------|-------------|------------------------|
 | `pending` | Not yet started | Read-only |
-| `queued` | Waiting to be picked up | Read-only |
-| `planning` | Understanding requirements, exploring codebase | Read, Grep, Glob, git status/diff/log |
+| `planning` | Understanding requirements, exploring codebase | Read, Grep, Glob |
 | `implementing` | Writing code, making changes | All tools |
 | `blocked` | Waiting for human input | Read, communicate |
-| `in_review` | Self-review, checking work | Read, git diff, communicate |
+| `in_review` | PR submitted, addressing feedback | All tools |
 | `done` | Work finished | Read-only |
+
+> **Note:** `queued` status is being removed - `pending` covers the "not started" case.
 
 ### Tool `status` Parameter
 
 Each tool declares which statuses it's available in via a `status` field:
 
 ```typescript
-type ToolStatus<TArgs = unknown> = 
-  | IssueStatus                                    // Single status
-  | IssueStatus[]                                  // Array of statuses
-  | ((args: TArgs) => IssueStatus | IssueStatus[]) // Dynamic based on args
-
-interface OrchestratorTool<TArgs = unknown> {
+interface OrchestratorTool {
   name: string;
   description: string;
   schema: JsonSchema;
   
   // Statuses where this tool is available
   // If omitted, tool is available in ALL statuses (backward compatible)
-  status?: ToolStatus<TArgs>;
+  status?: IssueStatus[];
   
-  execute: (args: TArgs, ctx: ToolExecutionContext) => Promise<Result>;
+  execute: (args: unknown, ctx: ToolExecutionContext) => Promise<Result>;
 }
 ```
 
 **Benefits:**
-- Simple — single field, multiple forms
-- Flexible — static string, array, or dynamic function
+- Simple — single optional field
+- No dynamic functions needed (YAGNI - we don't have tools with mixed read/write actions)
 - No category abstraction layer
 - Easy to understand at a glance
-- Plugins define their own status restrictions
-- Uses existing Workhorse status names
+- Backward compatible - omit field for "always available"
 
 ### Tool Definitions with Status
 
 ```typescript
-// Read-only tools — available in all statuses
+// Destructive tools — only during write phases
 orchestrator.registerTool({
-  name: "Read",
-  status: ["planning", "implementing", "in_review", "blocked", "done"],
-  // ... or omit status entirely for "all statuses"
+  name: "Write",
+  status: ["implementing", "in_review"],
+  // ...
 });
 
-// Write tools — only during implementation
+orchestrator.registerTool({
+  name: "Edit", 
+  status: ["implementing", "in_review"],
+  // ...
+});
+
+orchestrator.registerTool({
+  name: "Bash",
+  status: ["implementing", "in_review"],
+  // ...
+});
+
+// Everything else — no status field needed
+orchestrator.registerTool({
+  name: "Read",
+  // no status field = always available
+  // ...
+});
+
+orchestrator.registerTool({
+  name: "workhorse_escalate",
+  // no status field = always available
+  // ...
+});
+```
+
+### Simplified Approach
+
+The only restriction we need is blocking destructive actions during planning. Everything else is available everywhere.
+
+```typescript
+// Destructive tools — only during implementing
 orchestrator.registerTool({
   name: "Write",
   status: ["implementing"],
@@ -85,188 +111,55 @@ orchestrator.registerTool({
 });
 
 orchestrator.registerTool({
-  name: "Edit", 
+  name: "Edit",
   status: ["implementing"],
   // ...
 });
 
-// Git — dynamic status based on action
-orchestrator.registerTool({
-  name: "git",
-  status: (args) => {
-    const readActions = ["status", "diff", "log", "branch"];
-    if (readActions.includes(args.action)) {
-      return STATUS.READ_ONLY;
-    }
-    return "implementing";
-  },
-  // ...
-});
-
-// Communication tools — available when blocked too
-orchestrator.registerTool({
-  name: "workhorse_escalate",
-  status: ["planning", "implementing", "in_review", "blocked"],
-  // ...
-});
-```
-
-### Shorthand Constants
-
-For convenience, define common status sets:
-
-```typescript
-// packages/core/src/workflow/orchestrator/status-sets.ts
-export const STATUS = {
-  // All statuses
-  ALL: ["pending", "queued", "planning", "implementing", "in_review", "blocked", "done"] as const,
-  
-  // Read-only access
-  READ_ONLY: ["pending", "queued", "planning", "implementing", "in_review", "blocked", "done"] as const,
-  
-  // Can modify files/state
-  WRITE: ["implementing"] as const,
-  
-  // Can communicate (escalate, comment, etc.)
-  COMMUNICATE: ["planning", "implementing", "in_review", "blocked"] as const,
-  
-  // Active work (not done)
-  ACTIVE: ["planning", "implementing", "in_review", "blocked"] as const,
-};
-
-// Usage
+// Everything else — no status field, available everywhere
 orchestrator.registerTool({
   name: "Read",
-  status: STATUS.READ_ONLY,
+  // no status field = always available
   // ...
 });
 
 orchestrator.registerTool({
-  name: "Edit",
-  status: STATUS.WRITE,
+  name: "workhorse_escalate",
+  // no status field = always available
   // ...
 });
 ```
+
+**Key insight:** We don't need constants like `STATUS.READ_ONLY` or `STATUS.COMMUNICATE` because:
+- Read-only tools don't need gating (omit `status` entirely)
+- Communication tools should always be available (omit `status` entirely)
+- Only destructive tools need `status: ["implementing"]`
 
 ## Implementation
 
-### 1. Extend OrchestratorTool Interface
+### 1. Extend OrchestratorTool Interface (DONE)
 
-```typescript
-// packages/core/src/workflow/orchestrator/types.ts
-import type { IssueStatus } from "../../db/schema";
+Added `status?: IssueStatus[]` field to `OrchestratorTool` in `packages/core/src/workflow/orchestrator/types/tools.ts`.
 
-export type ToolStatus<TArgs = unknown> = 
-  | IssueStatus
-  | IssueStatus[]
-  | ((args: TArgs) => IssueStatus | IssueStatus[]);
+### 2. Inline Status Check in Harness
 
-export interface OrchestratorTool<TArgs = unknown, TResult = unknown> {
-  name: string;
-  description: string;
-  schema: JsonSchema;
-  
-  // Statuses where this tool is available
-  // If omitted, tool is available in ALL statuses
-  status?: ToolStatus<TArgs>;
-  
-  execute: (args: TArgs, ctx: ToolExecutionContext) => Promise<TResult>;
-}
-```
-
-### 2. Tool Filter Implementation
-
-Simple filter that checks tool availability:
-
-```typescript
-// packages/core/src/workflow/orchestrator/tool-filter.ts
-import type { IssueStatus } from "../../db/schema";
-import type { OrchestratorTool, ToolStatus } from "./types";
-
-// Helper to resolve status to array
-function resolveStatus<T>(status: ToolStatus<T> | undefined, args: T): IssueStatus[] {
-  if (!status) return []; // No restriction
-  if (typeof status === "string") return [status];
-  if (Array.isArray(status)) return status;
-  if (typeof status === "function") {
-    const result = status(args);
-    return typeof result === "string" ? [result] : result;
-  }
-  return [];
-}
-
-export class StatusToolFilter {
-  constructor(
-    private getAllTools: () => OrchestratorTool[],
-    private getCurrentStatus: () => IssueStatus
-  ) {}
-  
-  // Get tools available for current status (static check only)
-  getAvailableTools(): OrchestratorTool[] {
-    const currentStatus = this.getCurrentStatus();
-    
-    return this.getAllTools().filter(tool => {
-      // No restriction = always available
-      if (!tool.status) return true;
-      
-      // Functions are included but checked at execution time
-      if (typeof tool.status === "function") return true;
-      
-      // Static string or array
-      const allowed = typeof tool.status === "string" 
-        ? [tool.status] 
-        : tool.status;
-      return allowed.includes(currentStatus);
-    });
-  }
-  
-  // Check if a specific tool call is allowed
-  canExecute(tool: OrchestratorTool, args: unknown): boolean {
-    if (!tool.status) return true; // No restriction
-    
-    const currentStatus = this.getCurrentStatus();
-    const allowed = resolveStatus(tool.status, args);
-    
-    return allowed.length === 0 || allowed.includes(currentStatus);
-  }
-  
-  // Get reason why tool is blocked
-  getBlockReason(tool: OrchestratorTool, args: unknown): string | null {
-    if (this.canExecute(tool, args)) return null;
-    
-    const currentStatus = this.getCurrentStatus();
-    const allowed = resolveStatus(tool.status, args);
-    
-    return `Tool "${tool.name}" is not available during "${currentStatus}" status. ` +
-           `Allowed: ${allowed.join(", ")}. ` +
-           `Use workhorse_update_status to transition.`;
-  }
-}
-```
-
-### 3. Integration with Tool Execution
-
-Wrap tool execution to check status:
+Add status check directly in tool execution (no separate class needed):
 
 ```typescript
 // packages/core/src/workflow/orchestrator/harness.ts
-async function executeToolWithStatusCheck(
+async function executeTool(
   tool: OrchestratorTool,
   args: unknown,
   ctx: ToolExecutionContext
 ): Promise<ToolResult> {
-  const filter = ctx.adapter.toolFilter;
+  const currentStatus = ctx.issue.status;
   
-  if (!filter.canExecute(tool, args)) {
-    const reason = filter.getBlockReason(tool, args);
-    const currentStatus = ctx.issue.status;
-    
+  // Check if tool is blocked by status
+  if (tool.status && tool.status.length > 0 && !tool.status.includes(currentStatus)) {
     return {
       success: false,
-      error: reason,
-      hint: currentStatus === "planning"
-        ? "Use workhorse_update_status { status: 'implementing' } when ready to make changes."
-        : `Current status "${currentStatus}" does not allow this operation.`
+      error: `Tool "${tool.name}" is not available in "${currentStatus}" status. Available in: ${tool.status.join(", ")}.`,
+      hint: "Use workhorse_update_status to transition to 'implementing' or 'in_review'."
     };
   }
   
@@ -693,89 +586,27 @@ export interface HookEvents {
 
 ## Tool Status Mappings
 
-### Core Workhorse Tools
+Only destructive tools need a `status` field. Everything else is available in all statuses by default.
 
-| Tool | Status |
+### Destructive Tools (status: `["implementing", "in_review"]`)
+
+| Tool | Plugin |
 |------|--------|
-| `workhorse_acknowledge` | `STATUS.ACTIVE` |
-| `workhorse_update_status` | `STATUS.ACTIVE` |
-| `workhorse_list_tools` | `STATUS.ALL` |
-| `workhorse_escalate` | `STATUS.COMMUNICATE` |
-| `workhorse_preview_image` | `STATUS.READ_ONLY` |
-| `workhorse_plan` | `["planning"]` |
+| `Write` | Pi Adapter |
+| `Edit` | Pi Adapter |
+| `Bash` | Pi Adapter |
+| `file_ops` | Pi Adapter |
+| `project` | Pi Adapter |
+| `github_open_pr` | GitHub |
 
-### Pi Adapter Tools (Plan 22)
+### No Status Required (always available)
 
-| Tool | Status |
-|------|--------|
-| `Read` | `STATUS.READ_ONLY` |
-| `Grep` | `STATUS.READ_ONLY` |
-| `Glob` | `STATUS.READ_ONLY` |
-| `Write` | `STATUS.WRITE` |
-| `Edit` | `STATUS.WRITE` |
-| `git` | Dynamic — see below |
-| `project` | `STATUS.WRITE` |
-| `script` | Dynamic — see below |
-| `env_info` | `STATUS.READ_ONLY` |
-| `file_ops` | `STATUS.WRITE` |
-
-### Dynamic Tool Status Functions
-
-```typescript
-// Git tool — status based on action
-const gitTool: OrchestratorTool = {
-  name: "git",
-  status: (args: { action: string }) => {
-    const READ_ACTIONS = ["status", "diff", "log"];
-    if (READ_ACTIONS.includes(args.action)) {
-      return STATUS.READ_ONLY;
-    }
-    return "implementing";
-  },
-  // ...
-};
-
-// Script tool — status based on action
-const scriptTool: OrchestratorTool = {
-  name: "script",
-  status: (args: { action: string }) => {
-    const READ_ACTIONS = ["list", "read"];
-    if (READ_ACTIONS.includes(args.action)) {
-      return STATUS.READ_ONLY;
-    }
-    return "implementing";
-  },
-  // ...
-};
-```
-
-### Jira Plugin Tools
-
-| Tool | Status |
-|------|--------|
-| `jira_get_comments` | `STATUS.READ_ONLY` |
-| `jira_get_attachments` | `STATUS.READ_ONLY` |
-| `jira_add_comment` | `STATUS.COMMUNICATE` |
-| `jira_transition_issue` | `STATUS.COMMUNICATE` |
-
-### GitHub Plugin Tools
-
-| Tool | Status |
-|------|--------|
-| `github_get_pr_status` | `STATUS.READ_ONLY` |
-| `github_get_ci_check` | `STATUS.READ_ONLY` |
-| `github_get_pr_reviews` | `STATUS.READ_ONLY` |
-| `github_add_comment` | `STATUS.COMMUNICATE` |
-| `github_open_pr` | `STATUS.WRITE` |
-
-### Playwright Plugin Tools
-
-| Tool | Status |
-|------|--------|
-| `playwright_screenshot` | `STATUS.READ_ONLY` |
-| `playwright_navigate` | `STATUS.WRITE` |
-| `playwright_click` | `STATUS.WRITE` |
-| `playwright_fill` | `STATUS.WRITE` |
+All other tools omit the `status` field entirely:
+- Core: `workhorse_acknowledge`, `workhorse_update_status`, `workhorse_list_tools`, `workhorse_escalate`, `workhorse_preview_image`, `workhorse_plan`
+- Pi Adapter: `Read`, `Grep`, `Glob`, `env_info`
+- Jira: `jira_get_comments`, `jira_get_attachments`, `jira_add_comment`, `jira_transition_issue`
+- GitHub: `github_get_pr_status`, `github_get_ci_check`, `github_get_pr_reviews`, `github_add_comment`
+- Playwright: `playwright_navigate`, `playwright_click`, `playwright_fill`, `playwright_screenshot` (browser interaction, not filesystem)
 
 ## File Structure
 
@@ -783,10 +614,8 @@ const scriptTool: OrchestratorTool = {
 packages/core/src/
 ├── workflow/
 │   └── orchestrator/
-│       ├── types.ts             # Add status field to OrchestratorTool
-│       ├── tool-filter.ts       # NEW: StatusToolFilter class
-│       ├── status-sets.ts       # NEW: STATUS constants
-│       └── harness.ts           # Wire filter into execution
+│       ├── types.ts             # Add status field to OrchestratorTool (DONE)
+│       └── harness.ts           # Add inline status check in tool execution
 ├── plugins/
 │   └── builtin/
 │       └── tools/
@@ -800,35 +629,36 @@ packages/core/src/
 
 ## Tasks
 
+### Phase 0: Cleanup
+- [x] Remove `queued` status from schema (`packages/core/src/db/schema/issues.ts`)
+- [x] Create `STATUSES` constant array as single source of truth
+- [x] Update `update-status` tool definition to use `STATUSES`
+- [x] Update `update-status` tool implementation to use `STATUSES`
+- [x] Remove `queued` from Jira sync mapping
+- [x] Remove `queued` from TUI status component
+- [x] Update `status-utils.ts` in TUI (remove queued from config)
+- [x] Refactor `workhorse-status.tsx` to use `status-utils.ts` (remove duplication)
+- [ ] Update tests that reference `queued`
+
 ### Phase 1: Core Infrastructure
-- [ ] Add `ToolStatus` type and `status` field to `OrchestratorTool` interface
-- [ ] Create `status-sets.ts` with STATUS constants
-- [ ] Implement `StatusToolFilter` class
-- [ ] Add `tool.blocked` hook event
+- [x] Add `status?: IssueStatus[]` field to `OrchestratorTool` interface
+- [ ] Add status check inline in harness tool execution
+- [ ] Add `tool.blocked` hook event (optional, for observability)
 
 ### Phase 2: Integration
-- [ ] Wire `StatusToolFilter` into tool execution in `harness.ts`
-- [ ] Add `workhorse_list_tools` tool (always available)
+- [ ] Add `workhorse_list_tools` tool
 - [ ] Add `workhorse_plan` tool (planning-only)
 - [ ] Update `workhorse_update_status` to return available tools in response
-- [ ] Inject plan into prompt when transitioning to `implementing` status
-- [ ] Add `getAvailableToolNames(status)` method to `StatusToolFilter`
 - [ ] Add status context to system prompt via `prompt.building` hook
-- [ ] Update TUI to show available tools for current status
 
 ### Phase 3: Tool Updates
-- [ ] Update all builtin tools with `status` field
-- [ ] Update Pi adapter tools with `status` (static or function)
-- [ ] Update Jira plugin tools with `status`
-- [ ] Update GitHub plugin tools with `status`
-- [ ] Update Playwright plugin tools with `status`
+- [ ] Add `status: ["implementing", "in_review"]` to destructive Pi adapter tools (Write, Edit, Bash, file_ops, project)
+- [ ] Add `status: ["implementing", "in_review"]` to github_open_pr tool
 
 ### Phase 4: Testing
 - [ ] Unit tests for `StatusToolFilter`
-- [ ] Unit tests for status transitions
 - [ ] Integration test: planning → implementing → in_review flow
 - [ ] Test blocked tool response messages
-- [ ] Test dynamic status function resolution
 
 ## Open Questions
 
@@ -838,10 +668,10 @@ packages/core/src/
 
 ## Success Criteria
 
-1. Destructive tools are blocked during planning with helpful messages
-2. Explicit transition required before editing
+1. Destructive tools (Write, Edit, Bash, file_ops, project, github_open_pr) blocked during planning with helpful messages
+2. Explicit transition to `implementing` required before editing
 3. Status changes are logged and visible in TUI
 4. Status context injected into agent prompts
-5. All existing tools have appropriate `status` field
-6. Dynamic tools (git, script) correctly resolve status via function
-7. Backward compatible — tools without `status` work in all statuses
+5. Destructive tools have `status: ["implementing", "in_review"]`
+6. Backward compatible — tools without `status` work in all statuses
+7. `queued` status removed from codebase

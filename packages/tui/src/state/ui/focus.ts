@@ -38,9 +38,10 @@ export function exitInputMode() {
  * Automatically enters input mode when focusing chat.
  */
 export function focusNext() {
-  const current = focusedComponent();
   const next =
-    FOCUS_ORDER[(FOCUS_ORDER.indexOf(current) + 1) % FOCUS_ORDER.length]!;
+    FOCUS_ORDER[
+      (FOCUS_ORDER.indexOf(focusedComponent()) + 1) % FOCUS_ORDER.length
+    ]!;
 
   setFocusedComponent(next);
   // Auto-toggle input mode based on what we're focusing
@@ -52,10 +53,9 @@ export function focusNext() {
  * Automatically enters input mode when focusing chat.
  */
 export function focusPrev() {
-  const current = focusedComponent();
   const prev =
     FOCUS_ORDER[
-      (FOCUS_ORDER.indexOf(current) - 1 + FOCUS_ORDER.length) %
+      (FOCUS_ORDER.indexOf(focusedComponent()) - 1 + FOCUS_ORDER.length) %
         FOCUS_ORDER.length
     ]!;
 

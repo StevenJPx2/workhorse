@@ -69,7 +69,6 @@ function makeEvent(overrides?: Partial<IssueEvent>): IssueEvent {
 test("IssueStatusSchema accepts valid statuses", () => {
   const valid: IssueStatus[] = [
     "pending",
-    "queued",
     "planning",
     "implementing",
     "blocked",
@@ -81,9 +80,8 @@ test("IssueStatusSchema accepts valid statuses", () => {
   }
 });
 
-test("IssueStatusSchema accepts custom string status", () => {
-  // Schema accepts any string to support custom statuses
-  expect(IssueStatusSchema.parse("custom-status")).toBe("custom-status");
+test("IssueStatusSchema rejects invalid status", () => {
+  expect(() => IssueStatusSchema.parse("invalid-status")).toThrow();
 });
 
 test("NotificationPrioritySchema accepts valid priorities", () => {

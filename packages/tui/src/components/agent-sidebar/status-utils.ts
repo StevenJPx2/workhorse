@@ -29,7 +29,7 @@ interface AgentStateConfig {
 const AGENT_STATE_CONFIG: Record<AgentState, AgentStateConfig> = {
   running: { colorKey: "success", icon: "●", text: "Running" },
   starting: { colorKey: "success", icon: "◐", text: "Starting..." },
-  crashed: { colorKey: "warning", icon: "⚠", text: "Crashed" },
+  crashed: { colorKey: "warning", icon: "!", text: "Crashed" },
   stopped: { colorKey: "error", icon: "■", text: "Stopped" },
   stopping: { colorKey: "error", icon: "■", text: "Stopping..." },
 };
@@ -60,7 +60,6 @@ const WORKFLOW_STATUS_CONFIG: Record<IssueStatus, WorkflowStatusConfig> = {
   in_review: { colorKey: "accent", icon: "👀" },
   blocked: { colorKey: "error", icon: "🚫" },
   done: { colorKey: "success", icon: "✅" },
-  queued: { colorKey: "dim", icon: "⏳" },
   pending: { colorKey: "dim", icon: "" },
 };
 

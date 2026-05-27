@@ -116,7 +116,7 @@ Uses **Drizzle ORM** with libsql (Bun-compatible SQLite). Schemas define both da
 await db.issues.insert({
   externalId: "PROJ-123",
   source: "jira",
-  status: "queued",
+  status: "pending",
   metadata: { title: "Fix bug" },
 });
 
@@ -518,7 +518,7 @@ const memory = await MemoryService.create(options);
 External data validated with Zod schemas that double as type definitions:
 
 ```typescript
-export const IssueStatusSchema = z.enum(["pending", "queued", ...]);
+export const IssueStatusSchema = z.enum(["pending", "planning", ...]);
 export type IssueStatus = z.infer<typeof IssueStatusSchema>;
 ```
 

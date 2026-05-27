@@ -5,19 +5,17 @@ import { z } from "zod";
 
 import { dateText } from "./custom-types.ts";
 
+export const STATUSES = [
+  "pending",
+  "planning",
+  "implementing",
+  "blocked",
+  "in_review",
+  "done",
+] as const satisfies string[]; // Hacky way to NOT make this read-only
+
 /** Zod schema for validating issue status */
-export const IssueStatusSchema = z.union([
-  z.enum([
-    "pending",
-    "queued",
-    "planning",
-    "implementing",
-    "blocked",
-    "in_review",
-    "done",
-  ]),
-  z.string<string & {}>(),
-]);
+export const IssueStatusSchema = z.enum(STATUSES);
 
 /** Valid issue statuses */
 export type IssueStatus = z.infer<typeof IssueStatusSchema>;

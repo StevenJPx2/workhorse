@@ -22,6 +22,7 @@ export function createAddCommentTool(
       "metadata as replyToId to reply in the same thread. " +
       "Do NOT include any footer or signature - one is added automatically.",
     sources: ["jira"],
+    status: ["implementing", "in_review"],
     schema: {
       type: "object",
       properties: {

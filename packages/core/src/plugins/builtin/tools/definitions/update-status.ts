@@ -3,6 +3,7 @@
  *
  * @module plugins/builtin/tools/definitions/update-status
  */
+import { STATUSES } from "#db";
 import type { OrchestratorTool } from "#workflow";
 
 import { updateStatusToolImpl } from "../implementations";
@@ -18,15 +19,7 @@ export const updateStatusTool: OrchestratorTool = {
     properties: {
       status: {
         type: "string",
-        enum: [
-          "pending",
-          "queued",
-          "planning",
-          "implementing",
-          "blocked",
-          "in_review",
-          "done",
-        ],
+        enum: STATUSES,
         description: "The new status for the issue",
       },
     },

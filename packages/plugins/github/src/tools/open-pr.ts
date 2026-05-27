@@ -28,6 +28,7 @@ export function createOpenPRTool(
       "to the remote BEFORE calling this tool (use `git push -u origin <branch>`). " +
       "This tool does not push automatically to avoid timeouts from git hooks. " +
       "Updates the issue with PR information after creation.",
+    status: ["implementing", "in_review"],
     schema: {
       type: "object",
       properties: {

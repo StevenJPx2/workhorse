@@ -269,7 +269,7 @@ Updates the current issue's status to reflect progress.
 ```typescript
 {
   status: "implementing";
-} // Valid: pending, queued, planning, implementing, blocked, in_review, done
+} // Valid: pending, planning, implementing, blocked, in_review, done
 ```
 
 ### workhorse_escalate

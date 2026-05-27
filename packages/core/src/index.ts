@@ -1,11 +1,13 @@
 // workhorse-core — main entry point
 
 export * from "#config";
+// Config exports for plugin authors
+export { deleteCredential, getCredential, storeCredential } from "#config";
 export {
-  type WorkhorseContext,
   runWithContext,
   tryUseWorkhorse,
   useWorkhorse,
+  type WorkhorseContext,
 } from "#context";
 export type {
   Issue,
@@ -29,23 +31,37 @@ export {
   NotificationStatusSchema,
   notifications,
   nullableDateText,
+  STATUSES as issueStatuses,
 } from "#db";
+// Path validation exports for harness authors
 export {
+  assertPathAllowed,
+  CORE_HOOK_METADATA,
+  clearPluginHookMetadata,
+  createPathValidator,
   type DiscoveredLink,
+  generateHooksMarkdown,
+  generateHooksReference,
+  getAllHookMetadata,
   type HookCallbacks,
   type HookEmitter,
   type HookEventMap,
   type HookMetadata,
   type HookPayload,
   hooks,
+  isPathAllowed,
+  // Metadata footer for agent-generated content
+  isWorkhorseGenerated,
+  METADATA_FOOTER,
+  type PathValidationOptions,
+  type PathValidationResult,
+  type PathValidator,
   type PromptBuildingContext,
   type PromptContextBlock,
   registerHookMetadata,
-  clearPluginHookMetadata,
-  getAllHookMetadata,
-  CORE_HOOK_METADATA,
-  generateHooksMarkdown,
-  generateHooksReference,
+  validatePath,
+  WORKHORSE_MARKER,
+  withWorkhorseFooter,
 } from "#lib";
 export {
   definePlugin,
@@ -57,68 +73,73 @@ export {
   PluginRegistry,
   PluginSymbol,
 } from "#plugins";
+// Services exports for plugin authors
+export {
+  AttachmentService,
+  type CreateNotificationInput,
+  createRateLimitChecker,
+  type DownloadOptions,
+  type EventMonitorOptions,
+  exponentialBackoff,
+  extractRetryAfter,
+  fixedPause,
+  generateSystemInbox,
+  type IssueEventType,
+  L1Store,
+  L2Store,
+  type MemoryDocument,
+  type MemoryDocumentType,
+  type MemorySearchOptions,
+  MemoryService,
+  type MonitorContext,
+  type MonitorOptions,
+  type MonitorResult,
+  MonitorService,
+  type MonitorStatus,
+  NotificationService,
+  type PauseContext,
+  type PauseDurationFn,
+  type PollingMonitorOptions,
+  parseRetryAfter,
+  parseSessionMemory,
+  type SearchResult,
+  type SessionEntry,
+  type SessionMemory,
+  type StoredAttachment,
+  serializeSessionMemory,
+  withRetryAfterOrBackoff,
+} from "#services";
 // Workflow exports for plugin authors
 export {
-  AgentAdapter,
-  HarnessOrchestrator,
-  ModelRegistry,
-  SteeringRule,
-  Tracker,
   type AdapterInfo,
+  AgentAdapter,
   type AgentState,
   type CreateOptions,
+  HarnessOrchestrator,
   type ImageContent,
   type IssueParserOptions,
   type IssueSource,
   type IssueType,
   type JSONSchema,
   type ModelInfo,
+  ModelRegistry,
   type OrchestratorTool,
   type ParsedIssue,
   type SteeringCondition,
+  SteeringRule,
   type SteeringRuleConfig,
   type SteeringRuleConfigInput,
   type ToolExecutionContext,
   type ToolResult,
+  Tracker,
 } from "#workflow";
-// Services exports for plugin authors
 export {
-  AttachmentService,
-  L1Store,
-  L2Store,
-  MemoryService,
-  MonitorService,
-  NotificationService,
-  createRateLimitChecker,
-  exponentialBackoff,
-  extractRetryAfter,
-  fixedPause,
-  generateSystemInbox,
-  parseRetryAfter,
-  parseSessionMemory,
-  serializeSessionMemory,
-  withRetryAfterOrBackoff,
-  type CreateNotificationInput,
-  type DownloadOptions,
-  type EventMonitorOptions,
-  type IssueEventType,
-  type MemoryDocument,
-  type MemoryDocumentType,
-  type MemorySearchOptions,
-  type MonitorContext,
-  type MonitorOptions,
-  type MonitorResult,
-  type MonitorStatus,
-  type PauseContext,
-  type PauseDurationFn,
-  type PollingMonitorOptions,
-  type SearchResult,
-  type SessionEntry,
-  type SessionMemory,
-  type StoredAttachment,
-} from "#services";
-// Config exports for plugin authors
-export { deleteCredential, getCredential, storeCredential } from "#config";
+  generateState,
+  type OAuthFlowError,
+  type OAuthFlowResult,
+  type OAuthResult,
+  startOAuthFlow,
+} from "./auth";
 // Auth exports for plugin authors
 export type {
   ApiTokenAuthField,
@@ -133,30 +154,8 @@ export type {
   OAuthTokens,
 } from "./auth/types.ts";
 export {
-  generateState,
-  startOAuthFlow,
-  type OAuthFlowError,
-  type OAuthFlowResult,
-  type OAuthResult,
-} from "./auth";
-export {
-  bootstrap,
   type BootstrapOptions,
+  bootstrap,
   type ProgressCallback,
   type Workhorse,
 } from "./bootstrap.ts";
-// Path validation exports for harness authors
-export {
-  assertPathAllowed,
-  createPathValidator,
-  isPathAllowed,
-  type PathValidationOptions,
-  type PathValidationResult,
-  type PathValidator,
-  validatePath,
-  // Metadata footer for agent-generated content
-  isWorkhorseGenerated,
-  METADATA_FOOTER,
-  withWorkhorseFooter,
-  WORKHORSE_MARKER,
-} from "#lib";

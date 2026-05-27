@@ -15,7 +15,6 @@ import type { IssueStatus, WorkhorseContext } from "workhorse-core";
 /** Mapping from internal Workhorse status to Jira status name */
 const STATUS_MAPPING: Record<IssueStatus, string> = {
   pending: "To Do",
-  queued: "To Do",
   planning: "In Progress",
   implementing: "In Progress",
   blocked: "Blocked",

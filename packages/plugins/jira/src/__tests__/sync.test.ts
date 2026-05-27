@@ -64,7 +64,7 @@ describe("registerStatusSync", () => {
 
     handler({
       issue: { source: "jira", externalId: "AM-123" } as Issue,
-      from: "queued",
+      from: "pending",
       to: "planning",
     });
 
