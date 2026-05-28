@@ -26,8 +26,11 @@ export interface JSONSchema {
  * Contains references to services needed for tool implementation.
  */
 export interface ToolExecutionContext {
-  /** Issue ID the agent is working on */
+  /** Issue ID the agent is working on (externalId) */
   issueId: string;
+
+  /** Issue source (e.g., "github", "jira", "figma") */
+  source: string;
 
   /** Path to the git worktree */
   worktreePath: string;

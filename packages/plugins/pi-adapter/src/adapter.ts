@@ -3,6 +3,10 @@
  *
  * Uses @earendil-works/pi-coding-agent SDK directly with path restrictions
  * to ensure agents can only read/write files within their worktree.
+ *
+ * Tool gating: Write/Edit/Bash tools are always registered but check issue
+ * status at execution time. This allows agents to gain write access when
+ * transitioning from "planning" to "implementing" without session restart.
  */
 import {
   type AgentSession,
@@ -12,23 +16,14 @@ import {
   ModelRegistry as PiModelRegistry,
   SessionManager,
   createAgentSession,
-  createBashTool,
-  createEditTool,
-  createReadTool,
-  createWriteTool,
   getAgentDir,
 } from "@earendil-works/pi-coding-agent";
 import type { AgentState } from "workhorse-core";
 import { AgentAdapter } from "workhorse-core";
 
-import { createRestrictedBashOperations } from "./bash-restriction.ts";
 import { createExtensionFromTools, handleSessionEvent } from "./events.ts";
-import {
-  createRestrictedEditOperations,
-  createRestrictedReadOperations,
-  createRestrictedWriteOperations,
-} from "./path-restriction.ts";
 import { PiAdapterModelRegistry } from "./registry.ts";
+import { buildStatusGatedTools } from "./status-gate.ts";
 
 /** Pi Coding Agent adapter. Extends AgentAdapter to wrap the pi SDK session. */
 export class PiAgentAdapter extends AgentAdapter {
@@ -60,6 +55,7 @@ export class PiAgentAdapter extends AgentAdapter {
       extensionFactories: [
         createExtensionFromTools(this.tools, {
           issueId: this.issueId,
+          source: this.issue.source,
           worktreePath: this.worktreePath,
           db: this.db,
           hooks: this.hooks,
@@ -69,9 +65,6 @@ export class PiAgentAdapter extends AgentAdapter {
     });
     await loader.reload();
 
-    // Path restriction ensures agents can only read/write within their worktree
-    const pathRestriction = { rootDir: this.worktreePath };
-
     const { session } = await createAgentSession({
       cwd: this.worktreePath,
       resourceLoader: loader,
@@ -79,25 +72,15 @@ export class PiAgentAdapter extends AgentAdapter {
       authStorage,
       modelRegistry,
       model: this.model ? this.resolveModel(modelRegistry) : undefined,
-      // Override built-in tools with path-restricted versions
-      customTools: [
-        createReadTool(this.worktreePath, {
-          operations: createRestrictedReadOperations(pathRestriction),
-        }),
-        createWriteTool(this.worktreePath, {
-          operations: createRestrictedWriteOperations(pathRestriction),
-        }),
-        createEditTool(this.worktreePath, {
-          operations: createRestrictedEditOperations(pathRestriction),
-        }),
-        createBashTool(this.worktreePath, {
-          // Bash allows worktree + /tmp/ for temporary files
-          operations: createRestrictedBashOperations({
-            rootDir: this.worktreePath,
-            allowTmp: true,
-          }),
-        }),
-      ],
+      // Build custom tools based on current issue status
+      // Path restriction ensures agents can only read/write within their worktree
+      customTools: buildStatusGatedTools({
+        worktreePath: this.worktreePath,
+        db: this.db,
+        externalId: this.issue.externalId,
+        source: this.issue.source,
+        fallbackStatus: this.issue.status,
+      }),
     });
 
     this.session = session;

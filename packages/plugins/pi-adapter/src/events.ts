@@ -81,6 +81,7 @@ export function handleSessionEvent(
 
 export interface ToolFactoryContext {
   issueId: string;
+  source: string;
   worktreePath: string;
   db: ToolExecutionContext["db"];
   hooks: ToolExecutionContext["hooks"];
@@ -94,6 +95,7 @@ export function createExtensionFromTools(
 ): ExtensionFactory {
   const execCtx: ToolExecutionContext = {
     issueId: ctx.issueId,
+    source: ctx.source,
     worktreePath: ctx.worktreePath,
     db: ctx.db,
     hooks: ctx.hooks,

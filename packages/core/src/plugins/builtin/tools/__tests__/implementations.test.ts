@@ -13,6 +13,7 @@ describe("memorySearchToolImpl", () => {
 
     mockContext = {
       issueId: "TEST-123",
+      source: "github",
       worktreePath: "/tmp/test",
       db: {} as any,
       hooks: {} as any,

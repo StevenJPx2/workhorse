@@ -24,7 +24,7 @@ export async function updateStatusToolImpl(
     }
 
     // Find issue by external ID
-    const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
+    const issue = await ctx.db.issues.getByExternalId(ctx.issueId, ctx.source);
 
     if (!issue) {
       return {

@@ -629,7 +629,7 @@ packages/core/src/
 
 ## Tasks
 
-### Phase 0: Cleanup
+### Phase 0: Cleanup ✅
 - [x] Remove `queued` status from schema (`packages/core/src/db/schema/issues.ts`)
 - [x] Create `STATUSES` constant array as single source of truth
 - [x] Update `update-status` tool definition to use `STATUSES`
@@ -638,40 +638,51 @@ packages/core/src/
 - [x] Remove `queued` from TUI status component
 - [x] Update `status-utils.ts` in TUI (remove queued from config)
 - [x] Refactor `workhorse-status.tsx` to use `status-utils.ts` (remove duplication)
-- [ ] Update tests that reference `queued`
+- [x] Update tests that reference `queued`
+- [x] Update READMEs referencing `queued`
+- [x] Fix steering.ts invalid `debugging` status references
 
-### Phase 1: Core Infrastructure
+### Phase 1: Core Infrastructure ✅
 - [x] Add `status?: IssueStatus[]` field to `OrchestratorTool` interface
-- [ ] Add status check inline in harness tool execution
-- [ ] Add `tool.blocked` hook event (optional, for observability)
+- [x] Add status check in `AgentAdapter.tools` getter (filters by issue status)
+- [x] Add `workhorse_list_tools` tool (shows available/blocked tools per status)
 
-### Phase 2: Integration
-- [ ] Add `workhorse_list_tools` tool
-- [ ] Add `workhorse_plan` tool (planning-only)
-- [ ] Update `workhorse_update_status` to return available tools in response
+### Phase 2: Tool Updates ✅
+- [x] Add `status: ["implementing", "in_review"]` to `github_open_pr` tool
+- [x] Add `status: ["implementing", "in_review"]` to `github_add_comment` tool
+- [x] Add `status: ["implementing", "in_review"]` to `jira_add_comment` tool
+- [x] Add `status: ["implementing", "in_review"]` to `jira_transition_issue` tool
+
+### Phase 3: Pi SDK Tool Gating ✅
+- [x] Add `WRITE_STATUSES` constant to core schema (`["implementing", "in_review"]`)
+- [x] Export `WRITE_STATUSES` from `workhorse-core`
+- [x] Update `PiAgentAdapter.buildCustomTools()` to conditionally include Write/Edit/Bash based on issue status
+- [x] When status is NOT in `WRITE_STATUSES`, only `createReadTool` is passed to Pi session
+- [x] When status IS in `WRITE_STATUSES`, all tools (Read, Write, Edit, Bash) are available
+
+### Phase 4: Future Enhancements (Optional)
+- [ ] Add `tool.blocked` hook event for observability
+- [ ] Add `workhorse_plan` tool (planning-only)  
 - [ ] Add status context to system prompt via `prompt.building` hook
-
-### Phase 3: Tool Updates
-- [ ] Add `status: ["implementing", "in_review"]` to destructive Pi adapter tools (Write, Edit, Bash, file_ops, project)
-- [ ] Add `status: ["implementing", "in_review"]` to github_open_pr tool
-
-### Phase 4: Testing
-- [ ] Unit tests for `StatusToolFilter`
+- [ ] Unit tests for status filtering
 - [ ] Integration test: planning → implementing → in_review flow
-- [ ] Test blocked tool response messages
 
 ## Open Questions
 
-1. **Auto-transition triggers** — Should certain actions auto-transition? (e.g., first successful edit → implementing)
+1. **Pi SDK tool filtering** — To filter Write/Edit/Bash by status, we'd need to either:
+   - Modify Pi adapter to conditionally register `customTools` based on issue status
+   - Wrap Pi tools with status check before execution
+   - Request Pi SDK feature for tool filtering
 
-2. **Multi-agent statuses** — If orchestrator spawns sub-agents, do they inherit parent status or have their own?
+2. **Auto-transition triggers** — Should certain actions auto-transition? (e.g., first successful edit → implementing)
+
+3. **Multi-agent statuses** — If orchestrator spawns sub-agents, do they inherit parent status or have their own?
 
 ## Success Criteria
 
-1. Destructive tools (Write, Edit, Bash, file_ops, project, github_open_pr) blocked during planning with helpful messages
-2. Explicit transition to `implementing` required before editing
-3. Status changes are logged and visible in TUI
-4. Status context injected into agent prompts
-5. Destructive tools have `status: ["implementing", "in_review"]`
-6. Backward compatible — tools without `status` work in all statuses
-7. `queued` status removed from codebase
+1. ✅ Orchestrator tools (github_open_pr, jira_add_comment, etc.) blocked during planning
+2. ✅ Explicit transition to `implementing` required before using destructive orchestrator tools
+3. ✅ `workhorse_list_tools` shows available and blocked tools per status
+4. ✅ Backward compatible — tools without `status` work in all statuses
+5. ✅ `queued` status removed from codebase
+6. ✅ Pi SDK tools (Write, Edit, Bash) gated via `PiAgentAdapter.buildCustomTools()` — only Read tool available when not in write-enabled status

@@ -19,7 +19,10 @@ export async function acknowledgeToolImpl(
     if (!notificationIds || notificationIds.length === 0) {
       // Mark all unread notifications for this issue as read
       // issueId in ToolExecutionContext is the externalId, so find by that
-      const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
+      const issue = await ctx.db.issues.getByExternalId(
+        ctx.issueId,
+        ctx.source,
+      );
 
       if (issue) {
         const notifications = await ctx.db.notifications.getUnread(issue.id);

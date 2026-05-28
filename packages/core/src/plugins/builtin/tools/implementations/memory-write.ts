@@ -36,7 +36,10 @@ export async function memoryWriteToolImpl(
 
     // Auto-create session memory if it doesn't exist
     if (!l1.exists()) {
-      const issue = await ctx.db.issues.getByExternalId(ctx.issueId);
+      const issue = await ctx.db.issues.getByExternalId(
+        ctx.issueId,
+        ctx.source,
+      );
       if (!issue) {
         return {
           success: false,

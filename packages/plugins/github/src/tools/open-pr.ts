@@ -55,7 +55,7 @@ export function createOpenPRTool(
 
       try {
         // Note: ctx.issueId is the externalId, not the internal UUID
-        const issue = await db.issues.getByExternalId(ctx.issueId);
+        const issue = await db.issues.getByExternalId(ctx.issueId, ctx.source);
         if (!issue) {
           return { success: false, error: "Issue not found" };
         }
