@@ -219,6 +219,15 @@ await tools.playwright_navigate({
   url: "https://localhost:3443/dashboard",
   ignoreHTTPSErrors: true,
 });
+
+// Navigate with custom headers (e.g., custom User-Agent to bypass bot detection)
+await tools.playwright_navigate({
+  url: "https://example.com/api-page",
+  extraHTTPHeaders: {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    "Authorization": "Bearer token123",
+  },
+});
 await tools.playwright_fill({ selector: "#email", value: "test@example.com" });
 await tools.playwright_fill({ selector: "#password", value: "password123" });
 await tools.playwright_click({ selector: "button[type=submit]" });

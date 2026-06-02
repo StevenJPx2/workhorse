@@ -61,7 +61,6 @@ export class PlaywrightSessionManager {
     return state.session;
   }
 
-  /** Close and cleanup a session for the given issue. */
   async closeSession(issueId: string): Promise<void> {
     const state = this.sessions.get(issueId);
     if (!state) return;
@@ -69,24 +68,20 @@ export class PlaywrightSessionManager {
     this.sessions.delete(issueId);
   }
 
-  /** Close all active sessions. Called during agent shutdown. */
   async closeAllSessions(): Promise<void> {
     await Promise.all(
       Array.from(this.sessions.keys()).map((id) => this.closeSession(id)),
     );
   }
 
-  /** Check if a session is active for the given issue. */
   hasActiveSession(issueId: string): boolean {
     return this.sessions.get(issueId)?.session.isActive ?? false;
   }
 
-  /** Get the session for an issue, if it exists. */
   getSession(issueId: string): BrowserSession | null {
     return this.sessions.get(issueId)?.session ?? null;
   }
 
-  /** Get internal session state. Returns error object if session not ready. */
   getSessionState(issueId: string): SessionState | { error: string } {
     const state = this.sessions.get(issueId);
     if (!state?.session.isActive)
@@ -96,7 +91,6 @@ export class PlaywrightSessionManager {
     return state;
   }
 
-  /** Navigate to a URL. Creates a session if one doesn't exist. */
   async navigate(
     issueId: string,
     url: string,
@@ -126,6 +120,12 @@ export class PlaywrightSessionManager {
         if (!state.connection.initScripts.includes(script))
           await addInitScript(state.connection, script);
       }
+
+      // Set extra HTTP headers if provided
+      if (options.extraHTTPHeaders)
+        await state.connection.page.setExtraHTTPHeaders(
+          options.extraHTTPHeaders,
+        );
 
       const result = await navigateTo(state.connection, url, {
         waitUntil: options.waitUntil ?? "load",

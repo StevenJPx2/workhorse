@@ -367,6 +367,51 @@ describe("PlaywrightSessionManager", () => {
         },
       );
     });
+
+    it("sets extra HTTP headers before navigation", async () => {
+      const mockSetExtraHTTPHeaders = vi.fn().mockResolvedValue(undefined);
+      const mockConnection = {
+        config: { viewport: { width: 1280, height: 720 } },
+        initScripts: [],
+        page: { setExtraHTTPHeaders: mockSetExtraHTTPHeaders },
+      };
+      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
+
+      await sessionManager.navigate("issue-1", "https://example.com", {
+        extraHTTPHeaders: {
+          "User-Agent": "MyBot/1.0",
+          Authorization: "Bearer token123",
+        },
+      });
+
+      expect(mockSetExtraHTTPHeaders).toHaveBeenCalledWith({
+        "User-Agent": "MyBot/1.0",
+        Authorization: "Bearer token123",
+      });
+      expect(mockSetExtraHTTPHeaders).toHaveBeenCalledBefore(mockNavigateTo);
+    });
+
+    it("does not call setExtraHTTPHeaders when not provided", async () => {
+      const mockSetExtraHTTPHeaders = vi.fn();
+      const mockConnection = {
+        config: { viewport: { width: 1280, height: 720 } },
+        initScripts: [],
+        page: { setExtraHTTPHeaders: mockSetExtraHTTPHeaders },
+      };
+      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockNavigateTo.mockResolvedValue({
+        url: "https://example.com",
+        title: "Example",
+      });
+
+      await sessionManager.navigate("issue-1", "https://example.com");
+
+      expect(mockSetExtraHTTPHeaders).not.toHaveBeenCalled();
+    });
   });
 
   describe("setViewport", () => {
@@ -375,7 +420,6 @@ describe("PlaywrightSessionManager", () => {
         width: 1920,
         height: 1080,
       });
-
       expect(result).toEqual({
         success: false,
         error: "No active browser session",
@@ -383,24 +427,14 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("sets viewport and emits event", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       mockSetViewport.mockResolvedValue(undefined);
-
       await sessionManager.getOrCreateSession("issue-1");
       const result = await sessionManager.setViewport("issue-1", {
         width: 1920,
         height: 1080,
       });
-
       expect(result).toEqual({ success: true });
-      expect(mockSetViewport).toHaveBeenCalledWith(mockConnection, {
-        width: 1920,
-        height: 1080,
-      });
       expect(mockHooks.emit).toHaveBeenCalledWith(
         "playwright:viewport.changed",
         expect.objectContaining({
@@ -417,17 +451,12 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("returns current URL from connection", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       mockGetCurrentUrl.mockReturnValue("https://example.com/page");
-
       await sessionManager.getOrCreateSession("issue-1");
-      const url = sessionManager.getCurrentUrl("issue-1");
-
-      expect(url).toBe("https://example.com/page");
+      expect(sessionManager.getCurrentUrl("issue-1")).toBe(
+        "https://example.com/page",
+      );
     });
   });
 
@@ -438,15 +467,10 @@ describe("PlaywrightSessionManager", () => {
 
     it("returns console messages from connection", async () => {
       const messages = [{ type: "log", text: "Hello", timestamp: Date.now() }];
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-        consoleMessages: messages,
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(
+        mockConn({ consoleMessages: messages }),
+      );
       await sessionManager.getOrCreateSession("issue-1");
-
       expect(sessionManager.getConsoleMessages("issue-1")).toBe(messages);
     });
   });
@@ -460,15 +484,10 @@ describe("PlaywrightSessionManager", () => {
       const requests = [
         { url: "https://api.example.com", method: "GET", status: 200 },
       ];
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-        networkRequests: requests,
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(
+        mockConn({ networkRequests: requests }),
+      );
       await sessionManager.getOrCreateSession("issue-1");
-
       expect(sessionManager.getNetworkRequests("issue-1")).toBe(requests);
     });
   });

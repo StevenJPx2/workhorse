@@ -38,16 +38,24 @@ export function createNavigateTool(
           description:
             "Ignore HTTPS errors (e.g., self-signed certificates). If the session was created without this option and you set it to true, the session will be recreated. Default: false",
         },
+        extraHTTPHeaders: {
+          type: "object",
+          additionalProperties: { type: "string" },
+          description:
+            'Extra HTTP headers to send with every request (e.g., {"User-Agent": "MyBot/1.0", "Authorization": "Bearer token"}). Applied before navigation.',
+        },
       },
       required: ["url"],
     },
     execute: async (args, ctx) => {
-      const { url, waitUntil, timeout, ignoreHTTPSErrors } = args as {
-        url: string;
-        waitUntil?: "load" | "domcontentloaded" | "networkidle";
-        timeout?: number;
-        ignoreHTTPSErrors?: boolean;
-      };
+      const { url, waitUntil, timeout, ignoreHTTPSErrors, extraHTTPHeaders } =
+        args as {
+          url: string;
+          waitUntil?: "load" | "domcontentloaded" | "networkidle";
+          timeout?: number;
+          ignoreHTTPSErrors?: boolean;
+          extraHTTPHeaders?: Record<string, string>;
+        };
 
       // Validate URL
       try {
@@ -60,6 +68,7 @@ export function createNavigateTool(
         waitUntil,
         timeout,
         ignoreHTTPSErrors,
+        extraHTTPHeaders,
       });
 
       if (!result.success) {
