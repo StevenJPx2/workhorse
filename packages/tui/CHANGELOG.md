@@ -1,5 +1,17 @@
 # @fdcn/workhorse
 
+## v0.1.30
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.29...v0.1.30)
+
+### 🚀 Enhancements
+
+- **playwright:** Add headful, and stealth spoofs ([84bc080](https://github.com/StevenJPx2/workhorse/commit/84bc080))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.29
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.28...v0.1.29)
