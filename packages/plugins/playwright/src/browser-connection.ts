@@ -31,18 +31,28 @@ export interface BrowserConnection {
   consoleMessages: ConsoleMessage[];
   networkRequests: NetworkRequest[];
   initScripts: string[];
+  /** Persisted extra HTTP headers (merged across navigations) */
+  extraHTTPHeaders: Record<string, string>;
 }
+
+// Suppress automation detection: navigator.webdriver, Sec-CH-UA "HeadlessChrome", UA string
+const STEALTH_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 /** Launch a new browser and create a connection with a ready-to-use page. */
 export async function launchBrowser(
   config: BrowserConnectionConfig,
 ): Promise<BrowserConnection> {
   const browser = await import("playwright").then((pw) =>
-    pw[config.browserType].launch({ headless: config.headless }),
+    pw[config.browserType].launch({
+      headless: config.headless,
+      args: ["--disable-blink-features=AutomationControlled"],
+    }),
   );
   const context = await browser.newContext({
     viewport: config.viewport,
     ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
+    userAgent: STEALTH_USER_AGENT,
   });
   const page = await context.newPage();
   const consoleMessages: ConsoleMessage[] = [];
@@ -83,6 +93,7 @@ export async function launchBrowser(
     consoleMessages,
     networkRequests,
     initScripts: [],
+    extraHTTPHeaders: {},
   };
 }
 

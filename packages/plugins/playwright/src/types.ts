@@ -32,6 +32,8 @@ export interface NavigationOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle";
   /** Timeout in milliseconds */
   timeout?: number;
+  /** Run browser in headless mode (default: true). Set to false to see the browser window. */
+  headless?: boolean;
   /** Ignore HTTPS errors (e.g., self-signed certificates). Recreates browser context if changed. */
   ignoreHTTPSErrors?: boolean;
   /** Extra HTTP headers to send with every request (e.g., User-Agent, Authorization). */

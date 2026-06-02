@@ -44,18 +44,30 @@ export function createNavigateTool(
           description:
             'Extra HTTP headers to send with every request (e.g., {"User-Agent": "MyBot/1.0", "Authorization": "Bearer token"}). Applied before navigation.',
         },
+        headless: {
+          type: "boolean",
+          description:
+            "Run browser in headless mode (no visible window). Set to false to see the browser window for debugging. If changed, the session will be recreated. Default: true",
+        },
       },
       required: ["url"],
     },
     execute: async (args, ctx) => {
-      const { url, waitUntil, timeout, ignoreHTTPSErrors, extraHTTPHeaders } =
-        args as {
-          url: string;
-          waitUntil?: "load" | "domcontentloaded" | "networkidle";
-          timeout?: number;
-          ignoreHTTPSErrors?: boolean;
-          extraHTTPHeaders?: Record<string, string>;
-        };
+      const {
+        url,
+        waitUntil,
+        timeout,
+        ignoreHTTPSErrors,
+        extraHTTPHeaders,
+        headless,
+      } = args as {
+        url: string;
+        waitUntil?: "load" | "domcontentloaded" | "networkidle";
+        timeout?: number;
+        ignoreHTTPSErrors?: boolean;
+        extraHTTPHeaders?: Record<string, string>;
+        headless?: boolean;
+      };
 
       // Validate URL
       try {
@@ -69,6 +81,7 @@ export function createNavigateTool(
         timeout,
         ignoreHTTPSErrors,
         extraHTTPHeaders,
+        headless,
       });
 
       if (!result.success) {

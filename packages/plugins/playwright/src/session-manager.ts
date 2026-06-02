@@ -1,4 +1,3 @@
-/** Playwright Session Manager - manages persistent browser sessions per issue. */
 import type { HookEmitter } from "workhorse-core";
 
 import {
@@ -35,16 +34,20 @@ export class PlaywrightSessionManager {
     private defaultTimeout: number = 30000,
   ) {}
 
-  /** Get an existing session or create a new one for the given issue. */
+  /** Get or create session. Recreates if ignoreHTTPSErrors/headless changed. */
   async getOrCreateSession(
     issueId: string,
     browserType: BrowserType = this.defaultBrowserType,
     ignoreHTTPSErrors = false,
+    headless = true,
   ): Promise<BrowserSession> {
     const existing = this.sessions.get(issueId);
-    // If session exists but ignoreHTTPSErrors changed from false to true, recreate
     if (existing?.session.isActive) {
-      if (ignoreHTTPSErrors && !existing.connection.config.ignoreHTTPSErrors)
+      const cfg = existing.connection.config;
+      if (
+        (ignoreHTTPSErrors && !cfg.ignoreHTTPSErrors) ||
+        cfg.headless !== headless
+      )
         await this.closeSession(issueId);
       else return existing.session;
     }
@@ -56,6 +59,7 @@ export class PlaywrightSessionManager {
       this.defaultViewport,
       this.defaultTimeout,
       ignoreHTTPSErrors,
+      headless,
     );
     this.sessions.set(issueId, state);
     return state.session;
@@ -67,27 +71,23 @@ export class PlaywrightSessionManager {
     await closeSessionState(this.hooks, state);
     this.sessions.delete(issueId);
   }
-
   async closeAllSessions(): Promise<void> {
     await Promise.all(
-      Array.from(this.sessions.keys()).map((id) => this.closeSession(id)),
+      [...this.sessions.keys()].map((id) => this.closeSession(id)),
     );
   }
-
   hasActiveSession(issueId: string): boolean {
     return this.sessions.get(issueId)?.session.isActive ?? false;
   }
-
   getSession(issueId: string): BrowserSession | null {
     return this.sessions.get(issueId)?.session ?? null;
   }
-
   getSessionState(issueId: string): SessionState | { error: string } {
     const state = this.sessions.get(issueId);
     if (!state?.session.isActive)
-      return { error: "No active browser session. Call navigate first." };
+      return { error: "No active session. Call navigate first." };
     if (!hasNavigated(state.connection))
-      return { error: "No page loaded. Call navigate with a URL first." };
+      return { error: "No page loaded. Call navigate with a URL." };
     return state;
   }
 
@@ -101,6 +101,7 @@ export class PlaywrightSessionManager {
         issueId,
         this.defaultBrowserType,
         options.ignoreHTTPSErrors ?? false,
+        options.headless ?? true,
       );
       const state = this.sessions.get(issueId)!;
 
@@ -114,18 +115,18 @@ export class PlaywrightSessionManager {
       };
       this.hooks.emit("playwright:page.loading", ctx);
       await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Add collected init scripts
-      for (const script of ctx.initScripts) {
+      for (const script of ctx.initScripts)
         if (!state.connection.initScripts.includes(script))
           await addInitScript(state.connection, script);
-      }
-
-      // Set extra HTTP headers if provided
+      // Merge and persist extra HTTP headers across navigations
       if (options.extraHTTPHeaders)
-        await state.connection.page.setExtraHTTPHeaders(
+        Object.assign(
+          state.connection.extraHTTPHeaders,
           options.extraHTTPHeaders,
         );
+      const h = state.connection.extraHTTPHeaders;
+      if (Object.keys(h).length > 0)
+        await state.connection.page.setExtraHTTPHeaders(h);
 
       const result = await navigateTo(state.connection, url, {
         waitUntil: options.waitUntil ?? "load",
@@ -183,11 +184,11 @@ export class PlaywrightSessionManager {
     const s = this.sessions.get(issueId);
     return s?.session.isActive ? getCurrentUrl(s.connection) : null;
   }
-  getConsoleMessages(issueId: string): ConsoleMessage[] {
-    return this.sessions.get(issueId)?.connection.consoleMessages ?? [];
+  getConsoleMessages(id: string): ConsoleMessage[] {
+    return this.sessions.get(id)?.connection.consoleMessages ?? [];
   }
-  getNetworkRequests(issueId: string): NetworkRequest[] {
-    return this.sessions.get(issueId)?.connection.networkRequests ?? [];
+  getNetworkRequests(id: string): NetworkRequest[] {
+    return this.sessions.get(id)?.connection.networkRequests ?? [];
   }
   getDefaultTimeout(): number {
     return this.defaultTimeout;

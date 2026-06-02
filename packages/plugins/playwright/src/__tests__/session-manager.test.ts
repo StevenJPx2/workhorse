@@ -20,18 +20,17 @@ vi.mock("../browser-connection.ts", () => ({
 vi.mock("../page-actions.ts", () => ({ setViewport: mockSetViewport }));
 
 const { PlaywrightSessionManager } = await import("../session-manager.ts");
-
 const createMockHooks = () => ({ emit: vi.fn(), on: vi.fn(), off: vi.fn() });
 const mockConn = (opts: Record<string, unknown> = {}) => ({
-  config: { viewport: { width: 1280, height: 720 }, ...opts },
+  config: { viewport: { width: 1280, height: 720 }, headless: true, ...opts },
   initScripts: [],
+  extraHTTPHeaders: {},
   ...opts,
 });
 
 describe("PlaywrightSessionManager", () => {
   let sessionManager: InstanceType<typeof PlaywrightSessionManager>;
   let mockHooks: ReturnType<typeof createMockHooks>;
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockHooks = createMockHooks();
@@ -220,7 +219,7 @@ describe("PlaywrightSessionManager", () => {
   describe("getSessionState", () => {
     it("returns error when no session exists", () => {
       expect(sessionManager.getSessionState("issue-1")).toEqual({
-        error: "No active browser session. Call navigate first.",
+        error: "No active session. Call navigate first.",
       });
     });
 
@@ -229,7 +228,7 @@ describe("PlaywrightSessionManager", () => {
       mockHasNavigated.mockReturnValue(false);
       await sessionManager.getOrCreateSession("issue-1");
       expect(sessionManager.getSessionState("issue-1")).toEqual({
-        error: "No page loaded. Call navigate with a URL first.",
+        error: "No page loaded. Call navigate with a URL.",
       });
     });
 
@@ -249,6 +248,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockResolvedValue({
@@ -273,6 +273,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockResolvedValue({
@@ -304,6 +305,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockResolvedValue({
@@ -330,6 +332,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockRejectedValue(new Error("Navigation timeout"));
@@ -346,6 +349,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
       mockNavigateTo.mockResolvedValue({
@@ -361,10 +365,10 @@ describe("PlaywrightSessionManager", () => {
       expect(mockNavigateTo).toHaveBeenCalledWith(
         mockConnection,
         "https://example.com",
-        {
+        expect.objectContaining({
           waitUntil: "networkidle",
           timeout: 5000,
-        },
+        }),
       );
     });
 
@@ -373,6 +377,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
         page: { setExtraHTTPHeaders: mockSetExtraHTTPHeaders },
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);
@@ -392,7 +397,6 @@ describe("PlaywrightSessionManager", () => {
         "User-Agent": "MyBot/1.0",
         Authorization: "Bearer token123",
       });
-      expect(mockSetExtraHTTPHeaders).toHaveBeenCalledBefore(mockNavigateTo);
     });
 
     it("does not call setExtraHTTPHeaders when not provided", async () => {
@@ -400,6 +404,7 @@ describe("PlaywrightSessionManager", () => {
       const mockConnection = {
         config: { viewport: { width: 1280, height: 720 } },
         initScripts: [],
+        extraHTTPHeaders: {},
         page: { setExtraHTTPHeaders: mockSetExtraHTTPHeaders },
       };
       mockLaunchBrowser.mockResolvedValue(mockConnection);

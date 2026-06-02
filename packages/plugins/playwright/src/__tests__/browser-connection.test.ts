@@ -78,18 +78,27 @@ describe("browser-connection", () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mockPage.url.mockReturnValue("https://example.com");
+    mockPage.title.mockResolvedValue("Example");
+    mockPage.content.mockResolvedValue("<html></html>");
+    mockContext.newPage.mockResolvedValue(mockPage);
+    mockBrowser.newContext.mockResolvedValue(mockContext);
+    mockChromium.launch.mockResolvedValue(mockBrowser);
   });
 
   describe("launchBrowser", () => {
     it("creates browser, context, and page", async () => {
       const conn = await launchBrowser(defaultConfig);
 
-      expect(mockChromium.launch).toHaveBeenCalledWith({ headless: true });
+      expect(mockChromium.launch).toHaveBeenCalledWith({
+        headless: true,
+        args: ["--disable-blink-features=AutomationControlled"],
+      });
       expect(mockBrowser.newContext).toHaveBeenCalledWith({
         viewport: { width: 1280, height: 720 },
         ignoreHTTPSErrors: false,
+        userAgent: expect.stringContaining("Chrome/"),
       });
       expect(mockContext.newPage).toHaveBeenCalled();
       expect(conn.browser).toBe(mockBrowser);
@@ -366,22 +375,22 @@ describe("browser-connection", () => {
 
   describe("hasNavigated", () => {
     it("returns false for about:blank", async () => {
-      mockPage.url.mockReturnValue("about:blank");
       const conn = await launchBrowser(defaultConfig);
+      mockPage.url.mockReturnValue("about:blank");
 
       expect(hasNavigated(conn)).toBe(false);
     });
 
     it("returns false for empty string", async () => {
-      mockPage.url.mockReturnValue("");
       const conn = await launchBrowser(defaultConfig);
+      mockPage.url.mockReturnValue("");
 
       expect(hasNavigated(conn)).toBe(false);
     });
 
     it("returns true for actual URL", async () => {
-      mockPage.url.mockReturnValue("https://example.com");
       const conn = await launchBrowser(defaultConfig);
+      mockPage.url.mockReturnValue("https://example.com");
 
       expect(hasNavigated(conn)).toBe(true);
     });
