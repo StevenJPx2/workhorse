@@ -39,10 +39,15 @@ export class PlaywrightSessionManager {
   async getOrCreateSession(
     issueId: string,
     browserType: BrowserType = this.defaultBrowserType,
+    ignoreHTTPSErrors = false,
   ): Promise<BrowserSession> {
     const existing = this.sessions.get(issueId);
-    if (existing?.session.isActive) return existing.session;
-
+    // If session exists but ignoreHTTPSErrors changed from false to true, recreate
+    if (existing?.session.isActive) {
+      if (ignoreHTTPSErrors && !existing.connection.config.ignoreHTTPSErrors)
+        await this.closeSession(issueId);
+      else return existing.session;
+    }
     const state = await createSession(
       this.hooks,
       issueId,
@@ -50,6 +55,7 @@ export class PlaywrightSessionManager {
       browserType,
       this.defaultViewport,
       this.defaultTimeout,
+      ignoreHTTPSErrors,
     );
     this.sessions.set(issueId, state);
     return state.session;
@@ -97,7 +103,11 @@ export class PlaywrightSessionManager {
     options: NavigationOptions = {},
   ): Promise<{ success: boolean; pageInfo?: PageInfo; error?: string }> {
     try {
-      const session = await this.getOrCreateSession(issueId);
+      const session = await this.getOrCreateSession(
+        issueId,
+        this.defaultBrowserType,
+        options.ignoreHTTPSErrors ?? false,
+      );
       const state = this.sessions.get(issueId)!;
 
       // Emit hook for init script injection

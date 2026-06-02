@@ -20,6 +20,8 @@ export interface BrowserConnectionConfig {
   headless: boolean;
   viewport: Viewport;
   timeout: number;
+  /** Ignore HTTPS errors (e.g., self-signed certificates). Default: false */
+  ignoreHTTPSErrors?: boolean;
 }
 export interface BrowserConnection {
   browser: Browser;
@@ -38,7 +40,10 @@ export async function launchBrowser(
   const browser = await import("playwright").then((pw) =>
     pw[config.browserType].launch({ headless: config.headless }),
   );
-  const context = await browser.newContext({ viewport: config.viewport });
+  const context = await browser.newContext({
+    viewport: config.viewport,
+    ignoreHTTPSErrors: config.ignoreHTTPSErrors ?? false,
+  });
   const page = await context.newPage();
   const consoleMessages: ConsoleMessage[] = [];
   const networkRequests: NetworkRequest[] = [];

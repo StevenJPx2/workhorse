@@ -32,6 +32,8 @@ export interface NavigationOptions {
   waitUntil?: "load" | "domcontentloaded" | "networkidle";
   /** Timeout in milliseconds */
   timeout?: number;
+  /** Ignore HTTPS errors (e.g., self-signed certificates). Recreates browser context if changed. */
+  ignoreHTTPSErrors?: boolean;
 }
 
 /** Element selector result */

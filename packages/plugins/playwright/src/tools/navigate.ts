@@ -33,14 +33,20 @@ export function createNavigateTool(
           type: "number",
           description: "Navigation timeout in milliseconds (default: 30000)",
         },
+        ignoreHTTPSErrors: {
+          type: "boolean",
+          description:
+            "Ignore HTTPS errors (e.g., self-signed certificates). If the session was created without this option and you set it to true, the session will be recreated. Default: false",
+        },
       },
       required: ["url"],
     },
     execute: async (args, ctx) => {
-      const { url, waitUntil, timeout } = args as {
+      const { url, waitUntil, timeout, ignoreHTTPSErrors } = args as {
         url: string;
         waitUntil?: "load" | "domcontentloaded" | "networkidle";
         timeout?: number;
+        ignoreHTTPSErrors?: boolean;
       };
 
       // Validate URL
@@ -53,6 +59,7 @@ export function createNavigateTool(
       const result = await sessionManager.navigate(ctx.issueId, url, {
         waitUntil,
         timeout,
+        ignoreHTTPSErrors,
       });
 
       if (!result.success) {

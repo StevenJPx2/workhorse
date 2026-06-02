@@ -1,9 +1,6 @@
-/**
- * Tests for PlaywrightSessionManager
- */
+/** Tests for PlaywrightSessionManager */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock browser-connection module
 const mockLaunchBrowser = vi.fn();
 const mockCloseBrowser = vi.fn();
 const mockNavigateTo = vi.fn();
@@ -20,19 +17,15 @@ vi.mock("../browser-connection.ts", () => ({
   hasNavigated: mockHasNavigated,
   addInitScript: mockAddInitScript,
 }));
+vi.mock("../page-actions.ts", () => ({ setViewport: mockSetViewport }));
 
-vi.mock("../page-actions.ts", () => ({
-  setViewport: mockSetViewport,
-}));
-
-// Import after mocking
 const { PlaywrightSessionManager } = await import("../session-manager.ts");
 
-// Mock HookEmitter
-const createMockHooks = () => ({
-  emit: vi.fn(),
-  on: vi.fn(),
-  off: vi.fn(),
+const createMockHooks = () => ({ emit: vi.fn(), on: vi.fn(), off: vi.fn() });
+const mockConn = (opts: Record<string, unknown> = {}) => ({
+  config: { viewport: { width: 1280, height: 720 }, ...opts },
+  initScripts: [],
+  ...opts,
 });
 
 describe("PlaywrightSessionManager", () => {
@@ -64,14 +57,8 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("returns true after creating a session", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       await sessionManager.getOrCreateSession("issue-1");
-
       expect(sessionManager.hasActiveSession("issue-1")).toBe(true);
     });
   });
@@ -82,15 +69,9 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("returns session after creation", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       await sessionManager.getOrCreateSession("issue-1");
       const session = sessionManager.getSession("issue-1");
-
       expect(session).not.toBeNull();
       expect(session?.issueId).toBe("issue-1");
       expect(session?.browserType).toBe("chromium");
@@ -100,33 +81,22 @@ describe("PlaywrightSessionManager", () => {
 
   describe("getOrCreateSession", () => {
     it("creates a new session and launches browser", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       const session = await sessionManager.getOrCreateSession("issue-1");
-
       expect(mockLaunchBrowser).toHaveBeenCalledWith({
         browserType: "chromium",
         headless: true,
         viewport: { width: 1280, height: 720 },
         timeout: 30000,
+        ignoreHTTPSErrors: false,
       });
       expect(session.issueId).toBe("issue-1");
       expect(session.isActive).toBe(true);
     });
 
     it("emits session.started event", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       const session = await sessionManager.getOrCreateSession("issue-1");
-
       expect(mockHooks.emit).toHaveBeenCalledWith(
         "playwright:session.started",
         {
@@ -138,58 +108,89 @@ describe("PlaywrightSessionManager", () => {
     });
 
     it("returns existing session if active", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       const session1 = await sessionManager.getOrCreateSession("issue-1");
       const session2 = await sessionManager.getOrCreateSession("issue-1");
-
       expect(session1).toBe(session2);
       expect(mockLaunchBrowser).toHaveBeenCalledTimes(1);
     });
 
     it("uses custom browser type", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
-
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       const session = await sessionManager.getOrCreateSession(
         "issue-1",
         "firefox",
       );
-
       expect(session.browserType).toBe("firefox");
       expect(mockLaunchBrowser).toHaveBeenCalledWith(
         expect.objectContaining({ browserType: "firefox" }),
       );
+    });
+
+    it("creates session with ignoreHTTPSErrors", async () => {
+      mockLaunchBrowser.mockResolvedValue(
+        mockConn({ ignoreHTTPSErrors: true }),
+      );
+      await sessionManager.getOrCreateSession("issue-1", "chromium", true);
+      expect(mockLaunchBrowser).toHaveBeenCalledWith({
+        browserType: "chromium",
+        headless: true,
+        viewport: { width: 1280, height: 720 },
+        timeout: 30000,
+        ignoreHTTPSErrors: true,
+      });
+    });
+
+    it("recreates session when ignoreHTTPSErrors changes from false to true", async () => {
+      mockLaunchBrowser
+        .mockResolvedValueOnce(mockConn({ ignoreHTTPSErrors: false }))
+        .mockResolvedValueOnce(mockConn({ ignoreHTTPSErrors: true }));
+      mockCloseBrowser.mockResolvedValue(undefined);
+      const session1 = await sessionManager.getOrCreateSession("issue-1");
+      expect(mockLaunchBrowser).toHaveBeenCalledTimes(1);
+      const session2 = await sessionManager.getOrCreateSession(
+        "issue-1",
+        "chromium",
+        true,
+      );
+      expect(mockCloseBrowser).toHaveBeenCalledTimes(1);
+      expect(mockLaunchBrowser).toHaveBeenCalledTimes(2);
+      expect(session1.id).not.toBe(session2.id);
+    });
+
+    it("does not recreate session when ignoreHTTPSErrors stays true", async () => {
+      mockLaunchBrowser.mockResolvedValue(
+        mockConn({ ignoreHTTPSErrors: true }),
+      );
+      const session1 = await sessionManager.getOrCreateSession(
+        "issue-1",
+        "chromium",
+        true,
+      );
+      const session2 = await sessionManager.getOrCreateSession(
+        "issue-1",
+        "chromium",
+        true,
+      );
+      expect(session1).toBe(session2);
+      expect(mockLaunchBrowser).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("closeSession", () => {
     it("does nothing when no session exists", async () => {
       await sessionManager.closeSession("issue-1");
-
       expect(mockHooks.emit).not.toHaveBeenCalled();
       expect(mockCloseBrowser).not.toHaveBeenCalled();
     });
 
     it("closes browser and removes session", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      const conn = mockConn();
+      mockLaunchBrowser.mockResolvedValue(conn);
       mockCloseBrowser.mockResolvedValue(undefined);
-
       const session = await sessionManager.getOrCreateSession("issue-1");
       await sessionManager.closeSession("issue-1");
-
-      expect(mockCloseBrowser).toHaveBeenCalledWith(mockConnection);
+      expect(mockCloseBrowser).toHaveBeenCalledWith(conn);
       expect(sessionManager.hasActiveSession("issue-1")).toBe(false);
       expect(mockHooks.emit).toHaveBeenCalledWith("playwright:session.closed", {
         issueId: "issue-1",
@@ -201,22 +202,15 @@ describe("PlaywrightSessionManager", () => {
   describe("closeAllSessions", () => {
     it("does nothing when no sessions exist", async () => {
       await sessionManager.closeAllSessions();
-
       expect(mockHooks.emit).not.toHaveBeenCalled();
     });
 
     it("closes all active sessions", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       mockCloseBrowser.mockResolvedValue(undefined);
-
       await sessionManager.getOrCreateSession("issue-1");
       await sessionManager.getOrCreateSession("issue-2");
       await sessionManager.closeAllSessions();
-
       expect(mockCloseBrowser).toHaveBeenCalledTimes(2);
       expect(sessionManager.hasActiveSession("issue-1")).toBe(false);
       expect(sessionManager.hasActiveSession("issue-2")).toBe(false);
@@ -225,40 +219,25 @@ describe("PlaywrightSessionManager", () => {
 
   describe("getSessionState", () => {
     it("returns error when no session exists", () => {
-      const state = sessionManager.getSessionState("issue-1");
-
-      expect(state).toEqual({
+      expect(sessionManager.getSessionState("issue-1")).toEqual({
         error: "No active browser session. Call navigate first.",
       });
     });
 
     it("returns error when page not navigated", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       mockHasNavigated.mockReturnValue(false);
-
       await sessionManager.getOrCreateSession("issue-1");
-      const state = sessionManager.getSessionState("issue-1");
-
-      expect(state).toEqual({
+      expect(sessionManager.getSessionState("issue-1")).toEqual({
         error: "No page loaded. Call navigate with a URL first.",
       });
     });
 
     it("returns session state when ready", async () => {
-      const mockConnection = {
-        config: { viewport: { width: 1280, height: 720 } },
-        initScripts: [],
-      };
-      mockLaunchBrowser.mockResolvedValue(mockConnection);
+      mockLaunchBrowser.mockResolvedValue(mockConn());
       mockHasNavigated.mockReturnValue(true);
-
       await sessionManager.getOrCreateSession("issue-1");
       const state = sessionManager.getSessionState("issue-1");
-
       expect("error" in state).toBe(false);
       expect("session" in state).toBe(true);
       expect("connection" in state).toBe(true);

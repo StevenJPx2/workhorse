@@ -89,6 +89,7 @@ describe("browser-connection", () => {
       expect(mockChromium.launch).toHaveBeenCalledWith({ headless: true });
       expect(mockBrowser.newContext).toHaveBeenCalledWith({
         viewport: { width: 1280, height: 720 },
+        ignoreHTTPSErrors: false,
       });
       expect(mockContext.newPage).toHaveBeenCalled();
       expect(conn.browser).toBe(mockBrowser);

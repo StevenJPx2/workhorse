@@ -213,6 +213,12 @@ headless = true           # Run without visible browser
 ```typescript
 // Agent navigates and screenshots
 await tools.playwright_navigate({ url: "http://localhost:3000/login" });
+
+// Navigate to a site with a self-signed certificate
+await tools.playwright_navigate({
+  url: "https://localhost:3443/dashboard",
+  ignoreHTTPSErrors: true,
+});
 await tools.playwright_fill({ selector: "#email", value: "test@example.com" });
 await tools.playwright_fill({ selector: "#password", value: "password123" });
 await tools.playwright_click({ selector: "button[type=submit]" });

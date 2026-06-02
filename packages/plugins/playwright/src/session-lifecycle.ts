@@ -21,6 +21,7 @@ export async function createSession(
   browserType: BrowserType,
   viewport: Viewport,
   timeout: number,
+  ignoreHTTPSErrors = false,
 ): Promise<SessionState> {
   hooks.emit("playwright:session.started", { issueId, sessionId, browserType });
 
@@ -37,6 +38,7 @@ export async function createSession(
       headless: true,
       viewport,
       timeout,
+      ignoreHTTPSErrors,
     }),
   };
 }
