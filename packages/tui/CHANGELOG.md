@@ -1,5 +1,34 @@
 # @fdcn/workhorse
 
+## v0.1.28
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.27...v0.1.28)
+
+### 🚀 Enhancements
+
+- Status gates tools ([19ca2f5](https://github.com/StevenJPx2/workhorse/commit/19ca2f5))
+- Status-gated tools ([dca130c](https://github.com/StevenJPx2/workhorse/commit/dca130c))
+- Add core rearchitecture plan ([08d62f4](https://github.com/StevenJPx2/workhorse/commit/08d62f4))
+- Add learnings ([86d095f](https://github.com/StevenJPx2/workhorse/commit/86d095f))
+- **playwright:** Operate with ignoreHTTPSErrors ([2f4df0a](https://github.com/StevenJPx2/workhorse/commit/2f4df0a))
+
+### 🩹 Fixes
+
+- Source ([0520a48](https://github.com/StevenJPx2/workhorse/commit/0520a48))
+
+### 📖 Documentation
+
+- Add plans ([5bc91fe](https://github.com/StevenJPx2/workhorse/commit/5bc91fe))
+
+### 🏡 Chore
+
+- Move finished plans to archive ([713004d](https://github.com/StevenJPx2/workhorse/commit/713004d))
+- Add more things to the new architecture ([12f5b73](https://github.com/StevenJPx2/workhorse/commit/12f5b73))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.27
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.26...v0.1.27)
