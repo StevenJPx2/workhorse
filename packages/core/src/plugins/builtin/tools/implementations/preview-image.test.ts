@@ -17,6 +17,7 @@ describe("previewImageToolImpl", () => {
 
     mockContext = {
       issueId: "TEST-123",
+      source: "test",
       worktreePath: testDir,
       db: {} as any,
       hooks: {} as any,

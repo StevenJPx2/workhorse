@@ -68,6 +68,7 @@ describe("jira_add_comment tool", () => {
       { body: "LGTM" },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -100,6 +101,7 @@ describe("jira_add_comment tool", () => {
       { body: "Thanks for the feedback!", replyToId: "10001" },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -135,6 +137,7 @@ describe("jira_add_comment tool", () => {
       { body: "LGTM" },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -159,6 +162,7 @@ describe("jira_add_comment tool", () => {
       { body: "LGTM" },
       {
         issueId: "owner/repo#123",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -196,6 +200,7 @@ describe("jira_transition_issue tool", () => {
       { status: "Done" },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -235,6 +240,7 @@ describe("jira_transition_issue tool", () => {
       { status: "Blocked" },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -261,6 +267,7 @@ describe("jira_transition_issue tool", () => {
       { status: "Done" },
       {
         issueId: "owner/repo#123",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -314,6 +321,7 @@ describe("jira_get_comments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -355,6 +363,7 @@ describe("jira_get_comments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -380,6 +389,7 @@ describe("jira_get_comments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -404,6 +414,7 @@ describe("jira_get_comments tool", () => {
       {},
       {
         issueId: "owner/repo#123",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,

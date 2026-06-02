@@ -36,6 +36,7 @@ describe("load_skill tool", () => {
     // Create a minimal mock context - most fields aren't used by load_skill
     mockContext = {
       issueId: "TEST-123",
+      source: "test",
       worktreePath: "/tmp/test",
       db: {} as any,
       hooks: {} as any,

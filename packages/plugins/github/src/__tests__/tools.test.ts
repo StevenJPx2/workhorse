@@ -56,6 +56,7 @@ describe("github_add_comment tool", () => {
       { owner: "octocat", repo: "hello-world", number: 42, body: "LGTM!" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: {} as any,
         hooks: {} as any,
@@ -96,6 +97,7 @@ describe("github_add_comment tool", () => {
       { owner: "octocat", repo: "hello-world", number: 42, body: "Test" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: {} as any,
         hooks: {} as any,
@@ -147,6 +149,7 @@ describe("github_get_pr_status tool", () => {
       { owner: "octocat", repo: "hello-world", number: 42 },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: {} as any,
         hooks: {} as any,
@@ -198,6 +201,7 @@ describe("github_get_pr_status tool", () => {
       { owner: "octocat", repo: "hello-world", number: 42 },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: {} as any,
         hooks: {} as any,

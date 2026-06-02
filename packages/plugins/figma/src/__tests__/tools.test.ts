@@ -26,6 +26,7 @@ function makeDb(externalId: string, source = "figma") {
 function makeCtx(issueId: string, db: ReturnType<typeof makeDb>) {
   return {
     issueId,
+    source: "figma",
     worktreePath: "/tmp/wh",
     db: db as any,
     hooks: { emit: vi.fn() } as any,

@@ -86,6 +86,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -148,6 +149,7 @@ describe("jira_get_attachments tool", () => {
       { imagesOnly: true },
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -184,6 +186,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -247,6 +250,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -304,6 +308,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -333,6 +338,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "owner/repo#123",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -361,6 +367,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -405,6 +412,7 @@ describe("jira_get_attachments tool", () => {
       {},
       {
         issueId: "AM-123",
+        source: "jira",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,

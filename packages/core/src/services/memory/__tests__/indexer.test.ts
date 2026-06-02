@@ -169,7 +169,7 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       await l1ctx.updatePatterns(["Uses TypeScript", "Has tests"]);
       await l1ctx.appendSession({
         timestamp: new Date(),
-        status: "completed",
+        status: "done",
         summary: ["Implemented the feature", "Added unit tests"],
         learnings: ["Learned about TypeScript generics"],
         filesChanged: ["src/feature.ts", "src/feature.test.ts"],
@@ -243,7 +243,7 @@ describe.skipIf(isCI)("MemoryIndexer", () => {
       await l1ctx.create("AM-789: Learning feature", "implementing");
       await l1ctx.appendSession({
         timestamp: new Date(),
-        status: "completed",
+        status: "done",
         summary: ["Did some work"],
         learnings: ["Important discovery about async/await"],
         filesChanged: [],

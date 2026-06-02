@@ -28,6 +28,7 @@ describe("memoryWriteToolImpl", () => {
 
     mockContext = {
       issueId: "TEST-123",
+      source: "test",
       worktreePath: "/tmp/test",
       db: {
         issues: {

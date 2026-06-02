@@ -98,6 +98,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       { title: "Add feature", body: "Description", base: "main" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp/worktree",
         db: mockDb as any,
         hooks: mockHooks as any,
@@ -214,6 +215,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       { title: "AM-123: Implement feature", base: "main" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp/worktree",
         db: mockDb as any,
         hooks: mockHooks as any,
@@ -248,6 +250,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       { title: "Test", base: "main" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
@@ -300,6 +303,7 @@ describe.skipIf(!isBun)("github_open_pr tool", () => {
       { title: "Test", base: "main" },
       {
         issueId: "issue-1",
+        source: "github",
         worktreePath: "/tmp",
         db: mockDb as any,
         hooks: {} as any,
