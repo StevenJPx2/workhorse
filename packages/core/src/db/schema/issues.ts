@@ -21,12 +21,6 @@ export const IssueStatusSchema = z.enum(STATUSES);
 export type IssueStatus = z.infer<typeof IssueStatusSchema>;
 
 /**
- * Statuses where destructive/write operations are allowed.
- * Used by both OrchestratorTool filtering and Pi SDK tool gating.
- */
-export const WRITE_STATUSES: IssueStatus[] = ["implementing", "in_review"];
-
-/**
  * Issues table - tracks issues from external sources (Jira, GitHub, etc.)
  */
 export const issues = sqliteTable(

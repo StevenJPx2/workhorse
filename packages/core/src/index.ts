@@ -32,7 +32,6 @@ export {
   notifications,
   nullableDateText,
   STATUSES as issueStatuses,
-  WRITE_STATUSES,
 } from "#db";
 // Path validation exports for harness authors
 export {

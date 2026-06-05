@@ -59,8 +59,7 @@ export class AgentAdapter {
       .getTools()
       .filter(
         (t) => !t.sources?.length || t.sources.includes(this.issue.source),
-      )
-      .filter((t) => !t.status?.length || t.status.includes(this.issue.status));
+      );
   }
   get db(): Database {
     return this.orchestrator.db;

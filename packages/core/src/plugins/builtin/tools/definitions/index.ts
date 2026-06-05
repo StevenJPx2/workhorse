@@ -6,7 +6,6 @@
 
 export { acknowledgeTool } from "./acknowledge.ts";
 export { escalateTool } from "./escalate.ts";
-export { createListToolsTool } from "./list-tools.ts";
 export { memorySearchTool } from "./memory-search.ts";
 export { memoryWriteTool } from "./memory-write.ts";
 export { previewImageTool } from "./preview-image.ts";

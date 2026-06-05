@@ -15,7 +15,6 @@ import { registerBuiltinSkills } from "./skills/register.ts";
 import { registerCoreSteering } from "./steering.ts";
 import {
   acknowledgeTool,
-  createListToolsTool,
   escalateTool,
   memorySearchTool,
   memoryWriteTool,
@@ -39,7 +38,6 @@ export const corePlugin = definePlugin({
         "workhorse_memory_search",
         "workhorse_memory_write",
         "workhorse_preview_image",
-        "workhorse_list_tools",
         "load_skill",
       ],
       parsers: ["local"],
@@ -56,7 +54,6 @@ export const corePlugin = definePlugin({
     ctx.orchestrator.registerTool(memoryWriteTool);
     ctx.orchestrator.registerTool(previewImageTool);
     ctx.orchestrator.registerTool(createLoadSkillTool(ctx.orchestrator));
-    ctx.orchestrator.registerTool(createListToolsTool(ctx.orchestrator));
 
     // Register builtin skills
     registerBuiltinSkills(ctx.orchestrator.skillRegistry);

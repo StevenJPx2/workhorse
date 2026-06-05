@@ -15,7 +15,7 @@ Decisions and open questions from the design interview session.
 
 ### Workflow
 
-- **Status-driven step selection**: Status is the primary driver of which steps run. The Workflow watches deterministic conditions (e.g., "all todos complete") to advance status, and status changes drive step selection.
+- **Status-block step selection**: Status is a *block*, not a selector (see Resolved Loopholes #5). Steps sharing a status run in declaration order and loop back to the block's first step until an exit condition fires; then status advances to the next block. The Workflow watches deterministic conditions (e.g., "all todos complete") to drive block exits.
 - **Declarative config objects (pure data — TOML/JSON)**: Workflow types are defined as pure data files, not TypeScript. Transition conditions are named built-in conditions, not arbitrary functions.
 - **Built-in conditions + composites**: Ship a set of named conditions (`todos_complete`, `token_budget_exceeded`, `step_idle`, `status_changed`, etc.) with AND/OR combinators. Add a generic `state_check` condition for custom scenarios.
 - **Fully pluggable workflow types from day one**: Design the system so custom workflow types can be loaded from `.workhorse/workflows/`. Ralph ships as built-in.
@@ -125,13 +125,59 @@ Decisions and open questions from the design interview session.
 
 ---
 
+## Resolved Loopholes (adversarial pass)
+
+Decisions from the loophole review. All are now reflected in `rearchitecture.md`.
+
+1. **Duplicate `Agent` struct → two planes.** The runtime `Agent` (bones: `run`/`notify`/`interrupt`) stays named `Agent`. The static struct becomes `AgentDefinition`, an authored **config-plane** entry that is a *provider* of capabilities (tools/skills/scripts/models) for a backend. No "Adapter" jargon. A new "Config Plane vs Runtime Plane" section documents this.
+2. **Filtering double-ownership.** `BasicService` **declares/collects** contributions (tagged with metadata). The **Harness intersects** providers against the step allowlist at run time. Single owner for the live narrowing context.
+3. **Concurrent transition precedence.** Dissolved by the block model — `next` (intra-block jump) and `next_status` (block exit) operate at different scopes and never compete for a winner.
+4. **Unreachable `done`.** Terminal: a `next_status` to a status with no step block ends `Workflow.run()` and sets the tag as a side-effect. There is no "done step."
+5. **Status→step ambiguity → status blocks.** Status is a **block**, not a selector. Steps sharing a status run in declaration order and loop back to the block's first step until an exit condition fires; then the status advances and execution enters the next block's first step.
+6. **Orphaned `blocked`.** Entered via an agent-set condition (a tool marks blocked); exited via external `status_changed`. It is a normal block (may hold or poll).
+7. **Mid-tool interrupt safety.** The Harness interrupts only at **tool-call boundaries** — in-flight tool call completes, then it halts before the next. No partial writes/commits.
+8. *(merged into 7)*
+9. **`ask_parent` deadlock.** All tools have a **default timeout + per-tool override**; `ask_parent` is bound by it. If the parent goes idle/over-budget before answering, the paused sub-agent is cancelled at the next boundary and the unanswered question surfaces in the parent's output.
+10. **Epilogue chain vs injected steps.** Plugin pre-transition steps are **out-of-band** — the prologue→epilogue handoff flows around them; their side-effects (PR, notify) don't enter the chain.
+11. **`state_check` escape hatch.** Constrained to **declarative predicates over known state keys** (`file_exists`, `git_clean`, `git_ahead`, `todo_count`, `token_used`, `iteration_count`, `status`) with a fixed operator set (`eq`/`ne`/`gt`/`gte`/`lt`/`lte`/`exists`/`matches`). No arbitrary code.
+12. **`.workhorse/` writability.** **Read-only** to agents via FS tools.
+13. **Workflow-TOML tampering.** Definitions are **parsed/validated once at workflow start** and frozen for the run — no mid-run reload.
+14. **tool vs service allowlist precedence.** `services[]` gates which services are active; `tools[]` is the final per-tool filter. A tool must pass **both** — most-restrictive wins.
+15. **Monitoring with no actions.** Wired to a **`resource_exceeded`** built-in transition condition (configurable thresholds, per-step override).
+
+Supporting additions: `Step` gained `tokenBudget` and `toolTimeout`. The "Config gates; it never provides" principle is the unifying rule behind #1, #2, and #14.
+
+---
+
+## Resolved (session 2 — blocking design questions)
+
+Now reflected in `rearchitecture.md`.
+
+### Agent Event Stream
+
+- **Event set**: `tool_call`, `tool_result`, `message`, `token_usage`, `idle`, `done`, `error`. `token_usage` feeds `token_budget_exceeded`; `idle` feeds `step_idle`; `tool_call`/`tool_result` let the Harness enforce timeout + truncation; a failed sub-agent surfaces as an error `tool_result`.
+- **Termination contract**: the iterable **always** ends with a `done` event carrying `reason: completed | interrupted | error` — never dangles. `interrupt()` finishes the in-flight tool call, emits `done{ interrupted }`, closes the iterable.
+
+### Error Handling & Recovery
+
+- **Fail-fast to `blocked`**: `Step.retry` defaults to **0**. On failure (agent `error`, fatal tool error, unexpected budget blow) the step retries `retry` times, then sets `status = blocked` with the error captured. `blocked` now has three entry paths: agent-set, retry-exhaustion, fail-fast. Exited by external `status_changed`.
+- **Sub-agent errors surface inline**: a failing sub-agent returns an error `tool_result` to the parent (does not directly fail the parent step) — consistent with `ask_parent` timeout handling.
+- **Status-granularity resume**: the Workflow persists **only the current `status`** to XDG state. On restart it re-enters that block at its first step. Step id is not checkpointed; persisted memory/todos/L1 carry the real work.
+
+### Configuration Cascade
+
+- **Order**: `global → project → workflow type → preset → step` (later wins, most-specific wins).
+- **Project may patch presets by name**: e.g. `[presets.coding] agent = "codex"` in `.workhorse/config.toml` retunes the preset repo-wide; explicit step fields still override.
+
+---
+
 ## Open Questions for Next Session
 
 ### TUI Integration
 
 - How does the TUI observe the new Workflow → Step → Harness hierarchy?
 - Does the TUI need new renderers for step transitions, sub-agent trees, workflow loop iterations?
-- How does the TUI display the status-driven step selection in real time?
+- How does the TUI display the status-block model (loop iterations within a block, block transitions) in real time?
 
 ### Steering Rules
 
@@ -139,29 +185,11 @@ Decisions and open questions from the design interview session.
 - If they survive, do they live at the Workflow level or the Harness level?
 - How do steering rules interact with plugin-injected steps?
 
-### Error Handling & Recovery
-
-- What happens when a step fails (agent crashes, tool error, token budget exceeded unexpectedly)?
-- Does the Workflow retry the step, skip it, or halt?
-- How does error state propagate from sub-agents to the parent?
-- Can a workflow resume from a specific step after a crash (checkpoint/restore)?
-
 ### Multi-Workflow Coordination
 
 - Can multiple workflows share the same worktree (e.g., two issues in the same repo)?
 - How does the Orchestrator handle resource contention (same repo, different branches)?
 - Is there a workflow queue or priority system?
-
-### Configuration Cascade
-
-- How does the TOML config cascade work in core-v2? (global → project → workflow type → step?)
-- Can step presets be overridden in project config? (e.g., "in this repo, the coding step uses Codex instead of Claude")
-
-### Agent Event Stream
-
-- What events does `AsyncIterable<AgentEvent>` yield? (tool_call, message, token_usage, idle, done, error?)
-- How does the Harness map these events to external hooks?
-- What's the contract for when the iterable completes vs when `interrupt()` is called?
 
 ### L2 Memory in core-v2
 

@@ -20,7 +20,6 @@ export function createTransitionTool(
       "matches by status name. Use when the agent has completed work or needs to " +
       "update the ticket status.",
     sources: ["jira"],
-    status: ["implementing", "in_review"],
     schema: {
       type: "object",
       properties: {

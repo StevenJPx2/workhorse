@@ -26,7 +26,6 @@ export function createAddCommentTool(
       "ask questions, or share findings with stakeholders. " +
       "Can include image attachments by providing local paths or URLs. " +
       "Do NOT include any footer or signature - one is added automatically.",
-    status: ["implementing", "in_review"],
     schema: {
       type: "object",
       properties: {

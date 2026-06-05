@@ -3,7 +3,7 @@
  *
  * @module workflow/orchestrator/types/tools
  */
-import type { Database, IssueStatus } from "#db";
+import type { Database } from "#db";
 import type { HookEmitter } from "#lib";
 import type { MemoryService } from "#services";
 
@@ -105,16 +105,6 @@ export interface OrchestratorTool {
    * when working on a local issue that has no Jira integration.
    */
   sources?: string[];
-
-  /**
-   * Issue statuses this tool applies to (e.g., ["done"], ["blocked"]).
-   * If omitted or empty, tool is available for all issue statuses.
-   *
-   * This allows plugins to register tools that only appear when working on
-   * issues in specific statuses. For example, a tool that acknowledges
-   * issues when they're done could be registered with status=["done"].
-   */
-  status?: IssueStatus[];
 
   /**
    * Execute the tool with given arguments.
