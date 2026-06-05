@@ -1,5 +1,17 @@
 # @fdcn/workhorse
 
+## v0.1.32
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.31...v0.1.32)
+
+### 🚀 Enhancements
+
+- Add model label ([d771f14](https://github.com/StevenJPx2/workhorse/commit/d771f14))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.31
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.30...v0.1.31)
