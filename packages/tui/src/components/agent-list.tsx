@@ -159,10 +159,10 @@ export function AgentList(props: AgentListProps) {
                     status={getStatus(agent.issue.externalId)}
                     compact
                   />
-                  <Show when={agent.model}>
+                  <Show when={agent.modelLabel}>
                     <text fg={theme.colors.dim}>
                       {" · "}
-                      {agent.model}
+                      {agent.modelLabel}
                     </text>
                   </Show>
                 </box>

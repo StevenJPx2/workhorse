@@ -139,10 +139,10 @@ export function AgentSidebar(props: AgentSidebarProps) {
                     </Show>
                   </box>
                   {/* Row 3: Model info */}
-                  <Show when={agent.model}>
+                  <Show when={agent.modelLabel}>
                     <box paddingLeft={2}>
                       <text fg={theme.colors.dim}>
-                        {truncateModel(agent.model ?? "", SIDEBAR_WIDTH - 6)}
+                        ◇ {truncateModel(agent.modelLabel, SIDEBAR_WIDTH - 8)}
                       </text>
                     </box>
                   </Show>

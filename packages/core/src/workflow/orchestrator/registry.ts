@@ -53,4 +53,26 @@ export abstract class ModelRegistry {
    * Call this if model configuration has been modified.
    */
   abstract refresh(): void;
+
+  /**
+   * Get the default model used when none is explicitly selected.
+   *
+   * Resolves to the preferred provider's default model among the available
+   * (authenticated) models, falling back to any default model, then the first
+   * available model. Returns undefined when no models are available.
+   *
+   * Used by the UI to show which model an agent is running when the user
+   * didn't pin a specific one.
+   */
+  getDefault(): ModelInfo | undefined {
+    const available = this.getAvailable();
+    if (available.length === 0) return undefined;
+    const preferred = this.getPreferredProvider();
+    return (
+      available.find((m) => m.provider === preferred && m.isDefault) ??
+      available.find((m) => m.provider === preferred) ??
+      available.find((m) => m.isDefault) ??
+      available[0]
+    );
+  }
 }

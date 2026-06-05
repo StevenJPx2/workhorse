@@ -61,6 +61,14 @@ export class AgentAdapter {
         (t) => !t.sources?.length || t.sources.includes(this.issue.source),
       );
   }
+  /** Display label for the running model: explicit choice or harness default. */
+  get modelLabel(): string {
+    if (this.model) return this.model;
+    return (
+      (this.constructor as typeof AgentAdapter).registry?.getDefault?.()?.id ??
+      ""
+    );
+  }
   get db(): Database {
     return this.orchestrator.db;
   }

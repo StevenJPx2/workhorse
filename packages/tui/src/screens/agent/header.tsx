@@ -8,6 +8,7 @@ import { MonitorIndicator } from "../../components";
 import {
   getStatusColor,
   getStatusIcon,
+  truncateModel,
 } from "../../components/agent-sidebar/status-utils.ts";
 import { WorkhorseStatus } from "../../components/workhorse-status.tsx";
 import type { IssueStatusState } from "../../primitives/create-issue-status.ts";
@@ -44,12 +45,14 @@ export function AgentHeader(props: AgentHeaderProps) {
             ? agent().issue.title.slice(0, 30) + "..."
             : agent().issue.title}
         </text>
-        <Show when={agent().model}>
-          <text fg={theme.colors.dim}>{" | "}</text>
-          <text fg={theme.colors.info}>{agent().model}</text>
-        </Show>
       </box>
       <box flexDirection="row" flexShrink={0} gap={1}>
+        <Show when={agent().modelLabel}>
+          <text fg={theme.colors.info}>
+            ◇ {truncateModel(agent().modelLabel, 28)}
+          </text>
+          <text fg={theme.colors.dim}>|</text>
+        </Show>
         <WorkhorseStatus status={props.issueStatusState().status} />
         <text fg={theme.colors.dim}>|</text>
         <MonitorIndicator state={props.monitorState()} />
