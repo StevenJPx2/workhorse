@@ -1,5 +1,21 @@
 # @fdcn/workhorse
 
+## v0.1.31
+
+[compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.30...v0.1.31)
+
+### 🚀 Enhancements
+
+- Add core-v2, and revert status gating ([f3fc603](https://github.com/StevenJPx2/workhorse/commit/f3fc603))
+
+### 🏡 Chore
+
+- Bun lock ([62627ac](https://github.com/StevenJPx2/workhorse/commit/62627ac))
+
+### ❤️ Contributors
+
+- Steven John <stevenjpx2@gmail.com>
+
 ## v0.1.30
 
 [compare changes](https://github.com/StevenJPx2/workhorse/compare/v0.1.29...v0.1.30)
