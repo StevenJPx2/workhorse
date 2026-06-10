@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "jsPlugins": ["../../oxlint/eslint-plugin-workhorse"],
+  "categories": {
+    "correctness": "error",
+    "perf": "warn",
+    "suspicious": "warn",
+    "pedantic": "warn",
+    "style": "warn"
+  },
+  "rules": {
+    "eslint/sort-imports": ["warn", { "allowSeparatedGroups": true }],
+    "eslint/sort-keys": "warn",
+    "eslint/id-length": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/capitalized-comments": "off",
+    "eslint/no-inline-comments": "off",
+    "eslint/func-style": ["error", "declaration"],
+    "unicorn/no-empty-file": "warn"
+  },
+  "ignorePatterns": ["node_modules/**", "dist/**"]
+}

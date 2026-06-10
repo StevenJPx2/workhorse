@@ -1,0 +1,14 @@
+# .workhorse/config.toml — committed project settings.
+
+# Every step starts from these, then its preset, then the step's own fields win.
+[defaults]
+agent             = "claude"        # which registered backend drives a step
+model             = "claude-sonnet-4"
+token_budget      = 100_000
+tool_timeout      = 120_000   # ms
+tool_output_limit = 3_000     # chars; a tool's output is truncated past this
+retry             = 0         # 0 = stop on first failure
+
+# Patch a preset for THIS repo only — "here, the coder uses Codex."
+[presets.coding]
+agent = "codex"

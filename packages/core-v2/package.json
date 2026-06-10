@@ -2,6 +2,12 @@
   "name": "core-v2",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "fallow": "fallow",
+    "typecheck": "tsc --noEmit"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -9,7 +15,11 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "defu": "^6.1.7",
+    "es-toolkit": "~1.46.1",
     "hookable": "^6.1.1",
-    "unctx": "^2.5.0"
+    "smol-toml": "^1.6.1",
+    "unctx": "^2.5.0",
+    "zod": "^4.4.3"
   }
 }

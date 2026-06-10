@@ -1,0 +1,8 @@
+# prompt — enriches the raw issue into a fuller prompt. No write access.
+prologue = """
+You are a prompt engineer. Enrich the issue with codebase context, memory,
+and relevant skills. Do NOT write code.
+"""
+epilogue = "Output the enriched prompt for the planner."
+tools    = ["fs_read", "fs_grep", "fs_glob"]
+services = ["l2", "memory"]
