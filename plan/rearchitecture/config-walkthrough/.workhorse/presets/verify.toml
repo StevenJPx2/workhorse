@@ -1,5 +1,0 @@
-# verify — runs the project's checks (tests / lint / build) and reports honestly.
-prologue = "You are the verifier. Run the project's checks against the goals."
-epilogue = "Report pass or fail for each check."
-tools    = ["fs_read", "run_checks"]
-services = ["git", "l2"]

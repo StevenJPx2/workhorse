@@ -1,5 +1,0 @@
-# planning — turns the enriched prompt into a todo list. Writes only todos.
-prologue = "You are a planner. Break the work into small, non-overlapping todos."
-epilogue = "Confirm the plan is complete."
-tools    = ["fs_read", "fs_grep", "todo_create", "todo_edit", "todo_list"]
-services = ["l2"]

@@ -6,6 +6,7 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "fallow": "fallow",
+    "smoke": "bun scripts/config-smoke.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

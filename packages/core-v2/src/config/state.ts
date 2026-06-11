@@ -2,8 +2,11 @@ import z from "zod";
 
 import { Status } from "../schema/status";
 
-/** A routing rule: when its expression holds, switch to stage `to`. */
+/** A routing rule: when its expression holds, switch to stage `to`. `epilogue`
+ *  is the optional transition handoff sent to the finishing agent when this exit
+ *  fires; its response feeds the first step of `to`. Falls back to the step's. */
 export const ExitRule = z.object({
+  epilogue: z.string().optional(),
   to: Status,
   when: z.string(),
 });

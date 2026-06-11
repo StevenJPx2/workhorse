@@ -1,5 +1,0 @@
-# review-monitor — waits for external review input (CI, comments, Jira).
-prologue = "You are the review monitor. Watch for external review signals."
-epilogue = "Report any open review threads."
-tools    = ["fs_read"]
-services = ["git"]

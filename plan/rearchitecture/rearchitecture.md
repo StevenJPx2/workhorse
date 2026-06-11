@@ -1,5 +1,12 @@
 # Core Rearchitecture
 
+> **Config model.** A workflow is a list of `[[states]]` — each a status with an
+> ordered `steps` list and `exits` — and routing is
+> `exits = [{ when = "<expr>", to = "<status>" }]` using the safe `when`
+> expression grammar. Config is authored and validated in idiomatic
+> **snake_case** throughout (the schemas mirror the TOML; no case conversion).
+> Worked example: `packages/core-v2/src/config/example.ts` (run `bun run --filter core-v2 smoke`).
+
 ## Goals
 
 - Make it the SDK even clearer and concise
@@ -183,7 +190,8 @@ Workflow: {
   context: WorkflowContext
 
   cwd: string
-  +steps: "Step[]"
+  states: "State[]"          # the stage machine, in order
+  steps: "map[string]Step"   # step library, referenced by id from states
 
   # this provides context for the steps and its descendants
   provide(): "() -> WorkflowContext"
@@ -208,17 +216,22 @@ Status: {
   blocked            # entered via agent-set condition; exited via external status_changed
   ready_for_review
   in_review
-  done               # terminal: no step block — reaching it exits Workflow.run()
+  done               # terminal: no stage — reaching it exits Workflow.run()
 }
 
 
+# A library entry, referenced by id from a State's `steps`. It carries NO
+# status and NO routing — the State that lists it decides where it runs, and
+# only States carry exit rules.
 Step: {
   shape: class
 
   id: string
-  status: Status # the status BLOCK this step belongs to (not a selector — see Workflow)
+  preset: string  # optional: inherit a preset's fields; any field below overrides it
   prologue: string  # becomes the agent's system prompt
-  epilogue: string  # final prompt sent to agent; response feeds next step's prologue
+  # default/positional handoff — feeds the NEXT step in declaration order, or the
+  #   loop-back target. Overridden per-transition by ExitRule.epilogue (see below).
+  epilogue: string  # final prompt sent to the finishing agent; response → next prologue
   tools: "string[]"  # allowlist — gate only, never provides
   services: "string[]"  # allowlist — gate only, never provides
   agent: string  # name of an agent definition (config plane)
@@ -226,24 +239,32 @@ Step: {
   tokenBudget: number  # scalar; drives `token_budget_exceeded`; overridable, default from preset/config
   toolTimeout: number  # default per-tool timeout (ms); individual tools may override
   retry: number  # retries before routing to `blocked` on failure (default 0 = fail-fast)
-  subAgentTemplates: "SubAgentTemplate[]"
-  transitions: "Transition[]"
+  subAgents: "SubAgentTemplate[]"
 }
 
-# A transition ONLY sets status. When `condition` holds, the status tag
-# changes to `next_status` and execution lands on that block's FIRST step
-# (declaration order). There is no step-level routing — intra-block flow is
-# always positional. `next_status` must differ from the current status
-# (same-status is redundant) and must resolve to a known status (load time).
-Transition: {
+# A State (stage) is one status's block: an ordered list of step ids that run
+# in declaration order and loop back to the first until an exit fires. Only
+# States route — steps never do.
+State: {
   shape: class
 
-  condition: string          # named built-in (todos_complete, step_idle, …)
-  # state_check only — declarative predicate, no arbitrary code:
-  key: string                # known state key (e.g. todo_count)
-  op: string                 # eq | ne | gt | gte | lt | lte | exists | matches
-  value: any
-  next_status: Status        # the ONLY target — change status; land on that block's first step
+  name: Status               # the status this block represents
+  steps: "string[]"          # step ids; run in order, looping
+  exits: "ExitRule[]"        # routing rules, evaluated in order (first match wins)
+}
+
+# An exit's `when` is a safe boolean expression (see "The `when` rule
+# language"). When it holds, control switches to the `to` status and lands on
+# that block's FIRST step. `to` must differ from the owning State's `name` and
+# resolve to a known status (checked at load).
+ExitRule: {
+  shape: class
+
+  when: string               # safe boolean expression — pure data, never code
+  to: Status                 # target status — switch block; land on its first step
+  epilogue: string           # optional: transition handoff posed to the finishing
+                             #   agent when THIS exit fires; response → first step of
+                             #   `to`. Falls back to Step.epilogue when omitted.
 }
 
 SubAgentTemplate: {
@@ -266,7 +287,7 @@ Harness: {
 
   # intersects (agent definition + service contributions) against the step's
   #   tools[]/services[] allowlist, most-restrictive wins, and provides the
-  #   result to the agent (BasicService declares/collects; Harness intersects)
+  #   result to the agent (capability services declare/collect; Harness intersects)
   # enforces tool output truncation (configurable per-step, default ~2000-3000 chars)
   # interrupts the agent only at tool-call boundaries (never mid-tool-call)
   run(): "(step: Step) -> Promise<void>"
@@ -349,7 +370,7 @@ The Harness computes `(agent definition ∪ service contributions) ∩ step allo
 - **`Agent`** (runtime) — a live instance the Harness drives. Bones.
 - **`AgentDefinition`** (config) — names an adapter class and supplies its capability set (tools/skills/scripts/models). A Step's `agent` field references an `AgentDefinition` by name; the Harness resolves it to an `AdapterClass`, instantiates the `Agent`, and provides the gated capabilities.
 
-**Naming convention:** config files use idiomatic **snake_case** (`token_budget`, `next_status`, `write_globs`); structs/code use idiomatic **camelCase** (`tokenBudget`, `nextStatus`, `writeGlobs`). The config loader maps between them.
+**Naming convention:** config — and the Zod schemas that validate it — use idiomatic **snake_case** throughout (`token_budget`, `write_globs`, `sub_agents`); the schemas mirror the TOML shape directly, so there is **no case conversion**. (Runtime class members may still use camelCase.)
 
 ### Workflow
 
@@ -368,182 +389,138 @@ The Harness computes `(agent definition ∪ service contributions) ∩ step allo
 A workflow is a collection of steps that are executed in sequence and can loop back to the beginning until the workflow is complete / solved.
 This is isolated in its own directory and is not allowed to step out of it. All the tools are made to work within this directory and `$XDG_STATE_HOME/workhorse/workflow/<issue-id>/`.
 
-**The workflow is linear; the only routing decision is status.** A status block is the set of steps that share a `status`. Steps within a block run **in declaration order**, looping back to the block's first step at the end. This positional flow is the _only_ intra-block movement — a step never names "what runs next."
+**The workflow is linear; the only routing decision is the stage (status).** A **stage** (`[[states]]`) is one status with an ordered list of step ids. Its steps run **in declaration order**, looping back to the first step at the end. This positional flow is the _only_ intra-stage movement — a step never names "what runs next."
 
-**A transition only sets status.** When a transition's `condition` holds, the status tag changes to `next_status` and execution lands on the **first step of that block** (declaration order). There is no step-level routing. `next_status` must differ from the current status (same-status is redundant — same-block looping is already implicit). A backward edge is just a `next_status` to an earlier block.
+**Only stages route, via `exits`.** A stage's `exits` are rules `{ when = "<expr>", to = "<status>", epilogue? = "<prompt>" }`, evaluated in order — **first match wins**. When an exit's `when` holds, control switches to the `to` status and lands on the **first step of that stage**, and the exit's optional `epilogue` (if set) is the handoff prompt for that transition (see below). There is no step-level routing. `to` must differ from the stage's own status (same-stage looping is already implicit) and resolve to a known status. A backward edge is just a `to` an earlier stage.
 
-The agent doesn't know about or control transitions.
+The agent doesn't know about or control routing.
 
 ```
-status: planning      ┌─ prompt-engineer ─→ planner ─┐
-                      └────────── loop (implicit) ◀────┘
-                                       │ next_status = implementing → first step
+stage: planning       ┌─ prompt-engineer ─→ planner ─┐
+                      └────────── loop (implicit) ◄────┘
+                                       │ exit: when todos_complete → to = implementing (first step)
                                        ▼
-status: implementing  ┌─ coder ─→ memory-weaver ─┐
-                      └───────── loop (implicit) ◀┘
-                                       │ next_status = ready_for_review → first step
+stage: implementing   ┌─ coder ─→ memory-weaver ─┐
+                      └───────── loop (implicit) ◄┘
+                                       │ exit: when todos_complete → to = ready_for_review (first step)
                                        ▼
                             (reusable tail — see below)
 
-  A backward edge is just a next_status to an earlier block, e.g.
-  ready_for_review (tests fail) → next_status = implementing → lands on coder (its first step).
+  A backward edge is just a `to` an earlier stage, e.g.
+  ready_for_review (checks fail) → to = implementing → lands on coder (its first step).
 ```
 
-The Workflow checks external state (todo files on disk, git status, token count, resource usage) on a poll/hook basis while the step's agent is working. A transition decision never interrupts the agent mid-tool-call — the Harness finishes the in-flight tool call, then halts before the next one (see Harness).
+The Workflow checks external state (todo files on disk, git status, token count) on a poll/hook basis while the step's agent is working, evaluating each stage's `exits`. A routing decision never interrupts the agent mid-tool-call — the Harness finishes the in-flight tool call, then halts before the next one (see Harness).
 
-**Terminal & blocked.** Reaching `done` ends `Workflow.run()`; the tag is set as a final side-effect — there is no "done step." `done` is **never agent-controlled**: it is forced by an **external hook** (e.g. a sign-off/merge event), not by an internal condition the agent can satisfy. The `blocked` status is reached by an agent-set condition (a tool marks the issue blocked) and is exited by an external `status_changed` (e.g. a human answers). Both `blocked` and a signed-off `in_review` are **park states**: blocks the workflow rests in (no satisfied exit condition) until an external event routes out. Parking is normal — a workflow may sit in `in_review` indefinitely until an external hook forces `done` or a change-request routes back to `implementing`.
+**Terminal & blocked.** Reaching `done` ends `Workflow.run()`; the status is set as a final side-effect — there is no "done step." `done` is **never agent-controlled**: it is forced by an **external hook** (e.g. a sign-off/merge event), not by an internal condition the agent can satisfy. The `blocked` status is reached by an agent-set condition (a tool marks the issue blocked) and is exited by an external `status_changed` (e.g. a human answers). Both `blocked` and a signed-off `in_review` are **park states**: stages the workflow rests in (no satisfied exit condition) until an external event routes out. Parking is normal — a workflow may sit in `in_review` indefinitely until an external hook forces `done` or a change-request routes back to `implementing`.
 
-**Workflow types are pure data (TOML/JSON).** Transition conditions are named built-ins, not arbitrary functions. Custom workflow types can be loaded from `.workhorse/workflows/`. `ralph` ships as a built-in.
+**Workflow types are pure data (TOML/JSON).** Exit `when` rules use a fixed grammar of named built-ins, state keys, and comparisons — not arbitrary functions. Custom workflow types can be loaded from `.workhorse/workflows/`. `ralph` ships as a built-in.
 
-A step runs the Harness with a prologue (system prompt) and, on completion, sends an epilogue prompt to the agent. The agent's response to the epilogue becomes the next step's prologue input. Each step creates a fresh agent session — no conversation history is shared between steps.
+A step runs the Harness with a prologue (system prompt). When the step's run **resolves** — whether it finished cleanly (`done{completed}`) or was halted at a boundary by a firing exit (`done{interrupted}`) — the Workflow resolves routing and then sends the **handoff prompt that belongs to the chosen edge**. The agent's response to that prompt becomes the next step's prologue input. Each step creates a fresh agent session — no conversation history is shared between steps.
+
+**The handoff (epilogue) is edge-scoped, not just step-scoped.** Which prompt is sent depends on where control goes next:
+
+- **Stay in the stage** (advance to the next step in declaration order, or loop back to the first) → send the source `Step.epilogue`. This handoff varies by **source**, so it lives on the step (e.g. memory-weaver's epilogue feeds the coder).
+- **Leave the stage** (an exit's `when` held) → send that `ExitRule.epilogue`, falling back to `Step.epilogue` when the exit omits one. This handoff varies by **destination and reason** — the same exit, fired from any step in the stage, hands the same thing to the target's first step — so it lives on the exit.
+
+Because an exit's `when` _is_ the reason for leaving, the exit handoff naturally reflects it: `token_budget_exceeded` can ask the agent to checkpoint partial progress, while `todos_complete` can ask it to summarise the finished work for the next stage. This is also why the handoff is extracted in the finishing agent's **live session** (only it still holds the working context) rather than deferred to the next step, which has no session yet.
 
 Each step limits the tools, skills, and scripts available based on its allowlist configuration, not the current status alone.
 
 **Plugin-injected pre-transition steps**: Plugins can register steps that run synchronously before the workflow's own steps when a status transition occurs (e.g. GitHub plugin injects a PR-creation step on transition to `in_review`).
 
-#### Built-in Transition Conditions
+#### The `when` Rule Language
 
-| Condition               | Description                                                               |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `todos_complete`        | All todo items are marked done                                            |
-| `token_budget_exceeded` | Step has consumed its token limit (`Step.tokenBudget`)                    |
-| `step_idle`             | Agent stopped producing output                                            |
-| `status_changed`        | Issue status changed externally                                           |
-| `resource_exceeded`     | Harness-monitored resource limit hit (memory/CPU/disk/network)            |
-| `review_settled`        | All external review inputs resolved (hook + Jira fed) — see reusable tail |
-| `always`                | Unconditionally true                                                      |
-| `state_check`           | Declarative predicate over a known state key (no arbitrary code)          |
+A stage routes via its `exits`; each exit's `when` is a small, **safe boolean expression** — pure data, never code. It mixes three kinds of atom, combined with `and` / `or` / `not` and parentheses:
+
+| You write                      | Kind                   | Means                       |
+| ------------------------------ | ---------------------- | --------------------------- |
+| `todos_complete`               | built-in name          | a fixed runtime check       |
+| `git_clean`                    | bare boolean state key | the key is truthy           |
+| `todo_count == 0`              | state comparison       | `==` `!=` `>` `>=` `<` `<=` |
+| `checks_status != "passed"`    | …with a string literal | string compare              |
+| `file_exists("PLAN.md")`       | parameterised key      | existence check             |
+| `branch matches "^feat/"`      | pattern match          | regex/glob match            |
+| `todos_complete and git_clean` | composite              | mix names + state freely    |
+
+- **Built-in names** (fixed, core-owned): `todos_complete`, `token_budget_exceeded`, `step_idle`, `status_changed`, `review_settled`, `always`. A bad name is caught the moment the workflow loads.
+- **State keys** are runtime-extensible: core ships `file_exists`, `git_clean`, `git_ahead`, `todo_count`, `token_used`, `iteration_count`, `status`, and plugins surface more (e.g. `checks_status`, `open_review_threads` for the review tail).
+- **Composites** are written inline with `and` / `or` / `not` — there is no separate composite table.
 
 `review_settled` is **hook-extensible**: plugins (GitHub checks/comments) and Jira (change-requests / sign-off) feed it. It holds only when every external input is resolved with no pending items.
 
-**AND/OR composites.** A transition's `condition` may be a composite, expressed as a nested table rather than a string:
-
-```toml
-[[steps.transitions]]
-next_status = "ready_for_review"
-[steps.transitions.condition.all] # all = AND; any = OR
-of = ["todos_complete", "git_clean"]
-```
-
-`all` (AND) and `any` (OR) take a list of condition names or further nested composites. A bare `condition = "name"` is the simple case.
-
-**`state_check` is constrained, not an escape hatch.** It can only compare a **known state key** against a value using a **fixed operator set** — never arbitrary code. This keeps workflow types pure data.
-
-- **Known keys** (extensible by core only): `file_exists`, `git_clean`, `git_ahead`, `todo_count`, `token_used`, `iteration_count`, `status`.
-- **Operators**: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `exists`, `matches`.
-
-```toml
-[[steps.transitions]]
-condition = "state_check"
-key = "todo_count"
-op = "eq"
-value = 0
-next_status = "implementing"
-```
-
-`resource_exceeded` reads Harness-emitted monitoring metrics; thresholds live in an optional per-step `[steps.resources]` table (falling back to config defaults):
-
-```toml
-[steps.resources]
-max_memory_mb = 4096
-max_cpu_pct = 90
-max_disk_mb = 2048
-```
+> **Resources.** Resource usage (memory/CPU/disk/network) is **monitored** by the Harness and surfaced as metrics — it is not a routing input. If a workflow needs to react to usage, expose a monitored value as a state key and compare it in a `when` rule.
 
 **Load-time validation (workflow types are frozen at start — see Directory Layout).** At parse time the loader enforces:
 
-- step `id`s are unique within a workflow;
-- every `next_status` resolves to a known status and **differs from the step's own status** (same-status transitions are redundant and rejected);
-- every `condition` (and composite member) is a known built-in;
-- every `state_check` `key`/`op` is in the allowed sets;
-- **park-block check** — a block with no internal exit transition is allowed only if it has an external route (`status_changed`, or `done` forced by an external hook). A block with neither an internal exit nor an external route is flagged (it can never advance).
+- step `id`s are unique within a workflow, and every id named by a stage exists;
+- every stage `name` is a known status;
+- every exit `to` resolves to a known status (or terminal `done`) and **differs from the owning stage's status** (same-stage exits are redundant and rejected);
+- every `when` parses, and every built-in name, state key, and operator in it is known;
+- an exit's optional `epilogue`, if present, is a non-empty string;
+- **park-stage check** — a stage with no satisfiable exit is allowed only if it has an external route (`status_changed`, or `done` forced by an external hook). A stage with neither is flagged (it can never advance).
 
 A workflow that fails validation is rejected before it runs.
 
 #### `workflow.toml` Example
 
-A workflow type is a plain TOML file placed in `.workhorse/workflows/<name>.toml` (or shipped as a built-in). It declares the steps and the conditions that drive transitions between them.
+A workflow type is a plain TOML file placed in `.workhorse/workflows/<name>.toml` (or shipped as a built-in). It has two halves: the **stages** (`[[states]]` — the machine) on top, and a **step library** (`[steps.<id>]` — definitions referenced by id) below.
 
-When a `preset` is specified, all fields (status, agent, model, prologue, epilogue, tools, token_budget, etc.) are inherited from the preset definition. Any field you specify is an override.
-
-Recall the block semantics: steps sharing a `status` form a block and run in **declaration order**, looping back to the block's first step when no transition fires. Transitions only ever set `next_status` (change block); there is no step-level `next`. Intra-block movement is entirely positional, so a step that just wants the next step to run declares **no transition at all** — it falls through. In the example below, every transition is a block change (forward or backward); the linear flow between steps in the same block is implicit.
+When a step sets `preset`, all fields (agent, model, prologue, epilogue, tools, token_budget, etc.) are inherited from that preset; any field on the step is an override. A step lists **no status** — the stage that names it decides where it runs. Steps sharing a stage run in **declaration order**, looping back to the stage's first step until an exit fires.
 
 ```toml
 # .workhorse/workflows/ralph.toml
-
-name = "ralph"
+name    = "ralph"
 version = "1"
 
-# ─────────────────────────────────────────
-# Step 1 — Prompt Engineer  (status: planning, first step)
-# No transition needed: when it finishes it falls through to the planner.
-# ─────────────────────────────────────────
-[[steps]]
-id = "prompt-engineer"
+# ── stages: each runs its steps in order, looping, until an exit fires ──
+[[states]]
+name  = "planning"
+steps = ["prompt-engineer", "planner"]      # loops prompt → planner → prompt …
+exits = [{ when = "todos_complete", to = "implementing" }]
+
+[[states]]
+name  = "implementing"
+steps = ["coder", "memory-weaver"]          # loops coder → memory → coder …
+exits = [
+  { when = "todos_complete", to = "ready_for_review",
+    epilogue = "Summarise the finished implementation against the goals, for verification." },
+]
+
+# ── step library: definitions only, referenced by id above ──
+[steps.prompt-engineer]
 preset = "prompt"
 
-# ─────────────────────────────────────────
-# Step 2 — Planner  (status: planning)
-# Exits the planning block when the plan is ready; otherwise the block
-# loops back to prompt-engineer implicitly.
-# ─────────────────────────────────────────
-[[steps]]
-id = "planner"
+[steps.planner]
 preset = "planning"
 
-[[steps.transitions]]
-condition = "todos_complete"
-next_status = "implementing"
+[steps.coder]
+preset       = "coding"
+token_budget = 150_000                       # override the preset for THIS workflow
 
-# ─────────────────────────────────────────
-# Step 3 — Coder  (status: implementing, first step)
-# Uses the "coding" preset but overrides token_budget and adds sub-agents.
-# No transition: falls through to memory-weaver.
-# ─────────────────────────────────────────
-[[steps]]
-id = "coder"
-preset = "coding"
+  [[steps.coder.sub_agents]]
+  name        = "researcher"
+  model       = "claude-haiku-3"
+  write_globs = []                           # read-only
+  tools       = ["fs_read", "fs_grep", "fs_glob"]
 
-token_budget = 150_000 # override preset default
+  [[steps.coder.sub_agents]]
+  name        = "tester"
+  model       = "claude-sonnet-4"
+  write_globs = ["**/*.test.ts", "**/*.spec.ts"]
+  tools       = ["fs_read", "fs_write", "fs_grep", "todo_list"]
 
-[[steps.sub_agents]]
-name = "researcher"
-model = "claude-haiku-3"
-write_globs = []                          # read-only
-tools = ["fs_read", "fs_grep", "fs_glob"]
-
-[[steps.sub_agents]]
-name = "tester"
-model = "claude-sonnet-4"
-write_globs = ["**/*.test.ts", "**/*.spec.ts"]
-tools = ["fs_read", "fs_write", "fs_grep", "todo_list"]
-
-[[steps.transitions]]
-condition = "todos_complete"
-next_status = "ready_for_review"
-
-# ─────────────────────────────────────────
-# Step 4 — Memory Weaver  (status: implementing, last step)
-# Uses the "memory" preset but overrides model to use a lighter one.
-# NO transition: it falls through to the coder (this block's first step),
-# so the implementation iterates as coder → memory-weaver → coder → …
-# Crucially, memory-weaver's epilogue (summary, what's fixed, what's left,
-# learnings, feedback) becomes the CODER's next prologue — the handoff only
-# makes sense feeding the coder, so the loop must stay within implementing.
-# The block exits only when the coder fires todos_complete (above).
-# ─────────────────────────────────────────
-[[steps]]
-id = "memory-weaver"
+[steps.memory-weaver]
 preset = "memory"
-model = "claude-haiku-3" # override: lighter model for summarisation
+model  = "claude-haiku-3"                     # override: lighter model for summarisation
 ```
 
-**Full override example** — if you need to completely customise a step without using a preset:
+Memory-weaver declares no exit on its stage, so the implementing stage falls through it back to the coder (its first step) — the implementation iterates as coder → memory-weaver → coder …, and memory-weaver's epilogue becomes the coder's next prologue. The stage exits only when the coder's work satisfies `todos_complete → ready_for_review`.
+
+**Full override example** — a step can set every field directly instead of using a preset:
 
 ```toml
-[[steps]]
-id = "custom-step"
-status = "implementing"
+[steps.custom-step]
 agent = "claude"
 model = "claude-sonnet-4"
 
@@ -555,17 +532,11 @@ epilogue = """
 Summarise what you did.
 """
 
-tools = ["fs_read", "fs_write", "git_commit"]
-
+tools        = ["fs_read", "fs_write", "git_commit"]
 token_budget = 50_000
-
-# A transition only changes status. With none declared, this step falls
-# through to the next step in its block (or loops to the block's first
-# step if it is the last). Declare one only to leave the block:
-[[steps.transitions]]
-condition = "step_idle"
-next_status = "ready_for_review"
 ```
+
+(Where this step runs — and where it can route to — is decided by the stage that lists it, not by the step itself.)
 
 #### Example - Ralph Loop
 
@@ -605,7 +576,7 @@ next_status = "ready_for_review"
    - Feedback: What it should do for the next iteration.
 
 ```
-  planning block            implementing block
+  planning stage            implementing stage
  ┌─────────┐  ┌─────────┐   ┌────────┐   ┌─────────┐
  │ prompt  │─▶│ planner │──▶│  code  │──▶│ memory  │
  │         │◀┐│         │   │        │◀┐ │         │
@@ -617,62 +588,58 @@ next_status = "ready_for_review"
                   coder todos_complete → ready_for_review (tail)
 ```
 
-The planning block loops `prompt → planner → prompt` until the plan is ready (`todos_complete → implementing`). The implementing block then loops `code → memory → code`: memory-weaver's epilogue feeds the coder's next prologue. It exits only when the coder fires `todos_complete → ready_for_review`.
+The planning stage loops `prompt → planner → prompt` until the plan is ready (`todos_complete → implementing`). The implementing stage then loops `code → memory → code`: memory-weaver's epilogue feeds the coder's next prologue. It exits only when the coder fires `todos_complete → ready_for_review`.
 
 #### Reusable Tail — `ready_for_review` & `in_review`
 
-The two blocks after `implementing` are the same across most workflow types, so they are documented once here as a reusable pattern. A workflow type inherits them by declaring steps with these statuses (the PR step is injected by the GitHub plugin, not authored in the workflow).
+The two stages after `implementing` are the same across most workflow types, so they are documented once here as a reusable pattern. A workflow type inherits them by declaring steps with these statuses (the PR step is injected by the GitHub plugin, not authored in the workflow).
 
 ```
 implementing ──todos_complete──▶ ready_for_review ──pass──▶ in_review ──forced(done)──▶ done
      ▲                                  │                       │
-     │                            tests fail                review wants changes
-     └──────── next_status = implementing ◀──────────────────────┘
+     │                            checks fail               review wants changes
+     └──────── to = implementing ◄───────────────────┘
 ```
 
 **`ready_for_review` — verification agent.** Runs final checks against the goals.
 
-- **Pass** → `next_status = "in_review"`. On this transition the **GitHub plugin injects a PR-creation step** (pre-transition, out-of-band — see Plugins).
-- **Fail** → honestly reports failures, then `next_status = "implementing"` (lands on the first step of `implementing`, i.e. coder).
+- **Pass** → `to = "in_review"`. On this exit the **GitHub plugin injects a PR-creation step** (pre-transition, out-of-band — see Plugins).
+- **Fail** → honestly reports failures, then `to = "implementing"` (lands on the first step of `implementing`, i.e. coder).
 
 **`in_review` — external review holding state.** On entry it turns on the available monitors and waits for external input to flood in (GitHub checks/comments, Jira change-requests).
 
-- **Changes requested** (`review_settled` resolves with pending change-requests, or a Jira change-request arrives) → `next_status = "implementing"`.
-- **Signed off / clean** → the block **parks** (no satisfied internal exit). The workflow rests here.
+- **Changes requested** (`review_settled` resolves with pending change-requests, or a Jira change-request arrives) → `to = "implementing"`.
+- **Signed off / clean** → the stage **parks** (no satisfied internal exit). The workflow rests here.
 - **`done`** is **forced by an external hook** (sign-off/merge event). The agent never drives it.
 
 ```toml
 # Reusable tail (inheritable by any workflow type)
 
-[[steps]]
-id = "verifier"
-status = "ready_for_review"
+[[states]]
+name  = "ready_for_review"
+steps = ["verifier"]
+exits = [
+  # checks pass — hand a verification summary to the reviewer
+  { when = "todos_complete", to = "in_review",
+    epilogue = "Summarise what was verified and the supporting evidence, for external review." },
+  # checks failed — hand the failures back to the coder
+  { when = 'checks_status != "passed"', to = "implementing",
+    epilogue = "List the failing checks and what must change to make them pass." },
+]
+
+[[states]]
+name  = "in_review"
+steps = ["reviewer"]
+# change requested (hook/Jira fed) — hand the requested changes back to the coder
+exits = [{ when = "open_review_threads > 0", to = "implementing",
+  epilogue = "Summarise the requested changes and open threads for the next implementation pass." }]
+# signed-off → no matching exit → the stage parks until an external hook forces `done`.
+
+[steps.verifier]
 preset = "verify"
 
-[[steps.transitions]]
-condition = "todos_complete" # checks pass
-next_status = "in_review"
-
-[[steps.transitions]]
-condition = "state_check"    # checks failed
-key = "checks_status"
-op = "ne"
-value = "passed"
-next_status = "implementing"
-
-[[steps]]
-id = "reviewer"
-status = "in_review"
+[steps.reviewer]
 preset = "review-monitor"
-
-[[steps.transitions]]
-condition = "state_check"    # change requested (hook/Jira fed)
-key = "open_review_threads"
-op = "gt"
-value = 0
-next_status = "implementing"
-# signed-off → no matching transition → the block parks until an external
-# hook forces `done`.
 ```
 
 ### Harness
@@ -700,19 +667,19 @@ There is a **single generic Harness** that executes any step. All differentiatio
 For agents:
 
 - It instantiates the runtime `Agent` from the agent definition named by `Step.agent` (e.g., Pi, Claude, Codex)
-- Monitors the agent (memory, CPU, disk, network) and emits metrics; limits feed the `resource_exceeded` transition condition
+- Monitors the agent (memory, CPU, disk, network) and emits metrics (surfaced for observability — not a routing input)
 - Creates a fresh agent session per step (no shared conversation history)
 - Handles sub-agents (spawning, `ask_parent` routing, one-level-deep enforcement)
 
 For services:
 
-- **Intersects providers against the step allowlist.** Providers (the agent definition's capabilities + service contributions) propose the universe; the Step's `tools[]`/`services[]` allowlist narrows it. `services[]` gates which services are active; `tools[]` is the final per-tool filter — a tool must pass **both** (most-restrictive wins). BasicService declares/collects; the Harness performs this intersection at run time and provides the result to the agent. **Config only ever gates — it never provides.**
+- **Intersects providers against the step allowlist.** Providers (the agent definition's capabilities + service contributions) propose the universe; the Step's `tools[]`/`services[]` allowlist narrows it. `services[]` gates which services are active; `tools[]` is the final per-tool filter — a tool must pass **both** (most-restrictive wins). the capability services (`ToolService`/`SkillService`/`ScriptService`) declare/collect; the Harness performs this intersection at run time and provides the result to the agent. **Config only ever gates — it never provides.**
 - Enforces **tool output truncation** (configurable per step, default ~2000–3000 chars); tools return full output and the Harness truncates, adding a range hint so the agent can request more
 - Gives access to "feed-in" to the agent (e.g. system prompt, notify, tools, skills, scripts, etc.)
 
 For execution safety:
 
-- **Boundary interrupts only.** When the Workflow decides to transition (`step_idle`, `token_budget_exceeded`, `resource_exceeded`, …) while a tool call is in flight, the Harness lets the in-flight tool call complete, then halts before the next one. The agent is never interrupted mid-tool-call, so writes/commits cannot be left partial.
+- **Boundary interrupts only.** When the Workflow decides to route (`step_idle`, `token_budget_exceeded`, …) while a tool call is in flight, the Harness lets the in-flight tool call complete, then halts before the next one. The agent is never interrupted mid-tool-call, so writes/commits cannot be left partial.
 - **Tool timeouts.** Every tool has a default timeout (`Step.toolTimeout`) with an optional per-tool override. A timed-out tool call returns a timeout result rather than hanging the step.
 - **Sub-agent coordination & `ask_parent` safety.** The Harness pauses a sub-agent on `ask_parent`, routes to the parent via `notify()`, and waits. Because `ask_parent` is itself a tool, it is bound by the tool-timeout contract: if the parent goes idle or hits its budget before answering, the paused sub-agent is cancelled at the next boundary and the unanswered question surfaces in the parent's output.
 
@@ -775,35 +742,31 @@ Steps can define **sub-agent templates** — named profiles with predefined cons
 
 #### Service
 
-For a lack of a better word, a service works pretty much like an MCP.
+For a lack of a better word, a service works pretty much like an MCP to the **harness**, however it is not tied to it.
+You can use it separately from the harness, or even in a different process.
+
+For example, you have an agent service that registers all the agents. What if, for something else in your application, you just want to use the agent for its answering or agentic abilities and you just want to provide certain tools? For that, you don't need the entire product, but you just need the use of a single agent and provide the tools that it needs. You can use a mixture of `AgentService` and `ToolService`, maybe for something like that.
 
 It accesses the external world in a _safe_ way and provides reasonable context to the agent.
 It feeds the agent with the tools, notifications, skills, etc. that it needs to run the step perfectly.
 
-However, these are intrinsically tied to the harness and agent — plugins cannot change the core service wiring.
-
 Services have a lifecycle (`setup()` / `teardown()`) and contribute tools, skills, notifications, and prompt sections to the agent. All contributions are declared with metadata/tags so the Step's allowlist controls what's active (**co-owned activation**: service declares, step filters).
+
+Tools, skills, and scripts each have a dedicated registration service — `ToolService`, `SkillService`, `ScriptService`. Other services (Git, L1, L2, Agent, AST) and plugins contribute through them. Because services are not bound to the Harness, the same registries can be composed standalone (the Moby use case above).
 
 ##### Base Services
 
-###### `BasicService`
+###### `ToolService`
 
-The contribution gateway. All services and plugins register their tools, skills, and scripts via `BasicService` hooks. It **declares and collects** contributions, each tagged with metadata. It does **not** perform per-step filtering itself — the **Harness** intersects the collected providers against the step allowlist at run time (BasicService declares; Harness intersects). This keeps a single owner for the live step + sub-agent narrowing context.
+The registration point for **tools**. Services and plugins add their tools here; the Harness gates them against each step's `tools[]` allowlist.
 
-**Hooks**
+###### `SkillService`
 
-- `tools.add`: Add a tool to the agent
-- `skills.add`: Add a skill to the agent
-- `scripts.add`: Add a script to the agent
-- `prompt.add`: Add a section to the system prompt
+The registration point for **skills** — reusable prompt fragments / instruction sets injected into the agent's context.
 
-**Tools**
+###### `ScriptService`
 
-- `list_tools`: List available tools
-- `list_skills`: List available skills
-- `list_scripts`: List available scripts
-- `add_skill`: Add a skill to the agent
-- `add_script`: Add a script to the agent
+The registration point for **scripts** — runnable scripts the agent can execute in the workflow environment.
 
 ###### `GitService`
 
@@ -822,7 +785,7 @@ Provides L1 context (per-worktree `context.md` session memory). L1 compaction ru
 
 ###### `L2Service`
 
-Provides L2 context (semantic search via `retriv` — BM25 FTS5 + vector embeddings). Contributes search results to the agent prompt via `BasicService` hooks. Indexing uses the XDG state directory.
+Provides L2 context (semantic search via `retriv` — BM25 FTS5 + vector embeddings). Contributes search results to the agent's prompt (as a prompt section). Indexing uses the XDG state directory.
 
 ###### `AgentService`
 
@@ -858,7 +821,7 @@ Provides AST operations (rename, extract, etc.)
 
 **Sub-agent errors surface inline.** A failing sub-agent does **not** directly fail the parent step. Its failure returns as an **error `tool_result`** of the spawn/`ask_parent` call, so the parent agent sees it and decides how to proceed — consistent with the `ask_parent` timeout handling.
 
-**Crash recovery — status-granularity resume.** The Workflow persists **only the current `status`** to XDG state. On restart it re-enters that block at its **first step**. Mid-step work is never resumed (steps are fresh-session anyway); the real work is carried by persisted memory/todos/L1 in XDG state, so re-running the block from its first step picks up where it left off. Step id is intentionally not checkpointed.
+**Crash recovery — status-granularity resume.** The Workflow persists **only the current `status`** to XDG state. On restart it re-enters that stage at its **first step**. Mid-step work is never resumed (steps are fresh-session anyway); the real work is carried by persisted memory/todos/L1 in XDG state, so re-running the stage from its first step picks up where it left off. Step id is intentionally not checkpointed.
 
 ### Configuration Cascade
 
@@ -918,11 +881,11 @@ Workflow type definitions are **parsed and validated once at workflow start** an
 
 ### Plugins
 
-Plugins are **completely decoupled from harness internals**. They interact only via hooks and contribute tools/skills/prompts exclusively through `BasicService` hooks at plugin setup time (globally — not per-step). Step config controls which contributions are active for each step.
+Plugins are **completely decoupled from harness internals**. They interact only via hooks and contribute tools/skills/prompts through the capability services (`ToolService`/`SkillService`/`ScriptService`) at plugin setup time (globally — not per-step). Step config controls which contributions are active for each step.
 
 Plugins can also **inject pre-transition steps** — steps that run synchronously before the workflow's own steps when a status transition occurs.
 
 #### Philosophical Difference Between Plugins and Services
 
-- **Services** are intrinsically tied to the Harness and agent execution. They are part of the core execution machinery; plugins cannot alter their wiring. They contribute to agents via `BasicService` hooks and have their contributions filtered by step config.
-- **Plugins** are entirely external. They contribute tools, skills, and prompt sections through the same `BasicService` hooks, but the core cannot depend on them. They extend what agents can do without touching how agents run.
+- **Services** are the core capability providers — they own how tools, skills, scripts, and prompt sections reach the agent. They are **not bound to the Harness** (a service can be used standalone, even in another process — see Service), but within a workflow the Harness collects their contributions and filters them through step config.
+- **Plugins** are entirely external. They contribute tools, skills, and prompt sections through the same capability services, but the core cannot depend on them. They extend what agents can do without touching how agents run.

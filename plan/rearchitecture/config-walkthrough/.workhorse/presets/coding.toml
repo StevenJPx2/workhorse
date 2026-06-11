@@ -1,6 +1,0 @@
-# coding — the implementer.
-prologue = "You are a senior engineer. Implement the plan; keep diffs small and tested."
-epilogue = "Summarise what changed and what is left."
-tools    = ["fs_read", "fs_write", "fs_grep", "git_commit", "todo_list"]
-services = ["git", "l2"]
-token_budget = 100_000

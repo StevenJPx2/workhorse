@@ -4,12 +4,11 @@ The **config plane**: the declarative, authored-on-disk files that describe
 workflow types, step presets, and global settings. This folder will hold the
 Zod schemas that validate that config — it never executes anything.
 
-> **Status.** The _shape_ described here is agreed. The Zod schemas are being
-> rebuilt to match it and are **not yet implemented** — today this folder holds
-> only this spec plus the shared enums in [`../schema`](../schema). For a gentle,
-> file-by-file tour, read the worked example in
-> [`plan/rearchitecture/config-walkthrough/`](../../../../plan/rearchitecture/config-walkthrough/);
-> this document is the spec behind it.
+> **Status.** The _shape_ described here is agreed, and the Zod schemas in this
+> folder implement it (plus the shared enums in [`../schema`](../schema)). For a
+> runnable tour, see [`example.ts`](./example.ts) — a full `ralph` config in
+> code — and run the smoke test (`bun run --filter core-v2 smoke`) to validate it
+> and print the JSON.
 
 - Runtime model (source of truth): [`rearchitecture.md`](../../../../plan/rearchitecture/rearchitecture.md)
 - Shared enums (`Status`, condition names, operators, state keys): [`../schema`](../schema)
@@ -228,10 +227,10 @@ applies the cascade.
 
 ## Implementation status
 
-- **Exists:** this spec; the shared enums in [`../schema`](../schema)
-  (`Status`, `ConditionName`, `Operator`, `BuiltinStateKeys`).
-- **To reconcile when the schemas are rebuilt:** `ConditionName` still lists
-  `resource_exceeded` (retired with resource limits) and `state_check` (now
-  folded into the `when` expression grammar) — both should be dropped.
+- **Exists:** this spec; the shared `Status` enum in [`../schema`](../schema).
+- **Retired:** the enum-style `ConditionName` / `Operator` / `BuiltinStateKeys`
+  (carrying `state_check` + `resource_exceeded`) have been **deleted** — routing is
+  the `when` expression grammar (built-in names, state keys, comparisons), checked
+  at load.
 - **Planned:** the Zod schemas in this folder; the loader + cascade resolver; the
   `when` expression parser; reachability validation.

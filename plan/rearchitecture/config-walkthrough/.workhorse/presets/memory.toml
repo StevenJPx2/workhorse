@@ -1,5 +1,0 @@
-# memory — writes a short hand-off summary for the next coding pass.
-prologue = "You are the memory weaver. Record progress, learnings, and next steps."
-epilogue = "Output the summary (it feeds the coder's next prompt)."
-tools    = ["fs_read", "memory_write"]
-services = ["memory"]
