@@ -3,13 +3,13 @@
  * Config smoke test.
  *
  * Validates the in-code {@link exampleConfig} against the {@link ResolvedConfig}
- * Zod schema and prints the resulting JSON, so you can eyeball the config shape.
- * JSON goes to stdout and the pass/fail summary to stderr, so you can capture
- * just the shape: `bun run --filter core-v2 smoke > config.json`.
+ * Zod schema and prints the JSON to stdout, so you can eyeball the config shape.
+ * The pass/fail summary goes to stderr, so `… > config.json` captures JSON only.
  *
- * Usage:
- *   bun run --filter core-v2 smoke
- *   bun packages/core-v2/scripts/config-smoke.ts
+ * Run it DIRECTLY — `bun run --filter` uses multi-run mode and truncates output:
+ *   bun packages/core-v2/scripts/config-smoke.ts        # from the repo root
+ *   bun run smoke                                        # from packages/core-v2
+ *   bun packages/core-v2/scripts/config-smoke.ts > config.json
  */
 import z from "zod";
 

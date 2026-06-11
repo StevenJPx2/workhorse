@@ -32,7 +32,7 @@ A curated index. Paths are repo-root-relative. Tags: **CANON** = authoritative, 
 | `config/preset.ts`, `config/main.ts`, `config/settings.ts` | Built | Preset body, global/project `MainConfig`, shared settings. |
 | `config/resolved.ts` | Built | `ResolvedConfig` — the whole `.workhorse` tree mirrored into one object. |
 | `config/loader.ts` | Built | Globs `**/*.toml`, mirrors dirs → object, `defu`-merges project over global, parses. **No cascade resolver / no `when` parser yet.** |
-| `config/example.ts` + `scripts/config-smoke.ts` | Built | In-code worked example: `exampleConfig` (full `ralph` config) + a smoke test that validates it and prints the JSON (`bun run --filter core-v2 smoke`). |
+| `config/example.ts` + `scripts/config-smoke.ts` | Built | In-code worked example: `exampleConfig` (full `ralph` config) + a smoke test that validates it and prints the JSON. Run directly (not via `--filter`, which truncates): `bun packages/core-v2/scripts/config-smoke.ts`. |
 | `src/index.ts` | **STUB** | 31 bytes. |
 | `src/orchestrator/index.ts` | **STUB** | empty — orchestrator unbuilt. |
 | `src/workflow/index.ts` | **STUB** | empty — workflow/step/harness/agent unbuilt. |

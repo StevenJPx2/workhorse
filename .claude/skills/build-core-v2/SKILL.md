@@ -14,7 +14,7 @@ Workhorse is an SDK for **controllable, automated coding agents**. **core-v2** i
 | `plan/rearchitecture/rearchitecture.md` | **CANONICAL** spec — the model below comes from here |
 | `plan/rearchitecture/learnings.md` | Decision log, resolved loopholes, and open questions |
 | `plan/rearchitecture/high-level-ideas.md` | Vision (Moby/Jiratown TUIs, bare-repo worktrees) |
-| `packages/core-v2/src/config/README.md` + `config/example.ts` | Worked example of the config model — spec plus a runnable in-code config (`bun run --filter core-v2 smoke`) |
+| `packages/core-v2/src/config/README.md` + `config/example.ts` | Worked example of the config model — spec plus a runnable in-code config (`bun packages/core-v2/scripts/config-smoke.ts`) |
 
 Full annotated index → [MAP.md](MAP.md). Component-by-component outline → [ARCHITECTURE.md](ARCHITECTURE.md).
 

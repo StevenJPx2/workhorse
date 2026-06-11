@@ -3,11 +3,11 @@ import type { ResolvedConfigT } from "./resolved";
 
 /**
  * A complete, hand-built Workhorse config: the `ralph` workflow plus its presets
- * and project defaults.
+ * and project defaults — one typed object that satisfies the whole
+ * {@link ResolvedConfig} schema.
  *
- * This is the in-code counterpart to that on-disk example — one typed object
- * that satisfies the whole {@link ResolvedConfig} schema. Run the smoke test
- * (`bun run --filter core-v2 smoke`) to validate it and print the JSON shape.
+ * Run the smoke test (`bun run smoke` in this package) to validate it and print
+ * the JSON shape.
  */
 export const exampleConfig: ResolvedConfigT = {
   // Global/project config: cascade defaults + repo-wide preset patches.

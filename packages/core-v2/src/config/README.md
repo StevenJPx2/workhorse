@@ -7,7 +7,7 @@ Zod schemas that validate that config — it never executes anything.
 > **Status.** The _shape_ described here is agreed, and the Zod schemas in this
 > folder implement it (plus the shared enums in [`../schema`](../schema)). For a
 > runnable tour, see [`example.ts`](./example.ts) — a full `ralph` config in
-> code — and run the smoke test (`bun run --filter core-v2 smoke`) to validate it
+> code — and run the smoke test (`bun run smoke` in this package) to validate it
 > and print the JSON.
 
 - Runtime model (source of truth): [`rearchitecture.md`](../../../../plan/rearchitecture/rearchitecture.md)

@@ -5,7 +5,7 @@
 > `exits = [{ when = "<expr>", to = "<status>" }]` using the safe `when`
 > expression grammar. Config is authored and validated in idiomatic
 > **snake_case** throughout (the schemas mirror the TOML; no case conversion).
-> Worked example: `packages/core-v2/src/config/example.ts` (run `bun run --filter core-v2 smoke`).
+> Worked example: `packages/core-v2/src/config/example.ts` (run `bun packages/core-v2/scripts/config-smoke.ts`).
 
 ## Goals
 
