@@ -27,15 +27,19 @@ function assembleRoot(root: string): Promise<Record<string, unknown>> {
     )
     .then((entries) => {
       const tree: Record<string, unknown> = {};
+
       for (const { rel, raw } of entries) {
         const keys = rel.replace(/\.toml$/u, "").split("/");
         let node = tree;
+
         for (const key of keys.slice(0, -1)) {
           node[key] ??= {};
           node = node[key] as Record<string, unknown>;
         }
+
         node[keys.at(-1) ?? rel] = raw;
       }
+
       return tree;
     });
 }

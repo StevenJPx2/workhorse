@@ -10,18 +10,18 @@ This plan builds on top of [AFT (Agent File Toolkit)](https://github.com/cortexk
 
 Install via: `pi install npm:@cortexkit/aft-pi`
 
-| Tool | What It Provides |
-|------|------------------|
-| `aft_safety` | Undo, history, checkpoint, restore — file recovery |
-| `read` (hoisted) | File reading with line numbers, directory listing |
+| Tool              | What It Provides                                               |
+| ----------------- | -------------------------------------------------------------- |
+| `aft_safety`      | Undo, history, checkpoint, restore — file recovery             |
+| `read` (hoisted)  | File reading with line numbers, directory listing              |
 | `write` (hoisted) | File writing with backups, auto-format, inline LSP diagnostics |
-| `edit` (hoisted) | Find/replace, symbol replace, batch edits — with backups |
-| `aft_outline` | Structural outline of files (symbols, kinds, ranges) |
-| `aft_zoom` | Inspect symbols with call-graph annotations |
-| `aft_import` | Language-aware import add/remove/organize |
-| `aft_conflicts` | Git merge conflict viewer with line-numbered regions |
-| `grep` (hoisted) | Trigram-indexed regex search |
-| `glob` (hoisted) | Indexed file discovery |
+| `edit` (hoisted)  | Find/replace, symbol replace, batch edits — with backups       |
+| `aft_outline`     | Structural outline of files (symbols, kinds, ranges)           |
+| `aft_zoom`        | Inspect symbols with call-graph annotations                    |
+| `aft_import`      | Language-aware import add/remove/organize                      |
+| `aft_conflicts`   | Git merge conflict viewer with line-numbered regions           |
+| `grep` (hoisted)  | Trigram-indexed regex search                                   |
+| `glob` (hoisted)  | Indexed file discovery                                         |
 
 ### What We Don't Use From AFT
 
@@ -31,11 +31,11 @@ Install via: `pi install npm:@cortexkit/aft-pi`
 
 ### What We Build Ourselves
 
-| Tool | Purpose |
-|------|---------|
-| `git` | Consolidated git operations (11 actions) |
-| `project` | Package manager detection + install/add/remove |
-| `script` | File-based script execution in `.workhorse/scripts/` |
+| Tool      | Purpose                                              |
+| --------- | ---------------------------------------------------- |
+| `git`     | Consolidated git operations (11 actions)             |
+| `project` | Package manager detection + install/add/remove       |
+| `script`  | File-based script execution in `.workhorse/scripts/` |
 
 ## Motivation
 
@@ -52,17 +52,17 @@ Install via: `pi install npm:@cortexkit/aft-pi`
 
 Analysis of typical Pi agent bash usage:
 
-| Category | Commands | Replacement |
-|----------|----------|-------------|
-| **Git** | `git status`, `git diff`, `git add`, `git commit`, `git push`, `git pull`, `git checkout`, `git branch`, `git log`, `git stash`, `git reset` | `git` tool |
-| **Package managers** | `bun install`, `npm install`, `yarn`, `pnpm`, `pip install`, `cargo build` | `project` tool |
-| **Test runners** | `bun test`, `npm test`, `vitest`, `pytest`, `cargo test` | `script` tool |
-| **Linters/formatters** | `bun run lint`, `prettier`, `eslint`, `oxlint`, `ruff`, `cargo fmt` | `script` tool |
-| **Type checkers** | `tsc`, `bun run typecheck`, `mypy`, `pyright` | `script` tool |
-| **Build commands** | `bun run build`, `npm run build`, `cargo build`, `make` | `script` tool |
-| **File operations** | `mkdir`, `rm`, `mv`, `cp`, `touch` | AFT `write`/`edit` |
-| **Search** | `grep`, `find`, `rg` | AFT `grep`/`glob` |
-| **Misc** | `curl`, `jq`, `env`, `which` | Rare — not supported |
+| Category               | Commands                                                                                                                                     | Replacement          |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| **Git**                | `git status`, `git diff`, `git add`, `git commit`, `git push`, `git pull`, `git checkout`, `git branch`, `git log`, `git stash`, `git reset` | `git` tool           |
+| **Package managers**   | `bun install`, `npm install`, `yarn`, `pnpm`, `pip install`, `cargo build`                                                                   | `project` tool       |
+| **Test runners**       | `bun test`, `npm test`, `vitest`, `pytest`, `cargo test`                                                                                     | `script` tool        |
+| **Linters/formatters** | `bun run lint`, `prettier`, `eslint`, `oxlint`, `ruff`, `cargo fmt`                                                                          | `script` tool        |
+| **Type checkers**      | `tsc`, `bun run typecheck`, `mypy`, `pyright`                                                                                                | `script` tool        |
+| **Build commands**     | `bun run build`, `npm run build`, `cargo build`, `make`                                                                                      | `script` tool        |
+| **File operations**    | `mkdir`, `rm`, `mv`, `cp`, `touch`                                                                                                           | AFT `write`/`edit`   |
+| **Search**             | `grep`, `find`, `rg`                                                                                                                         | AFT `grep`/`glob`    |
+| **Misc**               | `curl`, `jq`, `env`, `which`                                                                                                                 | Rare — not supported |
 
 ## Design
 
@@ -119,8 +119,8 @@ Single `git` tool with type-safe `action` parameter. Each action is implemented 
   schema: {
     type: "object",
     properties: {
-      action: { 
-        type: "string", 
+      action: {
+        type: "string",
         enum: ["status", "diff", "add", "commit", "checkout", "branch", "log", "push", "pull", "stash", "reset"],
         description: "Git action to perform"
       },
@@ -209,19 +209,33 @@ import { executeAdd } from "./actions/add";
 import { executeCommit } from "./actions/commit";
 // ... etc
 
-export async function executeGit(cwd: string, params: GitParams): Promise<GitResult> {
+export async function executeGit(
+  cwd: string,
+  params: GitParams,
+): Promise<GitResult> {
   switch (params.action) {
-    case "status": return executeStatus(cwd, params);
-    case "diff": return executeDiff(cwd, params);
-    case "add": return executeAdd(cwd, params);
-    case "commit": return executeCommit(cwd, params);
-    case "checkout": return executeCheckout(cwd, params);
-    case "branch": return executeBranch(cwd, params);
-    case "log": return executeLog(cwd, params);
-    case "push": return executePush(cwd, params);
-    case "pull": return executePull(cwd, params);
-    case "stash": return executeStash(cwd, params);
-    case "reset": return executeReset(cwd, params);
+    case "status":
+      return executeStatus(cwd, params);
+    case "diff":
+      return executeDiff(cwd, params);
+    case "add":
+      return executeAdd(cwd, params);
+    case "commit":
+      return executeCommit(cwd, params);
+    case "checkout":
+      return executeCheckout(cwd, params);
+    case "branch":
+      return executeBranch(cwd, params);
+    case "log":
+      return executeLog(cwd, params);
+    case "push":
+      return executePush(cwd, params);
+    case "pull":
+      return executePull(cwd, params);
+    case "stash":
+      return executeStash(cwd, params);
+    case "reset":
+      return executeReset(cwd, params);
     default:
       throw new Error(`Unknown git action: ${params.action}`);
   }
@@ -241,7 +255,10 @@ export interface StatusResult {
   untracked: string[];
 }
 
-export async function executeStatus(cwd: string, _params: StatusParams): Promise<StatusResult> {
+export async function executeStatus(
+  cwd: string,
+  _params: StatusParams,
+): Promise<StatusResult> {
   const result = await $`git status --porcelain=v2 --branch`.cwd(cwd).quiet();
   if (result.exitCode !== 0) {
     throw new Error(`git status failed: ${result.stderr}`);
@@ -258,13 +275,16 @@ export interface DiffParams {
   stat?: boolean;
 }
 
-export async function executeDiff(cwd: string, params: DiffParams): Promise<string> {
+export async function executeDiff(
+  cwd: string,
+  params: DiffParams,
+): Promise<string> {
   const args = ["diff"];
   if (params.staged) args.push("--cached");
   if (params.stat) args.push("--stat");
   if (params.ref) args.push(params.ref);
   if (params.path) args.push("--", params.path);
-  
+
   const result = await $`git ${args}`.cwd(cwd).quiet();
   return result.stdout.toString();
 }
@@ -276,14 +296,17 @@ export interface CommitParams {
   all?: boolean;
 }
 
-export async function executeCommit(cwd: string, params: CommitParams): Promise<CommitResult> {
+export async function executeCommit(
+  cwd: string,
+  params: CommitParams,
+): Promise<CommitResult> {
   if (!params.message) {
     throw new Error("Commit message is required");
   }
-  
+
   const args = ["commit", "-m", params.message];
   if (params.all) args.push("-a");
-  
+
   const result = await $`git ${args}`.cwd(cwd).quiet();
   if (result.exitCode !== 0) {
     throw new Error(`git commit failed: ${result.stderr}`);
@@ -303,8 +326,8 @@ Handles dependency management. Uses [`package-manager-detector`](https://github.
   schema: {
     type: "object",
     properties: {
-      action: { 
-        type: "string", 
+      action: {
+        type: "string",
         enum: ["install", "add", "remove"],
         description: "Action to perform"
       },
@@ -331,7 +354,7 @@ project { action: "remove", packages: ["lodash"] }         → bun remove lodash
 **Core principle:** Agent cannot run arbitrary commands. It must create a script file first, then run it by name. This provides:
 
 - **Auditability** — all scripts are files, can be reviewed/version-controlled
-- **No ephemeral commands** — prevents `rm -rf /` or other dangerous one-liners  
+- **No ephemeral commands** — prevents `rm -rf /` or other dangerous one-liners
 - **Reproducibility** — scripts can be re-run, shared, committed to repo
 - **Isolation** — only files in `.workhorse/scripts/` can be executed
 
@@ -363,17 +386,17 @@ project { action: "remove", packages: ["lodash"] }         → bun remove lodash
 
 ```
 # Create a lint script
-script { 
-  action: "create", 
-  name: "lint", 
-  content: "#!/bin/bash\nbun run lint --fix \"$@\"" 
+script {
+  action: "create",
+  name: "lint",
+  content: "#!/bin/bash\nbun run lint --fix \"$@\""
 }
 
 # Create a test script
-script { 
-  action: "create", 
-  name: "test", 
-  content: "#!/bin/bash\nbun test \"$@\"" 
+script {
+  action: "create",
+  name: "test",
+  content: "#!/bin/bash\nbun test \"$@\""
 }
 
 # List available scripts
@@ -394,6 +417,7 @@ script { action: "delete", name: "lint" }
 ```
 
 **Script location:** `.workhorse/scripts/`
+
 ```
 .workhorse/
 └── scripts/
@@ -454,22 +478,23 @@ bun run typecheck "$@"
 
 **Frontmatter schema:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | No | Display name (defaults to filename) |
-| `description` | string | No | What the script does (shown in `script { action: "list" }`) |
-| `status` | string \| string[] | No | Workflow statuses where script is available |
-| `args` | array | No | Expected arguments with name, description, required |
+| Field         | Type               | Required | Description                                                 |
+| ------------- | ------------------ | -------- | ----------------------------------------------------------- |
+| `name`        | string             | No       | Display name (defaults to filename)                         |
+| `description` | string             | No       | What the script does (shown in `script { action: "list" }`) |
+| `status`      | string \| string[] | No       | Workflow statuses where script is available                 |
+| `args`        | array              | No       | Expected arguments with name, description, required         |
 
 **Args schema:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Argument name (e.g., `pattern`, `--coverage`) |
-| `description` | string | No | What the argument does |
-| `required` | boolean | No | Whether argument is required (default: false) |
+| Field         | Type    | Required | Description                                   |
+| ------------- | ------- | -------- | --------------------------------------------- |
+| `name`        | string  | Yes      | Argument name (e.g., `pattern`, `--coverage`) |
+| `description` | string  | No       | What the argument does                        |
+| `required`    | boolean | No       | Whether argument is required (default: false) |
 
 **Behavior:**
+
 - Scripts without `status` field are available in ALL statuses (backward compatible)
 - Scripts with `status: implementing` are only runnable during implementation
 - Scripts with `status: [implementing, in_review]` are available in both
@@ -482,11 +507,11 @@ bun run typecheck "$@"
 script { action: "list" }
 
 # During "planning" status:
-→ { 
+→ {
     scripts: [
-      { 
-        name: "check-types", 
-        description: "Run type checker", 
+      {
+        name: "check-types",
+        description: "Run type checker",
         status: ["planning", "implementing", "in_review"],
         args: []
       }
@@ -498,28 +523,28 @@ script { action: "list" }
   }
 
 # During "implementing" status:
-→ { 
+→ {
     scripts: [
-      { 
-        name: "test", 
-        description: "Run test suite", 
+      {
+        name: "test",
+        description: "Run test suite",
         status: ["implementing", "in_review"],
         args: [
           { name: "pattern", description: "Test file pattern or specific test file", required: false },
           { name: "--coverage", description: "Generate coverage report", required: false }
         ]
       },
-      { 
-        name: "lint", 
-        description: "Run linter", 
+      {
+        name: "lint",
+        description: "Run linter",
         status: ["implementing"],
         args: [
           { name: "path", description: "Specific file or directory to lint", required: false }
         ]
       },
-      { 
-        name: "check-types", 
-        description: "Run type checker", 
+      {
+        name: "check-types",
+        description: "Run type checker",
         status: ["planning", "implementing", "in_review"],
         args: []
       }
@@ -548,6 +573,7 @@ script { action: "run", name: "lint", args: ["src/components/"] }
 ```
 
 **Security constraints:**
+
 - Scripts MUST be in `.workhorse/scripts/` directory
 - Script names are sanitized (alphanumeric + hyphens + underscores only)
 - Cannot reference scripts outside the directory (no `../` or absolute paths)
@@ -570,7 +596,7 @@ script { action: "run", name: "lint", args: ["src/components/"] }
 
 **Modular Implementation:**
 
-```typescript
+````typescript
 // tools/script/index.ts — Main dispatcher
 import { executeCreate } from "./actions/create";
 import { executeList } from "./actions/list";
@@ -581,15 +607,23 @@ import type { ScriptParams, ScriptResult } from "./types";
 
 const SCRIPTS_DIR = ".workhorse/scripts";
 
-export async function executeScript(cwd: string, params: ScriptParams): Promise<ScriptResult> {
+export async function executeScript(
+  cwd: string,
+  params: ScriptParams,
+): Promise<ScriptResult> {
   const scriptsPath = join(cwd, SCRIPTS_DIR);
-  
+
   switch (params.action) {
-    case "create": return executeCreate(scriptsPath, params);
-    case "list": return executeList(scriptsPath);
-    case "read": return executeRead(scriptsPath, params);
-    case "run": return executeRun(scriptsPath, cwd, params);
-    case "delete": return executeDelete(scriptsPath, params);
+    case "create":
+      return executeCreate(scriptsPath, params);
+    case "list":
+      return executeList(scriptsPath);
+    case "read":
+      return executeRead(scriptsPath, params);
+    case "run":
+      return executeRun(scriptsPath, cwd, params);
+    case "delete":
+      return executeDelete(scriptsPath, params);
     default:
       throw new Error(`Unknown script action: ${params.action}`);
   }
@@ -600,34 +634,38 @@ import { writeFile, mkdir, chmod } from "fs/promises";
 import { join } from "path";
 
 export async function executeCreate(
-  scriptsPath: string, 
-  params: { name: string; content: string }
+  scriptsPath: string,
+  params: { name: string; content: string },
 ): Promise<{ created: string }> {
   validateScriptName(params.name);
-  
+
   // Ensure directory exists
   await mkdir(scriptsPath, { recursive: true });
-  
+
   const scriptPath = join(scriptsPath, `${params.name}.sh`);
-  
+
   // Ensure content starts with shebang
   let content = params.content;
   if (!content.startsWith("#!")) {
     content = "#!/bin/bash\n" + content;
   }
-  
+
   await writeFile(scriptPath, content, "utf-8");
   await chmod(scriptPath, 0o755); // Make executable
-  
+
   return { created: params.name };
 }
 
 function validateScriptName(name: string): void {
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-    throw new Error(`Invalid script name: "${name}". Use only letters, numbers, hyphens, underscores.`);
+    throw new Error(
+      `Invalid script name: "${name}". Use only letters, numbers, hyphens, underscores.`,
+    );
   }
   if (name.includes("..") || name.startsWith("/")) {
-    throw new Error(`Invalid script name: "${name}". Path traversal not allowed.`);
+    throw new Error(
+      `Invalid script name: "${name}". Path traversal not allowed.`,
+    );
   }
 }
 
@@ -641,37 +679,38 @@ export async function executeRun(
   scriptsPath: string,
   cwd: string,
   currentStatus: IssueStatus,
-  params: { name: string; args?: string[] }
+  params: { name: string; args?: string[] },
 ): Promise<{ success: boolean; output: string; error?: string }> {
   validateScriptName(params.name);
-  
+
   const scriptPath = join(scriptsPath, `${params.name}.sh`);
-  
+
   // Verify script exists
   try {
     await access(scriptPath, constants.X_OK);
   } catch {
     throw new Error(`Script not found or not executable: ${params.name}`);
   }
-  
+
   // Parse frontmatter and check status gating
   const content = await readFile(scriptPath, "utf-8");
   const meta = parseFrontmatter(content);
-  
+
   if (meta.status && !meta.status.includes(currentStatus)) {
     return {
       success: false,
       output: "",
-      error: `Script "${params.name}" is not available during "${currentStatus}" status. ` +
-             `Allowed: ${meta.status.join(", ")}. ` +
-             `Use workhorse_update_status to transition.`
+      error:
+        `Script "${params.name}" is not available during "${currentStatus}" status. ` +
+        `Allowed: ${meta.status.join(", ")}. ` +
+        `Use workhorse_update_status to transition.`,
     };
   }
-  
+
   // Run the script from project root
   const args = params.args ?? [];
   const result = await $`${scriptPath} ${args}`.cwd(cwd).quiet();
-  
+
   return {
     success: result.exitCode === 0,
     output: result.stdout.toString(),
@@ -695,7 +734,7 @@ export interface ScriptMeta {
 
 /**
  * Parse YAML-like frontmatter from script comments.
- * 
+ *
  * Format:
  * ```
  * #!/bin/bash
@@ -709,14 +748,14 @@ export interface ScriptMeta {
 export function parseFrontmatter(content: string): ScriptMeta {
   const lines = content.split("\n");
   const meta: ScriptMeta = {};
-  
+
   // Find frontmatter block (# --- ... # ---)
   let inFrontmatter = false;
   let frontmatterLines: string[] = [];
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     if (trimmed === "# ---") {
       if (!inFrontmatter) {
         inFrontmatter = true;
@@ -725,17 +764,17 @@ export function parseFrontmatter(content: string): ScriptMeta {
         break; // End of frontmatter
       }
     }
-    
+
     if (inFrontmatter && trimmed.startsWith("# ")) {
       frontmatterLines.push(trimmed.slice(2)); // Remove "# " prefix
     }
   }
-  
+
   // Parse key-value pairs (simple YAML-like format)
   let currentKey: string | null = null;
   let currentArgs: ScriptArg[] = [];
   let currentArg: Partial<ScriptArg> | null = null;
-  
+
   for (const line of frontmatterLines) {
     // Top-level key: value
     const topMatch = line.match(/^(\w+):\s*(.*)$/);
@@ -745,10 +784,10 @@ export function parseFrontmatter(content: string): ScriptMeta {
         currentArgs.push(currentArg as ScriptArg);
         currentArg = null;
       }
-      
+
       const [, key, value] = topMatch;
       currentKey = key;
-      
+
       switch (key) {
         case "name":
           meta.name = value.trim();
@@ -762,7 +801,7 @@ export function parseFrontmatter(content: string): ScriptMeta {
             meta.status = value
               .slice(1, -1)
               .split(",")
-              .map(s => s.trim() as IssueStatus);
+              .map((s) => s.trim() as IssueStatus);
           } else if (value.trim()) {
             meta.status = [value.trim() as IssueStatus];
           }
@@ -777,7 +816,7 @@ export function parseFrontmatter(content: string): ScriptMeta {
       }
       continue;
     }
-    
+
     // Nested under args: parse "  - name: value" or "    key: value"
     if (currentKey === "args") {
       const listItemMatch = line.match(/^\s+-\s+name:\s*(.+)$/);
@@ -789,7 +828,7 @@ export function parseFrontmatter(content: string): ScriptMeta {
         currentArg = { name: listItemMatch[1].trim() };
         continue;
       }
-      
+
       const nestedMatch = line.match(/^\s+(\w+):\s*(.+)$/);
       if (nestedMatch && currentArg) {
         const [, nestedKey, nestedValue] = nestedMatch;
@@ -801,23 +840,27 @@ export function parseFrontmatter(content: string): ScriptMeta {
       }
     }
   }
-  
+
   // Save last arg
   if (currentArg?.name) {
     currentArgs.push(currentArg as ScriptArg);
   }
-  
+
   if (currentArgs.length > 0) {
     meta.args = currentArgs;
   }
-  
+
   return meta;
 }
 
 // tools/script/actions/list.ts
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
-import { parseFrontmatter, type ScriptMeta, type ScriptArg } from "../frontmatter";
+import {
+  parseFrontmatter,
+  type ScriptMeta,
+  type ScriptArg,
+} from "../frontmatter";
 
 interface ScriptInfo {
   name: string;
@@ -828,36 +871,39 @@ interface ScriptInfo {
 
 export async function executeList(
   scriptsPath: string,
-  currentStatus: IssueStatus
-): Promise<{ scripts: ScriptInfo[]; unavailable: Array<{ name: string; reason: string }> }> {
+  currentStatus: IssueStatus,
+): Promise<{
+  scripts: ScriptInfo[];
+  unavailable: Array<{ name: string; reason: string }>;
+}> {
   try {
     const files = await readdir(scriptsPath);
     const scripts: ScriptInfo[] = [];
     const unavailable: Array<{ name: string; reason: string }> = [];
-    
-    for (const file of files.filter(f => f.endsWith(".sh"))) {
+
+    for (const file of files.filter((f) => f.endsWith(".sh"))) {
       const name = file.replace(/\.sh$/, "");
       const content = await readFile(join(scriptsPath, file), "utf-8");
       const meta = parseFrontmatter(content);
-      
+
       const info: ScriptInfo = {
         name: meta.name ?? name,
         description: meta.description,
         status: meta.status,
         args: meta.args,
       };
-      
+
       // Check if script is available in current status
       if (!meta.status || meta.status.includes(currentStatus)) {
         scripts.push(info);
       } else {
         unavailable.push({
           name: info.name,
-          reason: `Only available in: ${meta.status.join(", ")}`
+          reason: `Only available in: ${meta.status.join(", ")}`,
         });
       }
     }
-    
+
     return { scripts, unavailable };
   } catch {
     return { scripts: [], unavailable: [] }; // Directory doesn't exist yet
@@ -870,13 +916,13 @@ import { join } from "path";
 
 export async function executeRead(
   scriptsPath: string,
-  params: { name: string }
+  params: { name: string },
 ): Promise<{ name: string; content: string }> {
   validateScriptName(params.name);
-  
+
   const scriptPath = join(scriptsPath, `${params.name}.sh`);
   const content = await readFile(scriptPath, "utf-8");
-  
+
   return { name: params.name, content };
 }
 
@@ -886,20 +932,21 @@ import { join } from "path";
 
 export async function executeDelete(
   scriptsPath: string,
-  params: { name: string }
+  params: { name: string },
 ): Promise<{ deleted: string }> {
   validateScriptName(params.name);
-  
+
   const scriptPath = join(scriptsPath, `${params.name}.sh`);
   await unlink(scriptPath);
-  
+
   return { deleted: params.name };
 }
-```
+````
 
 #### 3. File Tools (Provided by AFT)
 
 These are provided by AFT with enhanced features:
+
 - `read` — File reading with line numbers, directory listing, image/PDF detection
 - `write` — File writing with backups, auto-format, inline LSP diagnostics
 - `edit` — Find/replace, symbol replace, batch edits — with backups and validation
@@ -914,8 +961,6 @@ These are provided by AFT with enhanced features:
 ### Package Manager Detection
 
 Uses [`package-manager-detector`](https://github.com/antfu-collective/package-manager-detector) for reliable detection:
-
-
 
 ## File Structure
 
@@ -1009,13 +1054,13 @@ export class PiAgentAdapter extends AgentAdapter {
         // NO bash tool — replaced by structured tools below
       ],
     });
-    
+
     // Register git tools
     this.registerGitTools(session);
-    
-    // Register project tools  
+
+    // Register project tools
     this.registerProjectTools(session);
-    
+
     // Register env tools
     this.registerEnvTools(session);
   }
@@ -1032,16 +1077,16 @@ import { $ } from "bun";
 
 export async function executeGitStatus(
   cwd: string,
-  options: { short?: boolean }
+  options: { short?: boolean },
 ): Promise<GitStatusResult> {
   const args = ["status", "--porcelain=v1"];
-  
+
   const result = await $`git ${args}`.cwd(cwd).quiet();
-  
+
   if (result.exitCode !== 0) {
     throw new Error(`git status failed: ${result.stderr}`);
   }
-  
+
   // Parse porcelain output into structured result
   return parseGitStatus(result.stdout.toString());
 }
@@ -1089,6 +1134,7 @@ The following files will be deleted from `packages/plugins/pi-adapter/src/`:
 ## Tasks
 
 ### Phase 1: Git Tool (Consolidated)
+
 - [ ] Create `src/tools/git/` directory structure with `actions/` subdirectory
 - [ ] Define `git` tool schema in `index.ts` with action enum
 - [ ] Define types in `types.ts` (GitParams, discriminated union per action)
@@ -1106,6 +1152,7 @@ The following files will be deleted from `packages/plugins/pi-adapter/src/`:
 - [ ] Unit tests for each action in `__tests__/git/`
 
 ### Phase 2: Project Tool (Package Management Only)
+
 - [ ] Create `src/tools/project/` directory structure with `actions/` subdirectory
 - [ ] Define `project` tool schema in `index.ts` with action enum (install, add, remove)
 - [ ] Define types in `types.ts` (ProjectParams, ProjectResult)
@@ -1116,6 +1163,7 @@ The following files will be deleted from `packages/plugins/pi-adapter/src/`:
 - [ ] Unit tests for each action in `__tests__/project/`
 
 ### Phase 3: Script Tool (File-Based Execution)
+
 - [ ] Create `src/tools/script/` directory structure with `actions/` subdirectory
 - [ ] Define `script` tool schema in `index.ts` with action enum (create, list, read, run, delete)
 - [ ] Define types in `types.ts` (ScriptParams, ScriptResult, ScriptMeta)
@@ -1130,12 +1178,14 @@ The following files will be deleted from `packages/plugins/pi-adapter/src/`:
 - [ ] Unit tests for frontmatter parsing
 
 ### Phase 4: Environment Tools
+
 - [ ] Create `src/tools/env/` directory structure with `actions/` subdirectory
 - [ ] Implement `env_info` tool with executeInfo()
 - [ ] Implement `file_ops` tool with executeFileOp() (mkdir, rm, mv, cp)
 - [ ] Unit tests for env tools
 
 ### Phase 5: Adapter Integration
+
 - [ ] Remove bash tool from adapter
 - [ ] Register `git`, `project`, and `script` tools with Pi session
 - [ ] Update TUI renderers for new consolidated tools
@@ -1143,6 +1193,7 @@ The following files will be deleted from `packages/plugins/pi-adapter/src/`:
 - [ ] Integration tests with real Pi session
 
 ### Phase 6: Verification
+
 - [ ] End-to-end test: full workflow (create script → run tests → commit → push)
 - [ ] Verify all common workflows work without bash
 - [ ] Verify script isolation (cannot run scripts outside .workhorse/scripts/)

@@ -35,16 +35,16 @@ Additionally, the current `AgentAdapter` is tightly coupled to the "coding agent
 
 ## Design Decisions
 
-| Decision | Choice |
-|----------|--------|
+| Decision                  | Choice                                                                      |
+| ------------------------- | --------------------------------------------------------------------------- |
 | **Workflow independence** | Workflow is self-contained, can run with own TUI (no orchestrator required) |
-| **Orchestrator role** | Manages multiple Workflows, provides cross-workflow coordination |
-| Agent extensibility | Modular AgentAdapter base class, plugins register types |
-| Workflow composition | Hook-driven, not hardcoded sequences |
-| Trigger mechanism | Token count threshold emits hook, plugins decide response |
-| Handoff data | Structured summary passed via hooks + L1 context |
-| Memory persistence | L1 compaction + L2 semantic indexing (plugin-provided) |
-| Agent communication | Shared context.md + continuation tool |
+| **Orchestrator role**     | Manages multiple Workflows, provides cross-workflow coordination            |
+| Agent extensibility       | Modular AgentAdapter base class, plugins register types                     |
+| Workflow composition      | Hook-driven, not hardcoded sequences                                        |
+| Trigger mechanism         | Token count threshold emits hook, plugins decide response                   |
+| Handoff data              | Structured summary passed via hooks + L1 context                            |
+| Memory persistence        | L1 compaction + L2 semantic indexing (plugin-provided)                      |
+| Agent communication       | Shared context.md + continuation tool                                       |
 
 ## Architecture
 
@@ -147,17 +147,21 @@ import type { HookEmitter } from "../lib/hooks";
 import type { Database } from "../db";
 import type { MemoryService } from "../services";
 import { AgentTypeRegistry } from "./orchestrator/agent-registry";
-import type { AgentAdapter, AgentConfig, SpawnOptions } from "./orchestrator/types";
+import type {
+  AgentAdapter,
+  AgentConfig,
+  SpawnOptions,
+} from "./orchestrator/types";
 
 export interface WorkflowConfig {
   issue: Issue;
   db: Database;
   hooks: HookEmitter;
   memory: MemoryService;
-  
+
   /** Optional: shared registry (for orchestrator mode). If not provided, workflow creates its own. */
   registry?: AgentTypeRegistry;
-  
+
   /** Optional: token threshold for compaction (default: 150,000) */
   tokenThreshold?: number;
 }
@@ -165,13 +169,13 @@ export interface WorkflowConfig {
 export interface WorkflowState {
   issueId: string;
   totalTokens: number;
-  contextData: unknown | null;  // Set by plugins (compaction summary, etc.)
+  contextData: unknown | null; // Set by plugins (compaction summary, etc.)
   status: "idle" | "running" | "stopped";
 }
 
 /**
  * Self-contained workflow for a single issue.
- * 
+ *
  * Can run independently with its own TUI — no orchestrator required.
  * The orchestrator is optional and just manages multiple workflows.
  */
@@ -179,7 +183,7 @@ export class Workflow {
   readonly state: WorkflowState;
   readonly agent: WorkflowAgentController;
   private readonly registry: AgentTypeRegistry;
-  
+
   constructor(private readonly config: WorkflowConfig) {
     this.state = {
       issueId: config.issue.id,
@@ -187,48 +191,51 @@ export class Workflow {
       contextData: null,
       status: "idle",
     };
-    
+
     // Use shared registry if provided, otherwise create local one
     this.registry = config.registry ?? new AgentTypeRegistry();
-    
+
     // Agent controller provides spawn/sendMessage/stop/current
     this.agent = new WorkflowAgentController(this, this.registry, config);
-    
+
     // Subscribe to token updates from agents
     config.hooks.on("agent.tokens", this.handleTokenUpdate.bind(this));
   }
-  
+
   /** Issue this workflow is managing */
   get issue(): Issue {
     return this.config.issue;
   }
-  
+
   /** Register an agent type (local to this workflow if no shared registry) */
   registerAgentType(definition: AgentTypeDefinition): void {
     this.registry.register(definition);
   }
-  
+
   /** Store context data (called by plugins after compaction) */
   async setContextData(data: unknown): Promise<void> {
     this.state.contextData = data;
   }
-  
+
   /** Get stored context data */
   getContextData(): unknown | null {
     return this.state.contextData;
   }
-  
+
   /** Reset token count (called by plugins when starting fresh agent) */
   resetTokens(): void {
     this.state.totalTokens = 0;
   }
-  
+
   /** Handle token updates from agents */
-  private handleTokenUpdate(event: { issueId: string; totalTokens: number }): void {
+  private handleTokenUpdate(event: {
+    issueId: string;
+    totalTokens: number;
+  }): void {
     if (event.issueId !== this.state.issueId) return;
-    
+
     this.state.totalTokens = event.totalTokens;
-    
+
     // Check threshold and emit hook — plugins decide what to do
     const threshold = this.config.tokenThreshold ?? 150_000;
     if (this.state.totalTokens >= threshold) {
@@ -247,33 +254,35 @@ export class Workflow {
  */
 export class WorkflowAgentController {
   private activeAgent: { type: string; adapter: AgentAdapter } | null = null;
-  
+
   constructor(
     private readonly workflow: Workflow,
     private readonly registry: AgentTypeRegistry,
     private readonly config: WorkflowConfig,
   ) {}
-  
+
   /** Get current agent adapter (if running) */
   get current(): AgentAdapter | null {
     return this.activeAgent?.adapter ?? null;
   }
-  
+
   /** Get current agent type (if running) */
   get currentType(): string | null {
     return this.activeAgent?.type ?? null;
   }
-  
+
   /** Spawn an agent of the given type */
-  async spawn(options: Omit<SpawnOptions, "issue"> = {}): Promise<AgentAdapter> {
+  async spawn(
+    options: Omit<SpawnOptions, "issue"> = {},
+  ): Promise<AgentAdapter> {
     const { type = "coding", ...rest } = options;
-    
+
     // Stop current agent if running
     if (this.activeAgent) {
       await this.activeAgent.adapter.stop();
       this.activeAgent = null;
     }
-    
+
     // Create adapter via registry
     const adapter = this.registry.createAdapter(type, {
       issue: this.config.issue,
@@ -283,30 +292,30 @@ export class WorkflowAgentController {
       memory: this.config.memory,
       ...rest,
     });
-    
+
     // Emit hook — plugins can intercept/modify
     this.config.hooks.emit("workflow.agent.spawn.pre", {
       issueId: this.workflow.state.issueId,
       type,
       adapter,
     });
-    
+
     await adapter.initialize();
-    
+
     this.activeAgent = { type, adapter };
     this.workflow.state.status = "running";
-    
+
     await adapter.start();
-    
+
     this.config.hooks.emit("workflow.agent.spawn.post", {
       issueId: this.workflow.state.issueId,
       type,
       adapter,
     });
-    
+
     return adapter;
   }
-  
+
   /** Send a message to the current agent */
   async sendMessage(content: string): Promise<string> {
     if (!this.activeAgent) {
@@ -314,7 +323,7 @@ export class WorkflowAgentController {
     }
     return this.activeAgent.adapter.sendMessage(content);
   }
-  
+
   /** Stop the current agent */
   async stop(): Promise<void> {
     if (this.activeAgent) {
@@ -322,7 +331,7 @@ export class WorkflowAgentController {
       this.activeAgent = null;
     }
     this.workflow.state.status = "stopped";
-    
+
     this.config.hooks.emit("workflow.agent.stopped", {
       issueId: this.workflow.state.issueId,
     });
@@ -356,11 +365,13 @@ workflow.registerAgentType({
 await workflow.agent.spawn({ type: "coding" });
 
 // Send messages
-await workflow.agent.sendMessage("Implement the feature described in the issue");
+await workflow.agent.sendMessage(
+  "Implement the feature described in the issue",
+);
 
 // Check current agent
-console.log(workflow.agent.current);      // AgentAdapter
-console.log(workflow.agent.currentType);  // "coding"
+console.log(workflow.agent.current); // AgentAdapter
+console.log(workflow.agent.currentType); // "coding"
 
 // Stop when done
 await workflow.agent.stop();
@@ -398,31 +409,31 @@ import type { AgentType, AgentConfig } from "./types";
 export interface AgentTypeDefinition {
   /** Unique identifier for this agent type */
   type: string;
-  
+
   /** Human-readable name */
   name: string;
-  
+
   /** What this agent does */
   description: string;
-  
-  /** 
+
+  /**
    * Factory to create the adapter instance.
    * Receives the base config + any type-specific config.
    */
   createAdapter: (config: AgentConfig) => AgentAdapter;
-  
+
   /**
    * Optional: Default system prompt for this agent type.
    * Can be overridden per-instance.
    */
   defaultSystemPrompt?: string;
-  
+
   /**
    * Optional: Tools this agent type should have access to.
    * In addition to any tools passed at spawn time.
    */
   defaultTools?: string[];
-  
+
   /**
    * Optional: Model preference for this agent type.
    * e.g., "fast" for lightweight agents, "capable" for coding
@@ -436,10 +447,10 @@ export interface AgentTypeDefinition {
 export abstract class AgentAdapter {
   readonly issueId: string;
   readonly type: string;
-  
+
   protected tokenCount = 0;
   protected state: "idle" | "running" | "stopped" = "idle";
-  
+
   constructor(
     protected config: AgentConfig,
     protected typeDefinition: AgentTypeDefinition,
@@ -450,20 +461,20 @@ export abstract class AgentAdapter {
 
   /** Lifecycle: initialize resources */
   abstract initialize(): Promise<void>;
-  
+
   /** Lifecycle: start execution */
   abstract start(): Promise<void>;
-  
+
   /** Lifecycle: send a message to the running agent */
   abstract sendMessage(content: string): Promise<void>;
-  
+
   /** Lifecycle: stop execution */
   abstract stop(): Promise<void>;
-  
+
   /** Token tracking — subclasses call this after each turn */
   protected async trackTokens(input: number, output: number): Promise<void> {
     this.tokenCount += input + output;
-    
+
     hooks.emit("agent.tokens", {
       issueId: this.issueId,
       type: this.type,
@@ -472,12 +483,12 @@ export abstract class AgentAdapter {
       totalTokens: this.tokenCount,
     });
   }
-  
+
   /** Check if running */
   isRunning(): boolean {
     return this.state === "running";
   }
-  
+
   /** Get current token count */
   getTokenCount(): number {
     return this.tokenCount;
@@ -493,7 +504,7 @@ Plugins register agent types, orchestrator spawns by type:
 // workflow/orchestrator/agent-registry.ts
 export class AgentTypeRegistry {
   private types = new Map<string, AgentTypeDefinition>();
-  
+
   /**
    * Register an agent type. Called by plugins during setup.
    */
@@ -502,34 +513,36 @@ export class AgentTypeRegistry {
       throw new Error(`Agent type "${definition.type}" already registered`);
     }
     this.types.set(definition.type, definition);
-    
+
     hooks.emit("agent.type.registered", {
       type: definition.type,
       name: definition.name,
     });
   }
-  
+
   /**
    * Get a registered agent type definition.
    */
   get(type: string): AgentTypeDefinition | undefined {
     return this.types.get(type);
   }
-  
+
   /**
    * List all registered agent types.
    */
   list(): AgentTypeDefinition[] {
     return [...this.types.values()];
   }
-  
+
   /**
    * Create an adapter instance for a given type.
    */
   createAdapter(type: string, config: AgentConfig): AgentAdapter {
     const definition = this.types.get(type);
     if (!definition) {
-      throw new Error(`Unknown agent type: "${type}". Available: ${[...this.types.keys()].join(", ")}`);
+      throw new Error(
+        `Unknown agent type: "${type}". Available: ${[...this.types.keys()].join(", ")}`,
+      );
     }
     return definition.createAdapter(config);
   }
@@ -548,17 +561,17 @@ import { AgentTypeRegistry } from "./agent-registry";
 export class HarnessOrchestrator {
   /** Shared registry for all workflows (plugins register here) */
   private readonly registry = new AgentTypeRegistry();
-  
+
   /** Active workflows by issue ID */
   private readonly workflows = new Map<string, Workflow>();
-  
+
   constructor(
     readonly db: Database,
     readonly hooks: HookEmitter,
     readonly memory: MemoryService,
     readonly config: Readonly<WorkhorseConfig>,
   ) {}
-  
+
   /**
    * Register an agent type. Used by plugins.
    * Types registered here are available to all workflows.
@@ -566,14 +579,14 @@ export class HarnessOrchestrator {
   registerAgentType(definition: AgentTypeDefinition): void {
     this.registry.register(definition);
   }
-  
+
   /**
    * Start a workflow for an issue.
    * Creates new Workflow if not exists, returns existing if already running.
    */
   async startWorkflow(issue: Issue): Promise<Workflow> {
     let workflow = this.workflows.get(issue.id);
-    
+
     if (!workflow) {
       workflow = new Workflow({
         issue,
@@ -583,17 +596,17 @@ export class HarnessOrchestrator {
         registry: this.registry, // Share registry across all workflows
         tokenThreshold: this.config.workflow?.tokenThreshold,
       });
-      
+
       this.workflows.set(issue.id, workflow);
-      
+
       this.hooks.emit("orchestrator.workflow.created", {
         issueId: issue.id,
       });
     }
-    
+
     return workflow;
   }
-  
+
   /**
    * Spawn an agent in a workflow. Creates workflow if not exists.
    * Convenience method that combines startWorkflow + workflow.spawn.
@@ -603,7 +616,7 @@ export class HarnessOrchestrator {
     const workflow = await this.startWorkflow(issue);
     return workflow.spawn(rest);
   }
-  
+
   /**
    * Send a message to a running workflow.
    */
@@ -614,21 +627,21 @@ export class HarnessOrchestrator {
     }
     await workflow.sendMessage(content);
   }
-  
+
   /**
    * Get workflow for an issue.
    */
   getWorkflow(issueId: string): Workflow | undefined {
     return this.workflows.get(issueId);
   }
-  
+
   /**
    * Get all active workflows.
    */
   getAllWorkflows(): Workflow[] {
     return [...this.workflows.values()];
   }
-  
+
   /**
    * Stop and remove a workflow.
    */
@@ -637,18 +650,20 @@ export class HarnessOrchestrator {
     if (workflow) {
       await workflow.stop();
       this.workflows.delete(issueId);
-      
+
       this.hooks.emit("orchestrator.workflow.stopped", {
         issueId,
       });
     }
   }
-  
+
   /**
    * Shutdown all workflows.
    */
   async shutdown(): Promise<void> {
-    const stopPromises = [...this.workflows.keys()].map(id => this.stopWorkflow(id));
+    const stopPromises = [...this.workflows.keys()].map((id) =>
+      this.stopWorkflow(id),
+    );
     await Promise.all(stopPromises);
   }
 }
@@ -660,18 +675,19 @@ The core Workflow provides **primitives only** — it doesn't prescribe what to 
 
 **Core primitives:**
 
-| Primitive | Description |
-|-----------|-------------|
-| `workflow.tokens.threshold` hook | Emitted when token count exceeds threshold |
-| `workflow.agent.spawn({ type })` | Spawn a new agent |
+| Primitive                            | Description                                   |
+| ------------------------------------ | --------------------------------------------- |
+| `workflow.tokens.threshold` hook     | Emitted when token count exceeds threshold    |
+| `workflow.agent.spawn({ type })`     | Spawn a new agent                             |
 | `workflow.agent.sendMessage(prompt)` | Send a message to current agent, get response |
-| `workflow.agent.stop()` | Stop current agent |
-| `workflow.agent.current` | Get current agent adapter (if running) |
-| `workflow.setContextData(data)` | Store arbitrary context for next agent |
-| `workflow.getContextData()` | Retrieve stored context |
-| `workflow.resetTokens()` | Reset token counter |
+| `workflow.agent.stop()`              | Stop current agent                            |
+| `workflow.agent.current`             | Get current agent adapter (if running)        |
+| `workflow.setContextData(data)`      | Store arbitrary context for next agent        |
+| `workflow.getContextData()`          | Retrieve stored context                       |
+| `workflow.resetTokens()`             | Reset token counter                           |
 
 **The core does NOT:**
+
 - Know about "compaction" or "handoff"
 - Prescribe what happens at threshold
 - Require any specific agent types
@@ -681,6 +697,7 @@ The core Workflow provides **primitives only** — it doesn't prescribe what to 
 The builtin plugin implements **one strategy** for handling token thresholds: ask the current agent to summarize, then spawn a fresh agent.
 
 Other plugins can implement different strategies:
+
 - Spawn a separate summarizer agent
 - Just restart without compaction
 - Save to external storage and continue later
@@ -707,29 +724,29 @@ Output as JSON.
 
 export function registerCompactionHandler(): void {
   const { orchestrator, hooks, memory } = useWorkhorse();
-  
+
   hooks.on("workflow.tokens.threshold", async ({ issueId }) => {
     const workflow = orchestrator.getWorkflow(issueId);
     if (!workflow?.agent.current) return;
-    
+
     // Ask current agent to summarize
     const response = await workflow.agent.sendMessage(COMPACTION_PROMPT);
     const summary = extractJsonFromResponse(response);
-    
+
     // Store for next agent
     await workflow.setContextData(summary);
-    
+
     // Stop current agent
     await workflow.agent.stop();
-    
+
     // Emit for other plugins (e.g., memory extraction)
     hooks.emit("builtin.compaction.completed", { issueId, summary });
-    
+
     // Spawn fresh agent
     workflow.resetTokens();
     await workflow.agent.spawn({ type: "coding" });
   });
-  
+
   // Background memory extraction (optional)
   hooks.on("builtin.compaction.completed", async ({ issueId, summary }) => {
     await memory.extractAndIndex(issueId, summary);
@@ -748,7 +765,11 @@ export const builtinPlugin = definePlugin({
     name: "builtin",
     version: "1.0.0",
     capabilities: {
-      tools: ["workhorse_acknowledge", "workhorse_update_status", "workhorse_escalate"],
+      tools: [
+        "workhorse_acknowledge",
+        "workhorse_update_status",
+        "workhorse_escalate",
+      ],
     },
   },
   setup() {
@@ -767,24 +788,24 @@ A different plugin could handle the threshold differently:
 // Example: workhorse-plugin-external-memory
 export default definePlugin({
   manifest: { name: "external-memory", version: "1.0.0" },
-  
+
   setup() {
     const { orchestrator, hooks } = useWorkhorse();
-    
+
     hooks.on("workflow.tokens.threshold", async ({ issueId }) => {
       const workflow = orchestrator.getWorkflow(issueId);
       if (!workflow?.agent.current) return;
-      
+
       // Different strategy: save full conversation to external service
       const messages = await db.messages.findByIssueId(issueId);
       await externalMemoryService.save(issueId, messages);
-      
+
       // Stop and restart without in-context summary
       await workflow.agent.stop();
       workflow.resetTokens();
-      
+
       // New agent queries external memory as needed
-      await workflow.agent.spawn({ 
+      await workflow.agent.spawn({
         type: "coding",
         tools: [externalMemoryQueryTool],
       });
@@ -800,15 +821,15 @@ Another plugin might prefer a separate agent for summarization:
 ```typescript
 // Example: workhorse-plugin-handoff-agent
 export default definePlugin({
-  manifest: { 
-    name: "handoff-agent", 
+  manifest: {
+    name: "handoff-agent",
     version: "1.0.0",
     capabilities: { agentTypes: ["handoff"] },
   },
-  
+
   setup() {
     const { orchestrator, hooks } = useWorkhorse();
-    
+
     // Register specialized handoff agent type
     orchestrator.registerAgentType({
       type: "handoff",
@@ -816,20 +837,20 @@ export default definePlugin({
       modelPreference: "fast",
       createAdapter: (config) => new HandoffAgentAdapter(config),
     });
-    
+
     hooks.on("workflow.tokens.threshold", async ({ issueId }) => {
       const workflow = orchestrator.getWorkflow(issueId);
       if (!workflow) return;
-      
+
       // Stop coding agent, spawn handoff agent
       await workflow.agent.stop();
       await workflow.agent.spawn({ type: "handoff" });
     });
-    
+
     hooks.on("handoff.agent.completed", async ({ issueId, summary }) => {
       const workflow = orchestrator.getWorkflow(issueId);
       if (!workflow) return;
-      
+
       await workflow.setContextData(summary);
       workflow.resetTokens();
       await workflow.agent.spawn({ type: "coding" });
@@ -854,10 +875,10 @@ export default definePlugin({
       agentTypes: ["coding"], // Or "pi-coding" if we want multiple coding agents
     },
   },
-  
+
   setup() {
     const { orchestrator } = useWorkhorse();
-    
+
     // Register as the default "coding" agent type
     orchestrator.registerAgentType({
       type: "coding",
@@ -866,7 +887,7 @@ export default definePlugin({
       modelPreference: "capable",
       createAdapter: (config) => new PiAgentAdapter(config),
     });
-    
+
     // Or register as a specific type, allowing multiple coding adapters
     // orchestrator.registerAgentType({
     //   type: "pi-coding",
@@ -880,7 +901,7 @@ export default definePlugin({
 // Explicit harness selection
 await orchestrator.spawn({
   issue,
-  type: "pi-coding",  // or "claude-code", "opencode"
+  type: "pi-coding", // or "claude-code", "opencode"
 });
 ```
 
@@ -898,10 +919,10 @@ export default definePlugin({
       agentTypes: ["review"],
     },
   },
-  
+
   setup() {
     const { orchestrator, hooks } = useWorkhorse();
-    
+
     // Register review agent type
     orchestrator.registerAgentType({
       type: "review",
@@ -912,7 +933,7 @@ export default definePlugin({
       defaultTools: ["github_get_pr_diff", "github_add_review"],
       createAdapter: (config) => new ReviewAgentAdapter(config),
     });
-    
+
     // Auto-spawn review agent when PR is ready
     hooks.on("github.pr.ready_for_review", async ({ issueId, prNumber }) => {
       const issue = await db.issues.findById(issueId);
@@ -947,14 +968,14 @@ export const continuationTool: OrchestratorTool = {
   execute: async (args, ctx) => {
     const workflow = orchestrator.getWorkflow(ctx.issueId);
     const contextData = workflow?.state.contextData;
-    
+
     if (!contextData) {
       return {
         success: true,
         output: "No previous agent session found. This is a fresh start.",
       };
     }
-    
+
     // If specific query, use L2 search
     if (args.query) {
       const relevant = await memory.l2.search(args.query, {
@@ -963,7 +984,7 @@ export const continuationTool: OrchestratorTool = {
       });
       return { success: true, output: formatSearchResults(relevant) };
     }
-    
+
     // Return full compaction summary
     return {
       success: true,
@@ -982,11 +1003,14 @@ Token tracking is built into the base class. Workflow responds to token hooks:
 export abstract class AgentAdapter {
   protected workflow?: Workflow;
   protected tokenCount = 0;
-  
+
   /** Called by subclasses after each turn to track token usage */
-  protected async trackTokens(inputTokens: number, outputTokens: number): Promise<void> {
+  protected async trackTokens(
+    inputTokens: number,
+    outputTokens: number,
+  ): Promise<void> {
     this.tokenCount += inputTokens + outputTokens;
-    
+
     // Emit hook — Workflow listens and checks threshold
     this.hooks.emit("agent.tokens", {
       issueId: this.issueId,
@@ -995,7 +1019,7 @@ export abstract class AgentAdapter {
       totalTokens: this.tokenCount,
     });
   }
-  
+
   /** Get current token count */
   getTokenCount(): number {
     return this.tokenCount;
@@ -1020,20 +1044,37 @@ New hooks for workflow events:
 // lib/hooks/types.ts (additions)
 export interface HookEvents {
   // ... existing hooks
-  
+
   // === CORE WORKFLOW HOOKS (emitted by Workflow class) ===
-  "workflow.tokens.threshold": { issueId: string; totalTokens: number; threshold: number };
+  "workflow.tokens.threshold": {
+    issueId: string;
+    totalTokens: number;
+    threshold: number;
+  };
   "workflow.stopped": { issueId: string };
-  "workflow.agent.spawn.pre": { issueId: string; type: string; adapter: AgentAdapter };
-  "workflow.agent.spawn.post": { issueId: string; type: string; adapter: AgentAdapter };
-  
+  "workflow.agent.spawn.pre": {
+    issueId: string;
+    type: string;
+    adapter: AgentAdapter;
+  };
+  "workflow.agent.spawn.post": {
+    issueId: string;
+    type: string;
+    adapter: AgentAdapter;
+  };
+
   // === ORCHESTRATOR HOOKS ===
   "orchestrator.workflow.created": { issueId: string };
   "orchestrator.workflow.stopped": { issueId: string };
-  
+
   // === AGENT HOOKS (emitted by AgentAdapter subclasses) ===
-  "agent.tokens": { issueId: string; inputTokens: number; outputTokens: number; totalTokens: number };
-  
+  "agent.tokens": {
+    issueId: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+
   // === PLUGIN HOOKS (emitted by builtin compaction handler) ===
   "workflow.compaction.completed": { issueId: string; summary: unknown };
 }
@@ -1047,6 +1088,7 @@ Extend context.md format to include compaction summary:
 
 ```markdown
 <!-- context.md -->
+
 # Issue: AM-123
 
 ## Handoff Summary
@@ -1056,7 +1098,7 @@ Extend context.md format to include compaction summary:
 - **Blockers:** None
 - **Next Steps:** Implement role-based access control
 - **Key Decisions:** Used JWT for stateless auth, chose bcrypt for password hashing
-- **Files Modified:** src/auth/*, src/models/user.ts
+- **Files Modified:** src/auth/\*, src/models/user.ts
 
 ## Session Log
 
@@ -1105,6 +1147,7 @@ packages/core/src/plugins/builtin/
 ## Tasks
 
 ### Core Infrastructure
+
 - [ ] Create `Workflow` class — self-contained, TUI-capable, idempotent
 - [ ] Implement `WorkflowState` interface with tokens, activeAgent, contextData
 - [ ] Implement `WorkflowAgentController` with `spawn()`, `sendMessage()`, `stop()`, `current`
@@ -1120,6 +1163,7 @@ packages/core/src/plugins/builtin/
 - [ ] Add tests for standalone Workflow usage (no orchestrator)
 
 ### Builtin Plugin: Self-Compaction Handler
+
 - [ ] Create `packages/core/src/plugins/builtin/workflow/compaction.ts`
 - [ ] Implement `registerCompactionHandler()` function
 - [ ] Subscribe to `workflow.tokens.threshold` hook
@@ -1129,8 +1173,8 @@ packages/core/src/plugins/builtin/
 - [ ] Stop current agent and spawn fresh coding agent
 - [ ] Update `plugin.ts` to call `registerCompactionHandler()`
 
-
 ### Integration
+
 - [ ] Update existing harness plugins (pi-adapter, etc.) to use `registerAgentType()`
 - [ ] Extend L1 context.md format to include compaction summary
 - [ ] Write tests for workflow transitions
@@ -1155,53 +1199,53 @@ Sub-agents are child agents spawned by the current agent to handle specific subt
 // WorkflowAgentController additions
 export class WorkflowAgentController {
   // ... existing methods ...
-  
-  /** 
+
+  /**
    * Spawn scoped sub-agents.
    * - mode: "eager" (default) — parent waits for result
    * - mode: "background" — returns immediately, notifies on completion
    */
   async spawnChildren(options: SubAgentOptions[]): Promise<SubAgentResult[]>;
-  
+
   /**
    * Get result of a completed background sub-agent by ID.
    * Call this after receiving completion notification.
    */
   getChildResult(id: string): SubAgentResult | undefined;
-  
+
   /** Current agent depth (0 = root, 1 = child, etc.) */
   get depth(): number;
-  
+
   /** Parent agent (if this is a sub-agent) */
   get parent(): AgentAdapter | null;
 }
 
 export interface SubAgentOptions {
-  /** 
-   * Unique ID for this sub-agent. 
+  /**
+   * Unique ID for this sub-agent.
    * Required for background mode (to retrieve results later).
    */
   id?: string;
-  
+
   /** Agent type to spawn */
   type: string;
-  
+
   /** Task description for the sub-agent */
   task: string;
-  
+
   /**
    * Execution mode:
    * - "eager" (default): Parent waits for result
    * - "background": Returns immediately, sends notification on completion
    */
   mode?: "eager" | "background";
-  
-  /** 
+
+  /**
    * Tools with their scopes. Each tool defines its own scope schema.
    * The plugin that provides the tool is responsible for enforcing the scope.
    */
   tools?: ScopedTool[];
-  
+
   /** Resource limits */
   limits?: {
     /** Max tokens for sub-agent context */
@@ -1211,7 +1255,7 @@ export interface SubAgentOptions {
     /** Timeout in milliseconds */
     timeout?: number;
   };
-  
+
   /** Context to pass to sub-agent */
   context?: unknown;
 }
@@ -1223,9 +1267,9 @@ export interface SubAgentOptions {
 export interface ScopedTool {
   /** Tool name */
   name: string;
-  
-  /** 
-   * Scope values for this tool. 
+
+  /**
+   * Scope values for this tool.
    * Schema depends on what the tool declares it accepts.
    * Examples:
    *   - read tool: { paths: ["src/auth/**"] }
@@ -1239,7 +1283,7 @@ export interface ScopedTool {
 export interface SubAgentResult {
   /** ID of the sub-agent (matches SubAgentOptions.id) */
   id: string;
-  /** 
+  /**
    * Execution mode this result came from:
    * - "eager": Result returned inline from spawnChildren()
    * - "background": Result retrieved via getChildResult() after notification
@@ -1267,119 +1311,139 @@ Plugins define tools with their scope schema. The tool is responsible for valida
 import { z } from "zod";
 
 /** Scope schema for the read tool */
-export const ReadScopeSchema = z.object({
-  /** Glob patterns for allowed paths */
-  paths: z.array(z.string()).optional(),
-}).optional();
+export const ReadScopeSchema = z
+  .object({
+    /** Glob patterns for allowed paths */
+    paths: z.array(z.string()).optional(),
+  })
+  .optional();
 
 export type ReadScope = z.infer<typeof ReadScopeSchema>;
 
 export const readTool: OrchestratorTool = {
   name: "read",
   description: "Read file contents",
-  
+
   /** Declare what scope parameters this tool accepts */
   scopeSchema: ReadScopeSchema,
-  
+
   execute: async (args, ctx) => {
     const { path } = args;
     const scope = ctx.scope as ReadScope;
-    
+
     // Tool enforces its own scope
     if (scope?.paths) {
-      const allowed = scope.paths.some(pattern => 
-        minimatch(path, pattern)
-      );
+      const allowed = scope.paths.some((pattern) => minimatch(path, pattern));
       if (!allowed) {
-        return { 
-          success: false, 
-          error: `Path "${path}" is outside allowed scope. Allowed: ${scope.paths.join(", ")}` 
+        return {
+          success: false,
+          error: `Path "${path}" is outside allowed scope. Allowed: ${scope.paths.join(", ")}`,
         };
       }
     }
-    
+
     // Proceed with read
     return readFile(path);
   },
 };
 
 // Example: write tool with more complex scope
-export const WriteScopeSchema = z.object({
-  paths: z.array(z.string()).optional(),
-  allowCreate: z.boolean().optional(),
-  allowDelete: z.boolean().optional(),
-}).optional();
+export const WriteScopeSchema = z
+  .object({
+    paths: z.array(z.string()).optional(),
+    allowCreate: z.boolean().optional(),
+    allowDelete: z.boolean().optional(),
+  })
+  .optional();
 
 export const writeTool: OrchestratorTool = {
   name: "write",
   scopeSchema: WriteScopeSchema,
   execute: async (args, ctx) => {
     const scope = ctx.scope as z.infer<typeof WriteScopeSchema>;
-    
+
     // Check path restriction
     if (scope?.paths && !matchesAny(args.path, scope.paths)) {
       return { success: false, error: "Path outside allowed scope" };
     }
-    
+
     // Check create restriction
     if (!scope?.allowCreate && !fileExists(args.path)) {
-      return { success: false, error: "Creating new files not allowed in this scope" };
+      return {
+        success: false,
+        error: "Creating new files not allowed in this scope",
+      };
     }
-    
+
     // Proceed
     return writeFile(args.path, args.content);
   },
 };
 
 // Example: git tool with operation restrictions
-export const GitScopeSchema = z.object({
-  operations: z.array(z.enum([
-    "status", "diff", "log",           // read-only
-    "add", "commit", "branch",         // local mutations
-    "push", "pull", "fetch",           // remote operations
-  ])).optional(),
-}).optional();
+export const GitScopeSchema = z
+  .object({
+    operations: z
+      .array(
+        z.enum([
+          "status",
+          "diff",
+          "log", // read-only
+          "add",
+          "commit",
+          "branch", // local mutations
+          "push",
+          "pull",
+          "fetch", // remote operations
+        ]),
+      )
+      .optional(),
+  })
+  .optional();
 
 export const gitTool: OrchestratorTool = {
   name: "git",
   scopeSchema: GitScopeSchema,
   execute: async (args, ctx) => {
     const scope = ctx.scope as z.infer<typeof GitScopeSchema>;
-    
+
     if (scope?.operations && !scope.operations.includes(args.action)) {
-      return { 
-        success: false, 
-        error: `Git operation "${args.action}" not allowed. Allowed: ${scope.operations.join(", ")}` 
+      return {
+        success: false,
+        error: `Git operation "${args.action}" not allowed. Allowed: ${scope.operations.join(", ")}`,
       };
     }
-    
+
     return executeGit(args);
   },
 };
 
 // Example: script tool with script name restrictions
-export const ScriptScopeSchema = z.object({
-  scripts: z.array(z.string()).optional(),  // Allowed script names
-}).optional();
+export const ScriptScopeSchema = z
+  .object({
+    scripts: z.array(z.string()).optional(), // Allowed script names
+  })
+  .optional();
 
 export const scriptTool: OrchestratorTool = {
   name: "script",
   scopeSchema: ScriptScopeSchema,
   execute: async (args, ctx) => {
     const scope = ctx.scope as z.infer<typeof ScriptScopeSchema>;
-    
+
     if (scope?.scripts && !scope.scripts.includes(args.name)) {
-      return { 
-        success: false, 
-        error: `Script "${args.name}" not allowed. Allowed: ${scope.scripts.join(", ")}` 
+      return {
+        success: false,
+        error: `Script "${args.name}" not allowed. Allowed: ${scope.scripts.join(", ")}`,
       };
     }
-    
+
     return runScript(args.name, args.args);
   },
 };
 ```
-```
+
+````
 
 ### Sub-Agent Tool
 
@@ -1402,7 +1466,7 @@ Background agents send a notification with their ID when complete.
 Use get_subagent_result to retrieve the result after notification.
 
 Use for: research, analysis, scoped refactoring, parallel tasks.`,
-  
+
   schema: {
     type: "object",
     properties: {
@@ -1416,13 +1480,13 @@ Use for: research, analysis, scoped refactoring, parallel tasks.`,
               type: "string",
               description: "Unique ID for this sub-agent (required for background mode)",
             },
-            type: { 
-              type: "string", 
-              description: "Agent type (e.g., 'research', 'refactor')" 
+            type: {
+              type: "string",
+              description: "Agent type (e.g., 'research', 'refactor')"
             },
-            task: { 
-              type: "string", 
-              description: "Task description for the sub-agent" 
+            task: {
+              type: "string",
+              description: "Task description for the sub-agent"
             },
             mode: {
               type: "string",
@@ -1457,7 +1521,7 @@ Use for: research, analysis, scoped refactoring, parallel tasks.`,
     },
     required: ["agents"],
   },
-  
+
   execute: async (args, ctx) => {
     const results = await ctx.workflow.agent.spawnChildren(args.agents);
     return {
@@ -1466,7 +1530,7 @@ Use for: research, analysis, scoped refactoring, parallel tasks.`,
         id: r.id,
         mode: r.mode,
         // Eager results have full data, background just confirms spawned
-        ...(r.mode === "eager" 
+        ...(r.mode === "eager"
           ? { success: r.success, output: r.output, error: r.error, tokensUsed: r.tokensUsed }
           : { status: "running" }
         ),
@@ -1478,7 +1542,7 @@ Use for: research, analysis, scoped refactoring, parallel tasks.`,
 export const getSubagentResultTool: OrchestratorTool = {
   name: "get_subagent_result",
   description: "Get result of a completed background sub-agent. Call after receiving completion notification.",
-  
+
   schema: {
     type: "object",
     properties: {
@@ -1489,7 +1553,7 @@ export const getSubagentResultTool: OrchestratorTool = {
     },
     required: ["id"],
   },
-  
+
   execute: async (args, ctx) => {
     const result = ctx.workflow.agent.getChildResult(args.id);
     if (!result) {
@@ -1505,7 +1569,7 @@ export const getSubagentResultTool: OrchestratorTool = {
     };
   },
 };
-```
+````
 
 ### Notification Integration
 
@@ -1514,10 +1578,10 @@ When a background sub-agent completes, a notification is sent to the parent agen
 ```typescript
 // In WorkflowAgentController.spawnChildren()
 for (const child of backgroundChildren) {
-  child.runToCompletion().then(result => {
+  child.runToCompletion().then((result) => {
     // Store result for retrieval
     this.completedChildren.set(child.id, result);
-    
+
     // Send notification to parent agent
     this.config.hooks.emit("agent.notification", {
       issueId: this.workflow.state.issueId,
@@ -1689,7 +1753,7 @@ Tool result: {
 
 Tool result: {
   success: true,
-  id: "test-coverage", 
+  id: "test-coverage",
   mode: "background",
   output: { coverage: "72%", gaps: ["auth/*", "utils/*"] },
   tokensUsed: 15000
@@ -1751,7 +1815,6 @@ console.log(result);
 //   tokensUsed: 12500,
 // }
 
-
 // ============================================
 // EXAMPLE 2: Multiple eager sub-agents (parallel)
 // ============================================
@@ -1784,7 +1847,6 @@ console.log(results);
 //   { id: "auto-3", mode: "eager", success: true, output: { outdated: ["lodash"] }, ... },
 // ]
 
-
 // ============================================
 // EXAMPLE 3: Single background sub-agent
 // ============================================
@@ -1794,8 +1856,11 @@ const [result] = await workflow.agent.spawnChildren([
     type: "research",
     task: "Deep audit of all dependencies",
     mode: "background",
-    tools: [{ name: "read" }, { name: "script", scope: { scripts: ["audit"] } }],
-    limits: { maxTokens: 50_000, timeout: 300_000 },  // 5 min timeout
+    tools: [
+      { name: "read" },
+      { name: "script", scope: { scripts: ["audit"] } },
+    ],
+    limits: { maxTokens: 50_000, timeout: 300_000 }, // 5 min timeout
   },
 ]);
 
@@ -1819,7 +1884,6 @@ console.log(finalResult);
 //   output: { vulnerabilities: [...], recommendations: [...] },
 //   tokensUsed: 35000,
 // }
-
 
 // ============================================
 // EXAMPLE 4: Mixed eager and background
@@ -1860,7 +1924,6 @@ console.log(results);
 // Function returns as soon as eager ones complete
 // Background ones continue running, will notify when done
 
-
 // ============================================
 // EXAMPLE 5: Scoped refactoring sub-agent
 // ============================================
@@ -1870,7 +1933,10 @@ const [result] = await workflow.agent.spawnChildren([
     task: "Extract validation logic into src/auth/validation/",
     tools: [
       { name: "read", scope: { paths: ["src/auth/**"] } },
-      { name: "write", scope: { paths: ["src/auth/validation/**"], allowCreate: true } },
+      {
+        name: "write",
+        scope: { paths: ["src/auth/validation/**"], allowCreate: true },
+      },
       { name: "grep", scope: { paths: ["src/**"] } },
     ],
     limits: { maxTokens: 50_000, maxTurns: 20 },
@@ -1878,7 +1944,6 @@ const [result] = await workflow.agent.spawnChildren([
 ]);
 
 // Sub-agent can only write to src/auth/validation/**, nowhere else
-
 
 // ============================================
 // EXAMPLE 6: Read-only git analysis
@@ -1889,11 +1954,10 @@ const [result] = await workflow.agent.spawnChildren([
     task: "Analyze recent changes to auth module",
     tools: [
       { name: "read", scope: { paths: ["src/auth/**"] } },
-      { name: "git", scope: { operations: ["log", "diff", "status"] } },  // No commit/push
+      { name: "git", scope: { operations: ["log", "diff", "status"] } }, // No commit/push
     ],
   },
 ]);
-
 
 // ============================================
 // EXAMPLE 7: Sub-agent with limited scripts
@@ -1904,11 +1968,13 @@ const [result] = await workflow.agent.spawnChildren([
     task: "Run auth tests and analyze failures",
     tools: [
       { name: "read", scope: { paths: ["src/auth/**", "tests/auth/**"] } },
-      { name: "script", scope: { scripts: ["test:auth", "test:auth:coverage"] } },  // Only these scripts
+      {
+        name: "script",
+        scope: { scripts: ["test:auth", "test:auth:coverage"] },
+      }, // Only these scripts
     ],
   },
 ]);
-
 
 // ============================================
 // EXAMPLE 8: No scope restrictions (full access)
@@ -1918,8 +1984,8 @@ const [result] = await workflow.agent.spawnChildren([
     type: "research",
     task: "General codebase exploration",
     tools: [
-      { name: "read" },   // No scope = full read access
-      { name: "grep" },   // No scope = can grep anywhere
+      { name: "read" }, // No scope = full read access
+      { name: "grep" }, // No scope = can grep anywhere
       { name: "outline" },
     ],
   },
@@ -1946,7 +2012,7 @@ When the sub-agent completes, it's popped and the parent resumes:
 // In WorkflowAgentController
 async spawnChild(options: SubAgentOptions): Promise<SubAgentResult> {
   const parent = this.activeAgent;
-  
+
   // Create scoped adapter
   const childAdapter = this.registry.createAdapter(options.type, {
     ...this.config,
@@ -1955,17 +2021,17 @@ async spawnChild(options: SubAgentOptions): Promise<SubAgentResult> {
     limits: options.limits,
     parent: parent?.adapter,
   });
-  
+
   // Push to stack
   this.agentStack.push(parent);
   this.activeAgent = { type: options.type, adapter: childAdapter };
-  
+
   // Run sub-agent
   const result = await childAdapter.runToCompletion(options.task);
-  
+
   // Pop stack, restore parent
   this.activeAgent = this.agentStack.pop();
-  
+
   return result;
 }
 ```
@@ -1986,8 +2052,8 @@ Sub-agents can spawn their own sub-agents, but scope can only be **narrowed**, n
 // ↑ "push" denied, "log" not requested so not included
 
 function narrowToolScope(
-  parentTool: ScopedTool, 
-  requestedTool: ScopedTool
+  parentTool: ScopedTool,
+  requestedTool: ScopedTool,
 ): ScopedTool {
   // Tool must define how to narrow its scope
   const toolDef = registry.getTool(requestedTool.name);
@@ -2006,8 +2072,8 @@ readTool.narrowScope = (parent, requested) => ({
 // Example for git tool:
 gitTool.narrowScope = (parent, requested) => ({
   operations: intersection(
-    parent?.operations ?? ALL_GIT_OPS, 
-    requested?.operations ?? ALL_GIT_OPS
+    parent?.operations ?? ALL_GIT_OPS,
+    requested?.operations ?? ALL_GIT_OPS,
   ),
 });
 ```

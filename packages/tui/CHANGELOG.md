@@ -87,7 +87,7 @@
 
 ### 🚀 Enhancements
 
-- **skills:** Add support for .agents/skills/* ([b441920](https://github.com/StevenJPx2/workhorse/commit/b441920))
+- **skills:** Add support for .agents/skills/\* ([b441920](https://github.com/StevenJPx2/workhorse/commit/b441920))
 - **jira:** Create a notification on auto-transition to not make the agent do anything ([5e8b22d](https://github.com/StevenJPx2/workhorse/commit/5e8b22d))
 
 ### ❤️ Contributors

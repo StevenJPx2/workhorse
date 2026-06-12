@@ -532,7 +532,7 @@ epilogue = """
 Summarise what you did.
 """
 
-tools        = ["fs_read", "fs_write", "git_commit"]
+tools = ["fs_read", "fs_write", "git_commit"]
 token_budget = 50_000
 ```
 
@@ -750,23 +750,27 @@ For example, you have an agent service that registers all the agents. What if, f
 It accesses the external world in a _safe_ way and provides reasonable context to the agent.
 It feeds the agent with the tools, notifications, skills, etc. that it needs to run the step perfectly.
 
-Services have a lifecycle (`setup()` / `teardown()`) and contribute tools, skills, notifications, and prompt sections to the agent. All contributions are declared with metadata/tags so the Step's allowlist controls what's active (**co-owned activation**: service declares, step filters).
+Services have a lifecycle (`setup()` / `teardown()`) and communicate over a shared **`hookable` bus** — not a generic registry. In `setup()` a service registers handlers for the hooks it owns (keeping the returned unregister callbacks) and drops them in `teardown()`. The host — the Harness, or a standalone composition — drives the bus: it calls hooks like `scripts:create` or `tools:collect`, and the owning service handles them. Contributions carry metadata/tags so the Step's allowlist controls what's active (**co-owned activation**: service declares, step filters).
 
-Tools, skills, and scripts each have a dedicated registration service — `ToolService`, `SkillService`, `ScriptService`. Other services (Git, L1, L2, Agent, AST) and plugins contribute through them. Because services are not bound to the Harness, the same registries can be composed standalone (the Moby use case above).
+Tools, skills, and scripts each have a dedicated service — `ToolService`, `SkillService`, `ScriptService` — and **each owns the _mechanism_ for its kind**. They differ in how they store and retrieve their capability: `ToolService` keeps code-registered tools in memory; `ScriptService` persists scripts under the workhorse directory and reads them back on demand; `SkillService` sources skill fragments (e.g. from `.workhorse/skills`). The capability _definitions_ themselves (`Tool`, `Skill`, `Script`) are global schema types in `src/schema`; the services just move instances of those definitions across the bus. Other services (Git, L1, L2, Agent, AST) and plugins contribute by calling the relevant hooks. Because services couple only to the bus — not the Harness — the same set can be composed standalone (the Moby use case above).
 
 ##### Base Services
 
 ###### `ToolService`
 
-The registration point for **tools**. Services and plugins add their tools here; the Harness gates them against each step's `tools[]` allowlist.
+The service for **tools**. Code and plugins contribute via `tools:register`; it keeps them in memory and returns them via `tools:collect` for the Harness to gate against each step's `tools[]` allowlist.
 
 ###### `SkillService`
 
-The registration point for **skills** — reusable prompt fragments / instruction sets injected into the agent's context.
+The service for **skills** — reusable prompt fragments / instruction sets injected into the agent's context. Contributed via `skills:register`, read back via `skills:collect`.
 
 ###### `ScriptService`
 
-The registration point for **scripts** — runnable scripts the agent can execute in the workflow environment.
+The service for **scripts** — runnable scripts the agent can execute. It owns its storage: `scripts:create` persists a script under the workhorse directory, `scripts:collect` reads the stored scripts back. Where and how scripts live is the service's concern, hidden behind the hooks.
+
+###### `MCPService`
+
+Provides MCP tools and allows a plugin to register a MCP.
 
 ###### `GitService`
 

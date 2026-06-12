@@ -25,6 +25,7 @@ if (!result.success) {
 }
 
 const config = result.data;
+
 console.log(JSON.stringify(config, undefined, 2));
 
 const workflows = Object.keys(config.workflows);

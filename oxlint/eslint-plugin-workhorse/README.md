@@ -37,7 +37,6 @@ This plugin enforces architectural decisions that keep the codebase maintainable
 | Rule                           | Severity | What It Does                                        |
 | ------------------------------ | -------- | --------------------------------------------------- |
 | `prefer-then-chain`            | warn     | `(await x).foo` → `await x.then(r => r.foo)`.       |
-| `no-cascading-ternary`         | warn     | Nested ternaries → object map or switch.            |
 | `no-section-comments`          | warn     | Remove `// ---`, `// 1.`, `// Step 1:` scaffolding. |
 | `no-single-reference-function` | warn     | Functions called once should be inlined.            |
 | `no-single-use-variable`       | warn     | Variables used once should be inlined.              |
@@ -192,7 +191,7 @@ In `.oxlintrc.json`:
     "workhorse/no-index-imports": "warn",
     "workhorse/prefer-path-alias": "warn",
     "workhorse/prefer-then-chain": "warn",
-    "workhorse/no-cascading-ternary": "warn"
+
   }
 }
 ```
@@ -216,7 +215,6 @@ eslint-plugin-workhorse/
 │   ├── prefer-folder-barrel.ts
 │   ├── prefer-path-alias.ts
 │   ├── prefer-then-chain.ts
-│   ├── no-cascading-ternary.ts
 │   └── utils.ts          # Shared helpers
 └── package.json
 ```

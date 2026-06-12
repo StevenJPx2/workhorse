@@ -24,8 +24,11 @@
     "workhorse/no-index-imports": "warn",
     "workhorse/prefer-path-alias": "warn",
     "workhorse/prefer-then-chain": "warn",
-    "workhorse/no-cascading-ternary": "warn",
+
     "promise/prefer-await-to-then": "off",
+    "eslint/no-ternary": "off",
+    "eslint/require-await": "off",
+    "typescript/parameter-properties": "off",
     "promise/no-nesting": "off",
     "import/no-named-export": "off",
     "import/prefer-default-export": "off",

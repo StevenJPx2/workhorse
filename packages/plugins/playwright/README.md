@@ -224,8 +224,9 @@ await tools.playwright_navigate({
 await tools.playwright_navigate({
   url: "https://example.com/api-page",
   extraHTTPHeaders: {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    "Authorization": "Bearer token123",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    Authorization: "Bearer token123",
   },
 });
 await tools.playwright_fill({ selector: "#email", value: "test@example.com" });

@@ -3,7 +3,6 @@ import enforceColocatedExports from "./rules/enforce-colocated-exports";
 import enforceKebabCaseFilenames from "./rules/enforce-kebab-case-filenames";
 import enforceTestColocation from "./rules/enforce-test-colocation";
 import maxLinesPerFile from "./rules/max-lines-per-file";
-import noCascadingTernary from "./rules/no-cascading-ternary";
 import noIndexImports from "./rules/no-index-imports";
 import noReexportChain from "./rules/no-reexport-chain";
 import noReexportOutsideBarrel from "./rules/no-reexport-outside-barrel";
@@ -38,7 +37,6 @@ const plugin = {
     "prefer-inline-single-import": preferInlineSingleImport,
     "prefer-path-alias": preferPathAlias,
     "prefer-then-chain": preferThenChain,
-    "no-cascading-ternary": noCascadingTernary,
   },
 };
 

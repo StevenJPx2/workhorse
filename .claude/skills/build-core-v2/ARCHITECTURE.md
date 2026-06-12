@@ -4,13 +4,13 @@ A component-by-component outline of the canonical design. Source of truth: `plan
 
 ## Two planes — "config gates; it never provides"
 
-- **Config plane** (authored, on disk, **snake_case throughout**): workflow types, step presets, **agent definitions**. Two roles: *providers* (an agent definition supplies tools/skills/scripts/models for a backend like `claude`/`pi`/`codex`) and *gates* (a Step's `tools[]`/`services[]` are allowlists only).
+- **Config plane** (authored, on disk, **snake_case throughout**): workflow types, step presets, **agent definitions**. Two roles: _providers_ (an agent definition supplies tools/skills/scripts/models for a backend like `claude`/`pi`/`codex`) and _gates_ (a Step's `tools[]`/`services[]` are allowlists only).
 - **Runtime plane** (in memory): the live `Agent` — "bones" with no config.
 - **Assembly is one-directional:** `(agent definition ∪ service contributions) ∩ step allowlist`, most-restrictive wins. `services[]` gates which services are active; `tools[]` is the final per-tool filter — a tool must pass both. The capability services declare/collect; the Harness intersects. → `§ Config Plane vs Runtime Plane`
 
 Three related-but-distinct concepts:
 
-- **`AdapterClass`** — runtime *implementation* of a backend; registered via `registerAdapter`; instantiated into a live `Agent`.
+- **`AdapterClass`** — runtime _implementation_ of a backend; registered via `registerAdapter`; instantiated into a live `Agent`.
 - **`Agent`** (runtime) — a live instance the Harness drives (`run`/`notify`/`interrupt`).
 - **`AgentDefinition`** (config) — names an adapter class and supplies its capability set. A Step's `agent` field references it by name.
 
@@ -18,7 +18,7 @@ Three related-but-distinct concepts:
 
 Owns the full bootstrap lifecycle. Creates **GlobalContext** once, then a **WorkflowContext** per workflow run (no shared mutable state). → `§ Orchestrator`
 
-- **GlobalContext**: infrastructure (`db`, `hooks`, `config`) + registries (service definitions, adapter classes, agent definitions, workflow types) — *definitions only, no instances*.
+- **GlobalContext**: infrastructure (`db`, `hooks`, `config`) + registries (service definitions, adapter classes, agent definitions, workflow types) — _definitions only, no instances_.
 - **WorkflowContext**: per-run instances of services/agents, built from the registries; carries `status`, `issue`.
 - **Issue intake** happens at the Orchestrator level before a Workflow starts: a lightweight one-off agent (via `AgentService`) fetches/structures issue details from any source → JSON `Issue` → DB record → worktree/branch → Workflow starts.
 
@@ -46,7 +46,7 @@ A stage's exit `when` is a small, **safe boolean expression** — pure data, nev
 
 A Step is "what to run" (the Harness is "how"). Fields: `id`, `preset?`, `prologue`/`epilogue`, `tools[]`/`services[]` (allowlists), `agent`, `model`, `token_budget`, `tool_timeout`, `retry` (default 0 = fail-fast), `sub_agents`. → `§ Workflow`, `§ Harness`
 
-- **Fresh agent session per step** — context flows only through prologue (system prompt) → epilogue (the handoff prompt; its response feeds the next step's prologue). The **handoff is edge-scoped**: when a step resolves (completed *or* interrupted by a firing exit), routing is decided, then the chosen edge's handoff is sent — the source `Step.epilogue` when staying in the stage (advance/loop), or the firing `ExitRule.epilogue` (falling back to `Step.epilogue`) when leaving. An exit handoff can reflect the exit's reason (e.g. `token_budget_exceeded` → "checkpoint progress").
+- **Fresh agent session per step** — context flows only through prologue (system prompt) → epilogue (the handoff prompt; its response feeds the next step's prologue). The **handoff is edge-scoped**: when a step resolves (completed _or_ interrupted by a firing exit), routing is decided, then the chosen edge's handoff is sent — the source `Step.epilogue` when staying in the stage (advance/loop), or the firing `ExitRule.epilogue` (falling back to `Step.epilogue`) when leaving. An exit handoff can reflect the exit's reason (e.g. `token_budget_exceeded` → "checkpoint progress").
 - **Presets** (`prompt`, `planning`, `coding`, `memory`, `verify`, `review-monitor`, …) are reusable step bodies; any step field overrides the preset.
 - **Cascade**: `global → project → workflow type → preset → step` (later wins). Project config may patch a preset by name (`[presets.coding] agent = "codex"`).
 
@@ -65,7 +65,7 @@ One **generic** engine that executes any step. → `§ Harness`
 `Agent.run(prompt, tools, options) → AsyncIterable<AgentEvent>`; plus `notify(message)` and `interrupt()`. → `§ Agent Event Stream`
 
 - **Events**: `tool_call`, `tool_result`, `message`, `token_usage` (→ `token_budget_exceeded`), `idle` (→ `step_idle`), `done` (`{ reason: completed | interrupted | error }`), `error`.
-- **Termination contract**: the iterable *always* ends with a `done` event. `interrupt()` finishes the in-flight call, emits `done{ interrupted }`, closes.
+- **Termination contract**: the iterable _always_ ends with a `done` event. `interrupt()` finishes the in-flight call, emits `done{ interrupted }`, closes.
 
 ## Sub-agents
 

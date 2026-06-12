@@ -10,14 +10,15 @@
     "style": "warn"
   },
   "rules": {
-    "eslint/sort-imports": ["warn", { "allowSeparatedGroups": true }],
+    "eslint/sort-imports": "off",
     "eslint/sort-keys": "warn",
     "eslint/id-length": "off",
     "eslint/no-magic-numbers": "off",
     "eslint/capitalized-comments": "off",
     "eslint/no-inline-comments": "off",
     "eslint/func-style": ["error", "declaration"],
-    "unicorn/no-empty-file": "warn"
+    "unicorn/no-empty-file": "warn",
+    "eslint/no-continue": "off"
   },
   "ignorePatterns": ["node_modules/**", "dist/**"]
 }

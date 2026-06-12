@@ -15,7 +15,7 @@ Decisions and open questions from the design interview session.
 
 ### Workflow
 
-- **Status-block step selection**: Status is a *block*, not a selector (see Resolved Loopholes #5). Steps sharing a status run in declaration order and loop back to the block's first step until an exit condition fires; then status advances to the next block. The Workflow watches deterministic conditions (e.g., "all todos complete") to drive block exits.
+- **Status-block step selection**: Status is a _block_, not a selector (see Resolved Loopholes #5). Steps sharing a status run in declaration order and loop back to the block's first step until an exit condition fires; then status advances to the next block. The Workflow watches deterministic conditions (e.g., "all todos complete") to drive block exits.
 - **Declarative config objects (pure data — TOML/JSON)**: Workflow types are defined as pure data files, not TypeScript. Transition conditions are named built-in conditions, not arbitrary functions.
 - **Built-in conditions + composites**: Ship a set of named conditions (`todos_complete`, `token_budget_exceeded`, `step_idle`, `status_changed`, etc.) with AND/OR combinators. Add a generic `state_check` condition for custom scenarios.
 - **Fully pluggable workflow types from day one**: Design the system so custom workflow types can be loaded from `.workhorse/workflows/`. Ralph ships as built-in.
@@ -129,14 +129,14 @@ Decisions and open questions from the design interview session.
 
 Decisions from the loophole review. All are now reflected in `rearchitecture.md`.
 
-1. **Duplicate `Agent` struct → two planes.** The runtime `Agent` (bones: `run`/`notify`/`interrupt`) stays named `Agent`. The static struct becomes `AgentDefinition`, an authored **config-plane** entry that is a *provider* of capabilities (tools/skills/scripts/models) for a backend. No "Adapter" jargon. A new "Config Plane vs Runtime Plane" section documents this.
+1. **Duplicate `Agent` struct → two planes.** The runtime `Agent` (bones: `run`/`notify`/`interrupt`) stays named `Agent`. The static struct becomes `AgentDefinition`, an authored **config-plane** entry that is a _provider_ of capabilities (tools/skills/scripts/models) for a backend. No "Adapter" jargon. A new "Config Plane vs Runtime Plane" section documents this.
 2. **Filtering double-ownership.** `BasicService` **declares/collects** contributions (tagged with metadata). The **Harness intersects** providers against the step allowlist at run time. Single owner for the live narrowing context.
 3. **Concurrent transition precedence.** Dissolved by the block model — `next` (intra-block jump) and `next_status` (block exit) operate at different scopes and never compete for a winner.
 4. **Unreachable `done`.** Terminal: a `next_status` to a status with no step block ends `Workflow.run()` and sets the tag as a side-effect. There is no "done step."
 5. **Status→step ambiguity → status blocks.** Status is a **block**, not a selector. Steps sharing a status run in declaration order and loop back to the block's first step until an exit condition fires; then the status advances and execution enters the next block's first step.
 6. **Orphaned `blocked`.** Entered via an agent-set condition (a tool marks blocked); exited via external `status_changed`. It is a normal block (may hold or poll).
 7. **Mid-tool interrupt safety.** The Harness interrupts only at **tool-call boundaries** — in-flight tool call completes, then it halts before the next. No partial writes/commits.
-8. *(merged into 7)*
+8. _(merged into 7)_
 9. **`ask_parent` deadlock.** All tools have a **default timeout + per-tool override**; `ask_parent` is bound by it. If the parent goes idle/over-budget before answering, the paused sub-agent is cancelled at the next boundary and the unanswered question surfaces in the parent's output.
 10. **Epilogue chain vs injected steps.** Plugin pre-transition steps are **out-of-band** — the prologue→epilogue handoff flows around them; their side-effects (PR, notify) don't enter the chain.
 11. **`state_check` escape hatch.** Constrained to **declarative predicates over known state keys** (`file_exists`, `git_clean`, `git_ahead`, `todo_count`, `token_used`, `iteration_count`, `status`) with a fixed operator set (`eq`/`ne`/`gt`/`gte`/`lt`/`lte`/`exists`/`matches`). No arbitrary code.

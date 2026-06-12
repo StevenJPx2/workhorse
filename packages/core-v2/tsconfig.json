@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    // Environment setup & latest features
     "lib": ["ESNext"],
     "target": "ESNext",
     "module": "Preserve",
@@ -8,21 +7,24 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "types": ["bun"],
-
-    // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-
-    // Best practices
+    "paths": {
+      "#config": ["./src/config/index.ts"],
+      "#db": ["./src/db/index.ts"],
+      "#hooks": ["./src/hooks/index.ts"],
+      "#orchestrator": ["./src/orchestrator/index.ts"],
+      "#schema": ["./src/schema/index.ts"],
+      "#services": ["./src/services/index.ts"],
+      "#workflow": ["./src/workflow/index.ts"]
+    },
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-
-    // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
