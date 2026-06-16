@@ -1,3 +1,5 @@
+import { diagnostics } from "#diagnostics";
+
 import type { ArgSpecT, ScriptInvocation, ScriptT } from "./schema";
 
 function resolveValue(params: {
@@ -17,9 +19,11 @@ function resolveValue(params: {
   }
 
   if (spec.required) {
-    throw new Error(
-      `Missing required ${kind} "${spec.name}" for script "${script.name}".`,
-    );
+    throw diagnostics.WH_SCRIPT_MISSING_ARG({
+      kind,
+      name: spec.name,
+      script: script.name,
+    });
   }
 }
 
@@ -31,7 +35,7 @@ export function resolveInvocation(
 
   for (const name of Object.keys(givenOptions)) {
     if (!script.args.options.some((option) => option.name === name)) {
-      throw new Error(`Unknown option "${name}" for script "${script.name}".`);
+      throw diagnostics.WH_SCRIPT_UNKNOWN_OPTION({ name, script: script.name });
     }
   }
 

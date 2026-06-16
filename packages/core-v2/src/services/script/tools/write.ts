@@ -1,13 +1,6 @@
-import z from "zod";
+import { defineTool, WriteScriptInput, type WriteScriptInputT } from "#schema";
 
-import { defineTool, ScriptArgs, type ScriptArgsT } from "#schema";
-
-export type WriteScript = (input: {
-  args?: ScriptArgsT;
-  command: string;
-  description?: string;
-  name: string;
-}) => void;
+export type WriteScript = (input: WriteScriptInputT) => void;
 
 export function writeScriptTool(write: WriteScript) {
   return defineTool({
@@ -30,12 +23,7 @@ export function writeScriptTool(write: WriteScript) {
         output: `Saved script "${input.name}".`,
       };
     },
-    input: z.object({
-      args: ScriptArgs.optional(),
-      command: z.string(),
-      description: z.string().optional(),
-      name: z.string(),
-    }),
+    input: WriteScriptInput,
     name: "write_script",
   });
 }

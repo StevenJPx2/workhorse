@@ -1,3 +1,4 @@
+import type { GlobalContext } from "#orchestrator";
 import { describe, expect, it } from "vitest";
 
 import type { Service } from "../base";
@@ -6,7 +7,7 @@ import { context } from "./fixture";
 class MinimalService implements Service {
   readonly name = "minimal";
 
-  setup(): void {}
+  setup(_context: GlobalContext): void {}
 
   teardown(): void {}
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defineScript } from "../define";
 import { resolveInvocation } from "../invoke";
@@ -17,6 +17,14 @@ const script = defineScript({
   command: "echo hi",
   description: "Demo",
   name: "demo",
+});
+
+beforeEach(() => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("resolveInvocation", () => {

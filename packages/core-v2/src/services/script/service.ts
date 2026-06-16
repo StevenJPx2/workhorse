@@ -3,10 +3,10 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import type { GlobalContext } from "#orchestrator";
-import type { ScriptT } from "#schema";
+import { type ScriptT, serializeFrontMatter } from "#schema";
 
 import type { Service } from "../base";
-import { discoverScripts, encodeArgs, SCRIPTS_DIR } from "./discover";
+import { discoverScripts, SCRIPTS_DIR } from "./discover";
 import { scriptTools, type WriteScript } from "./tools";
 
 export class ScriptService implements Service {
@@ -26,7 +26,7 @@ export class ScriptService implements Service {
     this.refresh();
 
     await Promise.all(
-      scriptTools(() => this.list(), this.write).map((tool) =>
+      scriptTools(this).map((tool) =>
         context.hooks.callHook("tools:register", { tool }),
       ),
     );
@@ -44,27 +44,11 @@ export class ScriptService implements Service {
     this.scripts = discoverScripts(this.cwd, this.home);
   }
 
-  private readonly write: WriteScript = ({
-    args,
-    command,
-    description,
-    name,
-  }) => {
-    const header: string[] = [];
-
-    if (description !== undefined) {
-      header.push(`# ${description}`);
-    }
-
-    if (args !== undefined) {
-      header.push(encodeArgs(args));
-    }
-
+  readonly write: WriteScript = ({ args, command, description, name }) => {
     mkdirSync(this.dir, { recursive: true });
-
     writeFileSync(
       join(this.dir, `${name}.sh`),
-      [...header, command].join("\n"),
+      serializeFrontMatter({ args, command, description }),
     );
     this.refresh();
   };

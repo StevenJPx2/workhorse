@@ -26,16 +26,6 @@ export const ScriptArgs = z.object({
 
 export type ScriptArgsT = z.infer<typeof ScriptArgs>;
 
-export interface ScriptInvocation {
-  options: Record<string, string>;
-  positional: string[];
-}
-
-export type ScriptHandler = (
-  invocation: ScriptInvocation,
-  ctx: WorkflowContext,
-) => Promise<ToolResultT>;
-
 export const Script = z.object({
   args: ScriptArgs.default({ options: [], positional: [] }),
   command: z.string(),
@@ -45,3 +35,51 @@ export const Script = z.object({
 });
 
 export type ScriptT = z.infer<typeof Script>;
+
+export const WriteScriptInput = Script.pick({
+  args: true,
+  command: true,
+  description: true,
+  name: true,
+});
+
+export type WriteScriptInputT = z.infer<typeof WriteScriptInput>;
+
+export const ScriptUsage = Script.pick({
+  args: true,
+  description: true,
+  name: true,
+});
+
+export type ScriptUsageT = z.infer<typeof ScriptUsage>;
+
+export const ScriptParseInput = Script.pick({
+  args: true,
+  description: true,
+}).partial({ description: true });
+
+export type ScriptParseInputT = z.infer<typeof ScriptParseInput>;
+
+export const ScriptParseOutput = Script.pick({
+  args: true,
+  command: true,
+  description: true,
+}).partial({ description: true });
+
+export type ScriptParseOutputT = z.infer<typeof ScriptParseOutput>;
+
+export const ScriptSerializeInput = ScriptParseOutput.partial({
+  args: true,
+});
+
+export type ScriptSerializeInputT = z.infer<typeof ScriptSerializeInput>;
+
+export interface ScriptInvocation {
+  options: Record<string, string>;
+  positional: string[];
+}
+
+export type ScriptHandler = (
+  invocation: ScriptInvocation,
+  ctx: WorkflowContext,
+) => Promise<ToolResultT>;

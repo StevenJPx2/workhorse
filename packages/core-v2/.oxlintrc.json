@@ -17,8 +17,9 @@
     "eslint/capitalized-comments": "off",
     "eslint/no-inline-comments": "off",
     "eslint/func-style": ["error", "declaration"],
+    "eslint/new-cap": ["warn", { "capIsNew": false }],
     "unicorn/no-empty-file": "warn",
     "eslint/no-continue": "off"
   },
-  "ignorePatterns": ["node_modules/**", "dist/**"]
+  "ignorePatterns": ["node_modules/**", "dist/**", "scripts/smoke/**"]
 }

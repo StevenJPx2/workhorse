@@ -1,13 +1,13 @@
-import type { ScriptT } from "#schema";
+import type { ScriptService } from "../service";
 
 import { runScriptTool } from "./run";
-import { type WriteScript, writeScriptTool } from "./write";
+import { writeScriptTool } from "./write";
 
 export type { WriteScript } from "./write";
 
-export function scriptTools(
-  scripts: () => readonly ScriptT[],
-  write: WriteScript,
-) {
-  return [runScriptTool(scripts), writeScriptTool(write)];
+export function scriptTools(service: ScriptService) {
+  return [
+    runScriptTool(service.list.bind(service)),
+    writeScriptTool(service.write),
+  ];
 }

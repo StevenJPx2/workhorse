@@ -6,11 +6,16 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "fallow": "fallow",
-    "smoke": "bun scripts/config-smoke.ts",
+    "smoke:config": "bun scripts/smoke/config.ts",
+    "smoke:script": "bun scripts/smoke/script.ts",
+    "smoke:skill": "bun scripts/smoke/skill.ts",
+    "smoke:services": "bun scripts/smoke/services.ts",
+    "smoke:web": "bun scripts/smoke/web/server.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "yoctocolors": "^2.1.2"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -18,8 +23,10 @@
   "dependencies": {
     "defu": "^6.1.7",
     "es-toolkit": "~1.46.1",
+    "gray-matter": "^4.0.3",
     "hookable": "^6.1.1",
     "just-bash": "^3.0.1",
+    "nostics": "^1.0.0",
     "smol-toml": "^1.6.1",
     "unctx": "^2.5.0",
     "zod": "^4.4.3"

@@ -6,8 +6,8 @@ import type { ResolvedConfigT } from "./resolved";
  * and project defaults — one typed object that satisfies the whole
  * {@link ResolvedConfig} schema.
  *
- * Run the smoke test (`bun run smoke` in this package) to validate it and print
- * the JSON shape.
+ * Run the smoke test (`bun run smoke:config` in this package) to validate it and
+ * print the JSON shape.
  */
 export const exampleConfig: ResolvedConfigT = {
   // Global/project config: cascade defaults + repo-wide preset patches.

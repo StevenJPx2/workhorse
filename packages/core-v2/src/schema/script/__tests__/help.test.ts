@@ -37,6 +37,6 @@ describe("renderHelp", () => {
       name: "bare",
     });
     const help = renderHelp(script);
-    expect(help).toBe("Usage: bare\n\nBare");
+    expect(help).toBe("Usage: bare\n\nBare\n\nArguments: [0]\n\nOptions: [0]");
   });
 });

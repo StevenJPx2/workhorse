@@ -18,8 +18,8 @@ export function runScriptTool(scripts: () => readonly ScriptT[]) {
     },
     description:
       "Run a named script with optional positional args and named options, returning " +
-      "its output. Call with no name to list the available scripts; pass `help: true` " +
-      "to show a script's usage (its positional args and named options) instead of running it.",
+      "its output. Call with no name to list the available scripts; pass `help: true` to " +
+      "show a script's usage instead of running it.",
     execute: async ({ help, name, options, positional }, ctx) => {
       if (!name) {
         return {
@@ -30,9 +30,7 @@ export function runScriptTool(scripts: () => readonly ScriptT[]) {
               .join("\n") || "No scripts are available.",
         };
       }
-
       const script = scripts().find((candidate) => candidate.name === name);
-
       if (!script) {
         return {
           error: `No script named "${name}".`,

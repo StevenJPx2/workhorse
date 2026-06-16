@@ -18,6 +18,10 @@ function write(base: string, rel: string, body: string): void {
   writeFileSync(path, body);
 }
 
+function skill(base: string, name: string, body: string): void {
+  write(base, `.claude/skills/${name}/SKILL.md`, body);
+}
+
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), "workhorse-home-"));
   cwd = mkdtempSync(join(tmpdir(), "workhorse-skills-"));
@@ -26,16 +30,17 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(home, { force: true, recursive: true });
   rmSync(cwd, { force: true, recursive: true });
+  vi.restoreAllMocks();
 });
 
 describe("SkillService", () => {
-  it("scans .claude/.agents skills on setup, parsing frontmatter", async () => {
+  it("scans .claude/.agents skill directories on setup", async () => {
+    skill(cwd, "pr_review", "---\nname: pr_review\ndescription: d\n---\nDiff.");
     write(
       cwd,
-      ".claude/skills/pr/SKILL.md",
-      "---\nname: pr_review\n---\nCheck the diff.",
+      ".agents/skills/house/SKILL.md",
+      "---\nname: house\ndescription: d\n---\nKeep diffs small.",
     );
-    write(cwd, ".agents/skills/house.md", "Keep diffs small.");
 
     const skills = new SkillService(cwd, home);
     await skills.setup(context());
@@ -45,27 +50,27 @@ describe("SkillService", () => {
     expect(names).toContain("house");
   });
 
-  it("namespaces companion fragments as <scope>:<file>", async () => {
-    write(cwd, ".claude/skills/pr/SKILL.md", "Main.");
-    write(cwd, ".claude/skills/pr/checklist.md", "Checklist body.");
+  it("reports WH_SKILL_NO_DESCRIPTION for malformed skills", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    skill(cwd, "nodesc", "---\nname: nodesc\n---\nBody.");
 
-    const skills = new SkillService(cwd, home);
-    await skills.setup(context());
+    await new SkillService(cwd, home).setup(context());
 
-    const fragment = skills.list().find((s) => s.name === "pr:checklist");
-    expect(fragment?.scope).toBe("pr");
+    expect(error.mock.calls.flat().join("\n")).toContain(
+      "WH_SKILL_NO_DESCRIPTION",
+    );
   });
 
   it("lets the project root override a global skill of the same name", async () => {
-    write(home, ".claude/skills/shared.md", "global version");
-    write(cwd, ".claude/skills/shared.md", "project version");
+    skill(home, "shared", "---\nname: shared\ndescription: d\n---\nglobal");
+    skill(cwd, "shared", "---\nname: shared\ndescription: d\n---\nproject");
 
     const skills = new SkillService(cwd, home);
     await skills.setup(context());
 
     const matches = skills.list().filter((s) => s.name === "shared");
     expect(matches).toHaveLength(1);
-    expect(matches[0]?.instructions).toBe("project version");
+    expect(matches[0]?.instructions).toBe("project");
   });
 });
 
@@ -79,12 +84,12 @@ async function loadSkill(cwd_: string, home_: string) {
   return { ctx, service, tool: registered.mock.calls[0]?.[0].tool };
 }
 
-describe("SkillService registry", () => {
-  it("contributes a load_skill tool that lists and loads skills", async () => {
-    write(
+describe("SkillService load_skill - list", () => {
+  it("lists all skills when called with no name", async () => {
+    skill(
       cwd,
-      ".claude/skills/pr.md",
-      "---\ndescription: Review\n---\nDiff carefully.",
+      "pr",
+      "---\nname: pr\ndescription: Review\n---\nDiff carefully.",
     );
     const { ctx, tool } = await loadSkill(cwd, home);
     const runCtx = { ...ctx, cwd };
@@ -94,17 +99,110 @@ describe("SkillService registry", () => {
       ok: true,
       output: "- **pr**: Review",
     });
-    await expect(tool.execute({ name: "pr" }, runCtx)).resolves.toEqual({
+  });
+
+  it("reports an empty catalogue when no skills exist", async () => {
+    const { ctx, tool } = await loadSkill(cwd, home);
+    await expect(tool.execute({}, { ...ctx, cwd })).resolves.toEqual({
       ok: true,
-      output: "Diff carefully.",
+      output: "No skills are available.",
     });
+  });
+});
+
+describe("SkillService load_skill - load", () => {
+  it("returns wrapped instructions with skill name", async () => {
+    skill(
+      cwd,
+      "pr",
+      "---\nname: pr\ndescription: Review\n---\nDiff carefully.",
+    );
+    const { ctx, tool } = await loadSkill(cwd, home);
+    const runCtx = { ...ctx, cwd };
+
+    const loaded = await tool.execute({ name: "pr" }, runCtx);
+    expect(loaded.ok).toBe(true);
+    expect(loaded.output).toContain("## pr");
+    expect(loaded.output).toContain("Diff carefully.");
+  });
+
+  it("returns an error for a nonexistent skill", async () => {
+    const { ctx, tool } = await loadSkill(cwd, home);
+    const runCtx = { ...ctx, cwd };
+
     await expect(tool.execute({ name: "nope" }, runCtx)).resolves.toEqual({
       error: 'No skill named "nope".',
       ok: false,
     });
   });
 
-  it("load_skill invokes a skill's custom renderer", async () => {
+  it("renders instructions with a resource listing", async () => {
+    skill(cwd, "pdf", "---\nname: pdf\ndescription: PDFs\n---\nBody.");
+    write(cwd, ".claude/skills/pdf/scripts/extract.py", "print('hi')");
+    const { ctx, tool } = await loadSkill(cwd, home);
+
+    const out = await tool.execute({ name: "pdf" }, ctx);
+    expect(out.output).toContain("## pdf");
+    expect(out.output).toContain("### Resources");
+    expect(out.output).toContain("scripts/extract.py");
+  });
+});
+
+describe("SkillService load_skill - resource read", () => {
+  it("reads a bundled resource by relative path", async () => {
+    skill(cwd, "pdf", "---\nname: pdf\ndescription: PDFs\n---\nBody.");
+    write(cwd, ".claude/skills/pdf/scripts/extract.py", "print('hi')");
+    const { ctx, tool } = await loadSkill(cwd, home);
+
+    await expect(
+      tool.execute({ name: "pdf", resource: "scripts/extract.py" }, ctx),
+    ).resolves.toEqual({ ok: true, output: "print('hi')" });
+  });
+});
+
+describe("SkillService load_skill - resource security", () => {
+  it("refuses a path that escapes the skill directory", async () => {
+    skill(cwd, "pdf", "---\nname: pdf\ndescription: PDFs\n---\nBody.");
+    write(cwd, ".claude/skills/pdf/scripts/extract.py", "print('hi')");
+    const { ctx, tool } = await loadSkill(cwd, home);
+
+    const escape = await tool.execute(
+      { name: "pdf", resource: "../../etc/passwd" },
+      ctx,
+    );
+    expect(escape.ok).toBe(false);
+  });
+
+  it("refuses an unknown resource path", async () => {
+    skill(cwd, "pdf", "---\nname: pdf\ndescription: PDFs\n---\nBody.");
+    write(cwd, ".claude/skills/pdf/scripts/extract.py", "print('hi')");
+    const { ctx, tool } = await loadSkill(cwd, home);
+
+    const missing = await tool.execute(
+      { name: "pdf", resource: "nope.txt" },
+      ctx,
+    );
+    expect(missing.ok).toBe(false);
+  });
+
+  it("refuses a resource read on a skill without a directory", async () => {
+    const { ctx, tool } = await loadSkill(cwd, home);
+    await ctx.hooks.callHook("skills:register", {
+      skill: defineSkill({
+        description: "Runtime",
+        instructions: "no dir",
+        name: "runtime",
+      }),
+    });
+
+    const out = await tool.execute({ name: "runtime", resource: "x.txt" }, ctx);
+    expect(out.ok).toBe(false);
+    expect(out.error).toContain("no directory");
+  });
+});
+
+describe("SkillService load_skill - renderer", () => {
+  it("invokes a skill's custom renderer", async () => {
     const { ctx, tool } = await loadSkill(cwd, home);
     await ctx.hooks.callHook("skills:register", {
       skill: defineSkill({
@@ -115,24 +213,12 @@ describe("SkillService registry", () => {
       }),
     });
 
-    await expect(
-      tool.execute({ name: "dyn" }, { ...ctx, cwd: "/wt" }),
-    ).resolves.toEqual({
-      ok: true,
-      output: "rendered for /wt",
-    });
+    const out = await tool.execute({ name: "dyn" }, { ...ctx, cwd: "/wt" });
+    expect(out.output).toContain("rendered for /wt");
   });
 });
 
-describe("SkillService registry — edges", () => {
-  it("load_skill reports an empty catalogue", async () => {
-    const { ctx, tool } = await loadSkill(cwd, home);
-    await expect(tool.execute({}, { ...ctx, cwd })).resolves.toEqual({
-      ok: true,
-      output: "No skills are available.",
-    });
-  });
-
+describe("SkillService lifecycle", () => {
   it("keeps a runtime-registered skill, then releases on teardown", async () => {
     const ctx = context();
     const skills = new SkillService(cwd, home);

@@ -1,17 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
-
-import {
-  defineScript,
-  ScriptArgs,
-  type ScriptArgsT,
-  type ScriptT,
-} from "#schema";
-
+import { diagnostics } from "#diagnostics";
+import { defineScript, parseFrontMatter, type ScriptT } from "#schema";
 import { skillDirs } from "../skill";
-
-const ARGS_PREFIX = "#workhorse:args ";
 
 function loadDir(scripts: ScriptT[], dir: string, prefix?: string): void {
   if (!existsSync(dir)) {
@@ -23,42 +15,28 @@ function loadDir(scripts: ScriptT[], dir: string, prefix?: string): void {
       continue;
     }
 
-    let name = basename(file, ".sh");
+    const name = prefix
+      ? `${prefix}:${basename(file, ".sh")}`
+      : basename(file, ".sh");
+    const path = join(dir, file);
 
-    if (prefix) {
-      name = `${prefix}:${name}`;
+    try {
+      scripts.push(
+        defineScript({
+          description: `Script: ${name}`,
+          name,
+          ...parseFrontMatter(readFileSync(path, "utf8")),
+        }),
+      );
+    } catch (error) {
+      diagnostics.WH_SCRIPT_INVALID(
+        {
+          detail: error instanceof Error ? error.message : String(error),
+          path,
+        },
+        { method: "error" },
+      );
     }
-
-    const command = readFileSync(join(dir, file), "utf8");
-
-    scripts.push(
-      defineScript({
-        args: ScriptArgs.parse(
-          JSON.parse(
-            command
-              .split("\n")
-              .find((raw) => raw.startsWith(ARGS_PREFIX))
-              ?.slice(ARGS_PREFIX.length) ?? "{}",
-          ),
-        ),
-        command,
-        description:
-          command
-            .split("\n")
-            .map((raw) => raw.trim())
-            .find(
-              (l) =>
-                !(
-                  l === "" ||
-                  l.startsWith("#!") ||
-                  l.startsWith("#workhorse:")
-                ),
-            )
-            ?.match(/^#\s*(.+)$/u)?.[1]
-            ?.trim() ?? `Script: ${name}`,
-        name,
-      }),
-    );
   }
 }
 
@@ -75,10 +53,6 @@ export function discoverScripts(
   }
 
   return scripts;
-}
-
-export function encodeArgs(args: ScriptArgsT): string {
-  return `${ARGS_PREFIX}${JSON.stringify(args)}`;
 }
 
 export const SCRIPTS_DIR = join(".workhorse", "scripts");

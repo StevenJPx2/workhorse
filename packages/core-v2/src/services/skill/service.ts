@@ -5,7 +5,7 @@ import type { SkillT } from "#schema";
 
 import type { Service } from "../base";
 import { discoverSkills } from "./discover";
-import { loadSkillTool } from "./tools";
+import { skillTools } from "./tools";
 
 export class SkillService implements Service {
   readonly name = "skills";
@@ -20,9 +20,11 @@ export class SkillService implements Service {
   async setup(context: GlobalContext): Promise<void> {
     this.skills.push(...discoverSkills(this.cwd, this.home));
 
-    await context.hooks.callHook("tools:register", {
-      tool: loadSkillTool(() => this.skills),
-    });
+    await Promise.all(
+      skillTools(this).map((tool) =>
+        context.hooks.callHook("tools:register", { tool }),
+      ),
+    );
 
     context.hooks.hook("skills:register", ({ skill }) => {
       this.skills.push(skill);

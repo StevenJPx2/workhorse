@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SCRIPTS_DIR, discoverScripts } from "./discover";
 
@@ -41,6 +41,7 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(cwd, { force: true, recursive: true });
   rmSync(home, { force: true, recursive: true });
+  vi.restoreAllMocks();
 });
 
 describe("discoverScripts", () => {
@@ -48,51 +49,72 @@ describe("discoverScripts", () => {
     expect(discoverScripts(cwd, home)).toEqual([]);
   });
 
-  it("skips the shebang and uses the first comment as the description", () => {
+  it("reads the description from the front-matter block", () => {
     write(
       "ci.sh",
-      "#!/usr/bin/env bash\n# Run continuous integration\nbun test\n",
+      "#!/usr/bin/env bash\n# ---\n# description: Run continuous integration\n# ---\nbun test\n",
     );
     expect(discoverScripts(cwd, home)[0]?.description).toBe(
       "Run continuous integration",
     );
   });
 
-  it("falls back to a default description when the script opens with code", () => {
+  it("falls back to a default description when there is no front matter", () => {
     write("bare.sh", "bun test\n# too late\n");
     expect(discoverScripts(cwd, home)[0]?.description).toBe("Script: bare");
   });
 
+  it("keeps the whole file (including header) as the command", () => {
+    write("ci.sh", "# ---\n# description: CI\n# ---\nbun test\n");
+    expect(discoverScripts(cwd, home)[0]?.command).toBe(
+      "# ---\n# description: CI\n# ---\nbun test\n",
+    );
+  });
+
   it("ignores non-.sh files", () => {
     write("readme.txt", "not a script");
-    write("real.sh", "# Real\necho hi\n");
+    write("real.sh", "# ---\n# description: Real\n# ---\necho hi\n");
     expect(discoverScripts(cwd, home).map((s) => s.name)).toEqual(["real"]);
   });
 });
 
 describe("discoverScripts args", () => {
-  it("recovers the args contract from #workhorse:args front-matter", () => {
+  it("recovers the args contract from the front-matter block", () => {
     write(
       "deploy.sh",
-      '#workhorse:args {"positional":[{"name":"env","description":"Env","required":true}],"options":[{"name":"force","description":"Force"}]}\n' +
-        "# Deploy the app\necho deploy\n",
+      [
+        "# ---",
+        "# description: Deploy the app",
+        "# args:",
+        "#   positional:",
+        "#     - name: env",
+        "#       description: Env",
+        "#       required: true",
+        "#   options:",
+        "#     - name: force",
+        "#       description: Force",
+        "# ---",
+        "echo deploy",
+        "",
+      ].join("\n"),
     );
     const [script] = discoverScripts(cwd, home);
     expect(script?.description).toBe("Deploy the app");
     expect(script?.args.positional[0]?.name).toBe("env");
+    expect(script?.args.positional[0]?.required).toBe(true);
     expect(script?.args.options[0]?.name).toBe("force");
   });
 
-  it("defaults to an empty args contract without front-matter", () => {
-    write("plain.sh", "# Plain\necho hi\n");
+  it("defaults to an empty args contract without front matter", () => {
+    write("plain.sh", "echo hi\n");
     const [script] = discoverScripts(cwd, home);
     expect(script?.args).toEqual({ options: [], positional: [] });
   });
 
-  it("uses the fallback description when the file is only ignored lines", () => {
+  it("uses the fallback description when the block only sets args", () => {
     write(
       "empty.sh",
-      '#!/bin/sh\n#workhorse:args {"positional":[],"options":[]}\n',
+      "#!/bin/sh\n# ---\n# args:\n#   positional: []\n#   options: []\n# ---\n",
     );
     expect(discoverScripts(cwd, home)[0]?.description).toBe("Script: empty");
   });
@@ -100,7 +122,10 @@ describe("discoverScripts args", () => {
 
 describe("discoverScripts global scripts", () => {
   it("loads .sh files from ~/.workhorse/scripts/", () => {
-    writeGlobalScript("lint.sh", "# Lint everything\necho lint\n");
+    writeGlobalScript(
+      "lint.sh",
+      "# ---\n# description: Lint everything\n# ---\necho lint\n",
+    );
     const scripts = discoverScripts(cwd, home);
     expect(scripts.find((s) => s.name === "lint")?.description).toBe(
       "Lint everything",
@@ -108,9 +133,9 @@ describe("discoverScripts global scripts", () => {
   });
 
   it("combines project, global, and skill scripts", () => {
-    write("ci.sh", "# CI\necho ci\n");
-    writeGlobalScript("lint.sh", "# Lint\necho lint\n");
-    writeSkillScript("deploy", "migrate.sh", "# Migrate\necho migrate\n");
+    write("ci.sh", "echo ci\n");
+    writeGlobalScript("lint.sh", "echo lint\n");
+    writeSkillScript("deploy", "migrate.sh", "echo migrate\n");
     const names = discoverScripts(cwd, home).map((s) => s.name);
     expect(names).toContain("ci");
     expect(names).toContain("lint");
@@ -123,7 +148,7 @@ describe("discoverScripts skill scripts", () => {
     writeSkillScript(
       "deploy",
       "migrate.sh",
-      "# Run migrations\necho migrate\n",
+      "# ---\n# description: Run migrations\n# ---\necho migrate\n",
     );
     const scripts = discoverScripts(cwd, home);
     expect(scripts.find((s) => s.name === "deploy:migrate")?.description).toBe(
@@ -132,8 +157,8 @@ describe("discoverScripts skill scripts", () => {
   });
 
   it("combines workhorse scripts and skill scripts", () => {
-    write("ci.sh", "# CI\necho ci\n");
-    writeSkillScript("deploy", "migrate.sh", "# Migrate\necho migrate\n");
+    write("ci.sh", "echo ci\n");
+    writeSkillScript("deploy", "migrate.sh", "echo migrate\n");
     const names = discoverScripts(cwd, home).map((s) => s.name);
     expect(names).toContain("ci");
     expect(names).toContain("deploy:migrate");
@@ -148,5 +173,20 @@ describe("discoverScripts skill scripts", () => {
     );
     writeFileSync(join(skillDir, "scripts", "readme.txt"), "not a script");
     expect(discoverScripts(cwd, home)).toEqual([]);
+  });
+});
+
+describe("discoverScripts diagnostics", () => {
+  it("reports WH_SCRIPT_INVALID and skips a script with an invalid args block", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    write(
+      "bad.sh",
+      "# ---\n# description: Bad\n# args: oops\n# ---\necho hi\n",
+    );
+
+    const scripts = discoverScripts(cwd, home);
+
+    expect(scripts.map((s) => s.name)).not.toContain("bad");
+    expect(error.mock.calls.flat().join("\n")).toContain("WH_SCRIPT_INVALID");
   });
 });

@@ -5,7 +5,7 @@ feeds an agent what it needs to run a step. Services are **not** bound to the
 Harness — they take the orchestrator-owned
 [`GlobalContext`](../orchestrator/global-context.ts) (its `hookable` bus, and
 later config/db), so the same set can be composed standalone (e.g. an
-`AgentService` + `ToolService` driving one agent without the rest of the product).
+`AgentService` + `ScriptService` driving one agent without the rest of the product).
 
 ## The model
 
@@ -19,9 +19,10 @@ later config/db), so the same set can be composed standalone (e.g. an
   hooks are for fan-in writes.
 - **Each service owns its mechanism** — how its kind is stored and retrieved is
   its whole job. On `setup` each one **scans its sources once** into memory and
-  contributes its own tools (`load_skill`, `run_script` / `write_script`) via
-  `tools:register`:
-  - `tool/` — `ToolService` keeps tool definitions **in memory**.
+  contributes its own tools (`load_skill`, `run_script` / `write_script`) over
+  the `tools:register` hook; the consumer (the Harness, or any standalone
+  composition) collects them off the bus — there is no dedicated tool registry
+  service:
   - `script/` — `ScriptService` scans `.workhorse/scripts` for `*.sh` once at
     setup and caches them; `list()` returns the cache. Scripts are
     **agent-authored** (no plugin hook): the `write_script` tool saves a
@@ -29,8 +30,10 @@ later config/db), so the same set can be composed standalone (e.g. an
     declares a **CLI contract** (`args`: positional arguments + named options);
     `run_script({ help: true })` renders its usage, and `run_script` validates
     the call against it, passing positionals as `$1..`
-    and options as `$UPPER_NAME` env vars. The contract is persisted in a
-    `#workhorse:args` front-matter comment so it survives re-discovery.
+    and options as `$UPPER_NAME` env vars. The description and contract are
+    persisted in a comment-fenced YAML front-matter block (`# ---` … `# ---`) at
+    the top of the file, so the script stays a runnable shell file and the
+    metadata survives re-discovery.
   - `skill/` — `SkillService` scans the agent skill roots (`~/.claude/skills`,
     `~/.agents/skills`, then the project equivalents — project wins) following
     the Anthropic `SKILL.md` convention.

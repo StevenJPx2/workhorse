@@ -1,4 +1,4 @@
-import type { ArgSpecT, ScriptT } from "./schema";
+import type { ArgSpecT, ScriptUsageT } from "./schema";
 
 function metaSuffix(arg: ArgSpecT): string {
   const parts: string[] = [];
@@ -18,15 +18,15 @@ function metaSuffix(arg: ArgSpecT): string {
   return ` (${parts.join(", ")})`;
 }
 
-export function renderHelp(script: ScriptT): string {
+export function renderHelp(usage: ScriptUsageT): string {
   const tokens = [
-    `Usage: ${script.name}`,
-    ...script.args.positional.map((arg) =>
+    `Usage: ${usage.name}`,
+    ...usage.args.positional.map((arg) =>
       arg.required ? `<${arg.name}>` : `[${arg.name}]`,
     ),
   ];
 
-  if (script.args.options.length > 0) {
+  if (usage.args.options.length > 0) {
     tokens.push("[options]");
   }
 
@@ -34,17 +34,17 @@ export function renderHelp(script: ScriptT): string {
     tokens.join(" "),
 
     "",
-    script.description,
+    usage.description,
 
     "",
-    `Arguments: [${script.args.positional.length}]`,
-    ...script.args.positional.map(
+    `Arguments: [${usage.args.positional.length}]`,
+    ...usage.args.positional.map(
       (arg) => `  ${arg.name}${metaSuffix(arg)} — ${arg.description}`,
     ),
 
     "",
-    `Options: [${script.args.options.length}]`,
-    ...script.args.options.flatMap(
+    `Options: [${usage.args.options.length}]`,
+    ...usage.args.options.flatMap(
       (option) =>
         `  --${option.name}${option.alias ? `, -${option.alias}` : ""}${metaSuffix(option)} — ${option.description}`,
     ),

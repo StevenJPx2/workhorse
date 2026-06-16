@@ -1,46 +1,13 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 
-import { defineSkill, type SkillT } from "#schema";
+import { diagnostics } from "#diagnostics";
+import type { SkillT } from "#schema";
 
-interface Frontmatter {
-  description?: string;
-  name?: string;
-}
+import { parseSkill } from "./parse";
 
-function readSkill(path: string, scope: string, key: string): SkillT {
-  const content = readFileSync(path, "utf8");
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/u);
-
-  if (!match) {
-    return defineSkill({
-      description: `Skill: ${key}`,
-      instructions: content.trim(),
-      name: key,
-      scope,
-    });
-  }
-
-  const meta: Frontmatter = {};
-
-  for (const line of match[1]!.split("\n")) {
-    const [, mkey, value = ""] = line.match(/^(\w+):\s*(.+)$/u) ?? [];
-
-    if (mkey === "name" || mkey === "description") {
-      meta[mkey] = value.trim();
-    }
-  }
-
-  return defineSkill({
-    description: meta.description ?? `Skill: ${key}`,
-    instructions: match[2]!.trim(),
-    name: meta.name ?? key,
-    scope,
-  });
-}
-
-export function skillDirs(cwd: string, home: string = homedir()): string[] {
+function skillDirs(cwd: string, home: string = homedir()): string[] {
   return [
     join(home, ".claude", "skills"),
     join(home, ".agents", "skills"),
@@ -52,40 +19,35 @@ export function skillDirs(cwd: string, home: string = homedir()): string[] {
     }
 
     return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
-      if (entry.isDirectory()) {
-        return [join(root, entry.name)];
+      if (!entry.isDirectory()) {
+        return [];
       }
 
-      return [];
+      const dir = join(root, entry.name);
+
+      return existsSync(join(dir, "SKILL.md")) ? [dir] : [];
     });
   });
 }
 
-export function discoverSkills(
-  cwd: string,
-  home: string = homedir(),
-): SkillT[] {
+function discoverSkills(cwd: string, home: string = homedir()): SkillT[] {
   const byName = new Map<string, SkillT>();
 
-  for (const { dir, file, name } of skillDirs(cwd, home).flatMap((d) =>
-    readdirSync(d)
-      .filter((f) => f.endsWith(".md"))
-      .map((f) => ({
-        dir: d,
-        file: f,
-        name: basename(d),
-      })),
-  )) {
-    let key = name;
+  for (const dir of skillDirs(cwd, home)) {
+    const skill = parseSkill(join(dir, "SKILL.md"));
 
-    if (file !== "SKILL.md") {
-      key = `${name}:${basename(file, ".md")}`;
+    if (!skill) {
+      continue;
     }
 
-    const skill = readSkill(join(dir, file), name, key);
+    if (byName.has(skill.name)) {
+      diagnostics.WH_SKILL_SHADOWED({ name: skill.name });
+    }
 
     byName.set(skill.name, skill);
   }
 
   return [...byName.values()];
 }
+
+export { discoverSkills, skillDirs };

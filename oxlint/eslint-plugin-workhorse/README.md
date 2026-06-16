@@ -190,8 +190,7 @@ In `.oxlintrc.json`:
     "workhorse/prefer-folder-barrel": "warn",
     "workhorse/no-index-imports": "warn",
     "workhorse/prefer-path-alias": "warn",
-    "workhorse/prefer-then-chain": "warn",
-
+    "workhorse/prefer-then-chain": "warn"
   }
 }
 ```

@@ -40,11 +40,15 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(cwd, { force: true, recursive: true });
+  vi.restoreAllMocks();
 });
 
 describe("ScriptService", () => {
-  it("scans .workhorse/scripts once on setup, reading the leading comment as description", async () => {
-    writeScript("ci", "#!/bin/sh\n# Run the suite\necho hi\n");
+  it("scans .workhorse/scripts once on setup, reading the front-matter description", async () => {
+    writeScript(
+      "ci",
+      "#!/bin/sh\n# ---\n# description: Run the suite\n# ---\necho hi\n",
+    );
     const service = new ScriptService(cwd);
     await service.setup(context());
 
@@ -77,9 +81,26 @@ describe("ScriptService", () => {
   });
 });
 
+describe("ScriptService diagnostics", () => {
+  it("reports WH_SCRIPT_INVALID for malformed scripts on setup", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    writeScript(
+      "bad",
+      "# ---\n# description: Bad\n# args: oops\n# ---\necho hi\n",
+    );
+
+    await new ScriptService(cwd).setup(context());
+
+    expect(error.mock.calls.flat().join("\n")).toContain("WH_SCRIPT_INVALID");
+  });
+});
+
 describe("ScriptService tools", () => {
   it("run_script lists, then runs, the registry", async () => {
-    writeScript("ci", "#!/bin/sh\n# Run the suite\necho ran-ci\n");
+    writeScript(
+      "ci",
+      "#!/bin/sh\n# ---\n# description: Run the suite\n# ---\necho ran-ci\n",
+    );
     const { ctx, tools } = await contributedTools();
     const runCtx = { ...ctx, cwd };
 
@@ -126,7 +147,7 @@ describe("ScriptService write_script", () => {
     ).resolves.toEqual({ ok: true, output: 'Saved script "build".' });
 
     expect(readFileSync(join(cwd, SCRIPTS_DIR, "build.sh"), "utf8")).toBe(
-      "# Build it\necho built\n",
+      "# ---\n# description: Build it\n# ---\necho built",
     );
     expect(service.list().find((s) => s.name === "build")?.description).toBe(
       "Build it",
@@ -135,20 +156,6 @@ describe("ScriptService write_script", () => {
       .get("run_script")
       ?.execute({ name: "build" }, runCtx);
     expect(ran?.output).toContain("built");
-  });
-
-  it("write_script omits the comment line when no description is given", async () => {
-    const { service, tools } = await contributedTools();
-    await tools
-      .get("write_script")
-      ?.execute(
-        { command: "echo bare\n", name: "bare" },
-        { ...context(), cwd },
-      );
-    expect(readFileSync(join(cwd, SCRIPTS_DIR, "bare.sh"), "utf8")).toBe(
-      "echo bare\n",
-    );
-    expect(service.list().some((s) => s.name === "bare")).toBe(true);
   });
 });
 
@@ -172,11 +179,23 @@ describe("ScriptService write_script args", () => {
   });
 });
 
-describe("ScriptService help + args", () => {
+describe("ScriptService help", () => {
   it("run_script with help: true renders a script's usage", async () => {
     writeScript(
       "deploy",
-      '#workhorse:args {"positional":[{"name":"env","description":"Target env","required":true}],"options":[]}\n# Deploy\necho deploy\n',
+      [
+        "# ---",
+        "# description: Deploy",
+        "# args:",
+        "#   positional:",
+        "#     - name: env",
+        "#       description: Target env",
+        "#       required: true",
+        "#   options: []",
+        "# ---",
+        "echo deploy",
+        "",
+      ].join("\n"),
     );
     const { ctx, tools } = await contributedTools();
     const help = await tools
@@ -187,28 +206,12 @@ describe("ScriptService help + args", () => {
   });
 
   it("run_script with help: true returns usage instead of running", async () => {
-    writeScript("noop", "# Noop\necho noop\n");
+    writeScript("noop", "# ---\n# description: Noop\n# ---\necho noop\n");
     const { ctx, tools } = await contributedTools();
     const result = await tools
       .get("run_script")
       ?.execute({ help: true, name: "noop" }, { ...ctx, cwd });
     expect(result?.output).toContain("Usage: noop");
-  });
-
-  it("run_script passes positionals and options to the script body", async () => {
-    writeScript(
-      "greet",
-      '#workhorse:args {"positional":[{"name":"who","description":"Name"}],"options":[{"name":"greeting","description":"Greeting"}]}\n' +
-        '# Greet\necho "$1 $GREETING"\n',
-    );
-    const { ctx, tools } = await contributedTools();
-    const ran = await tools
-      .get("run_script")
-      ?.execute(
-        { name: "greet", options: { greeting: "hi" }, positional: ["world"] },
-        { ...ctx, cwd },
-      );
-    expect(ran?.output).toBe("world hi\n");
   });
 
   it("run_script with help: true errors for an unknown script", async () => {
@@ -218,5 +221,35 @@ describe("ScriptService help + args", () => {
         .get("run_script")
         ?.execute({ help: true, name: "nope" }, { ...ctx, cwd }),
     ).resolves.toEqual({ error: 'No script named "nope".', ok: false });
+  });
+});
+
+describe("ScriptService run with args", () => {
+  it("run_script passes positionals and options to the script body", async () => {
+    writeScript(
+      "greet",
+      [
+        "# ---",
+        "# description: Greet",
+        "# args:",
+        "#   positional:",
+        "#     - name: who",
+        "#       description: Name",
+        "#   options:",
+        "#     - name: greeting",
+        "#       description: Greeting",
+        "# ---",
+        'echo "$1 $GREETING"',
+        "",
+      ].join("\n"),
+    );
+    const { ctx, tools } = await contributedTools();
+    const ran = await tools
+      .get("run_script")
+      ?.execute(
+        { name: "greet", options: { greeting: "hi" }, positional: ["world"] },
+        { ...ctx, cwd },
+      );
+    expect(ran?.output).toBe("world hi\n");
   });
 });
