@@ -81,7 +81,7 @@ async function loadSkill(cwd_: string, home_: string) {
   const service = new SkillService(cwd_, home_);
   await service.setup(ctx);
 
-  return { ctx, service, tool: registered.mock.calls[0]?.[0].tool };
+  return { ctx, service, tool: registered.mock.calls[0]?.[0].tools[0] };
 }
 
 describe("SkillService load_skill - list", () => {

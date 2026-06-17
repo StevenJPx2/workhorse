@@ -4,5 +4,5 @@ type Hook<T> = (payload: T) => void | Promise<void>;
 
 export interface Hooks {
   "skills:register": Hook<{ skill: SkillT }>;
-  "tools:register": Hook<{ tool: AnyTool }>;
+  "tools:register": Hook<{ tools: AnyTool[] }>;
 }

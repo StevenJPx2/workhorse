@@ -10,6 +10,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AnyTool } from "#schema";
+
 import { SCRIPTS_DIR, ScriptService } from "../script";
 import { context } from "./fixture";
 
@@ -27,8 +29,10 @@ async function contributedTools(ctx = context()) {
   const service = new ScriptService(cwd);
   await service.setup(ctx);
 
-  const tools = new Map(
-    registered.mock.calls.map(([p]) => [p.tool.name, p.tool]),
+  const tools = new Map<string, AnyTool>(
+    registered.mock.calls.flatMap(([p]) =>
+      (p.tools as AnyTool[]).map((tool) => [tool.name, tool]),
+    ),
   );
   return { ctx, service, tools };
 }

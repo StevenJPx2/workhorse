@@ -21,12 +21,16 @@ A curated index into the design docs and code. Paths are repo-root-relative.
 | `AGENTS.md` | Commands, import rules (path aliases, index-only imports), code constraints (≤200 lines, kebab-case, colocated tests, 97/95 coverage), pre-commit. |
 | `CLAUDE.md` | Points to `AGENTS.md`.                                                                                                                          |
 
-- Full check before commits: `bun run check` (lint → typecheck → test → fallow).
-- Single package: `bun run --filter core-v2 test`.
+- Package manager is **aube** (installed via Homebrew); the runtime is **Node**.
+- Full check before commits: `aube run check` (lint → typecheck → test → fallow).
+- Single package: `aube -F core-v2 run test` (root) or `aube run test` (in-package).
+- Scaffold code: `aube run generate <service|tool|skill> …` (plop; see
+  `generators/` + `plopfile.ts` + `scripts/generate.ts`).
 - Smoke a plane end-to-end (each builds a temp sandbox and prints results):
-  `bun packages/core-v2/scripts/smoke/<config|script|skill|services|web>.ts`,
-  or from the package `bun run smoke:<name>`. `scripts/smoke/harness.ts` is the
-  shared smoke scaffolding (sandbox + hook bus).
+  the `scripts/smoke/*.ts` files target the **Bun** runtime (shebang + `Bun.serve`),
+  so run them with `bun packages/core-v2/scripts/smoke/<config|script|skill|services|web>.ts`
+  or `aube run smoke:<name>`. `scripts/smoke/harness.ts` is the shared smoke
+  scaffolding (sandbox + hook bus).
 
 ## core-v2 code (`packages/core-v2/src/`)
 
@@ -45,19 +49,21 @@ A curated index into the design docs and code. Paths are repo-root-relative.
 | `config/loader.ts`                             | Globs `**/*.toml`, mirrors dirs → object, `defu`-merges project over global, parses.                                                                                                       |
 | `config/example.ts`                            | In-code worked example: a full `ralph` config. Validate + print: `bun packages/core-v2/scripts/smoke/config.ts` (or `bun run smoke:config`).                                              |
 | `lib/matter.ts`                                | `safeMatter` — a `gray-matter` wrapper returning `{ success, … }` for skill/script front-matter.                                                                                           |
-| `hooks/hooks.ts`                               | Typed `hookable` bus `Hooks`: `skills:register`, `tools:register`. Fan-in writes go through hooks; reads are plain service methods.                                                        |
+| `hooks/hooks.ts`                               | Typed `hookable` bus `Hooks`: `skills:register` (`{ skill }`), `tools:register` (**batched** `{ tools: AnyTool[] }` — one call per service, not per tool). Fan-in writes go through hooks; reads are plain service methods. |
 | `orchestrator/context.ts`                      | `GlobalContext { config, hooks }` interface.                                                                                                                                              |
 | `workflow/context.ts`                          | `WorkflowContext extends GlobalContext { cwd }`.                                                                                                                                          |
 | `services/base.ts`                             | `Service` contract: `name` + `setup(context)` / `teardown()`.                                                                                                                             |
-| `services/skill/`                              | `SkillService` (`name: "skills"`): `discover.ts` scans `~/.claude/skills`, `~/.agents/skills`, then the project (project wins); `parse/`; `tools/load` → `load_skill`; accepts `skills:register`. |
-| `services/script/`                             | `ScriptService` (`name: "scripts"`): `discover.ts` scans `.workhorse/scripts/*.sh`; `tools/run` → `run_script` (validates the front-matter CLI contract, `help`), `tools/write` → `write_script` (re-scans). |
+| `services/skill/`                              | `SkillService` (`name: "skills"`): `discover.ts` scans `~/.claude/skills`, `~/.agents/skills`, then the project (project wins); `parse/`; `tools/load` → `load_skill` (contributed via batched `tools:register`); accepts `skills:register`. |
+| `services/script/`                             | `ScriptService` (`name: "scripts"`): `discover.ts` scans `.workhorse/scripts/*.sh`; `tools/run` → `run_script` (validates the front-matter CLI contract, `help`), `tools/write` → `write_script` (re-scans); both contributed in one batched `tools:register`. |
 | `services/index.ts`                            | Re-exports `base`/`script`/`skill`.                                                                                                                                                       |
+| `generators/` (pkg root, not `src/`)           | plop generators — `helpers.ts` + one folder per generator (`service/`, `tool/`, `skill/`), each with `generator.ts` + `templates/*.hbs`. Wired by `plopfile.ts`; run via `scripts/generate.ts` (Node + `tsx`). Scaffold with `aube run generate <service\|tool\|skill>`. New services emit a single batched `tools:register`. |
 | `diagnostics/catalog.ts`                       | `nostics` `defineDiagnostics` — central `WH_*` error/advisory catalog with `why`/`fix`, console reporter. Producers call a code at detection.                                              |
-| `db/index.ts`                                  | Empty module (`export const _ = true`).                                                                                                                                                   |
-| `src/index.ts`                                 | `console.log("Hello via Bun!")`.                                                                                                                                                          |
+| `src/index.ts`                                 | Public package entry: re-exports `#config` and `#schema`.                                                                                                                                 |
 
 Package deps (`packages/core-v2/package.json`): `zod`, `smol-toml`, `defu`,
-`unctx`, `hookable`, `es-toolkit`, `gray-matter` (front-matter), `just-bash`
-(script execution), `nostics` (diagnostics); dev `yoctocolors` + `@types/bun`;
-peer `typescript`. Scripts: `lint`/`lint:fix` (oxlint), `typecheck` (tsc),
-`fallow`, `smoke:config|script|skill|services|web`.
+`hookable`, `gray-matter` (front-matter), `just-bash` (script execution),
+`nostics` (diagnostics); dev `yoctocolors`, `@types/bun`, `plop` +
+`node-plop` (generators), `tsx` (Node TS runner), `typescript`; peer
+`typescript`. Scripts: `lint`/`lint:fix` (oxlint), `typecheck` (tsc), `fallow`,
+`smoke:config|script|skill|services|web`,
+`generate`/`generate:service|tool|skill` (plop via `tsx scripts/generate.ts`).

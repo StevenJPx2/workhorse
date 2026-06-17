@@ -43,8 +43,10 @@ export function context(cwd: string): WorkflowContext {
 /** Collects every tool a service contributes over `tools:register`. */
 export function toolSink(ctx: WorkflowContext): Map<string, AnyTool> {
   const tools = new Map<string, AnyTool>();
-  ctx.hooks.hook("tools:register", ({ tool }) => {
-    tools.set(tool.name, tool);
+  ctx.hooks.hook("tools:register", ({ tools: batch }) => {
+    for (const tool of batch) {
+      tools.set(tool.name, tool);
+    }
   });
   return tools;
 }

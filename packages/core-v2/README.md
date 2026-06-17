@@ -110,24 +110,24 @@ never depends on them.**
 
 ## Cheat‑sheet
 
-| Plain English                              | Real thing                                                              |
-| ------------------------------------------ | ---------------------------------------------------------------------- |
-| Robot worker                               | **Agent** (`run` / `notify` / `interrupt`)                            |
-| Gadgets on its belt                        | **tools / skills / scripts**                                          |
-| Rooms                                      | **stages** (= statuses)                                              |
-| Chores in a room                           | **steps**                                                            |
-| Door signs                                 | **`when` exit rules** (only stages route)                            |
-| Sticky note between chores                 | **prologue / epilogue** handoff                                      |
-| Supervisor running the robot               | **Harness**                                                         |
-| Rulebook (read‑only, on disk)              | **config plane** (TOML, snake_case)                                  |
-| Live robot + real gadgets                  | **runtime plane**                                                    |
-| Sealed appliance (own guts, portable)      | **Service** (Git, L1 memory, L2 search, Agent, AST, Tools/Skills/Scripts) |
-| Wall outlets                               | **hook bus** (`*:register`)                                          |
-| Unplug an appliance, run it elsewhere      | **standalone composition**                    |
-| Other‑brand gadget in the same outlets     | **Plugin** (GitHub, Jira)                                            |
-| Gadget that auto‑runs a chore on room entry | plugin‑injected **pre‑transition step**                              |
-| Building manager                           | **Orchestrator** + GlobalContext                                    |
-| A ticket's private board                   | **WorkflowContext** (one per run)                                   |
+| Plain English                               | Real thing                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| Robot worker                                | **Agent** (`run` / `notify` / `interrupt`)                                |
+| Gadgets on its belt                         | **tools / skills / scripts**                                              |
+| Rooms                                       | **stages** (= statuses)                                                   |
+| Chores in a room                            | **steps**                                                                 |
+| Door signs                                  | **`when` exit rules** (only stages route)                                 |
+| Sticky note between chores                  | **prologue / epilogue** handoff                                           |
+| Supervisor running the robot                | **Harness**                                                               |
+| Rulebook (read‑only, on disk)               | **config plane** (TOML, snake_case)                                       |
+| Live robot + real gadgets                   | **runtime plane**                                                         |
+| Sealed appliance (own guts, portable)       | **Service** (Git, L1 memory, L2 search, Agent, AST, Tools/Skills/Scripts) |
+| Wall outlets                                | **hook bus** (`*:register`)                                               |
+| Unplug an appliance, run it elsewhere       | **standalone composition**                                                |
+| Other‑brand gadget in the same outlets      | **Plugin** (GitHub, Jira)                                                 |
+| Gadget that auto‑runs a chore on room entry | plugin‑injected **pre‑transition step**                                   |
+| Building manager                            | **Orchestrator** + GlobalContext                                          |
+| A ticket's private board                    | **WorkflowContext** (one per run)                                         |
 
 ## Going deeper
 

@@ -25,11 +25,9 @@ export class ScriptService implements Service {
   async setup(context: GlobalContext): Promise<void> {
     this.refresh();
 
-    await Promise.all(
-      scriptTools(this).map((tool) =>
-        context.hooks.callHook("tools:register", { tool }),
-      ),
-    );
+    await context.hooks.callHook("tools:register", {
+      tools: scriptTools(this),
+    });
   }
 
   list(): readonly ScriptT[] {

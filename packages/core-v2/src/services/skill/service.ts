@@ -20,11 +20,9 @@ export class SkillService implements Service {
   async setup(context: GlobalContext): Promise<void> {
     this.skills.push(...discoverSkills(this.cwd, this.home));
 
-    await Promise.all(
-      skillTools(this).map((tool) =>
-        context.hooks.callHook("tools:register", { tool }),
-      ),
-    );
+    await context.hooks.callHook("tools:register", {
+      tools: skillTools(this),
+    });
 
     context.hooks.hook("skills:register", ({ skill }) => {
       this.skills.push(skill);

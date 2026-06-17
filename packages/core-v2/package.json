@@ -14,11 +14,20 @@
     "smoke:skill": "bun scripts/smoke/skill.ts",
     "smoke:services": "bun scripts/smoke/services.ts",
     "smoke:web": "bun scripts/smoke/web/server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate.ts",
+    "generate:service": "tsx scripts/generate.ts service",
+    "generate:tool": "tsx scripts/generate.ts tool",
+    "generate:skill": "tsx scripts/generate.ts skill"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@vitest/coverage-v8": "^4.1.6",
+    "fallow": "^2.98.0",
+    "node-plop": "^0.32.3",
+    "plop": "^4.0.5",
+    "tsx": "^4.22.4",
+    "typescript": "^5",
     "vitest": "^4.1.6",
     "yoctocolors": "^2.1.2"
   },
@@ -27,13 +36,11 @@
   },
   "dependencies": {
     "defu": "^6.1.7",
-    "es-toolkit": "~1.46.1",
     "gray-matter": "^4.0.3",
     "hookable": "^6.1.1",
     "just-bash": "^3.0.1",
     "nostics": "^1.0.0",
     "smol-toml": "^1.6.1",
-    "unctx": "^2.5.0",
     "zod": "^4.4.3"
   }
 }
