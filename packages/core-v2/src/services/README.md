@@ -74,6 +74,14 @@ class GitService extends Service {
 }
 ```
 
+## Smoke tests
+
+Every new service must ship a runnable smoke script in
+[`scripts/smoke/`](../scripts/smoke/) that exercises the real service end-to-end
+without the full Orchestrator/Harness. The service generator scaffolds one
+alongside `service.ts`. Wire it into `scripts/smoke/services.ts` so the composed
+services smoke run includes it.
+
 ## Status
 
 Sketch. The hook taxonomy, gating tags on contributions, and the `Skill`/`Script`

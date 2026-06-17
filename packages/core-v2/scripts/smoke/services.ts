@@ -7,14 +7,16 @@
 import { ScriptService, SkillService } from "#services";
 
 import { context, narrator, sandbox, toolSink } from "./harness";
+import { mcpSmoke } from "./mcp";
 import { scriptSmoke } from "./script";
 import { skillSmoke } from "./skill";
 
 if (import.meta.main) {
   await scriptSmoke();
   await skillSmoke();
+  await mcpSmoke();
 
-  const out = narrator("Composition (Script ∪ Skill over one bus)");
+  const out = narrator("Composition (Script ∪ Skill ∪ MCP over one bus)");
   const box = sandbox();
   try {
     const ctx = context(box.cwd);

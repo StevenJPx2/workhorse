@@ -38,8 +38,14 @@ const SMOKES: Record<string, { file: string; label: string; blurb: string }> = {
     file: "skill.ts",
     label: "Skill",
   },
+  mcp: {
+    blurb:
+      "McpService: connect to an MCP server, register its tools as native Workhorse tools, and execute one.",
+    file: "mcp.ts",
+    label: "MCP",
+  },
   services: {
-    blurb: "Compose Script ∪ Skill over one bus, standalone.",
+    blurb: "Compose Script ∪ Skill ∪ MCP over one bus, standalone.",
     file: "services.ts",
     label: "Services (all)",
   },

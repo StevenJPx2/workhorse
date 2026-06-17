@@ -1,4 +1,4 @@
-import { globSync } from "node:fs";
+import { existsSync, globSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -13,11 +13,15 @@ function skillDirs(cwd: string, home: string = homedir()): string[] {
     join(home, ".agents", "skills"),
     join(cwd, ".claude", "skills"),
     join(cwd, ".agents", "skills"),
-  ].flatMap((root) =>
-    globSync("*/SKILL.md", { cwd: root }).map((path) =>
+  ].flatMap((root) => {
+    if (!existsSync(root)) {
+      return [];
+    }
+
+    return globSync("*/SKILL.md", { cwd: root }).map((path) =>
       join(root, dirname(path)),
-    ),
-  );
+    );
+  });
 }
 
 function discoverSkills(cwd: string, home: string = homedir()): SkillT[] {

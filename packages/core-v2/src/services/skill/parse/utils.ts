@@ -1,11 +1,16 @@
-import { existsSync, globSync, readFileSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { existsSync, globSync, readFileSync, statSync } from "node:fs";
+import { basename, join } from "node:path";
 import { parseFrontMatter, type ScriptUsageT } from "#schema";
 
 export function parseResources(dir: string): string[] {
-  return globSync("**", { cwd: dir, withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name !== "SKILL.md")
-    .map((entry) => relative(dir, join(entry.parentPath, entry.name)))
+  return globSync("**", { cwd: dir })
+    .filter((path) => {
+      if (basename(path) === "SKILL.md") {
+        return false;
+      }
+
+      return statSync(join(dir, path)).isFile();
+    })
     .toSorted();
 }
 

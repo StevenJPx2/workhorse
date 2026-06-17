@@ -14,50 +14,60 @@ function serviceSummary(answers: Record<string, string>): string {
     `    5. Update src/hooks/hooks.ts if the service needs a *:register hook`,
     `    6. Register ${pascal}Service in GlobalContext / Orchestrator`,
     `    7. Fill out service.test.ts — target 97% line/fn, 95% branch coverage`,
-    `    8. Run: aube run check`,
+    `    8. Add a smoke script in scripts/smoke/${name}.ts and wire it into scripts/smoke/services.ts`,
+    `    9. Run: aube run check`,
     "",
   ].join("\n");
 }
 
+function serviceActions() {
+  return [
+    {
+      path: "src/services/{{kebabCase name}}/service.ts",
+      templateFile: "generators/service/templates/service.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "src/services/{{kebabCase name}}/discover.ts",
+      templateFile: "generators/service/templates/discover.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "src/services/{{kebabCase name}}/index.ts",
+      templateFile: "generators/service/templates/index.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "src/services/{{kebabCase name}}/tools/index.ts",
+      templateFile: "generators/service/templates/tools/index.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "src/services/{{kebabCase name}}/service.test.ts",
+      templateFile: "generators/service/templates/service.test.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "scripts/smoke/{{kebabCase name}}.ts",
+      templateFile: "generators/service/templates/smoke.ts.hbs",
+      type: "add",
+    },
+    {
+      path: "src/services/index.ts",
+      pattern: /^/u,
+      template: 'export * from "./{{kebabCase name}}";\n',
+      type: "append",
+      unique: true,
+    },
+    serviceSummary,
+  ];
+}
+
 export function registerServiceGenerator(plop: NodePlopAPI): void {
   plop.setGenerator("service", {
-    actions: [
-      {
-        path: "src/services/{{kebabCase name}}/service.ts",
-        templateFile: "generators/service/templates/service.ts.hbs",
-        type: "add",
-      },
-      {
-        path: "src/services/{{kebabCase name}}/discover.ts",
-        templateFile: "generators/service/templates/discover.ts.hbs",
-        type: "add",
-      },
-      {
-        path: "src/services/{{kebabCase name}}/index.ts",
-        templateFile: "generators/service/templates/index.ts.hbs",
-        type: "add",
-      },
-      {
-        path: "src/services/{{kebabCase name}}/tools/index.ts",
-        templateFile: "generators/service/templates/tools/index.ts.hbs",
-        type: "add",
-      },
-      {
-        path: "src/services/{{kebabCase name}}/service.test.ts",
-        templateFile: "generators/service/templates/service.test.ts.hbs",
-        type: "add",
-      },
-      {
-        path: "src/services/index.ts",
-        pattern: /^/u,
-        template: 'export * from "./{{kebabCase name}}";\n',
-        type: "append",
-        unique: true,
-      },
-      serviceSummary,
-    ],
+    actions: serviceActions(),
     description:
-      "Scaffold a new core-v2 service (service.ts + discover.ts + tools/ + tests)",
+      "Scaffold a new core-v2 service (service.ts + discover.ts + tools/ + tests + smoke)",
     prompts: [
       {
         message:

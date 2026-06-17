@@ -41,6 +41,7 @@
     "just-bash": "^3.0.1",
     "nostics": "^1.0.0",
     "smol-toml": "^1.6.1",
+    "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^4.4.3"
   }
 }
