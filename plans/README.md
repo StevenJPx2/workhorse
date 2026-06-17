@@ -38,6 +38,6 @@ Implementation plans from a codebase audit of `packages/core-v2` (scope: that pa
 
 - **D1:** Config cascade resolver + cross-reference validation (states→steps, step→preset, exits→statuses) — the documented "Planned" milestone in `src/config/README.md`; gates the workflow engine.
 - **D2:** `when` expression parser — small closed grammar, highly testable in isolation.
-- **D3:** Minimal `GlobalContext` bootstrap factory (`loadConfig` + `createHooks`) — lets services be exercised end-to-end; powers the standalone-services (Moby) story.
+- **D3:** Minimal `GlobalContext` bootstrap factory (`loadConfig` + `createHooks`) — lets services be exercised end-to-end; powers the standalone-services story.
 
 Ask for a follow-up plan (`plan <description>`) if any of these should be specified.

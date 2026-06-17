@@ -1,6 +1,6 @@
 import { Bash, ReadWriteFs } from "just-bash";
 
-import { Script, type ScriptArgsT, type ScriptT } from "#schema";
+import { Script, type ScriptArgsT, type ScriptT } from "./schema";
 
 export function defineScript(
   spec: Omit<ScriptT, "args" | "run"> & { args?: ScriptArgsT },

@@ -1,22 +1,12 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, globSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { parseFrontMatter, type ScriptUsageT } from "#schema";
 
 export function parseResources(dir: string): string[] {
-  const resources: string[] = [];
-
-  for (const entry of readdirSync(dir, {
-    recursive: true,
-    withFileTypes: true,
-  })) {
-    if (entry.isDirectory() || entry.name === "SKILL.md") {
-      continue;
-    }
-
-    resources.push(relative(dir, join(entry.parentPath, entry.name)));
-  }
-
-  return resources.toSorted();
+  return globSync("**", { cwd: dir, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name !== "SKILL.md")
+    .map((entry) => relative(dir, join(entry.parentPath, entry.name)))
+    .toSorted();
 }
 
 export function parseScripts(dir: string): ScriptUsageT[] {
@@ -28,11 +18,7 @@ export function parseScripts(dir: string): ScriptUsageT[] {
 
   const scripts: ScriptUsageT[] = [];
 
-  for (const file of readdirSync(scriptsDir)) {
-    if (!file.endsWith(".sh")) {
-      continue;
-    }
-
+  for (const file of globSync("*.sh", { cwd: scriptsDir })) {
     const name = basename(file, ".sh");
 
     scripts.push({

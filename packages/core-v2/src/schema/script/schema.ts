@@ -4,7 +4,7 @@ import type { WorkflowContext } from "#workflow";
 
 import type { ToolResultT } from "../tool";
 
-export const ArgSpec = z.object({
+const ArgSpec = z.object({
   default: z.string().optional(),
   description: z.string(),
   name: z.string(),
@@ -13,13 +13,13 @@ export const ArgSpec = z.object({
 
 export type ArgSpecT = z.infer<typeof ArgSpec>;
 
-export const OptionSpec = ArgSpec.extend({
+const OptionSpec = ArgSpec.extend({
   alias: z.string().optional(),
 });
 
 export type OptionSpecT = z.infer<typeof OptionSpec>;
 
-export const ScriptArgs = z.object({
+const ScriptArgs = z.object({
   options: z.array(OptionSpec).default([]),
   positional: z.array(ArgSpec).default([]),
 });
@@ -60,7 +60,7 @@ export const ScriptParseInput = Script.pick({
 
 export type ScriptParseInputT = z.infer<typeof ScriptParseInput>;
 
-export const ScriptParseOutput = Script.pick({
+const ScriptParseOutput = Script.pick({
   args: true,
   command: true,
   description: true,

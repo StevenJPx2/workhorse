@@ -31,9 +31,9 @@ export function resolveInvocation(
   script: ScriptT,
   raw: RawInvocation = {},
 ): ScriptInvocation {
-  const givenOptions = raw.options ?? {};
+  const { options: givenOptions = {} } = raw;
 
-  for (const name of Object.keys(givenOptions)) {
+  for (const name in givenOptions) {
     if (!script.args.options.some((option) => option.name === name)) {
       throw diagnostics.WH_SCRIPT_UNKNOWN_OPTION({ name, script: script.name });
     }

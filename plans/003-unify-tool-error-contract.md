@@ -12,7 +12,7 @@ Tools in core-v2 have **two error channels** for the same class of failure:
 - `run_script` called with an unknown script name returns `{ ok: false, error: 'No script named "nope".' }` — the `ToolResultT` channel.
 - `run_script` called with a missing required argument **throws** (`resolveInvocation` raises a raw `Error`), and `defineTool` itself lets Zod input-validation **throw** out of `execute`.
 
-The future Harness (and any standalone-service consumer, per the Moby use case in the design docs) would have to wrap every tool call in try/catch _and_ check `ok` — and an LLM-facing tool runner that forgets the try/catch crashes the workflow on a malformed tool call, which is an everyday event with LLMs. The fix: make `defineTool`'s wrapper the single enforcement point — **a tool's `execute` never rejects; every failure becomes `{ ok: false, error }`**.
+The future Harness (and any standalone-service consumer) would have to wrap every tool call in try/catch _and_ check `ok` — and an LLM-facing tool runner that forgets the try/catch crashes the workflow on a malformed tool call, which is an everyday event with LLMs. The fix: make `defineTool`'s wrapper the single enforcement point — **a tool's `execute` never rejects; every failure becomes `{ ok: false, error }`**.
 
 ## Current state (verbatim excerpts — verify before editing)
 

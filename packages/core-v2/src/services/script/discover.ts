@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import { diagnostics } from "#diagnostics";
@@ -6,15 +6,7 @@ import { defineScript, parseFrontMatter, type ScriptT } from "#schema";
 import { skillDirs } from "../skill";
 
 function loadDir(scripts: ScriptT[], dir: string, prefix?: string): void {
-  if (!existsSync(dir)) {
-    return;
-  }
-
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith(".sh")) {
-      continue;
-    }
-
+  for (const file of globSync("*.sh", { cwd: dir })) {
     const name = prefix
       ? `${prefix}:${basename(file, ".sh")}`
       : basename(file, ".sh");

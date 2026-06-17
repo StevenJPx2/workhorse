@@ -1,47 +1,63 @@
 # core-v2 Living-Document & Code Map
 
-A curated index. Paths are repo-root-relative. Tags: **CANON** = authoritative, **DECISIONS** = resolved decision log, **STUB** = scaffold/empty, **SETTLING** = freshly decided, details still landing.
+A curated index into the design docs and code. Paths are repo-root-relative.
 
 ## Design docs (the "living documents")
 
-| Path                                      | Tag           | What's there                                                                                                                                                                                     |
-| ----------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `plan/rearchitecture/rearchitecture.md`   | **CANON**     | The full spec: structs (State/ExitRule/Step/…), two planes, stages + `when` exits, Harness, Agent event stream, services, plugins, config cascade, directory layout, error handling. Start here. |
-| `plan/rearchitecture/learnings.md`        | **DECISIONS** | Interview decisions, **Resolved Loopholes**, **Open Questions**.                                                                                                                                 |
-| `plan/rearchitecture/high-level-ideas.md` | Vision        | Workhorse-as-SDK pitch; Moby & Jiratown TUIs; bare-repo worktrees. The Moby use case drives the decoupled-service model.                                                                         |
-| `plan/rearchitecture/steps/step-1.md`     | Plan          | Target `packages/core-v2/src/` scaffolding (orchestrator/workflow/step/harness/services/schema).                                                                                                 |
-| `packages/core-v2/src/config/README.md`   | Spec          | Config-plane spec (stages/`when` model) + "Implementation status" — best current read on what's built.                                                                                           |
-| `architecture.d2` / `architecture.png`    | Diagram       | Architecture diagram source + render.                                                                                                                                                            |
+| Path                                      | What's there                                                                                                                                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plan/rearchitecture/rearchitecture.md`   | **Canonical** spec: structs (State/ExitRule/Step/…), two planes, stages + `when` exits, Harness, Agent event stream, services, plugins, config cascade, directory layout, error handling. Start here. |
+| `plan/rearchitecture/learnings.md`        | Decision log: interview decisions, resolved loopholes, open questions.                                                                                                       |
+| `plan/rearchitecture/high-level-ideas.md` | Vision: Workhorse-as-SDK; Jiratown TUI; bare-repo worktrees. The standalone-composition use case drives the decoupled-service model.                                                    |
+| `plan/rearchitecture/steps/step-1.md`     | Target `packages/core-v2/src/` scaffolding (orchestrator/workflow/step/harness/services/schema).                                                                             |
+| `packages/core-v2/src/config/README.md`   | Config-plane spec (stages/`when` model) + a runnable worked example.                                                                                                         |
+| `packages/core-v2/src/services/README.md` | The service model: `hookable` bus, `*:register` hooks, `define*` wrappers, capability-is-its-schema.                                                                          |
+| `architecture.d2` / `architecture.png`    | Architecture diagram source + render.                                                                                                                                        |
 
 ## Conventions & build commands
 
 | Path        | What's there                                                                                                                                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AGENTS.md` | Commands, import rules (path aliases, index-only imports), code constraints (≤200 lines, kebab-case, colocated tests, coverage), DB, pre-commit. |
-| `CLAUDE.md` | Points to `AGENTS.md`.                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` | Commands, import rules (path aliases, index-only imports), code constraints (≤200 lines, kebab-case, colocated tests, 97/95 coverage), pre-commit. |
+| `CLAUDE.md` | Points to `AGENTS.md`.                                                                                                                          |
+
+- Full check before commits: `bun run check` (lint → typecheck → test → fallow).
+- Single package: `bun run --filter core-v2 test`.
+- Smoke a plane end-to-end (each builds a temp sandbox and prints results):
+  `bun packages/core-v2/scripts/smoke/<config|script|skill|services|web>.ts`,
+  or from the package `bun run smoke:<name>`. `scripts/smoke/harness.ts` is the
+  shared smoke scaffolding (sandbox + hook bus).
 
 ## core-v2 code (`packages/core-v2/src/`)
 
-| Path                                                       | Tag                 | Notes                                                                                                                                                                                                                   |
-| ---------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema/status.ts`                                         | Built · CANON       | `Status` enum incl. `blocked`.                                                                                                                                                                                          |
-| `schema/index.ts`                                          | Built               | Re-exports `status`.                                                                                                                                                                                                    |
-| `config/state.ts`                                          | Built · CANON       | `ExitRule {when,to,epilogue?}` (epilogue = optional transition handoff), `StateConfig {name,steps,exits}` — the stages/`when` shape.                                                                                    |
-| `config/workflow.ts`                                       | Built · CANON       | `WorkflowConfig {name, states, steps, version}`.                                                                                                                                                                        |
-| `config/step.ts`                                           | Built               | `SubAgentConfig` (`write_globs`, snake_case), `StepConfig` = `PresetConfig` + `preset` + `sub_agents`.                                                                                                                  |
-| `config/preset.ts`, `config/main.ts`, `config/settings.ts` | Built               | Preset body, global/project `MainConfig`, shared settings.                                                                                                                                                              |
-| `config/resolved.ts`                                       | Built               | `ResolvedConfig` — the whole `.workhorse` tree mirrored into one object.                                                                                                                                                |
-| `config/loader.ts`                                         | Built               | Globs `**/*.toml`, mirrors dirs → object, `defu`-merges project over global, parses. **No cascade resolver / no `when` parser yet.**                                                                                    |
-| `config/example.ts` + `scripts/config-smoke.ts`            | Built               | In-code worked example: `exampleConfig` (full `ralph` config) + a smoke test that validates it and prints the JSON. Run directly (not via `--filter`, which truncates): `bun packages/core-v2/scripts/config-smoke.ts`. |
-| `src/index.ts`                                             | **STUB**            | 31 bytes.                                                                                                                                                                                                               |
-| `src/orchestrator/index.ts`                                | **STUB**            | empty — orchestrator unbuilt.                                                                                                                                                                                           |
-| `src/workflow/index.ts`                                    | **STUB**            | empty — workflow/step/harness/agent unbuilt.                                                                                                                                                                            |
-| `src/services/index.ts`                                    | **STUB · SETTLING** | empty — `ToolService`/`SkillService`/`ScriptService`/Git/L1/L2/Agent/AST unbuilt; the decoupled-service model is freshly decided.                                                                                       |
-| `src/db/index.ts`, `src/hooks/index.ts`                    | **STUB**            | empty scaffolds (deps include `hookable`).                                                                                                                                                                              |
+| Path                                           | What's there                                                                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema/status/`                               | `Status` enum (`schema.ts` + `index.ts`), incl. `blocked`. Shared by config + services.                                                                                                   |
+| `schema/tool/`                                 | `defineTool` (xmcp-style: types `execute`'s args from the `input` schema), `ToolT`/`AnyTool`, `result.ts`; `schema.ts` + `define.test.ts`.                                                 |
+| `schema/skill/`                                | `defineSkill`, `SkillT`, `schema.ts` + `define.test.ts`. Anthropic `SKILL.md` convention.                                                                                                 |
+| `schema/script/`                               | `defineScript`, `ScriptT`, `front-matter.ts` (`serializeFrontMatter`; comment-fenced `# ---` YAML CLI contract), `help.ts`, `invoke.ts`, `schema.ts` + `__tests__/`.                        |
+| `schema/index.ts`                              | Re-exports `script`/`skill`/`status`/`tool`. A capability **is** its schema object — the Zod schema validates the data and carries the handler (`z.custom` fn).                             |
+| `config/state.ts`                              | `ExitRule {when,to,epilogue?}` (epilogue = optional transition handoff), `StateConfig {name,steps,exits}` — the stages/`when` shape.                                                       |
+| `config/workflow.ts`                           | `WorkflowConfig {name, states, steps, version}`.                                                                                                                                          |
+| `config/step.ts`                               | `SubAgentConfig` (`write_globs`, snake_case), `StepConfig` = `PresetConfig` + `preset` + `sub_agents`.                                                                                     |
+| `config/preset.ts` · `main.ts` · `settings.ts` | Preset body, global/project `MainConfig`, shared settings.                                                                                                                                |
+| `config/resolved.ts`                           | `ResolvedConfig` — the whole `.workhorse` tree mirrored into one object.                                                                                                                   |
+| `config/loader.ts`                             | Globs `**/*.toml`, mirrors dirs → object, `defu`-merges project over global, parses.                                                                                                       |
+| `config/example.ts`                            | In-code worked example: a full `ralph` config. Validate + print: `bun packages/core-v2/scripts/smoke/config.ts` (or `bun run smoke:config`).                                              |
+| `lib/matter.ts`                                | `safeMatter` — a `gray-matter` wrapper returning `{ success, … }` for skill/script front-matter.                                                                                           |
+| `hooks/hooks.ts`                               | Typed `hookable` bus `Hooks`: `skills:register`, `tools:register`. Fan-in writes go through hooks; reads are plain service methods.                                                        |
+| `orchestrator/context.ts`                      | `GlobalContext { config, hooks }` interface.                                                                                                                                              |
+| `workflow/context.ts`                          | `WorkflowContext extends GlobalContext { cwd }`.                                                                                                                                          |
+| `services/base.ts`                             | `Service` contract: `name` + `setup(context)` / `teardown()`.                                                                                                                             |
+| `services/skill/`                              | `SkillService` (`name: "skills"`): `discover.ts` scans `~/.claude/skills`, `~/.agents/skills`, then the project (project wins); `parse/`; `tools/load` → `load_skill`; accepts `skills:register`. |
+| `services/script/`                             | `ScriptService` (`name: "scripts"`): `discover.ts` scans `.workhorse/scripts/*.sh`; `tools/run` → `run_script` (validates the front-matter CLI contract, `help`), `tools/write` → `write_script` (re-scans). |
+| `services/index.ts`                            | Re-exports `base`/`script`/`skill`.                                                                                                                                                       |
+| `diagnostics/catalog.ts`                       | `nostics` `defineDiagnostics` — central `WH_*` error/advisory catalog with `why`/`fix`, console reporter. Producers call a code at detection.                                              |
+| `db/index.ts`                                  | Empty module (`export const _ = true`).                                                                                                                                                   |
+| `src/index.ts`                                 | `console.log("Hello via Bun!")`.                                                                                                                                                          |
 
-Package deps (`packages/core-v2/package.json`): `zod`, `smol-toml`, `defu`, `unctx`, `hookable`, `es-toolkit`. Scripts: `lint` (oxlint), `typecheck` (tsc), `fallow`.
-
-## Open questions / not-yet-settled (confirm before building)
-
-- **Service contribution API** — how `ToolService`/`SkillService`/`ScriptService` accept contributions (hooks?), where prompt sections register, and the per-base-service specifics left open in `rearchitecture.md`.
-- From `learnings.md` (still open): TUI integration with the hierarchy · steering rules in the workflow model · multi-workflow coordination · L2 as a service · testing strategy · plugin onboarding order · compaction trigger.
+Package deps (`packages/core-v2/package.json`): `zod`, `smol-toml`, `defu`,
+`unctx`, `hookable`, `es-toolkit`, `gray-matter` (front-matter), `just-bash`
+(script execution), `nostics` (diagnostics); dev `yoctocolors` + `@types/bun`;
+peer `typescript`. Scripts: `lint`/`lint:fix` (oxlint), `typecheck` (tsc),
+`fallow`, `smoke:config|script|skill|services|web`.

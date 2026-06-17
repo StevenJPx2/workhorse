@@ -1,17 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": [],
-  "ignoreDependencies": [
-    "@huggingface/transformers",
-    "@mariozechner/pi-coding-agent",
-    "sqlite-vec",
-    "playwright",
-    "@stevenjpx2/jiratown-core",
-    "@stevenjpx2/jiratown-plugin-github",
-    "@stevenjpx2/jiratown-plugin-jira",
-    "@stevenjpx2/jiratown-plugin-pi-adapter",
-    "@stevenjpx2/jiratown-plugin-playwright"
-  ],
+  "entry": ["**/*.test.ts", "**/*.spec.ts"],
+  "ignoreDependencies": ["@huggingface/transformers", "playwright"],
   "ignoreExports": [
     { "file": "packages/core/src/services/memory/index.ts", "exports": ["*"] },
     {
@@ -19,47 +9,11 @@
       "exports": ["*"]
     },
     {
-      "file": "packages/core/src/services/memory/notifications/index.ts",
-      "exports": ["*"]
-    },
-    { "file": "packages/core/src/services/memory/types.ts", "exports": ["*"] },
-    {
-      "file": "packages/core/src/services/memory/l1/serializer.ts",
-      "exports": ["*"]
-    },
-    {
-      "file": "packages/core/src/workflow/orchestrator/types/index.ts",
-      "exports": ["JSONSchema"]
-    },
-    {
-      "file": "packages/plugins/jira/src/auth.ts",
-      "exports": ["loadCredentials", "saveCredentials", "clearCredentials"]
-    },
-    {
       "file": "packages/plugins/jira/src/parser.ts",
       "exports": ["canParseJira"]
-    },
-    {
-      "file": "packages/plugins/pi-adapter/src/events.ts",
-      "exports": ["EventHandlerContext", "ToolFactoryContext"]
-    },
-    {
-      "file": "packages/core/src/workflow/orchestrator/steering/evaluator.ts",
-      "exports": ["matchesCondition"]
-    },
-    {
-      "file": "packages/plugins/github/src/monitor-notifications.ts",
-      "exports": ["REVIEW_PRIORITIES", "PRMeta"]
     }
   ],
-  "ignorePatterns": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/coverage/**",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "oxlint/eslint-plugin-workhorse/**"
-  ],
+  "ignorePatterns": ["oxlint/eslint-plugin-workhorse/**"],
   "rules": {
     "unused-files": "warn",
     "unused-exports": "warn",
@@ -68,13 +22,12 @@
     "unused-class-members": "off",
     "circular-dependencies": "warn",
     "duplicate-exports": "warn",
-    "code-duplication": "warn",
-    "complexity": "warn"
+    "coverage-gaps": "warn"
   },
   "health": {
     "maxCyclomatic": 25,
     "maxCognitive": 25,
-    "failOnRefactoringTargets": false
+    "ignore": ["**/*.test.ts", "**/*.spec.ts"]
   },
   "duplicates": {
     "minLines": 30

@@ -1,6 +1,6 @@
-import { existsSync, readdirSync } from "node:fs";
+import { globSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { diagnostics } from "#diagnostics";
 import type { SkillT } from "#schema";
@@ -13,21 +13,11 @@ function skillDirs(cwd: string, home: string = homedir()): string[] {
     join(home, ".agents", "skills"),
     join(cwd, ".claude", "skills"),
     join(cwd, ".agents", "skills"),
-  ].flatMap((root) => {
-    if (!existsSync(root)) {
-      return [];
-    }
-
-    return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
-      if (!entry.isDirectory()) {
-        return [];
-      }
-
-      const dir = join(root, entry.name);
-
-      return existsSync(join(dir, "SKILL.md")) ? [dir] : [];
-    });
-  });
+  ].flatMap((root) =>
+    globSync("*/SKILL.md", { cwd: root }).map((path) =>
+      join(root, dirname(path)),
+    ),
+  );
 }
 
 function discoverSkills(cwd: string, home: string = homedir()): SkillT[] {

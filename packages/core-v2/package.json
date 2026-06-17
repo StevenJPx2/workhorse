@@ -5,6 +5,9 @@
   "scripts": {
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "fallow": "fallow",
     "smoke:config": "bun scripts/smoke/config.ts",
     "smoke:script": "bun scripts/smoke/script.ts",
@@ -15,6 +18,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@vitest/coverage-v8": "^4.1.6",
+    "vitest": "^4.1.6",
     "yoctocolors": "^2.1.2"
   },
   "peerDependencies": {

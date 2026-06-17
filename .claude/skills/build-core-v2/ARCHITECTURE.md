@@ -1,6 +1,6 @@
 # core-v2 Architecture Outline
 
-A component-by-component outline of the canonical design. Source of truth: `plan/rearchitecture/rearchitecture.md` (section pointers below as `§`). This is an outline, not a copy — open the doc for full prose, diagrams, and TOML examples.
+A component-by-component outline of the **canonical design**. Source of truth: `plan/rearchitecture/rearchitecture.md` (section pointers below as `§`). This is an outline, not a copy — open the doc for full prose, diagrams, and TOML examples. For a file-by-file map of the code, see [MAP.md](MAP.md).
 
 ## Two planes — "config gates; it never provides"
 
@@ -26,7 +26,7 @@ Owns the full bootstrap lifecycle. Creates **GlobalContext** once, then a **Work
 
 A Workflow is a line of **stages**, isolated to its worktree + `$XDG_STATE_HOME/workhorse/workflow/<issue-id>/`. → `§ Workflow`
 
-- **Status enum**: `planning → implementing → blocked → ready_for_review → in_review → done` (`schema/status.ts`).
+- **Status enum**: `planning → implementing → blocked → ready_for_review → in_review → done` (`schema/status/`).
 - **A stage (`[[states]]`) is one status** with an ordered `steps` list (step ids) that run in declaration order and **loop back to the first** until an exit fires. Intra-stage flow is purely positional — a step never names "what runs next."
 - **Only stages route, via `exits`.** Each exit is `{ when = "<expr>", to = "<status>", epilogue? = "<prompt>" }`, evaluated in order — **first match wins**. When a `when` holds, control switches to the `to` status and lands on that stage's first step. `to` must differ from the stage's own status and resolve to a known status (load-time check). A backward edge is just a `to` an earlier stage. An exit's optional `epilogue` is the transition handoff (see Step & presets).
 - **Step library** (`[steps.<id>]`): definitions referenced by id from stages. A step carries **no status and no routing** — the stage that lists it decides where it runs.
@@ -76,12 +76,12 @@ Step config defines named templates (`tools`, `write_globs`, `agent`/`model` cei
 
 ## Services
 
-"Like an MCP, but **not bound to the Harness**" — a service can be used standalone, even in a different process. This is what lets **Moby** compose e.g. `AgentService` + `ToolService` to drive a single agent with chosen tools, without the whole product. Lifecycle `setup()`/`teardown()`. **Co-owned activation**: service declares (tagged) contributions, the step allowlist filters, the Harness intersects. → `§ Service`
+"Like an MCP, but **not bound to the Harness**" — a service can be used standalone, even in a different process: compose e.g. `AgentService` + `ScriptService` to drive a single agent with chosen tools, without the whole product. → `§ Service`
 
-- **`ToolService` / `SkillService` / `ScriptService`** — the capability registries where services and plugins register tools, skills, and scripts; the Harness gates them per step.
-- **`GitService`** (`git_add`/`commit`/`push`/`pull`), **`L1Service`** (per-worktree `context.md` memory + periodic compaction), **`L2Service`** (semantic search via `retriv`: BM25 + vectors; contributes a prompt section), **`AgentService`** (`spawn_subagent`; also drives standalone intake/Moby), **`ASTService`** (rename/extract).
-
-> ⚠️ The contribution API (hooks) and some base-service specifics are **still being defined** (the `ToolService`/`SkillService`/`ScriptService` split is a fresh decision). Confirm against the Service section of `rearchitecture.md` before relying on details.
+- **Contribution model.** Services share a typed **`hookable` bus**, not a generic registry. Lifecycle: in `setup(context)` a service registers handlers for the hooks it owns (keeping the unregister callbacks) and drops them in `teardown()`. **Fan-in writes go through `*:register` hooks; reads are plain methods** (`list()`). **Co-owned activation**: contributions carry tags, the step allowlist filters, the Harness intersects.
+- **One definition, no copy-class.** A capability _is_ its `src/schema` object — the Zod schema validates the data and carries the handler (a `z.custom` function). Author with the `define*` wrappers (`defineTool` / `defineSkill` / `defineScript`); services just move these objects across the bus.
+- **`SkillService` / `ScriptService`** — canonical capability services. `ScriptService` persists agent-authored scripts under `.workhorse/scripts` (CLI-contract front-matter); `SkillService` sources skill fragments. The capability _definitions_ are global schema types in `src/schema`.
+- **`GitService`** (`git_add`/`commit`/`push`/`pull`), **`L1Service`** (per-worktree `context.md` memory + periodic compaction), **`L2Service`** (semantic search via `retriv`: BM25 + vectors; contributes a prompt section), **`AgentService`** (`spawn_subagent`; also drives standalone intake), **`ASTService`** (rename/extract).
 
 ## Plugins vs Services
 
