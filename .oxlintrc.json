@@ -1,5 +1,5 @@
 {
-  "$schema": "https://oxc.rs/docs/guide/usage/linter/config.html",
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import", "node", "promise"],
   "jsPlugins": ["./oxlint/eslint-plugin-workhorse"],
   "ignorePatterns": [
