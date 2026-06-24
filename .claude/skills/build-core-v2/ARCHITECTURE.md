@@ -26,6 +26,7 @@ Owns the full bootstrap lifecycle. Creates **GlobalContext** once, then a **Work
 
 A Workflow is a line of **stages**, isolated to its worktree + `$XDG_STATE_HOME/workhorse/workflow/<issue-id>/`. → `§ Workflow`
 
+- **Owns service setup.** Sets up all services once per run, collects the tools/skills they contribute, and hands that set to each step's Harness (which filters per step; the Harness never sets services up).
 - **Status enum**: `planning → implementing → blocked → ready_for_review → in_review → done` (`schema/status/`).
 - **A stage (`[[states]]`) is one status** with an ordered `steps` list (step ids) that run in declaration order and **loop back to the first** until an exit fires. Intra-stage flow is purely positional — a step never names "what runs next."
 - **Only stages route, via `exits`.** Each exit is `{ when = "<expr>", to = "<status>", epilogue? = "<prompt>" }`, evaluated in order — **first match wins**. When a `when` holds, control switches to the `to` status and lands on that stage's first step. `to` must differ from the stage's own status and resolve to a known status (load-time check). A backward edge is just a `to` an earlier stage. An exit's optional `epilogue` is the transition handoff (see Step & presets).
@@ -55,7 +56,8 @@ A Step is "what to run" (the Harness is "how"). Fields: `id`, `preset?`, `prolog
 One **generic** engine that executes any step. → `§ Harness`
 
 - Instantiates the runtime `Agent` from the agent definition named by `Step.agent`.
-- Intersects providers against the step allowlist and provides the result.
+- Receives the tools/skills the Workflow collected (the Workflow owns service setup) and filters them to the step (`services[]` selects active services).
+- Intersects providers (agent definition ∪ the workflow-collected service contributions) against the step allowlist and provides the result.
 - Enforces **tool output truncation** (configurable, ~2000–3000 chars; full output + range hint) and **per-tool timeouts** (`tool_timeout` + per-tool override).
 - **Boundary interrupts only** — finishes the in-flight tool call, then halts; never mid-tool-call (no partial writes/commits).
 - Coordinates sub-agents (spawn, `ask_parent` routing, one-level-deep); monitors resources, emits metrics (observability, not routing).
@@ -85,7 +87,7 @@ Step config defines named templates (`tools`, `write_globs`, `agent`/`model` cei
 
 ## Plugins vs Services
 
-- **Services** are the core capability providers, but **not harness-bound** (reusable standalone). Within a workflow the Harness collects their contributions and filters them per step.
+- **Services** are the core capability providers, but **not harness-bound** (reusable standalone). Within a workflow the Workflow sets the services up once and hands their contributions to the Harness, which filters them per step.
 - **Plugins** are fully external — they contribute through the same capability services at setup time (globally) and may inject pre-transition steps. The core never depends on a plugin. → `§ Plugins`
 
 ## Directory layout & state

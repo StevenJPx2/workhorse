@@ -285,9 +285,10 @@ Harness: {
 
   agent: Agent
 
-  # intersects (agent definition + service contributions) against the step's
-  #   tools[]/services[] allowlist, most-restrictive wins, and provides the
-  #   result to the agent (capability services declare/collect; Harness intersects)
+  # receives the workflow-collected service tools/skills, then intersects
+  #   (agent definition + those) against the step's tools[]/services[] allowlist,
+  #   most-restrictive wins, and provides the result to the agent
+  #   (the Workflow sets services up once per run; the Harness only filters)
   # enforces tool output truncation (configurable per-step, default ~2000-3000 chars)
   # interrupts the agent only at tool-call boundaries (never mid-tool-call)
   run(): "(step: Step) -> Promise<void>"
@@ -673,7 +674,8 @@ For agents:
 
 For services:
 
-- **Intersects providers against the step allowlist.** Providers (the agent definition's capabilities + service contributions) propose the universe; the Step's `tools[]`/`services[]` allowlist narrows it. `services[]` gates which services are active; `tools[]` is the final per-tool filter — a tool must pass **both** (most-restrictive wins). the capability services (`ToolService`/`SkillService`/`ScriptService`) declare/collect; the Harness performs this intersection at run time and provides the result to the agent. **Config only ever gates — it never provides.**
+- **Receives the workflow-collected capabilities.** The Workflow sets up all services once per run (owning their `setup()`/`teardown()` lifecycle) and collects the tools/skills they contribute over the hook bus; it hands that set to the Harness for each step. The Harness does not set up or tear down services itself. A step's `services[]` allowlist then filters which of the set-up services are active for that step.
+- **Intersects providers against the step allowlist.** Providers (the agent definition's capabilities + the workflow-collected service contributions) propose the universe; the Step's `tools[]`/`services[]` allowlist narrows it. `services[]` gates which services are active; `tools[]` is the final per-tool filter — a tool must pass **both** (most-restrictive wins). the capability services (`ToolService`/`SkillService`/`ScriptService`) declare/collect; the Harness performs this intersection at run time and provides the result to the agent. **Config only ever gates — it never provides.**
 - Enforces **tool output truncation** (configurable per step, default ~2000–3000 chars); tools return full output and the Harness truncates, adding a range hint so the agent can request more
 - Gives access to "feed-in" to the agent (e.g. system prompt, notify, tools, skills, scripts, etc.)
 
@@ -750,7 +752,7 @@ For example, you have an agent service that registers all the agents. What if, f
 It accesses the external world in a _safe_ way and provides reasonable context to the agent.
 It feeds the agent with the tools, notifications, skills, etc. that it needs to run the step perfectly.
 
-Services have a lifecycle (`setup()` / `teardown()`) and communicate over a shared **`hookable` bus** — not a generic registry. In `setup()` a service registers handlers for the hooks it owns (keeping the returned unregister callbacks) and drops them in `teardown()`. The host — the Harness, or a standalone composition — drives the bus: it calls hooks like `scripts:create` or `tools:collect`, and the owning service handles them. Contributions carry metadata/tags so the Step's allowlist controls what's active (**co-owned activation**: service declares, step filters).
+Services have a lifecycle (`setup()` / `teardown()`) and communicate over a shared **`hookable` bus** — not a generic registry. In `setup()` a service registers handlers for the hooks it owns (keeping the returned unregister callbacks) and drops them in `teardown()`. The host — the Workflow within a product run, or a standalone composition — **sets up the services it needs** and drives the bus: it calls hooks like `scripts:create` or `tools:collect`, and the owning service handles them. (Within a workflow the Workflow sets services up once and hands the collected tools/skills to the Harness, which filters per step.) Contributions carry metadata/tags so the Step's allowlist controls what's active (**co-owned activation**: service declares, step filters).
 
 Tools, skills, and scripts each have a dedicated service — `ToolService`, `SkillService`, `ScriptService` — and **each owns the _mechanism_ for its kind**. They differ in how they store and retrieve their capability: `ToolService` keeps code-registered tools in memory; `ScriptService` persists scripts under the workhorse directory and reads them back on demand; `SkillService` sources skill fragments (e.g. from `.workhorse/skills`). The capability _definitions_ themselves (`Tool`, `Skill`, `Script`) are global schema types in `src/schema`; the services just move instances of those definitions across the bus. Other services (Git, L1, L2, Agent, AST) and plugins contribute by calling the relevant hooks. Because services couple only to the bus — not the Harness — the same set can be composed standalone.
 

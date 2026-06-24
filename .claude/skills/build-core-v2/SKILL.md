@@ -26,22 +26,22 @@ Two planes — **config gates; it never provides:**
 - **Config plane** (declarative TOML): workflow types, step presets, agent definitions. A step _references_ a backend by name and _gates_ tools/services with allowlists. Authored in **snake_case throughout** (the Zod schemas mirror the TOML; no case conversion).
 - **Runtime plane** (in memory): the live `Agent` ("bones": `run`/`notify`/`interrupt`) the Harness drives. It receives the assembled capability set.
 
-Capability assembly: `(agent definition ∪ service contributions) ∩ step allowlist`, most-restrictive wins.
+Capability assembly: the Workflow sets up all services once and collects their tools/skills; the Harness then computes `(agent definition ∪ those contributions) ∩ step allowlist`, most-restrictive wins.
 
 Runtime hierarchy:
 
 ```
 Orchestrator  ─ owns GlobalContext (infra: db/hooks/config + registries: services, adapters, agent defs, workflow types)
   └─ WorkflowContext (per run; instances from registries — no shared mutable state)
-       └─ Workflow  ─ a line of stages
+       └─ Workflow  ─ a line of stages; sets up services once and collects their tools/skills
             └─ Stage ([[states]]) ─ one status + an ordered `steps` list + `exits`
                  └─ Step ─ config: prologue/epilogue, tools/services allowlists, agent/model, tokenBudget, sub-agents
-                      └─ Harness (one generic engine) ─ drives a runtime Agent, streams AgentEvents, enforces timeout/truncation/boundary-interrupts
+                      └─ Harness (one generic engine) ─ filters the workflow's capabilities per step, drives a runtime Agent, streams AgentEvents, enforces timeout/truncation/boundary-interrupts
 ```
 
 **Control flow = stages + `when` rules.** A **stage** is one status with an ordered `steps` list that runs in declaration order and loops back to the first. Routing is the stage's `exits = [{ when = "<expr>", to = "<status>", epilogue? }]` — first match wins; **only stages route, steps never do**. `when` is a safe boolean expression (built-in names, state keys, comparisons, `and`/`or`/`not`). The **handoff is edge-scoped**: a step's `epilogue` is the loop/positional handoff; an exit's optional `epilogue` is the transition handoff (falls back to the step's). `done` is terminal/external; `blocked` and a signed-off `in_review` are **park states**.
 
-**Services are decoupled from the Harness** — usable standalone, even in another process (compose e.g. `AgentService` + `ScriptService` to drive one agent with chosen tools, without the whole product). They communicate over a typed **`hookable` bus**: contribute via `*:register` hooks, read via plain methods (`list()`); contributions carry tags so the step allowlist gates them and the Harness intersects. `tools:register` is **batched** — a service contributes its whole tool set in one call (`callHook("tools:register", { tools })`), not one call per tool. A capability _is_ its `schema` object (Zod + embedded handler), authored with `defineTool` / `defineSkill` / `defineScript`. The capability services are `SkillService` / `ScriptService`, plus `GitService` / `L1Service` / `L2Service` / `AgentService` / `ASTService`. Plugins are decoupled too — they contribute over the same bus and can inject pre-transition steps.
+**Services are decoupled from the Harness** — usable standalone, even in another process (compose e.g. `AgentService` + `ScriptService` to drive one agent with chosen tools, without the whole product). They communicate over a typed **`hookable` bus**: contribute via `*:register` hooks, read via plain methods (`list()`); contributions carry tags so the step allowlist gates them and the Harness intersects. **Within a workflow the *Workflow* is the host: it sets up the services once, collects their tools/skills, and hands them to the Harness, which gates them per step.** `tools:register` is **batched** — a service contributes its whole tool set in one call (`callHook("tools:register", { tools })`), not one call per tool. A capability _is_ its `schema` object (Zod + embedded handler), authored with `defineTool` / `defineSkill` / `defineScript`. The capability services are `SkillService` / `ScriptService`, plus `GitService` / `L1Service` / `L2Service` / `AgentService` / `ASTService`. Plugins are decoupled too — they contribute over the same bus and can inject pre-transition steps.
 
 ## Scaffolding (plop generators)
 

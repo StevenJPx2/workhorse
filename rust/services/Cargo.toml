@@ -1,0 +1,23 @@
+[package]
+name = "services"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+tools = { path = "../tools" }
+sandbox = { path = "../sandbox" }
+rig.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+serde_yaml_ng = "0.10"
+
+[dev-dependencies]
+tokio.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

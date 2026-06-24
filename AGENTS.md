@@ -60,6 +60,29 @@ import { something } from "./types/index.ts"; // ❌
 | Filenames                   | kebab-case                           | oxlint                                |
 | Test location               | Colocated (`foo.ts` + `foo.test.ts`) | oxlint                                |
 
+## Rust port (`rust/`)
+
+A from-scratch Rust rewrite on `rig`. Plan + rituals in `plan/rearchitecture/` (start at its
+`README.md`). Use the pinned toolchain (Homebrew cargo shadows it):
+
+```bash
+export PATH="$HOME/.rustup/toolchains/nightly-2026-01-08-aarch64-apple-darwin/bin:$PATH"
+cd rust && cargo test                                  # core workspace (51 tests)
+cargo clippy --workspace --all-targets -- -D warnings  # lint gate — must be clean
+cargo run -p wh-demo                                   # native egui smoke-test app
+cargo run -p wh-demo -- --selfcheck                    # headless proof (CI-able)
+```
+
+### Enforced rules (do not regress)
+
+| Rule | What | Enforced by |
+| --- | --- | --- |
+| **clippy pedantic** | `clippy::pedantic` is on workspace-wide. Fix lints; never lower the global level. Suppress one site with `#[allow(clippy::x)]` + a reason. | `[workspace.lints]` in `rust/Cargo.toml` + `[lints] workspace = true` per crate; `rust/wh-demo` has its own `[lints.clippy]` (separate workspace). CI gate: `cargo clippy --workspace --all-targets -- -D warnings` (run in `rust/` **and** `rust/wh-demo/`). |
+| **Phosphor-only UI glyphs** | egui UI strings (icons, separators, arrows, dashes) use `egui_phosphor::regular::*` constants interpolated with `{}` — never literal non-ASCII chars, which tofu (□) once the Phosphor font merges. | `rust/wh-demo/tests/ui_icon_lint.rs` (runs in `cargo test`). |
+| **Phosphor in both font families** | After `egui_phosphor::add_to_fonts` (Proportional only), also push `"phosphor"` into the **Monospace** family, or icons in `ui.monospace(...)` tofu. | convention — set up once in `wh-demo/src/main.rs`. |
+| **Human-testable per slice** | Every slice adds/extends a `wh-demo` panel; keep `--selfcheck` green. | `plan/rearchitecture/demo.md`. |
+| ≤ 200 lines per file | same as TS side | review |
+
 ## Database
 
 SQLite via drizzle-orm. Schema in `packages/core/src/db/schema/`.

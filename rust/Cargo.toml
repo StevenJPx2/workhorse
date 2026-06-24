@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+members = ["tools", "sandbox", "pipeline", "runtime", "services", "wasm-probe"]
+# wh-demo is its own workspace (heavy egui/eframe deps) so the core test loop
+# stays fast. It path-depends on pipeline + runtime to wire the real crates.
+exclude = ["wh-demo"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+[workspace.lints.clippy]
+# Pedantic enforced workspace-wide (see plan/rearchitecture conventions). Warn,
+# and CI gates with `cargo clippy --workspace --all-targets -- -D warnings`.
+pedantic = { level = "warn", priority = -1 }
+
+[workspace.lints.rust]
+# The codebase is 100% safe Rust; lock that in. Crates inherit via
+# `[lints] workspace = true`.
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+rig = "0.39"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+async-trait = "0.1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wasmtime = "45"
+wasmtime-wasi = "45"
+tempfile = "3"
+regex = "1"
+tokio-util = "0.7"
