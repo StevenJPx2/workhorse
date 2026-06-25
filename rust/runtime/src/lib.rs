@@ -1,4 +1,5 @@
-// The sans-IO governor is pure and always compiled (wasm-friendly).
+// The sans-IO governor is pure and always compiled (kept for potential
+// headless/wasm consumers).
 pub mod workflow;
 pub use workflow::{WorkflowError, WorkflowRun, WorkflowRunStep};
 
@@ -16,12 +17,18 @@ pub mod model;
 #[cfg(feature = "native")]
 pub mod oauth;
 #[cfg(feature = "native")]
+pub mod orchestrator;
+#[cfg(feature = "native")]
+pub mod persist;
+#[cfg(feature = "native")]
 pub mod step;
+#[cfg(feature = "native")]
+pub mod subagent;
 
 #[cfg(feature = "native")]
 pub use genai_model::{GenAiClient, GenAiModel, GenAiResponse, GenAiStreamChunk};
 #[cfg(feature = "native")]
-pub use harness::{Harness, HarnessConfig, HarnessError, HarnessEvent};
+pub use harness::{Harness, HarnessConfig, HarnessError, HarnessEvent, no_epilogue};
 #[cfg(feature = "native")]
 pub use mock_model::{
     MockClient, MockCompletionModel, MockModelConfig, MockResponse, MockToolCall,
@@ -40,4 +47,15 @@ pub use oauth::{
     load_access_token,
 };
 #[cfg(feature = "native")]
+pub use orchestrator::{
+    ContextReader, DEFAULT_MAX_STAGE_RUNS, DriveOptions, ExternalEvent, OrchestratorEvent, Outcome,
+    RALPH_LOOP_CONFIG, RALPH_LOOP_PROMPT, SIMPLE_TASK_CONFIG, SIMPLE_TASK_PROMPT,
+    SUBAGENT_DEMO_CONFIG, SUBAGENT_DEMO_PROMPT, WorkflowPreset, presets, resume_workflow,
+    run_to_completion, run_with_limit, simple_task_seed, stage_routing_keys, validate_state_keys,
+};
+#[cfg(feature = "native")]
+pub use persist::{RunStore, state_root};
+#[cfg(feature = "native")]
 pub use step::assemble_request;
+#[cfg(feature = "native")]
+pub use subagent::{PermissionError, SpawnArgs, resolve_permissions, spawn_subagent_tool};

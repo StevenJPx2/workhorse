@@ -23,6 +23,25 @@ heavy egui deps don't touch the core build.
 - **WorkflowRun** — hand-drive the sans-IO governor: `next_step` → `stage_complete` →
   **park** → `resume` → **done**, with the live serialized snapshot proving a parked run
   round-trips to JSON. (`runtime`, spike E)
+- **Harness** — drive one step through the generic `Harness<M: CompletionModel>` against a
+  mock or a real provider (Anthropic OAuth/key, OpenAI-compatible), streaming `HarnessEvent`s.
+  (`runtime`)
+- **Orchestrator** — the end-to-end loop: the `WorkflowRun` governor runs each stage's step
+  through the `Harness`, and the model's trailing `@state { … }` line routes the next stage.
+  Walks a whole workflow from `plan` to `done` (or park) on model output alone. Pick a bundled
+  **preset** (`tiny`, `ralph-loop`) from the dropdown instead of hand-writing TOML. The
+  `ralph-loop` preset is a self-driving loop: a `work` stage with a real exit plus a
+  `builtin::paused` fallback to a `memory_weaver` stage that persists learnings to `context.md`
+  (via the `ContextService` `write_context`/`read_context` tools) and routes back — so the agent
+  keeps making progress across iterations instead of dead-stopping, bounded by a max-iterations
+  guard. Headless: `cargo run -p wh-demo -- --orchestrate[=<preset>]`. (`runtime`, `services`)
+- **Builder** — a visual workflow builder: a draggable flowchart of stage nodes with exit
+  edges (add/drag/delete stages, drag a node's port to another to connect, edit a selected
+  node's step + exits in the inspector) synced bidirectionally with an editable config (TOML)
+  view. Seed from a preset, then `send to Orchestrator` to run it. Node positions are a view
+  concern kept in panel state only; the config TOML stays coordinate-free. (`pipeline`)
+- **Registry** — real services contribute tools; `ScriptService` discovers `.sh` scripts and
+  runs them through the `Sandbox`. (`services`)
 
 ## The rule
 

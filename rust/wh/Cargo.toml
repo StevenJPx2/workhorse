@@ -1,19 +1,19 @@
 [package]
-name = "pipeline"
+name = "wh"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
 
 [dependencies]
+pipeline = { path = "../pipeline" }
+runtime = { path = "../runtime" }
 serde.workspace = true
-serde_json.workspace = true
+toml = "0.8"
 thiserror.workspace = true
-regex.workspace = true
-indexmap = { version = "2", features = ["serde"] }
+dirs = "6"
 
 [dev-dependencies]
-tokio.workspace = true
-toml = "0.8"
+tempfile.workspace = true
 
 [lints]
 workspace = true

@@ -5,13 +5,18 @@
 //! custom auth (e.g. `OAuth` tokens). This shim maps rig's `CompletionRequest` →
 //! genai `ChatRequest`, calls `exec_chat`, and maps the response back.
 //!
-//! Tool definitions are mapped; tool calls in responses are mapped back. The shim
-//! is generic over any provider genai supports — the model name selects the
+//! Tool definitions are mapped; tool calls in responses are mapped back. Both the
+//! non-streaming (`exec_chat`) and streaming (`exec_chat_stream`) paths are
+//! implemented — `stream()` maps genai `ChatStreamEvent`s (text chunks, tool-call
+//! chunks, and the usage-carrying end event) to rig `RawStreamingChoice`s. The
+//! shim is generic over any provider genai supports — the model name selects the
 //! adapter (e.g. `claude-sonnet-4-6` → `Anthropic`, `gpt-5.4-mini` → `OpenAI`,
 //! `opencode_go::mimo-v2.5` → opencode zen).
 
+use futures::StreamExt as _;
 use genai::chat::{
-    ChatMessage, ChatOptions, ChatRequest, ChatResponse, ContentPart, Tool as GenAiTool,
+    ChatMessage, ChatOptions, ChatRequest, ChatResponse, ChatStreamEvent, ContentPart,
+    Tool as GenAiTool,
 };
 use genai::resolver::AuthResolver;
 use rig::OneOrMany;
@@ -20,7 +25,7 @@ use rig::completion::{
     AssistantContent, CompletionError, CompletionModel, CompletionRequest, CompletionResponse,
     Message,
 };
-use rig::streaming::StreamingCompletionResponse;
+use rig::streaming::{RawStreamingChoice, StreamingCompletionResponse};
 use serde::{Deserialize, Serialize};
 
 // ── Public types ────────────────────────────────────────────────────────────
@@ -81,15 +86,23 @@ pub struct GenAiResponse {
     pub output_tokens: u64,
 }
 
-/// Stub streaming response — streaming is not yet implemented.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// The terminal streaming payload carried by `RawStreamingChoice::FinalResponse`.
+/// Holds the captured token usage from genai's stream-end event so the Harness
+/// can bill it.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GenAiStreamChunk {
     pub text: Option<String>,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
 }
 
 impl rig::completion::GetTokenUsage for GenAiStreamChunk {
     fn token_usage(&self) -> rig::completion::Usage {
-        rig::completion::Usage::new()
+        let mut usage = rig::completion::Usage::new();
+        usage.input_tokens = self.input_tokens;
+        usage.output_tokens = self.output_tokens;
+        usage.total_tokens = self.input_tokens + self.output_tokens;
+        usage
     }
 }
 
@@ -128,11 +141,53 @@ impl CompletionModel for GenAiModel {
 
     async fn stream(
         &self,
-        _request: CompletionRequest,
+        request: CompletionRequest,
     ) -> Result<StreamingCompletionResponse<GenAiStreamChunk>, CompletionError> {
-        Err(CompletionError::ProviderError(
-            "streaming not implemented for genai shim".into(),
-        ))
+        let chat_req = to_genai_request(&request);
+        // Capture usage so the stream-end event carries token counts the Harness
+        // can bill.
+        let mut options = ChatOptions::default().with_capture_usage(true);
+        if let Some(temp) = request.temperature {
+            options = options.with_temperature(temp);
+        }
+        if let Some(max) = request.max_tokens {
+            options = options.with_max_tokens(u32::try_from(max).unwrap_or(u32::MAX));
+        }
+
+        let response = self
+            .client
+            .exec_chat_stream(&self.model, chat_req, Some(&options))
+            .await
+            .map_err(|e| CompletionError::ProviderError(e.to_string()))?;
+
+        // Map genai stream events → rig streaming choices lazily.
+        let mapped = response.stream.filter_map(|event| async move {
+            match event {
+                Ok(ChatStreamEvent::Chunk(c)) => Some(Ok(RawStreamingChoice::Message(c.content))),
+                Ok(ChatStreamEvent::ToolCallChunk(tc)) => Some(Ok(RawStreamingChoice::ToolCall(
+                    rig::streaming::RawStreamingToolCall::new(
+                        tc.tool_call.call_id,
+                        tc.tool_call.fn_name,
+                        tc.tool_call.fn_arguments,
+                    ),
+                ))),
+                Ok(ChatStreamEvent::End(end)) => {
+                    let usage = end.captured_usage.unwrap_or_default();
+                    Some(Ok(RawStreamingChoice::FinalResponse(GenAiStreamChunk {
+                        text: None,
+                        input_tokens: u64::try_from(usage.prompt_tokens.unwrap_or(0)).unwrap_or(0),
+                        output_tokens: u64::try_from(usage.completion_tokens.unwrap_or(0))
+                            .unwrap_or(0),
+                    })))
+                }
+                // Start / reasoning / thought-signature events carry nothing the
+                // Harness consumes.
+                Ok(_) => None,
+                Err(e) => Some(Err(CompletionError::ProviderError(e.to_string()))),
+            }
+        });
+
+        Ok(StreamingCompletionResponse::stream(Box::pin(mapped)))
     }
 }
 

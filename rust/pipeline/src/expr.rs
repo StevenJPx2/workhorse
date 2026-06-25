@@ -97,7 +97,10 @@ impl Expr {
             }
 
             Expr::Builtin { name } => match name.as_str() {
-                "always" => Ok(true),
+                // `paused` is the unconditional fallback edge: it holds when no
+                // real guard fired, so the stage never dead-stops. `never` is its
+                // opposite.
+                "paused" => Ok(true),
                 "never" => Ok(false),
                 _ => Err(ExprError::UnknownBuiltin(name.clone())),
             },
@@ -126,6 +129,15 @@ impl Expr {
 
             Expr::Not { inner } => Ok(!inner.evaluate(state)?),
         }
+    }
+
+    /// Whether this guard is an unconditional fallback (`builtin::paused` /
+    /// `builtin::never`) rather than a "real" condition over state/files. The
+    /// harness uses this to decide mid-run boundaries: only real guards end the
+    /// agent's work the moment they hold; fallbacks apply only at natural Done.
+    #[must_use]
+    pub fn is_fallback(&self) -> bool {
+        matches!(self, Expr::Builtin { .. })
     }
 
     /// The state keys this expression reads, for surfacing required inputs.

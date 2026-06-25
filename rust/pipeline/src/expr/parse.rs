@@ -225,7 +225,9 @@ impl<'a> Parser<'a> {
         }
         while self.pos < self.input.len() {
             let c = self.input.as_bytes()[self.pos];
-            if c.is_ascii_alphanumeric() || c == b'_' {
+            // `@` is allowed inside an identifier (after the first char) so a
+            // stage-relative state key like `count@entry` parses as one key.
+            if c.is_ascii_alphanumeric() || c == b'_' || c == b'@' {
                 self.pos += 1;
             } else {
                 break;

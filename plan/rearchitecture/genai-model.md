@@ -50,7 +50,9 @@ Steps are **idempotent**: each names an end-state contract plus its test. Verify
   `GenAiModel::new(client, model)` with `GenAiClient::default_client()` (reads provider env vars)
   or `GenAiClient::with_auth_resolver(resolver)` (custom OAuth). Maps rig messages → genai
   `ChatRequest`, tool definitions → genai `Tool`, and response `ContentPart` back to rig
-  `AssistantContent`. Streaming returns an error (not yet wired). Supports all 25+ genai providers:
+  `AssistantContent`. Streaming is wired too: `stream()` calls `exec_chat_stream` and maps genai
+  `ChatStreamEvent`s (text chunks → `Message`, tool-call chunks → `ToolCall`, the end event →
+  `FinalResponse` carrying captured usage) to rig `RawStreamingChoice`s. Supports all 25+ genai providers:
   `claude-sonnet-4-6`, `gpt-5.4-mini`, `gemini-3-flash-preview`, `groq::openai/gpt-oss-20b`,
   `opencode_go::mimo-v2.5`, etc. `genai = "0.7.0-beta.5"` added as optional dep behind `native`.
 

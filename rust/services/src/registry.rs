@@ -1,5 +1,6 @@
 //! Registry — collects services and builds a fresh `ToolSet` per run.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use tools::{RigToolBridge, ToolContext};
@@ -27,15 +28,31 @@ impl Registry {
     /// Run `setup` on every service, bridge contributed tools into a rig `ToolSet`.
     /// Each call returns an independent set — the registry stores services, not tools.
     pub async fn build_toolset(&self, ctx: &ToolContext) -> rig::tool::ToolSet {
+        self.build_toolset_with_state(ctx).await.0
+    }
+
+    /// Like [`Registry::build_toolset`], but also returns the auto-seed: the
+    /// state keys every contributed tool declares it controls (via
+    /// `Tool::produces`), each with its initial value. A tool owns the keys it
+    /// produces, so this is the authoritative initial run state — callers seed a
+    /// `WorkflowRun` from it instead of hand-writing seeds.
+    pub async fn build_toolset_with_state(
+        &self,
+        ctx: &ToolContext,
+    ) -> (rig::tool::ToolSet, HashMap<String, serde_json::Value>) {
         let mut toolset = rig::tool::ToolSet::default();
+        let mut produced = HashMap::new();
         for svc in &self.services {
             let contribution = svc.clone().setup(ctx).await;
             for tool in contribution.tools {
+                for (key, initial) in tool.produces() {
+                    produced.entry(key).or_insert(initial);
+                }
                 let bridge = RigToolBridge::new(tool, Arc::new(ctx.clone()));
                 toolset.add_tool(bridge);
             }
         }
-        toolset
+        (toolset, produced)
     }
 
     /// Run `teardown` on every service. Call when the run ends.
@@ -88,7 +105,8 @@ mod tests {
                 "get_count",
                 "Get the setup invocation count",
                 move |_args: (), _ctx| async move { Ok(ToolResult::ok(count.to_string())) },
-            );
+            )
+            .build();
             Contribution { tools: vec![tool] }
         }
 

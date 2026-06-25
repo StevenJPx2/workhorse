@@ -265,7 +265,13 @@ fn run_harness(st: &mut HarnessPanelState) {
             let model = MockCompletionModel::make(&client, "mock-model");
             let harness = Harness::new(model, ToolSet::builder().build(), HarnessConfig::default());
             let (tx, rx) = mpsc::channel();
-            let result = pollster::block_on(harness.run_step(&step, &st.task, None, &tx));
+            let result = pollster::block_on(harness.run_step(
+                &step,
+                &st.task,
+                None,
+                &runtime::no_epilogue,
+                &tx,
+            ));
             // Drain streamed events from the mock, accumulating text chunks.
             st.text_buffer.clear();
             for ev in rx.try_iter() {
@@ -333,7 +339,7 @@ fn spawn_anthropic(st: &mut HarnessPanelState, step: pipeline::compiler::StepCon
                     .await
                     .map_err(|e| e.to_string())?;
                 Harness::new(m, ToolSet::builder().build(), HarnessConfig::default())
-                    .run_step(&step, &task, None, &tx)
+                    .run_step(&step, &task, None, &runtime::no_epilogue, &tx)
                     .await
                     .map_err(|e| e.to_string())?;
                 Ok(())
@@ -344,7 +350,7 @@ fn spawn_anthropic(st: &mut HarnessPanelState, step: pipeline::compiler::StepCon
                     .await
                     .map_err(|e| e.to_string())?;
                 Harness::new(m, ToolSet::builder().build(), HarnessConfig::default())
-                    .run_step(&step, &task, None, &tx)
+                    .run_step(&step, &task, None, &runtime::no_epilogue, &tx)
                     .await
                     .map_err(|e| e.to_string())?;
                 Ok(())
@@ -370,7 +376,7 @@ fn spawn_openai_compat(st: &mut HarnessPanelState, step: pipeline::compiler::Ste
                 runtime::openai_compat_model(&base, &key, &model_id).map_err(|e| e.to_string())?;
             let harness = Harness::new(model, ToolSet::builder().build(), HarnessConfig::default());
             let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
-            rt.block_on(harness.run_step(&step, &task, None, &tx))
+            rt.block_on(harness.run_step(&step, &task, None, &runtime::no_epilogue, &tx))
                 .map_err(|e| e.to_string())?;
             Ok(())
         })();
@@ -386,6 +392,7 @@ fn send_error_or_done<E: std::fmt::Display>(
         let _ = tx.send(HarnessEvent::Done {
             output: format!("error: {e}"),
             usage: rig::completion::Usage::new(),
+            state: std::collections::HashMap::new(),
         });
     }
 }
@@ -415,7 +422,7 @@ fn describe(e: &HarnessEvent) -> String {
             icon::ARROW_BEND_DOWN_LEFT,
             if *truncated { " [truncated]" } else { "" }
         ),
-        HarnessEvent::Done { output, usage } => format!(
+        HarnessEvent::Done { output, usage, .. } => format!(
             "{} Done {a} {output:?} (tokens: {})",
             icon::CHECK_CIRCLE,
             usage.total_tokens

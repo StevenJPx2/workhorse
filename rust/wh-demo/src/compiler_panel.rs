@@ -13,37 +13,28 @@ use crate::widgets;
 
 pub(crate) const SAMPLE: &str = r#"name = "demo"
 version = "1"
+initial = "plan"
 
-[[states]]
-name = "plan"
-steps = ["draft"]
-[[states.exits]]
+[states.plan]
+prologue = "You are planning."
+epilogue = "List remaining todos."
+[[states.plan.exits]]
 when = "todo_count == 0"
 to = "review"
 epilogue = "Summarize the plan for review."
 
-[[states]]
-name = "review"
-steps = ["inspect"]
-[[states.exits]]
+[states.review]
+prologue = "You are reviewing."
+[[states.review.exits]]
 when = "status == \"approved\""
 to = "done"
 epilogue = "Approved - proceed."
-[[states.exits]]
+[[states.review.exits]]
 when = "status == \"changes_requested\""
 to = "plan"
 epilogue = "Address the requested changes."
 
-[[states]]
-name = "done"
-steps = []
-
-[steps.draft]
-prologue = "You are planning."
-epilogue = "List remaining todos."
-
-[steps.inspect]
-prologue = "You are reviewing."
+[states.done]
 "#;
 
 pub struct CompilerState {
@@ -99,8 +90,8 @@ pub fn ui(ui: &mut egui::Ui, st: &mut CompilerState) {
 
 fn render_stages(ui: &mut egui::Ui, program: &pipeline::WorkflowProgram) {
     ui.strong("compiled stages");
-    for stage in &program.config.states {
-        let exits = program.compiled_exits.get(&stage.name);
+    for (name, stage) in &program.config.states {
+        let exits = program.compiled_exits.get(name);
         let exit_count = exits.map_or(0, Vec::len);
         let terminal = if exit_count == 0 {
             format!("  {} terminal", icon::FLAG_CHECKERED)
@@ -108,14 +99,11 @@ fn render_stages(ui: &mut egui::Ui, program: &pipeline::WorkflowProgram) {
             String::new()
         };
         let dot = icon::DOT_OUTLINE;
+        let tools = stage.step.tools.len();
         egui::CollapsingHeader::new(format!(
-            "{} {dot} steps[{}] {dot} exits[{}]{}",
-            stage.name,
-            stage.steps.len(),
-            exit_count,
-            terminal
+            "{name} {dot} tools[{tools}] {dot} exits[{exit_count}]{terminal}"
         ))
-        .id_salt(format!("stage_{}", stage.name))
+        .id_salt(format!("stage_{name}"))
         .show(ui, |ui| {
             if let Some(exits) = exits {
                 for exit in exits {

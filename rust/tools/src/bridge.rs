@@ -73,7 +73,8 @@ mod tests {
             |args: GreetArgs, _ctx| async move {
                 Ok(crate::ToolResult::ok(format!("hello {}", args.name)))
             },
-        );
+        )
+        .build();
 
         let ctx = Arc::new(ToolContext::new("/tmp/wt"));
         let bridge = RigToolBridge::new(tool, ctx);
@@ -98,7 +99,8 @@ mod tests {
     async fn bridge_handles_null_args_for_unit_tools() {
         let tool = define_tool("ping", "Always pong", |_args: (), _ctx| async move {
             Ok(crate::ToolResult::ok("pong"))
-        });
+        })
+        .build();
 
         let ctx = Arc::new(ToolContext::new("/tmp/wt"));
         let bridge = RigToolBridge::new(tool, ctx);

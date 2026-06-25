@@ -7067,6 +7067,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 name = "pipeline"
 version = "0.1.0"
 dependencies = [
+ "indexmap 2.14.0",
  "regex",
  "serde",
  "serde_json",
@@ -8178,6 +8179,8 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
+ "toml 0.8.23",
+ "tools",
  "url",
 ]
 
@@ -10887,6 +10890,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "wh"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "pipeline",
+ "runtime",
+ "serde",
+ "thiserror 2.0.18",
+ "toml 0.8.23",
+]
+
+[[package]]
 name = "wh-demo"
 version = "0.1.0"
 dependencies = [
@@ -10903,8 +10918,10 @@ dependencies = [
  "serde_json",
  "services",
  "tokio",
+ "tokio-util",
  "toml 0.8.23",
  "tools",
+ "wh",
 ]
 
 [[package]]

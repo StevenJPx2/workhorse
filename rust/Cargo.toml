@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["tools", "sandbox", "pipeline", "runtime", "services", "wasm-probe"]
+members = ["tools", "sandbox", "pipeline", "runtime", "services", "wasm-probe", "wh"]
 # wh-demo is its own workspace (heavy egui/eframe deps) so the core test loop
 # stays fast. It path-depends on pipeline + runtime to wire the real crates.
 exclude = ["wh-demo"]

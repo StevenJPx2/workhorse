@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use pipeline::compiler::{ExitRule, StageConfig, StepConfig, WorkflowConfig};
+use pipeline::compiler::{ExitRule, StageConfig, WorkflowConfig};
 use pipeline::{WorkflowProgram, compile_stage};
 use runtime::{WorkflowError, WorkflowRun, WorkflowRunStep};
 use serde_json::{Value, json};
@@ -12,56 +12,54 @@ use serde_json::{Value, json};
 ///   `park_stage` --approved--> `done`                   (parks until approved)
 ///   `done`                                            (terminal, no exits)
 fn build_program() -> WorkflowProgram {
-    let mut steps = HashMap::new();
-    for id in ["a", "b", "p"] {
-        steps.insert(id.to_string(), StepConfig::default());
-    }
-
     let config = WorkflowConfig {
         name: "loop_park".into(),
         version: "1".into(),
-        states: vec![
-            StageConfig {
-                name: "stage_a".into(),
-                steps: vec!["a".into()],
-                exits: vec![ExitRule {
-                    when: "builtin::always".into(),
-                    to: "stage_b".into(),
-                    epilogue: None,
-                }],
-            },
-            StageConfig {
-                name: "stage_b".into(),
-                steps: vec!["b".into()],
-                exits: vec![
-                    ExitRule {
-                        when: "iteration_count >= 3".into(),
-                        to: "park_stage".into(),
+        initial: "stage_a".into(),
+        states: indexmap::IndexMap::from([
+            (
+                "stage_a".to_string(),
+                StageConfig {
+                    exits: vec![ExitRule {
+                        when: "builtin::paused".into(),
+                        to: "stage_b".into(),
                         epilogue: None,
-                    },
-                    ExitRule {
-                        when: "iteration_count < 3".into(),
-                        to: "stage_a".into(),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "stage_b".to_string(),
+                StageConfig {
+                    exits: vec![
+                        ExitRule {
+                            when: "iteration_count >= 3".into(),
+                            to: "park_stage".into(),
+                            epilogue: None,
+                        },
+                        ExitRule {
+                            when: "iteration_count < 3".into(),
+                            to: "stage_a".into(),
+                            epilogue: None,
+                        },
+                    ],
+                    ..Default::default()
+                },
+            ),
+            (
+                "park_stage".to_string(),
+                StageConfig {
+                    exits: vec![ExitRule {
+                        when: "approved".into(),
+                        to: "done".into(),
                         epilogue: None,
-                    },
-                ],
-            },
-            StageConfig {
-                name: "park_stage".into(),
-                steps: vec!["p".into()],
-                exits: vec![ExitRule {
-                    when: "approved".into(),
-                    to: "done".into(),
-                    epilogue: None,
-                }],
-            },
-            StageConfig {
-                name: "done".into(),
-                steps: vec![],
-                exits: vec![],
-            },
-        ],
-        steps,
+                    }],
+                    ..Default::default()
+                },
+            ),
+            ("done".to_string(), StageConfig::default()),
+        ]),
+        presets: std::collections::HashMap::new(),
     };
 
     compile_stage(&config).unwrap()
@@ -167,34 +165,35 @@ fn suspend_serializes_and_resumes_in_fresh_run() {
 
 #[test]
 fn run_stage_carries_fired_exit_epilogue_as_handoff() {
-    let mut steps = HashMap::new();
-    steps.insert("x".to_string(), StepConfig::default());
-    steps.insert("y".to_string(), StepConfig::default());
-
     let config = WorkflowConfig {
         name: "handoff".into(),
         version: "1".into(),
-        states: vec![
-            StageConfig {
-                name: "stage_x".into(),
-                steps: vec!["x".into()],
-                exits: vec![ExitRule {
-                    when: "builtin::always".into(),
-                    to: "stage_y".into(),
-                    epilogue: Some("summarise for verification".into()),
-                }],
-            },
-            StageConfig {
-                name: "stage_y".into(),
-                steps: vec!["y".into()],
-                exits: vec![ExitRule {
-                    when: "approved".into(),
-                    to: "done".into(),
-                    epilogue: None,
-                }],
-            },
-        ],
-        steps,
+        initial: "stage_x".into(),
+        states: indexmap::IndexMap::from([
+            (
+                "stage_x".to_string(),
+                StageConfig {
+                    exits: vec![ExitRule {
+                        when: "builtin::paused".into(),
+                        to: "stage_y".into(),
+                        epilogue: Some("summarise for verification".into()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "stage_y".to_string(),
+                StageConfig {
+                    exits: vec![ExitRule {
+                        when: "approved".into(),
+                        to: "done".into(),
+                        epilogue: None,
+                    }],
+                    ..Default::default()
+                },
+            ),
+        ]),
+        presets: std::collections::HashMap::new(),
     };
     let program = compile_stage(&config).unwrap();
 

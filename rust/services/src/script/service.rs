@@ -171,7 +171,8 @@ fn script_tools(svc: Arc<ScriptService>) -> Contribution {
             let cwd = ctx.cwd.clone();
             async move { Ok(run_tool(&svc, &cwd, args).await) }
         },
-    );
+    )
+    .build();
 
     let read_svc = svc.clone();
     let read = define_tool(
@@ -182,7 +183,8 @@ fn script_tools(svc: Arc<ScriptService>) -> Contribution {
             let svc = read_svc.clone();
             async move { Ok(read_tool(&svc, &args.name)) }
         },
-    );
+    )
+    .build();
 
     let write = define_tool(
         "write_script",
@@ -192,7 +194,8 @@ fn script_tools(svc: Arc<ScriptService>) -> Contribution {
             let svc = svc.clone();
             async move { Ok(write_tool(&svc, args)) }
         },
-    );
+    )
+    .build();
 
     Contribution {
         tools: vec![run, read, write],

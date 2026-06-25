@@ -65,6 +65,7 @@ async fn harness_sends_prologue_epilogue_and_handoff() {
             &step,
             "Break down the issue.",
             Some("handoff from verifier"),
+            &runtime::no_epilogue,
             &tx,
         )
         .await
@@ -110,7 +111,8 @@ async fn harness_drives_tool_round_trip() {
     toolset.add_tool(tools::RigToolBridge::new(
         tools::define_tool("echo", "Echo back", |args: EchoArgs, _ctx| async move {
             Ok(tools::ToolResult::ok(args.msg))
-        }),
+        })
+        .build(),
         Arc::new(tools::ToolContext::new("/tmp")),
     ));
 
@@ -145,7 +147,8 @@ async fn harness_enforces_max_turns() {
     toolset.add_tool(tools::RigToolBridge::new(
         tools::define_tool("loop", "Loops", |_args: (), _ctx| async move {
             Ok(tools::ToolResult::ok("looped"))
-        }),
+        })
+        .build(),
         Arc::new(tools::ToolContext::new("/tmp")),
     ));
 
@@ -205,7 +208,8 @@ async fn harness_truncates_tool_output() {
         tools::define_tool("big", "Big output", move |_args: (), _ctx| {
             let o = output.clone();
             async move { Ok(tools::ToolResult::ok(o)) }
-        }),
+        })
+        .build(),
         Arc::new(tools::ToolContext::new("/tmp")),
     ));
 

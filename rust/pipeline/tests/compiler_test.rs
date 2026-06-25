@@ -35,6 +35,89 @@ fn parse_numeric_comparison() {
 }
 
 #[test]
+fn stage_inherits_preset_with_explicit_fields_overriding() {
+    // A stage names `preset = "coding"`; the preset supplies tools + token_budget
+    // + prologue, the stage overrides the prologue and adds nothing else.
+    let cfg = r#"name = "p"
+version = "1"
+initial = "work"
+
+[presets.coding]
+prologue = "preset prologue"
+tools = ["fs_read", "fs_write"]
+token_budget = 9000
+
+[states.work]
+preset = "coding"
+prologue = "stage prologue wins"
+[states.done]
+"#;
+    let config: WorkflowConfig = toml::from_str(cfg).expect("toml");
+    let program = compile_stage(&config).expect("compile");
+    let work = program
+        .config
+        .states
+        .get("work")
+        .expect("work")
+        .step
+        .clone();
+
+    // Stage's explicit prologue wins; unset fields inherit the preset.
+    assert_eq!(work.prologue.as_deref(), Some("stage prologue wins"));
+    assert_eq!(
+        work.tools,
+        vec!["fs_read".to_string(), "fs_write".to_string()]
+    );
+    assert_eq!(work.token_budget, Some(9000));
+    // The preset marker is consumed after resolution.
+    assert!(work.preset.is_none());
+}
+
+#[test]
+fn merge_step_prefers_over_then_base() {
+    use pipeline::compiler::{StepConfig, merge_step};
+    let base = StepConfig {
+        prologue: Some("base".into()),
+        epilogue: Some("base-epi".into()),
+        tools: vec!["a".into()],
+        token_budget: Some(100),
+        ..Default::default()
+    };
+    let over = StepConfig {
+        prologue: Some("over".into()),
+        tools: vec![],      // empty -> inherit base
+        token_budget: None, // None -> inherit base
+        ..Default::default()
+    };
+    let merged = merge_step(&base, &over);
+    assert_eq!(merged.prologue.as_deref(), Some("over"));
+    assert_eq!(merged.epilogue.as_deref(), Some("base-epi"));
+    assert_eq!(merged.tools, vec!["a".to_string()]);
+    assert_eq!(merged.token_budget, Some(100));
+    assert!(merged.preset.is_none());
+}
+
+#[test]
+fn parse_entry_suffixed_state_key() {
+    // `count@entry` (stage-entry snapshot) parses as a single state key, and a
+    // comparison against it evaluates correctly via the augmented guard state.
+    let expr = parse_expr("count != count@entry").unwrap();
+    assert!(matches!(expr, Expr::Comparison { .. }));
+    assert_eq!(expr.known_keys(), vec!["count".to_string()]);
+
+    let mut state = std::collections::HashMap::new();
+    state.insert("count".to_string(), serde_json::json!(2));
+    state.insert("count@entry".to_string(), serde_json::json!(1));
+    assert!(
+        expr.evaluate(&state).unwrap(),
+        "2 != 1 -> changed this stage"
+    );
+
+    state.insert("count@entry".to_string(), serde_json::json!(2));
+    assert!(!expr.evaluate(&state).unwrap(), "2 != 2 -> unchanged");
+}
+
+#[test]
 fn parse_and_combinator() {
     let expr = parse_expr("a and b").unwrap();
     assert!(matches!(expr, Expr::And { .. }));
@@ -60,11 +143,11 @@ fn parse_parenthesized() {
 
 #[test]
 fn parse_builtin() {
-    let expr = parse_expr("builtin::always").unwrap();
+    let expr = parse_expr("builtin::paused").unwrap();
     assert_eq!(
         expr,
         Expr::Builtin {
-            name: "always".into()
+            name: "paused".into()
         }
     );
 }
@@ -145,7 +228,7 @@ fn evaluate_not() {
 
 #[test]
 fn evaluate_builtin_always() {
-    let expr = parse_expr("builtin::always").unwrap();
+    let expr = parse_expr("builtin::paused").unwrap();
     assert!(expr.evaluate(&HashMap::new()).unwrap());
 }
 
@@ -200,48 +283,41 @@ fn compile_workflow_with_exits() {
     let config = WorkflowConfig {
         name: "test".into(),
         version: "1".into(),
-        states: vec![
-            StageConfig {
-                name: "planning".into(),
-                steps: vec!["prompt".into()],
-                exits: vec![ExitRule {
-                    when: "todos_complete".into(),
-                    to: "implementing".into(),
-                    epilogue: None,
-                }],
-            },
-            StageConfig {
-                name: "implementing".into(),
-                steps: vec!["coder".into()],
-                exits: vec![ExitRule {
-                    when: "todos_complete".into(),
-                    to: "done".into(),
-                    epilogue: None,
-                }],
-            },
-        ],
-        steps: {
-            let mut m = HashMap::new();
-            m.insert(
-                "prompt".into(),
-                StepConfig {
-                    preset: Some("prompt".into()),
-                    prologue: Some("Enrich the issue".into()),
-                    epilogue: Some("Output the enriched prompt".into()),
-                    ..Default::default()
+        initial: "planning".into(),
+        states: indexmap::IndexMap::from([
+            (
+                "planning".to_string(),
+                StageConfig {
+                    step: StepConfig {
+                        preset: Some("prompt".into()),
+                        prologue: Some("Enrich the issue".into()),
+                        epilogue: Some("Output the enriched prompt".into()),
+                        ..Default::default()
+                    },
+                    exits: vec![ExitRule {
+                        when: "todos_complete".into(),
+                        to: "implementing".into(),
+                        epilogue: None,
+                    }],
                 },
-            );
-            m.insert(
-                "coder".into(),
-                StepConfig {
-                    preset: Some("coding".into()),
-                    prologue: Some("Implement the plan".into()),
-                    epilogue: None,
-                    ..Default::default()
+            ),
+            (
+                "implementing".to_string(),
+                StageConfig {
+                    step: StepConfig {
+                        preset: Some("coding".into()),
+                        prologue: Some("Implement the plan".into()),
+                        ..Default::default()
+                    },
+                    exits: vec![ExitRule {
+                        when: "todos_complete".into(),
+                        to: "done".into(),
+                        epilogue: None,
+                    }],
                 },
-            );
-            m
-        },
+            ),
+        ]),
+        presets: std::collections::HashMap::new(),
     };
 
     let program = compile_stage(&config).unwrap();
@@ -260,29 +336,19 @@ async fn build_and_run_stage_pipeline() {
     let config = WorkflowConfig {
         name: "test".into(),
         version: "1".into(),
-        states: vec![StageConfig {
-            name: "s1".into(),
-            steps: vec!["a".into(), "b".into()],
-            exits: vec![],
-        }],
-        steps: {
-            let mut m = HashMap::new();
-            m.insert(
-                "a".into(),
-                StepConfig {
+        initial: "s1".into(),
+        states: indexmap::IndexMap::from([(
+            "s1".to_string(),
+            StageConfig {
+                step: StepConfig {
                     prologue: Some("step A".into()),
-                    ..Default::default()
-                },
-            );
-            m.insert(
-                "b".into(),
-                StepConfig {
                     epilogue: Some("step B".into()),
                     ..Default::default()
                 },
-            );
-            m
-        },
+                exits: vec![],
+            },
+        )]),
+        presets: std::collections::HashMap::new(),
     };
 
     let program = compile_stage(&config).unwrap();
@@ -291,7 +357,7 @@ async fn build_and_run_stage_pipeline() {
     let input = json!({});
     let output = pipeline.call(input).await;
 
-    assert_eq!(output["step"], "b");
+    assert_eq!(output["stage"], "s1");
     assert_eq!(output["prologue"], "step A");
     assert_eq!(output["epilogue"], "step B");
 }

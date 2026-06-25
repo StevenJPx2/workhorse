@@ -15,6 +15,7 @@ pipeline = { path = "../pipeline" }
 runtime = { path = "../runtime" }              # default features (native) → full WorkflowRun
 tools = { path = "../tools" }
 services = { path = "../services" }            # real services (ScriptService, Registry)
+wh = { path = "../wh" }                          # facade: .workhorse config discovery + cascade
 sandbox = { path = "../sandbox" }              # LocalSandbox for dev script execution
 rig = "0.39"                                   # CompletionModel trait for the Harness panel/selfcheck
 serde = { version = "1", features = ["derive"] }
@@ -22,6 +23,7 @@ serde_json = "1"
 toml = "0.8"
 pollster = "0.3"                                # block_on for the async ValueOp pipeline demo (mock path)
 tokio = { version = "1", features = ["rt-multi-thread"] }  # real-model calls need a reactor
+tokio-util = "0.7"                                        # CancellationToken for the Cancel button
 async-trait = "0.1"
 eframe = "0.34"
 egui = "0.34"

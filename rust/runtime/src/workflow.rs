@@ -12,6 +12,12 @@ use serde_json::Value;
 pub struct WorkflowRun {
     current_stage: String,
     state: HashMap<String, Value>,
+    /// Snapshot of `state` taken when the current stage started running. Exit
+    /// guards can read a key's entry value as `<key>@entry`, so a guard like
+    /// `count != count@entry` means "this stage changed `count`" — the per-stage
+    /// "did this unit of work complete" signal.
+    #[serde(default)]
+    entry_state: HashMap<String, Value>,
     total_tokens: u64,
     token_budget: u64,
     phase: Phase,
@@ -57,6 +63,7 @@ impl WorkflowRun {
         Self {
             current_stage: initial_stage.into(),
             state: HashMap::new(),
+            entry_state: HashMap::new(),
             total_tokens: 0,
             token_budget,
             phase: Phase::ReadyToRun,
@@ -96,6 +103,9 @@ impl WorkflowRun {
                     })
                 } else {
                     self.phase = Phase::AwaitingResult;
+                    // Snapshot state as the stage starts, so its exit guards can
+                    // compare against `<key>@entry` (what changed this stage).
+                    self.entry_state = self.state.clone();
                     Ok(WorkflowRunStep::RunStage {
                         stage: self.current_stage.clone(),
                         handoff: self.pending_handoff.clone(),
@@ -164,6 +174,15 @@ impl WorkflowRun {
         self.phase = Phase::Cancelled;
     }
 
+    /// Override the handoff carried into the next stage's first turn. The
+    /// orchestrator uses this to replace the static exit epilogue with the
+    /// finishing agent's *response* to that epilogue (the live-session handoff),
+    /// so the next agent receives what the previous one actually produced. A
+    /// `None` clears it. No-op semantics otherwise mirror `pending_handoff`.
+    pub fn set_handoff(&mut self, handoff: Option<String>) {
+        self.pending_handoff = handoff;
+    }
+
     #[must_use]
     pub fn total_tokens(&self) -> u64 {
         self.total_tokens
@@ -190,12 +209,63 @@ impl WorkflowRun {
         }
     }
 
+    /// The state map exit guards evaluate against: the live `state` plus, for
+    /// every key in the stage-entry snapshot, a `<key>@entry` alias holding its
+    /// value when the stage started. This lets a guard express "what changed this
+    /// stage" (e.g. `count != count@entry`) without any engine-side delta math.
+    fn guard_state(&self) -> HashMap<String, Value> {
+        let mut map = self.state.clone();
+        for (k, v) in &self.entry_state {
+            map.insert(format!("{k}@entry"), v.clone());
+        }
+        map
+    }
+
+    /// Read-only preview: given deterministic state `updates` published so far
+    /// this stage, return the epilogue of the first **non-fallback** exit that
+    /// would fire — without mutating the run. The harness calls this after each
+    /// tool batch to detect "a real exit condition is now satisfied" mid-run, so
+    /// it can halt the agent's agenda at a boundary and ask the epilogue. Fallback
+    /// edges (`builtin::paused`/`never`) are ignored here — they apply only when
+    /// the agent finishes on its own, never to short-circuit it.
+    ///
+    /// Returns `Some(epilogue_text)` (possibly an empty string if the exit has no
+    /// epilogue) when a real guard holds, else `None`.
+    #[must_use]
+    pub fn resolve_pending_epilogue(
+        &self,
+        program: &WorkflowProgram,
+        updates: &HashMap<String, Value>,
+    ) -> Option<String> {
+        // Build the guard state as stage_complete would: current state + pending
+        // updates + the stage-entry `<key>@entry` aliases.
+        let mut guard_state = self.state.clone();
+        for (k, v) in updates {
+            guard_state.insert(k.clone(), v.clone());
+        }
+        for (k, v) in &self.entry_state {
+            guard_state.insert(format!("{k}@entry"), v.clone());
+        }
+
+        let exits = program.compiled_exits.get(&self.current_stage)?;
+        for exit in exits {
+            if exit.expr.is_fallback() {
+                continue;
+            }
+            if exit.expr.evaluate(&guard_state).unwrap_or(false) {
+                return Some(exit.epilogue.clone().unwrap_or_default());
+            }
+        }
+        None
+    }
+
     fn evaluate_exits(&mut self, program: &WorkflowProgram) -> Result<(), WorkflowError> {
+        let guard_state = self.guard_state();
         if let Some(exits) = program.compiled_exits.get(&self.current_stage) {
             for exit in exits {
                 let fired = exit
                     .expr
-                    .evaluate(&self.state)
+                    .evaluate(&guard_state)
                     .map_err(|e| WorkflowError::Gating(e.to_string()))?;
                 if fired {
                     self.current_stage = exit.to.clone();

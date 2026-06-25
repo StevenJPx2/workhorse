@@ -1,9 +1,10 @@
 # Core Rearchitecture
 
-> **Config model.** A workflow is a list of `[[states]]` — each a status with an
-> ordered `steps` list and `exits` — and routing is
-> `exits = [{ when = "<expr>", to = "<status>" }]` using the safe `when`
-> expression grammar. Config is authored and validated in idiomatic
+> **Config model.** A workflow is a top-level `initial` status plus a
+> `[states.<status>]` table — each a status with an ordered `steps` list and
+> ordered `[[states.<status>.exits]]` — and routing is each exit's
+> `{ when = "<expr>", to = "<status>" }` using the safe `when`
+> expression grammar (first match wins). Config is authored and validated in idiomatic
 > **snake_case** throughout (the schemas mirror the TOML; no case conversion).
 > Worked example: `packages/core-v2/src/config/example.ts` (run `bun packages/core-v2/scripts/config-smoke.ts`).
 
@@ -387,12 +388,12 @@ The Harness computes `(agent definition ∪ service contributions) ∩ step allo
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-A workflow is a collection of steps that are executed in sequence and can loop back to the beginning until the workflow is complete / solved.
+A workflow is a collection of stages that are executed and can loop back until the workflow is complete / solved.
 This is isolated in its own directory and is not allowed to step out of it. All the tools are made to work within this directory and `$XDG_STATE_HOME/workhorse/workflow/<issue-id>/`.
 
-**The workflow is linear; the only routing decision is the stage (status).** A **stage** (`[[states]]`) is one status with an ordered list of step ids. Its steps run **in declaration order**, looping back to the first step at the end. This positional flow is the _only_ intra-stage movement — a step never names "what runs next."
+**A stage IS its agent configuration plus its exits — there is no separate "step".** A **stage** (`[states.<status>]`) is one status carrying the agent config that runs there (prologue, epilogue, tools, services, token_budget, optional `preset`) and a set of `exits`. Running a stage runs that one agent. There is no intra-stage ordered step list: multiple agents that used to "loop within a status" are now expressed as **separate stages with exit edges between them** (e.g. `work` ↔ `memory_weaver`).
 
-**Only stages route, via `exits`.** A stage's `exits` are rules `{ when = "<expr>", to = "<status>", epilogue? = "<prompt>" }`, evaluated in order — **first match wins**. When an exit's `when` holds, control switches to the `to` status and lands on the **first step of that stage**, and the exit's optional `epilogue` (if set) is the handoff prompt for that transition (see below). There is no step-level routing. `to` must differ from the stage's own status (same-stage looping is already implicit) and resolve to a known status. A backward edge is just a `to` an earlier stage.
+**Only stages route, via `exits` — and exits express all looping.** A stage's `exits` are rules `{ when = "<expr>", to = "<status>", epilogue? = "<prompt>" }`, evaluated in order — **first match wins**. When an exit's `when` holds, control switches to the `to` status, and the exit's optional `epilogue` (if set) is the handoff for that transition (see below). `to` resolves to a known status; it **may point back to the same stage** to loop it, or to an earlier stage for a backward edge. A stage with no satisfied exit parks (see park states).
 
 The agent doesn't know about or control routing.
 
@@ -417,16 +418,11 @@ The Workflow checks external state (todo files on disk, git status, token count)
 
 **Workflow types are pure data (TOML/JSON).** Exit `when` rules use a fixed grammar of named built-ins, state keys, and comparisons — not arbitrary functions. Custom workflow types can be loaded from `.workhorse/workflows/`. `ralph` ships as a built-in.
 
-A step runs the Harness with a prologue (system prompt). When the step's run **resolves** — whether it finished cleanly (`done{completed}`) or was halted at a boundary by a firing exit (`done{interrupted}`) — the Workflow resolves routing and then sends the **handoff prompt that belongs to the chosen edge**. The agent's response to that prompt becomes the next step's prologue input. Each step creates a fresh agent session — no conversation history is shared between steps.
+A stage runs the Harness with its prologue (system prompt). While the agent works, the Workflow evaluates the stage's `exits` against the deterministic run state after each tool-call boundary. When a real (non-fallback) exit's `when` becomes satisfied, the Harness lets the in-flight tool call finish, then — in the finishing agent's **live session** (only it still holds the working context) — sends that exit's `epilogue` as one more prompt. **The agent's response to the epilogue becomes the handoff carried into the next stage** (composed ahead of any shared context the next stage reads). The fallback edge (`builtin::paused`) and a stage that finishes on its own are resolved at the agent's natural `done`. Each stage creates a fresh agent session — no raw conversation history is shared across stages; the epilogue response is the deliberate bridge.
 
-**The handoff (epilogue) is edge-scoped, not just step-scoped.** Which prompt is sent depends on where control goes next:
+**The handoff (epilogue) is edge-scoped.** It lives on the `ExitRule`, so it varies by **destination and reason**: because an exit's `when` _is_ the reason for leaving, the epilogue naturally reflects it — `token_budget_exceeded` can ask the agent to checkpoint partial progress, while `todos_complete` can ask it to summarise the finished work for the next stage.
 
-- **Stay in the stage** (advance to the next step in declaration order, or loop back to the first) → send the source `Step.epilogue`. This handoff varies by **source**, so it lives on the step (e.g. memory-weaver's epilogue feeds the coder).
-- **Leave the stage** (an exit's `when` held) → send that `ExitRule.epilogue`, falling back to `Step.epilogue` when the exit omits one. This handoff varies by **destination and reason** — the same exit, fired from any step in the stage, hands the same thing to the target's first step — so it lives on the exit.
-
-Because an exit's `when` _is_ the reason for leaving, the exit handoff naturally reflects it: `token_budget_exceeded` can ask the agent to checkpoint partial progress, while `todos_complete` can ask it to summarise the finished work for the next stage. This is also why the handoff is extracted in the finishing agent's **live session** (only it still holds the working context) rather than deferred to the next step, which has no session yet.
-
-Each step limits the tools, skills, and scripts available based on its allowlist configuration, not the current status alone.
+Each stage limits the tools, skills, and scripts available based on its own allowlist configuration, not the current status alone.
 
 **Plugin-injected pre-transition steps**: Plugins can register steps that run synchronously before the workflow's own steps when a status transition occurs (e.g. GitHub plugin injects a PR-creation step on transition to `in_review`).
 
@@ -444,7 +440,7 @@ A stage routes via its `exits`; each exit's `when` is a small, **safe boolean ex
 | `branch matches "^feat/"`      | pattern match          | regex/glob match            |
 | `todos_complete and git_clean` | composite              | mix names + state freely    |
 
-- **Built-in names** (fixed, core-owned): `todos_complete`, `token_budget_exceeded`, `step_idle`, `status_changed`, `review_settled`, `always`. A bad name is caught the moment the workflow loads.
+- **Built-in names** (fixed, core-owned): `todos_complete`, `token_budget_exceeded`, `step_idle`, `status_changed`, `review_settled`, `paused`. A bad name is caught the moment the workflow loads. `paused` is the unconditional fallback edge — it holds when no real guard fired, so a stage never dead-stops.
 - **State keys** are runtime-extensible: core ships `file_exists`, `git_clean`, `git_ahead`, `todo_count`, `token_used`, `iteration_count`, `status`, and plugins surface more (e.g. `checks_status`, `open_review_threads` for the review tail).
 - **Composites** are written inline with `and` / `or` / `not` — there is no separate composite table.
 
@@ -454,9 +450,9 @@ A stage routes via its `exits`; each exit's `when` is a small, **safe boolean ex
 
 **Load-time validation (workflow types are frozen at start — see Directory Layout).** At parse time the loader enforces:
 
-- step `id`s are unique within a workflow, and every id named by a stage exists;
+- `initial` names a declared stage;
 - every stage `name` is a known status;
-- every exit `to` resolves to a known status (or terminal `done`) and **differs from the owning stage's status** (same-stage exits are redundant and rejected);
+- every exit `to` resolves to a known status (or terminal `done`) — a `to` back to the owning stage is allowed (an explicit self-loop);
 - every `when` parses, and every built-in name, state key, and operator in it is known;
 - an exit's optional `epilogue`, if present, is a non-empty string;
 - **park-stage check** — a stage with no satisfiable exit is allowed only if it has an external route (`status_changed`, or `done` forced by an external hook). A stage with neither is flagged (it can never advance).
@@ -465,63 +461,58 @@ A workflow that fails validation is rejected before it runs.
 
 #### `workflow.toml` Example
 
-A workflow type is a plain TOML file placed in `.workhorse/workflows/<name>.toml` (or shipped as a built-in). It has two halves: the **stages** (`[[states]]` — the machine) on top, and a **step library** (`[steps.<id>]` — definitions referenced by id) below.
+A workflow type is a plain TOML file placed in `.workhorse/workflows/<name>.toml` (or shipped as a built-in). It is a map of **stages** (`[states.<status>]`, keyed by status name) — each carrying its own agent config and `exits` — plus a top-level `initial` naming the entry stage (the `states` table is keyed by name, so there is no implicit "first" stage). A stage's exits are written as ordered `[[states.<status>.exits]]` blocks — exit order is significant (first match wins).
 
-When a step sets `preset`, all fields (agent, model, prologue, epilogue, tools, token_budget, etc.) are inherited from that preset; any field on the step is an override. A step lists **no status** — the stage that names it decides where it runs. Steps sharing a stage run in **declaration order**, looping back to the stage's first step until an exit fires.
+When a stage sets `preset`, all fields (agent, model, prologue, epilogue, tools, token_budget, etc.) are inherited from that preset; any field on the stage is an override. Looping is expressed entirely through exit edges — a stage can route back to itself or to an earlier stage; two agents that alternate (e.g. coder ↔ memory-weaver) are two stages with exits between them.
 
 ```toml
 # .workhorse/workflows/ralph.toml
 name    = "ralph"
 version = "1"
+initial = "planning"                        # the entry stage (states is keyed by name)
 
-# ── stages: each runs its steps in order, looping, until an exit fires ──
-[[states]]
-name  = "planning"
-steps = ["prompt-engineer", "planner"]      # loops prompt → planner → prompt …
-exits = [{ when = "todos_complete", to = "implementing" }]
+# Each stage IS its agent config + exits. Looping is expressed by exit edges
+# (a stage can route back to itself or an earlier stage); two alternating agents
+# are two stages with exits between them.
 
-[[states]]
-name  = "implementing"
-steps = ["coder", "memory-weaver"]          # loops coder → memory → coder …
-exits = [
-  { when = "todos_complete", to = "ready_for_review",
-    epilogue = "Summarise the finished implementation against the goals, for verification." },
-]
+[states.planning]
+preset = "planning"                          # inherit shared agent config
+[[states.planning.exits]]
+when = "todos_complete"
+to   = "implementing"
 
-# ── step library: definitions only, referenced by id above ──
-[steps.prompt-engineer]
-preset = "prompt"
-
-[steps.planner]
-preset = "planning"
-
-[steps.coder]
+[states.implementing]
 preset       = "coding"
 token_budget = 150_000                       # override the preset for THIS workflow
+[[states.implementing.exits]]
+when     = "todos_complete"
+to       = "ready_for_review"
+epilogue = "Summarise the finished implementation against the goals, for verification."
+[[states.implementing.exits]]
+when = "builtin::paused"                      # not done yet → record learnings, then retry
+to   = "memory_weaver"
 
-  [[steps.coder.sub_agents]]
+  [[states.implementing.sub_agents]]
   name        = "researcher"
   model       = "claude-haiku-3"
   write_globs = []                           # read-only
   tools       = ["fs_read", "fs_grep", "fs_glob"]
 
-  [[steps.coder.sub_agents]]
-  name        = "tester"
-  model       = "claude-sonnet-4"
-  write_globs = ["**/*.test.ts", "**/*.spec.ts"]
-  tools       = ["fs_read", "fs_write", "fs_grep", "todo_list"]
-
-[steps.memory-weaver]
+[states.memory_weaver]
 preset = "memory"
 model  = "claude-haiku-3"                     # override: lighter model for summarisation
+[[states.memory_weaver.exits]]
+when     = "builtin::paused"
+to       = "implementing"
+epilogue = "Here is what was learned so far; continue with the next task."
 ```
 
-Memory-weaver declares no exit on its stage, so the implementing stage falls through it back to the coder (its first step) — the implementation iterates as coder → memory-weaver → coder …, and memory-weaver's epilogue becomes the coder's next prologue. The stage exits only when the coder's work satisfies `todos_complete → ready_for_review`.
+The `implementing` stage loops via exits: while work remains, `builtin::paused` routes to `memory_weaver`, which records learnings and routes back. The implementation iterates as `implementing → memory_weaver → implementing …`, and each transition's epilogue response feeds the next stage. It leaves the loop only when `todos_complete → ready_for_review` fires first.
 
-**Full override example** — a step can set every field directly instead of using a preset:
+**Full override example** — a stage can set every field directly instead of using a preset:
 
 ```toml
-[steps.custom-step]
+[states.custom]
 agent = "claude"
 model = "claude-sonnet-4"
 
@@ -536,8 +527,6 @@ Summarise what you did.
 tools = ["fs_read", "fs_write", "git_commit"]
 token_budget = 50_000
 ```
-
-(Where this step runs — and where it can route to — is decided by the stage that lists it, not by the step itself.)
 
 #### Example - Ralph Loop
 
@@ -593,7 +582,7 @@ The planning stage loops `prompt → planner → prompt` until the plan is ready
 
 #### Reusable Tail — `ready_for_review` & `in_review`
 
-The two stages after `implementing` are the same across most workflow types, so they are documented once here as a reusable pattern. A workflow type inherits them by declaring steps with these statuses (the PR step is injected by the GitHub plugin, not authored in the workflow).
+The two stages after `implementing` are the same across most workflow types, so they are documented once here as a reusable pattern. A workflow type inherits them by declaring stages with these statuses (the PR step is injected by the GitHub plugin, not authored in the workflow).
 
 ```
 implementing ──todos_complete──▶ ready_for_review ──pass──▶ in_review ──forced(done)──▶ done
@@ -605,7 +594,7 @@ implementing ──todos_complete──▶ ready_for_review ──pass──▶ 
 **`ready_for_review` — verification agent.** Runs final checks against the goals.
 
 - **Pass** → `to = "in_review"`. On this exit the **GitHub plugin injects a PR-creation step** (pre-transition, out-of-band — see Plugins).
-- **Fail** → honestly reports failures, then `to = "implementing"` (lands on the first step of `implementing`, i.e. coder).
+- **Fail** → honestly reports failures, then `to = "implementing"` (re-enters the `implementing` stage).
 
 **`in_review` — external review holding state.** On entry it turns on the available monitors and waits for external input to flood in (GitHub checks/comments, Jira change-requests).
 
@@ -616,31 +605,27 @@ implementing ──todos_complete──▶ ready_for_review ──pass──▶ 
 ```toml
 # Reusable tail (inheritable by any workflow type)
 
-[[states]]
-name  = "ready_for_review"
-steps = ["verifier"]
-exits = [
-  # checks pass — hand a verification summary to the reviewer
-  { when = "todos_complete", to = "in_review",
-    epilogue = "Summarise what was verified and the supporting evidence, for external review." },
-  # checks failed — hand the failures back to the coder
-  { when = 'checks_status != "passed"', to = "implementing",
-    epilogue = "List the failing checks and what must change to make them pass." },
-]
-
-[[states]]
-name  = "in_review"
-steps = ["reviewer"]
-# change requested (hook/Jira fed) — hand the requested changes back to the coder
-exits = [{ when = "open_review_threads > 0", to = "implementing",
-  epilogue = "Summarise the requested changes and open threads for the next implementation pass." }]
-# signed-off → no matching exit → the stage parks until an external hook forces `done`.
-
-[steps.verifier]
+[states.ready_for_review]
 preset = "verify"
+# checks pass — hand a verification summary to the reviewer
+[[states.ready_for_review.exits]]
+when     = "todos_complete"
+to       = "in_review"
+epilogue = "Summarise what was verified and the supporting evidence, for external review."
+# checks failed — hand the failures back to the coder
+[[states.ready_for_review.exits]]
+when     = 'checks_status != "passed"'
+to       = "implementing"
+epilogue = "List the failing checks and what must change to make them pass."
 
-[steps.reviewer]
+[states.in_review]
 preset = "review-monitor"
+# change requested (hook/Jira fed) — hand the requested changes back to the coder
+[[states.in_review.exits]]
+when     = "open_review_threads > 0"
+to       = "implementing"
+epilogue = "Summarise the requested changes and open threads for the next implementation pass."
+# signed-off → no matching exit → the stage parks until an external hook forces `done`.
 ```
 
 ### Harness
@@ -742,6 +727,22 @@ Steps can define **sub-agent templates** — named profiles with predefined cons
 - **Sub-agents cannot spawn sub-agents** — Always leaf nodes. One level deep only (parent → sub-agents).
 - **`ask_parent` tool** — Sub-agent calls `ask_parent(question)`; Harness pauses the sub-agent, routes the question to the parent via `notify()`, waits for the parent's response, and returns it. As a tool it is bound by the tool-timeout contract: if the parent goes idle, hits its token budget, or otherwise fails to answer before the timeout, the paused sub-agent is cancelled at the next tool-call boundary and the unanswered question surfaces in the parent's output (no deadlock).
 
+> **Status (built).** `runtime::spawn_subagent_tool(model, templates, leaf_tools, ctx, config)`
+> contributes a `spawn_subagent` tool. `StageConfig` (via `StepConfig`) carries
+> `sub_agents: Vec<SubAgentTemplate>` (`name`, optional `model`, `tools` ceiling, `write_globs`
+> ceiling). On call it looks up the named template, validates the requested narrowing ⊆ ceiling via
+> `resolve_permissions` (a tool/glob outside the ceiling is rejected as escalation), and builds a
+> fresh leaf `Harness` with only the granted tools plus an `ask_parent` tool. **One level deep** is
+> enforced structurally: the leaf's toolset is built from `leaf_tools`, which never contains
+> `spawn_subagent`.
+>
+> **`ask_parent`** is realized as a concurrent leaf + select loop: the leaf future and an ask-channel
+> are driven in one `tokio::select!` (no `tokio::spawn`, so it works under both tokio and the demo's
+> `pollster`). When the leaf calls `ask_parent(question)`, the loop runs one parent-model turn to
+> answer it (seeded with the delegated task) and replies; if the parent side is dropped (gave up /
+> over budget) the leaf's `ask_parent` returns an error result and the leaf continues — no deadlock.
+> Write-glob FS enforcement is still deferred (needs FS-tool path gating).
+
 #### Service
 
 For a lack of a better word, a service works pretty much like an MCP to the **harness**, however it is not tied to it.
@@ -827,7 +828,7 @@ Provides AST operations (rename, extract, etc.)
 
 **Sub-agent errors surface inline.** A failing sub-agent does **not** directly fail the parent step. Its failure returns as an **error `tool_result`** of the spawn/`ask_parent` call, so the parent agent sees it and decides how to proceed — consistent with the `ask_parent` timeout handling.
 
-**Crash recovery — status-granularity resume.** The Workflow persists **only the current `status`** to XDG state. On restart it re-enters that stage at its **first step**. Mid-step work is never resumed (steps are fresh-session anyway); the real work is carried by persisted memory/todos/L1 in XDG state, so re-running the stage from its first step picks up where it left off. Step id is intentionally not checkpointed.
+**Crash recovery — status-granularity resume.** Because `WorkflowRun` is the sans-IO state object (fully serializable), the orchestrator persists the **whole run** (current status + routing state + token total + phase) as JSON to `$XDG_STATE_HOME/workhorse/workflow/<issue-id>/run.json` after **each stage boundary** (`runtime::RunStore`, wired via `DriveOptions::with_persist`). On restart it rebuilds the `WorkflowProgram` from the frozen workflow TOML and `RunStore::load()`s the run to resume exactly where it left off. Mid-stage work is never resumed (stages are fresh-session anyway), so a crash loses at most the in-flight stage, which re-runs cleanly.
 
 ### Configuration Cascade
 
@@ -849,6 +850,14 @@ agent = "codex"
 
 This applies to every workflow that uses the `coding` preset. Explicit fields on an individual step still override the patched preset (step is most-specific).
 
+> **Status (preset→stage layer built).** `WorkflowConfig` carries `presets: HashMap<String,
+> StepConfig>` (`[presets.<name>]`). A stage with `preset = "<name>"` is resolved at `compile_stage`
+> time via `pipeline::merge_step(preset, stage_step)`: the stage's set scalar fields win and unset
+> ones inherit the preset; `Vec` fields (tools/services/sub_agents) take the stage's when non-empty,
+> else inherit the preset. The `WorkflowProgram` stores the fully-merged config, so the orchestrator
+> sees resolved stages. The remaining cascade layers (global, project `.workhorse/config.toml` preset
+> patches) belong with config-file discovery in the bootstrap slice.
+
 ### Orchestrator
 
 The Orchestrator owns the full bootstrap lifecycle. It creates **GlobalContext** — shared infrastructure and registries — then creates a **WorkflowContext** per workflow run. There is no shared mutable state between workflows.
@@ -861,6 +870,14 @@ The Orchestrator owns the full bootstrap lifecycle. It creates **GlobalContext**
 **WorkflowContext** holds per-run instances of services and agents, instantiated from the GlobalContext registries.
 
 **Issue intake** happens at the Orchestrator level, before a Workflow starts. The Orchestrator spawns a lightweight one-off agent (via AgentService) to fetch and structure issue details from any source (Jira MCP, GitHub MCP, etc.). The agent produces a structured JSON Issue object → DB record → worktree/branch creation → Workflow starts. Workflows are self-contained execution units and are not responsible for their own setup.
+
+> **Status (facade load path built).** The `wh` crate is the facade: `wh::prepare_workflow(cwd, home,
+> name)` discovers `<cwd>/.workhorse/workflows/<name>.toml` (falling back to `<home>`), layers the
+> global (`<home>/.workhorse/config.toml`) and project (`<cwd>/.workhorse/config.toml`) `[presets.*]`
+> patches into the workflow (global → project → workflow, later wins), and compiles to a runnable
+> `WorkflowProgram` — completing the config cascade. The caller supplies the model + service toolset
+> and drives with `runtime::run_with_limit`. The rest of the bootstrap (GlobalContext/WorkflowContext,
+> DB, hooks bus, issue intake, worktree creation) is deferred to the integrations that own it.
 
 ### Directory Layout & State
 

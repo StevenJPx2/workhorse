@@ -14,42 +14,40 @@ use serde_json::json;
 
 #[tokio::test]
 async fn workflow_handoff_reaches_the_model_request() {
-    // stage_a --always(epilogue)--> stage_b ; stage_b parks on `approved`.
-    let mut steps = HashMap::new();
-    steps.insert("a".to_string(), StepConfig::default());
-    steps.insert(
-        "b".to_string(),
-        StepConfig {
-            prologue: Some("You are the verifier.".into()),
-            epilogue: Some("Report pass or fail.".into()),
-            ..Default::default()
-        },
-    );
-
+    // stage_a --paused(epilogue)--> stage_b ; stage_b parks on `approved`.
     let config = WorkflowConfig {
         name: "seam".into(),
         version: "1".into(),
-        states: vec![
-            StageConfig {
-                name: "stage_a".into(),
-                steps: vec!["a".into()],
-                exits: vec![ExitRule {
-                    when: "builtin::always".into(),
-                    to: "stage_b".into(),
-                    epilogue: Some("implementation finished; verify against goals".into()),
-                }],
-            },
-            StageConfig {
-                name: "stage_b".into(),
-                steps: vec!["b".into()],
-                exits: vec![ExitRule {
-                    when: "approved".into(),
-                    to: "done".into(),
-                    epilogue: None,
-                }],
-            },
-        ],
-        steps,
+        initial: "stage_a".into(),
+        states: indexmap::IndexMap::from([
+            (
+                "stage_a".to_string(),
+                StageConfig {
+                    exits: vec![ExitRule {
+                        when: "builtin::paused".into(),
+                        to: "stage_b".into(),
+                        epilogue: Some("implementation finished; verify against goals".into()),
+                    }],
+                    ..Default::default()
+                },
+            ),
+            (
+                "stage_b".to_string(),
+                StageConfig {
+                    step: StepConfig {
+                        prologue: Some("You are the verifier.".into()),
+                        epilogue: Some("Report pass or fail.".into()),
+                        ..Default::default()
+                    },
+                    exits: vec![ExitRule {
+                        when: "approved".into(),
+                        to: "done".into(),
+                        epilogue: None,
+                    }],
+                },
+            ),
+        ]),
+        presets: std::collections::HashMap::new(),
     };
     let program = compile_stage(&config).unwrap();
 
@@ -81,13 +79,14 @@ async fn workflow_handoff_reaches_the_model_request() {
         HarnessConfig::default(),
     );
 
-    let step_config = &program.config.steps["b"];
+    let step_config = &program.config.states["stage_b"].step;
     let (tx, _rx) = std::sync::mpsc::channel();
     harness
         .run_step(
             step_config,
             "the verification task",
             handoff.as_deref(),
+            &runtime::no_epilogue,
             &tx,
         )
         .await

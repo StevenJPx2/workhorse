@@ -11,6 +11,7 @@ struct TypedTool<A, F> {
     name: &'static str,
     description: &'static str,
     schema: Value,
+    produces: Vec<(String, Value)>,
     handler: F,
     _marker: PhantomData<A>,
 }
@@ -39,20 +40,63 @@ where
             serde_json::from_value(args).or_else(|_| serde_json::from_value(Value::Null))?;
         (self.handler)(typed, ctx).await
     }
+
+    fn produces(&self) -> Vec<(String, Value)> {
+        self.produces.clone()
+    }
 }
 
-/// Build a typed tool from a name, description, and async handler, erasing it to
-/// `Arc<dyn Tool>` for heterogeneous storage and the rig `ToolSet` bridge.
+/// A typed tool under construction. Declare any state keys the tool controls with
+/// [`ToolBuilder::produces`], then `.build()` to erase it to `Arc<dyn Tool>`.
+#[must_use]
+pub struct ToolBuilder<A, F> {
+    name: &'static str,
+    description: &'static str,
+    schema: Value,
+    produces: Vec<(String, Value)>,
+    handler: F,
+    _marker: PhantomData<A>,
+}
+
+impl<A, F, Fut> ToolBuilder<A, F>
+where
+    A: JsonSchema + DeserializeOwned + Send + Sync + 'static,
+    F: Fn(A, &ToolContext) -> Fut + Send + Sync + 'static,
+    Fut: std::future::Future<Output = Result<ToolResult, ToolError>> + Send + 'static,
+{
+    /// Declare a workflow state key this tool controls, with its initial value.
+    /// The tool is the authority for this key; the system auto-seeds it and
+    /// validates that guards only read keys some in-scope tool produces.
+    pub fn produces(mut self, key: impl Into<String>, initial: Value) -> Self {
+        self.produces.push((key.into(), initial));
+        self
+    }
+
+    /// Finish building, erasing to `Arc<dyn Tool>`.
+    #[must_use]
+    pub fn build(self) -> Arc<dyn Tool> {
+        Arc::new(TypedTool {
+            name: self.name,
+            description: self.description,
+            schema: self.schema,
+            produces: self.produces,
+            handler: self.handler,
+            _marker: PhantomData,
+        })
+    }
+}
+
+/// Begin defining a typed tool from a name, description, and async handler. Chain
+/// [`ToolBuilder::produces`] for any state keys it controls, then `.build()`.
 ///
 /// # Panics
 /// Panics if JSON Schema generation for `A` fails, which is infallible for any
 /// valid `JsonSchema` type.
-#[must_use]
 pub fn define_tool<A, F, Fut>(
     name: &'static str,
     description: &'static str,
     handler: F,
-) -> Arc<dyn Tool>
+) -> ToolBuilder<A, F>
 where
     A: JsonSchema + DeserializeOwned + Send + Sync + 'static,
     F: Fn(A, &ToolContext) -> Fut + Send + Sync + 'static,
@@ -61,13 +105,14 @@ where
     let schema = serde_json::to_value(schemars::schema_for!(A))
         .expect("schema generation is infallible for valid types");
 
-    Arc::new(TypedTool {
+    ToolBuilder {
         name,
         description,
         schema,
+        produces: Vec::new(),
         handler,
         _marker: PhantomData,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -86,7 +131,8 @@ mod tests {
     async fn validates_args_before_execute() {
         let tool = define_tool("echo", "Echo a name", |args: EchoArgs, _ctx| async move {
             Ok(ToolResult::ok(args.name))
-        });
+        })
+        .build();
 
         let ctx = ToolContext::new("/tmp/wt");
         let result = tool
@@ -101,7 +147,8 @@ mod tests {
     async fn rejects_args_that_do_not_match_input() {
         let tool = define_tool("echo", "Echo a name", |args: EchoArgs, _ctx| async move {
             Ok(ToolResult::ok(args.name))
-        });
+        })
+        .build();
 
         let ctx = ToolContext::new("/tmp/wt");
         let result = tool.execute(serde_json::json!({ "name": 42 }), &ctx).await;
@@ -116,8 +163,10 @@ mod tests {
                 ok: true,
                 output: None,
                 error: None,
+                state: std::collections::HashMap::new(),
             })
-        });
+        })
+        .build();
 
         let ctx = ToolContext::new("/tmp/wt");
         let result = tool.execute(Value::Null, &ctx).await.unwrap();
@@ -127,7 +176,8 @@ mod tests {
             ToolResult {
                 ok: true,
                 output: None,
-                error: None
+                error: None,
+                state: std::collections::HashMap::new(),
             }
         );
     }
@@ -158,12 +208,32 @@ mod tests {
                 let n = c.increment();
                 Ok(ToolResult::ok(format!("count={n}")))
             }
-        });
+        })
+        .build();
 
         let ctx = ToolContext::new("/tmp/wt");
         tool.execute(Value::Null, &ctx).await.unwrap();
         tool.execute(Value::Null, &ctx).await.unwrap();
 
         assert_eq!(counter.count.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn produces_declares_owned_state_keys() {
+        let plain = define_tool("noop", "x", |_args: (), _ctx| async move {
+            Ok(ToolResult::ok("ok"))
+        })
+        .build();
+        assert!(plain.produces().is_empty());
+
+        let counter = define_tool("inc", "x", |_args: (), _ctx| async move {
+            Ok(ToolResult::ok("1"))
+        })
+        .produces("count", serde_json::json!(0))
+        .build();
+        assert_eq!(
+            counter.produces(),
+            vec![("count".to_string(), serde_json::json!(0))]
+        );
     }
 }

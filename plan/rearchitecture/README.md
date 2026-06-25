@@ -19,7 +19,7 @@ Slice plans (each = one vertical slice, idempotent steps with tests):
 | `genai-model.md` | ✅ real models wired — Harness generic over `M`; Anthropic (native Claude) + `OpenAI`-compat (opencode zen) + genai shim (25+ providers via `GenAiModel`) + OAuth PKCE. |
 | `registry-services.md` | ✅ done — services contribute tools via `Service` trait; `Registry` builds fresh `ToolSet` per run; teardown fires once per run. |
 | `scripts.md` | ✅ done — `ScriptService` (first real service): discovers `.sh` scripts, `run_script`/`read_script`/`write_script` tools, sandbox-mediated execution (`LocalSandbox` dev, `WasiSandbox` prod). |
-| `orchestrator.md` | planned — composes `WorkflowRun` × Harness end to end |
+| `orchestrator.md` | ✅ mostly done — `run_to_completion`/`run_with_limit` compose `WorkflowRun` × Harness; presets, deterministic-state routing, `@entry` guards, live-session epilogues, merged stage model. Remaining: park & resume + external events; token-budget threading. |
 
 Cross-cutting: **`demo.md`** — every slice ships a human-testable panel in `rust/wh-demo/`
 (native egui). `cargo run -p wh-demo` to poke it; `-- --selfcheck` for a headless proof.
@@ -28,23 +28,30 @@ Cross-cutting: **`demo.md`** — every slice ships a human-testable panel in `ru
 
 - **Spikes A–E: validated.** Tool bridge, sandbox boundary, config→pipeline + `when`, Harness
   driving `AgentRun`, `WorkflowRun` governor — all proven against real rig 0.39 / wasmtime 45.
-- **Seam: done.** A `StepConfig` plus an exit handoff produces a real model request end to end.
-- **Current test count: 68 + 2 `#[ignore]` real-model tests (Anthropic + opencode zen), all green.**
+- **Orchestrator: end to end.** `run_to_completion`/`run_with_limit` compose `WorkflowRun` (stage grain)
+  × Harness (step grain). Bundled `presets()` (`tiny`, `ralph-loop`); the Ralph loop iterates
+  `work ⇄ memory_weaver` and converges live. Routing is **deterministic** — tools publish
+  `ToolResult.state` (the agent never asserts routing state); tools own their keys via
+  `Tool::produces()`; guards can read the stage-entry snapshot `<key>@entry`; the chosen exit's
+  epilogue is asked in the finishing agent's live session and its response is the next handoff.
+- **Config model: merged.** `states` is a name-keyed map with a top-level `initial`; a **stage IS its
+  agent config + exits** (steps removed). Looping is exit-driven (`builtin::paused` fallback).
+- **Current test count: 88 + 2 `#[ignore]` real-model tests, all green; wh-demo +2.**
 - **Real models wired.** `Harness<M: CompletionModel>` is generic. Three real providers:
   **Anthropic** (`anthropic_model` via rig's native provider, `ANTHROPIC_API_KEY`, default
-  `claude-sonnet-4-6`), **`OpenAI`-compatible** (`openai_compat_model`, `OPENCODE_API_KEY`,
-  opencode zen `mimo-v2.5`), and **genai** (`GenAiModel` — 25+ providers via genai's native
-  protocol client, auth via provider env vars or custom `AuthResolver`). `resolve_provider_from_env()`
-  tries Anthropic first, then openai-compat, else Mock. The `opencode-anthropic-auth` plugin injects
-  `ANTHROPIC_API_KEY` via env vars, which the Rust side reads directly.
+  `claude-sonnet-4-6`; plus the OAuth/Pro-Max direct path in `anthropic_direct.rs` with real
+  content-block tool-calling), **`OpenAI`-compatible** (`openai_compat_model`, `OPENCODE_API_KEY`,
+  opencode zen `mimo-v2.5`), and **genai** (`GenAiModel` — 25+ providers; non-streaming + streaming both implemented).
+  `resolve_provider_from_env()` tries Anthropic first, then openai-compat, else Mock.
 - **Human-testable:** `rust/wh-demo/` (native egui) — panels for the `when` language, the
-  config→pipeline compiler, the `WorkflowRun` governor (run→park→resume→done), the **Harness**
-  (Mock/Real toggle — real uses Anthropic or openai-compat via `resolve_provider_from_env()`),
-  and the **Registry** — registers the real `ScriptService` and calls
-  `run_script`/`read_script`/`write_script` (each tool shows the description + JSON schema the
-  agent sees) against a live `.workhorse/scripts` dir, executing through the sandbox.
-  Build a fresh panel each slice (see `demo.md`).
-- **Next:** `orchestrator.md` — composes `WorkflowRun` × Harness end to end.
+  config→pipeline compiler, the `WorkflowRun` governor, the **Harness** (Mock/Real toggle), the
+  **Registry** (real `ScriptService`), the **Orchestrator** (run a preset workflow end to end — plus
+  a Cancel button, a persist-run + reload/resume-from-disk flow, a sub-agent/`ask_parent` demo, and a
+  `load from .workhorse` button driving the `wh` facade), and a drag-and-drop **Builder** (flowchart +
+  bidirectional TOML). `--orchestrate[=preset]` is a headless runner. Build a fresh panel each slice
+  (see `demo.md`).
+- **Next:** token-budget threading (close the flat-0 seam) → orchestrator park & resume + external
+  events (`orchestrator.md` step 3) → sub-agents (`spawn_subagent`/`ask_parent`).
 
 ## Crates (`rust/`)
 
@@ -52,23 +59,26 @@ Cross-cutting: **`demo.md`** — every slice ships a human-testable panel in `ru
 tools/     Tool model (define_tool) + rig ToolDyn bridge
 sandbox/   Sandbox trait + WasiSandbox (wasmtime + WASI preopen) + LocalSandbox (dev shell)
 pipeline/  Expr/`when` parser+evaluator + config→pipeline compiler
-runtime/   Harness (drives AgentRun) + WorkflowRun governor + step assembly + mock model
-services/  Service/Contribution contract + Registry + built-in services (ScriptService)
+runtime/   Harness (drives AgentRun) + WorkflowRun governor + Orchestrator + presets + sub-agents + persistence + step assembly + mock model
+services/  Service/Contribution contract + Registry + built-in services (ScriptService, ContextService)
+wh/        facade: .workhorse config discovery + preset cascade (global->project->workflow) + prepare_workflow
 wasm-probe/   tiny wasm fixture the sandbox tests run
-wh-demo/   native egui smoke-test app (its own workspace; path-deps pipeline + runtime + services)
+wh-demo/   native egui smoke-test app (its own workspace) — when/compiler/governor/harness/registry/orchestrator/builder panels + demo CounterService
 ```
 
-The `wh` facade and `macros` proc-macro crate are specced in `rust-port.md`, not yet built.
+The `wh` facade now exists (config discovery + preset cascade + `prepare_workflow`); the heavier
+bootstrap it will grow into (GlobalContext/WorkflowContext, DB, hooks bus, issue intake, worktree
+creation) is deferred to when those integrations land. The `macros` proc-macro crate is still specced
+in `rust-port.md`, not yet built.
 
 ## Build & test
 
-The repo pins `nightly-2026-01-08` + `wasm32-wasip1` via `rust/rust-toolchain.toml` (wasmtime 45
-needs rustc ≥ 1.93). A Homebrew `cargo` (1.96) sits first in `PATH` and **ignores** that file — it
-compiles the workspace fine but has no wasm target. Put the pinned toolchain first so plain `cargo`
-just works:
+The repo pins **`channel = "stable"`** + `wasm32-wasip1` via `rust/rust-toolchain.toml` (the code uses
+zero unstable features; wasmtime 45 needs rustc ≥ 1.93, so keep `rustup` updated). `unsafe_code =
+"forbid"` is enforced in both workspaces. CI lives at `.github/workflows/rust-ci.yml` (core + wh-demo
+jobs: `fmt --check` + `clippy --all-targets -D warnings` + `test`; wh-demo also runs `--selfcheck`).
 
 ```bash
-export PATH="$HOME/.rustup/toolchains/nightly-2026-01-08-aarch64-apple-darwin/bin:$PATH"
 cd rust
 cargo test                                          # full workspace
 cargo test -p runtime                              # one crate

@@ -11,8 +11,9 @@ thiserror.workspace = true
 pipeline = { path = "../pipeline" }
 
 # Native-only: the Harness drives rig's AgentRun over tokio. The sans-IO
-# `WorkflowRun` governor needs none of this, so it stays buildable for wasm
-# (the demo site) when `native` is disabled.
+# `WorkflowRun` governor needs none of this, so it stays buildable without
+# native deps when `native` is disabled (kept for potential headless/wasm
+# consumers).
 rig = { workspace = true, optional = true }
 futures = { version = "0.3", optional = true }     # StreamExt for streaming model responses
 reqwest = { version = "0.13", optional = true }   # HTTP backend (transitive via rig); named in AnthropicCompletionModel<reqwest::Client>
@@ -29,14 +30,18 @@ dirs = { version = "6", optional = true }
 url = { version = "2", optional = true }
 # genai: native-protocol multi-provider client (25+ providers)
 genai = { version = "0.7.0-beta.5", optional = true }
+# toml: parse the bundled WorkflowPreset configs (native orchestrator presets)
+toml = { version = "0.8", optional = true }
+# tools: leaf Tool primitive — runtime owns the `spawn_subagent` tool (native).
+tools = { path = "../tools", optional = true }
 
 [features]
 default = ["native"]
-native = ["dep:rig", "dep:futures", "dep:reqwest", "dep:schemars", "dep:async-trait", "dep:tokio", "dep:tokio-util", "dep:sha2", "dep:base64", "dep:rand", "dep:open", "dep:dirs", "dep:url", "dep:genai"]
+native = ["dep:rig", "dep:futures", "dep:reqwest", "dep:schemars", "dep:async-trait", "dep:tokio", "dep:tokio-util", "dep:sha2", "dep:base64", "dep:rand", "dep:open", "dep:dirs", "dep:url", "dep:genai", "dep:toml", "dep:tools"]
 
 [dev-dependencies]
 tempfile.workspace = true
-tools = { path = "../tools" }
+indexmap = "2"
 
 [lints]
 workspace = true

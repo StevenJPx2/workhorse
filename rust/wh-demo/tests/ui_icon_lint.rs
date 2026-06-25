@@ -21,6 +21,8 @@ const UI_SOURCES: &[&str] = &[
     "src/when_panel.rs",
     "src/compiler_panel.rs",
     "src/workflow_panel.rs",
+    "src/orchestrator_panel.rs",
+    "src/builder_panel.rs",
 ];
 
 #[test]

@@ -42,6 +42,7 @@ pub async fn run_command(
             } else {
                 out.stderr
             }),
+            state: std::collections::HashMap::new(),
         },
         Err(e) => ToolResult::fail(format!("Sandbox execution failed: {e}")),
     }
