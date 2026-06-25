@@ -30,18 +30,18 @@ dirs = { version = "6", optional = true }
 url = { version = "2", optional = true }
 # genai: native-protocol multi-provider client (25+ providers)
 genai = { version = "0.7.0-beta.5", optional = true }
-# toml: parse the bundled WorkflowPreset configs (native orchestrator presets)
-toml = { version = "0.8", optional = true }
 # tools: leaf Tool primitive — runtime owns the `spawn_subagent` tool (native).
 tools = { path = "../tools", optional = true }
 
 [features]
 default = ["native"]
-native = ["dep:rig", "dep:futures", "dep:reqwest", "dep:schemars", "dep:async-trait", "dep:tokio", "dep:tokio-util", "dep:sha2", "dep:base64", "dep:rand", "dep:open", "dep:dirs", "dep:url", "dep:genai", "dep:toml", "dep:tools"]
+native = ["dep:rig", "dep:futures", "dep:reqwest", "dep:schemars", "dep:async-trait", "dep:tokio", "dep:tokio-util", "dep:sha2", "dep:base64", "dep:rand", "dep:open", "dep:dirs", "dep:url", "dep:genai", "dep:tools"]
 
 [dev-dependencies]
 tempfile.workspace = true
 indexmap = "2"
+# toml: parse workflow-config fixtures in the orchestrator tests.
+toml = "0.8"
 
 [lints]
 workspace = true

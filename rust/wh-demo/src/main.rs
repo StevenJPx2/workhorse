@@ -12,6 +12,7 @@ mod compiler_panel;
 mod demo_counter;
 mod harness_panel;
 mod orchestrator_panel;
+mod presets;
 mod registry_panel;
 mod selfcheck;
 mod when_panel;
@@ -217,7 +218,7 @@ fn orchestrate_headless() -> eframe::Result {
     let want = std::env::args()
         .find_map(|a| a.strip_prefix("--orchestrate=").map(str::to_string))
         .unwrap_or_else(|| "ralph-loop".to_string());
-    let presets = runtime::presets();
+    let presets = crate::presets::presets();
     let preset = presets
         .iter()
         .find(|p| p.name == want)

@@ -75,7 +75,7 @@ impl Default for BuilderState {
 impl BuilderState {
     /// Load a bundled preset's config into the model and re-layout.
     fn load_preset(&mut self, idx: usize) {
-        let presets = runtime::presets();
+        let presets = crate::presets::presets();
         let Some(preset) = presets.get(idx) else {
             return;
         };
@@ -298,7 +298,7 @@ fn toolbar(ui: &mut egui::Ui, st: &mut BuilderState) {
         ui.strong(format!("{} workflow builder", icon::TREE_STRUCTURE));
         ui.separator();
 
-        let presets = runtime::presets();
+        let presets = crate::presets::presets();
         let mut chosen = st.preset_idx;
         egui::ComboBox::from_id_salt("builder_preset")
             .selected_text(format!("{} {}", icon::CARDS, presets[st.preset_idx].name))

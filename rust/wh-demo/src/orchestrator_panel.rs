@@ -118,7 +118,7 @@ pub struct OrchestratorState {
 
 impl Default for OrchestratorState {
     fn default() -> Self {
-        let preset = runtime::presets()[0];
+        let preset = crate::presets::presets()[0];
         Self {
             provider: Provider::Mock,
             preset_idx: 0,
@@ -146,7 +146,7 @@ impl Default for OrchestratorState {
 }
 
 /// Pretty-print a preset's seed map as JSON for the editable seed box.
-fn seed_json_for(preset: &runtime::WorkflowPreset) -> String {
+fn seed_json_for(preset: &crate::presets::WorkflowPreset) -> String {
     serde_json::to_string_pretty(&preset.seed()).unwrap_or_else(|_| "{}".to_string())
 }
 
@@ -182,7 +182,7 @@ impl OrchestratorState {
 
 /// Load a preset's config, task, and seed into the editable fields.
 fn load_preset(st: &mut OrchestratorState, idx: usize) {
-    let presets = runtime::presets();
+    let presets = crate::presets::presets();
     if let Some(preset) = presets.get(idx) {
         st.preset_idx = idx;
         st.config_toml = preset.config.to_string();
@@ -306,7 +306,7 @@ fn load_via_facade(st: &mut OrchestratorState) {
 }
 
 fn preset_selector(ui: &mut egui::Ui, st: &mut OrchestratorState) {
-    let presets = runtime::presets();
+    let presets = crate::presets::presets();
     ui.horizontal(|ui| {
         ui.strong(format!("{} preset:", icon::CARDS));
         let current = presets[st.preset_idx].name;
@@ -477,7 +477,7 @@ fn start_run(st: &mut OrchestratorState) {
     let initial = program.config.initial.clone();
     let task = st.task.clone();
 
-    let preset_name = runtime::presets()[st.preset_idx].name;
+    let preset_name = crate::presets::presets()[st.preset_idx].name;
     match st.provider {
         Provider::Mock => run_mock(st, &program, &initial, seed, &task, preset_name),
         Provider::Anthropic => spawn_anthropic(st, program, initial, seed, task),

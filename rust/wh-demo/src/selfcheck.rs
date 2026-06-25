@@ -261,7 +261,7 @@ fn check_orchestrator(check: &mut dyn FnMut(&str, bool)) {
     // Every bundled preset completes end to end — driven ONLY by the
     // deterministic counter tool (no @state, no agent-set routing state). The
     // counter OWNS `count` (Tool::produces), which auto-seeds the run.
-    for preset in runtime::presets() {
+    for preset in crate::presets::presets() {
         // The sub-agent preset needs a spawn_subagent tool (live model) — it has
         // its own dedicated check (`check_subagent`), so skip it in this
         // counter-only loop.
@@ -523,7 +523,7 @@ fn check_subagent(check: &mut dyn FnMut(&str, bool)) {
 
     // The bundled sub-agent preset: work spawns a leaf sub-agent, then marks the
     // to-do done via the counter; `count >= 1` routes to done.
-    let cfg = runtime::SUBAGENT_DEMO_CONFIG;
+    let cfg = crate::presets::SUBAGENT_DEMO_CONFIG;
     let config: WorkflowConfig = match toml::from_str(cfg) {
         Ok(c) => c,
         Err(e) => {
@@ -637,7 +637,7 @@ fn check_builder(check: &mut dyn FnMut(&str, bool)) {
                 .all(|((bn, b), (an, a))| bn == an && b.exits.len() == a.exits.len())
     }
 
-    for preset in runtime::presets() {
+    for preset in crate::presets::presets() {
         check(
             &format!(
                 "builder: preset `{}` model<->TOML preserves stages + exits",
