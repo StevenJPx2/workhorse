@@ -1,5 +1,11 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
-import { injectAuth, cloneRepo, runAgent } from "./agent-run";
+import {
+  injectAuth,
+  prepareWorkspace,
+  startWorkflow,
+  superviseWorkflow,
+  collectResult,
+} from "./agent-run";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
@@ -9,51 +15,58 @@ async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) 
   await env.TICKETS.put(id, JSON.stringify(rec));
 }
 
+/**
+ * Durable ticket lifecycle (coarse). The rich staged execution — per-stage
+ * tool gating, artifacts, budgets — happens INSIDE the sandbox, run by
+ * @agwab/pi-workflow from the baked `coding` spec (plan → implement).
+ */
 export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   async run(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
     const t = event.payload;
     const sandboxId = `ticket-${t.id}`;
 
-    // Stage 1: PLAN (read-only)
-    const plan = await step.do(
-      "plan",
-      { retries: { limit: 2, delay: "10 seconds", backoff: "exponential" }, timeout: "15 minutes" },
+    // Step 1: prepare — auth + repo + workflow bundle in the sandbox.
+    await step.do(
+      "prepare",
+      { retries: { limit: 2, delay: "10 seconds", backoff: "exponential" }, timeout: "10 minutes" },
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, t.accessToken);
-        await cloneRepo(this.env, sandboxId, t.repo);
-        const plan = await runAgent(
-          this.env,
-          sandboxId,
-          `Task: ${t.prompt}\n\nStudy this repository and produce a concise implementation plan: which files you will change and how, risks, and how you will verify. End with the exact list of files to be modified.`,
-          { readOnly: true },
-        );
-        await updateTicket(this.env, t.id, { plan });
-        return plan;
+        await prepareWorkspace(this.env, sandboxId, t.repo);
       },
     );
 
-    // Stage 2: IMPLEMENT (write allowed) — autonomous, no approval gate.
-    // (Human-in-the-loop placement is a later design decision; the spike
-    // proved step.waitForEvent works when we want it.)
-    const result = await step.do(
-      "implement",
-      { retries: { limit: 1, delay: "10 seconds" }, timeout: "30 minutes" },
+    // Step 2: start the pi-workflow run (returns its run id).
+    const runId = await step.do(
+      "start-workflow",
+      { retries: { limit: 1, delay: "10 seconds" }, timeout: "10 minutes" },
+      async () => startWorkflow(this.env, sandboxId, t.prompt),
+    );
+
+    // Step 3: supervise the staged graph to completion (plan → implement).
+    const wf = await step.do(
+      "supervise",
+      { retries: { limit: 2, delay: "30 seconds" }, timeout: "40 minutes" },
       async () => {
         await updateTicket(this.env, t.id, { status: "implementing" });
-        // Re-inject: the sandbox may have slept; token may have been rotated by dispatcher.
+        // Token may have aged if retries delayed us; re-inject before driving.
         await injectAuth(this.env, sandboxId, t.accessToken);
-        await cloneRepo(this.env, sandboxId, t.repo);
-        const out = await runAgent(
-          this.env,
-          sandboxId,
-          `Task: ${t.prompt}\n\nA plan already exists:\n${plan}\n\nImplement it now. Make the code changes. When done, run: git add -A && git diff --cached --stat  — and end your reply with that diff stat.`,
-        );
-        await updateTicket(this.env, t.id, { status: "done", result: out });
-        return out;
+        const res = await superviseWorkflow(this.env, sandboxId, runId);
+        if (res.status !== "completed") {
+          throw new Error(`pi-workflow run ${runId} ended ${res.status}`);
+        }
+        return res;
       },
     );
 
-    return { outcome: "done", plan, result };
+    // Step 4: collect artifacts (implement analysis + diff stat).
+    const result = await step.do("collect", { timeout: "5 minutes" }, async () => {
+      const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
+      const summary = `${diffStat}\n\n${analysis}`.trim();
+      await updateTicket(this.env, t.id, { status: "done", result: summary });
+      return summary;
+    });
+
+    return { outcome: "done", runId, tasks: wf.tasks, result };
   }
 }

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "coding",
+  "description": "Plan then implement a code change in the current repository. Plan stage is read-only; implement stage has write tools.",
+  "defaults": {
+    "agent": "coder",
+    "readOnly": false,
+    "thinking": "low",
+    "maxRuntimeMs": 1500000,
+    "worktreePolicy": "off"
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "plan",
+        "type": "single",
+        "readOnly": true,
+        "tools": ["read", "grep", "find", "ls"],
+        "prompt": "Study the repository and produce a concise implementation plan for the runtime task: which files change and how, repo conventions to follow, risks, and how to verify. End with the exact list of files to be created or modified.",
+        "output": {
+          "analysis": { "required": true },
+          "maxDigestChars": 2000
+        }
+      },
+      {
+        "id": "implement",
+        "type": "single",
+        "from": "plan",
+        "tools": ["read", "grep", "find", "ls", "edit", "write", "bash"],
+        "prompt": "Implement the upstream plan for the runtime task. Make the code changes now, following the plan and repo conventions. When done, verify with bash: git add -A && git diff --cached --stat, and include that diff stat in your analysis.",
+        "output": {
+          "analysis": { "required": true },
+          "maxDigestChars": 2000
+        }
+      }
+    ]
+  }
+}
