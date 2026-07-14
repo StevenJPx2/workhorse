@@ -5,6 +5,7 @@ import {
   startWorkflow,
   superviseWorkflow,
   collectResult,
+  collectActivity,
   deliverBranch,
 } from "./agent-run";
 import type { Env, TicketParams, TicketRecord } from "./types";
@@ -41,7 +42,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     const runId = await step.do(
       "start-workflow",
       { retries: { limit: 1, delay: "10 seconds" }, timeout: "10 minutes" },
-      async () => startWorkflow(this.env, sandboxId, t.prompt),
+      async () => {
+        const id = await startWorkflow(this.env, sandboxId, t.prompt);
+        await updateTicket(this.env, t.id, { runId: id });
+        return id;
+      },
     );
 
     // Step 3: supervise the staged graph to completion (plan → implement).
@@ -60,9 +65,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       },
     );
 
-    // Step 4: collect artifacts (implement analysis + diff stat).
+    // Step 4: collect artifacts (implement analysis + diff stat + activity trail).
     const result = await step.do("collect", { timeout: "5 minutes" }, async () => {
       const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
+      const activity = await collectActivity(this.env, sandboxId, runId);
+      await this.env.TICKETS.put(`activity:${t.id}`, activity);
       return `${diffStat}\n\n${analysis}`.trim();
     });
 

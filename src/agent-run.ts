@@ -85,6 +85,64 @@ export async function superviseWorkflow(
 }
 
 /**
+ * Collect the run's activity trail: per-task lifecycle events + subagent
+ * event streams (tool calls, heartbeats) from the pi-workflow run records.
+ * Returns a JSON string (rendered by the UI activity view).
+ */
+export async function collectActivity(
+  env: Env,
+  sandboxId: string,
+  runId: string,
+): Promise<string> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const script = `
+const fs = require("fs"), path = require("path");
+const repo = "/workspace/repo";
+const out = { runId: ${JSON.stringify(runId)}, tasks: [] };
+const readJsonl = (f, cap) => {
+  try {
+    const lines = fs.readFileSync(f, "utf8").trim().split("\\n");
+    return lines.slice(-cap).map(l => { try { return JSON.parse(l); } catch { return { raw: l.slice(0, 300) }; } });
+  } catch { return []; }
+};
+const wfDir = path.join(repo, ".pi/workflows", ${JSON.stringify(runId)});
+let run = {};
+try { run = JSON.parse(fs.readFileSync(path.join(wfDir, "run.json"), "utf8")); } catch {}
+out.status = run.status;
+const tasks = run.tasks ?? [];
+// run.json tasks carry specId only; on-disk dirs are task-1, task-2, … in
+// declaration order. Zip by index, but also fall back to dir enumeration.
+const subWf = path.join(repo, ".pi/workflow-subagents", ${JSON.stringify(runId)});
+let taskDirs = [];
+try { taskDirs = fs.readdirSync(subWf).filter(d => d.startsWith("task-")).sort((a,b)=>Number(a.slice(5))-Number(b.slice(5))); } catch {}
+taskDirs.forEach((dir, i) => {
+  const t = tasks[i] ?? {};
+  const task = { id: t.specId ?? dir, status: t.status ?? "unknown", startedAt: t.startedAt, completedAt: t.completedAt, events: [] };
+  const subRoot = path.join(subWf, dir);
+  try {
+    for (const runDir of fs.readdirSync(subRoot)) {
+      task.events.push(...readJsonl(path.join(subRoot, runDir, "events.jsonl"), 200));
+    }
+  } catch {}
+  const read = (f, cap) => { try { return fs.readFileSync(f, "utf8").slice(-cap); } catch { return null; } };
+  const tdir = path.join(wfDir, "tasks", dir);
+  task.prompt = read(path.join(tdir, "task.md"), 4000);
+  task.analysis = read(path.join(tdir, "analysis.md"), 6000);
+  task.output = read(path.join(tdir, "output.log"), 4000);
+  out.tasks.push(task);
+});
+console.log(JSON.stringify(out));
+`;
+  await sandbox.writeFile("/workspace/.collect-activity.cjs", script);
+  const result = await sandbox.exec(`node /workspace/.collect-activity.cjs 2>/dev/null | head -c 900000`, {
+    timeout: 60_000,
+  });
+  return result.exitCode === 0 && result.stdout.trim().startsWith("{")
+    ? result.stdout.trim()
+    : JSON.stringify({ runId, error: "activity unavailable", detail: result.stdout.slice(-300) });
+}
+
+/**
  * Deliver the change set: commit on a ticket branch and push using the
  * Worker-held GitHub token (never persisted in the sandbox — used inline
  * in the push URL for a single command). Returns branch + full diff.

@@ -88,6 +88,76 @@ export default {
       return json({ ticket: JSON.parse(raw), workflow: wfStatus });
     }
 
+    // Stop a running ticket: terminate the durable workflow instance.
+    const stopM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/stop$/);
+    if (stopM && request.method === "POST") {
+      const raw = await env.TICKETS.get(stopM[1]);
+      if (!raw) return json({ error: "not found" }, 404);
+      try {
+        const inst = await env.TICKET_WF.get(stopM[1]);
+        await inst.terminate();
+      } catch (e) {
+        return json({ error: `terminate failed: ${e instanceof Error ? e.message : e}` }, 500);
+      }
+      const rec = JSON.parse(raw);
+      rec.status = "terminated";
+      rec.error = "stopped by user";
+      rec.updatedAt = new Date().toISOString();
+      await env.TICKETS.put(stopM[1], JSON.stringify(rec));
+      return json({ ok: true });
+    }
+
+    // Fleet chat: a Pi session in a dedicated sandbox, armed with the
+    // workhorse extension tools (file/list/status/diff) so it can act.
+    if (url.pathname === "/chat" && request.method === "POST") {
+      const { messages } = (await request.json()) as {
+        messages: Array<{ role: string; content: string }>;
+      };
+      const stored = await env.TICKETS.get("auth:access");
+      const auth = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
+      if (!auth || auth.expires - Date.now() < 10 * 60 * 1000) {
+        return json({ error: "no fresh access token (custodian push stale?)" }, 503);
+      }
+      const sandbox = getSandbox(env.Sandbox, "fleet-chat");
+      await sandbox.writeFile(
+        "/root/.pi/agent/auth.json",
+        JSON.stringify({
+          anthropic: { type: "oauth", access: auth.access, refresh: "", expires: auth.expires },
+        }),
+      );
+      const history = messages
+        .map((m) => `${m.role === "user" ? "User" : "You"}: ${m.content}`)
+        .join("\n\n");
+      const prompt = `You are the Workhorse fleet operator agent, chatting with the user from the fleet dashboard.
+You have workhorse_* tools: list tickets, check a ticket's status/diff, and file new tickets (repo + prompt \u2192 autonomous staged run \u2192 GitHub PR).
+When the user wants work done, file a ticket. When they ask about progress, use the status tools and report crisply.
+Before proposing a fix for a recurring problem, check earlier tickets for prior solutions (workhorse_list_tickets + workhorse_ticket_status).
+Be concise. This is a chat: reply with your message only.\n\nConversation so far:\n${history}\n\nReply to the last user message.`;
+      await sandbox.writeFile("/workspace/.chat-prompt", prompt);
+      const result = await sandbox.exec(
+        `cd /workspace && WORKHORSE_URL=${JSON.stringify(url.origin)} WORKHORSE_TOKEN=${JSON.stringify(env.SPIKE_TOKEN)} timeout 180 pi -p -np "$(cat /workspace/.chat-prompt)" 2>&1 | tail -c 4000`,
+        { timeout: 200_000 },
+      );
+      if (result.exitCode !== 0) {
+        return json({ error: `chat agent failed: ${result.stdout.slice(-400)}` }, 500);
+      }
+      return json({ reply: result.stdout.trim() });
+    }
+
+    // Activity trail: persisted post-run; live-read from the sandbox while running.
+    const actM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/activity$/);
+    if (actM && request.method === "GET") {
+      const stored = await env.TICKETS.get(`activity:${actM[1]}`);
+      if (stored) return new Response(stored, { headers: { "content-type": "application/json" } });
+      const raw = await env.TICKETS.get(actM[1]);
+      if (!raw) return json({ error: "not found" }, 404);
+      const rec = JSON.parse(raw) as { runId?: string };
+      if (!rec.runId) return json({ runId: null, tasks: [], note: "run not started yet" });
+      const { collectActivity } = await import("./agent-run");
+      const live = await collectActivity(env, `ticket-${actM[1]}`, rec.runId);
+      return new Response(live, { headers: { "content-type": "application/json" } });
+    }
+
     // Full diff (persisted at delivery; survives sandbox death).
     const diffM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/diff$/);
     if (diffM && request.method === "GET") {

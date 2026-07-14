@@ -1,0 +1,1 @@
+{"version":3,"file":"chat.post.mjs","sources":["../../../../../server/api/chat.post.ts"],"names":["chat_post","defineEventHandler","async","event","body","readBody","workhorse","method","JSON","stringify"],"mappings":"wLAAA,MAAAA,EAAAC,EAAAC,MAAAC,IACA,MAAAC,QAAAC,EAAAF,GACA,OAAAG,EAAAH,EAAA,QAAA,CAAAI,OAAA,OAAAH,KAAAI,KAAAC,UAAAL"}

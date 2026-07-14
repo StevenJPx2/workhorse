@@ -1,0 +1,1 @@
+{"version":3,"file":"stop.post.mjs","sources":["../../../../../../../server/api/tickets/[id]/stop.post.ts"],"names":["stop_post","defineEventHandler","event","workhorse","getRouterParam","method"],"mappings":"mMAAA,MAAAA,EAAAC,EAAAC,GACAC,EAAAD,EAAA,YAAAE,EAAAF,EAAA,aAAA,CAAAG,OAAA"}

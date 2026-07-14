@@ -1,0 +1,14 @@
+{
+  "name": "workhorse-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "deploy": "nuxt build && wrangler deploy"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.9.0",
+    "nuxt": "^4.4.8"
+  }
+}

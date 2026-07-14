@@ -31,6 +31,7 @@ export interface TicketRecord {
   error?: string;
   branch?: string;
   prUrl?: string;
+  runId?: string;
 }
 
 export interface Env {

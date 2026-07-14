@@ -1,11 +1,13 @@
 {
-  "$comment": "Pi plugins baked into the sandbox image. `packages` are Pi extension packages (pin versions for fast-moving deps). `extensions` are local .ts extension files copied into ~/.pi/agent/extensions/. Tools contributed by any of these are OFF inside workflow runs unless a stage's tools[] allowlist names them (custom tools need an object spec with a classification) — stage gating is enforced by pi-workflow.",
+  "$comment": "Pi plugins baked into the sandbox image. `packages` are Pi extension packages (pin versions for fast-moving deps). `extensions` are local .ts extension files copied into ~/.pi/agent/extensions/. Tools contributed by any of these are OFF inside workflow runs unless a stage's tools[] allowlist names them (custom tools need an object spec with a classification) \u2014 stage gating is enforced by pi-workflow.",
   "packages": [
     "npm:@gotgenes/pi-anthropic-auth",
     "npm:@agwab/pi-workflow@0.8.0",
     "npm:@cortexkit/aft-pi"
   ],
-  "extensions": [],
+  "extensions": [
+    "extensions/workhorse.ts"
+  ],
   "settings": {
     "defaultProvider": "anthropic",
     "defaultModel": "claude-sonnet-4-6"
