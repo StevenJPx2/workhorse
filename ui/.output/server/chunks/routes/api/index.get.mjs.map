@@ -1,1 +1,0 @@
-{"version":3,"file":"index.get.mjs","sources":["../../../../../server/api/tickets/index.get.ts"],"names":["index_get","defineEventHandler","event","workhorse"],"mappings":"sLAAA,MAAAA,EAAAC,EAAAC,GAAAC,EAAAD,EAAA"}

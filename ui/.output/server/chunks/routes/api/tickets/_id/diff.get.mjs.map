@@ -1,1 +1,0 @@
-{"version":3,"file":"diff.get.mjs","sources":["../../../../../../../server/api/tickets/[id]/diff.get.ts"],"names":["diff_get","defineEventHandler","async","event","diff","workhorse","getRouterParam","String"],"mappings":"mMAAA,MAAAA,EAAAC,EAAAC,MAAAC,IACA,MAAAC,QAAAC,EAAAF,EAAA,YAAAG,EAAAH,EAAA,cACA,MAAA,CAAAC,KAAAG,OAAAH"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"activity.get.mjs","sources":["../../../../../../../server/api/tickets/[id]/activity.get.ts"],"names":["activity_get","defineEventHandler","event","workhorse","getRouterParam"],"mappings":"mMAAA,MAAAA,EAAAC,EAAAC,GACAC,EAAAD,EAAA,YAAAE,EAAAF,EAAA"}
