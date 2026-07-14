@@ -16,13 +16,30 @@ export default {
       return new Response("unauthorized", { status: 401 });
     }
 
+    // Token push from the MacBook custodian (fresh short-lived access token).
+    if (url.pathname === "/token" && request.method === "POST") {
+      const { access, expires } = (await request.json()) as { access: string; expires: number };
+      if (!access?.startsWith("sk-ant-oat")) return json({ error: "not an oauth access token" }, 400);
+      await env.TICKETS.put("auth:access", JSON.stringify({ access, expires }));
+      return json({ ok: true, expires });
+    }
+
     // ---- Ticket API (the Workhorse fleet surface) ----
 
     // File a ticket: creates registry record + durable workflow instance.
     if (url.pathname === "/tickets" && request.method === "POST") {
       const body = (await request.json()) as Partial<TicketParams>;
-      if (!body.repo || !body.prompt || !body.accessToken) {
-        return json({ error: "repo, prompt, accessToken required" }, 400);
+      if (!body.repo || !body.prompt) {
+        return json({ error: "repo, prompt required" }, 400);
+      }
+      if (!body.accessToken) {
+        // Fall back to the custodian-pushed token.
+        const stored = await env.TICKETS.get("auth:access");
+        const parsed = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
+        if (!parsed || parsed.expires - Date.now() < 10 * 60 * 1000) {
+          return json({ error: "no fresh access token available (custodian push stale?)" }, 503);
+        }
+        body.accessToken = parsed.access;
       }
       const id = crypto.randomUUID().slice(0, 8);
       const now = new Date().toISOString();
