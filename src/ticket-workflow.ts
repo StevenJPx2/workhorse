@@ -5,6 +5,7 @@ import {
   startWorkflow,
   superviseWorkflow,
   collectResult,
+  deliverBranch,
 } from "./agent-run";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
@@ -62,11 +63,56 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     // Step 4: collect artifacts (implement analysis + diff stat).
     const result = await step.do("collect", { timeout: "5 minutes" }, async () => {
       const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
-      const summary = `${diffStat}\n\n${analysis}`.trim();
-      await updateTicket(this.env, t.id, { status: "done", result: summary });
-      return summary;
+      return `${diffStat}\n\n${analysis}`.trim();
     });
 
-    return { outcome: "done", runId, tasks: wf.tasks, result };
+    // Step 5: deliver — branch, push, persist diff, open PR.
+    const delivery = await step.do(
+      "deliver",
+      { retries: { limit: 2, delay: "15 seconds" }, timeout: "10 minutes" },
+      async () => {
+        const { branch, diff, pushed } = await deliverBranch(
+          this.env,
+          sandboxId,
+          t.id,
+          t.repo,
+          t.title,
+        );
+        // Persist the full diff durably (survives sandbox death).
+        await this.env.TICKETS.put(`diff:${t.id}`, diff);
+        if (!pushed) {
+          await updateTicket(this.env, t.id, { status: "done", result, branch });
+          return { branch, prUrl: null, note: "push failed (no write access?) — diff persisted" };
+        }
+        const m = t.repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/)!;
+        const resp = await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/pulls`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+            accept: "application/vnd.github+json",
+            "user-agent": "workhorse",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            title: t.title,
+            head: branch,
+            base: "main",
+            body: `## Workhorse ticket ${t.id}\n\n**Task:** ${t.prompt}\n\n${result.slice(0, 3000)}\n\n---\n*Filed via Workhorse; staged run \`${runId}\` (plan \u2192 implement, per-stage tool gating).*`,
+          }),
+        });
+        const pr = (await resp.json()) as { html_url?: string; message?: string };
+        const prUrl = pr.html_url ?? null;
+        await updateTicket(this.env, t.id, {
+          status: "done",
+          result,
+          branch,
+          prUrl: prUrl ?? undefined,
+          error: prUrl ? undefined : `PR creation: ${pr.message ?? resp.status}`,
+        });
+        return { branch, prUrl };
+      },
+    );
+
+    return { outcome: "done", runId, tasks: wf.tasks, result, ...delivery };
   }
 }

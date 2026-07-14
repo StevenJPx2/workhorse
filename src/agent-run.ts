@@ -84,6 +84,46 @@ export async function superviseWorkflow(
   }
 }
 
+/**
+ * Deliver the change set: commit on a ticket branch and push using the
+ * Worker-held GitHub token (never persisted in the sandbox — used inline
+ * in the push URL for a single command). Returns branch + full diff.
+ */
+export async function deliverBranch(
+  env: Env,
+  sandboxId: string,
+  ticketId: string,
+  repo: string,
+  title: string,
+): Promise<{ branch: string; diff: string; pushed: boolean }> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const branch = `workhorse/${ticketId}`;
+  const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+  if (!m) throw new Error(`not a github repo: ${repo}`);
+  const pushUrl = `https://x-access-token:${env.GITHUB_TOKEN}@github.com/${m[1]}/${m[2]}.git`;
+
+  const commit = await sandbox.exec(
+    [
+      `cd /workspace/repo`,
+      `git checkout -B ${branch}`,
+      `git add -A`,
+      `git commit -m ${JSON.stringify(`${title} (workhorse ticket ${ticketId})`)} || true`,
+      `git diff HEAD~1 --patch | head -c 200000`,
+    ].join(" && "),
+    { timeout: 60_000 },
+  );
+  if (commit.exitCode !== 0) {
+    throw new Error(`commit failed: ${(commit.stderr || commit.stdout).slice(-500)}`);
+  }
+  const diff = commit.stdout.replace(/^.*?diff --git/s, "diff --git");
+
+  const push = await sandbox.exec(
+    `cd /workspace/repo && git push -f ${JSON.stringify(pushUrl)} ${branch}:${branch} 2>&1 | tail -3`,
+    { timeout: 120_000 },
+  );
+  return { branch, diff, pushed: push.exitCode === 0 };
+}
+
 /** Collect the final artifacts: implement-stage analysis + the git diff stat. */
 export async function collectResult(
   env: Env,

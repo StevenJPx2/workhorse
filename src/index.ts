@@ -48,6 +48,7 @@ export default {
       const list = await env.TICKETS.list();
       const tickets: TicketRecord[] = [];
       for (const key of list.keys) {
+        if (key.name.includes(":")) continue; // skip diff:<id> etc.
         const raw = await env.TICKETS.get(key.name);
         if (raw) tickets.push(JSON.parse(raw));
       }
@@ -68,6 +69,14 @@ export default {
         /* instance may not exist yet */
       }
       return json({ ticket: JSON.parse(raw), workflow: wfStatus });
+    }
+
+    // Full diff (persisted at delivery; survives sandbox death).
+    const diffM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/diff$/);
+    if (diffM && request.method === "GET") {
+      const diff = await env.TICKETS.get(`diff:${diffM[1]}`);
+      if (!diff) return json({ error: "no diff persisted" }, 404);
+      return new Response(diff, { headers: { "content-type": "text/x-diff" } });
     }
 
     // ---- Phase-0 debug endpoints (kept for ops) ----

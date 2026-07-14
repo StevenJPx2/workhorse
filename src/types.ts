@@ -29,6 +29,8 @@ export interface TicketRecord {
   plan?: string;
   result?: string;
   error?: string;
+  branch?: string;
+  prUrl?: string;
 }
 
 export interface Env {
@@ -36,4 +38,5 @@ export interface Env {
   TICKETS: KVNamespace;
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
+  GITHUB_TOKEN: string;
 }
