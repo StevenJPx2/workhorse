@@ -5,6 +5,15 @@ const id = route.params.id as string;
 const { data, refresh } = await useFetch<{
   ticket: Record<string, string | undefined>;
   workflow: { status?: string } | null;
+  live: {
+    phase?: string;
+    runId?: string;
+    status?: string;
+    note?: string;
+    outcome?: string;
+    at?: string;
+    tasks?: Array<{ id: string; status: string }>;
+  } | null;
 }>(`/api/tickets/${id}`);
 
 const { data: diffData } = await useFetch<{ diff: string }>(`/api/tickets/${id}/diff`, {
@@ -76,6 +85,15 @@ async function stop() {
 const running = computed(() =>
   ["queued", "planning", "implementing"].includes(data.value?.ticket?.status ?? ""),
 );
+const stoppable = computed(
+  () => running.value || data.value?.ticket?.status === "in-review",
+);
+function taskDot(status: string): string {
+  if (status === "completed") return "bg-success";
+  if (status === "failed" || status === "interrupted") return "bg-error";
+  if (status === "running") return "bg-primary animate-pulse";
+  return "bg-muted";
+}
 </script>
 
 <template>
@@ -85,7 +103,7 @@ const running = computed(() =>
       <h1 class="text-xl font-bold">{{ data.ticket.title }}</h1>
       <UBadge variant="subtle">{{ data.ticket.status }}</UBadge>
       <div class="ml-auto flex gap-2">
-        <UButton v-if="running" color="warning" variant="soft" icon="i-lucide-octagon-x" :loading="stopping" @click="stop">
+        <UButton v-if="stoppable" color="warning" variant="soft" icon="i-lucide-octagon-x" :loading="stopping" @click="stop">
           Stop
         </UButton>
         <UButton v-if="data.ticket.prUrl" :to="data.ticket.prUrl" target="_blank" icon="i-lucide-git-pull-request">
@@ -101,6 +119,25 @@ const running = computed(() =>
         <div v-if="data.ticket.branch"><span class="text-muted">branch:</span> {{ data.ticket.branch }}</div>
         <div v-if="data.ticket.error" class="text-error">{{ data.ticket.error }}</div>
       </div>
+    </UCard>
+
+    <UCard v-if="data.live">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">Live pipeline</div>
+          <span class="text-muted text-xs">
+            {{ data.live.phase }}{{ data.live.at ? ` · ${new Date(data.live.at).toLocaleTimeString()}` : "" }}
+          </span>
+        </div>
+      </template>
+      <div v-if="data.live.tasks?.length" class="flex flex-wrap items-center gap-3">
+        <div v-for="task in data.live.tasks" :key="task.id" class="flex items-center gap-1.5 text-sm">
+          <span class="size-2 rounded-full" :class="taskDot(task.status)" />
+          <span>{{ task.id }}</span>
+          <span class="text-muted text-xs">{{ task.status }}</span>
+        </div>
+      </div>
+      <div v-else class="text-muted text-sm">{{ data.live.note ?? data.live.outcome ?? "…" }}</div>
     </UCard>
 
     <UCard>

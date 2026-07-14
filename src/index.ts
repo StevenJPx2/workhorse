@@ -1,4 +1,6 @@
 import { getSandbox } from "@cloudflare/sandbox";
+import { appendEvents } from "./events";
+import { pluginFor } from "./plugins";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
 export { Sandbox } from "@cloudflare/sandbox";
@@ -9,8 +11,47 @@ function json(data: unknown, status = 200): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    // Webhooks authenticate via per-plugin signatures, not the bearer.
+    const hookM = url.pathname.match(/^\/webhooks\/([a-z0-9-]+)$/);
+    if (hookM && request.method === "POST") {
+      const plugin = pluginFor(hookM[1]);
+      if (!plugin) return json({ error: "unknown source" }, 404);
+      const rawBody = await request.text();
+      if (!(await plugin.verify(request, rawBody, env).catch(() => false))) {
+        return new Response("bad signature", { status: 401 });
+      }
+      let payload: unknown;
+      try {
+        payload = JSON.parse(rawBody);
+      } catch {
+        return json({ error: "not json" }, 400);
+      }
+      const events = await plugin.parse(request.headers, payload, env);
+      if (events.length > 0) {
+        await appendEvents(env, events);
+        // Wake with retries: a webhook can land in the small window between
+        // the workflow's pre-park event check and waitForEvent registration,
+        // where a single sendEvent is silently lost. Events are already in
+        // KV, so retried wakes are harmless (spurious wakes re-park).
+        const wake = async (ticketId: string) => {
+          for (let attempt = 0; attempt < 4; attempt++) {
+            try {
+              const inst = await env.TICKET_WF.get(ticketId);
+              await inst.sendEvent({ type: "external-event", payload: {} });
+            } catch {
+              /* not parked / already finished */
+            }
+            await new Promise((r) => setTimeout(r, 15_000));
+          }
+        };
+        ctx.waitUntil(Promise.all([...new Set(events.map((e) => e.ticketId))].map(wake)));
+      }
+      return json({ ok: true, events: events.length });
+    }
+
     const auth = request.headers.get("authorization") ?? "";
     if (auth !== `Bearer ${env.SPIKE_TOKEN}`) {
       return new Response("unauthorized", { status: 401 });
@@ -31,6 +72,10 @@ export default {
       const body = (await request.json()) as Partial<TicketParams>;
       if (!body.repo || !body.prompt) {
         return json({ error: "repo, prompt required" }, 400);
+      }
+      // Accept bare "owner/name" slugs as well as full git URLs.
+      if (/^[\w.-]+\/[\w.-]+$/.test(body.repo)) {
+        body.repo = `https://github.com/${body.repo}.git`;
       }
       if (!body.accessToken) {
         // Fall back to the custodian-pushed token.
@@ -85,7 +130,8 @@ export default {
       } catch {
         /* instance may not exist yet */
       }
-      return json({ ticket: JSON.parse(raw), workflow: wfStatus });
+      const live = await env.TICKETS.get(`live:${url.pathname.split("/")[2]}`);
+      return json({ ticket: JSON.parse(raw), workflow: wfStatus, live: live ? JSON.parse(live) : null });
     }
 
     // Stop a running ticket: terminate the durable workflow instance.

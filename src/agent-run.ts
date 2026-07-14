@@ -61,26 +61,27 @@ export async function startWorkflow(env: Env, sandboxId: string, task: string): 
 }
 
 /**
- * Drive the workflow graph to completion with the supervisor.
- * Idempotent: safe to re-run after a step retry.
+ * Drive the workflow graph forward for ONE short burst (~drainMs) and report
+ * status. Long-lived execs through the sandbox DO die silently, so the
+ * caller loops short bursts instead (idempotent, retry-safe).
  */
-export async function superviseWorkflow(
+export async function driveWorkflow(
   env: Env,
   sandboxId: string,
   runId: string,
-  timeoutMs = 1_500_000,
+  drainMs = 50_000,
 ): Promise<{ status: string; tasks: Array<{ id: string; status: string }> }> {
   const sandbox = getSandbox(env.Sandbox, sandboxId);
   const result = await sandbox.exec(
-    `cd /workspace/repo && timeout ${Math.floor(timeoutMs / 1000)} node ${PI_WORKFLOW_CLI} supervise ${runId} --poll-ms 5000 2>&1 | tail -3; ` +
+    `cd /workspace/repo && timeout ${Math.ceil(drainMs / 1000) + 10} node ${PI_WORKFLOW_CLI} supervise ${runId} --poll-ms 2000 --max-runtime-ms ${drainMs} >/dev/null 2>&1; ` +
       `node -e "const r=require('/workspace/repo/.pi/workflows/${runId}/run.json'); console.log(JSON.stringify({status:r.status, tasks:(r.tasks||[]).map(t=>({id:t.specId||t.id,status:t.status}))}))"`,
-    { timeout: timeoutMs + 60_000 },
+    { timeout: drainMs + 45_000 },
   );
   const lastLine = result.stdout.trim().split("\n").at(-1) ?? "";
   try {
     return JSON.parse(lastLine);
   } catch {
-    throw new Error(`supervise did not yield status: ${result.stdout.slice(-800)}`);
+    throw new Error(`drive did not yield status: ${result.stdout.slice(-800)}`);
   }
 }
 
@@ -140,6 +141,31 @@ console.log(JSON.stringify(out));
   return result.exitCode === 0 && result.stdout.trim().startsWith("{")
     ? result.stdout.trim()
     : JSON.stringify({ runId, error: "activity unavailable", detail: result.stdout.slice(-300) });
+}
+
+/** Ensure the ticket branch exists locally (fresh sandbox after a park). */
+export async function checkoutTicketBranch(
+  env: Env,
+  sandboxId: string,
+  repo: string,
+  branch: string,
+  githubToken: string,
+): Promise<void> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+  if (!m) throw new Error(`not a github repo: ${repo}`);
+  const authUrl = `https://x-access-token:${githubToken}@github.com/${m[1]}/${m[2]}.git`;
+  const result = await sandbox.exec(
+    [
+      `cd /workspace/repo`,
+      `git fetch ${JSON.stringify(authUrl)} ${branch}:refs/remotes/origin/${branch} 2>/dev/null || true`,
+      `git checkout -B ${branch} origin/${branch} 2>/dev/null || git checkout -B ${branch}`,
+    ].join(" && "),
+    { timeout: 60_000 },
+  );
+  if (result.exitCode !== 0) {
+    throw new Error(`branch checkout failed: ${(result.stderr || result.stdout).slice(-400)}`);
+  }
 }
 
 /**

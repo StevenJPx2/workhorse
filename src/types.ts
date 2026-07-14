@@ -23,7 +23,16 @@ export interface TicketRecord {
   title: string;
   repo: string;
   prompt: string;
-  status: "queued" | "planning" | "implementing" | "done" | "errored" | "terminated";
+  // Mirrors original Workhorse: done is ONLY set by an external source
+  // (PR merged / issue transition) — never by the agent.
+  status:
+    | "queued"
+    | "planning"
+    | "implementing"
+    | "in-review"
+    | "done"
+    | "errored"
+    | "terminated";
   createdAt: string;
   updatedAt: string;
   plan?: string;
@@ -40,4 +49,5 @@ export interface Env {
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
+  GITHUB_WEBHOOK_SECRET: string;
 }
