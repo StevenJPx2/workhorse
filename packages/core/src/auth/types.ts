@@ -121,10 +121,7 @@ export interface NoAuthProvider {
  * Union of all auth provider types.
  */
 export type AuthProvider =
-  | OAuthProvider
-  | ExternalProvider
-  | ApiTokenProvider
-  | NoAuthProvider;
+  OAuthProvider | ExternalProvider | ApiTokenProvider | NoAuthProvider;
 
 /**
  * Auth status for a plugin.

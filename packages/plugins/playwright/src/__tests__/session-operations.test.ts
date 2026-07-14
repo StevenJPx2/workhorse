@@ -27,8 +27,7 @@ const { screenshot, click, fill, getElement, getContent, evaluate } =
 // Create mock session manager
 const createMockSessionManager = (
   sessionState:
-    | { error: string }
-    | { session: { id: string }; connection: object },
+    { error: string } | { session: { id: string }; connection: object },
 ) => ({
   getSessionState: vi.fn(() => sessionState),
   getDefaultTimeout: vi.fn(() => 30000),

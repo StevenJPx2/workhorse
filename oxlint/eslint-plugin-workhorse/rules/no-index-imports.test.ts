@@ -29,9 +29,7 @@ function parseImportsAndExports(code: string): Array<{
 }> {
   const result: Array<{
     type:
-      | "ImportDeclaration"
-      | "ExportNamedDeclaration"
-      | "ExportAllDeclaration";
+      "ImportDeclaration" | "ExportNamedDeclaration" | "ExportAllDeclaration";
     source: { value: string; raw: string };
   }> = [];
 

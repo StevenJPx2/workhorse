@@ -129,15 +129,16 @@ export default definePlugin({
 - **Adapter plugins** — Register agent harnesses (Pi, Claude Code, Opencode)
 
 **Plugin Capabilities:**
-| Capability | API | Description |
-|-----------|-----|-------------|
-| Issue Parsers | `ctx.tracker.registerParser()` | Parse ticket keys/URLs into issues |
-| Monitors | `ctx.monitors.registerMonitor()` | Poll external services for changes |
-| Tools | `ctx.orchestrator.registerTool()` | Add functions agents can invoke |
-| Adapters | `ctx.orchestrator.registerAdapter()` | Register agent harness implementations |
-| Steering | `ctx.orchestrator.registerSteeringRule()` | Add idle agent behavior rules |
-| Prompt Context | `ctx.hooks.on("prompt.building")` | Inject context into agent prompts |
-| TUI Renderers | `ctx.hooks.emit("tui.register_renderer")` | Register activity renderers |
+
+| Capability     | API                                       | Description                            |
+| -------------- | ----------------------------------------- | -------------------------------------- |
+| Issue Parsers  | `ctx.tracker.registerParser()`            | Parse ticket keys/URLs into issues     |
+| Monitors       | `ctx.monitors.registerMonitor()`          | Poll external services for changes     |
+| Tools          | `ctx.orchestrator.registerTool()`         | Add functions agents can invoke        |
+| Adapters       | `ctx.orchestrator.registerAdapter()`      | Register agent harness implementations |
+| Steering       | `ctx.orchestrator.registerSteeringRule()` | Add idle agent behavior rules          |
+| Prompt Context | `ctx.hooks.on("prompt.building")`         | Inject context into agent prompts      |
+| TUI Renderers  | `ctx.hooks.emit("tui.register_renderer")` | Register activity renderers            |
 
 ### 4. HarnessOrchestrator (`workflow/orchestrator/`)
 

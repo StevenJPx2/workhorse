@@ -294,9 +294,7 @@ const jiraTool: OrchestratorTool = {
   name: "jira_add_comment",
   description: "Add a comment to a Jira issue",
   sources: ["jira"], // Only shown for Jira-sourced issues
-  schema: {
-    /* ... */
-  },
+  schema: {/* ... */},
   execute: async (args, ctx) => {
     /* ... */
   },
@@ -306,9 +304,7 @@ const multiSourceTool: OrchestratorTool = {
   name: "ticket_link",
   description: "Link to an external ticket",
   sources: ["jira", "github"], // Shown for both Jira and GitHub issues
-  schema: {
-    /* ... */
-  },
+  schema: {/* ... */},
   execute: async (args, ctx) => {
     /* ... */
   },
@@ -319,9 +315,7 @@ const globalTool: OrchestratorTool = {
   name: "workhorse_status",
   description: "Update issue status",
   // sources: undefined — available for all sources
-  schema: {
-    /* ... */
-  },
+  schema: {/* ... */},
   execute: async (args, ctx) => {
     /* ... */
   },
@@ -440,12 +434,13 @@ setup(config) {
 ```
 
 **Condition filters:**
-| Filter | Default | Description |
-|--------|---------|-------------|
-| `status` | `[]` (any) | Only evaluate when issue status is in this list |
-| `source` | `[]` (any) | Only evaluate when issue source is in this list |
-| `hook` | `[]` (none) | At least one of these hooks must have fired |
-| `when` | `async () => true` | Custom async condition function |
+
+| Filter   | Default            | Description                                     |
+| -------- | ------------------ | ----------------------------------------------- |
+| `status` | `[]` (any)         | Only evaluate when issue status is in this list |
+| `source` | `[]` (any)         | Only evaluate when issue source is in this list |
+| `hook`   | `[]` (none)        | At least one of these hooks must have fired     |
+| `when`   | `async () => true` | Custom async condition function                 |
 
 **Evaluation rules:**
 

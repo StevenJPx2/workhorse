@@ -206,7 +206,7 @@ class MyHarnessAdapter extends AgentAdapter {
   }
 
   override isRunning(): boolean {
-    return /* check if active */;
+    return; /* check if active */
   }
 }
 

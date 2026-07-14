@@ -25,9 +25,4 @@ export interface RenderedActivity {
 
 /** Color type for consistency across renderers. */
 export type ActivityColor =
-  | "info"
-  | "success"
-  | "warning"
-  | "error"
-  | "dim"
-  | "accent";
+  "info" | "success" | "warning" | "error" | "dim" | "accent";

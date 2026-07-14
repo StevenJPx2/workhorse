@@ -25,10 +25,7 @@ export function emitReviewHooks(
       issueId: issue.id,
       review: {
         state: review.state as
-          | "APPROVED"
-          | "CHANGES_REQUESTED"
-          | "COMMENTED"
-          | "DISMISSED",
+          "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED",
         author: review.user?.login ?? "unknown",
         body: review.body ?? "",
       },

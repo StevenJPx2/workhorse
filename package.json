@@ -35,7 +35,6 @@
     "@types/bun": "latest",
     "@vitest/coverage-v8": "^4.1.6",
     "changelogen": "^0.6.1",
-    "core-v2": "workspace:*",
     "fallow": "^2.71.1",
     "lint-staged": "^17.0.4",
     "node-plop": "^0.32.3",

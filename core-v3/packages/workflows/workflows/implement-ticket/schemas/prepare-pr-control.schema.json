@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": [
+    "schema",
+    "digest",
+    "prTitle",
+    "prBody",
+    "testPlan",
+    "changedFiles"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "minLength": 1 },
+    "prTitle": { "type": "string", "minLength": 1 },
+    "prBody": { "type": "string", "minLength": 1 },
+    "testPlan": { "type": "array", "items": { "type": "string" } },
+    "changedFiles": { "type": "array", "items": { "type": "string" } }
+  }
+}

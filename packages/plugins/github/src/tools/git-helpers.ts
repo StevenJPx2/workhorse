@@ -6,8 +6,7 @@
 
 /** Result of a git operation */
 export type GitResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 /** Parse owner/repo from a GitHub remote URL */
 export function parseGitHubRemote(

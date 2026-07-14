@@ -10,12 +10,7 @@ import type { getTheme } from "../../theme.ts";
 
 type Theme = ReturnType<typeof getTheme>;
 type ThemeColorKey =
-  | "success"
-  | "warning"
-  | "error"
-  | "dim"
-  | "info"
-  | "accent";
+  "success" | "warning" | "error" | "dim" | "info" | "accent";
 
 // ─── Agent State Configuration ───────────────────────────────────────────────
 // Single source of truth for agent state display properties

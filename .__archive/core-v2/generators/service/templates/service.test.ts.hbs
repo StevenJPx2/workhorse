@@ -1,0 +1,32 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, } from "node:fs"; import
+{ tmpdir } from "node:os"; import { join } from "node:path"; import { afterEach,
+beforeEach, describe, expect, it, vi } from "vitest"; import {
+{{upperSnakeCase name}}_DIR,
+{{pascalCase name}}Service } from "../{{kebabCase name}}"; import { context }
+from "../../__tests__/fixture"; let cwd = ""; function writeItem(name: string,
+body: string): void { const dir = join(cwd,
+{{upperSnakeCase name}}_DIR); mkdirSync(dir, { recursive: true });
+writeFileSync(join(dir, name), body); } async function contributedTools(ctx =
+context()) { const registered = vi.fn(); ctx.hooks.hook("tools:register",
+registered); const service = new
+{{pascalCase name}}Service(cwd); await service.setup(ctx); const tools = new
+Map( registered.mock.calls.flatMap(([p]) => p.tools.map((tool: { name: string })
+=> [tool.name, tool]), ), ); return { ctx, service, tools }; } beforeEach(() =>
+{ cwd = mkdtempSync(join(tmpdir(), "workhorse-{{kebabCase name}}-"));
+mkdirSync(join(cwd,
+{{upperSnakeCase name}}_DIR), { recursive: true }); }); afterEach(() => {
+rmSync(cwd, { force: true, recursive: true }); vi.restoreAllMocks(); });
+describe("{{pascalCase name}}Service", () => { it("scans
+{{upperSnakeCase name}}_DIR once on setup", async () => { writeItem("example",
+"content"); const service = new
+{{pascalCase name}}Service(cwd); await service.setup(context());
+expect(service.list().length).toBeGreaterThan(0); }); it("lists nothing when the
+directory is empty", async () => { const service = new
+{{pascalCase name}}Service(cwd); await service.setup(context());
+expect(service.list()).toEqual([]); }); it("clears the cache on teardown", async
+() => { writeItem("example", "content"); const service = new
+{{pascalCase name}}Service(cwd); await service.setup(context());
+service.teardown(); expect(service.list()).toEqual([]); }); }); describe("{{pascalCase
+  name
+}}Service tools", () => { it("emits tools:register on setup", async () => {
+const { tools } = await contributedTools(); expect(tools.size).toBe(0); }); });

@@ -1,0 +1,13 @@
+import { globSync } from "node:fs"; import { join } from "node:path"; import {
+diagnostics } from "#diagnostics"; import { define{{pascalCase name}}, type
+{{pascalCase name}}T } from "#schema"; export const
+{{upperSnakeCase name}}_DIR = join(".workhorse", "{{kebabCase name}}s"); export
+function discover{{pascalCase name}}s(cwd: string):
+{{pascalCase name}}T[] { const items:
+{{pascalCase name}}T[] = []; const dir = join(cwd,
+{{upperSnakeCase name}}_DIR); for (const file of globSync("*", { cwd: dir })) {
+const path = join(dir, file); try { items.push( define{{pascalCase name}}({ //
+TODO: parse `path` and populate fields name: file, }), ); } catch (error) {
+diagnostics.WH_{{upperSnakeCase name}}_INVALID( { detail: error instanceof Error
+? error.message : String(error), path, }, { method: "error" }, ); } } return
+items; }

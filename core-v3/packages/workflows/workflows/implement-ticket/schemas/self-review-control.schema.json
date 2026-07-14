@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["schema", "digest", "reviewStatus", "blockingIssues"],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "minLength": 1 },
+    "reviewStatus": { "type": "string", "enum": ["complete", "needs-work"] },
+    "blockingIssues": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}
