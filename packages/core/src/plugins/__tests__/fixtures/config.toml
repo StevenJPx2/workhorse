@@ -1,2 +1,0 @@
-# Dummy config file for tests
-# This file exists so that dirname(globalConfig)/plugins points to ./plugins/

@@ -1,58 +1,21 @@
 {
-  "name": "workhorse-monorepo",
-  "version": "0.1.1",
+  "name": "workhorse",
+  "version": "0.1.0",
+  "type": "module",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "packages/plugins/*",
-    "oxlint/*"
-  ],
+  "description": "Controllable autonomous coding agents — Cloudflare-native fleet orchestrator (Sandbox + Workflows + Pi on Claude subscription)",
   "scripts": {
-    "dev": "cd packages/tui && bun run dev",
-    "test": "bun run --filter '*' test",
-    "build": "bun run --filter '*' build",
-    "build:all": "bun run --filter workhorse-core build && bun run build:plugins && bun run build:tui:prod",
-    "build:plugins": "bun scripts/build-plugins.ts",
-    "build:tui": "bun scripts/build-tui",
-    "build:tui:prod": "bun scripts/build-tui --minify --no-sourcemap",
-    "typecheck": "bun run --filter '*' typecheck",
-    "lint": "oxlint . --ignore-pattern 'packages/tui-worktrees/**'",
-    "lint:fix": "oxlint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run fallow",
-    "prepare": "simple-git-hooks || true",
-    "fallow": "fallow",
-    "fallow:dead": "fallow dead-code",
-    "fallow:dupes": "fallow dupes",
-    "fallow:health": "fallow health",
-    "fallow:audit": "fallow audit",
-    "changelog": "changelogen",
-    "release": "changelogen --release",
-    "release:publish": "changelogen --release --publish"
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "^0.12.3"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@vitest/coverage-v8": "^4.1.6",
-    "changelogen": "^0.6.1",
-    "core-v2": "workspace:*",
-    "fallow": "^2.71.1",
-    "lint-staged": "^17.0.4",
-    "node-plop": "^0.32.3",
-    "oxlint": "^1.64.0",
-    "plop": "^4.0.5",
-    "prettier": "^3.5.3",
-    "simple-git-hooks": "^2.13.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.6"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "bunx lint-staged"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "prettier --write",
-      "oxlint"
-    ]
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.110.0"
   }
 }
