@@ -204,6 +204,20 @@ Be concise. This is a chat: reply with your message only.\n\nConversation so far
       return new Response(live, { headers: { "content-type": "application/json" } });
     }
 
+    // Durable trace archive: every run ever executed for a ticket (immutable;
+    // activity is the "latest" pointer, traces are the history for evals).
+    const trIdxM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces$/);
+    if (trIdxM && request.method === "GET") {
+      const idx = await env.TICKETS.get(`traces:${trIdxM[1]}`);
+      return new Response(idx ?? "[]", { headers: { "content-type": "application/json" } });
+    }
+    const trM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces\/(workflow_[a-z0-9_]+)$/);
+    if (trM && request.method === "GET") {
+      const trace = await env.TICKETS.get(`trace:${trM[1]}:${trM[2]}`);
+      if (!trace) return json({ error: "no trace" }, 404);
+      return new Response(trace, { headers: { "content-type": "application/json" } });
+    }
+
     // Full diff (persisted at delivery; survives sandbox death).
     const diffM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/diff$/);
     if (diffM && request.method === "GET") {

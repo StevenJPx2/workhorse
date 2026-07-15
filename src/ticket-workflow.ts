@@ -31,6 +31,36 @@ async function setLive(env: Env, ticketId: string, live: Record<string, unknown>
 }
 
 /**
+ * Durable trace archive for optimization mining + evals: one immutable
+ * record per pi-workflow run (activity:<id> is a "latest" pointer that gets
+ * overwritten each revision; traces never are). Key: trace:<ticket>:<run>.
+ * Also maintains a per-ticket run index at traces:<ticket>.
+ */
+async function archiveTrace(
+  env: Env,
+  ticketId: string,
+  runId: string,
+  kind: string,
+  activity: string,
+): Promise<void> {
+  try {
+    const at = new Date().toISOString();
+    await env.TICKETS.put(
+      `trace:${ticketId}:${runId}`,
+      JSON.stringify({ ticketId, runId, kind, archivedAt: at, activity: JSON.parse(activity) }),
+    );
+    const idxRaw = await env.TICKETS.get(`traces:${ticketId}`);
+    const idx = idxRaw ? (JSON.parse(idxRaw) as Array<Record<string, string>>) : [];
+    if (!idx.some((e) => e.runId === runId)) {
+      idx.push({ runId, kind, archivedAt: at });
+      await env.TICKETS.put(`traces:${ticketId}`, JSON.stringify(idx));
+    }
+  } catch (err) {
+    console.warn(`trace archive failed for ${ticketId}:${runId}:`, err);
+  }
+}
+
+/**
  * Durable ticket lifecycle mirroring original Workhorse statuses:
  *   planning → implementing → in-review → done
  * "done" is ONLY reachable via an external signal (PR merged/closed) —
@@ -60,6 +90,12 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         async () => {
           const r = await driveWorkflow(this.env, sandboxId, runId);
           await setLive(this.env, ticketId, { phase: label, runId, ...r });
+          // Mirror the running pipeline stage onto the ticket status:
+          // verify/fix stages = the adversarial "ready-for-review" pass.
+          const active = r.tasks.find((t) => t.status === "running")?.id ?? "";
+          if (/^(verify|fix)\./.test(active)) {
+            await updateTicket(this.env, ticketId, { status: "ready-for-review" });
+          }
           return r;
         },
       );
@@ -109,6 +145,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
       const activity = await collectActivity(this.env, sandboxId, runId);
       await this.env.TICKETS.put(`activity:${t.id}`, activity);
+      // Durable trace archive: one immutable record per run, never overwritten.
+      await archiveTrace(this.env, t.id, runId, "initial", activity);
       // Fleet memory: persist what the agent learned about this repo.
       await persistMemory(this.env, sandboxId, t.repo);
       return `${diffStat}\n\n${analysis}`.trim();
@@ -215,6 +253,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         const { analysis, diffStat } = await collectResult(this.env, sandboxId, revisionRunId);
         const activity = await collectActivity(this.env, sandboxId, revisionRunId);
         await this.env.TICKETS.put(`activity:${t.id}`, activity);
+        await archiveTrace(this.env, t.id, revisionRunId, `revision-${round}`, activity);
         const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
         if (pushed) await this.env.TICKETS.put(`diff:${t.id}`, diff);
         await persistMemory(this.env, sandboxId, t.repo);

@@ -172,6 +172,8 @@ const wfDir = path.join(repo, ".pi/workflows", ${JSON.stringify(runId)});
 let run = {};
 try { run = JSON.parse(fs.readFileSync(path.join(wfDir, "run.json"), "utf8")); } catch {}
 out.status = run.status;
+out.usage = run.usage;
+out.startedAt = run.startedAt; out.completedAt = run.completedAt;
 const tasks = run.tasks ?? [];
 // run.json tasks carry specId only; on-disk dirs are task-1, task-2, … in
 // declaration order. Zip by index, but also fall back to dir enumeration.
@@ -284,7 +286,9 @@ export async function collectResult(
       `echo "===DIFF==="`,
       `git diff --cached --stat | tail -30`,
       `echo "===ANALYSIS==="`,
-      `tail -c 8000 .pi/workflows/${runId}/tasks/task-2/analysis.md 2>/dev/null || echo "(no analysis)"`,
+      // Read the LAST stage's analysis (fix stage in the 4-stage spec).
+      `LAST=$(ls -d .pi/workflows/${runId}/tasks/task-* 2>/dev/null | sort -t- -k2 -n | tail -1)`,
+      `tail -c 8000 "$LAST/analysis.md" 2>/dev/null || echo "(no analysis)"`,
     ].join(" && "),
     { timeout: 60_000 },
   );

@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["verdict", "blocking"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["pass", "fail"] },
+    "blocking": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "problem"],
+        "properties": {
+          "file": { "type": "string" },
+          "problem": { "type": "string" },
+          "impact": { "type": "string" }
+        }
+      }
+    },
+    "nits": { "type": "array", "items": { "type": "string" } }
+  }
+}

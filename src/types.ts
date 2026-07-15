@@ -29,6 +29,7 @@ export interface TicketRecord {
     | "queued"
     | "planning"
     | "implementing"
+    | "ready-for-review" // adversarial verifier pass before the PR goes up
     | "in-review"
     | "done"
     | "errored"
