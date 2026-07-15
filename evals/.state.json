@@ -1,0 +1,35 @@
+{
+  "filedAt": "2026-07-15T03:59:18.175Z",
+  "runs": [
+    {
+      "task": "docs-link",
+      "variant": "sonnet",
+      "ticketId": "d72712aa"
+    },
+    {
+      "task": "gitignore",
+      "variant": "sonnet",
+      "ticketId": "01e76d9b"
+    },
+    {
+      "task": "glossary",
+      "variant": "sonnet",
+      "ticketId": "dd0b5083"
+    },
+    {
+      "task": "docs-link",
+      "variant": "haiku",
+      "ticketId": "5f3f4bfd"
+    },
+    {
+      "task": "gitignore",
+      "variant": "haiku",
+      "ticketId": "043a3000"
+    },
+    {
+      "task": "glossary",
+      "variant": "haiku",
+      "ticketId": "631d5bce"
+    }
+  ]
+}

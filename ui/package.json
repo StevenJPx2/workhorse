@@ -8,6 +8,7 @@
     "deploy": "nuxt build && wrangler deploy"
   },
   "dependencies": {
+    "@comark/vue": "^0.5.1",
     "@nuxt/ui": "^4.9.0",
     "nuxt": "^4.4.8"
   }

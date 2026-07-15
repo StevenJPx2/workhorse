@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Comark } from "@comark/vue";
+
 interface Msg {
   role: "user" | "assistant";
   content: string;
@@ -40,10 +42,11 @@ async function send() {
       </div>
       <div v-for="(m, i) in messages" :key="i" class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
         <div
-          class="rounded-lg px-3 py-2 max-w-[85%] text-sm whitespace-pre-wrap"
-          :class="m.role === 'user' ? 'bg-primary/10' : 'bg-elevated'"
+          class="rounded-lg px-3 py-2 max-w-[85%] text-sm"
+          :class="m.role === 'user' ? 'bg-primary/10 whitespace-pre-wrap' : 'bg-elevated prose prose-sm dark:prose-invert max-w-none'"
         >
-          {{ m.content }}
+          <Comark v-if="m.role === 'assistant'" :streaming="busy && i === messages.length - 1" caret>{{ m.content }}</Comark>
+          <template v-else>{{ m.content }}</template>
         </div>
       </div>
       <div v-if="busy" class="text-muted text-sm animate-pulse">agent thinking…</div>

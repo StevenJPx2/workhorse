@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Comark } from "@comark/vue";
+
 const route = useRoute();
 const id = route.params.id as string;
 
@@ -189,7 +191,9 @@ function taskDot(status: string): string {
 
     <UCard v-if="data.ticket.result">
       <template #header><div class="font-semibold">Result</div></template>
-      <pre class="text-xs whitespace-pre-wrap overflow-x-auto">{{ data.ticket.result }}</pre>
+      <div class="prose prose-sm dark:prose-invert max-w-none">
+        <Comark>{{ data.ticket.result }}</Comark>
+      </div>
     </UCard>
 
     <UCard v-if="diffData?.diff">
