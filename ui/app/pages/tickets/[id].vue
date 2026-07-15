@@ -47,7 +47,39 @@ const { data: activity, refresh: refreshActivity } = await useFetch<{
   status?: string;
   tasks?: ActivityTask[];
   note?: string;
+  usage?: { totalTokens?: number };
 }>(`/api/tickets/${id}/activity`, { lazy: true, server: false });
+
+// Durable trace archive: every run ever executed for this ticket.
+interface TraceIndexEntry {
+  runId: string;
+  kind: string;
+  archivedAt: string;
+}
+const { data: traces } = await useFetch<TraceIndexEntry[]>(`/api/tickets/${id}/traces`, {
+  lazy: true,
+  server: false,
+});
+const selectedTrace = ref<string>();
+const { data: traceDetail } = await useFetch<{
+  kind: string;
+  archivedAt: string;
+  activity: { usage?: { totalTokens?: number }; tasks?: ActivityTask[] };
+}>(() => `/api/tickets/${id}/traces/${selectedTrace.value}`, {
+  lazy: true,
+  server: false,
+  immediate: false,
+  watch: [selectedTrace],
+});
+
+/** Verifier verdict pulled out of an activity task list, if present. */
+function verifierVerdict(tasks?: ActivityTask[]): { verdict: string; detail: string } | null {
+  const v = tasks?.find((t) => t.id.startsWith("verify"));
+  if (!v?.analysis) return null;
+  const fail = /verdict[\"'\s:=]+fail/i.test(v.analysis) || /\"verdict\":\s*\"fail\"/.test(v.analysis);
+  return { verdict: fail ? "fail" : "pass", detail: v.analysis.slice(0, 400) };
+}
+const verdict = computed(() => verifierVerdict(activity.value?.tasks));
 
 function eventLabel(e: ActivityEvent): string {
   const kind = e.type ?? e.event ?? "event";
@@ -83,7 +115,9 @@ async function stop() {
 }
 
 const running = computed(() =>
-  ["queued", "planning", "implementing"].includes(data.value?.ticket?.status ?? ""),
+  ["queued", "planning", "implementing", "ready-for-review"].includes(
+    data.value?.ticket?.status ?? "",
+  ),
 );
 const stoppable = computed(
   () => running.value || data.value?.ticket?.status === "in-review",
@@ -101,7 +135,15 @@ function taskDot(status: string): string {
     <div class="flex items-center gap-3">
       <UButton to="/" variant="ghost" icon="i-lucide-arrow-left" size="xs" />
       <h1 class="text-xl font-bold">{{ data.ticket.title }}</h1>
-      <UBadge variant="subtle">{{ data.ticket.status }}</UBadge>
+      <UBadge
+        variant="subtle"
+        :color="data.ticket.status === 'ready-for-review' ? 'warning' : data.ticket.status === 'done' ? 'success' : undefined"
+      >
+        {{ data.ticket.status === 'ready-for-review' ? 'verifying' : data.ticket.status }}
+      </UBadge>
+      <UBadge v-if="verdict" :color="verdict.verdict === 'pass' ? 'success' : 'error'" variant="soft">
+        verifier: {{ verdict.verdict }}
+      </UBadge>
       <div class="ml-auto flex gap-2">
         <UButton v-if="stoppable" color="warning" variant="soft" icon="i-lucide-octagon-x" :loading="stopping" @click="stop">
           Stop
@@ -202,6 +244,41 @@ function taskDot(status: string): string {
     <UCard v-else-if="activity?.note">
       <template #header><div class="font-semibold">Activity</div></template>
       <div class="text-muted text-sm">{{ activity.note }}</div>
+    </UCard>
+
+    <UCard v-if="traces?.length">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">Run history</div>
+          <span class="text-muted text-xs">{{ traces.length }} archived run{{ traces.length === 1 ? "" : "s" }}</span>
+        </div>
+      </template>
+      <div class="space-y-2">
+        <div
+          v-for="tr in traces"
+          :key="tr.runId"
+          class="flex items-center gap-3 text-sm cursor-pointer hover:bg-elevated rounded px-2 py-1"
+          @click="selectedTrace = selectedTrace === tr.runId ? undefined : tr.runId"
+        >
+          <UIcon :name="selectedTrace === tr.runId ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" class="text-muted" />
+          <UBadge variant="subtle" size="sm">{{ tr.kind }}</UBadge>
+          <span class="font-mono text-xs">{{ tr.runId }}</span>
+          <span class="text-muted text-xs ml-auto">{{ new Date(tr.archivedAt).toLocaleString() }}</span>
+        </div>
+        <div v-if="traceDetail && selectedTrace" class="border-l border-default ml-2 pl-3 space-y-2">
+          <div class="text-xs text-muted">
+            tokens: {{ traceDetail.activity?.usage?.totalTokens ?? "n/a" }}
+          </div>
+          <div v-for="task in traceDetail.activity?.tasks ?? []" :key="task.id" class="text-sm">
+            <div class="flex items-center gap-2">
+              <span class="size-1.5 rounded-full" :class="taskDot(task.status)" />
+              <span class="font-medium">{{ task.id }}</span>
+              <span class="text-muted text-xs">{{ task.status }}</span>
+            </div>
+            <pre v-if="task.analysis" class="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto text-muted mt-1">{{ task.analysis }}</pre>
+          </div>
+        </div>
+      </div>
     </UCard>
   </div>
 </template>

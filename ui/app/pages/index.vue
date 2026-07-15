@@ -39,6 +39,7 @@ const statusColor: Record<string, string> = {
   errored: "error",
   terminated: "neutral",
   queued: "neutral",
+  "ready-for-review": "warning",
 };
 
 function useIntervalFn(fn: () => void, ms: number) {
