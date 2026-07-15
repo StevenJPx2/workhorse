@@ -86,14 +86,19 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
  * Prepare the workspace: clone the repo, install the Workhorse workflow
  * bundle, and keep pi-workflow run artifacts out of the git diff.
  */
-export async function prepareWorkspace(env: Env, sandboxId: string, repo: string) {
+export async function prepareWorkspace(env: Env, sandboxId: string, repo: string, model?: string) {
   const sandbox = getSandbox(env.Sandbox, sandboxId);
+  // Evals: patch the model override into the workspace spec copy.
+  const patchModel = model
+    ? `node -e 'const f=".pi/workflows/coding/spec.json",s=require("/workspace/repo/"+f);s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`
+    : "true";
   const result = await sandbox.exec(
     [
       `[ -d /workspace/repo/.git ] || git clone --depth 50 ${JSON.stringify(repo)} /workspace/repo`,
       `cd /workspace/repo`,
       `mkdir -p .pi/workflows`,
       `cp -R /opt/agent/bundles/workflows/coding .pi/workflows/coding`,
+      patchModel,
       // Keep run artifacts out of diffs/PRs without touching tracked files.
       `grep -q "^\\.pi/$" .git/info/exclude 2>/dev/null || echo ".pi/" >> .git/info/exclude`,
       `git config user.email "workhorse@stevenjohn.co" && git config user.name "Workhorse"`,

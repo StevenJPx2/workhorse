@@ -16,6 +16,12 @@ export interface TicketParams {
    * ~5h token lifetime.
    */
   accessToken: string;
+  /**
+   * Optional model override for the run (evals: compare model X vs Y on
+   * the same corpus). Patched into the workspace copy of the workflow
+   * spec's defaults.model at prepare; per-stage spec models still win.
+   */
+  model?: string;
 }
 
 export interface TicketRecord {

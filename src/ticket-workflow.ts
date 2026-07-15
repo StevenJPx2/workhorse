@@ -119,7 +119,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, t.accessToken);
-        await prepareWorkspace(this.env, sandboxId, t.repo);
+        await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
         // Fleet memory: seed the sandbox with this repo's accumulated memories.
         await restoreMemory(this.env, sandboxId, t.repo);
       },
@@ -232,7 +232,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         async () => {
           await updateTicket(this.env, t.id, { status: "implementing" });
           await injectAuth(this.env, sandboxId, t.accessToken);
-          await prepareWorkspace(this.env, sandboxId, t.repo);
+          await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
           await restoreMemory(this.env, sandboxId, t.repo);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
           const feedback = events
