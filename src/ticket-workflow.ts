@@ -115,7 +115,9 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     // --- planning + implementing (the staged pi-workflow run) ---
     await step.do(
       "prepare",
-      { retries: { limit: 2, delay: "10 seconds", backoff: "exponential" }, timeout: "10 minutes" },
+      // Generous retries: parallel fleet dispatch means fresh containers can
+      // stay in "Container is starting" for minutes under provisioning load.
+      { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, t.accessToken);
