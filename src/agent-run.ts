@@ -20,6 +20,68 @@ export async function injectAuth(env: Env, sandboxId: string, accessToken: strin
   await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
 }
 
+const MC_DIR = "/root/.local/share/cortexkit/magic-context";
+const MC_DB = `${MC_DIR}/context.db`;
+/** KV cap is 25 MiB; leave headroom for base64→binary slack. */
+const MC_MAX_BYTES = 24 * 1024 * 1024;
+
+/** Stable per-repo key for the fleet memory store. */
+function memoryKey(repo: string): string {
+  const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+  return `mc:${m ? `${m[1]}/${m[2]}` : repo.replace(/[^a-zA-Z0-9_/-]/g, "_")}`;
+}
+
+/**
+ * Restore the repo's Magic Context database into the sandbox so the agent
+ * starts with the fleet's accumulated memories for this repo. Memories are
+ * keyed to stable project identity (git root commit hash), so the same repo
+ * resolves to the same memories in every sandbox.
+ */
+export async function restoreMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
+  const b64 = await env.TICKETS.get(memoryKey(repo));
+  if (!b64) return false;
+  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  await sandbox.writeFile("/workspace/.mc-db.b64", b64);
+  const res = await sandbox.exec(
+    `mkdir -p ${MC_DIR} && base64 -d /workspace/.mc-db.b64 > ${MC_DB} && rm /workspace/.mc-db.b64 && stat -c%s ${MC_DB}`,
+    { timeout: 60_000 },
+  );
+  return res.exitCode === 0;
+}
+
+/**
+ * Persist the sandbox's Magic Context database back to KV (WAL-checkpointed
+ * via node:sqlite, base64 over the exec channel). Never throws — memory
+ * persistence must not fail a ticket.
+ */
+export async function persistMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
+  try {
+    const sandbox = getSandbox(env.Sandbox, sandboxId);
+    const res = await sandbox.exec(
+      [
+        `[ -f ${MC_DB} ] || exit 3`,
+        // Fold WAL into the main file so one file is the whole state.
+        `node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('${MC_DB}');d.exec('PRAGMA wal_checkpoint(TRUNCATE)');d.close()" 2>/dev/null || true`,
+        `[ "$(stat -c%s ${MC_DB})" -le ${MC_MAX_BYTES} ] || exit 4`,
+        `base64 -w0 ${MC_DB}`,
+      ].join(" && "),
+      { timeout: 120_000 },
+    );
+    if (res.exitCode === 3) return false; // no db — MC never ran
+    if (res.exitCode === 4) {
+      console.warn(`MC db for ${repo} exceeds KV cap; skipping persist`);
+      return false;
+    }
+    const b64 = res.stdout.trim();
+    if (res.exitCode !== 0 || b64.length < 100) return false;
+    await env.TICKETS.put(memoryKey(repo), b64);
+    return true;
+  } catch (err) {
+    console.warn(`MC persist failed for ${repo}:`, err);
+    return false;
+  }
+}
+
 /**
  * Prepare the workspace: clone the repo, install the Workhorse workflow
  * bundle, and keep pi-workflow run artifacts out of the git diff.

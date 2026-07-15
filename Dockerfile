@@ -27,4 +27,16 @@ RUN mkdir -p /opt/agent /root/.pi/agent/agents \
   && (timeout 300 pi -p -np "warmup" || true) \
   && ls /root/.pi/agent/npm/node_modules/@agwab /root/.pi/agent/npm/node_modules/@cortexkit
 
+# Magic Context: config + bake the local embedding model (~90MB ONNX) so
+# sandboxes never download it at runtime. The context.db itself is restored
+# per-repo from KV at prepare and persisted back after each run (agent-run.ts).
+RUN mkdir -p /root/.config/cortexkit \
+  && cp /opt/agent/bundles/magic-context.jsonc /root/.config/cortexkit/magic-context.jsonc
+RUN MC_MODELS=/root/.local/share/cortexkit/magic-context/models/Xenova/all-MiniLM-L6-v2 \
+  && mkdir -p "$MC_MODELS/onnx" \
+  && curl -fsSL -o "$MC_MODELS/config.json" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json \
+  && curl -fsSL -o "$MC_MODELS/tokenizer.json" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json \
+  && curl -fsSL -o "$MC_MODELS/tokenizer_config.json" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json \
+  && curl -fsSL -o "$MC_MODELS/onnx/model.onnx" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx
+
 EXPOSE 8080

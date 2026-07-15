@@ -3,7 +3,8 @@
   "packages": [
     "npm:@gotgenes/pi-anthropic-auth",
     "npm:@agwab/pi-workflow@0.8.0",
-    "npm:@cortexkit/aft-pi"
+    "npm:@cortexkit/aft-pi",
+    "npm:@cortexkit/pi-magic-context@0.32.0"
   ],
   "extensions": [
     "extensions/workhorse.ts"

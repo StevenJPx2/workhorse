@@ -1,0 +1,28 @@
+// Magic Context config for Workhorse sandbox agents.
+// Copied to /root/.config/cortexkit/magic-context.jsonc at image build.
+//
+// Sandboxes are ephemeral: the context.db is restored per-repo from KV at
+// prepare and persisted back after each run (see src/agent-run.ts). Memories
+// are keyed to stable project identity (git root commit hash), so the same
+// repo maps to the same memories across sandboxes, clones, and tickets.
+{
+  // Local embedding model is baked into the image (~90MB ONNX) — no
+  // runtime downloads, semantic search works offline.
+  "embedding": {
+    "provider": "local"
+  },
+  "memory": {
+    "enabled": true,
+    // Historian/recomp auto-promotion stays on: ticket runs are short, so
+    // explicit ctx_memory writes by the agent are the main path anyway.
+    "auto_promote": true
+  },
+  // No nightly dreamer in a sandbox that lives minutes.
+  "dreamer": {
+    "enabled": false
+  },
+  // Pi-only: keep Pi's own todowrite; workflow stages are the task structure.
+  "todowrite": {
+    "enabled": false
+  }
+}

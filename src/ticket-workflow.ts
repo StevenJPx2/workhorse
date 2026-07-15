@@ -8,6 +8,8 @@ import {
   collectActivity,
   deliverBranch,
   checkoutTicketBranch,
+  restoreMemory,
+  persistMemory,
 } from "./agent-run";
 import { unconsumedEvents, consumeEvents } from "./events";
 import type { ExternalEvent } from "./plugins/types";
@@ -82,6 +84,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, t.accessToken);
         await prepareWorkspace(this.env, sandboxId, t.repo);
+        // Fleet memory: seed the sandbox with this repo's accumulated memories.
+        await restoreMemory(this.env, sandboxId, t.repo);
       },
     );
 
@@ -105,6 +109,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
       const activity = await collectActivity(this.env, sandboxId, runId);
       await this.env.TICKETS.put(`activity:${t.id}`, activity);
+      // Fleet memory: persist what the agent learned about this repo.
+      await persistMemory(this.env, sandboxId, t.repo);
       return `${diffStat}\n\n${analysis}`.trim();
     });
 
@@ -189,6 +195,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await updateTicket(this.env, t.id, { status: "implementing" });
           await injectAuth(this.env, sandboxId, t.accessToken);
           await prepareWorkspace(this.env, sandboxId, t.repo);
+          await restoreMemory(this.env, sandboxId, t.repo);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
           const feedback = events
             .map((e) => `- [${e.kind}] ${e.summary}`)
@@ -210,6 +217,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await this.env.TICKETS.put(`activity:${t.id}`, activity);
         const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
         if (pushed) await this.env.TICKETS.put(`diff:${t.id}`, diff);
+        await persistMemory(this.env, sandboxId, t.repo);
         await consumeEvents(this.env, t.id);
         await updateTicket(this.env, t.id, {
           status: "in-review",
