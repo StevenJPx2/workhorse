@@ -49,7 +49,7 @@ const { data: activity, refresh: refreshActivity } = await useFetch<{
   status?: string;
   tasks?: ActivityTask[];
   note?: string;
-  usage?: { totalTokens?: number };
+  usage?: { totalTokens?: number; costUsd?: number };
 }>(`/api/tickets/${id}/activity`, { lazy: true, server: false });
 
 // Durable trace archive: every run ever executed for this ticket.
@@ -83,15 +83,37 @@ function verifierVerdict(tasks?: ActivityTask[]): { verdict: string; detail: str
 }
 const verdict = computed(() => verifierVerdict(activity.value?.tasks));
 
-function eventLabel(e: ActivityEvent): string {
-  const kind = e.type ?? e.event ?? "event";
-  const detail =
-    e.tool ?? e.name ?? e.message ?? (e.raw ? e.raw.slice(0, 120) : "");
-  return detail ? `${kind} · ${String(detail).slice(0, 160)}` : String(kind);
+/** Human names for pipeline stages. */
+const STAGE_META: Record<string, { label: string; icon: string; blurb: string }> = {
+  plan: { label: "Plan", icon: "i-lucide-map", blurb: "read-only — studies the repo, decides what to change" },
+  implement: { label: "Implement", icon: "i-lucide-hammer", blurb: "makes the changes" },
+  verify: { label: "Verify", icon: "i-lucide-shield-alert", blurb: "adversarial review by a separate agent" },
+  fix: { label: "Fix", icon: "i-lucide-wrench", blurb: "addresses verifier findings" },
+};
+function stageMeta(taskId: string) {
+  const key = taskId.split(".")[0] ?? taskId;
+  return STAGE_META[key] ?? { label: taskId, icon: "i-lucide-circle", blurb: "" };
 }
-function eventTime(e: ActivityEvent): string {
-  const t = e.ts ?? e.timestamp;
-  return t ? new Date(String(t)).toLocaleTimeString() : "";
+/** Wall-clock duration of a task from its event timestamps. */
+function taskDuration(t: ActivityTask): string {
+  const ts = t.events
+    .map((e) => e.timestamp ?? e.ts)
+    .filter(Boolean)
+    .map((x) => new Date(String(x)).getTime());
+  if (ts.length < 2) return "";
+  const secs = Math.round((Math.max(...ts) - Math.min(...ts)) / 1000);
+  return secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
+}
+/** Retry count — the only genuinely interesting fact in the engine events. */
+function taskAttempts(t: ActivityTask): number {
+  return t.events.filter((e) => (e.type ?? "") === "attempt.started").length;
+}
+function fmtCost(u?: { totalTokens?: number; costUsd?: number }): string {
+  if (!u) return "";
+  const parts: string[] = [];
+  if (u.totalTokens) parts.push(`${(u.totalTokens / 1000).toFixed(1)}k tokens`);
+  if (u.costUsd) parts.push(`$${u.costUsd.toFixed(3)}`);
+  return parts.join(" · ");
 }
 
 let timer: ReturnType<typeof setInterval>;
@@ -190,7 +212,7 @@ function taskDot(status: string): string {
       <div v-if="data.live.tasks?.length" class="flex flex-wrap items-center gap-3">
         <div v-for="task in data.live.tasks" :key="task.id" class="flex items-center gap-1.5 text-sm">
           <span class="size-2 rounded-full" :class="taskDot(task.status)" />
-          <span>{{ task.id }}</span>
+          <span>{{ stageMeta(task.id).label }}</span>
           <span class="text-muted text-xs">{{ task.status }}</span>
         </div>
       </div>
@@ -217,44 +239,59 @@ function taskDot(status: string): string {
     <UCard v-if="activity?.tasks?.length">
       <template #header>
         <div class="flex items-center justify-between">
-          <div class="font-semibold">Activity</div>
+          <div class="font-semibold">Pipeline</div>
           <div class="flex items-center gap-2">
-            <span class="text-muted text-xs">run {{ activity.runId }}</span>
+            <span v-if="fmtCost(activity.usage)" class="text-muted text-xs">{{ fmtCost(activity.usage) }}</span>
             <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" @click="refreshActivity()" />
           </div>
         </div>
       </template>
-      <div class="space-y-4">
-        <div v-for="task in activity.tasks" :key="task.id">
-          <div class="flex items-center gap-2 mb-1">
-            <UBadge :color="task.status === 'completed' ? 'success' : task.status === 'failed' ? 'error' : 'primary'" variant="subtle" size="sm">
-              {{ task.status }}
-            </UBadge>
-            <span class="font-medium text-sm">{{ task.id }}</span>
-            <span v-if="task.completedAt" class="text-muted text-xs ml-auto">
-              {{ new Date(task.completedAt).toLocaleTimeString() }}
-            </span>
+      <div class="space-y-1">
+        <div v-for="(task, ti) in activity.tasks" :key="task.id" class="relative">
+          <!-- connector line -->
+          <div v-if="ti < activity.tasks!.length - 1" class="absolute left-[15px] top-8 bottom-0 w-px bg-(--ui-border)" />
+          <div class="flex items-start gap-3 py-2">
+            <div
+              class="size-8 rounded-full flex items-center justify-center shrink-0 ring-1"
+              :class="task.status === 'completed' ? 'bg-success/10 ring-success/30 text-success'
+                : task.status === 'failed' ? 'bg-error/10 ring-error/30 text-error'
+                : task.status === 'running' ? 'bg-primary/10 ring-primary/30 text-primary'
+                : 'bg-muted ring-(--ui-border) text-muted'"
+            >
+              <UIcon :name="task.status === 'running' ? 'i-lucide-loader-circle' : stageMeta(task.id).icon" :class="task.status === 'running' && 'animate-spin'" class="size-4" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <span class="font-medium text-sm">{{ stageMeta(task.id).label }}</span>
+                <span class="text-muted text-xs">{{ stageMeta(task.id).blurb }}</span>
+                <span class="ml-auto text-xs text-muted shrink-0">
+                  {{ taskDuration(task) }}<template v-if="taskAttempts(task) > 1"> · {{ taskAttempts(task) }} attempts</template>
+                </span>
+              </div>
+              <!-- What the stage concluded, rendered as prose — the actually useful part -->
+              <div v-if="task.analysis" class="prose prose-sm dark:prose-invert max-w-none mt-1 text-sm">
+                <Comark>{{ task.analysis }}</Comark>
+              </div>
+              <div v-else-if="task.status === 'running'" class="text-muted text-sm mt-1 italic">working…</div>
+              <UCollapsible v-if="task.prompt || task.output" class="mt-1">
+                <UButton variant="link" color="neutral" size="xs" icon="i-lucide-chevron-right" class="px-0">
+                  details
+                </UButton>
+                <template #content>
+                  <div class="space-y-2 mt-1">
+                    <div v-if="task.prompt">
+                      <div class="text-xs font-medium text-muted mb-0.5">Instructions given to this stage</div>
+                      <pre class="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto p-2 bg-elevated rounded">{{ task.prompt }}</pre>
+                    </div>
+                    <div v-if="task.output">
+                      <div class="text-xs font-medium text-muted mb-0.5">Raw agent output</div>
+                      <pre class="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto p-2 bg-elevated rounded">{{ task.output }}</pre>
+                    </div>
+                  </div>
+                </template>
+              </UCollapsible>
+            </div>
           </div>
-          <ol v-if="task.events.length" class="border-l border-default ml-1 pl-3 space-y-1 max-h-64 overflow-y-auto">
-            <li v-for="(e, i) in task.events" :key="i" class="text-xs flex gap-2">
-              <span class="text-muted shrink-0 w-16">{{ eventTime(e) }}</span>
-              <span class="truncate">{{ eventLabel(e) }}</span>
-            </li>
-          </ol>
-          <div v-else class="text-muted text-xs ml-4">no recorded events</div>
-          <UAccordion
-            v-if="task.prompt || task.analysis || task.output"
-            class="mt-2"
-            :items="[
-              ...(task.prompt ? [{ label: 'Task prompt', content: task.prompt, value: 'p' }] : []),
-              ...(task.analysis ? [{ label: 'Analysis', content: task.analysis, value: 'a' }] : []),
-              ...(task.output ? [{ label: 'Raw output', content: task.output, value: 'o' }] : []),
-            ]"
-          >
-            <template #content="{ item }">
-              <pre class="text-xs whitespace-pre-wrap max-h-64 overflow-y-auto p-2">{{ item.content }}</pre>
-            </template>
-          </UAccordion>
         </div>
       </div>
     </UCard>
@@ -289,7 +326,7 @@ function taskDot(status: string): string {
           <div v-for="task in traceDetail.activity?.tasks ?? []" :key="task.id" class="text-sm">
             <div class="flex items-center gap-2">
               <span class="size-1.5 rounded-full" :class="taskDot(task.status)" />
-              <span class="font-medium">{{ task.id }}</span>
+              <span class="font-medium">{{ stageMeta(task.id).label }}</span>
               <span class="text-muted text-xs">{{ task.status }}</span>
             </div>
             <pre v-if="task.analysis" class="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto text-muted mt-1">{{ task.analysis }}</pre>
