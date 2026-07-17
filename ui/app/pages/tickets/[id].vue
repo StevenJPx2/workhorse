@@ -121,9 +121,21 @@ const running = computed(() =>
     data.value?.ticket?.status ?? "",
   ),
 );
-const stoppable = computed(
-  () => running.value || data.value?.ticket?.status === "in-review",
-);
+const parked = computed(() => data.value?.ticket?.status === "in-review");
+const stoppable = computed(() => running.value || parked.value);
+/** What compute is actually happening right now — the honest line. */
+const computeState = computed(() => {
+  const wf = data.value?.workflow?.status ?? "";
+  if (running.value) return { label: "sandbox active — agent running", color: "text-primary" };
+  if (parked.value)
+    return {
+      label: "parked — zero compute; sandbox asleep, waiting for PR feedback (webhook wakes it)",
+      color: "text-muted",
+    };
+  if (wf === "errored" || data.value?.ticket?.status === "errored")
+    return { label: "workflow dead — nothing running", color: "text-error" };
+  return { label: "nothing running", color: "text-muted" };
+});
 function taskDot(status: string): string {
   if (status === "completed") return "bg-success";
   if (status === "failed" || status === "interrupted") return "bg-error";
@@ -147,8 +159,8 @@ function taskDot(status: string): string {
         verifier: {{ verdict.verdict }}
       </UBadge>
       <div class="ml-auto flex gap-2">
-        <UButton v-if="stoppable" color="warning" variant="soft" icon="i-lucide-octagon-x" :loading="stopping" @click="stop">
-          Stop
+        <UButton v-if="stoppable" color="warning" variant="soft" :icon="parked ? 'i-lucide-x' : 'i-lucide-octagon-x'" :loading="stopping" @click="stop">
+          {{ parked ? "Cancel ticket" : "Stop" }}
         </UButton>
         <UButton v-if="data.ticket.prUrl" :to="data.ticket.prUrl" target="_blank" icon="i-lucide-git-pull-request">
           Open PR
@@ -160,6 +172,7 @@ function taskDot(status: string): string {
       <div class="text-sm space-y-1">
         <div><span class="text-muted">repo:</span> {{ data.ticket.repo }}</div>
         <div><span class="text-muted">workflow:</span> {{ data.workflow?.status ?? "n/a" }}</div>
+        <div :class="computeState.color">{{ computeState.label }}</div>
         <div v-if="data.ticket.branch"><span class="text-muted">branch:</span> {{ data.ticket.branch }}</div>
         <div v-if="data.ticket.error" class="text-error">{{ data.ticket.error }}</div>
       </div>

@@ -7,7 +7,7 @@ const PI_WORKFLOW_CLI =
 
 /** Write the short-lived OAuth access token into the sandbox's Pi home. */
 export async function injectAuth(env: Env, sandboxId: string, accessToken: string) {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const auth = {
     anthropic: {
       type: "oauth",
@@ -40,7 +40,7 @@ function memoryKey(repo: string): string {
 export async function restoreMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
   const b64 = await env.TICKETS.get(memoryKey(repo));
   if (!b64) return false;
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   await sandbox.writeFile("/workspace/.mc-db.b64", b64);
   const res = await sandbox.exec(
     `mkdir -p ${MC_DIR} && base64 -d /workspace/.mc-db.b64 > ${MC_DB} && rm /workspace/.mc-db.b64 && stat -c%s ${MC_DB}`,
@@ -56,7 +56,7 @@ export async function restoreMemory(env: Env, sandboxId: string, repo: string): 
  */
 export async function persistMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
   try {
-    const sandbox = getSandbox(env.Sandbox, sandboxId);
+    const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
     const res = await sandbox.exec(
       [
         `[ -f ${MC_DB} ] || exit 3`,
@@ -87,7 +87,7 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
  * bundle, and keep pi-workflow run artifacts out of the git diff.
  */
 export async function prepareWorkspace(env: Env, sandboxId: string, repo: string, model?: string) {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   // Evals: patch the model override into the workspace spec copy.
   const patchModel = model
     ? `node -e 'const f=".pi/workflows/coding/spec.json",s=require("/workspace/repo/"+f);s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`
@@ -112,7 +112,7 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
 
 /** Start the coding workflow for a task. Returns the pi-workflow run id. */
 export async function startWorkflow(env: Env, sandboxId: string, task: string): Promise<string> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   // Write the slash command to a file to sidestep shell-quoting pitfalls.
   const slash = `/workflow run coding ${JSON.stringify(task)}`;
   await sandbox.writeFile("/workspace/.task", slash);
@@ -138,7 +138,7 @@ export async function driveWorkflow(
   runId: string,
   drainMs = 50_000,
 ): Promise<{ status: string; tasks: Array<{ id: string; status: string }> }> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const result = await sandbox.exec(
     `cd /workspace/repo && timeout ${Math.ceil(drainMs / 1000) + 10} node ${PI_WORKFLOW_CLI} supervise ${runId} --poll-ms 2000 --max-runtime-ms ${drainMs} >/dev/null 2>&1; ` +
       `node -e "const r=require('/workspace/repo/.pi/workflows/${runId}/run.json'); console.log(JSON.stringify({status:r.status, tasks:(r.tasks||[]).map(t=>({id:t.specId||t.id,status:t.status}))}))"`,
@@ -162,7 +162,7 @@ export async function collectActivity(
   sandboxId: string,
   runId: string,
 ): Promise<string> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const script = `
 const fs = require("fs"), path = require("path");
 const repo = "/workspace/repo";
@@ -220,7 +220,7 @@ export async function checkoutTicketBranch(
   branch: string,
   githubToken: string,
 ): Promise<void> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
   if (!m) throw new Error(`not a github repo: ${repo}`);
   const authUrl = `https://x-access-token:${githubToken}@github.com/${m[1]}/${m[2]}.git`;
@@ -249,7 +249,7 @@ export async function deliverBranch(
   repo: string,
   title: string,
 ): Promise<{ branch: string; diff: string; pushed: boolean }> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const branch = `workhorse/${ticketId}`;
   const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
   if (!m) throw new Error(`not a github repo: ${repo}`);
@@ -283,7 +283,7 @@ export async function collectResult(
   sandboxId: string,
   runId: string,
 ): Promise<{ analysis: string; diffStat: string }> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId);
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const result = await sandbox.exec(
     [
       `cd /workspace/repo`,

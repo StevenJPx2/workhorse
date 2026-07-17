@@ -123,15 +123,27 @@ export default {
     if (detail && request.method === "GET") {
       const raw = await env.TICKETS.get(detail[1]);
       if (!raw) return json({ error: "not found" }, 404);
-      let wfStatus: unknown = null;
+      const ticket = JSON.parse(raw) as Record<string, string>;
+      let wfStatus: { status?: string } | null = null;
       try {
         const inst = await env.TICKET_WF.get(detail[1]);
-        wfStatus = await inst.status();
+        wfStatus = (await inst.status()) as { status?: string };
       } catch {
         /* instance may not exist yet */
       }
-      const live = await env.TICKETS.get(`live:${url.pathname.split("/")[2]}`);
-      return json({ ticket: JSON.parse(raw), workflow: wfStatus, live: live ? JSON.parse(live) : null });
+      // Self-heal: if the durable instance is dead but the registry still
+      // claims an active status, reconcile so the UI never lies.
+      const activeStatuses = ["queued", "planning", "implementing", "ready-for-review", "in-review"];
+      const deadMap: Record<string, string> = { errored: "errored", terminated: "terminated" };
+      const wf = wfStatus?.status ?? "";
+      if (deadMap[wf] && activeStatuses.includes(ticket.status)) {
+        ticket.status = deadMap[wf];
+        ticket.error = ticket.error || `workflow instance ${wf}`;
+        ticket.updatedAt = new Date().toISOString();
+        await env.TICKETS.put(detail[1], JSON.stringify(ticket));
+      }
+      const live = await env.TICKETS.get(`live:${detail[1]}`);
+      return json({ ticket, workflow: wfStatus, live: live ? JSON.parse(live) : null });
     }
 
     // Stop a running ticket: terminate the durable workflow instance.
@@ -164,7 +176,7 @@ export default {
       if (!auth || auth.expires - Date.now() < 10 * 60 * 1000) {
         return json({ error: "no fresh access token (custodian push stale?)" }, 503);
       }
-      const sandbox = getSandbox(env.Sandbox, "fleet-chat");
+      const sandbox = getSandbox(env.Sandbox, "fleet-chat", { sleepAfter: "2m" });
       await sandbox.writeFile(
         "/root/.pi/agent/auth.json",
         JSON.stringify({
@@ -229,7 +241,7 @@ Be concise. This is a chat: reply with your message only.\n\nConversation so far
     // ---- Phase-0 debug endpoints (kept for ops) ----
 
     if (url.pathname === "/env") {
-      const sandbox = getSandbox(env.Sandbox, "phase0");
+      const sandbox = getSandbox(env.Sandbox, "phase0", { sleepAfter: "2m" });
       const result = await sandbox.exec(
         "echo node=$(node --version 2>/dev/null); echo git=$(git --version 2>/dev/null); uname -a",
       );
@@ -238,7 +250,7 @@ Be concise. This is a chat: reply with your message only.\n\nConversation so far
 
     if (url.pathname === "/exec" && request.method === "POST") {
       const { cmd, sandbox: sid } = (await request.json()) as { cmd: string; sandbox?: string };
-      const sandbox = getSandbox(env.Sandbox, sid ?? "phase0");
+      const sandbox = getSandbox(env.Sandbox, sid ?? "phase0", { sleepAfter: "2m" });
       const result = await sandbox.exec(cmd, { timeout: 300_000 });
       return json({ exitCode: result.exitCode, stdout: result.stdout, stderr: result.stderr });
     }

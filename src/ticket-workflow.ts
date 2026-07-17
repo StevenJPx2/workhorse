@@ -108,6 +108,21 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   }
 
   async run(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
+    try {
+      await this.runLifecycle(event, step);
+    } catch (err) {
+      // A crashed workflow must never leave the ticket looking alive:
+      // reflect the failure in the registry, then rethrow so the
+      // instance itself reads Errored too.
+      await updateTicket(this.env, event.payload.id, {
+        status: "errored",
+        error: String(err).slice(0, 500),
+      }).catch(() => {});
+      throw err;
+    }
+  }
+
+  private async runLifecycle(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
     const t = event.payload;
     const sandboxId = `ticket-${t.id}`;
     const branch = `workhorse/${t.id}`;
