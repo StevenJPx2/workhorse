@@ -116,6 +116,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       );
       if (res.status === "completed") return;
       if (res.status === "failed" || res.status === "interrupted") {
+        // Capture the post-mortem NOW — the sandbox disk vanishes minutes
+        // after failure (sleepAfter), taking task errors/output with it.
+        await step.do(`${label}-capture-failure`, { timeout: "3 minutes" }, async () => {
+          const activity = await collectActivity(this.env, sandboxId, runId);
+          await this.env.TICKETS.put(`activity:${ticketId}`, activity);
+          await archiveTrace(this.env, ticketId, runId, `${label}-failed`, activity);
+        }).catch(() => {});
         throw new Error(`pi-workflow run ${runId} ended ${res.status}`);
       }
     }
@@ -141,6 +148,23 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     const t = event.payload;
     const sandboxId = `ticket-${t.id}`;
     const branch = `workhorse/${t.id}`;
+
+    // --- healing resume: skip completed phases recorded on the ticket ---
+    if (t.resume) {
+      const rec = await step.do("read-resume-state", async () => {
+        const raw = await this.env.TICKETS.get(t.id);
+        return raw ? (JSON.parse(raw) as TicketRecord) : null;
+      });
+      if (rec?.prUrl) {
+        // Work was already delivered — jump straight back to the
+        // park ↔ revise loop; pending events (if any) wake immediately.
+        await updateTicket(this.env, t.id, { status: "in-review", error: undefined });
+        await this.reviewLoop(step, t, sandboxId, branch, rec.prUrl);
+        return;
+      }
+      // No PR yet: nothing durable was delivered; fall through to a full
+      // re-run (idempotent — fresh sandbox, branch is force-pushed later).
+    }
 
     // --- planning + implementing (the staged pi-workflow run) ---
     await step.do(
@@ -223,6 +247,20 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     );
 
     // --- in-review: park ↔ revise loop; done only via external signal ---
+    await this.reviewLoop(step, t, sandboxId, branch, prUrl);
+  }
+
+  /**
+   * The in-review park ↔ revise loop. Extracted so healing re-dispatches
+   * can re-enter it directly when a PR already exists.
+   */
+  private async reviewLoop(
+    step: WorkflowStep,
+    t: TicketParams,
+    sandboxId: string,
+    branch: string,
+    prUrl: string,
+  ) {
     for (let round = 1; round <= MAX_REVISIONS; round++) {
       // Anything queued while we were busy? Consume before parking.
       let events = (await step.do(`check-events-${round}`, async () =>
@@ -235,7 +273,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await step.waitForEvent(`park-${round}`, { type: "external-event", timeout: "90 days" });
         } catch {
           await updateTicket(this.env, t.id, { status: "terminated", error: "review window expired (90 days)" });
-          return { outcome: "expired", prUrl };
+          return;
         }
         events = (await step.do(`read-events-${round}`, async () =>
           unconsumedEvents(this.env, t.id),
@@ -252,7 +290,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           });
         });
         await setLive(this.env, t.id, { phase: "finished", outcome: terminal.kind });
-        return { outcome: terminal.kind, prUrl, revisions: round - 1 };
+        return;
       }
 
       if (events.length === 0) continue; // spurious wake
@@ -317,6 +355,5 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     }
 
     await updateTicket(this.env, t.id, { status: "terminated", error: `revision limit (${MAX_REVISIONS}) reached` });
-    return { outcome: "revision-limit", prUrl };
   }
 }

@@ -10,6 +10,54 @@ function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
+const MAX_HEALS = 3;
+
+/**
+ * Re-dispatch a dead ticket on a fresh workflow instance that resumes from
+ * recorded progress (branch/PR on GitHub, events + memory in KV). Used by
+ * the manual /heal endpoint and the cron sweep.
+ */
+export async function healTicket(
+  env: Env,
+  ticketId: string,
+): Promise<{ ok: boolean; reason?: string; instance?: string }> {
+  const raw = await env.TICKETS.get(ticketId);
+  if (!raw) return { ok: false, reason: "not found" };
+  const rec = JSON.parse(raw) as TicketRecord;
+  if (rec.status !== "errored") return { ok: false, reason: `status is ${rec.status}, only errored tickets heal` };
+  const attempts = rec.healAttempts ?? 0;
+  if (attempts >= MAX_HEALS) return { ok: false, reason: `heal limit (${MAX_HEALS}) reached` };
+
+  // Confirm the current instance really is dead (never double-drive a ticket).
+  try {
+    const inst = await env.TICKET_WF.get(rec.wfInstance || ticketId);
+    const st = (await inst.status()) as { status?: string };
+    if (st.status && !["errored", "terminated", "complete"].includes(st.status)) {
+      return { ok: false, reason: `instance still ${st.status}` };
+    }
+  } catch {
+    /* no instance — definitely dead */
+  }
+
+  const instance = `${ticketId}-h${attempts + 1}`;
+  const params: TicketParams = {
+    id: ticketId,
+    title: rec.title,
+    repo: rec.repo,
+    prompt: rec.prompt,
+    accessToken: "", // freshToken() pulls the custodian token from KV
+    resume: true,
+  };
+  await env.TICKET_WF.create({ id: instance, params });
+  rec.wfInstance = instance;
+  rec.healAttempts = attempts + 1;
+  rec.status = "queued";
+  rec.error = undefined;
+  rec.updatedAt = new Date().toISOString();
+  await env.TICKETS.put(ticketId, JSON.stringify(rec));
+  return { ok: true, instance };
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -39,7 +87,9 @@ export default {
         const wake = async (ticketId: string) => {
           for (let attempt = 0; attempt < 4; attempt++) {
             try {
-              const inst = await env.TICKET_WF.get(ticketId);
+              const rec = await env.TICKETS.get(ticketId);
+              const wfId = rec ? ((JSON.parse(rec) as { wfInstance?: string }).wfInstance ?? ticketId) : ticketId;
+              const inst = await env.TICKET_WF.get(wfId);
               await inst.sendEvent({ type: "external-event", payload: {} });
             } catch {
               /* not parked / already finished */
@@ -96,6 +146,7 @@ export default {
         status: "queued",
         createdAt: now,
         updatedAt: now,
+        wfInstance: id,
       };
       await env.TICKETS.put(id, JSON.stringify(rec));
       await env.TICKET_WF.create({
@@ -126,7 +177,7 @@ export default {
       const ticket = JSON.parse(raw) as Record<string, string>;
       let wfStatus: { status?: string } | null = null;
       try {
-        const inst = await env.TICKET_WF.get(detail[1]);
+        const inst = await env.TICKET_WF.get(ticket.wfInstance || detail[1]);
         wfStatus = (await inst.status()) as { status?: string };
       } catch {
         /* instance may not exist yet */
@@ -146,13 +197,23 @@ export default {
       return json({ ticket, workflow: wfStatus, live: live ? JSON.parse(live) : null });
     }
 
+    // Heal an errored ticket: re-dispatch a fresh workflow instance that
+    // resumes from recorded progress. Manual trigger; the cron uses the
+    // same helper.
+    const healM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/heal$/);
+    if (healM && request.method === "POST") {
+      const result = await healTicket(env, healM[1]);
+      return json(result, result.ok ? 200 : 409);
+    }
+
     // Stop a running ticket: terminate the durable workflow instance.
     const stopM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/stop$/);
     if (stopM && request.method === "POST") {
       const raw = await env.TICKETS.get(stopM[1]);
       if (!raw) return json({ error: "not found" }, 404);
+      const stopRec = JSON.parse(raw) as { wfInstance?: string };
       try {
-        const inst = await env.TICKET_WF.get(stopM[1]);
+        const inst = await env.TICKET_WF.get(stopRec.wfInstance || stopM[1]);
         await inst.terminate();
       } catch (e) {
         return json({ error: `terminate failed: ${e instanceof Error ? e.message : e}` }, 500);
@@ -258,5 +319,26 @@ Be concise. This is a chat: reply with your message only.\n\nConversation so far
     return new Response(
       "workhorse: POST /tickets {title,repo,prompt,accessToken} | GET /tickets | GET /tickets/:id || /env | POST /exec",
     );
+  },
+
+  // Self-healing sweep: every 15 min, re-dispatch errored tickets that
+  // still have heal budget. Skips anything a human already terminated.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    const sweep = async () => {
+      const list = await env.TICKETS.list();
+      for (const key of list.keys) {
+        if (key.name.includes(":")) continue;
+        const raw = await env.TICKETS.get(key.name);
+        if (!raw) continue;
+        const rec = JSON.parse(raw) as TicketRecord;
+        if (rec.status !== "errored") continue;
+        // Give ops a quiet window: only heal tickets errored >5 min ago
+        // (avoids racing a deploy or a human already investigating).
+        if (Date.now() - new Date(rec.updatedAt).getTime() < 5 * 60 * 1000) continue;
+        const res = await healTicket(env, rec.id);
+        console.log(`heal sweep ${rec.id}: ${res.ok ? `re-dispatched as ${res.instance}` : res.reason}`);
+      }
+    };
+    ctx.waitUntil(sweep());
   },
 };

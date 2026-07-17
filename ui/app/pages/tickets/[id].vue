@@ -124,6 +124,26 @@ onMounted(() => (timer = setInterval(() => {
 onUnmounted(() => clearInterval(timer));
 
 const toast = useToast();
+const healing = ref(false);
+async function heal() {
+  healing.value = true;
+  try {
+    const r = await $fetch<{ ok: boolean; reason?: string; instance?: string }>(
+      `/api/tickets/${id}/heal`,
+      { method: "POST" },
+    );
+    toast.add(
+      r.ok
+        ? { title: "Healing", description: `Re-dispatched as ${r.instance}`, color: "success" }
+        : { title: "Cannot heal", description: r.reason, color: "warning" },
+    );
+    refresh();
+  } catch (e: unknown) {
+    toast.add({ title: "Heal failed", description: String(e), color: "error" });
+  } finally {
+    healing.value = false;
+  }
+}
 const stopping = ref(false);
 async function stop() {
   stopping.value = true;
@@ -181,6 +201,9 @@ function taskDot(status: string): string {
         verifier: {{ verdict.verdict }}
       </UBadge>
       <div class="ml-auto flex gap-2">
+        <UButton v-if="data.ticket.status === 'errored'" color="success" variant="soft" icon="i-lucide-heart-pulse" :loading="healing" @click="heal">
+          Heal
+        </UButton>
         <UButton v-if="stoppable" color="warning" variant="soft" :icon="parked ? 'i-lucide-x' : 'i-lucide-octagon-x'" :loading="stopping" @click="stop">
           {{ parked ? "Cancel ticket" : "Stop" }}
         </UButton>

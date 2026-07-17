@@ -22,6 +22,12 @@ export interface TicketParams {
    * spec's defaults.model at prepare; per-stage spec models still win.
    */
   model?: string;
+  /**
+   * Healing re-dispatch: this instance replaces a dead one for an existing
+   * ticket. Resume from the ticket record's recorded progress (branch/PR
+   * on GitHub, events + memory in KV) instead of starting from scratch.
+   */
+  resume?: boolean;
 }
 
 export interface TicketRecord {
@@ -48,6 +54,14 @@ export interface TicketRecord {
   branch?: string;
   prUrl?: string;
   runId?: string;
+  /**
+   * Current workflow instance driving this ticket. Equals the ticket id
+   * for the first instance; healing re-dispatches append -h<n>. All
+   * wake/stop/status calls must target this, not the ticket id.
+   */
+  wfInstance?: string;
+  /** How many healing re-dispatches this ticket has consumed. */
+  healAttempts?: number;
 }
 
 export interface Env {

@@ -7,6 +7,10 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    // Self-healing sweep: re-dispatch errored tickets with heal budget left.
+    "crons": ["*/15 * * * *"]
+  },
   "containers": [
     {
       "class_name": "Sandbox",
