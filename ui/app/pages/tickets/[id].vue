@@ -62,17 +62,38 @@ const { data: traces } = await useFetch<TraceIndexEntry[]>(`/api/tickets/${id}/t
   lazy: true,
   server: false,
 });
-const selectedTrace = ref<string>();
-const { data: traceDetail } = await useFetch<{
+interface TraceDetail {
   kind: string;
   archivedAt: string;
-  activity: { usage?: { totalTokens?: number }; tasks?: ActivityTask[] };
-}>(() => `/api/tickets/${id}/traces/${selectedTrace.value}`, {
-  lazy: true,
-  server: false,
-  immediate: false,
-  watch: [selectedTrace],
-});
+  activity: { usage?: { totalTokens?: number; costUsd?: number }; tasks?: ActivityTask[] };
+}
+const selectedTrace = ref<string>();
+const traceDetail = ref<TraceDetail | null>(null);
+const traceLoading = ref(false);
+const traceCache = new Map<string, TraceDetail>();
+async function toggleTrace(runId: string) {
+  if (selectedTrace.value === runId) {
+    selectedTrace.value = undefined;
+    traceDetail.value = null;
+    return;
+  }
+  selectedTrace.value = runId;
+  const cached = traceCache.get(runId);
+  if (cached) {
+    traceDetail.value = cached;
+    return;
+  }
+  traceDetail.value = null;
+  traceLoading.value = true;
+  try {
+    const d = await $fetch<TraceDetail>(`/api/tickets/${id}/traces/${runId}`);
+    traceCache.set(runId, d);
+    // Only apply if the user hasn't clicked away meanwhile
+    if (selectedTrace.value === runId) traceDetail.value = d;
+  } finally {
+    traceLoading.value = false;
+  }
+}
 
 /** Verifier verdict pulled out of an activity task list, if present. */
 function verifierVerdict(tasks?: ActivityTask[]): { verdict: string; detail: string } | null {
@@ -107,6 +128,16 @@ function taskDuration(t: ActivityTask): string {
 /** Retry count — the only genuinely interesting fact in the engine events. */
 function taskAttempts(t: ActivityTask): number {
   return t.events.filter((e) => (e.type ?? "") === "attempt.started").length;
+}
+/** "initial" / "revision-2" / "rev1-failed" → human labels. */
+function traceKindLabel(kind: string): string {
+  if (kind === "initial") return "First run";
+  const rev = kind.match(/^revision-(\d+)$/);
+  if (rev) return `Revision ${rev[1]}`;
+  const failed = kind.match(/^rev(\d+)-failed$/);
+  if (failed) return `Revision ${failed[1]} — failed`;
+  if (kind === "run-failed") return "Run — failed";
+  return kind;
 }
 function fmtCost(u?: { totalTokens?: number; costUsd?: number }): string {
   if (!u) return "";
@@ -331,30 +362,40 @@ function taskDot(status: string): string {
         </div>
       </template>
       <div class="space-y-2">
-        <div
-          v-for="tr in traces"
-          :key="tr.runId"
-          class="flex items-center gap-3 text-sm cursor-pointer hover:bg-elevated rounded px-2 py-1"
-          @click="selectedTrace = selectedTrace === tr.runId ? undefined : tr.runId"
-        >
-          <UIcon :name="selectedTrace === tr.runId ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" class="text-muted" />
-          <UBadge variant="subtle" size="sm">{{ tr.kind }}</UBadge>
-          <span class="font-mono text-xs">{{ tr.runId }}</span>
-          <span class="text-muted text-xs ml-auto">{{ new Date(tr.archivedAt).toLocaleString() }}</span>
-        </div>
-        <div v-if="traceDetail && selectedTrace" class="border-l border-default ml-2 pl-3 space-y-2">
-          <div class="text-xs text-muted">
-            tokens: {{ traceDetail.activity?.usage?.totalTokens ?? "n/a" }}
+        <template v-for="tr in traces" :key="tr.runId">
+          <div
+            class="flex items-center gap-3 text-sm cursor-pointer hover:bg-elevated rounded px-2 py-1"
+            @click="toggleTrace(tr.runId)"
+          >
+            <UIcon :name="selectedTrace === tr.runId ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" class="text-muted" />
+            <UBadge :color="tr.kind.includes('failed') ? 'error' : 'neutral'" variant="subtle" size="sm">{{ traceKindLabel(tr.kind) }}</UBadge>
+            <span class="text-muted text-xs ml-auto">{{ new Date(tr.archivedAt).toLocaleString() }}</span>
           </div>
-          <div v-for="task in traceDetail.activity?.tasks ?? []" :key="task.id" class="text-sm">
-            <div class="flex items-center gap-2">
-              <span class="size-1.5 rounded-full" :class="taskDot(task.status)" />
-              <span class="font-medium">{{ stageMeta(task.id).label }}</span>
-              <span class="text-muted text-xs">{{ task.status }}</span>
+          <div v-if="selectedTrace === tr.runId" class="border-l-2 border-primary/30 ml-2.5 pl-4 py-1 space-y-3">
+            <div v-if="traceLoading" class="text-muted text-sm flex items-center gap-2">
+              <UIcon name="i-lucide-loader-circle" class="animate-spin size-3.5" /> loading run…
             </div>
-            <pre v-if="task.analysis" class="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto text-muted mt-1">{{ task.analysis }}</pre>
+            <template v-else-if="traceDetail">
+              <div v-if="fmtCost(traceDetail.activity?.usage)" class="text-xs text-muted">
+                {{ fmtCost(traceDetail.activity.usage) }}
+              </div>
+              <div v-for="task in traceDetail.activity?.tasks ?? []" :key="task.id">
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="size-1.5 rounded-full shrink-0" :class="taskDot(task.status)" />
+                  <span class="font-medium">{{ stageMeta(task.id).label }}</span>
+                  <span class="text-muted text-xs">{{ task.status }}</span>
+                  <span class="text-muted text-xs ml-auto">{{ taskDuration(task) }}</span>
+                </div>
+                <div v-if="task.analysis" class="prose prose-sm dark:prose-invert max-w-none mt-0.5 ml-3.5 text-sm opacity-90">
+                  <Comark>{{ task.analysis }}</Comark>
+                </div>
+              </div>
+              <div v-if="!traceDetail.activity?.tasks?.length" class="text-muted text-sm">
+                no stage data was captured for this run
+              </div>
+            </template>
           </div>
-        </div>
+        </template>
       </div>
     </UCard>
   </div>
