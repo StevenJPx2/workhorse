@@ -73,6 +73,9 @@ export const githubPlugin: SourcePlugin = {
       });
     } else if (event === "issue_comment" && p.action === "created" && p.issue?.pull_request) {
       const c = p.comment;
+      // Ignore the agent's own PR replies (posted with the same token as the
+      // human's) — without this the reply itself would wake the workflow: loop.
+      if ((c.body || "").startsWith("**Workhorse revision")) return [];
       await push(p.issue.number, {
         kind: "pr-comment",
         summary: `PR comment by ${c.user?.login}: ${(c.body || "").slice(0, 500)}`,

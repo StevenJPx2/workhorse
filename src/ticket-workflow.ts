@@ -25,6 +25,21 @@ async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) 
 /** How many external wake→revise cycles a ticket may go through. */
 const MAX_REVISIONS = 20;
 
+/**
+ * Freshest access token available. The token in the workflow payload is
+ * frozen at filing time and lives ~5h — any step that can run later
+ * (parks, long drives, revisions days after filing) MUST use the
+ * custodian-pushed token from KV instead.
+ */
+async function freshToken(env: Env, fallback: string): Promise<string> {
+  const stored = await env.TICKETS.get("auth:access");
+  if (stored) {
+    const parsed = JSON.parse(stored) as { access: string; expires: number };
+    if (parsed.expires - Date.now() > 5 * 60 * 1000) return parsed.access;
+  }
+  return fallback;
+}
+
 /** Live observability snapshot pushed to KV after every phase/burst. */
 async function setLive(env: Env, ticketId: string, live: Record<string, unknown>): Promise<void> {
   await env.TICKETS.put(`live:${ticketId}`, JSON.stringify({ ...live, at: new Date().toISOString() }));
@@ -135,7 +150,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
-        await injectAuth(this.env, sandboxId, t.accessToken);
+        await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
         await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
         // Fleet memory: seed the sandbox with this repo's accumulated memories.
         await restoreMemory(this.env, sandboxId, t.repo);
@@ -154,7 +169,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
 
     await step.do("mark-implementing", async () => {
       await updateTicket(this.env, t.id, { status: "implementing" });
-      await injectAuth(this.env, sandboxId, t.accessToken);
+      await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
     });
     await this.driveToCompletion(step, sandboxId, runId, t.id, "run");
 
@@ -248,7 +263,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         { retries: { limit: 1, delay: "30 seconds" }, timeout: "40 minutes" },
         async () => {
           await updateTicket(this.env, t.id, { status: "implementing" });
-          await injectAuth(this.env, sandboxId, t.accessToken);
+          await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
           await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
           await restoreMemory(this.env, sandboxId, t.repo);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
@@ -279,6 +294,25 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           status: "in-review",
           result: `${diffStat}\n\n${analysis}`.trim(),
         });
+        // Close the conversational loop: reply on the PR with what was done
+        // (or why nothing was changed). Without this, word-only feedback
+        // looks ignored even though the agent processed it.
+        const prNum = prUrl?.match(/\/pull\/(\d+)/)?.[1];
+        const m = t.repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
+        if (prNum && m) {
+          const changed = pushed && diff.trim().length > 0;
+          const body = `**Workhorse revision ${round}** ${changed ? "— changes pushed to this branch" : "— no code changes needed"}\n\n${analysis.slice(0, 2500)}\n\n---\n*Replying to:*\n${events.map((e) => `> ${e.summary}`).join("\n")}`;
+          await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/issues/${prNum}/comments`, {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+              accept: "application/vnd.github+json",
+              "user-agent": "workhorse",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ body }),
+          }).catch(() => {}); // reply is best-effort, never fails the step
+        }
       });
     }
 
