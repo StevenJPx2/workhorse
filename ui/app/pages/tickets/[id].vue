@@ -129,6 +129,27 @@ function taskDuration(t: ActivityTask): string {
 function taskAttempts(t: ActivityTask): number {
   return t.events.filter((e) => (e.type ?? "") === "attempt.started").length;
 }
+/** Human explanation for WHY a stage failed, mined from engine events. */
+const FAILURE_EXPLANATIONS: Record<string, string> = {
+  model:
+    "the model call failed — this is almost always an expired or invalid OAuth token (the agent process exits cleanly with no output)",
+  spawn: "the agent process could not be started inside the sandbox",
+  timeout: "the stage hit its runtime limit",
+  output: "the agent finished but did not produce the required structured output",
+};
+function taskFailure(t: ActivityTask): string | null {
+  if (t.status !== "failed") return null;
+  const fails = t.events.filter((e) => (e.type ?? "") === "attempt.failed");
+  if (!fails.length) return "no failure detail was recorded";
+  const last = fails[fails.length - 1] as { data?: { failureKind?: string; exitCode?: number; signal?: string | null } };
+  const kind = last?.data?.failureKind ?? "unknown";
+  const why = FAILURE_EXPLANATIONS[kind] ?? `failure kind: ${kind}`;
+  const attempts = fails.length;
+  const extra: string[] = [];
+  if (last?.data?.exitCode !== undefined && last.data.exitCode !== 0) extra.push(`exit code ${last.data.exitCode}`);
+  if (last?.data?.signal) extra.push(`signal ${last.data.signal}`);
+  return `Failed after ${attempts} attempt${attempts > 1 ? "s" : ""}: ${why}${extra.length ? ` (${extra.join(", ")})` : ""}.`;
+}
 /** "initial" / "revision-2" / "rev1-failed" → human labels. */
 function traceKindLabel(kind: string): string {
   if (kind === "initial") return "First run";
@@ -327,6 +348,10 @@ function taskDot(status: string): string {
                 <Comark>{{ task.analysis }}</Comark>
               </div>
               <div v-else-if="task.status === 'running'" class="text-muted text-sm mt-1 italic">working…</div>
+              <div v-if="taskFailure(task)" class="mt-1 text-sm text-error flex items-start gap-1.5">
+                <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0 mt-0.5" />
+                <span>{{ taskFailure(task) }}</span>
+              </div>
               <UCollapsible v-if="task.prompt || task.output" class="mt-1">
                 <UButton variant="link" color="neutral" size="xs" icon="i-lucide-chevron-right" class="px-0">
                   details
@@ -388,6 +413,10 @@ function taskDot(status: string): string {
                 </div>
                 <div v-if="task.analysis" class="prose prose-sm dark:prose-invert max-w-none mt-0.5 ml-3.5 text-sm opacity-90">
                   <Comark>{{ task.analysis }}</Comark>
+                </div>
+                <div v-if="taskFailure(task)" class="mt-0.5 ml-3.5 text-sm text-error flex items-start gap-1.5">
+                  <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0 mt-0.5" />
+                  <span>{{ taskFailure(task) }}</span>
                 </div>
               </div>
               <div v-if="!traceDetail.activity?.tasks?.length" class="text-muted text-sm">
