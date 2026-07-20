@@ -75,17 +75,28 @@ const UA =
 export function detectBlock(status: number, html: string, finalUrl: string): string | null {
   const h = html.slice(0, 20000).toLowerCase();
   const u = finalUrl.toLowerCase();
-  // PerimeterX / HUMAN Security.
+  // PerimeterX / HUMAN Security. Key off block-INTERSTITIAL signals, never the
+  // bare vendor name: legit PX-protected pages embed the "perimeterx" sensor
+  // script and _px* cookies, so matching those flags real content as a block
+  // (empirically: talbots.com home page contains "perimeterx" in 412KB of
+  // genuine content). The deny text / captcha element / px-show URL only appear
+  // on the actual interstitial.
   if (
     h.includes("access to this page has been denied") ||
+    h.includes("using automation tools to browse") ||
     h.includes("px-captcha") ||
     u.includes("/px-show") ||
-    h.includes("perimeterx") ||
-    h.includes("_pxhd")
+    u.includes("px-captcha")
   )
     return "PerimeterX/HUMAN";
-  // DataDome.
-  if (h.includes("datadome") || u.includes("geo.captcha-delivery.com") || h.includes("dd-captcha"))
+  // DataDome — same rule: match the captcha-delivery interstitial, not the
+  // "datadome" sensor string that legit protected pages embed.
+  if (
+    u.includes("geo.captcha-delivery.com") ||
+    u.includes("captcha-delivery.com") ||
+    h.includes("dd-captcha") ||
+    (h.includes("datadome") && h.includes("captcha"))
+  )
     return "DataDome";
   // Akamai Bot Manager.
   if (
