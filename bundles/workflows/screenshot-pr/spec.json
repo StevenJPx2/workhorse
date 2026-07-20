@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "name": "screenshot-pr",
+  "description": "Screenshot a web page, host the image at a public URL, and write it into the repo as markdown so Workhorse opens a PR embedding it.",
+  "defaults": {
+    "agent": "shooter",
+    "readOnly": false,
+    "thinking": "low",
+    "maxRuntimeMs": 900000,
+    "worktreePolicy": "off"
+  },
+  "artifactGraph": {
+    "stages": [
+      {
+        "id": "shoot",
+        "type": "single",
+        "readOnly": false,
+        "thinking": "low",
+        "tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "write",
+          "bash",
+          {
+            "name": "browser_screenshot",
+            "classification": "read-only",
+            "optional": false
+          },
+          {
+            "name": "upload_image",
+            "classification": "read-only",
+            "optional": false
+          }
+        ],
+        "prompt": "The task names a web page URL to capture. Steps: (1) browser_screenshot that URL with savePath=/workspace/shot.png (OUTSIDE the repo, so the raw PNG stays out of the diff); if the page is JS-heavy pass waitMs around 2000. (2) upload_image /workspace/shot.png to get a permanent public URL (it uploads to catbox, keyless, and retries transient failures itself). (3) write a markdown file in the repo root — use the filename the task requests, else SCREENSHOT.md — that embeds the hosted image with ![alt](url) and includes a short heading, the source URL, and today's date. Do NOT commit the PNG itself. If the screenshot or upload truly fails, write the file stating what failed rather than inventing a URL. Then verify with bash: git add -A && git diff --cached --stat, and include that in your analysis.",
+        "output": {
+          "analysis": { "required": true },
+          "maxDigestChars": 1500
+        }
+      }
+    ]
+  }
+}

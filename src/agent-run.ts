@@ -101,18 +101,26 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
  * Prepare the workspace: clone the repo, install the Workhorse workflow
  * bundle, and keep pi-workflow run artifacts out of the git diff.
  */
-export async function prepareWorkspace(env: Env, sandboxId: string, repo: string, model?: string) {
+export async function prepareWorkspace(
+  env: Env,
+  sandboxId: string,
+  repo: string,
+  model?: string,
+  workflow = "coding",
+) {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  // Guard the workflow name (it lands in shell paths): letters/digits/-/_ only.
+  const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
   // Evals: patch the model override into the workspace spec copy.
   const patchModel = model
-    ? `node -e 'const f=".pi/workflows/coding/spec.json",s=require("/workspace/repo/"+f);s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`
+    ? `node -e 'const f=".pi/workflows/${wf}/spec.json",s=require("/workspace/repo/"+f);s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`
     : "true";
   const result = await sandbox.exec(
     [
       `[ -d /workspace/repo/.git ] || git clone --depth 50 ${JSON.stringify(repo)} /workspace/repo`,
       `cd /workspace/repo`,
       `mkdir -p .pi/workflows`,
-      `cp -R /opt/agent/bundles/workflows/coding .pi/workflows/coding`,
+      `cp -R /opt/agent/bundles/workflows/${wf} .pi/workflows/${wf}`,
       patchModel,
       // Keep run artifacts out of diffs/PRs without touching tracked files.
       `grep -q "^\\.pi/$" .git/info/exclude 2>/dev/null || echo ".pi/" >> .git/info/exclude`,
@@ -125,11 +133,17 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
   }
 }
 
-/** Start the coding workflow for a task. Returns the pi-workflow run id. */
-export async function startWorkflow(env: Env, sandboxId: string, task: string): Promise<string> {
+/** Start the named workflow for a task. Returns the pi-workflow run id. */
+export async function startWorkflow(
+  env: Env,
+  sandboxId: string,
+  task: string,
+  workflow = "coding",
+): Promise<string> {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
   // Write the slash command to a file to sidestep shell-quoting pitfalls.
-  const slash = `/workflow run coding ${JSON.stringify(task)}`;
+  const slash = `/workflow run ${wf} ${JSON.stringify(task)}`;
   await sandbox.writeFile("/workspace/.task", slash);
   const result = await sandbox.exec(
     `cd /workspace/repo && timeout 240 ${PI} -p -np "$(cat /workspace/.task)" 2>&1 | tail -20`,

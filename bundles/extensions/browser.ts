@@ -19,7 +19,8 @@
 // else /root/.workhorse-browser.json { "url": "...", "token": "..." } written
 // into the sandbox at prepare time.
 
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
@@ -118,16 +119,34 @@ export default function (pi: ExtensionAPI) {
     description:
       "Capture a PNG screenshot of a live web page (Browser Rendering tier only). Returns the " +
       "image for visual inspection — e.g. checking a deployed/preview UI actually renders " +
-      "correctly. Not available for hard bot-walled sites that require the unblocker tier.",
+      "correctly. Pass savePath to instead write the PNG to a file in the workspace (and get " +
+      "the path back, no inline image) — use that when you intend to upload it with " +
+      "upload_image. Not available for hard bot-walled sites that require the unblocker tier.",
     parameters: Type.Object({
       url: Type.String({ description: "Absolute http(s) URL to screenshot" }),
       waitMs: Type.Optional(Type.Number({ description: "Settle time after load (ms), max 8000" })),
+      savePath: Type.Optional(
+        Type.String({
+          description:
+            "Write the PNG to this path instead of returning it inline (e.g. /workspace/repo/shot.png). " +
+            "Returns the saved path + byte size — ideal before upload_image.",
+        }),
+      ),
     }),
     async execute(_id, params) {
       const r = await callBrowser({ url: params.url, mode: "screenshot", waitMs: params.waitMs });
       if (!r.ok || !r.base64Image) {
         const why = r.blockedBy ? `blocked by ${r.blockedBy}` : (r.note ?? "screenshot failed");
         return textResult(`Could not screenshot ${params.url}: ${why}.`);
+      }
+      if (params.savePath) {
+        try {
+          mkdirSync(dirname(params.savePath), { recursive: true });
+          writeFileSync(params.savePath, Buffer.from(r.base64Image, "base64"));
+        } catch (e) {
+          return textResult(`Screenshot captured but could not write to ${params.savePath}: ${String(e)}`);
+        }
+        return textResult(`Screenshot of ${params.url} saved to ${params.savePath} (${r.bytes ?? 0} bytes). Upload it with upload_image to get a public URL.`);
       }
       return {
         content: [

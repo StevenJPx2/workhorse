@@ -23,6 +23,12 @@ export interface TicketParams {
    */
   model?: string;
   /**
+   * Which baked workflow bundle to run (bundles/workflows/<workflow>).
+   * Defaults to "coding". e.g. "screenshot-pr" screenshots a URL, uploads
+   * it, and opens a PR embedding the image.
+   */
+  workflow?: string;
+  /**
    * Healing re-dispatch: this instance replaces a dead one for an existing
    * ticket. Resume from the ticket record's recorded progress (branch/PR
    * on GitHub, events + memory in KV) instead of starting from scratch.
@@ -54,6 +60,8 @@ export interface TicketRecord {
   branch?: string;
   prUrl?: string;
   runId?: string;
+  /** Which baked workflow bundle drives this ticket (default "coding"). */
+  workflow?: string;
   /**
    * Current workflow instance driving this ticket. Equals the ticket id
    * for the first instance; healing re-dispatches append -h<n>. All

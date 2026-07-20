@@ -47,6 +47,7 @@ export async function healTicket(
     repo: rec.repo,
     prompt: rec.prompt,
     accessToken: "", // freshToken() pulls the custodian token from KV
+    workflow: rec.workflow,
     resume: true,
   };
   await env.TICKET_WF.create({ id: instance, params });
@@ -164,6 +165,7 @@ export default {
         status: "queued",
         createdAt: now,
         updatedAt: now,
+        workflow: body.workflow,
         wfInstance: id,
       };
       await env.TICKETS.put(id, JSON.stringify(rec));

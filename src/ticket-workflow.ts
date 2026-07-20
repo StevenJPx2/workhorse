@@ -176,7 +176,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
-        await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
+        await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
         // Fleet memory: seed the sandbox with this repo's accumulated memories.
         await restoreMemory(this.env, sandboxId, t.repo);
         // Browser plane: let gated stages fetch live web pages via the Worker.
@@ -188,7 +188,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       "start-workflow",
       { retries: { limit: 1, delay: "10 seconds" }, timeout: "10 minutes" },
       async () => {
-        const id = await startWorkflow(this.env, sandboxId, t.prompt);
+        const id = await startWorkflow(this.env, sandboxId, t.prompt, t.workflow);
         await updateTicket(this.env, t.id, { runId: id });
         return id;
       },
@@ -305,7 +305,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         async () => {
           await updateTicket(this.env, t.id, { status: "implementing" });
           await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
-          await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
+          await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
           await restoreMemory(this.env, sandboxId, t.repo);
           await injectBrowserConfig(this.env, sandboxId);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
@@ -316,6 +316,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
             this.env,
             sandboxId,
             `${t.prompt}\n\nYour earlier implementation is on the current branch and has an open PR (${prUrl}). New external feedback arrived that you must address now:\n${feedback}\n\nAddress ALL feedback with further code changes on this branch. Do not start over.`,
+            t.workflow,
           );
           await updateTicket(this.env, t.id, { runId: revId });
           return revId;

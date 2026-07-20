@@ -8,7 +8,8 @@
   ],
   "extensions": [
     "extensions/workhorse.ts",
-    "extensions/browser.ts"
+    "extensions/browser.ts",
+    "extensions/catbox.ts"
   ],
   "settings": {
     "defaultProvider": "anthropic",
