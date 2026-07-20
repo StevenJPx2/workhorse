@@ -9,7 +9,7 @@
   "extensions": [
     "extensions/workhorse.ts",
     "extensions/browser.ts",
-    "extensions/catbox.ts"
+    "extensions/imgup.ts"
   ],
   "settings": {
     "defaultProvider": "anthropic",

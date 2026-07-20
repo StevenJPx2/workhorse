@@ -39,4 +39,18 @@ RUN MC_MODELS=/root/.local/share/cortexkit/magic-context/models/Xenova/all-MiniL
   && curl -fsSL -o "$MC_MODELS/tokenizer_config.json" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json \
   && curl -fsSL -o "$MC_MODELS/onnx/model.onnx" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx
 
+# imgup (images-upload-cli): the upload_image tool shells out to it to host
+# screenshots. Single keyless hosts are individually unreliable (catbox
+# throttles datacenter IPs, 0x0.st disabled uploads), so imgup's breadth —
+# a default host plus a fallback chain across 30+ hosts — is the robustness.
+# It is a Python CLI and the base image has no python3, so bootstrap with uv
+# (one static binary that provisions its own managed Python), then symlink
+# imgup onto the global PATH so the workflow agent finds it regardless of its
+# shell PATH.
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin INSTALLER_NO_MODIFY_PATH=1 sh \
+  && uv tool install images-upload-cli \
+  && ln -sf /root/.local/bin/imgup /usr/local/bin/imgup \
+  && imgup --help >/dev/null \
+  && echo "imgup baked OK"
+
 EXPOSE 8080

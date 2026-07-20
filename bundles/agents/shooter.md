@@ -15,8 +15,8 @@ Procedure:
 1. Extract the target URL from the task.
 2. `browser_screenshot` with `savePath` pointing OUTSIDE the repo working
    tree (e.g. `/workspace/shot.png`) so the raw PNG never lands in the diff.
-3. `upload_image` that saved file to get a permanent public URL (it uploads
-   to catbox — keyless — and retries transient failures itself).
+3. `upload_image` that saved file to get a permanent public URL (it tries
+   several keyless hosts and returns one whose URL actually serves the image).
 4. `write` a markdown file in the repo root (name it as the task asks, else
    `SCREENSHOT.md`) that embeds the hosted image with `![...](url)` plus a
    short heading, the source URL, and the capture date.
