@@ -175,21 +175,104 @@ async function viaBrowserRendering(
   }
 }
 
-/** Tier 2: pluggable commercial unblocker (only if a credential is configured). */
-async function viaUnblocker(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
+/** Shape a successful unblocker HTML payload into the requested mode. */
+function shapeUnblocker(
+  req: BrowserFetchRequest,
+  mode: BrowserMode,
+  status: number,
+  html: string,
+  note?: string,
+): BrowserFetchResult {
+  if (mode === "html")
+    return { url: req.url, mode, ok: true, tier: "unblocker", status, content: html, bytes: html.length, note };
+  if (mode === "links") {
+    const links = [...new Set([...html.matchAll(/href=["']([^"']+)["']/gi)].map((m) => m[1]))].slice(0, 500);
+    return { url: req.url, mode, ok: true, tier: "unblocker", status, links, bytes: links.join("\n").length, note };
+  }
+  const content = stripHtml(html);
+  return { url: req.url, mode, ok: true, tier: "unblocker", status, content, bytes: content.length, note };
+}
+
+interface ScrapflyEnvelope {
+  result?: {
+    content?: string;
+    status_code?: number;
+    format?: string;
+    error?: { code?: string; message?: string };
+  };
+  message?: string;
+}
+
+/**
+ * Scrapfly provider (first-class). Its Anti Scraping Protection (asp=true) is
+ * purpose-built for PerimeterX/DataDome/Akamai/Cloudflare: it rotates
+ * residential proxies and solves JS/CAPTCHA challenges server-side — the exact
+ * capability Browser Rendering structurally cannot have. Returns a JSON
+ * envelope with the page in result.content (format=raw). cost_budget caps ASP's
+ * dynamic credit escalation; country defaults to us (the hard targets so far
+ * are US retailers).
+ */
+async function viaScrapfly(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
   const mode = req.mode ?? "text";
-  const tmpl = env.UNBLOCKER_URL;
-  const key = env.UNBLOCKER_KEY ?? "";
-  if (!tmpl) {
+  const key = env.SCRAPFLY_KEY!;
+  const params = new URLSearchParams({
+    key,
+    url: req.url,
+    asp: "true",
+    render_js: "true",
+    format: "raw",
+    country: env.SCRAPFLY_COUNTRY || "us",
+  });
+  if (req.waitMs && req.waitMs > 0) params.set("rendering_wait", String(Math.min(req.waitMs, 8000)));
+  if (env.SCRAPFLY_COST_BUDGET) params.set("cost_budget", env.SCRAPFLY_COST_BUDGET);
+
+  const resp = await fetch(`https://api.scrapfly.io/scrape?${params.toString()}`);
+  const apiStatus = resp.status;
+  const bodyText = await resp.text();
+  let envelope: ScrapflyEnvelope;
+  try {
+    envelope = JSON.parse(bodyText) as ScrapflyEnvelope;
+  } catch {
+    return { url: req.url, mode, ok: false, tier: "unblocker", status: apiStatus, note: `scrapfly: non-JSON response (HTTP ${apiStatus}) ${bodyText.slice(0, 160)}` };
+  }
+  const result = envelope.result ?? {};
+  const targetStatus = result.status_code ?? apiStatus;
+  let html = typeof result.content === "string" ? result.content : "";
+  // Large object (>5MB): result.content is an authenticated download URL.
+  if (result.format === "clob" && html) {
+    try {
+      const clobUrl = html;
+      const cr = await fetch(`${clobUrl}${clobUrl.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`);
+      html = await cr.text();
+    } catch {
+      return { url: req.url, mode, ok: false, tier: "unblocker", status: targetStatus, note: "scrapfly: large-object fetch failed" };
+    }
+  }
+  if (apiStatus >= 400 || !html) {
+    const reject = resp.headers.get("x-scrapfly-reject-code") || result.error?.code || envelope.message;
     return {
       url: req.url,
       mode,
       ok: false,
-      tier: "none",
-      blockedBy: null,
-      note: "unblocker not configured (set UNBLOCKER_URL + UNBLOCKER_KEY to fetch hard bot-walled sites)",
+      tier: "unblocker",
+      status: targetStatus,
+      blockedBy: "unblocker-failed",
+      note: `scrapfly could not retrieve the page (HTTP ${apiStatus}${reject ? `, ${reject}` : ""})`,
     };
   }
+  const blockedBy = detectBlock(targetStatus, html, req.url);
+  if (blockedBy) {
+    return { url: req.url, mode, ok: false, tier: "unblocker", status: targetStatus, blockedBy, note: `scrapfly ASP did not defeat ${blockedBy}` };
+  }
+  const cost = resp.headers.get("x-scrapfly-api-cost");
+  return shapeUnblocker(req, mode, targetStatus, html, cost ? `scrapfly asp+js, ${cost} credits` : "scrapfly asp+js");
+}
+
+/** Generic template provider (ScraperAPI-style raw-HTML proxies). */
+async function viaGenericUnblocker(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
+  const mode = req.mode ?? "text";
+  const tmpl = env.UNBLOCKER_URL!;
+  const key = env.UNBLOCKER_KEY ?? "";
   const endpoint = tmpl.replace(/\{URL\}/g, encodeURIComponent(req.url)).replace(/\{KEY\}/g, key);
   const resp = await fetch(endpoint, { headers: { "user-agent": UA } });
   const status = resp.status;
@@ -198,13 +281,25 @@ async function viaUnblocker(env: Env, req: BrowserFetchRequest): Promise<Browser
   if (!resp.ok || blockedBy) {
     return { url: req.url, mode, ok: false, tier: "unblocker", status, blockedBy: blockedBy ?? "generic-block", note: "unblocker could not retrieve the page" };
   }
-  if (mode === "html") return { url: req.url, mode, ok: true, tier: "unblocker", status, content: html, bytes: html.length };
-  if (mode === "links") {
-    const links = [...new Set([...html.matchAll(/href=["']([^"']+)["']/gi)].map((m) => m[1]))].slice(0, 500);
-    return { url: req.url, mode, ok: true, tier: "unblocker", status, links, bytes: links.join("\n").length };
-  }
-  const content = stripHtml(html);
-  return { url: req.url, mode, ok: true, tier: "unblocker", status, content, bytes: content.length };
+  return shapeUnblocker(req, mode, status, html);
+}
+
+/**
+ * Tier 2: pluggable commercial unblocker. Scrapfly is the first-class provider
+ * (just set SCRAPFLY_KEY); UNBLOCKER_URL is a generic template fallback for any
+ * other raw-HTML proxy. Neither configured => hard sites report an honest block.
+ */
+async function viaUnblocker(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
+  if (env.SCRAPFLY_KEY) return viaScrapfly(env, req);
+  if (env.UNBLOCKER_URL) return viaGenericUnblocker(env, req);
+  return {
+    url: req.url,
+    mode: req.mode ?? "text",
+    ok: false,
+    tier: "none",
+    blockedBy: null,
+    note: "unblocker not configured (set SCRAPFLY_KEY, or UNBLOCKER_URL + UNBLOCKER_KEY)",
+  };
 }
 
 /**
@@ -232,17 +327,22 @@ export async function browserFetch(env: Env, req: BrowserFetchRequest): Promise<
   }
   if (first.ok) return first;
 
+  // Screenshots only exist on the Browser Rendering tier (the unblocker
+  // returns HTML), so a blocked screenshot cannot escalate — report honestly.
+  if ((req.mode ?? "text") === "screenshot") return first;
+
+  const unblockerConfigured = !!env.SCRAPFLY_KEY || !!env.UNBLOCKER_URL;
   // Escalate blocks (and browser-rendering errors) to the unblocker tier.
   if (first.blockedBy || first.note?.startsWith("browser rendering error")) {
-    const second = await viaUnblocker(env, req).catch((e) => null);
+    const second = await viaUnblocker(env, req).catch(() => null);
     if (second && second.ok) return { ...second, note: `escalated from ${first.tier} (${first.blockedBy ?? "error"})` };
     // Neither tier worked — return the most informative failure.
     if (second && second.tier !== "none") return second;
     return {
       ...first,
       note:
-        first.blockedBy && !env.UNBLOCKER_URL
-          ? `blocked by ${first.blockedBy}; configure UNBLOCKER_URL + UNBLOCKER_KEY to fetch hard bot-walled sites`
+        first.blockedBy && !unblockerConfigured
+          ? `blocked by ${first.blockedBy}; set SCRAPFLY_KEY to fetch hard bot-walled sites`
           : first.note,
     };
   }

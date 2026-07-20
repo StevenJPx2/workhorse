@@ -82,10 +82,20 @@ export interface Env {
   /** This Worker's own public URL, so sandboxes can call back to /browser. */
   SELF_URL?: string;
   /**
-   * Optional commercial unblocker URL template for hard bot-walled sites
-   * (PerimeterX/DataDome/Akamai). {URL} is percent-encoded, {KEY} raw. e.g.
-   * "https://api.scraperapi.com/?api_key={KEY}&url={URL}&render=true".
-   * Credential stays in the Worker plane; unset = hard sites report blocked.
+   * Scrapfly API key (first-class unblocker for hard bot-walled sites). Its
+   * asp=true Anti Scraping Protection rotates residential proxies + solves
+   * PerimeterX/DataDome/Akamai/Cloudflare challenges server-side. Set this and
+   * hard sites (talbots.com) start working. Credential stays in the Worker plane.
+   */
+  SCRAPFLY_KEY?: string;
+  /** Scrapfly proxy country (ISO 3166-1 alpha-2). Default "us". */
+  SCRAPFLY_COUNTRY?: string;
+  /** Cap on ASP's dynamic credit escalation per request, e.g. "55". */
+  SCRAPFLY_COST_BUDGET?: string;
+  /**
+   * Generic unblocker URL template fallback (any raw-HTML proxy, ScraperAPI-
+   * style). {URL} percent-encoded, {KEY} raw. Used only when SCRAPFLY_KEY is
+   * unset. Unset (and no SCRAPFLY_KEY) = hard sites report an honest block.
    */
   UNBLOCKER_URL?: string;
   UNBLOCKER_KEY?: string;
