@@ -1,4 +1,5 @@
 import { getSandbox } from "@cloudflare/sandbox";
+import { type BrowserFetchRequest, browserFetch } from './browser';
 import { appendEvents } from "./events";
 import { pluginFor } from "./plugins";
 import type { Env, TicketParams, TicketRecord } from "./types";
@@ -103,6 +104,23 @@ export default {
     }
 
     const auth = request.headers.get("authorization") ?? "";
+
+    // Browser plane: tiered fetch (Browser Rendering → unblocker escalation).
+    // Authed by a SCOPED token (or the master token), NOT solely the master
+    // bearer: ticket sandboxes run untrusted repo code, so the value injected
+    // there must not be the fleet master key. Placed above the master gate so
+    // the scoped token is accepted.
+    if (url.pathname === "/browser" && request.method === "POST") {
+      const okAuth =
+        auth === `Bearer ${env.SPIKE_TOKEN}` ||
+        (!!env.BROWSER_TOKEN && auth === `Bearer ${env.BROWSER_TOKEN}`);
+      if (!okAuth) return new Response("unauthorized", { status: 401 });
+      const body = (await request.json().catch(() => ({}))) as BrowserFetchRequest;
+      if (!body.url) return json({ error: "url required" }, 400);
+      const result = await browserFetch(env, body);
+      return json(result, result.ok ? 200 : 502);
+    }
+
     if (auth !== `Bearer ${env.SPIKE_TOKEN}`) {
       return new Response("unauthorized", { status: 401 });
     }

@@ -19,6 +19,13 @@
       "max_instances": 5
     }
   ],
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "vars": {
+    // This Worker's own public URL, so ticket sandboxes can call POST /browser.
+    "SELF_URL": "https://workhorse-sandbox.stevenjpx2.workers.dev"
+  },
   "durable_objects": {
     "bindings": [
       {

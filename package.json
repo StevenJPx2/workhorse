@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cloudflare/puppeteer": "1.1.0",
     "@cloudflare/sandbox": "^0.12.3"
   },
   "devDependencies": {

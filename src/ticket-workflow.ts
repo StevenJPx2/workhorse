@@ -1,6 +1,7 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
 import {
   injectAuth,
+  injectBrowserConfig,
   prepareWorkspace,
   startWorkflow,
   driveWorkflow,
@@ -178,6 +179,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
         // Fleet memory: seed the sandbox with this repo's accumulated memories.
         await restoreMemory(this.env, sandboxId, t.repo);
+        // Browser plane: let gated stages fetch live web pages via the Worker.
+        await injectBrowserConfig(this.env, sandboxId);
       },
     );
 
@@ -304,6 +307,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
           await prepareWorkspace(this.env, sandboxId, t.repo, t.model);
           await restoreMemory(this.env, sandboxId, t.repo);
+          await injectBrowserConfig(this.env, sandboxId);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
           const feedback = events
             .map((e) => `- [${e.kind}] ${e.summary}`)

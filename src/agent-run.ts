@@ -20,6 +20,21 @@ export async function injectAuth(env: Env, sandboxId: string, accessToken: strin
   await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
 }
 
+/**
+ * Write the browser plane's callback config into the sandbox: the Worker's
+ * own public URL + the SCOPED browser token (never the master token). The
+ * sandbox-half browser tool reads this to call POST /browser. No-ops when
+ * the browser plane isn't configured, so runs never fail on its absence.
+ */
+export async function injectBrowserConfig(env: Env, sandboxId: string): Promise<void> {
+  if (!env.SELF_URL || !env.BROWSER_TOKEN) return;
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.writeFile(
+    "/root/.workhorse-browser.json",
+    JSON.stringify({ url: env.SELF_URL, token: env.BROWSER_TOKEN }),
+  );
+}
+
 const MC_DIR = "/root/.local/share/cortexkit/magic-context";
 const MC_DB = `${MC_DIR}/context.db`;
 /** KV cap is 25 MiB; leave headroom for base64→binary slack. */

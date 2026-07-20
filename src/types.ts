@@ -71,4 +71,22 @@ export interface Env {
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
   GITHUB_WEBHOOK_SECRET: string;
+  /**
+   * Scoped token for the /browser endpoint, injected into ticket sandboxes
+   * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if
+   * leaked: someone can drive our browser fetch, not command the fleet.
+   */
+  BROWSER_TOKEN?: string;
+  /** Browser Rendering binding (tokenless headless Chrome). */
+  BROWSER: Fetcher;
+  /** This Worker's own public URL, so sandboxes can call back to /browser. */
+  SELF_URL?: string;
+  /**
+   * Optional commercial unblocker URL template for hard bot-walled sites
+   * (PerimeterX/DataDome/Akamai). {URL} is percent-encoded, {KEY} raw. e.g.
+   * "https://api.scraperapi.com/?api_key={KEY}&url={URL}&render=true".
+   * Credential stays in the Worker plane; unset = hard sites report blocked.
+   */
+  UNBLOCKER_URL?: string;
+  UNBLOCKER_KEY?: string;
 }
