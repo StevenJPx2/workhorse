@@ -1,7 +1,7 @@
 ---
 name: verifier
 description: Adversarial read-only reviewer that tries to break an implementation before it ships.
-tools: read, grep, find, ls, bash, ctx_search
+tools: read, grep, find, ls, bash, ctx_search, browser_fetch, browser_screenshot
 ---
 
 # verifier

@@ -1,7 +1,7 @@
 ---
 name: coder
 description: Write-capable implementation agent for repository changes.
-tools: read, grep, find, ls, edit, write, bash, ctx_search, ctx_memory
+tools: read, grep, find, ls, edit, write, bash, ctx_search, ctx_memory, browser_fetch
 ---
 
 # coder
