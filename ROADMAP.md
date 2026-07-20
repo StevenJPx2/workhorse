@@ -45,26 +45,18 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
   `screenshot-pr` bundle captures a URL, hosts the image (imgup multi-host
   chain with serve-verification: imgbox → pixhost → catbox), embeds it, opens
   a PR.
-
----
-
-## Next 🔜
-
-### Model fallbacks (availability-driven)
-Detect `429` / credit exhaustion (`failureKind: "model"`) and retry the stage
-down a configured provider chain: OAuth Sonnet → Anthropic API key →
-Workers AI / other providers. Keeps the fleet alive when one credential dries
-up. Mostly a retry-chain in `driveToCompletion` + a spec knob.
-
-### Delegation / promotion (capability-driven)
-Same stage-restart machinery as fallbacks. Spec declares a per-stage model
-chain (haiku → sonnet → opus, or coder → architect). The agent signals
-"not equipped" via a `delegate` field in `control.json`; the orchestrator
-re-runs the stage one model up, upstream artifacts intact. Every promotion is
-recorded in the trace archive so **evals reveal which stages genuinely need a
-bigger model** — making the small-model thesis measurable.
-
-> Ship fallbacks + delegation together — one mechanism, two triggers.
+- **Model fallbacks + delegation** — one stage-restart mechanism, two
+  triggers. *Availability*: a stage that dies on the model plane (429 /
+  credit exhaustion / expired OAuth — detected from `statusDetail` /
+  `failureKind`) walks credential legs: fresh custodian OAuth token →
+  metered `ANTHROPIC_API_KEY`. *Capability*: any stage can set
+  `"delegate": true` (+ `delegateReason`) in its control block; the
+  orchestrator marks the stage failed, patches the next model up the
+  promotion chain (haiku → sonnet → opus, cap 2/run) into the compiled
+  plan, and `resumeRun`s — downstream stages re-run via
+  `invalidateOnDependencyResume`, upstream artifacts intact. Every
+  escalation lands in `esc:<ticket>:<run>` and merges into the trace
+  archive, so **evals reveal which stages genuinely need a bigger model**.
 
 ---
 

@@ -1,10 +1,12 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
 import {
   injectAuth,
+  injectApiKeyAuth,
   injectBrowserConfig,
   prepareWorkspace,
   startWorkflow,
   driveWorkflow,
+  escalateWorkflow,
   collectResult,
   collectActivity,
   deliverBranch,
@@ -12,6 +14,7 @@ import {
   restoreMemory,
   persistMemory,
 } from "./agent-run";
+import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
 import { unconsumedEvents, consumeEvents } from "./events";
 import type { ExternalEvent } from "./plugins/types";
 import type { Env, TicketParams, TicketRecord } from "./types";
@@ -47,6 +50,35 @@ async function setLive(env: Env, ticketId: string, live: Record<string, unknown>
 }
 
 /**
+ * One escalation event on a run: an availability fallback (credential leg
+ * switch) or a capability promotion (stage re-run one model up). Appended
+ * to esc:<ticket>:<run> as it happens; merged into the trace archive so
+ * evals can mine which stages genuinely need a bigger model.
+ */
+interface EscalationEvent {
+  at: string;
+  trigger: "fallback" | "promotion";
+  detail: string;
+  /** Promotion only: which stage delegated + the model movement. */
+  stage?: string;
+  fromModel?: string;
+  toModel?: string;
+}
+
+async function recordEscalation(
+  env: Env,
+  ticketId: string,
+  runId: string,
+  event: Omit<EscalationEvent, "at">,
+): Promise<void> {
+  const key = `esc:${ticketId}:${runId}`;
+  const raw = await env.TICKETS.get(key);
+  const events = raw ? (JSON.parse(raw) as EscalationEvent[]) : [];
+  events.push({ at: new Date().toISOString(), ...event });
+  await env.TICKETS.put(key, JSON.stringify(events));
+}
+
+/**
  * Durable trace archive for optimization mining + evals: one immutable
  * record per pi-workflow run (activity:<id> is a "latest" pointer that gets
  * overwritten each revision; traces never are). Key: trace:<ticket>:<run>.
@@ -61,9 +93,18 @@ async function archiveTrace(
 ): Promise<void> {
   try {
     const at = new Date().toISOString();
+    const escRaw = await env.TICKETS.get(`esc:${ticketId}:${runId}`);
+    const escalations = escRaw ? (JSON.parse(escRaw) as EscalationEvent[]) : undefined;
     await env.TICKETS.put(
       `trace:${ticketId}:${runId}`,
-      JSON.stringify({ ticketId, runId, kind, archivedAt: at, activity: JSON.parse(activity) }),
+      JSON.stringify({
+        ticketId,
+        runId,
+        kind,
+        archivedAt: at,
+        ...(escalations?.length ? { escalations } : {}),
+        activity: JSON.parse(activity),
+      }),
     );
     const idxRaw = await env.TICKETS.get(`traces:${ticketId}`);
     const idx = idxRaw ? (JSON.parse(idxRaw) as Array<Record<string, string>>) : [];
@@ -99,6 +140,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     ticketId: string,
     label: string,
   ): Promise<void> {
+    // Escalation bookkeeping (one mechanism, two triggers): which
+    // availability-fallback legs were burned, which stages already
+    // promoted, how many promotions consumed.
+    let fallbackLeg = 0;
+    const promotedStages = new Set<string>();
+    let promotions = 0;
+
     for (let burst = 1; burst <= 60; burst++) {
       const res = await step.do(
         `${label}-drive-${burst}`,
@@ -115,8 +163,91 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           return r;
         },
       );
+
+      // --- capability-driven promotion: a stage signalled "not equipped" ---
+      // Intercept as soon as the delegate flag shows up on a completed
+      // stage, before (or even after) downstream stages consume its output:
+      // the stage is re-run one model up, dependents re-run via the spec's
+      // invalidateOnDependencyResume.
+      const del = res.delegating;
+      if (del && !promotedStages.has(del.taskId) && promotions < MAX_PROMOTIONS) {
+        const toModel = nextModelUp(PROMOTION_CHAIN, del.model);
+        promotedStages.add(del.taskId); // even if unpromotable: signal is consumed
+        if (toModel) {
+          promotions++;
+          await step.do(
+            `${label}-promote-${del.taskId}-${promotions}`,
+            { retries: { limit: 1, delay: "15 seconds" }, timeout: "5 minutes" },
+            async () => {
+              await escalateWorkflow(this.env, sandboxId, runId, {
+                failSpecId: del.taskId,
+                model: toModel,
+              });
+              await recordEscalation(this.env, ticketId, runId, {
+                trigger: "promotion",
+                detail: del.reason ?? "stage delegated",
+                stage: del.taskId,
+                fromModel: del.model,
+                toModel,
+              });
+              await setLive(this.env, ticketId, {
+                phase: label,
+                runId,
+                note: `promoting ${del.taskId} to ${toModel}`,
+              });
+            },
+          );
+          continue; // resume driving with the promoted stage pending
+        }
+        // Already at the top of the chain: ignore the signal, keep going.
+      }
+
       if (res.status === "completed") return;
       if (res.status === "failed" || res.status === "interrupted") {
+        // --- availability-driven fallback: the MODEL plane died (429 /
+        // credit exhaustion / expired token). Walk the credential legs:
+        // fresh custodian OAuth token first, then a metered API key.
+        if (res.modelFailure) {
+          // Skip legs that need an unconfigured credential.
+          let leg;
+          while (fallbackLeg < FALLBACK_LEGS.length) {
+            const candidate = FALLBACK_LEGS[fallbackLeg++];
+            if (candidate.auth === "api-key" && !this.env.ANTHROPIC_API_KEY) continue;
+            leg = candidate;
+            break;
+          }
+          if (leg) {
+            await step.do(
+              `${label}-fallback-${fallbackLeg}`,
+              { retries: { limit: 1, delay: "15 seconds" }, timeout: "5 minutes" },
+              async () => {
+                if (leg.auth === "api-key") {
+                  await injectApiKeyAuth(this.env, sandboxId, this.env.ANTHROPIC_API_KEY!);
+                } else {
+                  const stored = await this.env.TICKETS.get("auth:access");
+                  const parsed = stored
+                    ? (JSON.parse(stored) as { access: string; expires: number })
+                    : null;
+                  if (!parsed || parsed.expires - Date.now() < 5 * 60 * 1000) {
+                    throw new Error("no fresh custodian token for oauth fallback leg");
+                  }
+                  await injectAuth(this.env, sandboxId, parsed.access);
+                }
+                await escalateWorkflow(this.env, sandboxId, runId, leg.model ? { model: leg.model } : {});
+                await recordEscalation(this.env, ticketId, runId, {
+                  trigger: "fallback",
+                  detail: `model-plane failure; retrying on ${leg.auth}${leg.model ? ` (${leg.model})` : ""}`,
+                });
+                await setLive(this.env, ticketId, {
+                  phase: label,
+                  runId,
+                  note: `model fallback: retrying on ${leg.auth}`,
+                });
+              },
+            ).catch(() => {}); // a failed leg is not terminal — next burst re-reads status
+            continue;
+          }
+        }
         // Capture the post-mortem NOW — the sandbox disk vanishes minutes
         // after failure (sleepAfter), taking task errors/output with it.
         await step.do(`${label}-capture-failure`, { timeout: "3 minutes" }, async () => {

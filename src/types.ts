@@ -80,6 +80,13 @@ export interface Env {
   GITHUB_TOKEN: string;
   GITHUB_WEBHOOK_SECRET: string;
   /**
+   * Metered Anthropic API key: the second availability-fallback leg when a
+   * stage dies on a model failure (429 / credit exhaustion / expired OAuth)
+   * and a fresh custodian OAuth token didn't save it. Optional — unset
+   * means the fallback chain stops after the OAuth re-injection leg.
+   */
+  ANTHROPIC_API_KEY?: string;
+  /**
    * Scoped token for the /browser endpoint, injected into ticket sandboxes
    * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if
    * leaked: someone can drive our browser fetch, not command the fleet.

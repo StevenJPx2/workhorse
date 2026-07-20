@@ -15,6 +15,11 @@
         }
       }
     },
-    "nits": { "type": "array", "items": { "type": "string" } }
+    "nits": { "type": "array", "items": { "type": "string" } },
+    "delegate": {
+      "type": "boolean",
+      "description": "Set true ONLY when this stage's work genuinely exceeds your capability (not merely hard): the orchestrator re-runs the stage on a stronger model."
+    },
+    "delegateReason": { "type": "string" }
   }
 }

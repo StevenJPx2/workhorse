@@ -4,6 +4,8 @@ import type { Env } from "./types";
 const PI = "pi"; // /usr/local/bin/pi shim baked into the image
 const PI_WORKFLOW_CLI =
   "/root/.pi/agent/npm/node_modules/@agwab/pi-workflow/src/cli.mjs";
+const PI_WORKFLOW_DIST =
+  "/root/.pi/agent/npm/node_modules/@agwab/pi-workflow/dist";
 
 /** Write the short-lived OAuth access token into the sandbox's Pi home. */
 export async function injectAuth(env: Env, sandboxId: string, accessToken: string) {
@@ -17,6 +19,17 @@ export async function injectAuth(env: Env, sandboxId: string, accessToken: strin
       expires: Date.now() + 4 * 3600 * 1000,
     },
   };
+  await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
+}
+
+/**
+ * Availability-fallback leg 2: switch the sandbox's Pi auth to a metered
+ * Anthropic API key when the OAuth plane is dead (429 / credit exhaustion
+ * even after a fresh custodian token).
+ */
+export async function injectApiKeyAuth(env: Env, sandboxId: string, apiKey: string) {
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  const auth = { anthropic: { type: "api_key", key: apiKey } };
   await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
 }
 
@@ -156,6 +169,77 @@ export async function startWorkflow(
   return m[0];
 }
 
+/** One burst's view of the run, including escalation-relevant signals. */
+export interface DriveReport {
+  status: string;
+  tasks: Array<{ id: string; status: string; detail?: string }>;
+  /**
+   * True when the run's failure traces back to the MODEL plane (429, credit
+   * exhaustion, expired OAuth token — pi-workflow failureKind "model" /
+   * statusDetail *model*). The availability-fallback chain applies.
+   */
+  modelFailure?: boolean;
+  /**
+   * A COMPLETED stage whose control block carried `"delegate": true` — the
+   * agent judged itself under-equipped. The capability-promotion chain
+   * applies (re-run that stage one model up).
+   */
+  delegating?: { taskId: string; model?: string; reason?: string };
+}
+
+/**
+ * Post-burst inspection: run/task status plus the two escalation signals
+ * (model-plane failure, delegate requests in completed stages' control.json).
+ */
+const INSPECT_RUN_SCRIPT = `
+import fs from "fs";
+import path from "path";
+const runId = process.argv[2];
+const repo = "/workspace/repo";
+const wfDir = path.join(repo, ".pi/workflows", runId);
+const run = JSON.parse(fs.readFileSync(path.join(wfDir, "run.json"), "utf8"));
+const tasks = (run.tasks ?? []).map((t) => ({
+  id: t.specId || t.taskId,
+  status: t.status,
+  ...(t.statusDetail && t.statusDetail !== t.status ? { detail: t.statusDetail } : {}),
+}));
+let modelFailure = false;
+for (const t of run.tasks ?? []) {
+  if (t.status !== "failed") continue;
+  if (/model/i.test(String(t.statusDetail ?? ""))) { modelFailure = true; continue; }
+  try {
+    const res = JSON.parse(fs.readFileSync(path.resolve(repo, t.files.result), "utf8"));
+    if (/model/i.test(String(res.failureKind ?? ""))) modelFailure = true;
+  } catch {}
+}
+let compiled = { tasks: [] };
+try { compiled = JSON.parse(fs.readFileSync(path.join(wfDir, "compiled.json"), "utf8")); } catch {}
+const modelOf = (specId) => {
+  const ct = (compiled.tasks ?? []).find((c) => (c.specId || c.id) === specId);
+  return ct?.runtime?.model;
+};
+let delegating;
+for (const t of run.tasks ?? []) {
+  if (t.status !== "completed" || !t.files?.result) continue;
+  try {
+    const dir = path.dirname(path.resolve(repo, t.files.result));
+    const control = JSON.parse(fs.readFileSync(path.join(dir, "control.json"), "utf8"));
+    if (control?.delegate === true) {
+      const specId = t.specId || t.taskId;
+      delegating = {
+        taskId: specId,
+        ...(modelOf(specId) ? { model: modelOf(specId) } : {}),
+        ...(typeof control.delegateReason === "string"
+          ? { reason: control.delegateReason.slice(0, 300) }
+          : {}),
+      };
+      break;
+    }
+  } catch {}
+}
+console.log(JSON.stringify({ status: run.status, tasks, ...(modelFailure ? { modelFailure } : {}), ...(delegating ? { delegating } : {}) }));
+`;
+
 /**
  * Drive the workflow graph forward for ONE short burst (~drainMs) and report
  * status. Long-lived execs through the sandbox DO die silently, so the
@@ -166,11 +250,12 @@ export async function driveWorkflow(
   sandboxId: string,
   runId: string,
   drainMs = 50_000,
-): Promise<{ status: string; tasks: Array<{ id: string; status: string }> }> {
+): Promise<DriveReport> {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.writeFile("/workspace/.inspect-run.mjs", INSPECT_RUN_SCRIPT);
   const result = await sandbox.exec(
     `cd /workspace/repo && timeout ${Math.ceil(drainMs / 1000) + 10} node ${PI_WORKFLOW_CLI} supervise ${runId} --poll-ms 2000 --max-runtime-ms ${drainMs} >/dev/null 2>&1; ` +
-      `node -e "const r=require('/workspace/repo/.pi/workflows/${runId}/run.json'); console.log(JSON.stringify({status:r.status, tasks:(r.tasks||[]).map(t=>({id:t.specId||t.id,status:t.status}))}))"`,
+      `node /workspace/.inspect-run.mjs ${runId}`,
     { timeout: drainMs + 45_000 },
   );
   const lastLine = result.stdout.trim().split("\n").at(-1) ?? "";
@@ -178,6 +263,83 @@ export async function driveWorkflow(
     return JSON.parse(lastLine);
   } catch {
     throw new Error(`drive did not yield status: ${result.stdout.slice(-800)}`);
+  }
+}
+
+/**
+ * Escalation script: stop the run if needed, optionally fail a completed
+ * stage (delegation) and promote its model in the compiled plan, then
+ * resume — failed/interrupted tasks reset to pending and (via the spec's
+ * invalidateOnDependencyResume) stale downstream stages re-run.
+ */
+const ESCALATE_RUN_SCRIPT = `
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from "url";
+const [distDir, runId, failSpecId, toModel] = process.argv.slice(2);
+const cwd = "/workspace/repo";
+const engine = await import(pathToFileURL(path.join(distDir, "engine.js")).href);
+const store = await import(pathToFileURL(path.join(distDir, "store.js")).href);
+// 1. Make sure nothing is still executing (no-op / throws on terminal runs).
+try { await engine.stopRun(cwd, runId); } catch {}
+// 2. Delegation: mark the completed-but-underpowered stage failed so resume
+//    re-runs it (and invalidates its dependents).
+if (failSpecId !== "-") {
+  await store.withRunLease(cwd, runId, async () => {
+    const run = await store.readRunRecord(cwd, runId);
+    const task = (run.tasks ?? []).find((t) => t.specId === failSpecId);
+    if (task && task.status === "completed") {
+      task.status = "failed";
+      task.statusDetail = "delegated";
+      task.lastMessage = "stage delegated for model promotion";
+      await store.writeRunRecord(cwd, run);
+    }
+  });
+}
+// 3. Promotion: patch the stage's model in the compiled plan (launch reads
+//    compiledTask.runtime.model).
+if (toModel !== "-") {
+  const compiledPath = path.join(cwd, ".pi/workflows", runId, "compiled.json");
+  const compiled = JSON.parse(fs.readFileSync(compiledPath, "utf8"));
+  for (const t of compiled.tasks ?? []) {
+    if (failSpecId === "-" || (t.specId || t.id) === failSpecId) {
+      t.runtime = { ...t.runtime, model: toModel };
+    }
+  }
+  fs.writeFileSync(compiledPath, JSON.stringify(compiled));
+}
+// 4. Resume: failed/interrupted -> pending; supervise picks it back up.
+const { resetTaskIds } = await engine.resumeRun(cwd, runId);
+console.log(JSON.stringify({ ok: true, resetTaskIds }));
+`;
+
+/**
+ * Restart the failed/delegated portion of a run. Options:
+ * - failSpecId: a COMPLETED stage to re-run (delegation) — marked failed first.
+ * - model: model override for the re-run stage (all non-matching stages keep
+ *   theirs); with no failSpecId it applies to every stage in the plan.
+ */
+export async function escalateWorkflow(
+  env: Env,
+  sandboxId: string,
+  runId: string,
+  options: { failSpecId?: string; model?: string } = {},
+): Promise<string[]> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.writeFile("/workspace/.escalate-run.mjs", ESCALATE_RUN_SCRIPT);
+  const result = await sandbox.exec(
+    `cd /workspace/repo && node /workspace/.escalate-run.mjs ${PI_WORKFLOW_DIST} ${runId} ${options.failSpecId ?? "-"} ${options.model ?? "-"}`,
+    { timeout: 120_000 },
+  );
+  const lastLine = result.stdout.trim().split("\n").at(-1) ?? "";
+  try {
+    const parsed = JSON.parse(lastLine) as { ok: boolean; resetTaskIds: string[] };
+    if (!parsed.ok) throw new Error("escalate not ok");
+    return parsed.resetTaskIds;
+  } catch {
+    throw new Error(
+      `escalate failed: ${(result.stderr || result.stdout).slice(-800)}`,
+    );
   }
 }
 
