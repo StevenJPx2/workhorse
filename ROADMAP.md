@@ -316,12 +316,23 @@ merged = done; the "Open PR" affordance is baked in.
   or `artifact` (files delivered without a PR, e.g. a generated doc
   committed to a branch without review ceremony).
 - **Done semantics per outcome**: `pr` keeps external-only completion
-  (merge/close). `report` completes on operator acknowledgment — an
-  explicit "Accept result" action in the UI (or Jira Done transition), so
-  the agent still never self-completes; the accept affordance replaces
-  the Open PR button and is configurable per workflow.
+  (merge/close). `report`/`artifact` park as `awaiting-acceptance` (a
+  sibling of `awaiting-input`) and complete on operator acceptance — an
+  explicit "Accept result" action in the UI or a Jira Done transition —
+  so the agent still never self-completes. The ticket page's action
+  affordance follows the outcome: Open PR / rendered report with
+  Accept + Request-changes / branch link with Accept.
+- **Rejection = revision**: "Request changes" with a comment feeds the
+  existing revision loop — operator feedback plays the role PR reviews
+  play for `pr` runs.
 - The verify stage still gates: a research workflow's verifier judges the
   report against the task before it's offered for acceptance.
+- **Acceptance feeds fleet knowledge**: accepted reports index into AI
+  Search as answer documents; rejected-then-revised reports index WITH
+  their rejection reasons — research runs compound the way coding runs
+  do.
+- Builds inside `@workhorse/workflow`: `outcome` is a terminal-stage
+  field the engine reads; the spine's deliver step switches on it.
 
 ### Workflow input parameters + input-parked runs (json-render)
 Two related upgrades to workflows-as-data, GitHub-Actions style:
