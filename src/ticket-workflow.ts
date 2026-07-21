@@ -1,7 +1,6 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
 import {
   injectAuth,
-  injectApiKeyAuth,
   injectBrowserConfig,
   prepareWorkspace,
   startWorkflow,
@@ -205,48 +204,36 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       if (res.status === "completed") return;
       if (res.status === "failed" || res.status === "interrupted") {
         // --- availability-driven fallback: the MODEL plane died (429 /
-        // credit exhaustion / expired token). Walk the credential legs:
-        // fresh custodian OAuth token first, then a metered API key.
-        if (res.modelFailure) {
-          // Skip legs that need an unconfigured credential.
-          let leg;
-          while (fallbackLeg < FALLBACK_LEGS.length) {
-            const candidate = FALLBACK_LEGS[fallbackLeg++];
-            if (candidate.auth === "api-key" && !this.env.ANTHROPIC_API_KEY) continue;
-            leg = candidate;
-            break;
-          }
-          if (leg) {
-            await step.do(
-              `${label}-fallback-${fallbackLeg}`,
-              { retries: { limit: 1, delay: "15 seconds" }, timeout: "5 minutes" },
-              async () => {
-                if (leg.auth === "api-key") {
-                  await injectApiKeyAuth(this.env, sandboxId, this.env.ANTHROPIC_API_KEY!);
-                } else {
-                  const stored = await this.env.TICKETS.get("auth:access");
-                  const parsed = stored
-                    ? (JSON.parse(stored) as { access: string; expires: number })
-                    : null;
-                  if (!parsed || parsed.expires - Date.now() < 5 * 60 * 1000) {
-                    throw new Error("no fresh custodian token for oauth fallback leg");
-                  }
-                  await injectAuth(this.env, sandboxId, parsed.access);
-                }
-                await escalateWorkflow(this.env, sandboxId, runId, leg.model ? { model: leg.model } : {});
-                await recordEscalation(this.env, ticketId, runId, {
-                  trigger: "fallback",
-                  detail: `model-plane failure; retrying on ${leg.auth}${leg.model ? ` (${leg.model})` : ""}`,
-                });
-                await setLive(this.env, ticketId, {
-                  phase: label,
-                  runId,
-                  note: `model fallback: retrying on ${leg.auth}`,
-                });
-              },
-            ).catch(() => {}); // a failed leg is not terminal — next burst re-reads status
-            continue;
-          }
+        // credit exhaustion / expired token). OAuth-only fleet: each leg
+        // re-injects a fresh custodian token and resumes; the step retry
+        // delay doubles as 429 backoff.
+        if (res.modelFailure && fallbackLeg < FALLBACK_LEGS.length) {
+          const leg = FALLBACK_LEGS[fallbackLeg++];
+          await step.do(
+            `${label}-fallback-${fallbackLeg}`,
+            { retries: { limit: 1, delay: "15 seconds" }, timeout: "5 minutes" },
+            async () => {
+              const stored = await this.env.TICKETS.get("auth:access");
+              const parsed = stored
+                ? (JSON.parse(stored) as { access: string; expires: number })
+                : null;
+              if (!parsed || parsed.expires - Date.now() < 5 * 60 * 1000) {
+                throw new Error("no fresh custodian token for oauth fallback leg");
+              }
+              await injectAuth(this.env, sandboxId, parsed.access);
+              await escalateWorkflow(this.env, sandboxId, runId, leg.model ? { model: leg.model } : {});
+              await recordEscalation(this.env, ticketId, runId, {
+                trigger: "fallback",
+                detail: `model-plane failure; fresh oauth token, retry ${fallbackLeg}/${FALLBACK_LEGS.length}${leg.model ? ` (${leg.model})` : ""}`,
+              });
+              await setLive(this.env, ticketId, {
+                phase: label,
+                runId,
+                note: `model fallback: oauth retry ${fallbackLeg}`,
+              });
+            },
+          ).catch(() => {}); // a failed leg is not terminal — next burst re-reads status
+          continue;
         }
         // Capture the post-mortem NOW — the sandbox disk vanishes minutes
         // after failure (sleepAfter), taking task errors/output with it.

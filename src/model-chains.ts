@@ -14,23 +14,19 @@
  */
 
 export interface FallbackLeg {
-  /** Credential source for the retry. */
-  auth: "oauth" | "api-key";
   /** Optional model override for the remaining run (default: keep). */
   model?: string;
 }
 
 /**
- * Availability legs, tried in order after the initial OAuth run dies on a
- * model failure. Leg 1 re-injects a fresh custodian token (the dominant
- * observed failure is an expired OAuth access token); leg 2 switches the
- * sandbox to a metered Anthropic API key (skipped when ANTHROPIC_API_KEY
- * is not configured).
+ * Availability legs, tried in order after the initial run dies on a model
+ * failure. The fleet is OAuth-only, so every leg re-injects a fresh
+ * custodian token and resumes — the dominant observed failure is an
+ * expired OAuth access token, and 429s get the workflow step's retry
+ * delay as backoff. Two legs = two escalated retries before the run is
+ * declared dead.
  */
-export const FALLBACK_LEGS: FallbackLeg[] = [
-  { auth: "oauth" },
-  { auth: "api-key" },
-];
+export const FALLBACK_LEGS: FallbackLeg[] = [{}, {}];
 
 /**
  * Capability promotion chain, weakest → strongest. A delegating stage is

@@ -23,17 +23,6 @@ export async function injectAuth(env: Env, sandboxId: string, accessToken: strin
 }
 
 /**
- * Availability-fallback leg 2: switch the sandbox's Pi auth to a metered
- * Anthropic API key when the OAuth plane is dead (429 / credit exhaustion
- * even after a fresh custodian token).
- */
-export async function injectApiKeyAuth(env: Env, sandboxId: string, apiKey: string) {
-  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  const auth = { anthropic: { type: "api_key", key: apiKey } };
-  await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
-}
-
-/**
  * Write the browser plane's callback config into the sandbox: the Worker's
  * own public URL + the SCOPED browser token (never the master token). The
  * sandbox-half browser tool reads this to call POST /browser. No-ops when

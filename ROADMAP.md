@@ -48,8 +48,9 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
 - **Model fallbacks + delegation** — one stage-restart mechanism, two
   triggers. *Availability*: a stage that dies on the model plane (429 /
   credit exhaustion / expired OAuth — detected from `statusDetail` /
-  `failureKind`) walks credential legs: fresh custodian OAuth token →
-  metered `ANTHROPIC_API_KEY`. *Capability*: any stage can set
+  `failureKind`) re-injects a fresh custodian OAuth token and resumes
+  (OAuth-only fleet; two retries, step delay as backoff). *Capability*:
+  any stage can set
   `"delegate": true` (+ `delegateReason`) in its control block; the
   orchestrator marks the stage failed, patches the next model up the
   promotion chain (haiku → sonnet → opus, cap 2/run) into the compiled
