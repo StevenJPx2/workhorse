@@ -12,7 +12,7 @@ flowchart LR
     OPS["Operators<br/>UI · Slack · GitHub"]
     WORKER["Worker (control plane)<br/>ticket API · durable workflow<br/>plugins · workflow registry"]
     SANDBOX["Sandbox (per ticket)<br/>Pi agent + pi-workflow<br/>on the cloned repo"]
-    STATE[("State<br/>KV · AI Search")]
+    STATE[("State<br/>D1 · KV · R2 · AI Search")]
     LLM["Anthropic<br/>(subscription OAuth)"]
 
     OPS -->|"tickets · steers · webhooks"| WORKER
@@ -29,7 +29,7 @@ flowchart LR
 | Spine | Cloudflare Workflows | one durable instance per ticket; drives, escalates, parks, revises |
 | Muscle | Cloudflare Sandbox | per-ticket Firecracker container; clone/build/test |
 | Brain | Anthropic (Claude subscription OAuth) | Pi agent + pi-workflow, baked into the sandbox image |
-| Memory | KV + AI Search | tickets/events/traces per ticket; distilled run knowledge fleet-wide |
+| Memory | D1 + KV + R2 + AI Search | records (tickets/escalations/indexes) in D1; hot state in KV; blobs (traces, repo memory) in R2; distilled run knowledge fleet-wide in AI Search |
 | Token custody | MacBook homelab server | holds+refreshes the OAuth refresh token; mints short-lived access tokens |
 | Face | Nuxt UI (`ui/`) | fleet dashboard: tickets, live steer, chat, traces, diffs |
 
