@@ -1,0 +1,22 @@
+{
+  "name": "@workhorse/workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Workhorse workflow engine: spec compile, graph routing, run lifecycle, stage execution over bare Pi sessions, control verbs (steer/promote/inject-input/cancel). Sandbox I/O behind a Driver interface.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.0.18"
+  }
+}

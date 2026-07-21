@@ -59,10 +59,12 @@ export interface StageSpec {
   tools?: ToolRef[];
   prompt: string;
   output?: StageOutput;
-  /** Loop stages: JSONPath-lite over control ("$.reviewStatus == 'complete'"). */
+  /** Loop stages: condition over control ("$.reviewStatus == 'complete'"). */
   until?: string;
   maxRounds?: number;
-  /** Legacy pi-workflow field — accepted, inert (our engine always re-runs dependents of a re-run stage). */
+  /** Terminal stage: what the run delivers. Default "pr". */
+  outcome?: "pr" | "report" | "artifact";
+  /** Accepted for spec compatibility — inert (dependents of a re-run stage always re-run). */
   inputPolicy?: Record<string, unknown>;
 }
 
@@ -119,10 +121,10 @@ export interface StageState {
   inputRequest?: { title?: string; schema: JsonSchema };
 }
 
-export type RunStatus = "running" | "completed" | "failed" | "awaiting-input";
+export type RunStatus = "running" | "completed" | "failed" | "awaiting-input" | "cancelled";
 
 export interface RunState {
-  engine: "workhorse-stages";
+  engine: "workhorse-workflow";
   version: 1;
   runId: string;
   workflow: string;
