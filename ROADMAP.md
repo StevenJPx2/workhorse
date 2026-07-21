@@ -104,123 +104,39 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   not-yet-started stage. Steers land in the escalation record
   (`trigger: "steer"`) and the trace archive.
 
+- **Jira plugin (first intake source)** — `plugins/jira`: assigned/labeled
+  issues file tickets (`Core.fileTicket`; repo from `jira-project:<KEY>` KV
+  map or a `repo:` description line); comments on mapped issues steer live
+  runs / wake parked ones; ticket lifecycle mirrored onto the issue
+  (transitions + PR-link comment); Jira Done/Closed accepted as external
+  completion. Webhook auth via `?secret=` (Atlassian can't sign).
+- **Script service (agent self-extension)** — `plugins/scripts`:
+  `write_script` / `run_script` / `list_scripts` over the D1 `scripts`
+  registry (strict validation, repo|global scope, live status gates, args
+  as `ARG_<NAME>` env vars); `.workhorse/scripts.toml` seeding at prepare;
+  gated into the coding spec (plan lists, implement/fix write, verify runs).
+- **ntfy plugin** — hook-only push notifications: PR-up/done/errored/
+  terminated + escalation digests, priority-mapped, silent when unset.
+- **Paste plugin** — `upload_text`: raw curl-able text hosting
+  (paste.rs → 0x0.st → dpaste.org) with serve-back verification.
+- **R2 dependency cache** — cold sandboxes restore `node_modules` from
+  `depcache/<owner/repo>/<lockfile-sha256>.tar.gz` (content-addressed,
+  immutable); sandbox curls `/depcache` with the scoped token; saved after
+  successful runs (400 MB cap), restored at prepare + revision re-prepare.
+- **Registry UI + vue-flow workflow builder** — `/workflows` list +
+  `/workflows/:name` editor: faithful ArtifactGraph canvas (stages=nodes,
+  from-edges=connections, computed layout), side-panel stage config, raw
+  JSON drawer, save through pi-workflow validation (422 surfaced verbatim),
+  seed templates via Save-as; workflow picker on the ticket form; the
+  ticket page's live pipeline renders the same graph with per-stage status.
+- **Chat-first home** — `/` is one chat box: repo chips (from `/repos`) +
+  add-new, per-repo workflow select (create-new → builder), message+repo
+  files a ticket / bare message chats with the fleet agent; running-fleet
+  strip with View-running/all links. Old form home lives at `/tickets`.
+
 ---
 
 ## Planned ⏳ (in priority order)
-
-### Jira plugin
-`plugins/jira` — the third webhook source, and the first true *intake*
-source (GitHub reacts to PRs Workhorse opened; Jira originates work).
-Heir of legacy Workhorse's Jira integration (Jiratown / jira-comments
-monitor), rebuilt on the plugin contract:
-
-- **Inbound** (`POST /webhooks/jira`, Atlassian webhook + secret check):
-  issue assigned to the Workhorse account (or labeled `workhorse`) →
-  `fileTicket` with the issue's summary/description as the prompt and a
-  `jira:<issueKey>` ↔ ticket mapping (repo resolved from a project→repo
-  config map, or a `repo:` field convention on the issue). New comments on
-  a mapped issue → the two-path model: live run → steer; parked in-review
-  → revision event + wake (same as PR/Slack feedback).
-- **Outbound** (`onStatusChange` hook): transition the Jira issue along a
-  configurable status map (queued→In Progress, in-review→In Review,
-  done→Done) and comment with the PR link when it goes up. Errored →
-  comment + flag, never auto-reopen loops.
-- **Done stays external-only**: Jira "Done"/"Closed" transition (like PR
-  merge) is an accepted completion signal; the agent still can't
-  self-complete.
-- Config: `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN` (or OAuth),
-  `JIRA_WEBHOOK_SECRET`; per-project repo map in KV (`jira-project:<key>`).
-
-Exercises every part of the plugin contract (webhook verify/parse, hooks,
-Core.fileTicket — which needs adding to Core services) and makes Workhorse
-usable from where tickets already live.
-
-### Script service (agent self-extension)
-The legacy Workhorse crown jewel, ported to the fleet: agents author
-**persistent shell-script tools for themselves**, so repeated command
-sequences become named, parameterized, auditable tools instead of
-re-derived bash each run. Three wins: **token cost** (one tool call vs
-re-explaining a pipeline), **auditability** (a reviewed script with a
-stable name vs ad-hoc shell every time), **compounding capability** (the
-fleet gets better at a repo the more it works on it).
-
-- **Registry**: DB-authoritative in **D1** (see next item) — a `scripts`
-  table (name, scope `repo:<owner/repo>` | `global`, description, command
-  body, typed args JSON, status gates, `created_by` agent|user|seed,
-  timestamps, UNIQUE(scope, name)) — the structured shape the legacy
-  design proved out. Strict validation at registration; listing reads the
-  DB, never the filesystem.
-- **Sandbox tools**: `write_script` (register/update — the self-extension
-  verb), `run_script` (fetch + execute), `list_scripts` (with
-  descriptions, so the planner sees the repo's tool inventory). Worker
-  half: scoped-token CRUD routes + audit trail of every registration and
-  edit in the trace archive.
-- **Seeding**: a committed `.workhorse/scripts.toml` in the target repo
-  imports at prepare (`created_by: seed`) — clone-and-go, same pattern as
-  `.workhorse/workflows/`.
-- **Gating**: stage allowlists decide where `run_script` is callable
-  (write-classified); `write_script` only in implement-class stages.
-  Status gates stop e.g. a deploy script running from a plan stage.
-- **UI**: scripts page per repo — inventory, bodies, who created what,
-  edit/retire. The audit surface is the point: you can read your fleet's
-  self-built toolbox.
-
-### Visual workflow builder (vue-flow)
-Definable workflows, end to end in the UI. A `/workflows` page in the Nuxt
-dashboard using [vue-flow](https://github.com/bcakmakoglu/vue-flow): stages
-as nodes (agent, model, tool allowlist, control schema, loop/until settings
-in a side panel), artifact edges as connections (`from` data edges — the
-graph IS pi-workflow's artifact graph, so the canvas is a faithful editor,
-not a lossy sketch). Save compiles the graph to an ArtifactGraph `spec.json`
-and `PUT`s it to the existing workflow registry — same validation (422 with
-pi-workflow's parser message rendered on the offending node), same storage,
-no new backend concepts. Load = spec → graph (positions in a `ui` sidecar
-key the parser ignores, or `.plan-state`-style KV). The file-ticket form
-gains a workflow picker (`GET /workflows`) so a saved workflow is usable on
-the next ticket immediately. Seeded `coding` / `screenshot-pr` open in the
-builder as starting templates (edit → save-as — seeds stay pristine,
-`source: user` copies take a new name).
-
-Slices: (1) registry UI — list/inspect/upload + ticket-form picker (no
-canvas yet); (2) read-only graph rendering of any registered workflow
-(spec → vue-flow, also useful as run visualization on the ticket page);
-(3) full editor — node/edge editing, side-panel stage config, save-as flow.
-
-### Registry UI prerequisites
-Workflow picker on the file-ticket form + list/inspect pages — slice 1
-above; worth shipping even before the canvas exists.
-
-### Chat-first home page
-Replace the form-first home with a dispatch surface built around ONE chat
-box (the fleet agent — today's `/chat` — promoted to the front door):
-
-- **Repo attachments**: toggle chips under the chat box for repos already
-  seen in the fleet (derived from existing tickets, most-recent first);
-  attaching a repo scopes the message to it. An **Add new** button appends
-  a repo text input right under the chat box for first-time repos.
-- **Per-repo workflow select**: next to each attached repo, a workflow
-  picker (`GET /workflows`) with a **create new workflow** entry that
-  jumps into the workflow builder (see vue-flow item above).
-- **Dispatch semantics**: message + attached repo(+workflow) → files a
-  ticket directly; message with no repo attached → plain fleet-agent chat
-  (status questions, steering, knowledge Q&A).
-- **Running fleet strip** underneath: the currently active tickets
-  (live phase badges), with **View all running agents** / **View all
-  agents** links to the full fleet list (today's index, filtered/unfiltered).
-
-Depends on: registry UI slice 1 (picker); pairs with the vue-flow builder
-("create new workflow" target).
-
-### R2 dependency cache
-The remaining piece of the blob plane: cold sandboxes (every revision wake
-after an in-review park, every heal, every repeat ticket on a known repo)
-rebuild `node_modules` from scratch. After a successful run, tar the
-dependency artifacts keyed by `repo + lockfile hash` into
-`depcache/<owner/repo>/<hash>.tar.zst`; at `prepareWorkspace`, restore via
-a presigned URL (`curl | tar x` — the sandbox never holds an R2
-credential, same custody model as the scoped browser token). Lockfile-hash
-keying makes staleness a non-problem. Node-first; measure
-restore-vs-install in the trace before generalizing to other stacks.
 
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
@@ -273,32 +189,6 @@ iframe. Make it first-class:
 - **Compact iframe mode**: a `/embed` route in the UI (header-less,
   dense, dark-aware) purpose-built for iframe embedding in dashboard
   tiles, instead of iframing the full app.
-
-### ntfy plugin (push notifications)
-`plugins/ntfy` — connect [ntfy](https://ntfy.sh) to fleet runs: push
-notifications for the transitions an operator actually waits on (PR up,
-done, errored/terminated, escalation fired, steer applied). Pure
-`onStatusChange`/`onTraceArchived` hook consumer — the notification twin
-of the Slack outbound half, with zero inbound surface. Config:
-`NTFY_URL` (self-hosted or ntfy.sh) + `NTFY_TOPIC` (+ optional token);
-unset = silent, same convention as Slack. Priority mapping: errored →
-high, PR up → default, the rest → low. The cheapest possible validation
-that the hook bus carries a *notify-only* plugin cleanly.
-
-### Paste plugin (text/code hosting)
-`plugins/paste` — imgup's sibling for text: a sandbox tool
-(`upload_text` / `share_snippet`) that hosts arbitrary text/code and
-returns a raw, curl-able URL. Uses [paste.rs](https://paste.rs) (or a
-small fallback chain, mirroring imgup's multi-host robustness lesson —
-single keyless hosts are individually unreliable). Sandbox-only plugin,
-no worker half.
-
-Use cases: agents sharing repro scripts / long logs / patches in PR
-comments and Slack replies without blowing comment size limits; handing
-a colleague-agent (or human) a `curl`-able artifact; verifier attaching
-full failing-test output to its verdict. If the R2 blob plane lands
-first, a self-hosted variant (R2 + presigned GET) is the zero-dependency
-alternative — same tool surface, our own storage.
 
 ---
 
