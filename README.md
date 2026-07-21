@@ -7,31 +7,110 @@ the right tools and context at each workflow stage.
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph operators["Operators"]
+        UI["ui/ — Nuxt dashboard<br/>(tickets, steer, chat, traces)"]
+        SLACK_USER["Slack<br/>@workhorse mentions + threads"]
+        GH_USER["GitHub<br/>PR reviews / comments / CI"]
+    end
+
+    subgraph worker["worker/ — Cloudflare Worker (composition root)"]
+        ROUTES["Ticket API + routes"]
+        WF["TicketWorkflow<br/>(durable spine: prepare → plan →<br/>implement → verify → park → revise)"]
+        REG["Plugin registry<br/>coreFor · routeFor · fireHook"]
+        WFREG["Workflow registry<br/>(specs as user data)"]
+    end
+
+    subgraph plugins["plugins/* — @workhorse/api only"]
+        P_GH["github<br/>webhook"]
+        P_SLACK["slack<br/>webhook + status hook"]
+        P_BROWSER["browser<br/>route + sandbox tool"]
+        P_KNOW["knowledge<br/>routes + trace hook + tool"]
+        P_TICKETS["tickets<br/>sandbox tools"]
+        P_IMGUP["imgup<br/>sandbox tool"]
+    end
+
+    subgraph state["State (Cloudflare)"]
+        KV[("KV — tickets, events, steers,<br/>traces, workflows, memory")]
+        AIS[("AI Search<br/>fleet knowledge index")]
+        BR["Browser Rendering"]
+    end
+
+    subgraph sandbox["sandbox/ — per-ticket Firecracker container"]
+        PI["Pi agent + pi-workflow<br/>(staged runs, tool gating)"]
+        EXT["plugin extensions<br/>(auto-discovered extension.ts)"]
+        REPO["cloned repo<br/>+ .pi/workflows/&lt;spec&gt;"]
+    end
+
+    CUSTODIAN["MacBook custodian<br/>OAuth refresh → short-lived tokens"]
+    ANTHROPIC["Anthropic API<br/>(Claude subscription OAuth)"]
+
+    UI -->|/api proxy| ROUTES
+    SLACK_USER --> P_SLACK
+    GH_USER --> P_GH
+    P_GH & P_SLACK -->|"events + wake / steer"| WF
+    ROUTES --> WF
+    REG -->|"onStatusChange · onTraceArchived"| P_SLACK & P_KNOW
+    WF <-->|"drive bursts · escalate ·<br/>steer · collect traces"| PI
+    WF --> KV
+    WFREG --> KV
+    P_KNOW --> AIS
+    P_BROWSER --> BR
+    PI --> EXT
+    EXT -->|"scoped token callbacks<br/>(/browser · /knowledge/search · /tickets)"| ROUTES
+    PI --> REPO
+    PI --> ANTHROPIC
+    CUSTODIAN -->|"POST /token"| ROUTES
+    REPO -->|"branch + PR"| GH_USER
+```
+
+**Planes:**
+
 | Plane | Runs on | What |
 |---|---|---|
-| Spine | Cloudflare Workflows | one durable instance per ticket (plan → implement → …) |
+| Spine | Cloudflare Workflows | one durable instance per ticket; drives, escalates, parks, revises |
 | Muscle | Cloudflare Sandbox | per-ticket Firecracker container; clone/build/test |
-| Brain | Anthropic (Claude subscription OAuth) | Pi agent, baked into the sandbox image |
+| Brain | Anthropic (Claude subscription OAuth) | Pi agent + pi-workflow, baked into the sandbox image |
+| Memory | KV + AI Search | tickets/events/traces per ticket; distilled run knowledge fleet-wide |
 | Token custody | MacBook homelab server | holds+refreshes the OAuth refresh token; mints short-lived access tokens |
-| Face | NuxtHub (planned) | fleet UI, embedded in Glance |
+| Face | Nuxt UI (`ui/`) | fleet dashboard: tickets, live steer, chat, traces, diffs |
+
+**Workspace (hard boundaries):** `packages/api` is the contract; each
+`plugins/<name>` package depends on it and nothing else (enforced by
+workspace resolution); `worker/` is the only package that imports concrete
+plugins. A plugin's optional `extension.ts` is auto-discovered by the
+sandbox image build. Workflows are user data: repo
+`.workhorse/workflows/<name>/` → KV registry → baked seeds.
 
 ## API (bearer-gated)
 
 ```
-POST /tickets  {title?, repo, prompt, accessToken}  → durable run
-GET  /tickets                                       → fleet list
-GET  /tickets/:id                                   → record + live workflow status
+POST /tickets {title?, repo, prompt}       → durable run (custodian token used)
+GET  /tickets · GET /tickets/:id           → fleet list / record + live status
+POST /tickets/:id/steer {message}          → interrupt + redirect the live stage
+POST /tickets/:id/heal · /stop             → re-dispatch errored / terminate
+GET  /tickets/:id/activity · /traces · /diff
+POST /chat {messages}                      → fleet operator agent
+GET/PUT/DELETE /workflows/:name            → workflow registry (spec validated)
+POST /workflows/seed                       → import baked bundles
+POST /knowledge/search {query}             → fleet knowledge (scoped token ok)
+POST /webhooks/github · /webhooks/slack    → signature-verified sources
 ```
 
 ## Dev
 
 ```
 bun install
-bun run dev       # local (needs Docker for the sandbox container)
-bun run deploy    # deploy Worker + container image
+bun run typecheck    # all workspace packages
+bun run dev          # local worker (needs Docker for the sandbox container)
+bun run deploy       # deploy worker + container image (from worker/)
 ```
 
-Secrets: `SPIKE_TOKEN` (API bearer). Dev value in `.dev.vars` (git-ignored).
+Secrets: `SPIKE_TOKEN` (master bearer), `GITHUB_TOKEN`,
+`GITHUB_WEBHOOK_SECRET`, `BROWSER_TOKEN` (scoped sandbox callbacks);
+optional: `SCRAPFLY_KEY` (unblocker), `SLACK_SIGNING_SECRET` +
+`SLACK_BOT_TOKEN` (Slack surface). Dev values in `.dev.vars` (git-ignored).
 
-Legacy Workhorse (TS core, core-v2/v3, Rust orchestrator) lives on the
-`legacy` branch.
+Roadmap: [ROADMAP.md](./ROADMAP.md). Legacy Workhorse (TS core, core-v2/v3,
+Rust orchestrator) lives on the `legacy` branch.
