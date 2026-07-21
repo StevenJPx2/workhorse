@@ -4,6 +4,7 @@
 
 import type { ExternalEvent } from "@workhorse/api";
 import type { Env } from "@workhorse/api";
+import { getTicket } from "./db";
 
 export async function appendEvents(env: Env, events: ExternalEvent[]): Promise<void> {
   const byTicket = new Map<string, ExternalEvent[]>();
@@ -34,9 +35,8 @@ export async function unconsumedEvents(env: Env, ticketId: string): Promise<Exte
 export async function wakeTicket(env: Env, ticketId: string, attempts = 4): Promise<void> {
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const rec = await env.TICKETS.get(ticketId);
-      const wfId = rec ? ((JSON.parse(rec) as { wfInstance?: string }).wfInstance ?? ticketId) : ticketId;
-      const inst = await env.TICKET_WF.get(wfId);
+      const rec = await getTicket(env, ticketId);
+      const inst = await env.TICKET_WF.get(rec?.wfInstance ?? ticketId);
       await inst.sendEvent({ type: "external-event", payload: {} });
     } catch {
       /* not parked / already finished */

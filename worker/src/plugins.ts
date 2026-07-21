@@ -27,6 +27,10 @@ export function pluginFor(id: string): WorkhorsePlugin | undefined {
 /** Core services handed to plugin webhooks, routes, and hooks. */
 export function coreFor(env: Env, selfOrigin: string): Core {
   return {
+    getTicket: async (ticketId) => {
+      const { getTicket } = await import("./db");
+      return getTicket(env, ticketId);
+    },
     appendEvents: (events) => appendEvents(env, events),
     wakeTicket: (ticketId) => wakeTicket(env, ticketId),
     appendSteer: (ticketId, message) => appendSteer(env, ticketId, message),
@@ -49,7 +53,13 @@ export async function fireHook<K extends "onTraceArchived" | "onStatusChange">(
   selfOrigin: string,
   hook: K,
   info: K extends "onTraceArchived"
-    ? { ticketId: string; runId: string; kind: string; activityJson: string }
+    ? {
+        ticketId: string;
+        runId: string;
+        kind: string;
+        activityJson: string;
+        escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string; at: string }>;
+      }
     : { ticketId: string; from: TicketRecord["status"]; to: TicketRecord["status"]; record: TicketRecord },
 ): Promise<void> {
   const core = coreFor(env, selfOrigin);

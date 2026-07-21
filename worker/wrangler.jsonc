@@ -54,6 +54,16 @@
       "id": "aa4614982dcc48d1b532daf213441213"
     }
   ],
+  // Relational plane: record-shaped data with relationships (tickets,
+  // escalations, trace index, scripts). KV keeps hot small state (live:,
+  // cursors, thread mappings, auth); blobs stay in KV until R2 lands.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "workhorse",
+      "database_id": "85f8b551-162f-4ecb-8430-10099f2d3da5"
+    }
+  ],
   "workflows": [
     {
       "name": "ticket-workflow",

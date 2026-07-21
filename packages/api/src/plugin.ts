@@ -34,6 +34,8 @@ export interface ExternalEvent {
  * reaches core behavior; plugins never import the worker package.
  */
 export interface Core {
+  /** Read a ticket record (null when unknown). */
+  getTicket(ticketId: string): Promise<TicketRecord | null>;
   /** Append normalized events to a ticket's KV event list. */
   appendEvents(events: ExternalEvent[]): Promise<void>;
   /**
@@ -102,7 +104,20 @@ export interface PluginHooks {
   onTraceArchived?(
     env: Env,
     core: Core,
-    info: { ticketId: string; runId: string; kind: string; activityJson: string },
+    info: {
+      ticketId: string;
+      runId: string;
+      kind: string;
+      activityJson: string;
+      /** Escalation events recorded for this run (fallback/promotion/steer). */
+      escalations?: Array<{
+        trigger: string;
+        detail: string;
+        stage?: string;
+        toModel?: string;
+        at: string;
+      }>;
+    },
   ): Promise<void>;
   /** A ticket's status changed (old → new, record already persisted). */
   onStatusChange?(

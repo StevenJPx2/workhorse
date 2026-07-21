@@ -4,6 +4,7 @@ import { appendEvents, appendSteer, wakeTicket } from "./events";
 import { fileTicket } from "./tickets";
 import { runFleetChat } from "./chat";
 import { coreFor, pluginFor, routeFor } from "./plugins";
+import { getTicket, knownRepos, listTickets, listTraceIndex, patchTicket, backfillFromKV } from "./db";
 import { NAME_RE, deleteWorkflow, getWorkflow, listWorkflows, putWorkflow, seedWorkflows } from "./workflows";
 
 export { Sandbox } from "@cloudflare/sandbox";
@@ -24,9 +25,8 @@ export async function healTicket(
   env: Env,
   ticketId: string,
 ): Promise<{ ok: boolean; reason?: string; instance?: string }> {
-  const raw = await env.TICKETS.get(ticketId);
-  if (!raw) return { ok: false, reason: "not found" };
-  const rec = JSON.parse(raw) as TicketRecord;
+  const rec = await getTicket(env, ticketId);
+  if (!rec) return { ok: false, reason: "not found" };
   if (rec.status !== "errored") return { ok: false, reason: `status is ${rec.status}, only errored tickets heal` };
   const attempts = rec.healAttempts ?? 0;
   if (attempts >= MAX_HEALS) return { ok: false, reason: `heal limit (${MAX_HEALS}) reached` };
@@ -53,12 +53,12 @@ export async function healTicket(
     resume: true,
   };
   await env.TICKET_WF.create({ id: instance, params });
-  rec.wfInstance = instance;
-  rec.healAttempts = attempts + 1;
-  rec.status = "queued";
-  rec.error = undefined;
-  rec.updatedAt = new Date().toISOString();
-  await env.TICKETS.put(ticketId, JSON.stringify(rec));
+  await patchTicket(env, ticketId, {
+    wfInstance: instance,
+    healAttempts: attempts + 1,
+    status: "queued",
+    error: undefined,
+  });
   return { ok: true, instance };
 }
 
@@ -112,6 +112,11 @@ export default {
 
     if (!masterAuth) {
       return new Response("unauthorized", { status: 401 });
+    }
+
+    // One-time D1 backfill from legacy KV records (idempotent).
+    if (url.pathname === "/admin/backfill-d1" && request.method === "POST") {
+      return json(await backfillFromKV(env));
     }
 
     // ---- Workflow registry (workflows are user data, not core code) ----
@@ -169,25 +174,22 @@ export default {
       return json({ ok: true, ticket: r.ticket });
     }
 
-    // List tickets.
+    // List tickets (optionally ?status=).
     if (url.pathname === "/tickets" && request.method === "GET") {
-      const list = await env.TICKETS.list();
-      const tickets: TicketRecord[] = [];
-      for (const key of list.keys) {
-        if (key.name.includes(":")) continue; // skip diff:<id> etc.
-        const raw = await env.TICKETS.get(key.name);
-        if (raw) tickets.push(JSON.parse(raw));
-      }
-      tickets.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const tickets = await listTickets(env, url.searchParams.get("status") ?? undefined);
       return json({ tickets });
+    }
+
+    // Repos the fleet has seen, most recent first (home-page chips).
+    if (url.pathname === "/repos" && request.method === "GET") {
+      return json({ repos: await knownRepos(env) });
     }
 
     // Ticket detail (registry + live workflow status).
     const detail = url.pathname.match(/^\/tickets\/([a-z0-9-]+)$/);
     if (detail && request.method === "GET") {
-      const raw = await env.TICKETS.get(detail[1]);
-      if (!raw) return json({ error: "not found" }, 404);
-      const ticket = JSON.parse(raw) as Record<string, string>;
+      let ticket = await getTicket(env, detail[1]);
+      if (!ticket) return json({ error: "not found" }, 404);
       let wfStatus: { status?: string } | null = null;
       try {
         const inst = await env.TICKET_WF.get(ticket.wfInstance || detail[1]);
@@ -198,13 +200,14 @@ export default {
       // Self-heal: if the durable instance is dead but the registry still
       // claims an active status, reconcile so the UI never lies.
       const activeStatuses = ["queued", "planning", "implementing", "ready-for-review", "in-review"];
-      const deadMap: Record<string, string> = { errored: "errored", terminated: "terminated" };
-      const wf = wfStatus?.status ?? "";
+      const deadMap = { errored: "errored", terminated: "terminated" } as const;
+      const wf = (wfStatus?.status ?? "") as keyof typeof deadMap;
       if (deadMap[wf] && activeStatuses.includes(ticket.status)) {
-        ticket.status = deadMap[wf];
-        ticket.error = ticket.error || `workflow instance ${wf}`;
-        ticket.updatedAt = new Date().toISOString();
-        await env.TICKETS.put(detail[1], JSON.stringify(ticket));
+        const r = await patchTicket(env, detail[1], {
+          status: deadMap[wf],
+          error: ticket.error || `workflow instance ${wf}`,
+        });
+        if (r) ticket = r.next;
       }
       const live = await env.TICKETS.get(`live:${detail[1]}`);
       return json({ ticket, workflow: wfStatus, live: live ? JSON.parse(live) : null });
@@ -222,20 +225,15 @@ export default {
     // Stop a running ticket: terminate the durable workflow instance.
     const stopM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/stop$/);
     if (stopM && request.method === "POST") {
-      const raw = await env.TICKETS.get(stopM[1]);
-      if (!raw) return json({ error: "not found" }, 404);
-      const stopRec = JSON.parse(raw) as { wfInstance?: string };
+      const stopRec = await getTicket(env, stopM[1]);
+      if (!stopRec) return json({ error: "not found" }, 404);
       try {
         const inst = await env.TICKET_WF.get(stopRec.wfInstance || stopM[1]);
         await inst.terminate();
       } catch (e) {
         return json({ error: `terminate failed: ${e instanceof Error ? e.message : e}` }, 500);
       }
-      const rec = JSON.parse(raw);
-      rec.status = "terminated";
-      rec.error = "stopped by user";
-      rec.updatedAt = new Date().toISOString();
-      await env.TICKETS.put(stopM[1], JSON.stringify(rec));
+      await patchTicket(env, stopM[1], { status: "terminated", error: "stopped by user" });
       return json({ ok: true });
     }
 
@@ -246,9 +244,8 @@ export default {
     // instead — steers target the ACTIVE run.
     const steerM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/steer$/);
     if (steerM && request.method === "POST") {
-      const raw = await env.TICKETS.get(steerM[1]);
-      if (!raw) return json({ error: "not found" }, 404);
-      const rec = JSON.parse(raw) as { status?: string };
+      const rec = await getTicket(env, steerM[1]);
+      if (!rec) return json({ error: "not found" }, 404);
       const active = ["queued", "planning", "implementing", "ready-for-review"];
       if (!active.includes(rec.status ?? "")) {
         return json({ error: `ticket is ${rec.status}; steering targets a live run (use PR feedback while in-review)` }, 409);
@@ -275,9 +272,8 @@ export default {
     if (actM && request.method === "GET") {
       const stored = await env.TICKETS.get(`activity:${actM[1]}`);
       if (stored) return new Response(stored, { headers: { "content-type": "application/json" } });
-      const raw = await env.TICKETS.get(actM[1]);
-      if (!raw) return json({ error: "not found" }, 404);
-      const rec = JSON.parse(raw) as { runId?: string };
+      const rec = await getTicket(env, actM[1]);
+      if (!rec) return json({ error: "not found" }, 404);
       if (!rec.runId) return json({ runId: null, tasks: [], note: "run not started yet" });
       const { collectActivity } = await import("./agent-run");
       const live = await collectActivity(env, `ticket-${actM[1]}`, rec.runId);
@@ -288,8 +284,7 @@ export default {
     // activity is the "latest" pointer, traces are the history for evals).
     const trIdxM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces$/);
     if (trIdxM && request.method === "GET") {
-      const idx = await env.TICKETS.get(`traces:${trIdxM[1]}`);
-      return new Response(idx ?? "[]", { headers: { "content-type": "application/json" } });
+      return json(await listTraceIndex(env, trIdxM[1]));
     }
     const trM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces\/(workflow_[a-z0-9_]+)$/);
     if (trM && request.method === "GET") {
@@ -332,16 +327,12 @@ export default {
   // still have heal budget. Skips anything a human already terminated.
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const sweep = async () => {
-      const list = await env.TICKETS.list();
-      for (const key of list.keys) {
-        if (key.name.includes(":")) continue;
-        const raw = await env.TICKETS.get(key.name);
-        if (!raw) continue;
-        const rec = JSON.parse(raw) as TicketRecord;
-        if (rec.status !== "errored") continue;
-        // Give ops a quiet window: only heal tickets errored >5 min ago
-        // (avoids racing a deploy or a human already investigating).
-        if (Date.now() - new Date(rec.updatedAt).getTime() < 5 * 60 * 1000) continue;
+      // One query instead of a full KV scan: errored tickets outside the
+      // 5-min quiet window (avoids racing a deploy or a human investigating).
+      const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const errored = await listTickets(env, "errored");
+      for (const rec of errored) {
+        if (rec.updatedAt >= cutoff) continue;
         const res = await healTicket(env, rec.id);
         console.log(`heal sweep ${rec.id}: ${res.ok ? `re-dispatched as ${res.instance}` : res.reason}`);
       }

@@ -1,6 +1,7 @@
 // Ticket filing — shared by the HTTP API and source plugins (Slack).
 
 import type { Env, TicketParams, TicketRecord } from "@workhorse/api";
+import { insertTicket } from "./db";
 
 export type FileTicketResult =
   | { ok: true; ticket: TicketRecord }
@@ -40,7 +41,7 @@ export async function fileTicket(
     workflow: body.workflow,
     wfInstance: id,
   };
-  await env.TICKETS.put(id, JSON.stringify(rec));
+  await insertTicket(env, rec);
   await env.TICKET_WF.create({
     id,
     params: { ...body, id, title: rec.title } as TicketParams,

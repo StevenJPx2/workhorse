@@ -106,24 +106,23 @@ export function distillRun(
  */
 async function indexRun(
   env: Env,
+  ticket: TicketMeta,
   ticketId: string,
   runId: string,
   kind: string,
   activityJson: string,
+  escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>,
 ): Promise<boolean> {
   try {
     const inst = await instance(env);
     if (!inst) return false;
-    const rawTicket = await env.TICKETS.get(ticketId);
-    const ticket = rawTicket ? (JSON.parse(rawTicket) as TicketMeta) : {};
-    const escRaw = await env.TICKETS.get(`esc:${ticketId}:${runId}`);
     const doc = distillRun(
       ticketId,
       runId,
       kind,
       ticket,
       JSON.parse(activityJson) as TraceActivity,
-      escRaw ? JSON.parse(escRaw) : undefined,
+      escalations,
     );
     await inst.items.upload(`${ticketId}-${runId}.md`, doc, {
       metadata: { ticketId, runId, kind, repo: ticket.repo ?? "", context: `Workhorse run trace for ticket "${ticket.title ?? ticketId}"` },
@@ -210,7 +209,7 @@ export const knowledgePlugin: WorkhorsePlugin = {
       method: "POST",
       path: "/knowledge/reindex",
       auth: "master",
-      async handler(_request, env) {
+      async handler(_request, env, _ctx, core) {
         let indexed = 0;
         let failed = 0;
         let cursor: string | undefined;
@@ -225,8 +224,18 @@ export const knowledgePlugin: WorkhorsePlugin = {
                 runId: string;
                 kind: string;
                 activity: unknown;
+                escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>;
               };
-              const ok = await indexRun(env, t.ticketId, t.runId, t.kind, JSON.stringify(t.activity));
+              const ticket = (await core.getTicket(t.ticketId)) ?? {};
+              const ok = await indexRun(
+                env,
+                ticket,
+                t.ticketId,
+                t.runId,
+                t.kind,
+                JSON.stringify(t.activity),
+                t.escalations,
+              );
               ok ? indexed++ : failed++;
             } catch {
               failed++;
@@ -242,8 +251,9 @@ export const knowledgePlugin: WorkhorsePlugin = {
   hooks: {
     // Fleet knowledge: distill + index every archived run so future agents
     // can find it. Best-effort by design (indexRun never throws).
-    async onTraceArchived(env, _core, { ticketId, runId, kind, activityJson }) {
-      await indexRun(env, ticketId, runId, kind, activityJson);
+    async onTraceArchived(env, core, { ticketId, runId, kind, activityJson, escalations }) {
+      const ticket = (await core.getTicket(ticketId)) ?? {};
+      await indexRun(env, ticket, ticketId, runId, kind, activityJson, escalations);
     },
   },
 };

@@ -17,22 +17,20 @@ import {
 import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
 import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
 import { fireHook } from "./plugins";
+import { getTicket, insertEscalation, insertTraceIndex, patchTicket } from "./db";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
-  const raw = await env.TICKETS.get(id);
-  if (!raw) return;
-  const prev = JSON.parse(raw) as TicketRecord;
-  const rec = { ...prev, ...patch, updatedAt: new Date().toISOString() };
-  await env.TICKETS.put(id, JSON.stringify(rec));
+  const r = await patchTicket(env, id, patch);
+  if (!r) return;
   // Lifecycle hook: plugins react to transitions (e.g. slack posts into
   // the ticket's thread). Best-effort by contract.
-  if (patch.status && patch.status !== prev.status) {
+  if (patch.status && patch.status !== r.prev.status) {
     await fireHook(env, env.SELF_URL ?? "", "onStatusChange", {
       ticketId: id,
-      from: prev.status,
+      from: r.prev.status,
       to: patch.status,
-      record: rec,
+      record: r.next,
     });
   }
 }
@@ -82,11 +80,15 @@ async function recordEscalation(
   runId: string,
   event: Omit<EscalationEvent, "at">,
 ): Promise<void> {
-  const key = `esc:${ticketId}:${runId}`;
-  const raw = await env.TICKETS.get(key);
-  const events = raw ? (JSON.parse(raw) as EscalationEvent[]) : [];
-  events.push({ at: new Date().toISOString(), ...event });
-  await env.TICKETS.put(key, JSON.stringify(events));
+  await insertEscalation(env, {
+    ticketId,
+    runId,
+    trigger: event.trigger,
+    detail: event.detail,
+    stage: event.stage,
+    toModel: event.toModel,
+    at: new Date().toISOString(),
+  });
 }
 
 /**
@@ -104,8 +106,19 @@ async function archiveTrace(
 ): Promise<void> {
   try {
     const at = new Date().toISOString();
-    const escRaw = await env.TICKETS.get(`esc:${ticketId}:${runId}`);
-    const escalations = escRaw ? (JSON.parse(escRaw) as EscalationEvent[]) : undefined;
+    const { results } = await env.DB.prepare(
+      "SELECT trigger_kind, detail, stage, to_model, at FROM escalations WHERE ticket_id = ? AND run_id = ? ORDER BY at",
+    )
+      .bind(ticketId, runId)
+      .all<{ trigger_kind: string; detail: string; stage: string | null; to_model: string | null; at: string }>();
+    const escalations = (results ?? []).map((r) => ({
+      trigger: r.trigger_kind,
+      detail: r.detail,
+      stage: r.stage ?? undefined,
+      toModel: r.to_model ?? undefined,
+      at: r.at,
+    }));
+    // Trace BODY stays a KV blob (R2 candidate); the queryable INDEX is D1.
     await env.TICKETS.put(
       `trace:${ticketId}:${runId}`,
       JSON.stringify({
@@ -113,16 +126,11 @@ async function archiveTrace(
         runId,
         kind,
         archivedAt: at,
-        ...(escalations?.length ? { escalations } : {}),
+        ...(escalations.length ? { escalations } : {}),
         activity: JSON.parse(activity),
       }),
     );
-    const idxRaw = await env.TICKETS.get(`traces:${ticketId}`);
-    const idx = idxRaw ? (JSON.parse(idxRaw) as Array<Record<string, string>>) : [];
-    if (!idx.some((e) => e.runId === runId)) {
-      idx.push({ runId, kind, archivedAt: at });
-      await env.TICKETS.put(`traces:${ticketId}`, JSON.stringify(idx));
-    }
+    await insertTraceIndex(env, { ticketId, runId, kind, archivedAt: at });
     // Lifecycle hook: plugins react to archived traces (e.g. knowledge
     // distills + indexes the run for fleet search). Best-effort by contract.
     await fireHook(env, env.SELF_URL ?? "", "onTraceArchived", {
@@ -130,6 +138,7 @@ async function archiveTrace(
       runId,
       kind,
       activityJson: activity,
+      escalations: escalations.length ? escalations : undefined,
     });
   } catch (err) {
     console.warn(`trace archive failed for ${ticketId}:${runId}:`, err);
@@ -316,10 +325,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
 
     // --- healing resume: skip completed phases recorded on the ticket ---
     if (t.resume) {
-      const rec = await step.do("read-resume-state", async () => {
-        const raw = await this.env.TICKETS.get(t.id);
-        return raw ? (JSON.parse(raw) as TicketRecord) : null;
-      });
+      const rec = await step.do("read-resume-state", async () => getTicket(this.env, t.id));
       if (rec?.prUrl) {
         // Work was already delivered — jump straight back to the
         // park ↔ revise loop; pending events (if any) wake immediately.

@@ -114,8 +114,7 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
 
   // --- mapped thread: feedback for an existing ticket ---
   if (mapped) {
-    const raw = await env.TICKETS.get(mapped);
-    const rec = raw ? (JSON.parse(raw) as TicketRecord) : null;
+    const rec = await core.getTicket(mapped);
     if (!rec) return;
     const active = ["queued", "planning", "implementing", "ready-for-review"];
     if (active.includes(rec.status)) {
@@ -149,7 +148,7 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
   // If the agent filed a ticket its reply contains the 8-hex id — map the
   // thread so subsequent replies steer/revise that ticket.
   const m = reply.match(/\b[Tt]icket ([0-9a-f]{8})\b/);
-  if (m && (await env.TICKETS.get(m[1]))) {
+  if (m && (await core.getTicket(m[1]))) {
     await env.TICKETS.put(`slack:${channel}:${threadTs}`, m[1]);
     await env.TICKETS.put(`slack-thread:${m[1]}`, JSON.stringify({ channel, threadTs }));
   }

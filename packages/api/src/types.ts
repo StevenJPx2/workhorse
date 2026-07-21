@@ -75,6 +75,13 @@ export interface TicketRecord {
 export interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
   TICKETS: KVNamespace;
+  /**
+   * D1: the relational plane. Records with relationships — tickets,
+   * escalations, trace index, scripts. KV keeps hot small state (live
+   * status, cursors, thread mappings, auth token); R2 (future) keeps
+   * blobs; AI Search keeps semantic.
+   */
+  DB: D1Database;
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
