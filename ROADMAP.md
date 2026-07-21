@@ -123,6 +123,27 @@ canvas yet); (2) read-only graph rendering of any registered workflow
 Workflow picker on the file-ticket form + list/inspect pages — slice 1
 above; worth shipping even before the canvas exists.
 
+### Chat-first home page
+Replace the form-first home with a dispatch surface built around ONE chat
+box (the fleet agent — today's `/chat` — promoted to the front door):
+
+- **Repo attachments**: toggle chips under the chat box for repos already
+  seen in the fleet (derived from existing tickets, most-recent first);
+  attaching a repo scopes the message to it. An **Add new** button appends
+  a repo text input right under the chat box for first-time repos.
+- **Per-repo workflow select**: next to each attached repo, a workflow
+  picker (`GET /workflows`) with a **create new workflow** entry that
+  jumps into the workflow builder (see vue-flow item above).
+- **Dispatch semantics**: message + attached repo(+workflow) → files a
+  ticket directly; message with no repo attached → plain fleet-agent chat
+  (status questions, steering, knowledge Q&A).
+- **Running fleet strip** underneath: the currently active tickets
+  (live phase badges), with **View all running agents** / **View all
+  agents** links to the full fleet list (today's index, filtered/unfiltered).
+
+Depends on: registry UI slice 1 (picker); pairs with the vue-flow builder
+("create new workflow" target).
+
 ---
 
 ## Tabled 🅿️
