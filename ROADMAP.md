@@ -161,29 +161,38 @@ framework — AI SDK vs Pi, and dead-weight approval/durability machinery).
   PR, replies), the agent works in the repo — that separation is what
   keeps "the agent can never self-complete" true.
 
-### Semantic tool selection (toolpick pattern)
-[toolpick](https://github.com/pontusab/toolpick)'s concept — index all
-tools, let each step see only the ~5 most relevant, keyword+semantic
-ranked, all tools still callable — solves a problem Workhorse is now
-accumulating: the sandbox tool surface keeps growing (aft_*, ctx_*,
-workhorse_*, browser, knowledge, imgup, paste, scripts…), and every
-registered-but-gated tool costs context tokens in every stage prompt.
+### Semantic index toolkit (`@workhorse/semindex`) + toolpick-style selection
+A reusable semantic-search layer over Cloudflare primitives, so building
+an index for ANY registry becomes a few lines instead of a bespoke
+feature. Inspired by [toolpick](https://github.com/pontusab/toolpick)'s
+concept — index everything, rank per query, surface only the top-k.
 
-Two applications, in feasibility order:
-1. **Script/knowledge discovery** (near-term, no engine changes):
-   `list_scripts` and fleet knowledge grow semantic search — an agent
-   asks "how do I run the e2e suite here?" and gets the matching script
-   rather than reading the full inventory. Embedding via Workers AI or
-   AI Search, index maintained on script registration. This also
-   fulfills the old L2 ambition of semantic search over the script/skill
-   registry (memory #71) with fleet-native infrastructure.
-2. **Per-stage dynamic tool visibility** (needs pi-workflow cooperation):
-   stage allowlists stay the HARD gate (security boundary, unchanged),
-   but within an allowed set, rank tools against the stage prompt + task
-   and surface the top-k into the model's context, keeping the rest
-   callable-but-hidden. Worth a pi-workflow upstream conversation —
-   it owns tool registration per task; Workhorse alone can only shape
-   prompts, not the tool schema list Pi sends.
+- **The toolkit**: a workspace package wrapping Workers AI embeddings
+  (`@cf/baai/bge-*`) + Vectorize (one index, namespaced per corpus) +
+  D1/KV metadata behind a tiny contract:
+  `defineIndex({name, toText(item), id(item)})` →
+  `{upsert(items), remove(ids), query(text, {topK, filter})}`.
+  Registries call `upsert` on write (script registered, workflow saved,
+  knowledge doc distilled); consumers call `query`. Embedding+vector
+  plumbing, batching, and namespace hygiene live in ONE place. (AI
+  Search remains for the heavyweight managed-RAG corpus — fleet
+  knowledge docs; the toolkit is for the light structured registries
+  where we own chunking and want cheap exact control.)
+- **First corpora**: scripts (semantic `list_scripts` — "how do I run
+  the e2e suite here?" → the matching script, not the full inventory),
+  workflows (picker search + "which workflow fits this task?" in chat),
+  tools (the full sandbox tool surface: aft_*, ctx_*, workhorse_*,
+  browser/knowledge/imgup/paste/scripts…), and skills when a skill
+  registry lands. This fulfills the old L2 ambition (memory #71) of
+  semantic search over skills/scripts/tools with fleet-native infra.
+- **Toolpick-style per-stage tool selection** (the end game, needs
+  pi-workflow cooperation): stage allowlists stay the HARD gate
+  (security boundary, unchanged); within the allowed set, rank tools
+  against the stage prompt + task via the tools corpus and surface the
+  top-k into context, rest callable-but-hidden. pi-workflow owns the
+  tool schema list Pi sends — upstream conversation required; until
+  then, `find_tool`/`find_script` query tools give agents on-demand
+  discovery without any engine change.
 
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
