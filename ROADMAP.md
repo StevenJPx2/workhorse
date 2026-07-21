@@ -138,58 +138,51 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-### `@workhorse/stages` — CF-native stage engine (Plan B: absorb pi-workflow)
-Replace pi-workflow with our own stage engine, pushed up into the
-Cloudflare Workflow spine. Decision rationale: every Workhorse pipeline
-is a LINEAR chain of `single` stages — we use ~30% of pi-workflow's
-machinery (no `foreach`/`reduce`/`dag`, no projections, no leases) while
-paying 100% of the seam cost: run state spelunked off disk by inspect
-scripts, steering/escalation done as surgery on `compiled.json` +
-internal lease invariants (already broken once by an upstream internals
-change), and three sources of truth for "where is this run?".
+### `@workhorse/stages` — the stage engine
+Workhorse owns its stage engine: a workspace package driven directly by
+the Cloudflare Workflow spine. pi-workflow over own-engine was a real
+trade, decided on usage: every Workhorse pipeline is a linear chain of
+`single` stages — ~30% of pi-workflow's machinery — while the seam
+between the two engines costs 100%: run state spelunked off disk by
+inspect scripts, steering/escalation as surgery on `compiled.json` and
+internal lease invariants (fragile against upstream internals changes),
+and three sources of truth for "where is this run?".
 
-- **The package**: `packages/stages` (`@workhorse/stages`), hard-boundary
-  workspace package (depends on `@workhorse/api` only). Owns: the spec
-  format (compatible subset of today's `spec.json` — registry, builder,
-  seeds unchanged), our own validator (replacing the sandbox-side
-  pi-workflow parser at `PUT /workflows`), topological stage ordering,
+- **The package**: `packages/stages` (`@workhorse/stages`), depending on
+  `@workhorse/api` only. Owns the spec format (compatible subset of
+  today's `spec.json` — registry, builder, and seeds keep working), the
+  validator behind `PUT /workflows`, topological stage ordering,
   per-stage prompt assembly (upstream artifact digests + control
   contract epilogue), control-schema validation, and the run-state
-  machine. Sandbox I/O is injected behind a small `Driver` interface
-  (`exec`/`writeFile`/`readFile`) so the engine is unit-testable with a
-  mock driver — the worker provides the real `@cloudflare/sandbox` impl.
-- **The stage pattern**: each stage = one bare Pi session in the sandbox
-  (`pi -p` with a generated per-stage agent file — Pi agent definitions
-  natively enforce tool ceilings, so gating stays enforcement, not
-  prompt-begging). The session writes `analysis.md` + `control.json` to
-  the stage dir; the engine validates control against the stage's
-  schema, computes the digest, and hands it to the next stage. State
-  lives in ONE json the worker owns (`.stages/<run>/state.json`).
-- **What the seam-ectomy buys**: steering = kill session, re-run stage
-  with amended prompt (native). Promotion/fallback = re-run stage with a
-  different `--model` (native). Failure classification = the engine's
-  own typed error codes, not `/model/i` regexes. Inspect/escalate/steer
-  sandbox scripts deleted.
-- **The GH-Actions-style pattern becomes native**: owning the engine is
-  what unblocks the workflow-inputs items — `inputs:` declared on the
-  spec (`workflow_dispatch.inputs` pattern, json-render UI at dispatch),
-  the `awaiting-input` park state (a stage requests operator input
-  mid-run; the engine parks, the CF spine `waitForEvent`s, submission
-  resumes the stage with answers injected), and non-PR outcome kinds on
-  the terminal stage — all plain engine features instead of upstream
-  asks against pi-workflow.
-- **Fan-out ships too** (not given up — planned): `foreach` (map a
-  stage over a list artifact, e.g. one verify per changed package),
-  `reduce` (fan-in synthesis stage), and parallel `from` joins — CF
-  Workflows runs steps concurrently, so parallel stages = parallel
-  sandbox sessions under one run. Loop-until stages ship in v1
-  (verify→fix rounds need them); foreach/reduce in v2 once the linear
-  cutover is proven. This also finally creates the A2A consumer the
-  tabled item waits on.
-- Migration: engine lands behind the same drive-loop interface
-  (start/drive/steer/escalate), cut over per-workflow, then remove
-  pi-workflow from the sandbox image and `pi.json` outright (no
-  compat aliases, per project rule).
+  machine. Sandbox I/O sits behind a small `Driver` interface
+  (`exec`/`writeFile`/`readFile`): unit tests use a mock driver, the
+  worker provides the `@cloudflare/sandbox` implementation.
+- **The stage pattern**: each stage is one bare Pi session in the
+  sandbox — `pi -p` with a generated per-stage agent file; Pi agent
+  definitions enforce tool ceilings natively, so gating stays
+  enforcement. The session writes `analysis.md` + `control.json` to its
+  stage dir; the engine validates control against the stage schema,
+  computes the digest, and feeds it to dependents. Run state is one
+  worker-owned json (`.stages/<run>/state.json`).
+- **Native control operations**: steering kills the session and re-runs
+  the stage with the amended prompt; promotion/fallback re-runs with a
+  different `--model`; failures carry typed codes
+  (`model`/`control`/`session`/`timeout`/`input`).
+- **GH-Actions-style workflows**: the spec declares `inputs:`
+  (`workflow_dispatch.inputs` pattern, json-render UI at dispatch); a
+  stage can request operator input mid-run — the run parks as
+  `awaiting-input`, the CF spine `waitForEvent`s, submission resumes the
+  stage with the answers; the terminal stage declares its outcome kind
+  (`pr` | `report` | `artifact`).
+- **Fan-out**: `foreach` (map a stage over a list artifact — e.g. one
+  verify per changed package), `reduce` (fan-in synthesis), and parallel
+  `from` joins — CF Workflows runs steps concurrently, so parallel
+  stages are parallel sandbox sessions under one run. v1 ships linear +
+  loop-until (verify→fix rounds); foreach/reduce land in v2 and create
+  the A2A consumer the tabled item waits on.
+- **Migration**: the engine lands behind the existing drive-loop
+  interface (start/drive/steer/escalate), cuts over per-workflow, then
+  pi-workflow leaves the sandbox image and `pi.json` entirely.
 
 ### GitHub read tools for agents (`plugins/github/extension.ts`)
 The github plugin grows a sandbox half: a small set of READ-ONLY GitHub
