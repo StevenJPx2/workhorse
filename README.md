@@ -8,61 +8,18 @@ the right tools and context at each workflow stage.
 ## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph operators["Operators"]
-        UI["ui/ — Nuxt dashboard<br/>(tickets, steer, chat, traces)"]
-        SLACK_USER["Slack<br/>@workhorse mentions + threads"]
-        GH_USER["GitHub<br/>PR reviews / comments / CI"]
-    end
+flowchart LR
+    OPS["Operators<br/>UI · Slack · GitHub"]
+    WORKER["Worker (control plane)<br/>ticket API · durable workflow<br/>plugins · workflow registry"]
+    SANDBOX["Sandbox (per ticket)<br/>Pi agent + pi-workflow<br/>on the cloned repo"]
+    STATE[("State<br/>KV · AI Search")]
+    LLM["Anthropic<br/>(subscription OAuth)"]
 
-    subgraph worker["worker/ — Cloudflare Worker (composition root)"]
-        ROUTES["Ticket API + routes"]
-        WF["TicketWorkflow<br/>(durable spine: prepare → plan →<br/>implement → verify → park → revise)"]
-        REG["Plugin registry<br/>coreFor · routeFor · fireHook"]
-        WFREG["Workflow registry<br/>(specs as user data)"]
-    end
-
-    subgraph plugins["plugins/* — @workhorse/api only"]
-        P_GH["github<br/>webhook"]
-        P_SLACK["slack<br/>webhook + status hook"]
-        P_BROWSER["browser<br/>route + sandbox tool"]
-        P_KNOW["knowledge<br/>routes + trace hook + tool"]
-        P_TICKETS["tickets<br/>sandbox tools"]
-        P_IMGUP["imgup<br/>sandbox tool"]
-    end
-
-    subgraph state["State (Cloudflare)"]
-        KV[("KV — tickets, events, steers,<br/>traces, workflows, memory")]
-        AIS[("AI Search<br/>fleet knowledge index")]
-        BR["Browser Rendering"]
-    end
-
-    subgraph sandbox["sandbox/ — per-ticket Firecracker container"]
-        PI["Pi agent + pi-workflow<br/>(staged runs, tool gating)"]
-        EXT["plugin extensions<br/>(auto-discovered extension.ts)"]
-        REPO["cloned repo<br/>+ .pi/workflows/&lt;spec&gt;"]
-    end
-
-    CUSTODIAN["MacBook custodian<br/>OAuth refresh → short-lived tokens"]
-    ANTHROPIC["Anthropic API<br/>(Claude subscription OAuth)"]
-
-    UI -->|/api proxy| ROUTES
-    SLACK_USER --> P_SLACK
-    GH_USER --> P_GH
-    P_GH & P_SLACK -->|"events + wake / steer"| WF
-    ROUTES --> WF
-    REG -->|"onStatusChange · onTraceArchived"| P_SLACK & P_KNOW
-    WF <-->|"drive bursts · escalate ·<br/>steer · collect traces"| PI
-    WF --> KV
-    WFREG --> KV
-    P_KNOW --> AIS
-    P_BROWSER --> BR
-    PI --> EXT
-    EXT -->|"scoped token callbacks<br/>(/browser · /knowledge/search · /tickets)"| ROUTES
-    PI --> REPO
-    PI --> ANTHROPIC
-    CUSTODIAN -->|"POST /token"| ROUTES
-    REPO -->|"branch + PR"| GH_USER
+    OPS -->|"tickets · steers · webhooks"| WORKER
+    WORKER -->|"drive · escalate · trace"| SANDBOX
+    WORKER --> STATE
+    SANDBOX --> LLM
+    SANDBOX -->|"branch + PR"| OPS
 ```
 
 **Planes:**
