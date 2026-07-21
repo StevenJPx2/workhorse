@@ -15,6 +15,7 @@ const { data, refresh } = await useFetch<{
     outcome?: string;
     at?: string;
     tasks?: Array<{ id: string; status: string }>;
+    awaitingInput?: { stageId: string; request: { title?: string; schema: Record<string, unknown> } };
   } | null;
 }>(`/api/tickets/${id}`);
 
@@ -248,12 +249,61 @@ async function steer() {
   }
 }
 
+// Operator input (awaiting-input park).
+const sendingInput = ref(false);
+async function sendInput(answers: Record<string, unknown>) {
+  sendingInput.value = true;
+  try {
+    await $fetch(`/api/tickets/${id}/input`, { method: "POST", body: { answers } });
+    toast.add({ title: "Answers sent — the stage resumes", color: "success" });
+    refresh();
+  } catch (e: unknown) {
+    toast.add({ title: "Input failed", description: String(e), color: "error" });
+  } finally {
+    sendingInput.value = false;
+  }
+}
+
+// Acceptance verdicts (report/artifact outcomes).
+const accepting = ref(false);
+async function accept() {
+  accepting.value = true;
+  try {
+    await $fetch(`/api/tickets/${id}/accept`, { method: "POST" });
+    toast.add({ title: "Accepted — ticket completes", color: "success" });
+    refresh();
+  } catch (e: unknown) {
+    toast.add({ title: "Accept failed", description: String(e), color: "error" });
+  } finally {
+    accepting.value = false;
+  }
+}
+const changeComment = ref("");
+const requestingChanges = ref(false);
+async function requestChanges() {
+  const comment = changeComment.value.trim();
+  if (!comment) return;
+  requestingChanges.value = true;
+  try {
+    await $fetch(`/api/tickets/${id}/request-changes`, { method: "POST", body: { comment } });
+    changeComment.value = "";
+    toast.add({ title: "Changes requested — the agent revises", color: "success" });
+    refresh();
+  } catch (e: unknown) {
+    toast.add({ title: "Request failed", description: String(e), color: "error" });
+  } finally {
+    requestingChanges.value = false;
+  }
+}
+
 const running = computed(() =>
   ["queued", "planning", "implementing", "ready-for-review"].includes(
     data.value?.ticket?.status ?? "",
   ),
 );
-const parked = computed(() => data.value?.ticket?.status === "in-review");
+const parked = computed(() =>
+  ["in-review", "awaiting-input", "awaiting-acceptance"].includes(data.value?.ticket?.status ?? ""),
+);
 const stoppable = computed(() => running.value || parked.value);
 /** What compute is actually happening right now — the honest line. */
 const computeState = computed(() => {
@@ -300,8 +350,41 @@ function taskDot(status: string): string {
         <UButton v-if="data.ticket.prUrl" :to="data.ticket.prUrl" target="_blank" icon="i-lucide-git-pull-request">
           Open PR
         </UButton>
+        <template v-if="data.ticket.status === 'awaiting-acceptance'">
+          <UButton color="success" icon="i-lucide-check" :loading="accepting" @click="accept">
+            Accept result
+          </UButton>
+        </template>
       </div>
     </div>
+
+    <!-- awaiting operator input: render the requested form -->
+    <UCard v-if="data.ticket.status === 'awaiting-input' && data.live?.awaitingInput">
+      <template #header>
+        <div class="font-semibold">
+          {{ data.live.awaitingInput.request.title ?? `Stage \"${data.live.awaitingInput.stageId}\" needs your input` }}
+        </div>
+      </template>
+      <SchemaForm
+        :schema="data.live.awaitingInput.request.schema"
+        submit-label="Send answers"
+        :busy="sendingInput"
+        @submit="sendInput"
+      />
+    </UCard>
+
+    <!-- awaiting acceptance: request-changes affordance -->
+    <UCard v-if="data.ticket.status === 'awaiting-acceptance'">
+      <template #header>
+        <div class="font-semibold">Request changes</div>
+      </template>
+      <div class="flex gap-2">
+        <UInput v-model="changeComment" class="flex-1" size="sm" placeholder="What should the agent revise?" @keydown.enter="requestChanges" />
+        <UButton size="sm" color="warning" variant="soft" :loading="requestingChanges" :disabled="!changeComment.trim()" @click="requestChanges">
+          Send
+        </UButton>
+      </div>
+    </UCard>
 
     <UCard>
       <div class="text-sm space-y-1">

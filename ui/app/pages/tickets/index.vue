@@ -23,9 +23,44 @@ const shown = computed(() => {
 const { data: wfData } = await useFetch<{ workflows: Array<{ name: string }> }>("/api/workflows");
 const workflowItems = computed(() => (wfData.value?.workflows ?? []).map((w) => w.name));
 
+// Declared workflow inputs (workflow_dispatch pattern): fetch the selected
+// workflow's spec and render its inputs as real controls.
+interface WorkflowInput {
+  name: string;
+  type: "string" | "boolean" | "number" | "choice";
+  description?: string;
+  default?: string | number | boolean;
+  required?: boolean;
+  options?: string[];
+}
+const wfInputs = ref<WorkflowInput[]>([]);
+const inputValues = reactive<Record<string, string | number | boolean>>({});
+
 const filing = ref(false);
 const form = reactive({ repo: "", prompt: "", title: "", workflow: "coding" });
 const toast = useToast();
+
+watch(
+  () => form.workflow,
+  async (wf) => {
+    wfInputs.value = [];
+    if (!wf) return;
+    try {
+      const r = await $fetch<{ workflow: { spec: { inputs?: WorkflowInput[] } } }>(`/api/workflows/${wf}`);
+      wfInputs.value = r.workflow.spec.inputs ?? [];
+      for (const k of Object.keys(inputValues)) delete inputValues[k];
+      for (const i of wfInputs.value) {
+        if (i.default !== undefined) inputValues[i.name] = i.default;
+      }
+    } catch {
+      /* workflow without registry entry */
+    }
+  },
+  { immediate: true },
+);
+const inputsValid = computed(() =>
+  wfInputs.value.every((i) => !i.required || (inputValues[i.name] !== undefined && inputValues[i.name] !== "")),
+);
 
 async function fileTicket() {
   filing.value = true;
@@ -37,6 +72,7 @@ async function fileTicket() {
         prompt: form.prompt,
         title: form.title || undefined,
         workflow: form.workflow || undefined,
+        inputs: wfInputs.value.length ? { ...inputValues } : undefined,
       },
     });
     toast.add({ title: `Ticket ${r.ticket.id} filed`, color: "success" });
@@ -74,10 +110,22 @@ function useIntervalFn(fn: () => void, ms: number) {
       <div class="space-y-3">
         <UInput v-model="form.repo" placeholder="https://github.com/user/repo" icon="i-lucide-github" class="w-full" />
         <UTextarea v-model="form.prompt" placeholder="What should the agent do? Scope, constraints, acceptance criteria…" :rows="3" class="w-full" />
+        <div v-if="wfInputs.length" class="grid grid-cols-1 sm:grid-cols-2 gap-3 border border-default rounded-lg p-3">
+          <UFormField
+            v-for="i in wfInputs"
+            :key="i.name"
+            :label="i.name + (i.required ? ' *' : '')"
+            :description="i.description"
+          >
+            <USelect v-if="i.type === 'choice'" v-model="inputValues[i.name] as string" :items="i.options ?? []" size="sm" class="w-full" />
+            <UCheckbox v-else-if="i.type === 'boolean'" v-model="inputValues[i.name] as boolean" />
+            <UInput v-else v-model="inputValues[i.name] as string" :type="i.type === 'number' ? 'number' : 'text'" size="sm" class="w-full" />
+          </UFormField>
+        </div>
         <div class="flex gap-3">
           <UInput v-model="form.title" placeholder="Title (optional)" class="flex-1" />
           <USelect v-model="form.workflow" :items="workflowItems" placeholder="workflow" class="w-44" />
-          <UButton :loading="filing" :disabled="!form.repo || !form.prompt" @click="fileTicket">
+          <UButton :loading="filing" :disabled="!form.repo || !form.prompt || !inputsValid" @click="fileTicket">
             Dispatch
           </UButton>
         </div>
