@@ -125,6 +125,58 @@ Exercises every part of the plugin contract (webhook verify/parse, hooks,
 Core.fileTicket — which needs adding to Core services) and makes Workhorse
 usable from where tickets already live.
 
+### Script service (agent self-extension)
+The legacy Workhorse crown jewel, ported to the fleet: agents author
+**persistent shell-script tools for themselves**, so repeated command
+sequences become named, parameterized, auditable tools instead of
+re-derived bash each run. Three wins: **token cost** (one tool call vs
+re-explaining a pipeline), **auditability** (a reviewed script with a
+stable name vs ad-hoc shell every time), **compounding capability** (the
+fleet gets better at a repo the more it works on it).
+
+- **Registry**: DB-authoritative in **D1** (see next item) — a `scripts`
+  table (name, scope `repo:<owner/repo>` | `global`, description, command
+  body, typed args JSON, status gates, `created_by` agent|user|seed,
+  timestamps, UNIQUE(scope, name)) — the structured shape the legacy
+  design proved out. Strict validation at registration; listing reads the
+  DB, never the filesystem.
+- **Sandbox tools**: `write_script` (register/update — the self-extension
+  verb), `run_script` (fetch + execute), `list_scripts` (with
+  descriptions, so the planner sees the repo's tool inventory). Worker
+  half: scoped-token CRUD routes + audit trail of every registration and
+  edit in the trace archive.
+- **Seeding**: a committed `.workhorse/scripts.toml` in the target repo
+  imports at prepare (`created_by: seed`) — clone-and-go, same pattern as
+  `.workhorse/workflows/`.
+- **Gating**: stage allowlists decide where `run_script` is callable
+  (write-classified); `write_script` only in implement-class stages.
+  Status gates stop e.g. a deploy script running from a plan stage.
+- **UI**: scripts page per repo — inventory, bodies, who created what,
+  edit/retire. The audit surface is the point: you can read your fleet's
+  self-built toolbox.
+
+### D1 structured store
+Adopt **D1** as the relational plane for record-shaped data that has
+outgrown KV's get/put-by-key model:
+
+- **Scripts first** (greenfield — no migration): the script registry above
+  is born as a D1 table; its queries ("all scripts for repo X visible in
+  stage Y", "everything agent-created last week") are exactly what SQL is
+  for and what KV prefix-scans do badly.
+- **Tickets + escalations next**: the fleet list already does
+  list-all-keys + N gets per page load, filtering statuses in JS; ticket
+  records, escalation events, and the traces *index* become tables
+  (`tickets`, `escalations`, `traces`), unlocking real queries — fleet
+  dashboards (tickets by status/repo/week), eval slices ("promotion rate
+  per stage per model"), heal-sweep as one `SELECT` instead of a full
+  scan.
+- **What stays put**: KV keeps hot small state (live:, steers/events
+  cursors, auth token, PR/Slack thread mappings); R2 keeps blobs (trace
+  bodies, MC db, dep cache); AI Search keeps semantic. D1 is for records
+  with relationships — not a new home for everything.
+- Migration is incremental per record type behind the existing accessors
+  (`fileTicket`, `updateTicket`, `recordEscalation`, `archiveTrace`).
+
 ### Visual workflow builder (vue-flow)
 Definable workflows, end to end in the UI. A `/workflows` page in the Nuxt
 dashboard using [vue-flow](https://github.com/bcakmakoglu/vue-flow): stages
