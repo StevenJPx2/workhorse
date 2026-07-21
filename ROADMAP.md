@@ -5,7 +5,8 @@ bigger model but from giving a smaller model the right tools and the right
 context at the right *stage* of a workflow. Three required properties:
 autonomous-but-staged, observable-and-conversational, and a fleet.
 
-Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
+Status legend: ✅ shipped · 🅿️ tabled — everything previously planned has
+shipped; new items land here as they're conceived.
 
 ---
 
@@ -85,21 +86,17 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
 
 ---
 
-## Planned ⏳
-
-### A2A / agent communication
-Graph-mediated handoff in pi-workflow carries typed stage outputs
-(`control.json` / `analysis.md` / `refs.json`), `from` data edges (downstream
-receives a `source-manifest.json`), `sourceProjection.include` (inline selected
-upstream dot-paths), `inputPolicy.requiredReads` (fail-closed),
-`foreach`/`reduce` fan-out/fan-in, and `dag` composites. Live peer-to-peer
-messaging between concurrently running subagents is absent; adding it would take
-a shared-filesystem mailbox + polling tool, or an orchestrator-level message
-bus.
-
----
-
 ## Tabled 🅿️
+
+### A2A / live agent communication
+Graph-mediated handoff already carries typed stage outputs (`control.json` /
+`analysis.md` / `refs.json`), `from` data edges, `sourceProjection.include`,
+`inputPolicy.requiredReads`, `foreach`/`reduce` fan-out/fan-in, and `dag`
+composites. Live peer-to-peer messaging between CONCURRENT subagents has no
+consumer today: every Workhorse bundle is a linear pipeline (no
+`foreach`/`dag` fan-out), so no two subagents ever run at once. Revisit when
+a workflow genuinely fans out — a shared-filesystem mailbox + polling tool,
+or an orchestrator-level message bus.
 
 ### Rust in Workhorse
 The control plane is TypeScript: `WorkflowEntrypoint` and the
