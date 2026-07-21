@@ -58,6 +58,14 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
   `invalidateOnDependencyResume`, upstream artifacts intact. Every
   escalation lands in `esc:<ticket>:<run>` and merges into the trace
   archive, so **evals reveal which stages genuinely need a bigger model**.
+- **AI Search fleet knowledge** — every archived run is distilled
+  (task, per-stage analyses, verifier verdict, escalations, outcome) and
+  indexed into an AI Search instance (`workhorse-fleet`, built-in storage,
+  hybrid vector+keyword). Agents get `search_fleet_knowledge` (gated into
+  plan + verify) — institutional memory across ALL repos/tickets,
+  complementing Magic Context's per-repo working memory; the fleet chat
+  answers "why did X fail?" from the same corpus. `POST /knowledge/search`
+  (scoped token) + `POST /knowledge/reindex` backfill.
 - **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
   input on the ticket page) queues an operator message; the driving
   workflow picks it up on its next burst, interrupts the current stage via
@@ -70,12 +78,6 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
 ---
 
 ## Planned ⏳
-
-### AI Search (Cloudflare AutoRAG)
-Managed RAG over our own corpora — repo docs, past tickets, the trace archive
-— exposing "search prior solutions before solving" as a native tool. Magic
-Context holds the agent's working memory; AI Search holds fleet-wide
-institutional knowledge.
 
 ### Slack bot
 Exercises both plugin halves and both directions. Inbound: `@workhorse …` in a

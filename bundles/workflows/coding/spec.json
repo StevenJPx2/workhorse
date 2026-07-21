@@ -27,12 +27,17 @@
             "optional": true
           },
           {
+            "name": "search_fleet_knowledge",
+            "classification": "read-only",
+            "optional": true
+          },
+          {
             "name": "browser_fetch",
             "classification": "read-only",
             "optional": true
           }
         ],
-        "prompt": "FIRST: search project memory for prior work on this repo — run ctx_search with terms from the task (e.g. the feature area, file names, error text). Prior tickets may have already mapped the conventions, pitfalls, or even solved something similar; use what you find. If the task references external documentation, an API, or a URL, use browser_fetch to read it (it renders JS and returns clean text). Then study the repository and produce a concise implementation plan for the runtime task: which files change and how, repo conventions to follow, risks, and how to verify. End with the exact list of files to be created or modified. ESCALATION: if after genuine effort this task exceeds your capability (architecture you cannot untangle, reasoning you cannot complete — NOT merely tedious work), still produce your best partial result AND set \"delegate\": true with a short \"delegateReason\" in your control block; the orchestrator re-runs this stage on a stronger model.",
+        "prompt": "FIRST: search prior work — run ctx_search (this repo's memory) AND search_fleet_knowledge (distilled traces of every past fleet run, all repos) with terms from the task (feature area, file names, error text). Prior tickets may have already mapped the conventions, pitfalls, or even solved something similar; use what you find. If the task references external documentation, an API, or a URL, use browser_fetch to read it (it renders JS and returns clean text). Then study the repository and produce a concise implementation plan for the runtime task: which files change and how, repo conventions to follow, risks, and how to verify. End with the exact list of files to be created or modified. ESCALATION: if after genuine effort this task exceeds your capability (architecture you cannot untangle, reasoning you cannot complete — NOT merely tedious work), still produce your best partial result AND set \"delegate\": true with a short \"delegateReason\" in your control block; the orchestrator re-runs this stage on a stronger model.",
         "output": {
           "analysis": { "required": true },
           "maxDigestChars": 2000
@@ -85,6 +90,11 @@
           "bash",
           {
             "name": "ctx_search",
+            "classification": "read-only",
+            "optional": true
+          },
+          {
+            "name": "search_fleet_knowledge",
             "classification": "read-only",
             "optional": true
           },

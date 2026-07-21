@@ -16,6 +16,7 @@ import {
 } from "./agent-run";
 import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
 import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
+import { indexRun } from "./knowledge";
 import type { ExternalEvent } from "./plugins/types";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
@@ -112,6 +113,9 @@ async function archiveTrace(
       idx.push({ runId, kind, archivedAt: at });
       await env.TICKETS.put(`traces:${ticketId}`, JSON.stringify(idx));
     }
+    // Fleet knowledge: distill + index the run so future agents can find it
+    // ("has the fleet seen this before?"). Best-effort by design.
+    await indexRun(env, ticketId, runId, kind, activity);
   } catch (err) {
     console.warn(`trace archive failed for ${ticketId}:${runId}:`, err);
   }

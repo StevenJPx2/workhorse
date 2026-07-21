@@ -1,6 +1,7 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import { type BrowserFetchRequest, browserFetch } from './browser';
 import { appendEvents, appendSteer } from "./events";
+import { indexRun, searchKnowledge } from "./knowledge";
 import { pluginFor } from "./plugins";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
@@ -122,8 +123,54 @@ export default {
       return json(result, result.ok ? 200 : 502);
     }
 
+    // Fleet knowledge search: sandbox agents ask "has the fleet seen this
+    // before?". Same scoped-token policy as /browser (sandboxes run
+    // untrusted repo code — never give them the master bearer).
+    if (url.pathname === "/knowledge/search" && request.method === "POST") {
+      const okAuth =
+        auth === `Bearer ${env.SPIKE_TOKEN}` ||
+        (!!env.BROWSER_TOKEN && auth === `Bearer ${env.BROWSER_TOKEN}`);
+      if (!okAuth) return new Response("unauthorized", { status: 401 });
+      const { query, limit } = (await request.json().catch(() => ({}))) as {
+        query?: string;
+        limit?: number;
+      };
+      if (!query?.trim()) return json({ error: "query required" }, 400);
+      const hits = await searchKnowledge(env, query.trim().slice(0, 500), limit);
+      return json({ hits });
+    }
+
     if (auth !== `Bearer ${env.SPIKE_TOKEN}`) {
       return new Response("unauthorized", { status: 401 });
+    }
+
+    // Backfill fleet knowledge from the existing trace archive (idempotent:
+    // items upsert by filename). Master-token only.
+    if (url.pathname === "/knowledge/reindex" && request.method === "POST") {
+      let indexed = 0;
+      let failed = 0;
+      let cursor: string | undefined;
+      do {
+        const page = await env.TICKETS.list({ prefix: "trace:", cursor });
+        for (const key of page.keys) {
+          const raw = await env.TICKETS.get(key.name);
+          if (!raw) continue;
+          try {
+            const t = JSON.parse(raw) as {
+              ticketId: string;
+              runId: string;
+              kind: string;
+              activity: unknown;
+            };
+            const ok = await indexRun(env, t.ticketId, t.runId, t.kind, JSON.stringify(t.activity));
+            ok ? indexed++ : failed++;
+          } catch {
+            failed++;
+          }
+        }
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+      return json({ ok: true, indexed, failed });
     }
 
     // Token push from the MacBook custodian (fresh short-lived access token).
@@ -284,13 +331,20 @@ export default {
           anthropic: { type: "oauth", access: auth.access, refresh: "", expires: auth.expires },
         }),
       );
+      // Knowledge callback config so search_fleet_knowledge works in chat.
+      if (env.SELF_URL && env.BROWSER_TOKEN) {
+        await sandbox.writeFile(
+          "/root/.workhorse-browser.json",
+          JSON.stringify({ url: env.SELF_URL, token: env.BROWSER_TOKEN }),
+        );
+      }
       const history = messages
         .map((m) => `${m.role === "user" ? "User" : "You"}: ${m.content}`)
         .join("\n\n");
       const prompt = `You are the Workhorse fleet operator agent, chatting with the user from the fleet dashboard.
 You have workhorse_* tools: list tickets, check a ticket's status/diff, and file new tickets (repo + prompt \u2192 autonomous staged run \u2192 GitHub PR).
+You also have search_fleet_knowledge: the fleet's institutional memory (distilled traces of every past run — stage analyses, verifier findings, escalations, outcomes). Use it for questions like "why did X fail?", "have we done this before?", or before proposing a fix for a recurring problem.
 When the user wants work done, file a ticket. When they ask about progress, use the status tools and report crisply.
-Before proposing a fix for a recurring problem, check earlier tickets for prior solutions (workhorse_list_tickets + workhorse_ticket_status).
 Be concise. This is a chat: reply with your message only.\n\nConversation so far:\n${history}\n\nReply to the last user message.`;
       await sandbox.writeFile("/workspace/.chat-prompt", prompt);
       const result = await sandbox.exec(

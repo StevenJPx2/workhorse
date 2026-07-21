@@ -87,6 +87,13 @@ export interface Env {
   BROWSER_TOKEN?: string;
   /** Browser Rendering binding (tokenless headless Chrome). */
   BROWSER: Fetcher;
+  /**
+   * AI Search (AutoRAG) namespace binding — fleet-wide institutional
+   * knowledge. One instance ("workhorse-fleet", built-in storage) indexes
+   * distilled run traces + ticket outcomes; agents search it before
+   * solving ("has the fleet seen this before?").
+   */
+  AI_SEARCH: AiSearchNamespace;
   /** This Worker's own public URL, so sandboxes can call back to /browser. */
   SELF_URL?: string;
   /**

@@ -9,7 +9,8 @@
   "extensions": [
     "extensions/workhorse.ts",
     "extensions/browser.ts",
-    "extensions/imgup.ts"
+    "extensions/imgup.ts",
+    "extensions/knowledge.ts"
   ],
   "settings": {
     "defaultProvider": "anthropic",
