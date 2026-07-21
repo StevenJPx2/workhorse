@@ -34,6 +34,8 @@ export interface TicketParams {
    * on GitHub, events + memory in KV) instead of starting from scratch.
    */
   resume?: boolean;
+  /** Dispatch-time values for the workflow's declared inputs. */
+  inputs?: Record<string, string | number | boolean>;
 }
 
 export interface TicketRecord {
@@ -48,7 +50,9 @@ export interface TicketRecord {
     | "planning"
     | "implementing"
     | "ready-for-review" // adversarial verifier pass before the PR goes up
+    | "awaiting-input" // a stage requested operator input mid-run
     | "in-review"
+    | "awaiting-acceptance" // report/artifact outcome offered; operator accepts
     | "done"
     | "errored"
     | "terminated";

@@ -73,10 +73,9 @@ describe("run lifecycle", () => {
       { id: "implement", status: "pending" },
       { id: "verify", status: "pending" },
     ]);
-    // Agent file carries the ceiling for implement later; plan has no tools → no tools line.
-    const planAgent = driver.files.get("/root/.pi/agent/agents/wh-plan.md")!;
-    expect(planAgent).toContain("name: wh-plan");
-    expect(planAgent).not.toContain("tools:");
+    // Plan declares no tools → launch runs without a --tools allowlist.
+    expect(driver.launches.at(-1)!.command).not.toContain("--tools");
+    expect(driver.launches.at(-1)!.command).toContain("--append-system-prompt");
 
     // plan finishes.
     driver.finishSession(stageDir("wfrun_test", "plan", 1), { status: "done" }, "PLAN ANALYSIS");
@@ -88,9 +87,8 @@ describe("run lifecycle", () => {
     const implPrompt = driver.files.get(`${stageDir("wfrun_test", "implement", 1)}/prompt.md`)!;
     expect(implPrompt).toContain("PLAN ANALYSIS");
     expect(implPrompt).toContain("Upstream stage `plan`");
-    expect(driver.files.get("/root/.pi/agent/agents/wh-implement.md")).toContain(
-      "tools: read, write, run_script",
-    );
+    // implement's tool ceiling rides the CLI allowlist.
+    expect(driver.launches.at(-1)!.command).toContain('--tools "read,write,run_script"');
 
     driver.finishSession(stageDir("wfrun_test", "implement", 1), { status: "done" });
     r = await engine.advance("wfrun_test", 0);

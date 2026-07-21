@@ -21,7 +21,8 @@
     "@workhorse/paste": "workspace:*",
     "@workhorse/scripts": "workspace:*",
     "@workhorse/slack": "workspace:*",
-    "@workhorse/tickets": "workspace:*"
+    "@workhorse/tickets": "workspace:*",
+    "@workhorse/workflow": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",

@@ -5,7 +5,7 @@ export {
   initialStages,
   inputsToSchema,
   runDir,
-  stageAgentFile,
+  stageSession,
   stageDir,
   stageOrder,
   terminalStage,

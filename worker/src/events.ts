@@ -51,7 +51,7 @@ export async function consumeEvents(env: Env, ticketId: string): Promise<void> {
 }
 
 // --- mid-run steering (operator → running stage) -------------------------
-// Steers are NOT ExternalEvents: they target the live pi-workflow run (the
+// Steers are NOT ExternalEvents: they target the live workflow run (the
 // current stage is restarted with the steer appended to its prompt), not
 // the park ↔ revise loop. Same append-only + cursor pattern.
 

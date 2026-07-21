@@ -42,25 +42,20 @@ export function toolName(t: ToolRef): string {
 }
 
 /**
- * Generated Pi agent file for one stage: tool ceiling + persona. Pi agent
- * definitions enforce the tools list natively — gating is enforcement,
- * not prompt-begging.
+ * Per-stage session config, mapped to Pi CLI flags. The tool ceiling rides
+ * `--tools` (a CLI-level allowlist — enforcement, not prompt-begging);
+ * persona rides `--append-system-prompt <file>`.
  */
-export function stageAgentFile(spec: WorkflowSpec, stage: StageSpec, baseAgentMd?: string): string {
-  const tools = (stage.tools ?? []).map(toolName);
-  const persona =
-    baseAgentMd?.replace(/^---[\s\S]*?---\s*/, "").trim() ||
-    "You are a focused software engineering agent executing one stage of a staged workflow.";
-  const lines = [
-    "---",
-    `name: wh-${stage.id}`,
-    `description: Workhorse workflow stage "${stage.id}" of ${spec.name}`,
-    ...(tools.length ? [`tools: ${tools.join(", ")}`] : []),
-    "---",
-    "",
-    persona,
-  ];
-  return lines.join("\n");
+export function stageSession(stage: StageSpec, baseAgentMd?: string | null): {
+  tools: string[];
+  persona: string;
+} {
+  return {
+    tools: (stage.tools ?? []).map(toolName),
+    persona:
+      baseAgentMd?.replace(/^---[\s\S]*?---\s*/, "").trim() ||
+      `You are a focused software engineering agent executing the "${stage.id}" stage of a staged workflow. Work only within this stage's scope.`,
+  };
 }
 
 /** Digest of a completed upstream stage, injected into dependents. */

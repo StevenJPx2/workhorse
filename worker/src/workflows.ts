@@ -1,11 +1,10 @@
 // Workflow registry: workflows are USER DATA, not core code.
 //
-// A workflow entry = pi-workflow spec + optional agent definitions +
-// optional control schemas. Stored in KV (`workflow:<name>`), uploadable
-// via the API/UI, validated at upload time with pi-workflow's OWN parser
-// (executed in a sandbox, where pi-workflow is baked — the Worker never
-// bundles it). The Docker image keeps seed bundles only; POST
-// /workflows/seed imports them into KV (idempotent).
+// A workflow entry = @workhorse/workflow spec + optional agent definitions
+// + optional control schemas. Stored in KV (`workflow:<name>`), uploadable
+// via the API/UI, validated at upload time by the engine's own validator
+// (worker-side — no sandbox round-trip). The Docker image keeps seed
+// bundles only; POST /workflows/seed imports them into KV (idempotent).
 //
 // Resolution order at run prepare (agent-run.ts):
 //   1. target repo's .workhorse/workflows/<name>/  (teams version their own)
@@ -13,11 +12,12 @@
 //   3. baked /opt/agent/sandbox/workflows/<name>    (seed fallback)
 
 import { getSandbox } from "@cloudflare/sandbox";
+import { validateWorkflowSpec } from "@workhorse/workflow";
 import type { Env } from "@workhorse/api";
 
 export interface WorkflowEntry {
   name: string;
-  /** The pi-workflow ArtifactGraph spec (validated at upload). */
+  /** The workflow spec (validated at upload by @workhorse/workflow). */
   spec: Record<string, unknown>;
   /** Agent definitions (filename → markdown), installed to ~/.pi/agent/agents. */
   agents?: Record<string, string>;
@@ -58,34 +58,10 @@ export async function listWorkflows(
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Validate a spec with pi-workflow's own parser, executed in a sandbox
- * (pi-workflow is baked there; the Worker never bundles it). Returns null
- * when valid, else the validation error text.
- */
-export async function validateSpec(env: Env, spec: unknown): Promise<string | null> {
-  const sandbox = getSandbox(env.Sandbox, "wf-validate", { sleepAfter: "1m" });
-  await sandbox.writeFile("/tmp/spec.json", JSON.stringify(spec));
-  await sandbox.writeFile(
-    "/tmp/validate.mjs",
-    [
-      `import { readFileSync } from "fs";`,
-      `import { pathToFileURL } from "url";`,
-      `const dist = "/root/.pi/agent/npm/node_modules/@agwab/pi-workflow/dist";`,
-      `const { parseArtifactGraphWorkflowSpec } = await import(pathToFileURL(dist + "/index.js").href);`,
-      `try {`,
-      `  parseArtifactGraphWorkflowSpec(JSON.parse(readFileSync("/tmp/spec.json", "utf8")));`,
-      `  console.log("VALID");`,
-      `} catch (e) {`,
-      `  console.log("INVALID: " + (e?.message ?? e));`,
-      `}`,
-    ].join("\n"),
-  );
-  const res = await sandbox.exec("node /tmp/validate.mjs", { timeout: 60_000 });
-  const line = res.stdout.trim().split("\n").at(-1) ?? "";
-  if (line === "VALID") return null;
-  if (line.startsWith("INVALID: ")) return line.slice("INVALID: ".length).slice(0, 2000);
-  return `validator failed: ${(res.stderr || res.stdout).slice(-500)}`;
+/** Validate a spec with the engine's validator. Null when valid. */
+export async function validateSpec(_env: Env, spec: unknown): Promise<string | null> {
+  const errors = validateWorkflowSpec(spec);
+  return errors.length ? errors.join("\n").slice(0, 2000) : null;
 }
 
 /** Upsert a workflow after validating its spec. Returns an error string or null. */

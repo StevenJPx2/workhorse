@@ -47,7 +47,7 @@ export const PROMOTION_CHAIN = [
  */
 export const DEFAULT_BASE_MODEL = "claude-sonnet-4-6";
 
-/** Hard cap on promotions per pi-workflow run (cost guard). */
+/** Hard cap on promotions per run (cost guard). */
 export const MAX_PROMOTIONS = 2;
 
 /** Pick the next model up the chain, or undefined when already at the top. */

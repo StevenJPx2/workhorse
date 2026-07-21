@@ -267,6 +267,61 @@ export default {
     // interrupts the current stage, and re-runs it with the steer appended
     // to its prompt. Parked (in-review) tickets should use PR feedback
     // instead — steers target the ACTIVE run.
+    // Operator input for an awaiting-input park: inject answers into the
+    // engine, then wake the spine's waitForEvent.
+    const inputM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/input$/);
+    if (inputM && request.method === "POST") {
+      const rec = await getTicket(env, inputM[1]);
+      if (!rec) return json({ error: "not found" }, 404);
+      if (rec.status !== "awaiting-input" || !rec.runId) {
+        return json({ error: "ticket is not awaiting input" }, 409);
+      }
+      const { answers } = (await request.json().catch(() => ({}))) as {
+        answers?: Record<string, unknown>;
+      };
+      if (!answers) return json({ error: "answers required" }, 400);
+      try {
+        const { engineFor } = await import("./agent-run");
+        const engine = await engineFor(env, `ticket-${inputM[1]}`, rec.workflow);
+        const stage = await engine.injectInput(rec.runId, answers);
+        try {
+          const inst = await env.TICKET_WF.get(rec.wfInstance ?? inputM[1]);
+          await inst.sendEvent({ type: "operator-input", payload: {} });
+        } catch {
+          /* instance not parked yet — next burst reads the state anyway */
+        }
+        return json({ ok: true, stage });
+      } catch (e) {
+        return json({ error: String(e instanceof Error ? e.message : e).slice(0, 500) }, 422);
+      }
+    }
+
+    // Acceptance verdicts for report/artifact outcomes. Operator-only
+    // (master bearer): accept completes, request-changes revises.
+    const acceptM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/(accept|request-changes)$/);
+    if (acceptM && request.method === "POST") {
+      const rec = await getTicket(env, acceptM[1]);
+      if (!rec) return json({ error: "not found" }, 404);
+      if (rec.status !== "awaiting-acceptance") {
+        return json({ error: "ticket is not awaiting acceptance" }, 409);
+      }
+      const { comment } = (await request.json().catch(() => ({}))) as { comment?: string };
+      const accept = acceptM[2] === "accept";
+      if (!accept && !comment?.trim()) {
+        return json({ error: "comment required when requesting changes" }, 400);
+      }
+      await appendEvents(env, [
+        {
+          ticketId: acceptM[1],
+          kind: accept ? "accepted" : "changes-requested",
+          summary: accept ? "Operator accepted the result" : `Operator requested changes: ${comment!.slice(0, 1500)}`,
+          receivedAt: new Date().toISOString(),
+        },
+      ]);
+      ctx.waitUntil(wakeTicket(env, acceptM[1]));
+      return json({ ok: true });
+    }
+
     const steerM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/steer$/);
     if (steerM && request.method === "POST") {
       const rec = await getTicket(env, steerM[1]);

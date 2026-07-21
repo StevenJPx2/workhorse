@@ -8,9 +8,9 @@ import {
   assemblePrompt,
   initialStages,
   runDir,
-  stageAgentFile,
   stageDir,
   stageOrder,
+  stageSession,
   terminalStage,
   untilSatisfied,
   upstreamDigest,
@@ -202,12 +202,10 @@ export class WorkflowEngine {
     const baseAgentMd = agentName
       ? await this.driver.readFile(`/root/.pi/agent/agents/${agentName}.md`)
       : null;
+    const session = stageSession(spec, baseAgentMd);
 
     await this.driver.exec(`mkdir -p ${dir}`, { timeout: 10_000 });
-    await this.driver.writeFile(
-      `/root/.pi/agent/agents/wh-${st.id}.md`,
-      stageAgentFile(this.spec, spec, baseAgentMd ?? undefined),
-    );
+    await this.driver.writeFile(`${dir}/persona.md`, session.persona);
     await this.driver.writeFile(`${dir}/prompt.md`, prompt);
 
     const model = st.model ?? spec.model ?? this.spec.defaults?.model;
@@ -215,7 +213,11 @@ export class WorkflowEngine {
     const flags = [
       "-p",
       "-np",
-      `--agent wh-${st.id}`,
+      "--no-session",
+      `--append-system-prompt ${dir}/persona.md`,
+      // Tool ceiling: CLI-level allowlist. No list = the stage runs open
+      // (spec authors gate by listing; validation encourages it).
+      ...(session.tools.length ? [`--tools ${JSON.stringify(session.tools.join(","))}`] : []),
       ...(model ? [`--model ${JSON.stringify(model)}`] : []),
       ...(thinking ? [`--thinking ${thinking}`] : []),
     ].join(" ");
@@ -382,6 +384,21 @@ export class WorkflowEngine {
     state.status = "running";
     await this.save(state);
     return target.id;
+  }
+
+  /** Re-run failed stages as-is (availability retry: fresh credentials, same models). */
+  async retry(runId: string): Promise<string[]> {
+    const state = await this.load(runId);
+    const failed = state.stages.filter((s) => s.status === "failed");
+    for (const st of failed) {
+      st.status = "pending";
+      st.failureKind = undefined;
+      st.detail = undefined;
+      await this.invalidateDependents(state, st.id);
+    }
+    if (failed.length) state.status = "running";
+    await this.save(state);
+    return failed.map((s) => s.id);
   }
 
   async cancel(runId: string): Promise<void> {

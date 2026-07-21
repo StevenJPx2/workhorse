@@ -18,6 +18,7 @@ import {
   persistMemory,
 } from "./agent-run";
 import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
+import type { DriveReport } from "./agent-run";
 import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
 import { fireHook } from "./plugins";
 import { getTicket, insertEscalation, insertTraceIndex, patchTicket } from "./db";
@@ -96,7 +97,7 @@ async function recordEscalation(
 
 /**
  * Durable trace archive for optimization mining + evals: one immutable
- * record per pi-workflow run (activity:<id> is a "latest" pointer that gets
+ * record per engine run (activity:<id> is a "latest" pointer that gets
  * overwritten each revision; traces never are). Key: trace:<ticket>:<run>.
  * Also maintains a per-ticket run index at traces:<ticket>.
  */
@@ -159,7 +160,7 @@ async function archiveTrace(
  */
 export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   /**
-   * Drive a pi-workflow graph to completion in short supervisor bursts.
+   * Drive the workflow run to completion in short engine-advance bursts.
    * Long-lived execs through the sandbox DO die silently (observed: the
    * detached supervisor exits with its parent and a 25-min exec never
    * returns), so we loop ~50s bursts — each burst also publishes a live
@@ -171,6 +172,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     runId: string,
     ticketId: string,
     label: string,
+    workflow?: string,
   ): Promise<void> {
     // Escalation bookkeeping (one mechanism, two triggers): which
     // availability-fallback legs were burned, which stages already
@@ -180,36 +182,36 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     let promotions = 0;
 
     for (let burst = 1; burst <= 60; burst++) {
-      const res = await step.do(
+      const res = (await step.do(
         `${label}-drive-${burst}`,
         { retries: { limit: 2, delay: "10 seconds" }, timeout: "4 minutes" },
         async () => {
-          const r = await driveWorkflow(this.env, sandboxId, runId);
+          const r = await driveWorkflow(this.env, sandboxId, runId, 50_000, workflow);
           await setLive(this.env, ticketId, { phase: label, runId, ...r });
           const steers = await pendingSteers(this.env, ticketId);
           if (steers.length > 0) (r as { steers?: string[] }).steers = steers;
           // Mirror the running pipeline stage onto the ticket status:
           // verify/fix stages = the adversarial "ready-for-review" pass.
           const active = r.tasks.find((t) => t.status === "running")?.id ?? "";
-          if (/^(verify|fix)\./.test(active)) {
+          if (/^(verify|fix)/.test(active)) {
             await updateTicket(this.env, ticketId, { status: "ready-for-review" });
           }
-          return r;
+          return JSON.stringify(r);
         },
-      );
+      ).then((s) => JSON.parse(s as string))) as DriveReport & { steers?: string[] };
 
       // --- operator mid-run steering: interrupt the current stage and
-      // re-run it with the steer appended to its prompt (pi-workflow has no
-      // live-injection API). Between-stage steers just re-prompt the not-yet-
+      // re-run it with the steer appended to its prompt (engine-native: kill the
+      // session, relaunch with the amended prompt). Between-stage steers re-prompt
       // started stage. Checked before escalations: a human redirect
       // supersedes machine escalation this burst.
-      const steers = (res as { steers?: string[] }).steers ?? [];
+      const steers = res.steers ?? [];
       if (steers.length > 0) {
         await step.do(
           `${label}-steer-${burst}`,
           { retries: { limit: 1, delay: "10 seconds" }, timeout: "5 minutes" },
           async () => {
-            const stage = await steerWorkflow(this.env, sandboxId, runId, steers.join("\n\n"));
+            const stage = await steerWorkflow(this.env, sandboxId, runId, steers.join("\n\n"), workflow);
             await consumeSteers(this.env, ticketId);
             await recordEscalation(this.env, ticketId, runId, {
               trigger: "steer",
@@ -240,7 +242,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
               await escalateWorkflow(this.env, sandboxId, runId, {
                 failSpecId: del.taskId,
                 model: toModel,
-              });
+              }, workflow);
               await recordEscalation(this.env, ticketId, runId, {
                 trigger: "promotion",
                 detail: del.reason ?? "stage delegated",
@@ -261,7 +263,39 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       }
 
       if (res.status === "completed") return;
-      if (res.status === "failed" || res.status === "interrupted") {
+      // Operator-input park: surface the request and hand control back to
+      // the lifecycle (which parks on waitForEvent until the answer arrives).
+      if (res.status === "awaiting-input") {
+        await step.do(`${label}-park-input-${burst}`, { timeout: "5 minutes" }, async () => {
+          await updateTicket(this.env, ticketId, { status: "awaiting-input" });
+          await setLive(this.env, ticketId, {
+            phase: label,
+            runId,
+            note: `awaiting operator input for ${res.awaitingInput?.stageId}`,
+            awaitingInput: res.awaitingInput,
+          });
+          // Durability: snapshot the run state to KV (sandbox disk may die
+          // during a long park; the input route restores it if needed).
+          const { sandboxDriver } = await import("./agent-run");
+          const state = await sandboxDriver(this.env, sandboxId).readFile(
+            `/workspace/.workflow/${runId}/state.json`,
+          );
+          if (state) await this.env.TICKETS.put(`wfstate:${ticketId}`, state);
+        });
+        try {
+          await step.waitForEvent(`${label}-input-${burst}`, {
+            type: "operator-input",
+            timeout: "14 days",
+          });
+        } catch {
+          throw new Error("operator input window expired (14 days)");
+        }
+        // POST /tickets/:id/input already injected the answers via the
+        // engine; resume driving.
+        await updateTicket(this.env, ticketId, { status: "implementing" });
+        continue;
+      }
+      if (res.status === "failed" || res.status === "cancelled") {
         // --- availability-driven fallback: the MODEL plane died (429 /
         // credit exhaustion / expired token). OAuth-only fleet: each leg
         // re-injects a fresh custodian token and resumes; the step retry
@@ -280,7 +314,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
                 throw new Error("no fresh custodian token for oauth fallback leg");
               }
               await injectAuth(this.env, sandboxId, parsed.access);
-              await escalateWorkflow(this.env, sandboxId, runId, leg.model ? { model: leg.model } : {});
+              await escalateWorkflow(this.env, sandboxId, runId, leg.model ? { model: leg.model } : {}, workflow);
               await recordEscalation(this.env, ticketId, runId, {
                 trigger: "fallback",
                 detail: `model-plane failure; fresh oauth token, retry ${fallbackLeg}/${FALLBACK_LEGS.length}${leg.model ? ` (${leg.model})` : ""}`,
@@ -297,14 +331,14 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         // Capture the post-mortem NOW — the sandbox disk vanishes minutes
         // after failure (sleepAfter), taking task errors/output with it.
         await step.do(`${label}-capture-failure`, { timeout: "3 minutes" }, async () => {
-          const activity = await collectActivity(this.env, sandboxId, runId);
+          const activity = await collectActivity(this.env, sandboxId, runId, workflow);
           await this.env.TICKETS.put(`activity:${ticketId}`, activity);
           await archiveTrace(this.env, ticketId, runId, `${label}-failed`, activity);
         }).catch(() => {});
-        throw new Error(`pi-workflow run ${runId} ended ${res.status}`);
+        throw new Error(`workflow run ${runId} ended ${res.status}`);
       }
     }
-    throw new Error(`pi-workflow run ${runId} did not finish within drive budget`);
+    throw new Error(`workflow run ${runId} did not finish within drive budget`);
   }
 
   async run(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
@@ -341,7 +375,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       // re-run (idempotent — fresh sandbox, branch is force-pushed later).
     }
 
-    // --- planning + implementing (the staged pi-workflow run) ---
+    // --- planning + implementing (the staged engine run) ---
     await step.do(
       "prepare",
       // Generous retries: parallel fleet dispatch means fresh containers can
@@ -367,7 +401,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       "start-workflow",
       { retries: { limit: 1, delay: "10 seconds" }, timeout: "10 minutes" },
       async () => {
-        const id = await startWorkflow(this.env, sandboxId, t.prompt, t.workflow);
+        const id = await startWorkflow(this.env, sandboxId, t.prompt, t.workflow, t.inputs);
         await updateTicket(this.env, t.id, { runId: id });
         return id;
       },
@@ -377,11 +411,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       await updateTicket(this.env, t.id, { status: "implementing" });
       await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
     });
-    await this.driveToCompletion(step, sandboxId, runId, t.id, "run");
+    await this.driveToCompletion(step, sandboxId, runId, t.id, "run", t.workflow);
 
     const result = await step.do("collect", { timeout: "5 minutes" }, async () => {
-      const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId);
-      const activity = await collectActivity(this.env, sandboxId, runId);
+      const { analysis, diffStat } = await collectResult(this.env, sandboxId, runId, t.workflow);
+      const activity = await collectActivity(this.env, sandboxId, runId, t.workflow);
       await this.env.TICKETS.put(`activity:${t.id}`, activity);
       // Durable trace archive: one immutable record per run, never overwritten.
       await archiveTrace(this.env, t.id, runId, "initial", activity);
@@ -392,7 +426,28 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       return `${diffStat}\n\n${analysis}`.trim();
     });
 
-    // --- deliver: branch + PR, then hand off to external review ---
+    // --- deliver by outcome kind (the workflow's terminal stage declares it) ---
+    const outcome = await step.do("read-outcome", async () => {
+      try {
+        const { engineFor } = await import("./agent-run");
+        return (await engineFor(this.env, sandboxId, t.workflow)).outcome();
+      } catch {
+        return "pr" as const;
+      }
+    });
+
+    if (outcome === "report") {
+      // Research/audit outcome: the deliverable is the terminal analysis —
+      // published as the result, offered for operator acceptance. No branch,
+      // no PR; done comes from POST /tickets/:id/accept (or Jira Done).
+      await step.do("deliver-report", async () => {
+        await updateTicket(this.env, t.id, { status: "awaiting-acceptance", result });
+        await setLive(this.env, t.id, { phase: "awaiting-acceptance", note: "report offered for acceptance" });
+      });
+      await this.acceptanceLoop(step, t, sandboxId, runId);
+      return;
+    }
+
     const prUrl = await step.do(
       "deliver",
       { retries: { limit: 2, delay: "15 seconds" }, timeout: "10 minutes" },
@@ -402,6 +457,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         if (!pushed) {
           await updateTicket(this.env, t.id, { status: "errored", result, branch, error: "push failed" });
           throw new Error("push failed");
+        }
+        if (outcome === "artifact") {
+          // Files delivered on the branch without PR ceremony; operator accepts.
+          await updateTicket(this.env, t.id, { status: "awaiting-acceptance", result, branch });
+          return null;
         }
         const m = t.repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/)!;
         const resp = await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/pulls`, {
@@ -430,8 +490,97 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       },
     );
 
+    if (!prUrl) {
+      // artifact outcome — operator acceptance instead of PR review.
+      await this.acceptanceLoop(step, t, sandboxId, runId);
+      return;
+    }
+
     // --- in-review: park ↔ revise loop; done only via external signal ---
     await this.reviewLoop(step, t, sandboxId, branch, prUrl);
+  }
+
+  /**
+   * Acceptance park for report/artifact outcomes: done comes ONLY from an
+   * operator action (accept) — the agent never self-completes. "Request
+   * changes" feedback re-runs the workflow with the operator's comments,
+   * mirroring the PR revision loop.
+   */
+  private async acceptanceLoop(
+    step: WorkflowStep,
+    t: TicketParams,
+    sandboxId: string,
+    runId: string,
+  ) {
+    for (let round = 1; round <= MAX_REVISIONS; round++) {
+      let events = (await step.do(`acc-check-${round}`, async () =>
+        unconsumedEvents(this.env, t.id),
+      )) as ExternalEvent[];
+      if (events.length === 0) {
+        await setLive(this.env, t.id, { phase: "awaiting-acceptance", note: "waiting for operator" });
+        try {
+          await step.waitForEvent(`acc-park-${round}`, { type: "external-event", timeout: "90 days" });
+        } catch {
+          await updateTicket(this.env, t.id, { status: "terminated", error: "acceptance window expired (90 days)" });
+          return;
+        }
+        events = (await step.do(`acc-read-${round}`, async () =>
+          unconsumedEvents(this.env, t.id),
+        )) as ExternalEvent[];
+      }
+
+      const accepted = events.find((e) => e.kind === "accepted" || e.kind === "jira-done");
+      if (accepted) {
+        await step.do(`acc-finish-${round}`, async () => {
+          await consumeEvents(this.env, t.id);
+          await updateTicket(this.env, t.id, { status: "done" });
+        });
+        return;
+      }
+
+      const feedback = events.filter((e) => e.kind === "changes-requested" || e.kind === "jira-comment");
+      if (feedback.length === 0) {
+        await step.do(`acc-consume-${round}`, async () => consumeEvents(this.env, t.id));
+        continue;
+      }
+
+      // Revision: re-run the workflow with the operator's feedback.
+      const revId = await step.do(
+        `acc-revise-${round}`,
+        { retries: { limit: 1, delay: "30 seconds" }, timeout: "40 minutes" },
+        async () => {
+          await updateTicket(this.env, t.id, { status: "implementing" });
+          await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
+          await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+          await restoreMemory(this.env, sandboxId, t.repo);
+          await injectBrowserConfig(this.env, sandboxId);
+          await injectTicketContext(this.env, sandboxId, t.id, t.repo);
+          const fb = feedback.map((e) => `- ${e.summary}`).join("\n");
+          const id = await startWorkflow(
+            this.env,
+            sandboxId,
+            `${t.prompt}\n\nYour previous result was reviewed by the operator, who requested changes:\n${fb}\n\nRevise your work to address ALL the feedback.`,
+            t.workflow,
+            t.inputs,
+          );
+          await consumeEvents(this.env, t.id);
+          return id;
+        },
+      );
+      await this.driveToCompletion(step, sandboxId, revId, t.id, `acc-rev${round}`, t.workflow);
+      await step.do(`acc-redeliver-${round}`, { timeout: "10 minutes" }, async () => {
+        const { analysis, diffStat } = await collectResult(this.env, sandboxId, revId, t.workflow);
+        const activity = await collectActivity(this.env, sandboxId, revId, t.workflow);
+        await this.env.TICKETS.put(`activity:${t.id}`, activity);
+        await archiveTrace(this.env, t.id, revId, `acceptance-rev-${round}`, activity);
+        await persistMemory(this.env, sandboxId, t.repo);
+        await updateTicket(this.env, t.id, {
+          status: "awaiting-acceptance",
+          result: `${diffStat}\n\n${analysis}`.trim(),
+        });
+      });
+    }
+    await updateTicket(this.env, t.id, { status: "terminated", error: "max acceptance revisions reached" });
   }
 
   /**
@@ -506,11 +655,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           return revId;
         },
       );
-      await this.driveToCompletion(step, sandboxId, revisionRunId, t.id, `rev${round}`);
+      await this.driveToCompletion(step, sandboxId, revisionRunId, t.id, `rev${round}`, t.workflow);
 
       await step.do(`redeliver-${round}`, { timeout: "10 minutes" }, async () => {
-        const { analysis, diffStat } = await collectResult(this.env, sandboxId, revisionRunId);
-        const activity = await collectActivity(this.env, sandboxId, revisionRunId);
+        const { analysis, diffStat } = await collectResult(this.env, sandboxId, revisionRunId, t.workflow);
+        const activity = await collectActivity(this.env, sandboxId, revisionRunId, t.workflow);
         await this.env.TICKETS.put(`activity:${t.id}`, activity);
         await archiveTrace(this.env, t.id, revisionRunId, `revision-${round}`, activity);
         const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
