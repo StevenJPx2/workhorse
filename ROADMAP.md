@@ -138,32 +138,43 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-### `@workhorse/stages` — the stage engine
-Workhorse owns its stage engine: a workspace package driven directly by
-the Cloudflare Workflow spine. pi-workflow over own-engine was a real
-trade, decided on usage: every Workhorse pipeline is a linear chain of
-`single` stages — ~30% of pi-workflow's machinery — while the seam
-between the two engines costs 100%: run state spelunked off disk by
-inspect scripts, steering/escalation as surgery on `compiled.json` and
-internal lease invariants (fragile against upstream internals changes),
-and three sources of truth for "where is this run?".
+### `@workhorse/workflow` — the workflow engine
+Workhorse owns its workflow engine end to end: `packages/workflow`
+carries the full weight of a run — spec compilation, graph routing, the
+run state machine, stage execution, control operations — while the
+Cloudflare Workflow spine reduces to durability plumbing (durable steps,
+retries, parks on `waitForEvent`, wall-clock survival) that calls into
+the engine. pi-workflow over own-engine was a real trade, decided on
+usage: every Workhorse pipeline is a linear chain of `single` stages —
+~30% of pi-workflow's machinery — while the seam between two engines
+costs 100%: run state spelunked off disk by inspect scripts,
+steering/escalation as surgery on `compiled.json` and internal lease
+invariants (fragile against upstream internals changes), and three
+sources of truth for "where is this run?".
 
-- **The package**: `packages/stages` (`@workhorse/stages`), depending on
-  `@workhorse/api` only. Owns the spec format (compatible subset of
-  today's `spec.json` — registry, builder, and seeds keep working), the
-  validator behind `PUT /workflows`, topological stage ordering,
-  per-stage prompt assembly (upstream artifact digests + control
-  contract epilogue), control-schema validation, and the run-state
-  machine. Sandbox I/O sits behind a small `Driver` interface
-  (`exec`/`writeFile`/`readFile`): unit tests use a mock driver, the
-  worker provides the `@cloudflare/sandbox` implementation.
+- **The package**: `@workhorse/workflow`, depending on `@workhorse/api`
+  only. Owns the spec format (compatible subset of today's `spec.json`
+  — registry, builder, and seeds keep working), the validator behind
+  `PUT /workflows`, graph compilation + routing (which stage runs next,
+  loop rounds, joins), per-stage prompt assembly (upstream artifact
+  digests + control contract epilogue), control-schema validation,
+  run lifecycle (dispatch → advance → park → resume → outcome), and
+  the control verbs (steer, promote, inject-input, cancel). Sandbox I/O
+  sits behind a small `Driver` interface (`exec`/`writeFile`/`readFile`):
+  unit tests use a mock driver, the worker provides the
+  `@cloudflare/sandbox` implementation.
+- **The worker's remaining job**: `TicketWorkflow` maps ticket lifecycle
+  onto engine runs — `step.do(() => engine.advance(run))` bursts, park
+  when the engine reports `awaiting-input`/`in-review`, deliver the
+  outcome (PR, report, artifact), translate statuses for the UI. No
+  workflow semantics live in the worker.
 - **The stage pattern**: each stage is one bare Pi session in the
   sandbox — `pi -p` with a generated per-stage agent file; Pi agent
   definitions enforce tool ceilings natively, so gating stays
   enforcement. The session writes `analysis.md` + `control.json` to its
   stage dir; the engine validates control against the stage schema,
   computes the digest, and feeds it to dependents. Run state is one
-  worker-owned json (`.stages/<run>/state.json`).
+  engine-owned json (`.workflow/<run>/state.json`).
 - **Native control operations**: steering kills the session and re-runs
   the stage with the amended prompt; promotion/fallback re-runs with a
   different `--model`; failures carry typed codes
@@ -171,7 +182,7 @@ and three sources of truth for "where is this run?".
 - **GH-Actions-style workflows**: the spec declares `inputs:`
   (`workflow_dispatch.inputs` pattern, json-render UI at dispatch); a
   stage can request operator input mid-run — the run parks as
-  `awaiting-input`, the CF spine `waitForEvent`s, submission resumes the
+  `awaiting-input`, the spine `waitForEvent`s, submission resumes the
   stage with the answers; the terminal stage declares its outcome kind
   (`pr` | `report` | `artifact`).
 - **Fan-out**: `foreach` (map a stage over a list artifact — e.g. one
