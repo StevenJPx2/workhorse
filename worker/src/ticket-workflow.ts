@@ -118,9 +118,10 @@ async function archiveTrace(
       toModel: r.to_model ?? undefined,
       at: r.at,
     }));
-    // Trace BODY stays a KV blob (R2 candidate); the queryable INDEX is D1.
-    await env.TICKETS.put(
-      `trace:${ticketId}:${runId}`,
+    // Trace BODY is an immutable R2 blob (no KV size ceiling); the
+    // queryable INDEX is D1.
+    await env.BLOBS.put(
+      `trace/${ticketId}/${runId}.json`,
       JSON.stringify({
         ticketId,
         runId,

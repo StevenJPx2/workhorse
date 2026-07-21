@@ -82,6 +82,13 @@ export interface Env {
    * blobs; AI Search keeps semantic.
    */
   DB: D1Database;
+  /**
+   * R2: the blob plane — anything too big or too blob-shaped for KV
+   * (25 MiB value cap). Trace bodies (trace/<ticket>/<run>.json),
+   * oversized Magic Context dbs (mc/<owner/repo>.db), dependency caches
+   * (depcache/<owner/repo>/<lockfile-hash>.tar.zst).
+   */
+  BLOBS: R2Bucket;
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;

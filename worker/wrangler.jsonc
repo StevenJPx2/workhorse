@@ -57,6 +57,14 @@
   // Relational plane: record-shaped data with relationships (tickets,
   // escalations, trace index, scripts). KV keeps hot small state (live:,
   // cursors, thread mappings, auth); blobs stay in KV until R2 lands.
+  // Blob plane: things KV structurally can't hold (25 MiB value cap).
+  // Trace bodies, oversized Magic Context dbs, dependency caches.
+  "r2_buckets": [
+    {
+      "binding": "BLOBS",
+      "bucket_name": "workhorse-blobs"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

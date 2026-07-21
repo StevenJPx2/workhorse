@@ -212,37 +212,54 @@ export const knowledgePlugin: WorkhorsePlugin = {
       async handler(_request, env, _ctx, core) {
         let indexed = 0;
         let failed = 0;
-        let cursor: string | undefined;
+        const seen = new Set<string>();
+        interface TraceBody {
+          ticketId: string;
+          runId: string;
+          kind: string;
+          activity: unknown;
+          escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>;
+        }
+        const index = async (raw: string) => {
+          try {
+            const t = JSON.parse(raw) as TraceBody;
+            if (seen.has(`${t.ticketId}:${t.runId}`)) return;
+            seen.add(`${t.ticketId}:${t.runId}`);
+            const ticket = (await core.getTicket(t.ticketId)) ?? {};
+            const ok = await indexRun(
+              env,
+              ticket,
+              t.ticketId,
+              t.runId,
+              t.kind,
+              JSON.stringify(t.activity),
+              t.escalations,
+            );
+            ok ? indexed++ : failed++;
+          } catch {
+            failed++;
+          }
+        };
+        // R2 traces (authoritative since the blob plane) …
+        let r2cursor: string | undefined;
         do {
-          const page = await env.TICKETS.list({ prefix: "trace:", cursor });
+          const page = await env.BLOBS.list({ prefix: "trace/", cursor: r2cursor });
+          for (const obj of page.objects) {
+            const body = await env.BLOBS.get(obj.key);
+            if (body) await index(await body.text());
+          }
+          r2cursor = page.truncated ? page.cursor : undefined;
+        } while (r2cursor);
+        // … then legacy KV traces (pre-R2 runs).
+        let kvCursor: string | undefined;
+        do {
+          const page = await env.TICKETS.list({ prefix: "trace:", cursor: kvCursor });
           for (const key of page.keys) {
             const raw = await env.TICKETS.get(key.name);
-            if (!raw) continue;
-            try {
-              const t = JSON.parse(raw) as {
-                ticketId: string;
-                runId: string;
-                kind: string;
-                activity: unknown;
-                escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>;
-              };
-              const ticket = (await core.getTicket(t.ticketId)) ?? {};
-              const ok = await indexRun(
-                env,
-                ticket,
-                t.ticketId,
-                t.runId,
-                t.kind,
-                JSON.stringify(t.activity),
-                t.escalations,
-              );
-              ok ? indexed++ : failed++;
-            } catch {
-              failed++;
-            }
+            if (raw) await index(raw);
           }
-          cursor = page.list_complete ? undefined : page.cursor;
-        } while (cursor);
+          kvCursor = page.list_complete ? undefined : page.cursor;
+        } while (kvCursor);
         return json({ ok: true, indexed, failed });
       },
     },

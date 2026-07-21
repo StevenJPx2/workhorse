@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { getSandbox } from "@cloudflare/sandbox";
 import type { Env } from "@workhorse/api";
 
@@ -39,13 +40,23 @@ export async function injectBrowserConfig(env: Env, sandboxId: string): Promise<
 
 const MC_DIR = "/root/.local/share/cortexkit/magic-context";
 const MC_DB = `${MC_DIR}/context.db`;
-/** KV cap is 25 MiB; leave headroom for base64→binary slack. */
-const MC_MAX_BYTES = 24 * 1024 * 1024;
+/** Sanity ceiling for a repo memory db in R2 (not a KV cap — just abuse guard). */
+const MC_MAX_BYTES = 512 * 1024 * 1024;
 
-/** Stable per-repo key for the fleet memory store. */
-function memoryKey(repo: string): string {
+/** Stable per-repo slug for blob keys. */
+function repoSlug(repo: string): string {
   const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  return `mc:${m ? `${m[1]}/${m[2]}` : repo.replace(/[^a-zA-Z0-9_/-]/g, "_")}`;
+  return m ? `${m[1]}/${m[2]}` : repo.replace(/[^a-zA-Z0-9_/-]/g, "_");
+}
+
+/** R2 object key for a repo's Magic Context db. */
+function memoryBlobKey(repo: string): string {
+  return `mc/${repoSlug(repo)}.db`;
+}
+
+/** Legacy KV key (pre-R2) — read-only fallback for repos not yet migrated. */
+function memoryKVKey(repo: string): string {
+  return `mc:${repoSlug(repo)}`;
 }
 
 /**
@@ -55,7 +66,15 @@ function memoryKey(repo: string): string {
  * resolves to the same memories in every sandbox.
  */
 export async function restoreMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
-  const b64 = await env.TICKETS.get(memoryKey(repo));
+  // R2 is authoritative; legacy KV is a read-only fallback for repos whose
+  // memory predates the blob plane (next persist moves them to R2).
+  let b64: string | null = null;
+  const obj = await env.BLOBS.get(memoryBlobKey(repo));
+  if (obj) {
+    b64 = Buffer.from(await obj.arrayBuffer()).toString("base64");
+  } else {
+    b64 = await env.TICKETS.get(memoryKVKey(repo));
+  }
   if (!b64) return false;
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   await sandbox.writeFile("/workspace/.mc-db.b64", b64);
@@ -67,9 +86,10 @@ export async function restoreMemory(env: Env, sandboxId: string, repo: string): 
 }
 
 /**
- * Persist the sandbox's Magic Context database back to KV (WAL-checkpointed
- * via node:sqlite, base64 over the exec channel). Never throws — memory
- * persistence must not fail a ticket.
+ * Persist the sandbox's Magic Context database to R2 (WAL-checkpointed via
+ * node:sqlite, base64 over the exec channel, stored as raw bytes). No KV
+ * size ceiling anymore — the old 25 MiB cap silently dropped memories on
+ * chatty repos. Never throws — memory persistence must not fail a ticket.
  */
 export async function persistMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
   try {
@@ -86,12 +106,14 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
     );
     if (res.exitCode === 3) return false; // no db — MC never ran
     if (res.exitCode === 4) {
-      console.warn(`MC db for ${repo} exceeds KV cap; skipping persist`);
+      console.warn(`MC db for ${repo} exceeds sanity ceiling; skipping persist`);
       return false;
     }
     const b64 = res.stdout.trim();
     if (res.exitCode !== 0 || b64.length < 100) return false;
-    await env.TICKETS.put(memoryKey(repo), b64);
+    await env.BLOBS.put(memoryBlobKey(repo), Buffer.from(b64, "base64"));
+    // Retire the legacy KV copy so future restores can't resurrect stale state.
+    await env.TICKETS.delete(memoryKVKey(repo));
     return true;
   } catch (err) {
     console.warn(`MC persist failed for ${repo}:`, err);

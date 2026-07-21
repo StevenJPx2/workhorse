@@ -288,6 +288,9 @@ export default {
     }
     const trM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces\/(workflow_[a-z0-9_]+)$/);
     if (trM && request.method === "GET") {
+      // R2 first; legacy KV fallback for traces archived before the blob plane.
+      const blob = await env.BLOBS.get(`trace/${trM[1]}/${trM[2]}.json`);
+      if (blob) return new Response(blob.body, { headers: { "content-type": "application/json" } });
       const trace = await env.TICKETS.get(`trace:${trM[1]}:${trM[2]}`);
       if (!trace) return json({ error: "no trace" }, 404);
       return new Response(trace, { headers: { "content-type": "application/json" } });
