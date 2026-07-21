@@ -251,6 +251,34 @@ concept — index everything, rank per query, surface only the top-k.
   then, `find_tool`/`find_script` query tools give agents on-demand
   discovery without any engine change.
 
+### Web search plugin (`plugins/search`) + provider evals
+Agents get real AI-grade web search. Today the only web surface is the
+browser plane (fetch/screenshot a URL you already know) and
+`Lightpanda`-style scraping of search engines is blocked or brittle —
+agents need "find me the answer/doc/source" as a first-class tool.
+
+- **Provider comparison first**: survey the AI search APIs — Exa,
+  Tavily, Brave Search API, Perplexity Sonar, Jina Reader/Search,
+  Firecrawl Search, SerpAPI, You.com — on result quality for agent
+  queries (docs lookup, error-message search, library research), snippet
+  faithfulness, rate limits, latency, and price per 1k queries.
+- **Evals decide, not vibes**: a small eval harness in the repo — a
+  fixed query set drawn from real fleet traces (the questions agents
+  actually asked the browser plane), graded on retrieval quality
+  (did the returned snippets contain the answer?) by an LLM judge.
+  Results land in the repo as a report; the winner becomes the default
+  provider, the harness stays for re-running when providers ship
+  changes.
+- **The plugin**: `plugins/search` — worker route `/search` (scoped
+  token, provider key custody worker-side, same model as browser) +
+  sandbox tool `web_search(query, {depth})` returning ranked
+  results with snippets and canonical URLs; compose with
+  `browser_fetch` for full-page reads. Provider behind a tiny interface
+  so the eval winner is a config choice, not a rewrite; optional
+  fallback chain (primary → secondary on 429/5xx, the imgup lesson).
+- Stage gating as usual: read-only classification, on in plan/verify
+  and research workflows.
+
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
 tasks, audits, analyses, or one-off questions whose deliverable is a
