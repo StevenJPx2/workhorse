@@ -23,6 +23,23 @@ const { data: diffData } = await useFetch<{ diff: string }>(`/api/tickets/${id}/
   server: false,
 });
 
+// Workflow graph (run visualization): the ticket's workflow spec rendered
+// as the artifact graph, with live per-stage status overlaid.
+const wfName = computed(() => data.value?.ticket?.workflow ?? "coding");
+const { data: wfEntry } = await useFetch<{ workflow: { spec: { artifactGraph: { stages: Array<Record<string, unknown>> } } } }>(
+  () => `/api/workflows/${wfName.value}`,
+  { lazy: true, server: false },
+);
+const graphStages = computed(() => (wfEntry.value?.workflow?.spec?.artifactGraph?.stages ?? []) as never[]);
+const liveStageStatus = computed<Record<string, string>>(() => {
+  const out: Record<string, string> = {};
+  for (const t of data.value?.live?.tasks ?? []) {
+    // pi-workflow task ids look like "<stage>" or "<stage>:<round>".
+    out[t.id.split(":")[0]!] = t.status;
+  }
+  return out;
+});
+
 interface ActivityEvent {
   type?: string;
   event?: string;
@@ -305,7 +322,10 @@ function taskDot(status: string): string {
           </span>
         </div>
       </template>
-      <div v-if="data.live.tasks?.length" class="flex flex-wrap items-center gap-3">
+      <div v-if="graphStages.length && data.live.tasks?.length" class="h-64 -mx-2">
+        <WorkflowGraph :stages="graphStages" :live-status="liveStageStatus" />
+      </div>
+      <div v-else-if="data.live.tasks?.length" class="flex flex-wrap items-center gap-3">
         <div v-for="task in data.live.tasks" :key="task.id" class="flex items-center gap-1.5 text-sm">
           <span class="size-2 rounded-full" :class="taskDot(task.status)" />
           <span>{{ stageMeta(task.id).label }}</span>

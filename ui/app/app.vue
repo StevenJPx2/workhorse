@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const links = [
-  { label: "Fleet", to: "/", icon: "i-lucide-list-todo" },
-  { label: "Chat", to: "/chat", icon: "i-lucide-message-square" },
+  { label: "Home", to: "/", icon: "i-lucide-message-square" },
+  { label: "Fleet", to: "/tickets", icon: "i-lucide-list-todo" },
+  { label: "Workflows", to: "/workflows", icon: "i-lucide-workflow" },
 ];
 </script>
 
