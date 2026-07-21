@@ -1,0 +1,6 @@
+# Sandbox image build context = repo root (wrangler image_build_context),
+# but the image only COPYs sandbox/ + plugins/. Keep the context lean.
+*
+!sandbox
+!plugins
+plugins/*/node_modules

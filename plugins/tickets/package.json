@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/tickets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ticket tools plugin: workhorse_* sandbox tools (file/list/status/diff) calling the worker's ticket API. Sandbox-only — the ticket API itself is core.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@workhorse/browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser plane plugin: tiered fetch (Browser Rendering → unblocker) route + browser_fetch/browser_screenshot sandbox tools.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/puppeteer": "1.1.0",
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

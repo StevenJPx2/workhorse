@@ -20,9 +20,13 @@ shipped; new items land here as they're conceived.
   ready-for-review → in-review → done`. `done`/`terminated` come **only** from
   external signals (PR merged/closed); the agent can never self-complete.
   Webhooks (`/webhooks/:source`) wake parked tickets to run revisions.
-- **Plugin architecture** — `src/plugins/` `SourcePlugin` (Worker half:
-  verify + parse webhooks) paired with sandbox-half Pi extensions
-  (`bundles/plugins.json`). GitHub plugin live.
+- **Plugin architecture** — hard-boundary workspace monorepo: `plugins/*`
+  packages (single-word names) implementing `WorkhorsePlugin` from
+  `@workhorse/api` (webhook verify/parse/handle, worker routes with
+  declared auth tier, lifecycle hooks, optional sandbox `extension.ts`
+  auto-discovered by the image build). Plugins depend ONLY on
+  `@workhorse/api`; `worker/` is the sole composition point. Live:
+  github, slack, browser, knowledge, imgup, tickets.
 - **Self-healing** — errored instances re-dispatched as `<ticket>-hN` resuming
   from recorded state (branch/PR/events/memory persist outside the sandbox).
   Heal button + `POST /tickets/:id/heal` + cron sweep (cap 3).
@@ -111,9 +115,12 @@ filing/watching tickets.
 
 ## Future workflow specs
 
-The `bundles/` layout is designed so each new use case is cheap to add:
-a `spec.json` (+ optional `agents/*.md`), baked via `Dockerfile COPY`. `coding`
-and `screenshot-pr` are the first two; more use-case workflows to come.
+The `sandbox/workflows/` layout is designed so each new use case is cheap to
+add: a `spec.json` (+ optional `agents/*.md`), baked via `Dockerfile COPY`.
+`coding` and `screenshot-pr` are the first two; more use-case workflows to
+come — and the next step is promoting workflows to USER DATA (a registry
+uploadable via API/UI, seeded from these bundles) so they are configurable
+without a rebuild.
 
 ---
 

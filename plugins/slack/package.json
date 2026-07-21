@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/slack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Slack plugin: @workhorse mentions → fleet chat; thread replies → steer/revise; status transitions posted back.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}
