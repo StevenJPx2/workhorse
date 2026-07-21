@@ -136,4 +136,25 @@ export interface Env {
    */
   SLACK_SIGNING_SECRET?: string;
   SLACK_BOT_TOKEN?: string;
+  /**
+   * Jira (optional — unset disables the Jira surface). Base URL like
+   * https://yourorg.atlassian.net; email + API token for outbound
+   * transitions/comments; webhook secret required as ?secret= on
+   * /webhooks/jira (Atlassian cloud webhooks can't sign requests);
+   * agent account (accountId/email/displayName) marks which assignee
+   * triggers intake and filters the bot's own comment echoes.
+   */
+  JIRA_BASE_URL?: string;
+  JIRA_EMAIL?: string;
+  JIRA_API_TOKEN?: string;
+  JIRA_WEBHOOK_SECRET?: string;
+  JIRA_AGENT_ACCOUNT?: string;
+  /**
+   * ntfy push notifications (optional — unset disables). Server base URL
+   * (self-hosted or https://ntfy.sh), topic to publish to, optional
+   * bearer token for protected topics.
+   */
+  NTFY_URL?: string;
+  NTFY_TOPIC?: string;
+  NTFY_TOKEN?: string;
 }

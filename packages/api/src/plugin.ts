@@ -36,6 +36,13 @@ export interface ExternalEvent {
 export interface Core {
   /** Read a ticket record (null when unknown). */
   getTicket(ticketId: string): Promise<TicketRecord | null>;
+  /**
+   * File a new ticket (repo + prompt → durable staged run). The intake
+   * verb for source plugins that ORIGINATE work (Jira, Slack).
+   */
+  fileTicket(
+    body: { repo: string; prompt: string; title?: string; workflow?: string },
+  ): Promise<{ ok: true; ticket: TicketRecord } | { ok: false; error: string; status: number }>;
   /** Append normalized events to a ticket's KV event list. */
   appendEvents(events: ExternalEvent[]): Promise<void>;
   /**

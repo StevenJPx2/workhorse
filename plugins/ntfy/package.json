@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/ntfy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ntfy push-notification plugin: hook-only — status transitions and escalations pushed to an ntfy topic.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

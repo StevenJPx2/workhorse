@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/paste",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Text/code hosting plugin: upload_text sandbox tool returning raw curl-able URLs (paste.rs fallback chain). Sandbox-only — no worker half.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

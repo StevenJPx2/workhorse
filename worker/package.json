@@ -15,7 +15,10 @@
     "@workhorse/browser": "workspace:*",
     "@workhorse/github": "workspace:*",
     "@workhorse/imgup": "workspace:*",
+    "@workhorse/jira": "workspace:*",
     "@workhorse/knowledge": "workspace:*",
+    "@workhorse/ntfy": "workspace:*",
+    "@workhorse/paste": "workspace:*",
     "@workhorse/slack": "workspace:*",
     "@workhorse/tickets": "workspace:*"
   },

@@ -4,7 +4,10 @@
 import { browserPlugin } from "@workhorse/browser";
 import { githubPlugin } from "@workhorse/github";
 import { imgupPlugin } from "@workhorse/imgup";
+import { jiraPlugin } from "@workhorse/jira";
 import { knowledgePlugin } from "@workhorse/knowledge";
+import { ntfyPlugin } from "@workhorse/ntfy";
+import { pastePlugin } from "@workhorse/paste";
 import { slackPlugin } from "@workhorse/slack";
 import { ticketsPlugin } from "@workhorse/tickets";
 import type { Core, Env, PluginRoute, TicketRecord, WorkhorsePlugin } from "@workhorse/api";
@@ -15,7 +18,10 @@ export const plugins: WorkhorsePlugin[] = [
   browserPlugin,
   githubPlugin,
   imgupPlugin,
+  jiraPlugin,
   knowledgePlugin,
+  ntfyPlugin,
+  pastePlugin,
   slackPlugin,
   ticketsPlugin,
 ];
@@ -30,6 +36,10 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     getTicket: async (ticketId) => {
       const { getTicket } = await import("./db");
       return getTicket(env, ticketId);
+    },
+    fileTicket: async (body) => {
+      const { fileTicket } = await import("./tickets");
+      return fileTicket(env, body);
     },
     appendEvents: (events) => appendEvents(env, events),
     wakeTicket: (ticketId) => wakeTicket(env, ticketId),
