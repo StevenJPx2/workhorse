@@ -5,8 +5,7 @@ bigger model but from giving a smaller model the right tools and the right
 context at the right *stage* of a workflow. Three required properties:
 autonomous-but-staged, observable-and-conversational, and a fleet.
 
-Status legend: ✅ shipped · 🅿️ tabled — everything previously planned has
-shipped; new items land here as they're conceived.
+Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ---
 
@@ -94,6 +93,35 @@ shipped; new items land here as they're conceived.
   upstream artifacts intact. Between-stage steers just re-prompt the
   not-yet-started stage. Steers land in the escalation record
   (`trigger: "steer"`) and the trace archive.
+
+---
+
+## Planned ⏳
+
+### Visual workflow builder (vue-flow)
+Definable workflows, end to end in the UI. A `/workflows` page in the Nuxt
+dashboard using [vue-flow](https://github.com/bcakmakoglu/vue-flow): stages
+as nodes (agent, model, tool allowlist, control schema, loop/until settings
+in a side panel), artifact edges as connections (`from` data edges — the
+graph IS pi-workflow's artifact graph, so the canvas is a faithful editor,
+not a lossy sketch). Save compiles the graph to an ArtifactGraph `spec.json`
+and `PUT`s it to the existing workflow registry — same validation (422 with
+pi-workflow's parser message rendered on the offending node), same storage,
+no new backend concepts. Load = spec → graph (positions in a `ui` sidecar
+key the parser ignores, or `.plan-state`-style KV). The file-ticket form
+gains a workflow picker (`GET /workflows`) so a saved workflow is usable on
+the next ticket immediately. Seeded `coding` / `screenshot-pr` open in the
+builder as starting templates (edit → save-as — seeds stay pristine,
+`source: user` copies take a new name).
+
+Slices: (1) registry UI — list/inspect/upload + ticket-form picker (no
+canvas yet); (2) read-only graph rendering of any registered workflow
+(spec → vue-flow, also useful as run visualization on the ticket page);
+(3) full editor — node/edge editing, side-panel stage config, save-as flow.
+
+### Registry UI prerequisites
+Workflow picker on the file-ticket form + list/inspect pages — slice 1
+above; worth shipping even before the canvas exists.
 
 ---
 
