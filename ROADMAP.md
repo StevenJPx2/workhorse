@@ -96,7 +96,34 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ---
 
-## Planned ⏳
+## Planned ⏳ (in priority order)
+
+### Jira plugin
+`plugins/jira` — the third webhook source, and the first true *intake*
+source (GitHub reacts to PRs Workhorse opened; Jira originates work).
+Heir of legacy Workhorse's Jira integration (Jiratown / jira-comments
+monitor), rebuilt on the plugin contract:
+
+- **Inbound** (`POST /webhooks/jira`, Atlassian webhook + secret check):
+  issue assigned to the Workhorse account (or labeled `workhorse`) →
+  `fileTicket` with the issue's summary/description as the prompt and a
+  `jira:<issueKey>` ↔ ticket mapping (repo resolved from a project→repo
+  config map, or a `repo:` field convention on the issue). New comments on
+  a mapped issue → the two-path model: live run → steer; parked in-review
+  → revision event + wake (same as PR/Slack feedback).
+- **Outbound** (`onStatusChange` hook): transition the Jira issue along a
+  configurable status map (queued→In Progress, in-review→In Review,
+  done→Done) and comment with the PR link when it goes up. Errored →
+  comment + flag, never auto-reopen loops.
+- **Done stays external-only**: Jira "Done"/"Closed" transition (like PR
+  merge) is an accepted completion signal; the agent still can't
+  self-complete.
+- Config: `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN` (or OAuth),
+  `JIRA_WEBHOOK_SECRET`; per-project repo map in KV (`jira-project:<key>`).
+
+Exercises every part of the plugin contract (webhook verify/parse, hooks,
+Core.fileTicket — which needs adding to Core services) and makes Workhorse
+usable from where tickets already live.
 
 ### Visual workflow builder (vue-flow)
 Definable workflows, end to end in the UI. A `/workflows` page in the Nuxt
@@ -144,32 +171,28 @@ box (the fleet agent — today's `/chat` — promoted to the front door):
 Depends on: registry UI slice 1 (picker); pairs with the vue-flow builder
 ("create new workflow" target).
 
-### Jira plugin
-`plugins/jira` — the third webhook source, and the first true *intake*
-source (GitHub reacts to PRs Workhorse opened; Jira originates work).
-Heir of legacy Workhorse's Jira integration (Jiratown / jira-comments
-monitor), rebuilt on the plugin contract:
+### R2 blob plane (build cache + oversized blobs)
+Add an R2 bucket for the things KV structurally can't hold (25 MiB value
+cap, blob-shaped data):
 
-- **Inbound** (`POST /webhooks/jira`, Atlassian webhook + secret check):
-  issue assigned to the Workhorse account (or labeled `workhorse`) →
-  `fileTicket` with the issue's summary/description as the prompt and a
-  `jira:<issueKey>` ↔ ticket mapping (repo resolved from a project→repo
-  config map, or a `repo:` field convention on the issue). New comments on
-  a mapped issue → the two-path model: live run → steer; parked in-review
-  → revision event + wake (same as PR/Slack feedback).
-- **Outbound** (`onStatusChange` hook): transition the Jira issue along a
-  configurable status map (queued→In Progress, in-review→In Review,
-  done→Done) and comment with the PR link when it goes up. Errored →
-  comment + flag, never auto-reopen loops.
-- **Done stays external-only**: Jira "Done"/"Closed" transition (like PR
-  merge) is an accepted completion signal; the agent still can't
-  self-complete.
-- Config: `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN` (or OAuth),
-  `JIRA_WEBHOOK_SECRET`; per-project repo map in KV (`jira-project:<key>`).
-
-Exercises every part of the plugin contract (webhook verify/parse, hooks,
-Core.fileTicket — which needs adding to Core services) and makes Workhorse
-usable from where tickets already live.
+- **Dependency/workspace cache** — the headline win. Cold sandboxes (every
+  revision wake after an in-review park, every heal, every repeat ticket on
+  a known repo) currently rebuild `node_modules` from scratch. After a
+  successful run, tar the dependency artifacts keyed by
+  `repo + lockfile hash`; at `prepareWorkspace`, restore via a presigned
+  URL (`curl | tar x` — the sandbox never holds an R2 credential, same
+  custody model as the scoped browser token). Lockfile-hash keying makes
+  staleness a non-problem. Node-first; measure restore-vs-install in the
+  trace before generalizing to other stacks.
+- **Magic Context db overflow** — the per-repo `context.db` KV round-trip
+  silently SKIPS persisting when the db outgrows the KV cap (real memory
+  loss on chatty repos). R2 removes the ceiling; same restore/persist code,
+  different store. (Vectorize is NOT the answer here: the MC db is mostly
+  relational SQLite + FTS with local ONNX embeddings, queried in-process on
+  the agent's hot path — fleet-side semantic search is already covered by
+  AI Search.)
+- **Trace archive overflow** — big runs can brush the KV value cap; move
+  trace blobs to R2, keep the small per-ticket index in KV.
 
 ---
 
