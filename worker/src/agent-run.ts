@@ -100,8 +100,13 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
 }
 
 /**
- * Prepare the workspace: clone the repo, install the Workhorse workflow
- * bundle, and keep pi-workflow run artifacts out of the git diff.
+ * Prepare the workspace: clone the repo, install the workflow, and keep
+ * pi-workflow run artifacts out of the git diff.
+ *
+ * Workflows are USER DATA. Resolution order:
+ *   1. repo's .workhorse/workflows/<name>/   (teams version their own)
+ *   2. KV registry entry (workflow:<name>)   (fleet-wide, user-managed)
+ *   3. baked /opt/agent/sandbox/workflows/   (seed fallback)
  */
 export async function prepareWorkspace(
   env: Env,
@@ -113,17 +118,17 @@ export async function prepareWorkspace(
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   // Guard the workflow name (it lands in shell paths): letters/digits/-/_ only.
   const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
-  // Evals: patch the model override into the workspace spec copy.
-  const patchModel = model
-    ? `node -e 'const f=".pi/workflows/${wf}/spec.json",s=require("/workspace/repo/"+f);s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`
-    : "true";
   const result = await sandbox.exec(
     [
       `[ -d /workspace/repo/.git ] || git clone --depth 50 ${JSON.stringify(repo)} /workspace/repo`,
       `cd /workspace/repo`,
       `mkdir -p .pi/workflows`,
-      `cp -R /opt/agent/sandbox/workflows/${wf} .pi/workflows/${wf}`,
-      patchModel,
+      // Tier 1/3: repo-versioned workflow wins; baked bundle is the fallback.
+      // (A registry entry, when present, overwrites this copy below.)
+      `if [ -d .workhorse/workflows/${wf} ]; then cp -R .workhorse/workflows/${wf} .pi/workflows/${wf}; ` +
+        `elif [ -d /opt/agent/sandbox/workflows/${wf} ]; then cp -R /opt/agent/sandbox/workflows/${wf} .pi/workflows/${wf}; ` +
+        `else mkdir -p .pi/workflows/${wf}; fi`,
+      `[ -d .workhorse/workflows/${wf} ] && echo WH_SRC=repo || echo WH_SRC=other`,
       // Keep run artifacts out of diffs/PRs without touching tracked files.
       `grep -q "^\\.pi/$" .git/info/exclude 2>/dev/null || echo ".pi/" >> .git/info/exclude`,
       `git config user.email "workhorse@stevenjohn.co" && git config user.name "Workhorse"`,
@@ -132,6 +137,44 @@ export async function prepareWorkspace(
   );
   if (result.exitCode !== 0) {
     throw new Error(`workspace prep failed: ${(result.stderr || result.stdout).slice(-500)}`);
+  }
+
+  // Tier 2: KV registry entry — unless the repo versions its own (tier 1).
+  if (!result.stdout.includes("WH_SRC=repo")) {
+    const { getWorkflow } = await import("./workflows");
+    const entry = await getWorkflow(env, wf);
+    if (entry) {
+      const dir = `/workspace/repo/.pi/workflows/${wf}`;
+      await sandbox.writeFile(`${dir}/spec.json`, JSON.stringify(entry.spec, null, 2));
+      for (const [rel, text] of Object.entries(entry.schemas ?? {})) {
+        if (!/^[\w./-]+$/.test(rel) || rel.includes("..")) continue;
+        await sandbox.writeFile(`${dir}/${rel}`, text);
+      }
+      for (const [file, md] of Object.entries(entry.agents ?? {})) {
+        if (!/^[\w.-]+\.md$/.test(file)) continue;
+        await sandbox.writeFile(`/root/.pi/agent/agents/${file}`, md);
+      }
+    }
+  }
+
+  // Sanity: SOME spec must exist now (an unknown name with no registry
+  // entry would otherwise fail deep inside pi-workflow).
+  const check = await sandbox.exec(`test -f /workspace/repo/.pi/workflows/${wf}/spec.json`, {
+    timeout: 10_000,
+  });
+  if (check.exitCode !== 0) {
+    throw new Error(`workflow "${wf}" not found in repo, registry, or baked bundles`);
+  }
+
+  // Evals: patch the model override into the workspace spec copy.
+  if (model) {
+    const patch = await sandbox.exec(
+      `cd /workspace/repo && node -e 'const f=".pi/workflows/${wf}/spec.json",s=require("/workspace/repo/"+f);s.defaults=s.defaults??{};s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`,
+      { timeout: 30_000 },
+    );
+    if (patch.exitCode !== 0) {
+      throw new Error(`model patch failed: ${(patch.stderr || patch.stdout).slice(-300)}`);
+    }
   }
 }
 

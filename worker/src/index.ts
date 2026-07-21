@@ -4,6 +4,7 @@ import { appendEvents, appendSteer, wakeTicket } from "./events";
 import { fileTicket } from "./tickets";
 import { runFleetChat } from "./chat";
 import { coreFor, pluginFor, routeFor } from "./plugins";
+import { NAME_RE, deleteWorkflow, getWorkflow, listWorkflows, putWorkflow, seedWorkflows } from "./workflows";
 
 export { Sandbox } from "@cloudflare/sandbox";
 export { TicketWorkflow } from "./ticket-workflow";
@@ -111,6 +112,43 @@ export default {
 
     if (!masterAuth) {
       return new Response("unauthorized", { status: 401 });
+    }
+
+    // ---- Workflow registry (workflows are user data, not core code) ----
+
+    if (url.pathname === "/workflows" && request.method === "GET") {
+      return json({ workflows: await listWorkflows(env) });
+    }
+    if (url.pathname === "/workflows/seed" && request.method === "POST") {
+      return json(await seedWorkflows(env));
+    }
+    const wfM = url.pathname.match(/^\/workflows\/([\w-]+)$/);
+    if (wfM && NAME_RE.test(wfM[1])) {
+      if (request.method === "GET") {
+        const entry = await getWorkflow(env, wfM[1]);
+        return entry ? json(entry) : json({ error: "not found" }, 404);
+      }
+      if (request.method === "PUT") {
+        const body = (await request.json().catch(() => null)) as {
+          spec?: Record<string, unknown>;
+          agents?: Record<string, string>;
+          schemas?: Record<string, string>;
+        } | null;
+        if (!body?.spec) return json({ error: "spec required" }, 400);
+        const err = await putWorkflow(env, wfM[1], {
+          spec: body.spec,
+          agents: body.agents,
+          schemas: body.schemas,
+        });
+        if (err) return json({ error: err }, 422);
+        return json({ ok: true, name: wfM[1] });
+      }
+      if (request.method === "DELETE") {
+        const entry = await getWorkflow(env, wfM[1]);
+        if (!entry) return json({ error: "not found" }, 404);
+        await deleteWorkflow(env, wfM[1]);
+        return json({ ok: true });
+      }
     }
 
     // Token push from the MacBook custodian (fresh short-lived access token).

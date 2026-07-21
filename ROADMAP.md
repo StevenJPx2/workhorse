@@ -79,6 +79,13 @@ shipped; new items land here as they're conceived.
   Thread replies become mid-run steers (live run) or revision events
   (parked in-review). Outbound: status transitions post into the thread.
   Config: `SLACK_SIGNING_SECRET` + `SLACK_BOT_TOKEN` secrets.
+- **Workflow registry (user-configurable workflows)** — workflows are
+  USER DATA: KV-registered entries (`workflow:<name>` — spec + agents +
+  schemas) uploadable via `PUT /workflows/:name`, validated at upload with
+  pi-workflow's own parser (run inside a sandbox). Resolution at prepare:
+  repo's `.workhorse/workflows/<name>/` → KV registry → baked seed
+  bundles; `POST /workflows/seed` imports the baked bundles (never
+  clobbers user entries). New pipelines need no rebuild/redeploy.
 - **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
   input on the ticket page) queues an operator message; the driving
   workflow picks it up on its next burst, interrupts the current stage via
@@ -115,12 +122,11 @@ filing/watching tickets.
 
 ## Future workflow specs
 
-The `sandbox/workflows/` layout is designed so each new use case is cheap to
-add: a `spec.json` (+ optional `agents/*.md`), baked via `Dockerfile COPY`.
-`coding` and `screenshot-pr` are the first two; more use-case workflows to
-come — and the next step is promoting workflows to USER DATA (a registry
-uploadable via API/UI, seeded from these bundles) so they are configurable
-without a rebuild.
+Workflows are user data (see Workflow registry): upload a spec via
+`PUT /workflows/:name`, or version one in the target repo under
+`.workhorse/workflows/<name>/`. The baked `sandbox/workflows/` bundles
+(`coding`, `screenshot-pr`) are seeds — `POST /workflows/seed` imports them
+into the registry on a fresh deployment.
 
 ---
 
