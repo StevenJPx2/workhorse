@@ -138,6 +138,53 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
+### GitHub read tools for agents (`plugins/github/extension.ts`)
+The github plugin grows a sandbox half: a small set of READ-ONLY GitHub
+tools for agents and fleet chat, cribbing the tool shapes and preset
+groupings from
+[vercel-labs/github-tools](https://github.com/vercel-labs/github-tools)
+(its `code-review`/`repo-explorer`/`ci-ops` presets are a well-chosen
+menu) — implemented natively as a Pi extension against the REST API, not
+as a dependency (wrong direction for our inbound plugin, wrong agent
+framework — AI SDK vs Pi, and dead-weight approval/durability machinery).
+
+- Tools: `gh_pr` (PR details + files + reviews), `gh_ci` (workflow runs
+  + failing jobs for a PR/branch), `gh_issue`, `gh_search_code`,
+  `gh_commits` (list/get + blame). Auth via the fleet `GITHUB_TOKEN`
+  through a scoped worker route (`/github/*` proxy) — the sandbox never
+  holds the raw token, same custody model as browser/knowledge.
+- Consumers: fleet chat ("summarize the review comments on X's PR",
+  "what's failing in CI?"); verify stages (read the actual PR state
+  instead of trusting the local diff); revision runs (read the review
+  thread directly). Useful across research/audit workflows too.
+- WRITE tools stay out by design: the system talks to GitHub (branch,
+  PR, replies), the agent works in the repo — that separation is what
+  keeps "the agent can never self-complete" true.
+
+### Semantic tool selection (toolpick pattern)
+[toolpick](https://github.com/pontusab/toolpick)'s concept — index all
+tools, let each step see only the ~5 most relevant, keyword+semantic
+ranked, all tools still callable — solves a problem Workhorse is now
+accumulating: the sandbox tool surface keeps growing (aft_*, ctx_*,
+workhorse_*, browser, knowledge, imgup, paste, scripts…), and every
+registered-but-gated tool costs context tokens in every stage prompt.
+
+Two applications, in feasibility order:
+1. **Script/knowledge discovery** (near-term, no engine changes):
+   `list_scripts` and fleet knowledge grow semantic search — an agent
+   asks "how do I run the e2e suite here?" and gets the matching script
+   rather than reading the full inventory. Embedding via Workers AI or
+   AI Search, index maintained on script registration. This also
+   fulfills the old L2 ambition of semantic search over the script/skill
+   registry (memory #71) with fleet-native infrastructure.
+2. **Per-stage dynamic tool visibility** (needs pi-workflow cooperation):
+   stage allowlists stay the HARD gate (security boundary, unchanged),
+   but within an allowed set, rank tools against the stage prompt + task
+   and surface the top-k into the model's context, keeping the rest
+   callable-but-hidden. Worth a pi-workflow upstream conversation —
+   it owns tool registration per task; Workhorse alone can only shape
+   prompts, not the tool schema list Pi sends.
+
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
 tasks, audits, analyses, or one-off questions whose deliverable is a
