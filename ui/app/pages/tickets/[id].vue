@@ -24,6 +24,20 @@ const { data: diffData } = await useFetch<{ diff: string }>(`/api/tickets/${id}/
   server: false,
 });
 
+// Live streaming output: the running stage's session log tail, polled
+// while the ticket is active.
+const { data: liveOut, refresh: refreshOutput } = await useFetch<{
+  stage?: string;
+  status?: string;
+  output?: string | null;
+  note?: string;
+}>(`/api/tickets/${id}/output`, { lazy: true, server: false });
+const outputBox = ref<HTMLElement>();
+watch(
+  () => liveOut.value?.output,
+  () => nextTick(() => outputBox.value?.scrollTo({ top: outputBox.value.scrollHeight })),
+);
+
 // Workflow graph (run visualization): the ticket's workflow spec rendered
 // as the artifact graph, with live per-stage status overlaid.
 const wfName = computed(() => data.value?.ticket?.workflow ?? "coding");
@@ -189,8 +203,11 @@ function fmtCost(u?: { totalTokens?: number; costUsd?: number }): string {
 let timer: ReturnType<typeof setInterval>;
 onMounted(() => (timer = setInterval(() => {
   refresh();
-  if (running.value) refreshActivity();
-}, 10000)));
+  if (running.value) {
+    refreshActivity();
+    refreshOutput();
+  }
+}, 8000)));
 onUnmounted(() => clearInterval(timer));
 
 const toast = useToast();
@@ -296,6 +313,13 @@ async function requestChanges() {
   }
 }
 
+const tabItems = [
+  { label: "Result", slot: "result", icon: "i-lucide-file-check" },
+  { label: "Task", slot: "task", icon: "i-lucide-clipboard-list" },
+  { label: "Pipeline", slot: "pipeline", icon: "i-lucide-list-tree" },
+  { label: "History", slot: "history", icon: "i-lucide-history" },
+];
+
 const running = computed(() =>
   ["queued", "planning", "implementing", "ready-for-review"].includes(
     data.value?.ticket?.status ?? "",
@@ -386,37 +410,45 @@ function taskDot(status: string): string {
       </div>
     </UCard>
 
-    <UCard>
-      <div class="text-sm space-y-1">
-        <div><span class="text-muted">repo:</span> {{ data.ticket.repo }}</div>
-        <div><span class="text-muted">workflow:</span> {{ data.workflow?.status ?? "n/a" }}</div>
-        <div :class="computeState.color">{{ computeState.label }}</div>
-        <div v-if="data.ticket.branch"><span class="text-muted">branch:</span> {{ data.ticket.branch }}</div>
-        <div v-if="data.ticket.error" class="text-error">{{ data.ticket.error }}</div>
-      </div>
-    </UCard>
+    <!-- meta line: repo · branch · compute state — one row, not a card -->
+    <div class="flex items-center gap-3 text-xs text-muted flex-wrap">
+      <span class="flex items-center gap-1"><UIcon name="i-lucide-github" class="size-3.5" />{{ data.ticket.repo.replace("https://github.com/", "").replace(/\.git$/, "") }}</span>
+      <span v-if="data.ticket.branch" class="flex items-center gap-1"><UIcon name="i-lucide-git-branch" class="size-3.5" />{{ data.ticket.branch }}</span>
+      <span :class="computeState.color">{{ computeState.label }}</span>
+      <span v-if="data.ticket.error" class="text-error">{{ data.ticket.error }}</span>
+    </div>
 
-    <UCard v-if="data.live">
+    <!-- THE RUN: graph + live output, the page's centerpiece while active -->
+    <UCard v-if="data.live && data.ticket.status !== 'done'" :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>
         <div class="flex items-center justify-between">
-          <div class="font-semibold">Live pipeline</div>
+          <div class="font-semibold">Run</div>
           <span class="text-muted text-xs">
             {{ data.live.phase }}{{ data.live.at ? ` · ${new Date(data.live.at).toLocaleTimeString()}` : "" }}
           </span>
         </div>
       </template>
-      <div v-if="graphStages.length && data.live.tasks?.length" class="h-64 -mx-2">
-        <WorkflowGraph :stages="graphStages" :live-status="liveStageStatus" />
-      </div>
-      <div v-else-if="data.live.tasks?.length" class="flex flex-wrap items-center gap-3">
-        <div v-for="task in data.live.tasks" :key="task.id" class="flex items-center gap-1.5 text-sm">
-          <span class="size-2 rounded-full" :class="taskDot(task.status)" />
-          <span>{{ stageMeta(task.id).label }}</span>
-          <span class="text-muted text-xs">{{ task.status }}</span>
+      <div class="grid grid-cols-1 lg:grid-cols-2">
+        <div v-if="graphStages.length && data.live.tasks?.length" class="h-56 border-b lg:border-b-0 lg:border-r border-default">
+          <WorkflowGraph :stages="graphStages" :live-status="liveStageStatus" />
+        </div>
+        <div v-else class="p-3 text-muted text-sm">{{ data.live.note ?? data.live.outcome ?? "…" }}</div>
+        <!-- live agent output -->
+        <div class="h-56 flex flex-col">
+          <div class="px-3 py-1.5 text-xs text-muted border-b border-default flex items-center gap-2">
+            <span class="relative flex size-1.5">
+              <span v-if="running" class="animate-ping absolute inline-flex size-full rounded-full bg-primary opacity-75" />
+              <span class="relative inline-flex rounded-full size-1.5" :class="running ? 'bg-primary' : 'bg-neutral'" />
+            </span>
+            {{ liveOut?.stage ? `agent output — ${liveOut.stage}` : "agent output" }}
+          </div>
+          <div ref="outputBox" class="flex-1 overflow-y-auto px-3 py-2 bg-elevated/50">
+            <pre v-if="liveOut?.output" class="text-[11px] leading-relaxed whitespace-pre-wrap font-mono">{{ liveOut.output }}</pre>
+            <div v-else class="text-muted text-xs italic">{{ liveOut?.note ?? "waiting for output…" }}</div>
+          </div>
         </div>
       </div>
-      <div v-else class="text-muted text-sm">{{ data.live.note ?? data.live.outcome ?? "…" }}</div>
-      <div v-if="running" class="mt-3 flex gap-2">
+      <div v-if="running" class="p-3 border-t border-default flex gap-2">
         <UInput
           v-model="steerText"
           class="flex-1"
@@ -431,23 +463,29 @@ function taskDot(status: string): string {
       </div>
     </UCard>
 
-    <UCard>
-      <template #header><div class="font-semibold">Task</div></template>
-      <p class="text-sm whitespace-pre-wrap">{{ data.ticket.prompt }}</p>
-    </UCard>
-
-    <UCard v-if="data.ticket.result">
-      <template #header><div class="font-semibold">Result</div></template>
-      <div class="prose prose-sm dark:prose-invert max-w-none">
-        <Comark>{{ data.ticket.result }}</Comark>
-      </div>
-    </UCard>
-
-    <UCard v-if="diffData?.diff">
-      <template #header><div class="font-semibold">Diff</div></template>
-      <pre class="text-xs overflow-x-auto max-h-96">{{ diffData.diff }}</pre>
-    </UCard>
-
+    <!-- result + everything else, tabbed instead of stacked -->
+    <UTabs :items="tabItems" variant="link" :ui="{ trigger: 'grow' }" class="w-full">
+      <template #result>
+        <div class="space-y-4 pt-2">
+          <UCard v-if="data.ticket.result">
+            <div class="prose prose-sm dark:prose-invert max-w-none">
+              <Comark>{{ data.ticket.result }}</Comark>
+            </div>
+          </UCard>
+          <div v-else class="text-muted text-sm pt-4 text-center">No result yet.</div>
+          <UCard v-if="diffData?.diff">
+            <template #header><div class="font-semibold text-sm">Diff</div></template>
+            <pre class="text-xs overflow-x-auto max-h-96">{{ diffData.diff }}</pre>
+          </UCard>
+        </div>
+      </template>
+      <template #task>
+        <UCard class="mt-2">
+          <p class="text-sm whitespace-pre-wrap">{{ data.ticket.prompt }}</p>
+        </UCard>
+      </template>
+      <template #pipeline>
+        <div class="pt-2">
     <UCard v-if="activity?.tasks?.length">
       <template #header>
         <div class="flex items-center justify-between">
@@ -515,7 +553,10 @@ function taskDot(status: string): string {
       <template #header><div class="font-semibold">Activity</div></template>
       <div class="text-muted text-sm">{{ activity.note }}</div>
     </UCard>
-
+        </div>
+      </template>
+      <template #history>
+        <div class="pt-2">
     <UCard v-if="traces?.length">
       <template #header>
         <div class="flex items-center justify-between">
@@ -564,5 +605,9 @@ function taskDot(status: string): string {
         </template>
       </div>
     </UCard>
+    <div v-else class="text-muted text-sm pt-4 text-center">No archived runs yet.</div>
+        </div>
+      </template>
+    </UTabs>
   </div>
 </template>

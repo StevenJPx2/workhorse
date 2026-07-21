@@ -22,12 +22,15 @@ const toast = useToast();
 const { data: repoData } = await useFetch<{ repos: string[] }>("/api/repos");
 const { data: wfData } = await useFetch<{ workflows: Array<{ name: string }> }>("/api/workflows");
 
-const knownRepos = computed(() =>
-  (repoData.value?.repos ?? []).map((r) => ({
-    url: r,
-    label: r.replace("https://github.com/", "").replace(/\.git$/, ""),
-  })),
-);
+const knownRepos = computed(() => {
+  // Dedupe by normalized slug (KV-era records may differ only in .git/URL form).
+  const seen = new Map<string, { url: string; label: string }>();
+  for (const r of repoData.value?.repos ?? []) {
+    const label = r.replace("https://github.com/", "").replace(/\.git$/, "").toLowerCase();
+    if (!seen.has(label)) seen.set(label, { url: r, label });
+  }
+  return [...seen.values()];
+});
 const attachedRepo = ref<string | null>(null);
 const showAddRepo = ref(false);
 const newRepo = ref("");
@@ -101,8 +104,10 @@ async function send() {
 
 // --- running fleet strip ----------------------------------------------------
 const { data: fleet, refresh: refreshFleet } = await useFetch<{ tickets: Ticket[] }>("/api/tickets");
-const ACTIVE = ["queued", "planning", "implementing", "ready-for-review", "in-review"];
-const running = computed(() => (fleet.value?.tickets ?? []).filter((t) => ACTIVE.includes(t.status)));
+// "Running" = compute actively burning — parked states (in-review,
+// awaiting-*) are NOT running.
+const RUNNING = ["queued", "planning", "implementing", "ready-for-review"];
+const running = computed(() => (fleet.value?.tickets ?? []).filter((t) => RUNNING.includes(t.status)));
 
 let timer: ReturnType<typeof setInterval>;
 onMounted(() => (timer = setInterval(() => refreshFleet(), 15000)));
@@ -118,7 +123,7 @@ const statusColor: Record<string, string> = {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto flex flex-col gap-4" style="min-height: calc(100vh - 8rem)">
+  <div class="max-w-3xl w-full mx-auto flex flex-col justify-center gap-4" style="min-height: calc(100vh - 8rem)">
     <!-- chat transcript -->
     <div ref="box" class="flex-1 overflow-y-auto space-y-3 pt-2">
       <div v-if="!messages.length" class="text-center pt-16 space-y-2">

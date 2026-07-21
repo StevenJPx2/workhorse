@@ -419,6 +419,34 @@ export default {
 
     // Durable trace archive: every run ever executed for a ticket (immutable;
     // activity is the "latest" pointer, traces are the history for evals).
+    // Live streaming output: tail of the running stage's session log.
+    const outM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/output$/);
+    if (outM && request.method === "GET") {
+      const rec = await getTicket(env, outM[1]);
+      if (!rec?.runId) return json({ output: null, note: "no run yet" });
+      try {
+        const { sandboxDriver } = await import("./agent-run");
+        const driver = sandboxDriver(env, `ticket-${outM[1]}`);
+        const raw = await driver.readFile(`/workspace/.workflow/${rec.runId}/state.json`);
+        if (!raw) return json({ output: null, note: "no live run state (sandbox cold)" });
+        const state = JSON.parse(raw) as {
+          stages: Array<{ id: string; status: string; rounds: number }>;
+        };
+        const active =
+          state.stages.find((s) => s.status === "running") ??
+          [...state.stages].reverse().find((s) => s.status !== "pending");
+        if (!active) return json({ output: null, note: "no active stage" });
+        const round = Math.max(1, active.rounds + (active.status === "running" ? 1 : 0));
+        const r = await driver.exec(
+          `tail -c 12000 /workspace/.workflow/${rec.runId}/stages/${active.id}/round-${round}/session.log 2>/dev/null || true`,
+          { timeout: 15_000 },
+        );
+        return json({ stage: active.id, status: active.status, output: r.stdout || null });
+      } catch (e) {
+        return json({ output: null, note: `unavailable: ${String(e).slice(0, 200)}` });
+      }
+    }
+
     const trIdxM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/traces$/);
     if (trIdxM && request.method === "GET") {
       return json(await listTraceIndex(env, trIdxM[1]));

@@ -14,7 +14,8 @@ useIntervalFn(() => refresh(), 15000);
 
 // ?active=1 → only running statuses (the home page's "View running" link).
 const route = useRoute();
-const ACTIVE = ["queued", "planning", "implementing", "ready-for-review", "in-review"];
+// ?active=1 = actively running (compute burning) — parked states are not.
+const ACTIVE = ["queued", "planning", "implementing", "ready-for-review"];
 const shown = computed(() => {
   const all = data.value?.tickets ?? [];
   return route.query.active ? all.filter((t) => ACTIVE.includes(t.status)) : all;
