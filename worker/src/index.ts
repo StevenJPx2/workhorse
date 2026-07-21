@@ -102,6 +102,31 @@ export default {
     // code runs there — it must never hold the fleet master key).
     const scopedAuth = masterAuth || (!!env.BROWSER_TOKEN && auth === `Bearer ${env.BROWSER_TOKEN}`);
 
+    // Dependency cache (R2): sandbox-side curl with the scoped token.
+    // GET = restore (streamed), PUT = save (streamed to R2). Keys are
+    // content-addressed (repo + lockfile hash) so entries are immutable.
+    if (url.pathname === "/depcache") {
+      if (!scopedAuth) return new Response("unauthorized", { status: 401 });
+      const repo = url.searchParams.get("repo") ?? "";
+      const hash = url.searchParams.get("hash") ?? "";
+      if (!/^[\w./-]+$/.test(repo) || repo.includes("..") || !/^[a-f0-9]{64}$/.test(hash)) {
+        return json({ error: "bad repo/hash" }, 400);
+      }
+      const key = `depcache/${repo}/${hash}.tar.gz`;
+      if (request.method === "GET") {
+        const obj = await env.BLOBS.get(key);
+        if (!obj) return json({ error: "miss" }, 404);
+        return new Response(obj.body, {
+          headers: { "content-type": "application/gzip" },
+        });
+      }
+      if (request.method === "PUT") {
+        if (!request.body) return json({ error: "body required" }, 400);
+        await env.BLOBS.put(key, request.body);
+        return json({ ok: true });
+      }
+    }
+
     // Plugin routes (declared auth tier per route).
     const pluginRoute = routeFor(request.method, url.pathname);
     if (pluginRoute) {

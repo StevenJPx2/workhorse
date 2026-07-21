@@ -56,6 +56,82 @@ export async function injectTicketContext(
   );
 }
 
+// ---------------- dependency cache (R2 blob plane) ----------------
+//
+// Cold sandboxes (revision wakes, heals, repeat tickets on a known repo)
+// rebuild node_modules from scratch. We tar the install artifacts after a
+// successful run keyed by repo + lockfile hash, and restore at prepare.
+// Transport: the sandbox curls the Worker's /depcache routes with the
+// SCOPED token (already injected for browser/knowledge callbacks) — the
+// sandbox never holds an R2 credential. Lockfile-hash keying makes
+// staleness a non-problem: changed lockfile = miss = normal install.
+
+const LOCKFILES = ["bun.lock", "bun.lockb", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"];
+
+/** R2 object key for a dependency cache entry. */
+export function depCacheKey(repo: string, hash: string): string {
+  return `depcache/${repoSlug(repo)}/${hash}.tar.gz`;
+}
+
+/** In-sandbox: hash the first lockfile present (empty string = none). */
+const HASH_CMD = `cd /workspace/repo && for f in ${LOCKFILES.join(" ")}; do [ -f "$f" ] && { sha256sum "$f" | cut -d' ' -f1; exit 0; }; done; echo ""`;
+
+/**
+ * Restore node_modules from the dependency cache. Returns "hit", "miss",
+ * or "skip" (no lockfile / not configured). Never throws.
+ */
+export async function restoreDepCache(env: Env, sandboxId: string, repo: string): Promise<string> {
+  try {
+    if (!env.SELF_URL || !env.BROWSER_TOKEN) return "skip";
+    const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+    const h = await sandbox.exec(HASH_CMD, { timeout: 30_000 });
+    const hash = h.stdout.trim().split("\n").pop() ?? "";
+    if (h.exitCode !== 0 || !/^[a-f0-9]{64}$/.test(hash)) return "skip";
+    // Already installed (warm sandbox)? Don't clobber.
+    const warm = await sandbox.exec(`[ -d /workspace/repo/node_modules ] && echo warm || echo cold`, {
+      timeout: 10_000,
+    });
+    if (warm.stdout.includes("warm")) return "skip";
+    const url = `${env.SELF_URL}/depcache?repo=${encodeURIComponent(repoSlug(repo))}&hash=${hash}`;
+    const res = await sandbox.exec(
+      `cd /workspace/repo && curl -sf -H "authorization: Bearer ${env.BROWSER_TOKEN}" ${JSON.stringify(url)} -o /tmp/depcache.tgz && tar -xzf /tmp/depcache.tgz && rm -f /tmp/depcache.tgz && echo RESTORED || { rm -f /tmp/depcache.tgz; echo MISS; }`,
+      { timeout: 300_000 },
+    );
+    return res.stdout.includes("RESTORED") ? "hit" : "miss";
+  } catch (err) {
+    console.warn("depcache restore failed (non-fatal):", err);
+    return "skip";
+  }
+}
+
+/**
+ * Save the dependency artifacts to the cache after a successful run.
+ * Skips when the exact key already exists (immutable by content hash).
+ * Never throws.
+ */
+export async function saveDepCache(env: Env, sandboxId: string, repo: string): Promise<boolean> {
+  try {
+    if (!env.SELF_URL || !env.BROWSER_TOKEN) return false;
+    const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+    const h = await sandbox.exec(HASH_CMD, { timeout: 30_000 });
+    const hash = h.stdout.trim().split("\n").pop() ?? "";
+    if (h.exitCode !== 0 || !/^[a-f0-9]{64}$/.test(hash)) return false;
+    // Content-addressed: if the key exists, the exact artifact exists.
+    if (await env.BLOBS.head(depCacheKey(repo, hash))) return false;
+    const url = `${env.SELF_URL}/depcache?repo=${encodeURIComponent(repoSlug(repo))}&hash=${hash}`;
+    const res = await sandbox.exec(
+      // node_modules only (the dominant cost, uniformly located); cap ~400MB
+      // compressed — beyond that the round-trip stops paying for itself.
+      `cd /workspace/repo && [ -d node_modules ] || { echo NONE; exit 0; }; tar -czf /tmp/depcache.tgz node_modules && [ "$(stat -c%s /tmp/depcache.tgz)" -le 419430400 ] && curl -sf -X PUT -H "authorization: Bearer ${env.BROWSER_TOKEN}" --data-binary @/tmp/depcache.tgz ${JSON.stringify(url)} && echo SAVED; rm -f /tmp/depcache.tgz`,
+      { timeout: 600_000 },
+    );
+    return res.stdout.includes("SAVED");
+  } catch (err) {
+    console.warn("depcache save failed (non-fatal):", err);
+    return false;
+  }
+}
+
 const MC_DIR = "/root/.local/share/cortexkit/magic-context";
 const MC_DB = `${MC_DIR}/context.db`;
 /** Sanity ceiling for a repo memory db in R2 (not a KV cap — just abuse guard). */

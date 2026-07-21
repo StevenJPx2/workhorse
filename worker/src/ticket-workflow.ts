@@ -3,6 +3,8 @@ import {
   injectAuth,
   injectBrowserConfig,
   injectTicketContext,
+  restoreDepCache,
+  saveDepCache,
   prepareWorkspace,
   startWorkflow,
   driveWorkflow,
@@ -355,6 +357,9 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await injectBrowserConfig(this.env, sandboxId);
         // Ticket context for sandbox plugin tools (script scoping/gating).
         await injectTicketContext(this.env, sandboxId, t.id, t.repo);
+        // Dependency cache: restore node_modules for cold sandboxes.
+        const dep = await restoreDepCache(this.env, sandboxId, t.repo);
+        if (dep !== "skip") console.log(`depcache restore ${t.id}: ${dep}`);
       },
     );
 
@@ -382,6 +387,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       await archiveTrace(this.env, t.id, runId, "initial", activity);
       // Fleet memory: persist what the agent learned about this repo.
       await persistMemory(this.env, sandboxId, t.repo);
+      // Dependency cache: bank the installed node_modules for future runs.
+      await saveDepCache(this.env, sandboxId, t.repo);
       return `${diffStat}\n\n${analysis}`.trim();
     });
 
@@ -483,6 +490,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await restoreMemory(this.env, sandboxId, t.repo);
           await injectBrowserConfig(this.env, sandboxId);
           await injectTicketContext(this.env, sandboxId, t.id, t.repo);
+          const dep = await restoreDepCache(this.env, sandboxId, t.repo);
+          if (dep !== "skip") console.log(`depcache restore ${t.id} rev${round}: ${dep}`);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
           const feedback = events
             .map((e) => `- [${e.kind}] ${e.summary}`)
@@ -507,6 +516,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
         if (pushed) await this.env.TICKETS.put(`diff:${t.id}`, diff);
         await persistMemory(this.env, sandboxId, t.repo);
+        await saveDepCache(this.env, sandboxId, t.repo);
         await consumeEvents(this.env, t.id);
         await updateTicket(this.env, t.id, {
           status: "in-review",
