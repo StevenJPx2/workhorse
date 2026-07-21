@@ -144,6 +144,33 @@ box (the fleet agent — today's `/chat` — promoted to the front door):
 Depends on: registry UI slice 1 (picker); pairs with the vue-flow builder
 ("create new workflow" target).
 
+### Jira plugin
+`plugins/jira` — the third webhook source, and the first true *intake*
+source (GitHub reacts to PRs Workhorse opened; Jira originates work).
+Heir of legacy Workhorse's Jira integration (Jiratown / jira-comments
+monitor), rebuilt on the plugin contract:
+
+- **Inbound** (`POST /webhooks/jira`, Atlassian webhook + secret check):
+  issue assigned to the Workhorse account (or labeled `workhorse`) →
+  `fileTicket` with the issue's summary/description as the prompt and a
+  `jira:<issueKey>` ↔ ticket mapping (repo resolved from a project→repo
+  config map, or a `repo:` field convention on the issue). New comments on
+  a mapped issue → the two-path model: live run → steer; parked in-review
+  → revision event + wake (same as PR/Slack feedback).
+- **Outbound** (`onStatusChange` hook): transition the Jira issue along a
+  configurable status map (queued→In Progress, in-review→In Review,
+  done→Done) and comment with the PR link when it goes up. Errored →
+  comment + flag, never auto-reopen loops.
+- **Done stays external-only**: Jira "Done"/"Closed" transition (like PR
+  merge) is an accepted completion signal; the agent still can't
+  self-complete.
+- Config: `JIRA_BASE_URL`, `JIRA_EMAIL` + `JIRA_API_TOKEN` (or OAuth),
+  `JIRA_WEBHOOK_SECRET`; per-project repo map in KV (`jira-project:<key>`).
+
+Exercises every part of the plugin contract (webhook verify/parse, hooks,
+Core.fileTicket — which needs adding to Core services) and makes Workhorse
+usable from where tickets already live.
+
 ---
 
 ## Tabled 🅿️
