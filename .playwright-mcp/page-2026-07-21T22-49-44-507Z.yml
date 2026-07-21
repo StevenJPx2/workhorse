@@ -1,0 +1,64 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e3]:
+    - banner [ref=f4e4]:
+      - link "Workhorse" [ref=f4e5] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f4e7]:
+        - list [ref=f4e9]:
+          - listitem [ref=f4e10]:
+            - link "Home" [ref=f4e11] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f4e14]:
+            - link "Fleet" [ref=f4e15] [cursor=pointer]:
+              - /url: /tickets
+          - listitem [ref=f4e18]:
+            - link "Workflows" [ref=f4e19] [cursor=pointer]:
+              - /url: /workflows
+    - main [ref=f4e22]:
+      - generic [ref=f4e23]:
+        - generic [ref=f4e25]:
+          - paragraph [ref=f4e27]: What should the fleet work on?
+          - paragraph [ref=f4e28]:
+            - text: "Attach a repo to dispatch a ticket — or just ask about the fleet:"
+            - emphasis [ref=f4e29]: "\"what's running?\""
+            - text: ·
+            - emphasis [ref=f4e30]: "\"why did be45ecec fail?\""
+        - generic [ref=f4e31]:
+          - generic [ref=f4e32]:
+            - textbox "Message the fleet, or attach a repo to dispatch work…" [ref=f4e34]
+            - button [disabled] [ref=f4e35]
+          - generic [ref=f4e37]:
+            - button "stevenjpx2/workhorse-e2e-test" [ref=f4e38]
+            - button "octocat/hello-world" [ref=f4e40]
+            - button "Add new" [ref=f4e42]
+        - generic [ref=f4e45]:
+          - generic [ref=f4e46]:
+            - generic [ref=f4e47]: Running now (4)
+            - generic [ref=f4e51]:
+              - link "View running agents" [ref=f4e52] [cursor=pointer]:
+                - /url: /tickets?active=1
+              - link "View all agents" [ref=f4e53] [cursor=pointer]:
+                - /url: /tickets
+          - list [ref=f4e54]:
+            - listitem [ref=f4e55]:
+              - generic [ref=f4e56]: implementing
+              - link "Add CHANGELOG.md" [ref=f4e57] [cursor=pointer]:
+                - /url: /tickets/3df77fc5
+              - generic [ref=f4e58]: StevenJPx2/workhorse-e2e-test
+            - listitem [ref=f4e59]:
+              - generic [ref=f4e60]: implementing
+              - link "Add CHANGELOG.md" [ref=f4e61] [cursor=pointer]:
+                - /url: /tickets/7b4fe06b
+              - generic [ref=f4e62]: StevenJPx2/workhorse-e2e-test
+            - listitem [ref=f4e63]:
+              - generic [ref=f4e64]: implementing
+              - link "Add CHANGELOG.md" [ref=f4e65] [cursor=pointer]:
+                - /url: /tickets/9e880d9e
+              - generic [ref=f4e66]: StevenJPx2/workhorse-e2e-test
+            - listitem [ref=f4e67]:
+              - generic [ref=f4e68]: planning
+              - link "Add SUPPORT.md" [ref=f4e69] [cursor=pointer]:
+                - /url: /tickets/4affc1c6
+              - generic [ref=f4e70]: StevenJPx2/workhorse-e2e-test
+  - region "Notifications (F8)":
+    - list

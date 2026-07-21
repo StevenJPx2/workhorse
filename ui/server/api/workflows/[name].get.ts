@@ -1,4 +1,6 @@
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const name = getRouterParam(event, "name");
-  return workhorse(event, `/workflows/${name}`);
+  const entry = await workhorse(event, `/workflows/${name}`);
+  // The worker returns the entry unwrapped; page code consumes { workflow }.
+  return { workflow: entry };
 });

@@ -209,7 +209,12 @@ const rawField = computed({
       <!-- canvas -->
       <UCard class="lg:col-span-2" :ui="{ body: 'p-0 sm:p-0' }">
         <div class="h-[420px]">
-          <WorkflowGraph :stages="stages" :selected="selectedId" @select="selectedId = $event" />
+          <ClientOnly>
+            <WorkflowGraph :stages="stages" :selected="selectedId" @select="selectedId = $event" />
+            <template #fallback>
+              <div class="h-full flex items-center justify-center text-muted text-sm">loading canvas…</div>
+            </template>
+          </ClientOnly>
         </div>
         <template #footer>
           <UButton size="xs" variant="soft" icon="i-lucide-plus" @click="addStage">Add stage</UButton>

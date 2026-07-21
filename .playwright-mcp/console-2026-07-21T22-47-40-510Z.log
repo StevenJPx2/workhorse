@@ -1,0 +1,2 @@
+[     633ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://workhorse-ui.stevenjpx2.workers.dev/workflows/coding:0
+[     884ms] [ERROR] Hydration completed but contains mismatches. @ https://workhorse-ui.stevenjpx2.workers.dev/_nuxt/BKdMxN_E.js:1

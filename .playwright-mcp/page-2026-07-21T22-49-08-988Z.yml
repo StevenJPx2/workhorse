@@ -1,0 +1,71 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e3]:
+    - banner [ref=f3e4]:
+      - link "Workhorse" [ref=f3e5] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f3e7]:
+        - list [ref=f3e9]:
+          - listitem [ref=f3e10]:
+            - link "Home" [ref=f3e11] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f3e14]:
+            - link "Fleet" [ref=f3e15] [cursor=pointer]:
+              - /url: /tickets
+          - listitem [ref=f3e18]:
+            - link "Workflows" [ref=f3e19] [cursor=pointer]:
+              - /url: /workflows
+    - main [ref=f3e22]:
+      - generic [ref=f3e23]:
+        - generic [ref=f3e24]:
+          - heading "coding" [level=1] [ref=f3e25]
+          - generic [ref=f3e26]: seed
+          - generic [ref=f3e27]: "Plan, implement, adversarially verify, then fix a code change in the current repository. Plan+verify are read-only; implement+fix have write tools. Memory tools throughout: search prior solutions first, record durable learnings."
+          - generic [ref=f3e28]:
+            - button "JSON" [ref=f3e29]
+            - textbox "copy-name" [ref=f3e32]
+            - button "Save as" [disabled] [ref=f3e33]
+        - generic [ref=f3e34]: Seed workflows are read-only templates — edit freely, then Save-as under a new name.
+        - generic [ref=f3e38]:
+          - generic [ref=f3e39]:
+            - generic [ref=f3e45]:
+              - generic:
+                - img:
+                  - group "Edge from plan to implement" [ref=f3e46] [cursor=pointer]
+                - img:
+                  - group "Edge from implement to verify" [ref=f3e49] [cursor=pointer]
+                - img:
+                  - group "Edge from verify to fix" [ref=f3e52] [cursor=pointer]
+                - generic:
+                  - group [ref=f3e55]:
+                    - generic [ref=f3e56] [cursor=pointer]:
+                      - generic [ref=f3e57]: plan
+                      - generic [ref=f3e60]:
+                        - generic [ref=f3e61]: default
+                        - generic [ref=f3e62]: 8 tools
+                  - group [ref=f3e63]:
+                    - generic [ref=f3e64] [cursor=pointer]:
+                      - generic [ref=f3e65]: implement
+                      - generic [ref=f3e68]:
+                        - generic [ref=f3e69]: default
+                        - generic [ref=f3e70]: 12 tools
+                  - group [ref=f3e71]:
+                    - generic [ref=f3e72] [cursor=pointer]:
+                      - generic [ref=f3e73]: verify
+                      - generic [ref=f3e76]:
+                        - generic [ref=f3e77]: verifier
+                        - generic [ref=f3e78]: 11 tools
+                  - group [ref=f3e79]:
+                    - generic [ref=f3e80] [cursor=pointer]:
+                      - generic [ref=f3e81]: fix
+                      - generic [ref=f3e84]:
+                        - generic [ref=f3e85]: default
+                        - generic [ref=f3e86]: 12 tools
+            - button "Add stage" [ref=f3e91]
+          - generic [ref=f3e93]:
+            - generic [ref=f3e94]: Select a stage
+            - generic [ref=f3e97]:
+              - text: Click a node to edit its agent, tools, prompt, and wiring. Connections come from each stage's
+              - code [ref=f3e98]: from
+              - text: field.
+  - region "Notifications (F8)":
+    - list

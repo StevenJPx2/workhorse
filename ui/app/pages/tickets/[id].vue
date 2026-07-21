@@ -430,7 +430,9 @@ function taskDot(status: string): string {
       </template>
       <div class="grid grid-cols-1 lg:grid-cols-2">
         <div v-if="graphStages.length && data.live.tasks?.length" class="h-56 border-b lg:border-b-0 lg:border-r border-default">
-          <WorkflowGraph :stages="graphStages" :live-status="liveStageStatus" />
+          <ClientOnly>
+            <WorkflowGraph :stages="graphStages" :live-status="liveStageStatus" />
+          </ClientOnly>
         </div>
         <div v-else class="p-3 text-muted text-sm">{{ data.live.note ?? data.live.outcome ?? "…" }}</div>
         <!-- live agent output -->
