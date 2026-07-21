@@ -222,6 +222,58 @@ credential, same custody model as the scoped browser token). Lockfile-hash
 keying makes staleness a non-problem. Node-first; measure
 restore-vs-install in the trace before generalizing to other stacks.
 
+### Non-PR outcomes (configurable done states)
+Not every fleet run should end in a pull request — some are research
+tasks, audits, analyses, or one-off questions whose deliverable is a
+REPORT, not a diff. Today the pipeline hard-codes PR-up → in-review →
+merged = done; the "Open PR" affordance is baked in.
+
+- **Outcome as a workflow property**: the spec's terminal stage declares
+  its outcome kind — `pr` (today's flow), `report` (final artifact
+  published as the result: ticket page + Jira/Slack comment + paste URL),
+  or `artifact` (files delivered without a PR, e.g. a generated doc
+  committed to a branch without review ceremony).
+- **Done semantics per outcome**: `pr` keeps external-only completion
+  (merge/close). `report` completes on operator acknowledgment — an
+  explicit "Accept result" action in the UI (or Jira Done transition), so
+  the agent still never self-completes; the accept affordance replaces
+  the Open PR button and is configurable per workflow.
+- The verify stage still gates: a research workflow's verifier judges the
+  report against the task before it's offered for acceptance.
+
+### Workflow input parameters + input-parked runs (json-render)
+Two related upgrades to workflows-as-data, GitHub-Actions style:
+
+- **Declared inputs**: a workflow spec declares typed input parameters
+  (`inputs: {name, type, description, default, required, options?}` —
+  the `workflow_dispatch.inputs` pattern). Triggering one from the UI
+  renders those as real input controls (text/select/boolean/number)
+  before dispatch; the values land in the task prompt / spec defaults.
+  The file-ticket form and chat-first home render them dynamically via
+  [vercel-labs/json-render](https://github.com/vercel-labs/json-render)
+  (schema-driven UI from JSON — no hand-built form per workflow).
+- **Input-parked runs**: a new park state where a RUNNING workflow stops
+  and asks the operator for input mid-flight (today's only park is
+  in-review). A stage declares an input request (same JSON schema),
+  the run parks as `awaiting-input`, the ticket page renders the form
+  via json-render, and submission resumes the run with the answers
+  injected as a steer/handoff. Generalizes: approve/deny gates, choice
+  points ("which of these three approaches?"), credentials-shaped input.
+
+### Better Glance integration
+The fleet lives on a homelab Glance dashboard today as (at best) a plain
+iframe. Make it first-class:
+
+- **Glance widgets over the existing API**: `custom-api` widget configs
+  (Glance natively renders remote JSON) for fleet-at-a-glance — running
+  tickets with live phase, errored count, last done, PR links. Ship as a
+  documented `glance/` snippet folder in the repo (copy into your
+  glance.yml).
+- **Deep links**: every widget row links into the Nuxt UI ticket page.
+- **Compact iframe mode**: a `/embed` route in the UI (header-less,
+  dense, dark-aware) purpose-built for iframe embedding in dashboard
+  tiles, instead of iframing the full app.
+
 ### ntfy plugin (push notifications)
 `plugins/ntfy` — connect [ntfy](https://ntfy.sh) to fleet runs: push
 notifications for the transitions an operator actually waits on (PR up,
