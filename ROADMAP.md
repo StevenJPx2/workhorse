@@ -246,6 +246,17 @@ cap, blob-shaped data):
 - **Trace archive overflow** — big runs can brush the KV value cap; move
   trace blobs to R2, keep the small per-ticket index in KV.
 
+### ntfy plugin (push notifications)
+`plugins/ntfy` — connect [ntfy](https://ntfy.sh) to fleet runs: push
+notifications for the transitions an operator actually waits on (PR up,
+done, errored/terminated, escalation fired, steer applied). Pure
+`onStatusChange`/`onTraceArchived` hook consumer — the notification twin
+of the Slack outbound half, with zero inbound surface. Config:
+`NTFY_URL` (self-hosted or ntfy.sh) + `NTFY_TOPIC` (+ optional token);
+unset = silent, same convention as Slack. Priority mapping: errored →
+high, PR up → default, the rest → low. The cheapest possible validation
+that the hook bus carries a *notify-only* plugin cleanly.
+
 ### Paste plugin (text/code hosting)
 `plugins/paste` — imgup's sibling for text: a sandbox tool
 (`upload_text` / `share_snippet`) that hosts arbitrary text/code and
