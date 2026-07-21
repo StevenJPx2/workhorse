@@ -165,4 +165,13 @@ export interface Env {
   NTFY_URL?: string;
   NTFY_TOPIC?: string;
   NTFY_TOKEN?: string;
+  /**
+   * Web search providers (all optional — unset providers are skipped by
+   * the fallback chain). SEARCH_PROVIDER picks the default (tavily|exa|
+   * brave); the eval report (evals/) decides which to set.
+   */
+  SEARCH_PROVIDER?: string;
+  TAVILY_API_KEY?: string;
+  EXA_API_KEY?: string;
+  BRAVE_API_KEY?: string;
 }

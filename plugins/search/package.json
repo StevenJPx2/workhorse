@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/search",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Web search plugin: provider chain (tavily/exa/brave) behind /search + the web_search sandbox tool. Evals pick the default provider.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

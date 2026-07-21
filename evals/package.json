@@ -1,0 +1,25 @@
+{
+  "name": "@workhorse/evals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Per-tool evals on evalite: fixtures from fleet traces, deterministic + LLM-judge scorers. `bun run eval` for the watch UI, `bun run eval:ci` for one pass.",
+  "scripts": {
+    "eval": "evalite watch",
+    "eval:ci": "evalite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "@workhorse/search": "workspace:*",
+    "@workhorse/workflow": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "@types/node": "^26.1.1",
+    "autoevals": "^0.0.131",
+    "evalite": "^0.19.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.0.18"
+  }
+}

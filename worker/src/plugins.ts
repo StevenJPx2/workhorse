@@ -6,6 +6,7 @@ import { githubPlugin } from "@workhorse/github";
 import { imgupPlugin } from "@workhorse/imgup";
 import { jiraPlugin } from "@workhorse/jira";
 import { scriptsPlugin } from "@workhorse/scripts";
+import { searchPlugin } from "@workhorse/search";
 import { knowledgePlugin } from "@workhorse/knowledge";
 import { ntfyPlugin } from "@workhorse/ntfy";
 import { pastePlugin } from "@workhorse/paste";
@@ -24,6 +25,7 @@ export const plugins: WorkhorsePlugin[] = [
   ntfyPlugin,
   pastePlugin,
   scriptsPlugin,
+  searchPlugin,
   slackPlugin,
   ticketsPlugin,
 ];
