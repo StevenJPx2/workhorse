@@ -163,6 +163,44 @@ export default {
       return json(await reindexAll(env));
     }
 
+    // ---- Agent block registry (reusable agent definitions) ----
+    if (url.pathname === "/agents" && request.method === "GET") {
+      const { listAgentBlocks } = await import("./agents");
+      return json({ agents: await listAgentBlocks(env) });
+    }
+    if (url.pathname === "/agents/seed" && request.method === "POST") {
+      const { seedAgentBlocks } = await import("./agents");
+      return json({ seeded: await seedAgentBlocks(env) });
+    }
+    const agentM = url.pathname.match(/^\/agents\/([\w-]+)$/);
+    if (agentM) {
+      const { getAgentBlock, putAgentBlock, deleteAgentBlock } = await import("./agents");
+      if (request.method === "GET") {
+        const block = await getAgentBlock(env, agentM[1]);
+        return block ? json({ agent: block }) : json({ error: "not found" }, 404);
+      }
+      if (request.method === "PUT") {
+        const body = (await request.json().catch(() => null)) as {
+          description?: string;
+          tools?: string[];
+          persona?: string;
+        } | null;
+        if (!body) return json({ error: "json body required" }, 400);
+        const err = await putAgentBlock(env, {
+          name: agentM[1],
+          description: body.description ?? "",
+          tools: body.tools ?? [],
+          persona: body.persona ?? "",
+          source: "user",
+        });
+        return err ? json({ error: err }, 422) : json({ ok: true });
+      }
+      if (request.method === "DELETE") {
+        await deleteAgentBlock(env, agentM[1]);
+        return json({ ok: true });
+      }
+    }
+
     // ---- Workflow registry (workflows are user data, not core code) ----
 
     if (url.pathname === "/workflows" && request.method === "GET") {

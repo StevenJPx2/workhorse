@@ -69,6 +69,16 @@ export interface Core {
   /** Queue a mid-run steer for a ticket's LIVE run (picked up next burst). */
   appendSteer(ticketId: string, message: string): Promise<void>;
   /**
+   * Emit a ticket transition signal — the pluggable completion/verdict
+   * mechanism. Queues the event and wakes the parked run; the workflow
+   * decides which signals it honors at which parks. Kinds the core loops
+   * understand today: "accepted" | "changes-requested" | "jira-done"
+   * (plus the github plugin's pr-merged/pr-closed via events). Plugins
+   * may emit new kinds — unknown kinds park-wake and are consumed as
+   * plain events.
+   */
+  signalTransition(ticketId: string, kind: string, detail?: string): Promise<void>;
+  /**
    * Run the fleet-chat agent (a Pi session with workhorse_* tools) over a
    * message history; returns the agent's reply.
    */

@@ -44,14 +44,22 @@ export function toolName(t: ToolRef): string {
 /**
  * Per-stage session config, mapped to Pi CLI flags. The tool ceiling rides
  * `--tools` (a CLI-level allowlist — enforcement, not prompt-begging);
- * persona rides `--append-system-prompt <file>`.
+ * persona rides `--append-system-prompt <file>`. An agent BLOCK's
+ * frontmatter (`tools: a, b, c`) supplies the ceiling when the stage
+ * declares none — stage tools always win.
  */
 export function stageSession(stage: StageSpec, baseAgentMd?: string | null): {
   tools: string[];
   persona: string;
 } {
+  let tools = (stage.tools ?? []).map(toolName);
+  if (tools.length === 0 && baseAgentMd) {
+    const fm = baseAgentMd.match(/^---\n([\s\S]*?)\n---/);
+    const line = fm?.[1].match(/^tools:\s*(.+)$/m)?.[1];
+    if (line) tools = line.split(",").map((t) => t.trim()).filter(Boolean);
+  }
   return {
-    tools: (stage.tools ?? []).map(toolName),
+    tools,
     persona:
       baseAgentMd?.replace(/^---[\s\S]*?---\s*/, "").trim() ||
       `You are a focused software engineering agent executing the "${stage.id}" stage of a staged workflow. Work only within this stage's scope.`,

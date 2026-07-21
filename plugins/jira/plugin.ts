@@ -214,15 +214,13 @@ async function processEvent(env: Env, core: Core, payload: JiraWebhookPayload): 
     if (["done", "closed", "resolved"].includes(status)) {
       const rec = await core.getTicket(mapped);
       if (rec && rec.status !== "done" && rec.status !== "terminated") {
-        await core.appendEvents([
-          {
-            ticketId: mapped,
-            kind: "jira-done",
-            summary: `Jira issue ${issue.key} transitioned to ${issue.fields?.status?.name}`,
-            receivedAt: new Date().toISOString(),
-          },
-        ]);
-        await core.wakeTicket(mapped);
+        // Plugin-provided transition: Jira's Done is an accepted external
+        // completion signal (like PR merge, like the UI's Accept).
+        await core.signalTransition(
+          mapped,
+          "jira-done",
+          `Jira issue ${issue.key} transitioned to ${issue.fields?.status?.name}`,
+        );
       }
       return;
     }

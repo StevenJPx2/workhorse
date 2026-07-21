@@ -385,6 +385,9 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
         await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+        // Agent blocks: install the registry's agent definitions.
+        const { installAgentBlocks } = await import("./agents");
+        await installAgentBlocks(this.env, sandboxId);
         // Fleet memory: seed the sandbox with this repo's accumulated memories.
         await restoreMemory(this.env, sandboxId, t.repo);
         // Browser plane: let gated stages fetch live web pages via the Worker.
@@ -552,6 +555,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await updateTicket(this.env, t.id, { status: "implementing" });
           await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
           await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+          const { installAgentBlocks } = await import("./agents");
+          await installAgentBlocks(this.env, sandboxId);
           await restoreMemory(this.env, sandboxId, t.repo);
           await injectBrowserConfig(this.env, sandboxId);
           await injectTicketContext(this.env, sandboxId, t.id, t.repo);
@@ -613,12 +618,16 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         )) as ExternalEvent[];
       }
 
-      const terminal = events.find((e) => e.kind === "pr-merged" || e.kind === "pr-closed");
+      // Completion signals are pluggable: PR merge (github), Jira Done,
+      // operator Accept — any plugin can emit one via Core.signalTransition.
+      const terminal = events.find((e) =>
+        ["pr-merged", "pr-closed", "jira-done", "accepted"].includes(e.kind),
+      );
       if (terminal) {
         await step.do(`finish-${round}`, async () => {
           await consumeEvents(this.env, t.id);
           await updateTicket(this.env, t.id, {
-            status: terminal.kind === "pr-merged" ? "done" : "terminated",
+            status: terminal.kind === "pr-closed" ? "terminated" : "done",
             error: terminal.kind === "pr-closed" ? "PR closed without merge" : undefined,
           });
         });
@@ -636,6 +645,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await updateTicket(this.env, t.id, { status: "implementing" });
           await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
           await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+          const { installAgentBlocks } = await import("./agents");
+          await installAgentBlocks(this.env, sandboxId);
           await restoreMemory(this.env, sandboxId, t.repo);
           await injectBrowserConfig(this.env, sandboxId);
           await injectTicketContext(this.env, sandboxId, t.id, t.repo);

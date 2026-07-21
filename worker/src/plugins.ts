@@ -48,6 +48,17 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     appendEvents: (events) => appendEvents(env, events),
     wakeTicket: (ticketId) => wakeTicket(env, ticketId),
     appendSteer: (ticketId, message) => appendSteer(env, ticketId, message),
+    signalTransition: async (ticketId, kind, detail) => {
+      await appendEvents(env, [
+        {
+          ticketId,
+          kind,
+          summary: detail ?? `transition signal: ${kind}`,
+          receivedAt: new Date().toISOString(),
+        },
+      ]);
+      await wakeTicket(env, ticketId);
+    },
     fleetChat: (messages) => runFleetChat(env, selfOrigin, messages),
     listScripts: async (repo) => {
       const { listScripts } = await import("./db");
