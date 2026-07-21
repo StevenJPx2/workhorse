@@ -78,6 +78,9 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       };
       await upsertScript(env, script);
       console.log(`script ${existing ? "updated" : "registered"}: ${s.scope}/${s.name} by ${s.createdBy}`);
+      // Semantic discovery: keep the scripts corpus fresh (best-effort).
+      const { scriptIndex } = await import("./semindex");
+      await scriptIndex.upsert(env, [script]);
       return { ok: true, script };
     },
   };

@@ -14,6 +14,14 @@
         "typescript": "^7.0.2",
       },
     },
+    "packages/semindex": {
+      "name": "@workhorse/semindex",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260714.1",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/workflow": {
       "name": "@workhorse/workflow",
       "version": "0.1.0",
@@ -162,6 +170,7 @@
         "@workhorse/ntfy": "workspace:*",
         "@workhorse/paste": "workspace:*",
         "@workhorse/scripts": "workspace:*",
+        "@workhorse/semindex": "workspace:*",
         "@workhorse/slack": "workspace:*",
         "@workhorse/tickets": "workspace:*",
         "@workhorse/workflow": "workspace:*",
@@ -902,6 +911,8 @@
     "@workhorse/paste": ["@workhorse/paste@workspace:plugins/paste"],
 
     "@workhorse/scripts": ["@workhorse/scripts@workspace:plugins/scripts"],
+
+    "@workhorse/semindex": ["@workhorse/semindex@workspace:packages/semindex"],
 
     "@workhorse/slack": ["@workhorse/slack@workspace:plugins/slack"],
 

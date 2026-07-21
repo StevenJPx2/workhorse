@@ -84,6 +84,16 @@ export async function putWorkflow(
     updatedAt: new Date().toISOString(),
   };
   await env.TICKETS.put(KEY(name), JSON.stringify(rec));
+  // Semantic discovery: keep the workflows corpus fresh (best-effort).
+  try {
+    const { workflowIndex } = await import("./semindex");
+    const stages = ((rec.spec as { artifactGraph?: { stages?: Array<{ id: string }> } }).artifactGraph?.stages ?? []).map((s) => s.id);
+    await workflowIndex.upsert(env, [
+      { name, description: typeof rec.spec.description === "string" ? rec.spec.description : undefined, stages },
+    ]);
+  } catch {
+    /* discovery never blocks registration */
+  }
   return null;
 }
 

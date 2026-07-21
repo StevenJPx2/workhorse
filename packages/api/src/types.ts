@@ -93,6 +93,10 @@ export interface Env {
    * (depcache/<owner/repo>/<lockfile-hash>.tar.zst).
    */
   BLOBS: R2Bucket;
+  /** Workers AI (embeddings for the semindex toolkit). */
+  AI: Ai;
+  /** Vectorize: one index, namespaced per corpus (scripts/workflows/tools). */
+  VECTORIZE: VectorizeIndex;
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;

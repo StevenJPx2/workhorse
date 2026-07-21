@@ -65,6 +65,17 @@
       "bucket_name": "workhorse-blobs"
     }
   ],
+  // Semantic plane: Workers AI embeddings + one Vectorize index namespaced
+  // per corpus (scripts, workflows, tools) — the semindex toolkit.
+  "ai": {
+    "binding": "AI"
+  },
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "workhorse-semindex"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

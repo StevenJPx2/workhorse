@@ -166,6 +166,52 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "find_script",
+    label: "Find script",
+    description:
+      "Semantic search over the registered script registry — describe what you need " +
+      "('run the e2e suite', 'refresh generated types') and get the best-matching scripts " +
+      "with descriptions. Faster than reading the full list_scripts inventory.",
+    parameters: Type.Object({
+      query: Type.String({ description: "What you're trying to do" }),
+    }),
+    async execute(_id, params) {
+      const r = await api(`/find?corpus=scripts&q=${encodeURIComponent(params.query)}&topK=5`);
+      if (!r.ok) return textResult(`find_script failed: HTTP ${r.status}`);
+      const { hits } = (await r.json()) as {
+        hits: Array<{ id: string; score: number; metadata: { name?: string; scope?: string; description?: string } }>;
+      };
+      if (!hits.length) return textResult("No matching scripts. Try list_scripts for the full inventory.");
+      return textResult(
+        hits.map((h) => `- ${h.metadata.name} [${h.metadata.scope}] (${h.score.toFixed(2)}): ${h.metadata.description}`).join("\n"),
+      );
+    },
+  });
+
+  pi.registerTool({
+    name: "find_tool",
+    label: "Find tool",
+    description:
+      "Semantic search over the sandbox tool catalog — describe a capability ('take a " +
+      "screenshot', 'search past solutions') and get the tool names that provide it. Note: " +
+      "a tool must still be allowed in your current stage to be callable.",
+    parameters: Type.Object({
+      query: Type.String({ description: "The capability you need" }),
+    }),
+    async execute(_id, params) {
+      const r = await api(`/find?corpus=tools&q=${encodeURIComponent(params.query)}&topK=5`);
+      if (!r.ok) return textResult(`find_tool failed: HTTP ${r.status}`);
+      const { hits } = (await r.json()) as {
+        hits: Array<{ score: number; metadata: { name?: string; description?: string; classification?: string } }>;
+      };
+      if (!hits.length) return textResult("No matching tools.");
+      return textResult(
+        hits.map((h) => `- ${h.metadata.name} (${h.metadata.classification}): ${h.metadata.description}`).join("\n"),
+      );
+    },
+  });
+
+  pi.registerTool({
     name: "write_script",
     label: "Write script",
     description:

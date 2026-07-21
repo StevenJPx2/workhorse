@@ -20,6 +20,7 @@
     "@workhorse/ntfy": "workspace:*",
     "@workhorse/paste": "workspace:*",
     "@workhorse/scripts": "workspace:*",
+    "@workhorse/semindex": "workspace:*",
     "@workhorse/slack": "workspace:*",
     "@workhorse/tickets": "workspace:*",
     "@workhorse/workflow": "workspace:*"

@@ -102,6 +102,19 @@ export default {
     // code runs there — it must never hold the fleet master key).
     const scopedAuth = masterAuth || (!!env.BROWSER_TOKEN && auth === `Bearer ${env.BROWSER_TOKEN}`);
 
+    // Semantic find (scoped): sandbox tools query the semindex corpora.
+    if (url.pathname === "/find" && request.method === "GET") {
+      if (!scopedAuth) return new Response("unauthorized", { status: 401 });
+      const corpus = url.searchParams.get("corpus") ?? "";
+      const q = url.searchParams.get("q") ?? "";
+      if (!q.trim()) return json({ error: "q required" }, 400);
+      const { scriptIndex, workflowIndex, toolIndex } = await import("./semindex");
+      const index = { scripts: scriptIndex, workflows: workflowIndex, tools: toolIndex }[corpus];
+      if (!index) return json({ error: "corpus must be scripts|workflows|tools" }, 400);
+      const topK = Math.min(Number(url.searchParams.get("topK") ?? 5) || 5, 20);
+      return json({ hits: await index.query(env, q, { topK }) });
+    }
+
     // Dependency cache (R2): sandbox-side curl with the scoped token.
     // GET = restore (streamed), PUT = save (streamed to R2). Keys are
     // content-addressed (repo + lockfile hash) so entries are immutable.
@@ -142,6 +155,12 @@ export default {
     // One-time D1 backfill from legacy KV records (idempotent).
     if (url.pathname === "/admin/backfill-d1" && request.method === "POST") {
       return json(await backfillFromKV(env));
+    }
+
+    // Rebuild the semindex corpora (scripts/workflows/tools). Idempotent.
+    if (url.pathname === "/admin/reindex-semindex" && request.method === "POST") {
+      const { reindexAll } = await import("./semindex");
+      return json(await reindexAll(env));
     }
 
     // ---- Workflow registry (workflows are user data, not core code) ----
