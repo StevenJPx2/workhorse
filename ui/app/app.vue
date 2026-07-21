@@ -3,6 +3,7 @@ const links = [
   { label: "Home", to: "/", icon: "i-lucide-message-square" },
   { label: "Fleet", to: "/tickets", icon: "i-lucide-list-todo" },
   { label: "Workflows", to: "/workflows", icon: "i-lucide-workflow" },
+  { label: "Agents", to: "/agents", icon: "i-lucide-bot" },
 ];
 </script>
 

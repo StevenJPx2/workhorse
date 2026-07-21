@@ -95,6 +95,42 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   (`mc/<owner/repo>.db` — the KV 25 MiB cap that silently dropped memories
   is gone) and trace bodies (`trace/<ticket>/<run>.json`), both with legacy
   KV read fallbacks. Dependency cache still planned (below).
+- **`@workhorse/workflow` — the workflow engine** — pi-workflow replaced
+  outright: spec compile + validation (worker-side at `PUT /workflows`),
+  graph routing, run lifecycle, per-stage bare Pi sessions with CLI-level
+  tool ceilings, typed FailureKind classification, control verbs (steer/
+  promote/inject-input/retry/cancel), loop-until stages — 12 vitest
+  tests on a mock Driver. The CF spine is durability plumbing.
+- **Non-PR outcomes + workflow inputs + awaiting-input** — terminal-stage
+  `outcome: pr|report|artifact`; report/artifact park as
+  awaiting-acceptance with Accept/Request-changes (revisions loop);
+  declared `inputs:` render as real controls at dispatch; stages request
+  operator input mid-run via control.json → schema-rendered form →
+  answers resume the stage.
+- **Agent blocks** — reusable agent definitions (persona + frontmatter
+  tool ceiling) as registry entries: CRUD at /agents, /agents page in
+  the UI, seeded from baked agents, installed into every sandbox;
+  stage.agent references a block, block tools = default ceiling.
+- **Plugin-provided transitions** — Core.signalTransition: done/accepted/
+  changes-requested emitted by any plugin (Jira Done rides it; reviewLoop
+  honors jira-done/accepted alongside pr-merged).
+- **GitHub read tools** — gh_pr/gh_ci/gh_issue/gh_search_code/gh_commits
+  via a scoped /github proxy (GET allowlist; no self-completing actions).
+- **semindex** — @workhorse/semindex over Workers AI embeddings +
+  Vectorize; scripts/workflows/tools corpora; find_script + find_tool
+  sandbox tools; GET /find; reindex admin route. Verified live.
+- **Web search plugin** — tavily/exa/brave chain behind /search +
+  web_search tool (keys worker-side; SEARCH_PROVIDER picks the default).
+- **evals/** — evalite on vitest: workflow-validator eval (8/8 green,
+  keyless) + search-provider harness over trace-shaped fixtures.
+- **Live agent output + run-centric ticket page** — GET
+  /tickets/:id/output tails the running stage's session log; ticket page
+  rebuilt around the Run card (graph + streaming output + steer), with
+  Result/Task/Pipeline/History as tabs. Workflows editor fixed (proxy
+  shape + SSR) and verified with Playwright.
+- **Glance integration** — homelab widget v2 (running/parked/errored
+  strip, deep links) + the UI's /embed compact tile; deployed to the
+  server.
 - **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
   input on the ticket page) queues an operator message; the driving
   workflow picks it up on its next burst, interrupts the current stage via
@@ -138,272 +174,11 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-### `@workhorse/workflow` — the workflow engine
-Workhorse owns its workflow engine end to end: `packages/workflow`
-carries the full weight of a run — spec compilation, graph routing, the
-run state machine, stage execution, control operations — while the
-Cloudflare Workflow spine reduces to durability plumbing (durable steps,
-retries, parks on `waitForEvent`, wall-clock survival) that calls into
-the engine. pi-workflow over own-engine was a real trade, decided on
-usage: every Workhorse pipeline is a linear chain of `single` stages —
-~30% of pi-workflow's machinery — while the seam between two engines
-costs 100%: run state spelunked off disk by inspect scripts,
-steering/escalation as surgery on `compiled.json` and internal lease
-invariants (fragile against upstream internals changes), and three
-sources of truth for "where is this run?".
-
-- **The package**: `@workhorse/workflow`, depending on `@workhorse/api`
-  only. Owns the spec format (compatible subset of today's `spec.json`
-  — registry, builder, and seeds keep working), the validator behind
-  `PUT /workflows`, graph compilation + routing (which stage runs next,
-  loop rounds, joins), per-stage prompt assembly (upstream artifact
-  digests + control contract epilogue), control-schema validation,
-  run lifecycle (dispatch → advance → park → resume → outcome), and
-  the control verbs (steer, promote, inject-input, cancel). Sandbox I/O
-  sits behind a small `Driver` interface (`exec`/`writeFile`/`readFile`):
-  unit tests use a mock driver, the worker provides the
-  `@cloudflare/sandbox` implementation.
-- **The worker's remaining job**: `TicketWorkflow` maps ticket lifecycle
-  onto engine runs — `step.do(() => engine.advance(run))` bursts, park
-  when the engine reports `awaiting-input`/`in-review`, deliver the
-  outcome (PR, report, artifact), translate statuses for the UI. No
-  workflow semantics live in the worker.
-- **The stage pattern**: each stage is one bare Pi session in the
-  sandbox — `pi -p` with a generated per-stage agent file; Pi agent
-  definitions enforce tool ceilings natively, so gating stays
-  enforcement. The session writes `analysis.md` + `control.json` to its
-  stage dir; the engine validates control against the stage schema,
-  computes the digest, and feeds it to dependents. Run state is one
-  engine-owned json (`.workflow/<run>/state.json`).
-- **Native control operations**: steering kills the session and re-runs
-  the stage with the amended prompt; promotion/fallback re-runs with a
-  different `--model`; failures carry typed codes
-  (`model`/`control`/`session`/`timeout`/`input`).
-- **GH-Actions-style workflows**: the spec declares `inputs:`
-  (`workflow_dispatch.inputs` pattern, json-render UI at dispatch); a
-  stage can request operator input mid-run — the run parks as
-  `awaiting-input`, the spine `waitForEvent`s, submission resumes the
-  stage with the answers; the terminal stage declares its outcome kind
-  (`pr` | `report` | `artifact`).
-- **Fan-out**: `foreach` (map a stage over a list artifact — e.g. one
-  verify per changed package), `reduce` (fan-in synthesis), and parallel
-  `from` joins — CF Workflows runs steps concurrently, so parallel
-  stages are parallel sandbox sessions under one run. v1 ships linear +
-  loop-until (verify→fix rounds); foreach/reduce land in v2 and create
-  the A2A consumer the tabled item waits on.
-- **Migration**: the engine lands behind the existing drive-loop
-  interface (start/drive/steer/escalate), cuts over per-workflow, then
-  pi-workflow leaves the sandbox image and `pi.json` entirely.
-
-### GitHub read tools for agents (`plugins/github/extension.ts`)
-The github plugin grows a sandbox half: a small set of READ-ONLY GitHub
-tools for agents and fleet chat, cribbing the tool shapes and preset
-groupings from
-[vercel-labs/github-tools](https://github.com/vercel-labs/github-tools)
-(its `code-review`/`repo-explorer`/`ci-ops` presets are a well-chosen
-menu) — implemented natively as a Pi extension against the REST API, not
-as a dependency (wrong direction for our inbound plugin, wrong agent
-framework — AI SDK vs Pi, and dead-weight approval/durability machinery).
-
-- Tools: `gh_pr` (PR details + files + reviews), `gh_ci` (workflow runs
-  + failing jobs for a PR/branch), `gh_issue`, `gh_search_code`,
-  `gh_commits` (list/get + blame). Auth via the fleet `GITHUB_TOKEN`
-  through a scoped worker route (`/github/*` proxy) — the sandbox never
-  holds the raw token, same custody model as browser/knowledge.
-- Consumers: fleet chat ("summarize the review comments on X's PR",
-  "what's failing in CI?"); verify stages (read the actual PR state
-  instead of trusting the local diff); revision runs (read the review
-  thread directly). Useful across research/audit workflows too.
-- Write-level tools are acceptable (commenting, labeling, opening
-  issues/PRs, pushing files) — the hard line is SELF-COMPLETING actions:
-  merging a PR, closing a PR/issue, or any other operation that
-  constitutes an external completion signal stays with the system. The
-  /github proxy allowlist encodes that line.
-
-### Semantic index toolkit (`@workhorse/semindex`) + toolpick-style selection
-A reusable semantic-search layer over Cloudflare primitives, so building
-an index for ANY registry becomes a few lines instead of a bespoke
-feature. Inspired by [toolpick](https://github.com/pontusab/toolpick)'s
-concept — index everything, rank per query, surface only the top-k.
-
-- **The toolkit**: a workspace package wrapping Workers AI embeddings
-  (`@cf/baai/bge-*`) + Vectorize (one index, namespaced per corpus) +
-  D1/KV metadata behind a tiny contract:
-  `defineIndex({name, toText(item), id(item)})` →
-  `{upsert(items), remove(ids), query(text, {topK, filter})}`.
-  Registries call `upsert` on write (script registered, workflow saved,
-  knowledge doc distilled); consumers call `query`. Embedding+vector
-  plumbing, batching, and namespace hygiene live in ONE place. (AI
-  Search remains for the heavyweight managed-RAG corpus — fleet
-  knowledge docs; the toolkit is for the light structured registries
-  where we own chunking and want cheap exact control.)
-- **First corpora**: scripts (semantic `list_scripts` — "how do I run
-  the e2e suite here?" → the matching script, not the full inventory),
-  workflows (picker search + "which workflow fits this task?" in chat),
-  tools (the full sandbox tool surface: aft_*, ctx_*, workhorse_*,
-  browser/knowledge/imgup/paste/scripts…), and skills when a skill
-  registry lands. This fulfills the old L2 ambition (memory #71) of
-  semantic search over skills/scripts/tools with fleet-native infra.
-- **Toolpick-style per-stage tool selection** (the end game, needs
-  pi-workflow cooperation): stage allowlists stay the HARD gate
-  (security boundary, unchanged); within the allowed set, rank tools
-  against the stage prompt + task via the tools corpus and surface the
-  top-k into context, rest callable-but-hidden. pi-workflow owns the
-  tool schema list Pi sends — upstream conversation required; until
-  then, `find_tool`/`find_script` query tools give agents on-demand
-  discovery without any engine change.
-
-### Web search plugin (`plugins/search`) + provider evals
-Also evaluate [wigolo](https://github.com/KnockOutEZ/wigolo) as a
-provider/self-hosted leg alongside the API providers.
-
-Agents get real AI-grade web search. Today the only web surface is the
-browser plane (fetch/screenshot a URL you already know) and
-`Lightpanda`-style scraping of search engines is blocked or brittle —
-agents need "find me the answer/doc/source" as a first-class tool.
-
-- **Provider comparison first**: survey the AI search APIs — Exa,
-  Tavily, Brave Search API, Perplexity Sonar, Jina Reader/Search,
-  Firecrawl Search, SerpAPI, You.com — on result quality for agent
-  queries (docs lookup, error-message search, library research), snippet
-  faithfulness, rate limits, latency, and price per 1k queries.
-- **Evals decide, not vibes**: a small eval harness in the repo — a
-  fixed query set drawn from real fleet traces (the questions agents
-  actually asked the browser plane), graded on retrieval quality
-  (did the returned snippets contain the answer?) by an LLM judge.
-  Results land in the repo as a report; the winner becomes the default
-  provider, the harness stays for re-running when providers ship
-  changes.
-- **The plugin**: `plugins/search` — worker route `/search` (scoped
-  token, provider key custody worker-side, same model as browser) +
-  sandbox tool `web_search(query, {depth})` returning ranked
-  results with snippets and canonical URLs; compose with
-  `browser_fetch` for full-page reads. Provider behind a tiny interface
-  so the eval winner is a config choice, not a rewrite; optional
-  fallback chain (primary → secondary on 429/5xx, the imgup lesson).
-- Stage gating as usual: read-only classification, on in plan/verify
-  and research workflows.
-
-### Per-tool evals (`evals/` on evalite)
-Every sandbox tool gets an eval suite; [evalite](https://evalite.dev)
-(vitest-based, TypeScript-native, fully local, score history + results
-UI) is the runner. One eval file per tool — `data` fixtures, `task`
-invokes the tool, `scorers` mix deterministic checks with LLM judges
-(autoevals): `upload_text` serves the exact bytes back, `web_search`
-snippets contain the answer, `search_fleet_knowledge` retrieves the
-right trace, `find_script` ranks the right script first, `gh_*` returns
-faithful PR state.
-
-The real work is ours, evalite is the chassis:
-- **Fixtures from traces**: query/expected sets mined from the trace
-  archive — what agents actually asked, what a correct answer looked
-  like. Curated once, re-run forever (provider/model changes become
-  score diffs, not vibes).
-- **Tool-logic export convention**: extension files keep registration
-  thin (`pi.registerTool` glue) and export the logic function, so evals
-  import and invoke tools outside the sandbox.
-- **Selection evals** (later): "given this stage prompt, does the agent
-  pick the right tool?" — needs a Pi session harness; evalite scores the
-  transcript. Pairs with the semindex top-k tool-visibility work.
-- `evals/` is a workspace package; vitest is the repo's test runner
-  (tests and evals share one runner — evalite rides vitest), bun stays
-  as package manager. CI-runnable, results table committed per run.
-
-### Agent blocks (reusable agent definitions)
-Agents become saved, reusable REGISTRY entries — like workflows and
-scripts: an agent block = id/name, persona (system prompt), tool
-ceiling, optional model/thinking defaults. Stored per-fleet, editable in
-the UI, referenced from any workflow stage by name (`stage.agent`).
-Seeded from today's baked `sandbox/agents/*.md`. The composability end
-game: workflows assemble from blocks — `coding` (implementation-focused)
-feeding `screenshot-pr` (screenshot + PR assembly) as two blocks in one
-graph, rather than two disjoint workflow bundles.
-
-### Plugin-provided transition states
-Ticket transitions (done, accepted, changes-requested — and future
-states) are pluggable signals, not core-owned constants: any plugin can
-emit a transition via `Core.signalTransition(ticketId, kind, detail)`,
-which queues the event and wakes the parked run. GitHub's merge webhook,
-Jira's Done transition, the UI's Accept button are all the same
-mechanism — and a Slack action button, an ntfy action, or a custom
-webhook slot in without touching core. The workflow decides which
-signals it honors at which parks; plugins decide how humans produce
-them. The combinations are the point.
-
-### PixelRAG feasibility (future session)
+### PixelRAG feasibility
 Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
 (if anywhere) it beats the current retrieval stack (AI Search for fleet
 knowledge, semindex for registries, Magic Context in-sandbox). Outcome:
 a short feasibility note; adopt only with a concrete consumer.
-
-### Non-PR outcomes (configurable done states)
-Not every fleet run should end in a pull request — some are research
-tasks, audits, analyses, or one-off questions whose deliverable is a
-REPORT, not a diff. Today the pipeline hard-codes PR-up → in-review →
-merged = done; the "Open PR" affordance is baked in.
-
-- **Outcome as a workflow property**: the spec's terminal stage declares
-  its outcome kind — `pr` (today's flow), `report` (final artifact
-  published as the result: ticket page + Jira/Slack comment + paste URL),
-  or `artifact` (files delivered without a PR, e.g. a generated doc
-  committed to a branch without review ceremony).
-- **Done semantics per outcome**: `pr` keeps external-only completion
-  (merge/close). `report`/`artifact` park as `awaiting-acceptance` (a
-  sibling of `awaiting-input`) and complete on operator acceptance — an
-  explicit "Accept result" action in the UI or a Jira Done transition —
-  so the agent still never self-completes. The ticket page's action
-  affordance follows the outcome: Open PR / rendered report with
-  Accept + Request-changes / branch link with Accept.
-- **Rejection = revision**: "Request changes" with a comment feeds the
-  existing revision loop — operator feedback plays the role PR reviews
-  play for `pr` runs.
-- The verify stage still gates: a research workflow's verifier judges the
-  report against the task before it's offered for acceptance.
-- **Acceptance feeds fleet knowledge**: accepted reports index into AI
-  Search as answer documents; rejected-then-revised reports index WITH
-  their rejection reasons — research runs compound the way coding runs
-  do.
-- Builds inside `@workhorse/workflow`: `outcome` is a terminal-stage
-  field the engine reads; the spine's deliver step switches on it.
-
-### Workflow input parameters + input-parked runs (json-render)
-Two related upgrades to workflows-as-data, GitHub-Actions style:
-
-- **Declared inputs**: a workflow spec declares typed input parameters
-  (`inputs: {name, type, description, default, required, options?}` —
-  the `workflow_dispatch.inputs` pattern). Triggering one from the UI
-  renders those as real input controls (text/select/boolean/number)
-  before dispatch; the values land in the task prompt / spec defaults.
-  The file-ticket form and chat-first home render them dynamically via
-  [vercel-labs/json-render](https://github.com/vercel-labs/json-render)
-  (schema-driven UI from JSON — no hand-built form per workflow).
-- **Input-parked runs**: a new park state where a RUNNING workflow stops
-  and asks the operator for input mid-flight (today's only park is
-  in-review). A stage declares an input request (same JSON schema),
-  the run parks as `awaiting-input`, the ticket page renders the form
-  via json-render, and submission resumes the run with the answers
-  injected as a steer/handoff. Generalizes: approve/deny gates, choice
-  points ("which of these three approaches?"), credentials-shaped input.
-- **Live agent output + a clean ticket page**: the running agent's
-  streaming output (current stage's session log) is visible on the
-  ticket page as it happens, and `tickets/:id` is redesigned around the
-  run — the workflow graph, the live output, and the schema-rendered
-  input/acceptance forms presented coherently rather than as stacked
-  cards.
-
-### Better Glance integration
-The fleet lives on a homelab Glance dashboard today as (at best) a plain
-iframe. Make it first-class:
-
-- **Glance widgets over the existing API**: `custom-api` widget configs
-  (Glance natively renders remote JSON) for fleet-at-a-glance — running
-  tickets with live phase, errored count, last done, PR links. Ship as a
-  documented `glance/` snippet folder in the repo (copy into your
-  glance.yml).
-- **Deep links**: every widget row links into the Nuxt UI ticket page.
-- **Compact iframe mode**: a `/embed` route in the UI (header-less,
-  dense, dark-aware) purpose-built for iframe embedding in dashboard
-  tiles, instead of iframing the full app.
 
 ---
 
