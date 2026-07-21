@@ -279,6 +279,30 @@ agents need "find me the answer/doc/source" as a first-class tool.
 - Stage gating as usual: read-only classification, on in plan/verify
   and research workflows.
 
+### Per-tool evals (`evals/` on evalite)
+Every sandbox tool gets an eval suite; [evalite](https://evalite.dev)
+(vitest-based, TypeScript-native, fully local, score history + results
+UI) is the runner. One eval file per tool — `data` fixtures, `task`
+invokes the tool, `scorers` mix deterministic checks with LLM judges
+(autoevals): `upload_text` serves the exact bytes back, `web_search`
+snippets contain the answer, `search_fleet_knowledge` retrieves the
+right trace, `find_script` ranks the right script first, `gh_*` returns
+faithful PR state.
+
+The real work is ours, evalite is the chassis:
+- **Fixtures from traces**: query/expected sets mined from the trace
+  archive — what agents actually asked, what a correct answer looked
+  like. Curated once, re-run forever (provider/model changes become
+  score diffs, not vibes).
+- **Tool-logic export convention**: extension files keep registration
+  thin (`pi.registerTool` glue) and export the logic function, so evals
+  import and invoke tools outside the sandbox.
+- **Selection evals** (later): "given this stage prompt, does the agent
+  pick the right tool?" — needs a Pi session harness; evalite scores the
+  transcript. Pairs with the semindex top-k tool-visibility work.
+- `evals/` is a workspace package with its own runner (vitest rides
+  alongside bun test); CI-runnable, results table committed per run.
+
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
 tasks, audits, analyses, or one-off questions whose deliverable is a
