@@ -24,6 +24,27 @@ export async function unconsumedEvents(env: Env, ticketId: string): Promise<Exte
   return all.slice(cursor);
 }
 
+/**
+ * Wake a parked ticket workflow with retries: an event can land in the
+ * small window between the workflow's pre-park event check and its
+ * waitForEvent registration, where a single sendEvent is silently lost.
+ * Events are already in KV, so retried wakes are harmless (spurious wakes
+ * re-park). Run inside ctx.waitUntil.
+ */
+export async function wakeTicket(env: Env, ticketId: string, attempts = 4): Promise<void> {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const rec = await env.TICKETS.get(ticketId);
+      const wfId = rec ? ((JSON.parse(rec) as { wfInstance?: string }).wfInstance ?? ticketId) : ticketId;
+      const inst = await env.TICKET_WF.get(wfId);
+      await inst.sendEvent({ type: "external-event", payload: {} });
+    } catch {
+      /* not parked / already finished */
+    }
+    await new Promise((r) => setTimeout(r, 15_000));
+  }
+}
+
 export async function consumeEvents(env: Env, ticketId: string): Promise<void> {
   const all = JSON.parse((await env.TICKETS.get(`events:${ticketId}`)) ?? "[]") as ExternalEvent[];
   await env.TICKETS.put(`events-cursor:${ticketId}`, String(all.length));

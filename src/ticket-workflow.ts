@@ -18,13 +18,28 @@ import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./m
 import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
 import { indexRun } from "./knowledge";
 import type { ExternalEvent } from "./plugins/types";
+import { notifySlackThread } from "./plugins/slack/worker";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
   const raw = await env.TICKETS.get(id);
   if (!raw) return;
-  const rec = { ...(JSON.parse(raw) as TicketRecord), ...patch, updatedAt: new Date().toISOString() };
+  const prev = JSON.parse(raw) as TicketRecord;
+  const rec = { ...prev, ...patch, updatedAt: new Date().toISOString() };
   await env.TICKETS.put(id, JSON.stringify(rec));
+  // Slack surface: post meaningful transitions into the mapped thread.
+  if (patch.status && patch.status !== prev.status) {
+    const notable: Partial<Record<TicketRecord["status"], string>> = {
+      implementing: "🛠️ Implementing…",
+      "ready-for-review": "🔍 Verifying the implementation…",
+      "in-review": rec.prUrl ? `📤 PR is up: ${rec.prUrl} — review/merge there; replies here steer revisions.` : undefined,
+      done: "✅ Done — PR merged.",
+      errored: `❌ Errored: ${rec.error ?? "unknown"}`,
+      terminated: `⏹️ Terminated: ${rec.error ?? "stopped"}`,
+    };
+    const msg = notable[patch.status];
+    if (msg) await notifySlackThread(env, id, msg);
+  }
 }
 
 /** How many external wake→revise cycles a ticket may go through. */

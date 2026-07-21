@@ -114,4 +114,12 @@ export interface Env {
    */
   UNBLOCKER_URL?: string;
   UNBLOCKER_KEY?: string;
+  /**
+   * Slack bot (optional — unset disables the Slack surface). Signing secret
+   * verifies /webhooks/slack deliveries; bot token posts replies + status
+   * updates. Bot needs app_mentions:read, chat:write, and the message.channels
+   * event subscription for thread replies.
+   */
+  SLACK_SIGNING_SECRET?: string;
+  SLACK_BOT_TOKEN?: string;
 }

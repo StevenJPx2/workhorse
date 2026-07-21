@@ -66,6 +66,14 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
   complementing Magic Context's per-repo working memory; the fleet chat
   answers "why did X fail?" from the same corpus. `POST /knowledge/search`
   (scoped token) + `POST /knowledge/reindex` backfill.
+- **Slack bot** — `slack` source plugin (Events API → `/webhooks/slack`,
+  signature-verified, 3s-ack via new plugin `handle` override). `@workhorse
+  …` mentions route to the fleet-chat agent (file tickets, status, fleet
+  knowledge); when it files a ticket the thread maps to it
+  (`slack:<channel>:<ts>` ↔ `slack-thread:<ticket>`, mirrors `pr:`).
+  Thread replies become mid-run steers (live run) or revision events
+  (parked in-review). Outbound: status transitions post into the thread.
+  Config: `SLACK_SIGNING_SECRET` + `SLACK_BOT_TOKEN` secrets.
 - **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
   input on the ticket page) queues an operator message; the driving
   workflow picks it up on its next burst, interrupts the current stage via
@@ -78,13 +86,6 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
 ---
 
 ## Planned ⏳
-
-### Slack bot
-Exercises both plugin halves and both directions. Inbound: `@workhorse …` in a
-channel → `/webhooks/slack` → file/wake a ticket; thread replies become
-steering events (`thread ↔ ticket` mapping mirrors `pr:`). Outbound: status
-transitions post into the ticket's thread. Q&A: "what's running?", "why did X
-fail?" routed to the fleet-chat agent (later supercharged by AI Search).
 
 ### A2A / agent communication
 Graph-mediated handoff in pi-workflow carries typed stage outputs

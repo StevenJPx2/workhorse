@@ -1,6 +1,8 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import { type BrowserFetchRequest, browserFetch } from './browser';
-import { appendEvents, appendSteer } from "./events";
+import { appendEvents, appendSteer, wakeTicket } from "./events";
+import { fileTicket } from "./tickets";
+import { runFleetChat } from "./chat";
 import { indexRun, searchKnowledge } from "./knowledge";
 import { pluginFor } from "./plugins";
 import type { Env, TicketParams, TicketRecord } from "./types";
@@ -80,27 +82,15 @@ export default {
       } catch {
         return json({ error: "not json" }, 400);
       }
+      // Sources with a bespoke webhook contract (handshakes, sub-3s acks)
+      // take over the whole request; they emit events themselves.
+      if (plugin.handle) return plugin.handle(request, payload, env, ctx);
       const events = await plugin.parse(request.headers, payload, env);
       if (events.length > 0) {
         await appendEvents(env, events);
-        // Wake with retries: a webhook can land in the small window between
-        // the workflow's pre-park event check and waitForEvent registration,
-        // where a single sendEvent is silently lost. Events are already in
-        // KV, so retried wakes are harmless (spurious wakes re-park).
-        const wake = async (ticketId: string) => {
-          for (let attempt = 0; attempt < 4; attempt++) {
-            try {
-              const rec = await env.TICKETS.get(ticketId);
-              const wfId = rec ? ((JSON.parse(rec) as { wfInstance?: string }).wfInstance ?? ticketId) : ticketId;
-              const inst = await env.TICKET_WF.get(wfId);
-              await inst.sendEvent({ type: "external-event", payload: {} });
-            } catch {
-              /* not parked / already finished */
-            }
-            await new Promise((r) => setTimeout(r, 15_000));
-          }
-        };
-        ctx.waitUntil(Promise.all([...new Set(events.map((e) => e.ticketId))].map(wake)));
+        ctx.waitUntil(
+          Promise.all([...new Set(events.map((e) => e.ticketId))].map((t) => wakeTicket(env, t))),
+        );
       }
       return json({ ok: true, events: events.length });
     }
@@ -186,41 +176,9 @@ export default {
     // File a ticket: creates registry record + durable workflow instance.
     if (url.pathname === "/tickets" && request.method === "POST") {
       const body = (await request.json()) as Partial<TicketParams>;
-      if (!body.repo || !body.prompt) {
-        return json({ error: "repo, prompt required" }, 400);
-      }
-      // Accept bare "owner/name" slugs as well as full git URLs.
-      if (/^[\w.-]+\/[\w.-]+$/.test(body.repo)) {
-        body.repo = `https://github.com/${body.repo}.git`;
-      }
-      if (!body.accessToken) {
-        // Fall back to the custodian-pushed token.
-        const stored = await env.TICKETS.get("auth:access");
-        const parsed = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-        if (!parsed || parsed.expires - Date.now() < 10 * 60 * 1000) {
-          return json({ error: "no fresh access token available (custodian push stale?)" }, 503);
-        }
-        body.accessToken = parsed.access;
-      }
-      const id = crypto.randomUUID().slice(0, 8);
-      const now = new Date().toISOString();
-      const rec: TicketRecord = {
-        id,
-        title: body.title ?? body.prompt.slice(0, 60),
-        repo: body.repo,
-        prompt: body.prompt,
-        status: "queued",
-        createdAt: now,
-        updatedAt: now,
-        workflow: body.workflow,
-        wfInstance: id,
-      };
-      await env.TICKETS.put(id, JSON.stringify(rec));
-      await env.TICKET_WF.create({
-        id,
-        params: { ...body, id, title: rec.title } as TicketParams,
-      });
-      return json({ ok: true, ticket: rec });
+      const r = await fileTicket(env, body);
+      if (!r.ok) return json({ error: r.error }, r.status);
+      return json({ ok: true, ticket: r.ticket });
     }
 
     // List tickets.
@@ -319,42 +277,9 @@ export default {
       const { messages } = (await request.json()) as {
         messages: Array<{ role: string; content: string }>;
       };
-      const stored = await env.TICKETS.get("auth:access");
-      const auth = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-      if (!auth || auth.expires - Date.now() < 10 * 60 * 1000) {
-        return json({ error: "no fresh access token (custodian push stale?)" }, 503);
-      }
-      const sandbox = getSandbox(env.Sandbox, "fleet-chat", { sleepAfter: "2m" });
-      await sandbox.writeFile(
-        "/root/.pi/agent/auth.json",
-        JSON.stringify({
-          anthropic: { type: "oauth", access: auth.access, refresh: "", expires: auth.expires },
-        }),
-      );
-      // Knowledge callback config so search_fleet_knowledge works in chat.
-      if (env.SELF_URL && env.BROWSER_TOKEN) {
-        await sandbox.writeFile(
-          "/root/.workhorse-browser.json",
-          JSON.stringify({ url: env.SELF_URL, token: env.BROWSER_TOKEN }),
-        );
-      }
-      const history = messages
-        .map((m) => `${m.role === "user" ? "User" : "You"}: ${m.content}`)
-        .join("\n\n");
-      const prompt = `You are the Workhorse fleet operator agent, chatting with the user from the fleet dashboard.
-You have workhorse_* tools: list tickets, check a ticket's status/diff, and file new tickets (repo + prompt \u2192 autonomous staged run \u2192 GitHub PR).
-You also have search_fleet_knowledge: the fleet's institutional memory (distilled traces of every past run — stage analyses, verifier findings, escalations, outcomes). Use it for questions like "why did X fail?", "have we done this before?", or before proposing a fix for a recurring problem.
-When the user wants work done, file a ticket. When they ask about progress, use the status tools and report crisply.
-Be concise. This is a chat: reply with your message only.\n\nConversation so far:\n${history}\n\nReply to the last user message.`;
-      await sandbox.writeFile("/workspace/.chat-prompt", prompt);
-      const result = await sandbox.exec(
-        `cd /workspace && WORKHORSE_URL=${JSON.stringify(url.origin)} WORKHORSE_TOKEN=${JSON.stringify(env.SPIKE_TOKEN)} timeout 180 pi -p -np "$(cat /workspace/.chat-prompt)" 2>&1 | tail -c 4000`,
-        { timeout: 200_000 },
-      );
-      if (result.exitCode !== 0) {
-        return json({ error: `chat agent failed: ${result.stdout.slice(-400)}` }, 500);
-      }
-      return json({ reply: result.stdout.trim() });
+      const r = await runFleetChat(env, url.origin, messages);
+      if (!r.ok) return json({ error: r.error }, r.status);
+      return json({ reply: r.reply });
     }
 
     // Activity trail: persisted post-run; live-read from the sandbox while running.

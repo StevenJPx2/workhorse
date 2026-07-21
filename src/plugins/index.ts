@@ -3,9 +3,10 @@
 // routes webhooks and stores events without knowing source specifics.
 
 import { githubPlugin } from "./github/worker";
+import { slackPlugin } from "./slack/worker";
 import type { SourcePlugin } from "./types";
 
-export const plugins: SourcePlugin[] = [githubPlugin];
+export const plugins: SourcePlugin[] = [githubPlugin, slackPlugin];
 
 export function pluginFor(id: string): SourcePlugin | undefined {
   return plugins.find((p) => p.id === id);

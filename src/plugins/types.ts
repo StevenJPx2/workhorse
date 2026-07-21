@@ -37,4 +37,12 @@ export interface SourcePlugin {
    * May consult KV to resolve ticket associations.
    */
   parse(headers: Headers, payload: unknown, env: Env): Promise<ExternalEvent[]>;
+  /**
+   * Full request override for sources whose webhook contract exceeds
+   * verify+parse (handshake echoes, sub-3s ack with async processing —
+   * e.g. Slack's url_verification + Events API). When present, the route
+   * calls ONLY this after verify(); parse is skipped. Emit ticket events
+   * yourself (appendEvents) and use ctx.waitUntil for slow work.
+   */
+  handle?(request: Request, payload: unknown, env: Env, ctx: ExecutionContext): Promise<Response>;
 }
