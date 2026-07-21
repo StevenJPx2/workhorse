@@ -214,9 +214,11 @@ framework — AI SDK vs Pi, and dead-weight approval/durability machinery).
   "what's failing in CI?"); verify stages (read the actual PR state
   instead of trusting the local diff); revision runs (read the review
   thread directly). Useful across research/audit workflows too.
-- WRITE tools stay out by design: the system talks to GitHub (branch,
-  PR, replies), the agent works in the repo — that separation is what
-  keeps "the agent can never self-complete" true.
+- Write-level tools are acceptable (commenting, labeling, opening
+  issues/PRs, pushing files) — the hard line is SELF-COMPLETING actions:
+  merging a PR, closing a PR/issue, or any other operation that
+  constitutes an external completion signal stays with the system. The
+  /github proxy allowlist encodes that line.
 
 ### Semantic index toolkit (`@workhorse/semindex`) + toolpick-style selection
 A reusable semantic-search layer over Cloudflare primitives, so building
@@ -252,6 +254,9 @@ concept — index everything, rank per query, surface only the top-k.
   discovery without any engine change.
 
 ### Web search plugin (`plugins/search`) + provider evals
+Also evaluate [wigolo](https://github.com/KnockOutEZ/wigolo) as a
+provider/self-hosted leg alongside the API providers.
+
 Agents get real AI-grade web search. Today the only web surface is the
 browser plane (fetch/screenshot a URL you already know) and
 `Lightpanda`-style scraping of search engines is blocked or brittle —
@@ -304,6 +309,33 @@ The real work is ours, evalite is the chassis:
   (tests and evals share one runner — evalite rides vitest), bun stays
   as package manager. CI-runnable, results table committed per run.
 
+### Agent blocks (reusable agent definitions)
+Agents become saved, reusable REGISTRY entries — like workflows and
+scripts: an agent block = id/name, persona (system prompt), tool
+ceiling, optional model/thinking defaults. Stored per-fleet, editable in
+the UI, referenced from any workflow stage by name (`stage.agent`).
+Seeded from today's baked `sandbox/agents/*.md`. The composability end
+game: workflows assemble from blocks — `coding` (implementation-focused)
+feeding `screenshot-pr` (screenshot + PR assembly) as two blocks in one
+graph, rather than two disjoint workflow bundles.
+
+### Plugin-provided transition states
+Ticket transitions (done, accepted, changes-requested — and future
+states) are pluggable signals, not core-owned constants: any plugin can
+emit a transition via `Core.signalTransition(ticketId, kind, detail)`,
+which queues the event and wakes the parked run. GitHub's merge webhook,
+Jira's Done transition, the UI's Accept button are all the same
+mechanism — and a Slack action button, an ntfy action, or a custom
+webhook slot in without touching core. The workflow decides which
+signals it honors at which parks; plugins decide how humans produce
+them. The combinations are the point.
+
+### PixelRAG feasibility (future session)
+Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
+(if anywhere) it beats the current retrieval stack (AI Search for fleet
+knowledge, semindex for registries, Magic Context in-sandbox). Outcome:
+a short feasibility note; adopt only with a concrete consumer.
+
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
 tasks, audits, analyses, or one-off questions whose deliverable is a
@@ -352,6 +384,12 @@ Two related upgrades to workflows-as-data, GitHub-Actions style:
   via json-render, and submission resumes the run with the answers
   injected as a steer/handoff. Generalizes: approve/deny gates, choice
   points ("which of these three approaches?"), credentials-shaped input.
+- **Live agent output + a clean ticket page**: the running agent's
+  streaming output (current stage's session log) is visible on the
+  ticket page as it happens, and `tickets/:id` is redesigned around the
+  run — the workflow graph, the live output, and the schema-rendered
+  input/acceptance forms presented coherently rather than as stacked
+  cards.
 
 ### Better Glance integration
 The fleet lives on a homelab Glance dashboard today as (at best) a plain
@@ -370,6 +408,33 @@ iframe. Make it first-class:
 ---
 
 ## Tabled 🅿️
+
+### Knowledge attachments (plugin-provided context)
+Attaching context to a dispatch or ticket is a PLUGIN capability, not a
+core feature: repos, Jira tickets, Slack conversations, PR threads —
+each is a "knowledge attachment" a plugin contributes (fetch + render +
+prompt-enrichment). The chat-first home's repo chips become one instance
+of a general attachment surface; messaging the fleet agent enriches the
+prompt by resolving attachments through their plugins. Applies to the
+ticket page too (attach more context to a live ticket). A large,
+holistic change — design before build.
+
+### Non-chat triggers (cron + mention-fed prompts)
+With non-PR outcomes (report) and plugin-provided inputs in place,
+triggers generalize beyond chat/API dispatch: cron jobs with a fixed
+prompt + workflow + output ("every Monday, produce a Slack report on
+X"), Slack mentions feeding the prompt directly, Jira mentions doing the
+same. A trigger = source (cron | mention | webhook) + prompt template +
+workflow + outcome routing.
+
+### Notification bus (queued operator input)
+Operator input from ANY surface (Nuxt UI, PR comments, Slack, Jira, …)
+queues in a per-ticket notification bus instead of interrupting
+immediately; when the run reaches a park that reads notifications, the
+agent acknowledges, collates, replies to each, and the workflow decides
+whether to loop back — by design, not by interrupt. Subsumes today's
+steer (live interrupt) and revision events (park wake) under one queue
+with workflow-declared read points.
 
 ### A2A / live agent communication
 Graph-mediated handoff already carries typed stage outputs (`control.json` /

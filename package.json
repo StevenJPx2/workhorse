@@ -3,16 +3,27 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Controllable autonomous coding agents — Cloudflare-native fleet orchestrator (Sandbox + Workflows + Pi on Claude subscription)",
+  "description": "Controllable autonomous coding agents \u2014 Cloudflare-native fleet orchestrator (Sandbox + Workflows + Pi on Claude subscription)",
   "workspaces": [
     "packages/*",
     "plugins/*",
     "worker",
-    "ui"
+    "ui",
+    "evals"
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
     "deploy": "cd worker && bun run deploy",
     "dev": "cd worker && bun run dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "autoevals": "^0.3.0",
+    "evalite": "^0.19.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "better-sqlite3": "^12.4.1"
   }
 }
