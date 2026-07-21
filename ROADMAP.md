@@ -85,6 +85,16 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   repo's `.workhorse/workflows/<name>/` → KV registry → baked seed
   bundles; `POST /workflows/seed` imports the baked bundles (never
   clobbers user entries). New pipelines need no rebuild/redeploy.
+- **D1 structured store** — database `workhorse`: `tickets` (status/repo/
+  updated indexes), `escalations`, `traces` index, `scripts` (ready for the
+  script service). Data layer `worker/src/db.ts`; heal sweep + fleet list
+  are single queries now; `GET /tickets?status=` + `GET /repos`;
+  `POST /admin/backfill-d1` imported legacy KV (33 tickets, 24 traces).
+  Division: D1 records · KV hot small state · R2 blobs · AI Search semantic.
+- **R2 blob plane (core)** — bucket `workhorse-blobs`: Magic Context dbs
+  (`mc/<owner/repo>.db` — the KV 25 MiB cap that silently dropped memories
+  is gone) and trace bodies (`trace/<ticket>/<run>.json`), both with legacy
+  KV read fallbacks. Dependency cache still planned (below).
 - **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
   input on the ticket page) queues an operator message; the driving
   workflow picks it up on its next burst, interrupts the current stage via
@@ -155,28 +165,6 @@ fleet gets better at a repo the more it works on it).
   edit/retire. The audit surface is the point: you can read your fleet's
   self-built toolbox.
 
-### D1 structured store
-Adopt **D1** as the relational plane for record-shaped data that has
-outgrown KV's get/put-by-key model:
-
-- **Scripts first** (greenfield — no migration): the script registry above
-  is born as a D1 table; its queries ("all scripts for repo X visible in
-  stage Y", "everything agent-created last week") are exactly what SQL is
-  for and what KV prefix-scans do badly.
-- **Tickets + escalations next**: the fleet list already does
-  list-all-keys + N gets per page load, filtering statuses in JS; ticket
-  records, escalation events, and the traces *index* become tables
-  (`tickets`, `escalations`, `traces`), unlocking real queries — fleet
-  dashboards (tickets by status/repo/week), eval slices ("promotion rate
-  per stage per model"), heal-sweep as one `SELECT` instead of a full
-  scan.
-- **What stays put**: KV keeps hot small state (live:, steers/events
-  cursors, auth token, PR/Slack thread mappings); R2 keeps blobs (trace
-  bodies, MC db, dep cache); AI Search keeps semantic. D1 is for records
-  with relationships — not a new home for everything.
-- Migration is incremental per record type behind the existing accessors
-  (`fileTicket`, `updateTicket`, `recordEscalation`, `archiveTrace`).
-
 ### Visual workflow builder (vue-flow)
 Definable workflows, end to end in the UI. A `/workflows` page in the Nuxt
 dashboard using [vue-flow](https://github.com/bcakmakoglu/vue-flow): stages
@@ -223,28 +211,16 @@ box (the fleet agent — today's `/chat` — promoted to the front door):
 Depends on: registry UI slice 1 (picker); pairs with the vue-flow builder
 ("create new workflow" target).
 
-### R2 blob plane (build cache + oversized blobs)
-Add an R2 bucket for the things KV structurally can't hold (25 MiB value
-cap, blob-shaped data):
-
-- **Dependency/workspace cache** — the headline win. Cold sandboxes (every
-  revision wake after an in-review park, every heal, every repeat ticket on
-  a known repo) currently rebuild `node_modules` from scratch. After a
-  successful run, tar the dependency artifacts keyed by
-  `repo + lockfile hash`; at `prepareWorkspace`, restore via a presigned
-  URL (`curl | tar x` — the sandbox never holds an R2 credential, same
-  custody model as the scoped browser token). Lockfile-hash keying makes
-  staleness a non-problem. Node-first; measure restore-vs-install in the
-  trace before generalizing to other stacks.
-- **Magic Context db overflow** — the per-repo `context.db` KV round-trip
-  silently SKIPS persisting when the db outgrows the KV cap (real memory
-  loss on chatty repos). R2 removes the ceiling; same restore/persist code,
-  different store. (Vectorize is NOT the answer here: the MC db is mostly
-  relational SQLite + FTS with local ONNX embeddings, queried in-process on
-  the agent's hot path — fleet-side semantic search is already covered by
-  AI Search.)
-- **Trace archive overflow** — big runs can brush the KV value cap; move
-  trace blobs to R2, keep the small per-ticket index in KV.
+### R2 dependency cache
+The remaining piece of the blob plane: cold sandboxes (every revision wake
+after an in-review park, every heal, every repeat ticket on a known repo)
+rebuild `node_modules` from scratch. After a successful run, tar the
+dependency artifacts keyed by `repo + lockfile hash` into
+`depcache/<owner/repo>/<hash>.tar.zst`; at `prepareWorkspace`, restore via
+a presigned URL (`curl | tar x` — the sandbox never holds an R2
+credential, same custody model as the scoped browser token). Lockfile-hash
+keying makes staleness a non-problem. Node-first; measure
+restore-vs-install in the trace before generalizing to other stacks.
 
 ### ntfy plugin (push notifications)
 `plugins/ntfy` — connect [ntfy](https://ntfy.sh) to fleet runs: push
