@@ -1,6 +1,6 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import { type BrowserFetchRequest, browserFetch } from './browser';
-import { appendEvents } from "./events";
+import { appendEvents, appendSteer } from "./events";
 import { pluginFor } from "./plugins";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
@@ -244,6 +244,26 @@ export default {
       rec.updatedAt = new Date().toISOString();
       await env.TICKETS.put(stopM[1], JSON.stringify(rec));
       return json({ ok: true });
+    }
+
+    // Mid-run steering: append an operator message for the ticket's live
+    // run. The driving workflow picks it up on its next burst (~50s),
+    // interrupts the current stage, and re-runs it with the steer appended
+    // to its prompt. Parked (in-review) tickets should use PR feedback
+    // instead — steers target the ACTIVE run.
+    const steerM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/steer$/);
+    if (steerM && request.method === "POST") {
+      const raw = await env.TICKETS.get(steerM[1]);
+      if (!raw) return json({ error: "not found" }, 404);
+      const rec = JSON.parse(raw) as { status?: string };
+      const active = ["queued", "planning", "implementing", "ready-for-review"];
+      if (!active.includes(rec.status ?? "")) {
+        return json({ error: `ticket is ${rec.status}; steering targets a live run (use PR feedback while in-review)` }, 409);
+      }
+      const { message } = (await request.json().catch(() => ({}))) as { message?: string };
+      if (!message?.trim()) return json({ error: "message required" }, 400);
+      await appendSteer(env, steerM[1], message.trim().slice(0, 4000));
+      return json({ ok: true, note: "steer queued; applied on the next drive burst (<1 min)" });
     }
 
     // Fleet chat: a Pi session in a dedicated sandbox, armed with the

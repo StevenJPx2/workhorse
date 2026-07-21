@@ -58,6 +58,14 @@ Status legend: ✅ shipped · 🔜 next · ⏳ planned · 🅿️ tabled
   `invalidateOnDependencyResume`, upstream artifacts intact. Every
   escalation lands in `esc:<ticket>:<run>` and merges into the trace
   archive, so **evals reveal which stages genuinely need a bigger model**.
+- **Mid-run interception (steering)** — `POST /tickets/:id/steer` (+ steer
+  input on the ticket page) queues an operator message; the driving
+  workflow picks it up on its next burst, interrupts the current stage via
+  pi-workflow's own `stopRun`, appends the steer to the stage's compiled
+  prompt (operator instructions take precedence), and `resumeRun`s —
+  upstream artifacts intact. Between-stage steers just re-prompt the
+  not-yet-started stage. Steers land in the escalation record
+  (`trigger: "steer"`) and the trace archive.
 
 ---
 
@@ -75,13 +83,6 @@ channel → `/webhooks/slack` → file/wake a ticket; thread replies become
 steering events (`thread ↔ ticket` mapping mirrors `pr:`). Outbound: status
 transitions post into the ticket's thread. Q&A: "what's running?", "why did X
 fail?" routed to the fleet-chat agent (later supercharged by AI Search).
-
-### Mid-run interception from the UI
-`pi-workflow` has no injection API for a running subagent, so interception
-interrupts and **restarts the current stage** with the steer appended, upstream
-artifacts intact. Between-stage injection is covered by external events.
-(`/workflow continue` and `/workflow delegate` are unimplemented in pi-workflow
-0.8.1.)
 
 ### A2A / agent communication
 Graph-mediated handoff in pi-workflow carries typed stage outputs

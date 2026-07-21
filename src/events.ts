@@ -28,3 +28,26 @@ export async function consumeEvents(env: Env, ticketId: string): Promise<void> {
   const all = JSON.parse((await env.TICKETS.get(`events:${ticketId}`)) ?? "[]") as ExternalEvent[];
   await env.TICKETS.put(`events-cursor:${ticketId}`, String(all.length));
 }
+
+// --- mid-run steering (operator → running stage) -------------------------
+// Steers are NOT ExternalEvents: they target the live pi-workflow run (the
+// current stage is restarted with the steer appended to its prompt), not
+// the park ↔ revise loop. Same append-only + cursor pattern.
+
+export async function appendSteer(env: Env, ticketId: string, message: string): Promise<void> {
+  const key = `steers:${ticketId}`;
+  const list = JSON.parse((await env.TICKETS.get(key)) ?? "[]") as string[];
+  list.push(message);
+  await env.TICKETS.put(key, JSON.stringify(list.slice(-50)));
+}
+
+export async function pendingSteers(env: Env, ticketId: string): Promise<string[]> {
+  const all = JSON.parse((await env.TICKETS.get(`steers:${ticketId}`)) ?? "[]") as string[];
+  const cursor = Number((await env.TICKETS.get(`steers-cursor:${ticketId}`)) ?? "0");
+  return all.slice(cursor);
+}
+
+export async function consumeSteers(env: Env, ticketId: string): Promise<void> {
+  const all = JSON.parse((await env.TICKETS.get(`steers:${ticketId}`)) ?? "[]") as string[];
+  await env.TICKETS.put(`steers-cursor:${ticketId}`, String(all.length));
+}

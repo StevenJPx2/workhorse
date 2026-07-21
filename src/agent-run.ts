@@ -303,6 +303,87 @@ console.log(JSON.stringify({ ok: true, resetTaskIds }));
 `;
 
 /**
+ * Mid-run steer: stop the run, append the operator's message to the CURRENT
+ * stage's compiled prompt, and resume. pi-workflow has no live-injection
+ * API, so interception = restart-the-stage-with-the-steer — upstream
+ * artifacts intact (only the interrupted/failed stage re-runs; completed
+ * stages keep their outputs).
+ *
+ * Mechanics this relies on (verified against @agwab/pi-workflow 0.9.0):
+ * - stopRun interrupts the in-flight task (status "interrupted").
+ * - resumeRun resets failed/interrupted tasks to pending.
+ * - At (re)launch, subagent-backend writes task.md from
+ *   compiledTask.compiledPrompt — so patching compiled.json re-prompts the
+ *   stage. A pending-only run (steer landed between stages) has nothing to
+ *   reset; resumeRun's complaint is ignored and the next supervise burst
+ *   picks the patched prompt up anyway.
+ */
+const STEER_RUN_SCRIPT = `
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from "url";
+const [distDir, runId, steerFile] = process.argv.slice(2);
+const cwd = "/workspace/repo";
+const steer = fs.readFileSync(steerFile, "utf8").trim();
+const engine = await import(pathToFileURL(path.join(distDir, "engine.js")).href);
+try { await engine.stopRun(cwd, runId); } catch {}
+// Target = the CURRENT stage: first task not yet completed.
+const runPath = path.join(cwd, ".pi/workflows", runId, "run.json");
+const run = JSON.parse(fs.readFileSync(runPath, "utf8"));
+const target = (run.tasks ?? []).find((t) => t.status !== "completed");
+if (!target) { console.log(JSON.stringify({ ok: false, reason: "no non-completed stage" })); process.exit(0); }
+const specId = target.specId || target.taskId;
+// Append the steer to the stage's compiled prompt (the relaunch source).
+const compiledPath = path.join(cwd, ".pi/workflows", runId, "compiled.json");
+const compiled = JSON.parse(fs.readFileSync(compiledPath, "utf8"));
+const marker = "## Operator steering (mid-run";
+for (const t of compiled.tasks ?? []) {
+  if ((t.specId || t.id) !== specId) continue;
+  t.compiledPrompt = (t.compiledPrompt ?? "") +
+    "\\n\\n" + marker + " — read carefully)\\n\\n" +
+    "A human operator interrupted this stage to redirect it. Their instructions " +
+    "take precedence over conflicting parts of the original task above:\\n\\n" + steer + "\\n";
+}
+fs.writeFileSync(compiledPath, JSON.stringify(compiled));
+// Resume: interrupted/failed -> pending. A pending-only run throws
+// "No failed..." — fine, supervise picks it up.
+let resetTaskIds = [];
+try { ({ resetTaskIds } = await engine.resumeRun(cwd, runId)); } catch (e) {
+  if (!/No failed/i.test(String(e?.message))) throw e;
+}
+console.log(JSON.stringify({ ok: true, stage: specId, resetTaskIds }));
+`;
+
+/**
+ * Interrupt the run's current stage and re-run it with the operator's steer
+ * appended to its prompt. Returns the steered stage's spec id.
+ */
+export async function steerWorkflow(
+  env: Env,
+  sandboxId: string,
+  runId: string,
+  steer: string,
+): Promise<string> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.writeFile("/workspace/.steer-run.mjs", STEER_RUN_SCRIPT);
+  await sandbox.writeFile("/workspace/.steer-text", steer);
+  const result = await sandbox.exec(
+    `cd /workspace/repo && node /workspace/.steer-run.mjs ${PI_WORKFLOW_DIST} ${runId} /workspace/.steer-text`,
+    { timeout: 120_000 },
+  );
+  const lastLine = result.stdout.trim().split("\n").at(-1) ?? "";
+  try {
+    const parsed = JSON.parse(lastLine) as { ok: boolean; stage?: string; reason?: string };
+    if (!parsed.ok || !parsed.stage) throw new Error(parsed.reason ?? "steer not ok");
+    return parsed.stage;
+  } catch (err) {
+    throw new Error(
+      `steer failed: ${err instanceof Error ? err.message : err}: ${(result.stderr || result.stdout).slice(-500)}`,
+    );
+  }
+}
+
+/**
  * Restart the failed/delegated portion of a run. Options:
  * - failSpecId: a COMPLETED stage to re-run (delegation) — marked failed first.
  * - model: model override for the re-run stage (all non-matching stages keep

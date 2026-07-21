@@ -210,6 +210,27 @@ async function stop() {
   }
 }
 
+const steerText = ref("");
+const steering = ref(false);
+async function steer() {
+  const message = steerText.value.trim();
+  if (!message) return;
+  steering.value = true;
+  try {
+    await $fetch(`/api/tickets/${id}/steer`, { method: "POST", body: { message } });
+    steerText.value = "";
+    toast.add({
+      title: "Steer queued",
+      description: "The current stage restarts with your instructions within ~1 min.",
+      color: "success",
+    });
+  } catch (e: unknown) {
+    toast.add({ title: "Steer failed", description: String(e), color: "error" });
+  } finally {
+    steering.value = false;
+  }
+}
+
 const running = computed(() =>
   ["queued", "planning", "implementing", "ready-for-review"].includes(
     data.value?.ticket?.status ?? "",
@@ -292,6 +313,19 @@ function taskDot(status: string): string {
         </div>
       </div>
       <div v-else class="text-muted text-sm">{{ data.live.note ?? data.live.outcome ?? "…" }}</div>
+      <div v-if="running" class="mt-3 flex gap-2">
+        <UInput
+          v-model="steerText"
+          class="flex-1"
+          size="sm"
+          placeholder="Steer the agent — interrupts the current stage with your instructions…"
+          icon="i-lucide-navigation"
+          @keydown.enter="steer"
+        />
+        <UButton size="sm" variant="soft" :loading="steering" :disabled="!steerText.trim()" @click="steer">
+          Steer
+        </UButton>
+      </div>
     </UCard>
 
     <UCard>

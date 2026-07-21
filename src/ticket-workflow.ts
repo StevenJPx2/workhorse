@@ -6,6 +6,7 @@ import {
   startWorkflow,
   driveWorkflow,
   escalateWorkflow,
+  steerWorkflow,
   collectResult,
   collectActivity,
   deliverBranch,
@@ -14,7 +15,7 @@ import {
   persistMemory,
 } from "./agent-run";
 import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
-import { unconsumedEvents, consumeEvents } from "./events";
+import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
 import type { ExternalEvent } from "./plugins/types";
 import type { Env, TicketParams, TicketRecord } from "./types";
 
@@ -56,7 +57,7 @@ async function setLive(env: Env, ticketId: string, live: Record<string, unknown>
  */
 interface EscalationEvent {
   at: string;
-  trigger: "fallback" | "promotion";
+  trigger: "fallback" | "promotion" | "steer";
   detail: string;
   /** Promotion only: which stage delegated + the model movement. */
   stage?: string;
@@ -153,6 +154,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         async () => {
           const r = await driveWorkflow(this.env, sandboxId, runId);
           await setLive(this.env, ticketId, { phase: label, runId, ...r });
+          const steers = await pendingSteers(this.env, ticketId);
+          if (steers.length > 0) (r as { steers?: string[] }).steers = steers;
           // Mirror the running pipeline stage onto the ticket status:
           // verify/fix stages = the adversarial "ready-for-review" pass.
           const active = r.tasks.find((t) => t.status === "running")?.id ?? "";
@@ -162,6 +165,30 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           return r;
         },
       );
+
+      // --- operator mid-run steering: interrupt the current stage and
+      // re-run it with the steer appended to its prompt (pi-workflow has no
+      // live-injection API). Between-stage steers just re-prompt the not-yet-
+      // started stage. Checked before escalations: a human redirect
+      // supersedes machine escalation this burst.
+      const steers = (res as { steers?: string[] }).steers ?? [];
+      if (steers.length > 0) {
+        await step.do(
+          `${label}-steer-${burst}`,
+          { retries: { limit: 1, delay: "10 seconds" }, timeout: "5 minutes" },
+          async () => {
+            const stage = await steerWorkflow(this.env, sandboxId, runId, steers.join("\n\n"));
+            await consumeSteers(this.env, ticketId);
+            await recordEscalation(this.env, ticketId, runId, {
+              trigger: "steer",
+              detail: steers.join(" | ").slice(0, 500),
+              stage,
+            });
+            await setLive(this.env, ticketId, { phase: label, runId, note: `steered ${stage}` });
+          },
+        ).catch(() => {}); // failed steer must not kill the run; steers stay pending
+        continue;
+      }
 
       // --- capability-driven promotion: a stage signalled "not equipped" ---
       // Intercept as soon as the delegate flag shows up on a completed
