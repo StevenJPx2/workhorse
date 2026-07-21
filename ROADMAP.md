@@ -300,8 +300,9 @@ The real work is ours, evalite is the chassis:
 - **Selection evals** (later): "given this stage prompt, does the agent
   pick the right tool?" — needs a Pi session harness; evalite scores the
   transcript. Pairs with the semindex top-k tool-visibility work.
-- `evals/` is a workspace package with its own runner (vitest rides
-  alongside bun test); CI-runnable, results table committed per run.
+- `evals/` is a workspace package; vitest is the repo's test runner
+  (tests and evals share one runner — evalite rides vitest), bun stays
+  as package manager. CI-runnable, results table committed per run.
 
 ### Non-PR outcomes (configurable done states)
 Not every fleet run should end in a pull request — some are research
