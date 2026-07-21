@@ -194,6 +194,21 @@ cap, blob-shaped data):
 - **Trace archive overflow** — big runs can brush the KV value cap; move
   trace blobs to R2, keep the small per-ticket index in KV.
 
+### Paste plugin (text/code hosting)
+`plugins/paste` — imgup's sibling for text: a sandbox tool
+(`upload_text` / `share_snippet`) that hosts arbitrary text/code and
+returns a raw, curl-able URL. Uses [paste.rs](https://paste.rs) (or a
+small fallback chain, mirroring imgup's multi-host robustness lesson —
+single keyless hosts are individually unreliable). Sandbox-only plugin,
+no worker half.
+
+Use cases: agents sharing repro scripts / long logs / patches in PR
+comments and Slack replies without blowing comment size limits; handing
+a colleague-agent (or human) a `curl`-able artifact; verifier attaching
+full failing-test output to its verdict. If the R2 blob plane lands
+first, a self-hosted variant (R2 + presigned GET) is the zero-dependency
+alternative — same tool surface, our own storage.
+
 ---
 
 ## Tabled 🅿️
