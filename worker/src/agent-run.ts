@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { getSandbox } from "@cloudflare/sandbox";
+import { parseScriptsToml } from "./scripts-toml";
 import type { Env } from "@workhorse/api";
 
 const PI = "pi"; // /usr/local/bin/pi shim baked into the image
@@ -35,6 +36,23 @@ export async function injectBrowserConfig(env: Env, sandboxId: string): Promise<
   await sandbox.writeFile(
     "/root/.workhorse-browser.json",
     JSON.stringify({ url: env.SELF_URL, token: env.BROWSER_TOKEN }),
+  );
+}
+
+/**
+ * Write ticket context for sandbox-half plugin tools: repo slug (script
+ * scope resolution) + ticket id (live status gating via the registry).
+ */
+export async function injectTicketContext(
+  env: Env,
+  sandboxId: string,
+  ticketId: string,
+  repo: string,
+): Promise<void> {
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.writeFile(
+    "/root/.workhorse-ticket.json",
+    JSON.stringify({ ticketId, repo: repoSlug(repo) }),
   );
 }
 
@@ -186,6 +204,46 @@ export async function prepareWorkspace(
   });
   if (check.exitCode !== 0) {
     throw new Error(`workflow "${wf}" not found in repo, registry, or baked bundles`);
+  }
+
+  // Script seeding: a committed .workhorse/scripts.toml imports into the
+  // registry (created_by: seed) — clone-and-go, same pattern as workflows.
+  // Parsed sandbox-side with a tiny tolerant reader (name/description/
+  // command/args/status_gates per [[script]] block), registered via db.
+  try {
+    const tomlRead = await sandbox.exec(
+      `cat /workspace/repo/.workhorse/scripts.toml 2>/dev/null || true`,
+      { timeout: 10_000 },
+    );
+    const toml = tomlRead.stdout?.trim();
+    if (toml) {
+      const { validateScript, upsertScript, getScript } = await import("./db");
+      const now = new Date().toISOString();
+      for (const s of parseScriptsToml(toml)) {
+        const scope = `repo:${repoSlug(repo)}`;
+        const err = validateScript({ ...s, scope });
+        if (err) {
+          console.warn(`scripts.toml: skipped "${s.name}": ${err}`);
+          continue;
+        }
+        const existing = await getScript(env, scope, s.name);
+        // Seeds never clobber agent/user entries.
+        if (existing && existing.createdBy !== "seed") continue;
+        await upsertScript(env, {
+          scope,
+          name: s.name,
+          description: s.description ?? "",
+          command: s.command,
+          args: s.args ?? [],
+          statusGates: s.statusGates ?? [],
+          createdBy: "seed",
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("scripts.toml seeding failed (non-fatal):", err);
   }
 
   // Evals: patch the model override into the workspace spec copy.

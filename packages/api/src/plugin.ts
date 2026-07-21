@@ -13,6 +13,22 @@
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
 
+/** A registered self-extension script (see the scripts plugin). */
+export interface ScriptRecord {
+  /** "global" or "repo:<owner/repo>". */
+  scope: string;
+  name: string;
+  description: string;
+  /** Shell command body (bash -c). Args arrive as $ARG_<NAME> env vars. */
+  command: string;
+  args: Array<{ name: string; description?: string; required?: boolean }>;
+  /** Ticket statuses allowed to run this script; empty = any. */
+  statusGates: string[];
+  createdBy: "agent" | "user" | "seed";
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** One normalized external event tied to a ticket. */
 export interface ExternalEvent {
   /** Workhorse ticket id this event belongs to. */
@@ -59,6 +75,14 @@ export interface Core {
   fleetChat(
     messages: Array<{ role: string; content: string }>,
   ): Promise<{ ok: true; reply: string } | { ok: false; error: string; status: number }>;
+  /** Scripts visible to a repo (repo-scoped + global, repo wins name clashes). */
+  listScripts(repo?: string): Promise<ScriptRecord[]>;
+  /** Resolve one script by name (repo scope first, then global). */
+  getScriptByName(name: string, repo?: string): Promise<ScriptRecord | null>;
+  /** Validate + register/update a script. */
+  registerScript(
+    s: Omit<ScriptRecord, "createdAt" | "updatedAt">,
+  ): Promise<{ ok: true; script: ScriptRecord } | { ok: false; error: string }>;
 }
 
 /** Webhook half: POST /webhooks/<plugin id>. */

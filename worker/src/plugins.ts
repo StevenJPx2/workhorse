@@ -5,6 +5,7 @@ import { browserPlugin } from "@workhorse/browser";
 import { githubPlugin } from "@workhorse/github";
 import { imgupPlugin } from "@workhorse/imgup";
 import { jiraPlugin } from "@workhorse/jira";
+import { scriptsPlugin } from "@workhorse/scripts";
 import { knowledgePlugin } from "@workhorse/knowledge";
 import { ntfyPlugin } from "@workhorse/ntfy";
 import { pastePlugin } from "@workhorse/paste";
@@ -22,6 +23,7 @@ export const plugins: WorkhorsePlugin[] = [
   knowledgePlugin,
   ntfyPlugin,
   pastePlugin,
+  scriptsPlugin,
   slackPlugin,
   ticketsPlugin,
 ];
@@ -45,6 +47,39 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     wakeTicket: (ticketId) => wakeTicket(env, ticketId),
     appendSteer: (ticketId, message) => appendSteer(env, ticketId, message),
     fleetChat: (messages) => runFleetChat(env, selfOrigin, messages),
+    listScripts: async (repo) => {
+      const { listScripts } = await import("./db");
+      return listScripts(env, repo);
+    },
+    getScriptByName: async (name, repo) => {
+      const { getScript } = await import("./db");
+      if (repo) {
+        const hit = await getScript(env, `repo:${repo}`, name);
+        if (hit) return hit;
+      }
+      return getScript(env, "global", name);
+    },
+    registerScript: async (s) => {
+      const { validateScript, upsertScript, getScript } = await import("./db");
+      const err = validateScript(s);
+      if (err) return { ok: false, error: err };
+      const now = new Date().toISOString();
+      const existing = await getScript(env, s.scope, s.name);
+      // Seeded scripts stay pristine: agents/users update their own entries,
+      // but a seed is only replaced by an explicit user action.
+      if (existing?.createdBy === "seed" && s.createdBy === "agent") {
+        return { ok: false, error: `"${s.name}" is a seeded script — copy it under a new name instead` };
+      }
+      const script = {
+        ...s,
+        createdBy: existing?.createdBy === "seed" ? existing.createdBy : s.createdBy,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      };
+      await upsertScript(env, script);
+      console.log(`script ${existing ? "updated" : "registered"}: ${s.scope}/${s.name} by ${s.createdBy}`);
+      return { ok: true, script };
+    },
   };
 }
 

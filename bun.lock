@@ -92,6 +92,17 @@
         "typescript": "^7.0.2",
       },
     },
+    "plugins/scripts": {
+      "name": "@workhorse/scripts",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260714.1",
+        "typescript": "^7.0.2",
+      },
+    },
     "plugins/slack": {
       "name": "@workhorse/slack",
       "version": "0.1.0",
@@ -135,6 +146,7 @@
         "@workhorse/knowledge": "workspace:*",
         "@workhorse/ntfy": "workspace:*",
         "@workhorse/paste": "workspace:*",
+        "@workhorse/scripts": "workspace:*",
         "@workhorse/slack": "workspace:*",
         "@workhorse/tickets": "workspace:*",
       },
@@ -848,6 +860,8 @@
     "@workhorse/ntfy": ["@workhorse/ntfy@workspace:plugins/ntfy"],
 
     "@workhorse/paste": ["@workhorse/paste@workspace:plugins/paste"],
+
+    "@workhorse/scripts": ["@workhorse/scripts@workspace:plugins/scripts"],
 
     "@workhorse/slack": ["@workhorse/slack@workspace:plugins/slack"],
 

@@ -1,0 +1,20 @@
+{
+  "name": "@workhorse/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Script service plugin: agent self-extension — write_script/run_script/list_scripts over a D1-authoritative registry with status gates.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

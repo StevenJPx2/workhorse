@@ -19,6 +19,7 @@
     "@workhorse/knowledge": "workspace:*",
     "@workhorse/ntfy": "workspace:*",
     "@workhorse/paste": "workspace:*",
+    "@workhorse/scripts": "workspace:*",
     "@workhorse/slack": "workspace:*",
     "@workhorse/tickets": "workspace:*"
   },

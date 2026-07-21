@@ -160,6 +160,150 @@ export async function listTraceIndex(
   return (results ?? []).map((r) => ({ runId: r.run_id, kind: r.kind, archivedAt: r.archived_at }));
 }
 
+// --- scripts (agent self-extension) -----------------------------------------
+
+export interface ScriptRecord {
+  /** "global" or "repo:<owner/repo>". */
+  scope: string;
+  name: string;
+  description: string;
+  /** Shell command body (bash -c). Args arrive as $ARG_<NAME> env vars. */
+  command: string;
+  /** Declared args: [{name, description, required}] */
+  args: Array<{ name: string; description?: string; required?: boolean }>;
+  /** Ticket statuses allowed to run this script; empty = any. */
+  statusGates: string[];
+  createdBy: "agent" | "user" | "seed";
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ScriptRow {
+  scope: string;
+  name: string;
+  description: string;
+  command: string;
+  args: string;
+  status_gates: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function toScript(r: ScriptRow): ScriptRecord {
+  return {
+    scope: r.scope,
+    name: r.name,
+    description: r.description,
+    command: r.command,
+    args: JSON.parse(r.args || "[]"),
+    statusGates: JSON.parse(r.status_gates || "[]"),
+    createdBy: r.created_by as ScriptRecord["createdBy"],
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+const SCRIPT_NAME_RE = /^[a-z][a-z0-9_-]{1,63}$/;
+const VALID_GATES = new Set([
+  "queued",
+  "planning",
+  "implementing",
+  "ready-for-review",
+  "in-review",
+]);
+
+/** Validate a script registration; returns an error string or null. */
+export function validateScript(s: {
+  name?: string;
+  command?: string;
+  scope?: string;
+  args?: unknown;
+  statusGates?: unknown;
+}): string | null {
+  if (!s.name || !SCRIPT_NAME_RE.test(s.name)) {
+    return "name must match ^[a-z][a-z0-9_-]{1,63}$";
+  }
+  if (!s.command?.trim()) return "command required";
+  if (s.command.length > 16384) return "command too long (16 KiB max)";
+  if (!s.scope || (s.scope !== "global" && !s.scope.startsWith("repo:"))) {
+    return 'scope must be "global" or "repo:<owner/repo>"';
+  }
+  if (s.args !== undefined) {
+    if (!Array.isArray(s.args)) return "args must be an array";
+    for (const a of s.args as Array<{ name?: string }>) {
+      if (!a?.name || !/^[A-Za-z][A-Za-z0-9_]{0,31}$/.test(a.name)) {
+        return "each arg needs a name matching ^[A-Za-z][A-Za-z0-9_]{0,31}$";
+      }
+    }
+  }
+  if (s.statusGates !== undefined) {
+    if (!Array.isArray(s.statusGates)) return "statusGates must be an array";
+    for (const g of s.statusGates as string[]) {
+      if (!VALID_GATES.has(g)) return `unknown status gate "${g}"`;
+    }
+  }
+  return null;
+}
+
+export async function upsertScript(env: Env, s: ScriptRecord): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO scripts (scope, name, description, command, args, status_gates, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(scope, name) DO UPDATE SET
+       description = excluded.description,
+       command = excluded.command,
+       args = excluded.args,
+       status_gates = excluded.status_gates,
+       updated_at = excluded.updated_at`,
+  )
+    .bind(
+      s.scope,
+      s.name,
+      s.description,
+      s.command,
+      JSON.stringify(s.args),
+      JSON.stringify(s.statusGates),
+      s.createdBy,
+      s.createdAt,
+      s.updatedAt,
+    )
+    .run();
+}
+
+export async function getScript(env: Env, scope: string, name: string): Promise<ScriptRecord | null> {
+  const row = await env.DB.prepare("SELECT * FROM scripts WHERE scope = ? AND name = ?")
+    .bind(scope, name)
+    .first<ScriptRow>();
+  return row ? toScript(row) : null;
+}
+
+/** Scripts visible to a repo: its own scope + global, repo-scoped winning name clashes. */
+export async function listScripts(env: Env, repo?: string): Promise<ScriptRecord[]> {
+  const scopes = repo ? [`repo:${repo}`, "global"] : ["global"];
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM scripts WHERE scope IN (${scopes.map(() => "?").join(",")}) ORDER BY name, scope DESC`,
+  )
+    .bind(...scopes)
+    .all<ScriptRow>();
+  const seen = new Set<string>();
+  const out: ScriptRecord[] = [];
+  for (const row of results ?? []) {
+    // repo:* sorts before "global" per ORDER BY scope DESC — first wins.
+    if (seen.has(row.name)) continue;
+    seen.add(row.name);
+    out.push(toScript(row));
+  }
+  return out;
+}
+
+export async function deleteScript(env: Env, scope: string, name: string): Promise<boolean> {
+  const r = await env.DB.prepare("DELETE FROM scripts WHERE scope = ? AND name = ?")
+    .bind(scope, name)
+    .run();
+  return (r.meta.changes ?? 0) > 0;
+}
+
 // --- one-time backfill from KV ----------------------------------------------
 
 /** Import legacy KV records into D1. Idempotent (INSERT OR REPLACE / IGNORE). */

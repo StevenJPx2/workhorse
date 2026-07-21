@@ -4,6 +4,7 @@ export type {
   PluginHooks,
   PluginRoute,
   RouteAuth,
+  ScriptRecord,
   WebhookHandler,
   WorkhorsePlugin,
 } from "./plugin";

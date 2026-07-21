@@ -2,6 +2,7 @@ import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:work
 import {
   injectAuth,
   injectBrowserConfig,
+  injectTicketContext,
   prepareWorkspace,
   startWorkflow,
   driveWorkflow,
@@ -352,6 +353,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await restoreMemory(this.env, sandboxId, t.repo);
         // Browser plane: let gated stages fetch live web pages via the Worker.
         await injectBrowserConfig(this.env, sandboxId);
+        // Ticket context for sandbox plugin tools (script scoping/gating).
+        await injectTicketContext(this.env, sandboxId, t.id, t.repo);
       },
     );
 
@@ -479,6 +482,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
           await restoreMemory(this.env, sandboxId, t.repo);
           await injectBrowserConfig(this.env, sandboxId);
+          await injectTicketContext(this.env, sandboxId, t.id, t.repo);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
           const feedback = events
             .map((e) => `- [${e.kind}] ${e.summary}`)
