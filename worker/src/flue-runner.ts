@@ -201,26 +201,6 @@ export function flueStageRunner(
       if (!token) return { failure: { kind: "model", detail: "no fresh OAuth token (custodian push stale?)" } };
       registerProvider("anthropic", { apiKey: token });
 
-      // OpenCode free models (fallback when Anthropic rate-limits).
-      // opencode-zen hosts Anthropic models at /zen/v1/messages (same wire
-      // format as the built-in anthropic provider). Use api:'anthropic' +
-      // baseUrl:'https://opencode.ai/zen/v1' so the Anthropic SDK sends to
-      // the right endpoint. For OpenAI-compatible free models (mimo-v2.5-free),
-      // use opencode-go with api:'openai-completions'.
-      // Single API key for both.
-      if (env.OPENCODE_API_KEY) {
-        registerProvider("opencode-zen", {
-          api: "anthropic",
-          baseUrl: "https://opencode.ai/zen/v1",
-          apiKey: env.OPENCODE_API_KEY,
-        });
-        registerProvider("opencode-go", {
-          api: "openai-completions",
-          baseUrl: "https://opencode.ai/go/v1",
-          apiKey: env.OPENCODE_API_KEY,
-        });
-      }
-
       if (!repo) repo = (await core.getTicket(ticketId))?.repo ?? "";
       const allow = new Set(input.tools);
 
@@ -233,22 +213,23 @@ export function flueStageRunner(
       const { tool: submit, wasSubmitted } = submitWorkTool(sandbox, input.dir);
 
       const model = input.model ?? "claude-sonnet-4-6";
-      // Fallback chain: Anthropic (OAuth, primary) → OpenCode Zen free
-      // → OpenCode Go cheap. Single API key for zen+go.
-      // Exactly how the fleet's model-chains work (memory #227).
-      const fallbacks: Array<{ provider: string; model: string }> = [
-        { provider: "anthropic", model },
+      // Fallback: override the "anthropic" provider to point to opencode-zen's
+      // gateway when the primary OAuth call 429s. The Anthropic API handler is
+      // already registered (proven by the spike) — just swap baseUrl + apiKey.
+      // opencode-zen hosts Anthropic models at /zen/v1/messages.
+      const providerOverrides = [
+        { baseUrl: undefined, apiKey: undefined }, // primary: OAuth (registered above)
         ...(env.OPENCODE_API_KEY
-          ? [
-              { provider: "opencode-zen", model: "claude-haiku-4-5" },
-              { provider: "opencode-go", model: "deepseek-v4-flash" },
-            ]
+          ? [{ baseUrl: "https://opencode.ai/zen/v1", apiKey: env.OPENCODE_API_KEY }]
           : []),
       ];
       let lastError = "";
-      for (const { provider, model: m } of fallbacks) {
+      for (const override of providerOverrides) {
+        if (override.baseUrl) {
+          registerProvider("anthropic", { baseUrl: override.baseUrl, apiKey: override.apiKey });
+        }
         const agent = defineAgent(() => ({
-          model: `${provider}/${m}`,
+          model: `anthropic/${model}`,
           instructions: input.persona,
           tools: [...builtins, ...pluginTools, submit],
           sandbox: { ...cloudflareSandbox(getSandbox(env.Sandbox, sandboxId) as never, { cwd: input.cwd }), tools: () => [] },
@@ -257,7 +238,7 @@ export function flueStageRunner(
         const ctxFlue = createFlueContext({
           id: sandboxId,
           env: {},
-          agentConfig: { resolveModel: () => resolveModel(`${provider}/${m}`) },
+          agentConfig: { resolveModel: () => resolveModel(`anthropic/${model}`) },
           createDefaultEnv: async () => {
             throw new Error("no default env — stage agent supplies a sandbox factory");
           },
