@@ -220,7 +220,7 @@ export function flueStageRunner(
       const providerOverrides = [
         { baseUrl: undefined, apiKey: undefined }, // primary: OAuth (registered above)
         ...(env.OPENCODE_API_KEY
-          ? [{ baseUrl: "https://opencode.ai/zen/v1", apiKey: env.OPENCODE_API_KEY }]
+          ? [{ baseUrl: "https://opencode.ai/zen", apiKey: env.OPENCODE_API_KEY }]
           : []),
       ];
       let lastError = "";
