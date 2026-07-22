@@ -57,20 +57,91 @@ are the same mechanism.
 
 Each plugin is a single `plugins/<name>/` package with an optional worker half (routes, hooks) and an optional sandbox half (Pi extension). Plugins depend only on `@workhorse/api`; the worker is the sole composition point.
 
-| Plugin | What it does |
+### browser
+| | |
 |---|---|
-| `browser` | Sandbox: agent-browser tools (persistent sessions — open, AX snapshot, click/fill/type, screenshot, record GIF). Worker: no-op shell (BROWSER_TOKEN for sandbox auth). |
-| `github` | Inbound: PR/issue webhook → fileTicket, thread replies → two-path steer/revise, PR merge → done. Outbound: onStatusChange → PR comments. Sandbox: read-only `gh_pr`/`gh_ci`/`gh_search_code`/`gh_commits` (scoped proxy). |
-| `slack` | Inbound: @mention → fleet chat or `trigger <name>` fire; thread replies → notification bus. Outbound: onStatusChange → thread replies. |
-| `jira` | Inbound: issue assigned/labeled → fileTicket; comments → notification bus. Outbound: transitions + PR-link comments. Sandbox: `search_jira`/`search_confluence` (federated search). |
-| `knowledge` | Sandbox: `search_fleet_knowledge` (AI Search semantic index of every past run). Worker: `POST /knowledge/search`, `/reindex`. |
-| `imgup` | Sandbox: `upload_image` — multi-host image upload chain (imgbb → catbox → …) with serve-verification. |
-| `scripts` | Sandbox: `list_scripts`/`run_script`/`write_script`/`find_script` — agent self-extension from the D1 scripts registry. |
-| `tickets` | Worker: ticket CRUD, dispatch, health, attachments, notification bus routes. |
-| `paste` | Sandbox: `upload_text` — text → curl-able URL (paste.rs → 0x0.st fallback chain). |
-| `ntfy` | Worker: onStatusChange/onTraceArchived → ntfy push (priority-mapped). |
-| `search` | Sandbox: `web_search` (jina → exa fallback chain), `web_read` (jina reader, clean markdown). |
-| `semindex` | Worker: `POST /semindex/query` — Vectorize-backed semantic search over scripts/workflows/tools. Sandbox: `find_script`/`find_tool`. |
+| Package | `plugins/browser` |
+| Worker | No-op shell (BROWSER_TOKEN for sandbox auth) |
+| Sandbox tools | `browser_open`, `browser_snapshot` (AX tree + refs), `browser_read`, `browser_act` (click/fill/type/scroll by ref), `browser_screenshot`, `browser_record` (timed frame capture → GIF) |
+| Implementation | [agent-browser](https://github.com/vercel-labs/agent-browser) CLI daemon, persistent session per run; stateless reads use jina (`web_read`)|
+
+### github
+| | |
+|---|---|
+| Package | `plugins/github` |
+| Inbound | PR/issue webhooks → fileTicket, PR merge → done, PR close → terminated, PR comments → notification bus |
+| Outbound | onStatusChange → PR comments (what changed, revision notes) |
+| Sandbox tools | `gh_pr`, `gh_ci`, `gh_search_code`, `gh_commits` (read-only via scoped proxy) |
+
+### slack
+| | |
+|---|---|
+| Package | `plugins/slack` |
+| Inbound | @mention → fleet chat or `trigger <name>` fire; thread replies → notification bus (urgent for live runs) |
+| Outbound | onStatusChange → thread replies |
+| Triggers | `slack-mention` (Slack TriggerSource for `Core.fireTrigger`) |
+
+### jira
+| | |
+|---|---|
+| Package | `plugins/jira` |
+| Inbound | Issue assigned to agent account or labeled `workhorse` → fileTicket; comments → notification bus |
+| Outbound | onStatusChange → issue transitions + PR-link comments |
+| Sandbox tools | `search_jira` (issues + comments), `search_confluence` (federated search) |
+| Triggers | `jira-mention` (Jira TriggerSource for `Core.fireTrigger`) |
+
+### knowledge
+| | |
+|---|---|
+| Package | `plugins/knowledge` |
+| Sandbox tools | `search_fleet_knowledge` (AI Search semantic index of every past run) |
+| Worker routes | `POST /knowledge/search` (federated search), `POST /knowledge/reindex` (backfill) |
+
+### imgup
+| | |
+|---|---|
+| Package | `plugins/imgup` |
+| Sandbox tools | `upload_image` (multi-host chain: imgbb → catbox → …, serve-verified) |
+
+### scripts
+| | |
+|---|---|
+| Package | `plugins/scripts` |
+| Sandbox tools | `list_scripts`, `run_script`, `write_script`, `find_script`, `find_tool` |
+| Worker routes | `GET/POST /scripts`, `GET /scripts/get?ticket=` |
+| Registry | D1 `scripts` table; `.workhorse/scripts.toml` seeds |
+
+### tickets
+| | |
+|---|---|
+| Package | `plugins/tickets` |
+| Worker routes | Ticket CRUD, dispatch, health, attachments (`match`/`recent`/`resolve`), notification bus (`notify`/`notifications`) |
+
+### paste
+| | |
+|---|---|
+| Package | `plugins/paste` |
+| Sandbox tools | `upload_text` (text → curl-able URL; paste.rs → 0x0.st fallback chain) |
+
+### ntfy
+| | |
+|---|---|
+| Package | `plugins/ntfy` |
+| Outbound | onStatusChange/onTraceArchived → ntfy push (priority-mapped; silent when NTFY_URL unset) |
+
+### search
+| | |
+|---|---|
+| Package | `plugins/search` |
+| Sandbox tools | `web_search` (jina → exa fallback chain), `web_read` (jina reader, clean markdown) |
+
+### semindex
+| | |
+|---|---|
+| Package | `plugins/semindex` |
+| Worker routes | `POST /semindex/query` (Vectorize-backed semantic search) |
+| Sandbox tools | `find_script`, `find_tool` (semantic registry queries) |
+| Corpora | scripts, workflows, tools (auto-indexed on deploy) |
 
 ## API (bearer-gated)
 
