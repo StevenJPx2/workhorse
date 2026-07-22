@@ -218,6 +218,43 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
+### Flue-first: hard-coded, eval-tested workflows (DECISION PENDING — awaiting green light)
+
+A proposed reversal of the "workflows as USER DATA" pillar below. Instead of
+uploaded specs interpreted by `packages/workflow`, each workflow is a
+**hard-coded, eval-tested TypeScript function** using flue's harness — the
+engine's stage loop unrolled into `run()`, with routing as ordinary control
+flow (`if (verdict === 'fail') continue`). Workflows can no longer be authored
+on the fleet page; they ship with the app, type-checked and gated by the
+`agent-vs-workflow` eval (`coding-raw` vs `coding`).
+
+Feasibility (assessed 2026-07-22, after the first green end-to-end flue smoke —
+ticket 22f7cad7 → PR #28, staged coding on haiku):
+- **flue workflows are finite** (docs: "finite operations… use an agent when
+  work continues"; no `waitForEvent`/park in `run()`). So flue absorbs the
+  **bounded work pipeline** only; the **day-scale ticket lifecycle** (park
+  in-review, wake on PR-merge, operator accept) STAYS in the CF spine /
+  product layer. Clean split, not a conflict.
+- **Every primitive is already proven**: `flueStageRunner` builds a per-stage
+  agent (persona + tool ceiling) and calls `session.prompt(prompt,{result})`
+  today. A hard-coded workflow is that, called once per stage from a plain
+  `run()`.
+- **Recommended shape**: run the workflow function **in-process inside the
+  existing spine's `step.do()`** — NOT flue's `invoke()`/generated DO runtime
+  — so there is no `flue build` deploy handover. CF steps have unlimited
+  wall-clock; crash-retry granularity becomes the whole pipeline (mitigable by
+  resuming from on-disk stage artifacts).
+- **Deletes**: `packages/workflow` engine, KV workflow registry, vue-flow
+  builder-as-editor (→ read-only graph view), spec validator, `flueStageRunner`,
+  `submit_work` (→ typed `result`), `FLUE_STAGES` flag, per-repo overrides.
+  **Keeps**: CF spine (lifecycle only), product layer, plugin tool factories,
+  sandbox, eval harness (now the correctness gate).
+- **Trade**: loses runtime authorability; buys type-checked, eval-tested
+  workflows — the property data specs never had. User is accepting the trade.
+
+If adopted, this SUPERSEDES the "What survives → workflows as USER DATA" note
+in the section below.
+
 ### Flue migration — stages become in-Worker flue sessions
 
 **Decision (2026-07-22).** Adopt [flue](https://flueframework.com)
