@@ -12,8 +12,8 @@ export const workflowDefs: Record<string, WorkflowDef> = Object.fromEntries(
   DEFS.map((d) => [d.name, d]),
 );
 
-export function workflowDef(name: string): WorkflowDef | undefined {
-  return workflowDefs[name];
+export function workflowDef(name: string | undefined): WorkflowDef | undefined {
+  return name ? workflowDefs[name] : undefined;
 }
 
 export { coding, codingRaw };

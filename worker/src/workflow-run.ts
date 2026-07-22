@@ -43,8 +43,15 @@ export interface WorkflowRunDeps {
   model?: string;
   /** Repo working dir in the container. */
   cwd?: string;
-  /** Live-status hook: called on each stage transition (UI snapshot). */
-  onStage?: (s: { id: string; status: "running" | "completed"; round: number; control?: Record<string, unknown> }) => Promise<void>;
+  /** Live-status hook: called on each stage transition (UI snapshot + trace). */
+  onStage?: (s: {
+    id: string;
+    status: "running" | "completed";
+    round: number;
+    control?: Record<string, unknown>;
+    analysis?: string;
+    stats?: StageResult["stats"];
+  }) => Promise<void>;
   /** Notification read point for stages that declare notifications: "read". */
   readNotifications?: (stageId: string) => Promise<string | null>;
 }
@@ -73,6 +80,75 @@ async function readStageResult(
   return { stageId: spec.id, control, analysis };
 }
 
+/** Trace-compatible activity doc (matches the engine path's shape). */
+export interface DefActivity {
+  runId: string;
+  workflow: string;
+  tasks: Array<{ id: string; status: "completed"; round: number; analysis: string; control: Record<string, unknown> }>;
+  usage: { totalTokens: number; cost: number };
+  startedAt: string;
+  completedAt: string;
+}
+
+export type DefRunResult =
+  | { status: "done"; result: string; outcome: "pr" | "report" | "artifact"; activity: DefActivity }
+  | { status: "throttled"; retryAfterMs: number; providers: string[]; stageId: string; activity: DefActivity };
+
+/**
+ * Run one WorkflowDef to completion (one attempt). Accumulates a
+ * trace-compatible activity doc via onStage; returns drop-in result/outcome
+ * for the shared deliver path. Catches ThrottledPark → {status:"throttled"}
+ * (the spine sleeps durably + re-invokes). Hard StageFailure throws (the
+ * spine's step fails → run errors). Idempotent: a re-invoke replays completed
+ * stages from disk and resumes at the throttled/failed stage.
+ */
+export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResult> {
+  const startedAt = new Date().toISOString();
+  const tasks: DefActivity["tasks"] = [];
+  let tokens = 0;
+  let cost = 0;
+  const sandbox = sandboxDriver(deps.env, deps.sandboxId);
+
+  const ctx = makeWorkflowContext({
+    ...deps,
+    onStage: async (s) => {
+      await deps.onStage?.(s);
+      if (s.status === "completed") {
+        tasks.push({ id: s.id, status: "completed", round: s.round, analysis: s.analysis ?? "", control: s.control ?? {} });
+        tokens += s.stats?.tokens?.total ?? 0;
+        cost += s.stats?.cost ?? 0;
+      }
+    },
+  });
+
+  const activity = (): DefActivity => ({
+    runId: deps.runId,
+    workflow: deps.def.name,
+    tasks,
+    usage: { totalTokens: tokens, cost },
+    startedAt,
+    completedAt: new Date().toISOString(),
+  });
+
+  let wf;
+  try {
+    wf = await deps.def.run(ctx);
+  } catch (e) {
+    if (e instanceof ThrottledPark) {
+      return { status: "throttled", retryAfterMs: e.retryAfterMs, providers: e.providers, stageId: e.stageId, activity: activity() };
+    }
+    throw e; // hard StageFailure (and anything else) fails the run
+  }
+
+  const diff = await sandbox
+    .exec(`cd ${deps.cwd ?? "/workspace/repo"} && git add -A && git diff --cached --stat | tail -30`, { timeout: 60_000 })
+    .catch(() => ({ stdout: "" }) as { stdout: string });
+  const terminalAnalysis = tasks.at(-1)?.analysis ?? wf.summary ?? "";
+  const result = `${(diff.stdout ?? "").trim()}\n\n${terminalAnalysis}`.trim();
+
+  return { status: "done", result, outcome: wf.outcome, activity: activity() };
+}
+
 /** Build the concrete WorkflowContext for one run. */
 export function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
   const { env, sandboxId, selfOrigin, ticketId, repo, def, runId, task } = deps;
@@ -97,8 +173,12 @@ export function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
       await sandbox.exec(`mkdir -p ${dir}`, { timeout: 15_000 });
 
       // Idempotent replay: this round already ran (resume after park/crash).
+      // Still fire onStage(completed) so a re-invoke rebuilds a full trace —
+      // replayed stages must not vanish from the accumulated tasks[].
       if ((await sandbox.readFile(`${dir}/control.json`)) != null) {
-        return readStageResult(sandbox, spec, dir);
+        const replayed = await readStageResult(sandbox, spec, dir);
+        await deps.onStage?.({ id, status: "completed", round, control: replayed.control, analysis: replayed.analysis });
+        return replayed;
       }
 
       // Persona from the agent block (stage agent > def default); tool ceiling.
@@ -151,7 +231,7 @@ export function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
 
       const result = await readStageResult(sandbox, spec, dir);
       result.stats = outcome.stats;
-      await deps.onStage?.({ id, status: "completed", round, control: result.control });
+      await deps.onStage?.({ id, status: "completed", round, control: result.control, analysis: result.analysis, stats: result.stats });
       return result;
     },
   };

@@ -18,6 +18,8 @@ import {
   persistMemory,
 } from "./agent-run";
 import { FALLBACK_LEGS, PROMOTION_CHAIN, MAX_PROMOTIONS, nextModelUp } from "./model-chains";
+import { workflowDef } from "@workhorse/workflow";
+import { runWorkflowDef, type DefRunResult } from "./workflow-run";
 import type { DriveReport } from "./agent-run";
 import { unconsumedEvents, consumeEvents, pendingSteers, consumeSteers } from "./events";
 import { fireHook } from "./plugins";
@@ -363,6 +365,166 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     }
   }
 
+  /**
+   * Prepare a sandbox for a run: auth, workspace clone, agent blocks, memory,
+   * browser config, ticket context, dep cache. Shared by the engine path's
+   * "prepare" step and the def path's initial + post-throttle re-prepare
+   * (a durable step.sleep past sleepAfter wipes the container disk).
+   */
+  private async prepareRun(step: WorkflowStep, t: TicketParams, sandboxId: string, stepName: string) {
+    await step.do(
+      stepName,
+      { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
+      async () => {
+        await updateTicket(this.env, t.id, { status: "planning" });
+        await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
+        await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+        const { installAgentBlocks } = await import("./agents");
+        await installAgentBlocks(this.env, sandboxId);
+        await restoreMemory(this.env, sandboxId, t.repo);
+        await injectBrowserConfig(this.env, sandboxId);
+        await injectTicketContext(this.env, sandboxId, t.id, t.repo);
+        const dep = await restoreDepCache(this.env, sandboxId, t.repo);
+        if (dep !== "skip") console.log(`depcache restore ${t.id}: ${dep}`);
+      },
+    );
+  }
+
+  /**
+   * Flue-first run: drive a hard-coded WorkflowDef to a terminal outcome,
+   * then deliver via the shared PR/report/artifact paths. run(ctx) executes
+   * in-process inside a step; a capacity ThrottledPark returns {throttled}
+   * and the spine sleeps durably (step.sleep) then re-prepares + re-invokes
+   * (whole-pipeline granularity; completed stages replay from disk when the
+   * sandbox survived, else re-run in the fresh clone). Steering + awaiting-
+   * input parks are engine-path features not yet ported (tracked).
+   */
+  private async runViaDef(step: WorkflowStep, t: TicketParams, sandboxId: string, branch: string) {
+    const runId = `def-${t.id}`;
+    const MAX_THROTTLE_PARKS = 12;
+    let parks = 0;
+    let outcome: "pr" | "report" | "artifact" = "pr";
+    let result = "";
+
+    for (let attempt = 1; ; attempt++) {
+      await this.prepareRun(step, t, sandboxId, attempt === 1 ? "prepare" : `re-prepare-${attempt}`);
+      await step.do(`mark-implementing-${attempt}`, async () => {
+        await updateTicket(this.env, t.id, { status: "implementing", runId });
+      });
+
+      const drive = (await step.do(
+        `def-run-${attempt}`,
+        { retries: { limit: 1, delay: "10 seconds" }, timeout: "30 minutes" },
+        async () => {
+          const r = await runWorkflowDef({
+            env: this.env,
+            sandboxId,
+            selfOrigin: this.env.SELF_URL ?? "",
+            ticketId: t.id,
+            repo: t.repo,
+            def: workflowDef(t.workflow)!,
+            runId,
+            task: t.prompt,
+            inputs: t.inputs,
+            model: t.model,
+            onStage: async (s) => {
+              const phase = /^(verify|fix)/.test(s.id) ? "ready-for-review" : "implementing";
+              if (s.status === "running") await updateTicket(this.env, t.id, { status: phase });
+              await setLive(this.env, t.id, { phase: s.id, runId, note: `${s.id}: ${s.status}` });
+            },
+          });
+          return JSON.stringify(r);
+        },
+      ).then((s) => JSON.parse(s as string))) as DefRunResult;
+
+      // Trace every attempt (throttled or done) for observability.
+      await step.do(`def-trace-${attempt}`, async () => {
+        await this.env.TICKETS.put(`activity:${t.id}`, JSON.stringify(drive.activity));
+        await archiveTrace(this.env, t.id, runId, attempt === 1 ? "initial" : `attempt-${attempt}`, JSON.stringify(drive.activity));
+      }).catch(() => {});
+
+      if (drive.status === "throttled") {
+        if (++parks > MAX_THROTTLE_PARKS) {
+          await updateTicket(this.env, t.id, { status: "errored", error: `model capacity throttled past ${MAX_THROTTLE_PARKS} waits` });
+          throw new Error("throttle park budget exhausted");
+        }
+        const sleepMs = Math.min(Math.max(drive.retryAfterMs, 30_000), 60 * 60_000);
+        await step.do(`def-throttle-${attempt}`, async () => {
+          await recordEscalation(this.env, t.id, runId, {
+            trigger: "fallback",
+            detail: `capacity throttle (${drive.providers.join(",")}); waiting ${Math.round(sleepMs / 1000)}s`,
+            stage: drive.stageId,
+          });
+          await setLive(this.env, t.id, { phase: "waiting-for-capacity", runId, note: `all providers throttled; retry in ${Math.round(sleepMs / 1000)}s` });
+        });
+        await step.sleep(`def-capacity-sleep-${attempt}`, sleepMs);
+        continue; // re-prepare (fresh disk after a long sleep) + re-run
+      }
+
+      outcome = drive.outcome;
+      result = drive.result;
+      await step.do(`def-collect-${attempt}`, async () => {
+        await persistMemory(this.env, sandboxId, t.repo);
+        await saveDepCache(this.env, sandboxId, t.repo);
+      }).catch(() => {});
+      break;
+    }
+
+    // --- deliver by outcome kind (shared with the engine path) ---
+    if (outcome === "report") {
+      await step.do("def-deliver-report", async () => {
+        await updateTicket(this.env, t.id, { status: "awaiting-acceptance", result });
+        await setLive(this.env, t.id, { phase: "awaiting-acceptance", note: "report offered for acceptance" });
+      });
+      await this.acceptanceLoop(step, t, sandboxId, runId);
+      return;
+    }
+
+    const prUrl = await step.do(
+      "def-deliver",
+      { retries: { limit: 2, delay: "15 seconds" }, timeout: "10 minutes" },
+      async () => {
+        const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, t.title);
+        await this.env.TICKETS.put(`diff:${t.id}`, diff);
+        if (!pushed) {
+          await updateTicket(this.env, t.id, { status: "errored", result, branch, error: "push failed" });
+          throw new Error("push failed");
+        }
+        if (outcome === "artifact") {
+          await updateTicket(this.env, t.id, { status: "awaiting-acceptance", result, branch });
+          return null;
+        }
+        const m = t.repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/)!;
+        const resp = await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/pulls`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+            accept: "application/vnd.github+json",
+            "user-agent": "workhorse",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            title: t.title,
+            head: branch,
+            base: "main",
+            body: `## Workhorse ticket ${t.id}\n\n**Task:** ${t.prompt}\n\n${result.slice(0, 3000)}\n\n---\n*Workhorse run \`${runId}\`. Reviews/comments on this PR wake the agent for revisions; merging completes the ticket.*`,
+          }),
+        });
+        const pr = (await resp.json()) as { html_url?: string; number?: number; message?: string };
+        if (!pr.html_url || !pr.number) throw new Error(`PR creation failed: ${pr.message ?? resp.status}`);
+        await this.env.TICKETS.put(`pr:${m[1]}/${m[2]}#${pr.number}`, t.id);
+        await updateTicket(this.env, t.id, { status: "in-review", result, branch, prUrl: pr.html_url });
+        return pr.html_url;
+      },
+    );
+
+    if (!prUrl) {
+      await this.acceptanceLoop(step, t, sandboxId, runId);
+      return;
+    }
+    await this.reviewLoop(step, t, sandboxId, branch, prUrl);
+  }
+
   private async runLifecycle(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
     const t = event.payload;
     const sandboxId = `ticket-${t.id}`;
@@ -382,30 +544,17 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       // re-run (idempotent — fresh sandbox, branch is force-pushed later).
     }
 
+    // Flue-first path: when a hard-coded WorkflowDef exists for this
+    // workflow, run it in-process via the spine (no engine interpreter, no
+    // registry). Self-contained (own prepare + drive + deliver) so the
+    // engine path below stays untouched until it is removed.
+    if (workflowDef(t.workflow)) {
+      await this.runViaDef(step, t, sandboxId, branch);
+      return;
+    }
+
     // --- planning + implementing (the staged engine run) ---
-    await step.do(
-      "prepare",
-      // Generous retries: parallel fleet dispatch means fresh containers can
-      // stay in "Container is starting" for minutes under provisioning load.
-      { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
-      async () => {
-        await updateTicket(this.env, t.id, { status: "planning" });
-        await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
-        await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
-        // Agent blocks: install the registry's agent definitions.
-        const { installAgentBlocks } = await import("./agents");
-        await installAgentBlocks(this.env, sandboxId);
-        // Fleet memory: seed the sandbox with this repo's accumulated memories.
-        await restoreMemory(this.env, sandboxId, t.repo);
-        // Browser plane: let gated stages fetch live web pages via the Worker.
-        await injectBrowserConfig(this.env, sandboxId);
-        // Ticket context for sandbox plugin tools (script scoping/gating).
-        await injectTicketContext(this.env, sandboxId, t.id, t.repo);
-        // Dependency cache: restore node_modules for cold sandboxes.
-        const dep = await restoreDepCache(this.env, sandboxId, t.repo);
-        if (dep !== "skip") console.log(`depcache restore ${t.id}: ${dep}`);
-      },
-    );
+    await this.prepareRun(step, t, sandboxId, "prepare");
 
     const runId = await step.do(
       "start-workflow",
