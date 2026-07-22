@@ -260,27 +260,38 @@ durable step continuation belongs to Cloudflare Workflows.
   wrangler config + DO classes; our router mounts beside `flue()` in
   app.ts). Accepted.
 
-**Plan:**
-1. Scaffold: worker becomes a flue project (app.ts = existing router;
-   cloudflare.ts exports Sandbox + TicketWorkflow; migrations for
-   FlueRegistry + FlueStageWorkflow).
-2. `workflows/stage.ts` — ONE flue workflow "run a stage": input
-   {ticketId, stage, prompt, tools, model, resultSchema}; sandbox bound
-   to the ticket's container; `session.prompt(…, { result })` returns
-   the typed control verdict.
-3. Plugin tool factories (browser/aft/search/imgup/knowledge/scripts/
-   github/paste) replacing extension.ts; image slims (no pi, no
-   extension installs, no auth injection — container never holds a
-   model credential again).
-4. OAuth: pi-ai natively detects `sk-ant-oat` (Claude-Code identity
-   headers built in) — custodian token feeds
-   `registerProvider('anthropic', { apiKey })`; model chains become
-   provider registrations.
-5. Engine: `launch()` → `invoke(stageWorkflow)`; steer via
-   CallHandle.abort + re-prompt (later: queued mid-session); delete
-   session.ts FIFO machinery.
-6. Smoke the full matrix (coding e2e, steer, bus, screenshot-pr) on the
-   flue path; delete dead launcher code.
+**Plan (progress 2026-07-22):**
+- ✅ **3. Plugin tool factories** — `@workhorse/api` gained the contract
+  (`PluginToolFactory`, `ToolFactoryContext`, `SandboxHandle`,
+  `WorkhorseTool`); all 8 tool halves ported to `plugins/<name>/tools.ts`
+  as flue `defineTool` factories, typecheck-clean: paste + imgup (CLI-
+  exec), search + knowledge + github (call core/env directly, no callback
+  round-trip), scripts (unified core-call + sandbox-exec), **aft** (new,
+  user-pinned — execs the `aft` CLI in the container), browser (agent-
+  browser via SandboxHandle). Worker gained `assembleStageTools(ctx,
+  allow)` — the (plugins ∪ services) ∩ stage-allowlist gate — + full
+  workspace typecheck green.
+- ⏳ **Staged (gated on live OAuth — the only real validation is a stage
+  actually running):**
+  1. Scaffold: worker becomes a flue project (app.ts = existing router;
+     cloudflare.ts exports Sandbox + TicketWorkflow; migrations for
+     FlueRegistry + FlueStageWorkflow).
+  2. `workflows/stage.ts` — ONE flue workflow "run a stage": input
+     {ticketId, stage, prompt, tools, model, resultSchema}; sandbox
+     bound to the ticket's container; `session.prompt(…, { result })`
+     returns the typed control verdict; tools = assembleStageTools.
+  4. OAuth: pi-ai natively detects `sk-ant-oat` — custodian token feeds
+     `registerProvider('anthropic', { apiKey })`; model chains become
+     provider registrations.
+  5. Engine: `launch()` → `invoke(stageWorkflow)`; steer via
+     CallHandle.abort + re-prompt; delete session.ts FIFO machinery.
+     Image slims (no pi, no extension installs, no auth injection —
+     container never holds a model credential again).
+  6. Cutover tails: port `tickets` (fleet-client — needs
+     `Core.listTickets` + ticket diff) and `find_script`/`find_tool`
+     (need a `Core` semindex query) once the stage path is live; smoke
+     the full matrix (coding e2e, steer, bus, screenshot-pr) on flue,
+     then delete dead launcher code.
 
 ### Browser plane follow-ups (post-flue)
 Verify-stage steals from agent-browser: content boundaries on fetched
