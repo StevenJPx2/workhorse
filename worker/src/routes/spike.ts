@@ -12,8 +12,11 @@ import { defineAgent, defineTool, registerProvider } from "@flue/runtime";
 import { cloudflareSandbox } from "@flue/runtime/cloudflare";
 import { createFlueContext, resolveModel } from "@flue/runtime/internal";
 import type { SessionEnv } from "@flue/runtime";
+import { WorkflowEngine, runDir, type WorkflowSpec } from "@workhorse/workflow";
 import * as v from "valibot";
 import type { Env } from "@workhorse/api";
+import { sandboxDriver } from "../agent-run";
+import { flueStageRunner } from "../flue-runner";
 import { json, type Route } from "../router";
 
 /** Minimal in-memory SessionEnv: enough for a no-tool prompt (init reads cwd). */
@@ -149,6 +152,66 @@ async function runSandboxProbe(env: Env, model: string): Promise<Record<string, 
   };
 }
 
+/**
+ * The FULL stack: the real WorkflowEngine + real flueStageRunner + real
+ * container, on a throwaway 2-stage workflow (no ticket, no PR, no fleet
+ * impact). Proves the engine's runner branch drives stages end-to-end with
+ * the actual flue harness — the true cutover smoke.
+ */
+async function runEngineProbe(env: Env, model: string): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  if (!env.SELF_URL) return { ok: false, stage: "config", error: "SELF_URL unset" };
+  const sandboxId = `spike-eng-${Date.now()}`;
+
+  // Minimal 2-stage workflow: a read-only "look" stage → a "report" stage.
+  // No repo needed — the agent works in the bare container.
+  const spec: WorkflowSpec = {
+    schemaVersion: 1,
+    name: "spike-engine",
+    defaults: { thinking: "low", maxRuntimeMs: 600_000 },
+    artifactGraph: {
+      stages: [
+        {
+          id: "look",
+          type: "single",
+          readOnly: true,
+          prompt: "Run `echo hello-from-look` with the bash tool. Then submit_work with analysis of what you saw and control {\"status\":\"done\"}.",
+          tools: [{ name: "bash", classification: "read-only" }],
+          output: { analysis: { required: true } },
+        },
+        {
+          id: "report",
+          from: "look",
+          prompt: "Based on the upstream analysis, submit_work with a one-line analysis and control {\"status\":\"done\",\"ok\":true}.",
+          output: { analysis: { required: true } },
+        },
+      ],
+    },
+  };
+
+  const driver = sandboxDriver(env, sandboxId);
+  await driver.exec(`mkdir -p ${runDir("probe")}/stages`, { timeout: 15_000 });
+  const runner = flueStageRunner(env, sandboxId, env.SELF_URL, "spike-nonticket");
+  const engine = new WorkflowEngine(driver, spec, { cwd: "/workspace", runner });
+
+  await engine.dispatch("Say hello via the pipeline.", { runId: "probe", model });
+  let r = await engine.advance("probe", 0);
+  let guard = 0;
+  const trail: string[] = [];
+  while (r.status === "running" && guard++ < 8) {
+    trail.push(r.tasks.map((t) => `${t.id}:${t.status}`).join(","));
+    r = await engine.advance("probe", 0);
+  }
+  const state = await engine.load("probe");
+  return {
+    ok: r.status === "completed",
+    status: r.status,
+    elapsedMs: Date.now() - started,
+    stages: state.stages.map((s) => ({ id: s.id, status: s.status, tokens: s.stats?.tokens?.total, detail: s.detail })),
+    trail,
+  };
+}
+
 export const spikeRoutes: Route[] = [
   {
     method: "POST",
@@ -158,7 +221,12 @@ export const spikeRoutes: Route[] = [
       const body = (await request.json().catch(() => ({}))) as { model?: string; mode?: string };
       const model = body.model ?? "claude-haiku-4-5";
       try {
-        const out = body.mode === "sandbox" ? await runSandboxProbe(env, model) : await runProbe(env, model);
+        const out =
+          body.mode === "engine"
+            ? await runEngineProbe(env, model)
+            : body.mode === "sandbox"
+              ? await runSandboxProbe(env, model)
+              : await runProbe(env, model);
         return json(out);
       } catch (e) {
         return json(
