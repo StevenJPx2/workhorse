@@ -107,6 +107,7 @@ export const coding: WorkflowDef = {
   name: "coding",
   description:
     "Plan, implement, and adversarially verify a code change; loop back to implement on a failing verdict, then open a PR.",
+  defaults: { agent: "coder" },
   stages,
 
   async run(ctx: WorkflowContext): Promise<WorkflowResult> {

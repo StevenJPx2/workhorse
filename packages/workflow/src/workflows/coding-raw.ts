@@ -40,6 +40,7 @@ const stages: StageSpec[] = [
 export const codingRaw: WorkflowDef = {
   name: "coding-raw",
   description: "Single-stage baseline: one agent implements + self-checks in one session, then opens a PR.",
+  defaults: { agent: "coder" },
   stages,
 
   async run(ctx: WorkflowContext): Promise<WorkflowResult> {

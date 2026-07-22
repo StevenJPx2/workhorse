@@ -5,8 +5,9 @@
 import type { WorkflowDef } from "../context";
 import { coding } from "./coding";
 import { codingRaw } from "./coding-raw";
+import { screenshotPr } from "./screenshot-pr";
 
-const DEFS: WorkflowDef[] = [coding, codingRaw];
+const DEFS: WorkflowDef[] = [coding, codingRaw, screenshotPr];
 
 export const workflowDefs: Record<string, WorkflowDef> = Object.fromEntries(
   DEFS.map((d) => [d.name, d]),
@@ -16,4 +17,4 @@ export function workflowDef(name: string | undefined): WorkflowDef | undefined {
   return name ? workflowDefs[name] : undefined;
 }
 
-export { coding, codingRaw };
+export { coding, codingRaw, screenshotPr };

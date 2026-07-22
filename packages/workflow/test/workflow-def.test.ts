@@ -5,7 +5,7 @@
 // sequence, and lets a test script a failing verify to exercise the loop-back.
 
 import { describe, expect, it } from "vitest";
-import { coding, codingRaw } from "../src/workflows/index";
+import { coding, codingRaw, screenshotPr, workflowDef } from "../src/workflows/index";
 import { StageFailure, type StageInvocation, type StageResult, type WorkflowContext } from "../src/context";
 
 interface Call {
@@ -99,5 +99,21 @@ describe("manifests", () => {
     expect(names).not.toContain("write");
     expect(names).not.toContain("edit");
     expect(plan.readOnly).toBe(true);
+  });
+  it("registry resolves all three workflows by name; unknown → undefined", () => {
+    expect(workflowDef("coding")).toBe(coding);
+    expect(workflowDef("coding-raw")).toBe(codingRaw);
+    expect(workflowDef("screenshot-pr")).toBe(screenshotPr);
+    expect(workflowDef("nope")).toBeUndefined();
+    expect(workflowDef(undefined)).toBeUndefined();
+  });
+  it("workflows carry an agent-block default; verify overrides to verifier", () => {
+    expect(coding.defaults?.agent).toBe("coder");
+    expect(coding.stages.find((s) => s.id === "verify")?.agent).toBe("verifier");
+    expect(screenshotPr.defaults?.agent).toBe("shooter");
+  });
+  it("screenshot-pr is single-stage with a pr outcome", () => {
+    expect(screenshotPr.stages.map((s) => s.id)).toEqual(["shoot"]);
+    expect(screenshotPr.stages[0].outcome).toBe("pr");
   });
 });
