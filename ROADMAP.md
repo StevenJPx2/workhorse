@@ -211,20 +211,33 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳
 
-### Browser plane v2 (agent-browser steals)
-[agent-browser](https://github.com/vercel-labs/agent-browser) itself is a
-category mismatch (local Rust CLI + Chrome daemon; interactive browsing
-agent). Four of its ideas fit our worker-binding tools:
-1. **AX snapshot mode** — `mode: "snapshot"`: accessibility tree of
-   interactive elements (role/name/ref), far cheaper in tokens than html
-   mode for "what's on this page". The best steal.
-2. **Content boundaries** — wrap `browser_fetch` output in delimiters so
-   the model can distinguish tool output from untrusted page content
-   (prompt-injection hardening).
-3. **Visual diff** — `browser_diff(url, baselinePath)` pixel-diffs
-   against a saved baseline; natural verify-stage tool for UI changes.
-4. **Annotated screenshots** — numbered element labels on the PNG, if
-   interactive flows ever land.
+### Browser plane v2 — long-lived sessions (replacement architecture)
+The current plane is STATELESS: every `browser_*` call is one
+Browser-Rendering launch → act → close; no cookies, no login state, no
+multi-step flows. Replace it with a three-tier plane:
+
+1. **Stateful tier (new default for interaction)** — a hosted browser
+   vendor with persistent sessions (evaluate Browserbase / Browser Use /
+   Browserless; agent-browser's provider plugins are the integration
+   sketch). New sandbox tools operate on a session: `browser_session`
+   (open/close, returns id), `browser_act` (click/fill/press/scroll by
+   AX ref), `browser_snapshot` (accessibility tree with refs — the
+   token-cheap "what's on this page"), plus session-scoped
+   screenshot/record. Sessions map 1:1 to a ticket run, credentialed
+   worker-side, with recording/replay for the trace archive. Unlocks
+   login flows, "test the signup e2e", stealth/CAPTCHA handling.
+2. **Stateless read tier** — the jina tools (`web_search`, `web_read`)
+   own one-shot "fetch this page as text/markdown"; today's
+   `browser_fetch` text/html/links modes fold into them.
+3. **Fallback/cheap tier** — [Lightpanda](https://lightpanda.io) (or the
+   CF binding retained) for fast headless fetch+screenshot when a full
+   Chrome session is overkill; also the local-dev path.
+
+Migration: keep tool names stable where semantics survive
+(`browser_screenshot`/`browser_record` become session-or-oneshot);
+verify-stage steals ride along — content boundaries on all fetched text,
+`browser_diff(url, baseline)` pixel diff, annotated screenshots
+(numbered AX labels) for interactive flows.
 
 ---
 

@@ -17,10 +17,22 @@
         "readOnly": true,
         "thinking": "low",
         "tools": [
-          "read",
-          "grep",
-          "find",
-          "ls",
+          {
+            "name": "read",
+            "classification": "read-only"
+          },
+          {
+            "name": "grep",
+            "classification": "read-only"
+          },
+          {
+            "name": "find",
+            "classification": "read-only"
+          },
+          {
+            "name": "ls",
+            "classification": "read-only"
+          },
           {
             "name": "ctx_search",
             "classification": "read-only",
@@ -32,9 +44,20 @@
             "optional": true
           },
           {
-            "name": "browser_fetch",
-            "classification": "read-only",
-            "optional": true
+            "name": "browser_open",
+            "classification": "read-only"
+          },
+          {
+            "name": "browser_snapshot",
+            "classification": "read-only"
+          },
+          {
+            "name": "browser_read",
+            "classification": "read-only"
+          },
+          {
+            "name": "browser_screenshot",
+            "classification": "read-only"
           },
           {
             "name": "list_scripts",
@@ -84,13 +107,34 @@
         },
         "thinking": "low",
         "tools": [
-          "read",
-          "grep",
-          "find",
-          "ls",
-          "edit",
-          "write",
-          "bash",
+          {
+            "name": "read",
+            "classification": "read-only"
+          },
+          {
+            "name": "grep",
+            "classification": "read-only"
+          },
+          {
+            "name": "find",
+            "classification": "read-only"
+          },
+          {
+            "name": "ls",
+            "classification": "read-only"
+          },
+          {
+            "name": "edit",
+            "classification": "read-only"
+          },
+          {
+            "name": "write",
+            "classification": "read-only"
+          },
+          {
+            "name": "bash",
+            "classification": "read-only"
+          },
           {
             "name": "ctx_search",
             "classification": "read-only",
@@ -146,11 +190,26 @@
         "readOnly": true,
         "thinking": "medium",
         "tools": [
-          "read",
-          "grep",
-          "find",
-          "ls",
-          "bash",
+          {
+            "name": "read",
+            "classification": "read-only"
+          },
+          {
+            "name": "grep",
+            "classification": "read-only"
+          },
+          {
+            "name": "find",
+            "classification": "read-only"
+          },
+          {
+            "name": "ls",
+            "classification": "read-only"
+          },
+          {
+            "name": "bash",
+            "classification": "read-only"
+          },
           {
             "name": "ctx_search",
             "classification": "read-only",
@@ -162,14 +221,20 @@
             "optional": true
           },
           {
-            "name": "browser_fetch",
-            "classification": "read-only",
-            "optional": true
+            "name": "browser_open",
+            "classification": "read-only"
+          },
+          {
+            "name": "browser_snapshot",
+            "classification": "read-only"
+          },
+          {
+            "name": "browser_read",
+            "classification": "read-only"
           },
           {
             "name": "browser_screenshot",
-            "classification": "read-only",
-            "optional": true
+            "classification": "read-only"
           },
           {
             "name": "list_scripts",
@@ -212,7 +277,7 @@
             "optional": true
           }
         ],
-        "prompt": "You are reviewing another agent's implementation of the runtime task. The change is unstaged/staged in the working tree \u2014 inspect it with: git diff HEAD (or git diff --cached). Adversarially verify it against the original task and the upstream plan: missed requirements, bugs, regressions in touched code paths, convention violations. Run any checks the repo offers via bash (per project memory if ctx_search knows how this repo is verified). If the change affects a web page that is deployed or can be reached at a URL, use browser_fetch to read its live content and browser_screenshot to confirm it actually renders correctly. Report findings via submit_work's control: verdict pass|fail. ROUTING IS MECHANICAL: verdict \"fail\" re-runs the implement stage with your blocking[] findings embedded in its prompt (then this verification runs again); verdict \"pass\" completes the run and delivers the PR. Be precise in blocking[] \u2014 the implementer sees exactly what you write, with blocking[] (each: file, problem, why it matters) and nits[]. Only genuine defects are blocking \u2014 do not invent findings; a sound implementation gets verdict pass with empty blocking.",
+        "prompt": "You are reviewing another agent's implementation of the runtime task. The change is unstaged/staged in the working tree \u2014 inspect it with: git diff HEAD (or git diff --cached). Adversarially verify it against the original task and the upstream plan: missed requirements, bugs, regressions in touched code paths, convention violations. Run any checks the repo offers via bash (per project memory if ctx_search knows how this repo is verified). If the change affects a web page that is deployed or can be reached at a URL, use browser_open + browser_read to inspect its live content and browser_snapshot to confirm the page structure is correct. Report findings via submit_work's control: verdict pass|fail. ROUTING IS MECHANICAL: verdict \"fail\" re-runs the implement stage with your blocking[] findings embedded in its prompt (then this verification runs again); verdict \"pass\" completes the run and delivers the PR. Be precise in blocking[] \u2014 the implementer sees exactly what you write, with blocking[] (each: file, problem, why it matters) and nits[]. Only genuine defects are blocking \u2014 do not invent findings; a sound implementation gets verdict pass with empty blocking.",
         "output": {
           "analysis": {
             "required": true

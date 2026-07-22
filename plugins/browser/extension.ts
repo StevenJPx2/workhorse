@@ -1,26 +1,20 @@
 // Pi extension: Workhorse browser tools (sandbox half).
 //
-// Gives a workflow agent the ability to read live web pages through the
-// Workhorse browser plane — a tiered fetch that runs Cloudflare Browser
-// Rendering first and auto-escalates bot-walled sites (PerimeterX/DataDome/
-// Akamai) to a commercial unblocker when one is configured. The heavy
-// lifting + any unblocker credential live in the Worker; this half is a thin
-// authenticated client, so untrusted repo code never sees provider secrets.
+// Stateful browser via agent-browser (CLI daemon, persistent sessions):
+//   browser_open       — open/navigate a URL (starts daemon + session)
+//   browser_snapshot   — accessibility tree with element refs (token-cheap)
+//   browser_read       — rendered page text/markdown (JS-capable read)
+//   browser_act        — click/fill/type/scroll/select/hover by AX ref
+//   browser_screenshot — PNG screenshot of current page
+//   browser_record     — timed frame capture → animated GIF (ffmpeg)
 //
-// Tools:
-//   browser_fetch      — fetch a URL as clean text (default), html, or links
-//   browser_screenshot — capture a PNG of a URL (Browser Rendering tier only)
-//   browser_record     — record a short page interaction as an animated GIF
-//                        (frame captures assembled with native ffmpeg; pass
-//                        the GIF to upload_image for a hosted URL)
+// The daemon starts lazily on first call and lives for the container's
+// lifetime (one session = one ticket run). agent-browser-wrapper handles
+// daemon lifecycle; the extension shells out to it for every call.
 //
-// Gating: these are custom tools, so a workflow stage must name them in its
-// tools[] WITH an object-spec classification ("read-only") or pi-workflow
-// blocks them. Off by default in every stage.
-//
-// Config (first hit wins): env WORKHORSE_BROWSER_URL / WORKHORSE_BROWSER_TOKEN,
-// else /root/.workhorse-browser.json { "url": "...", "token": "..." } written
-// into the sandbox at prepare time.
+// Gating: custom tools — a workflow stage must name them in tools[] with
+// an object-spec classification ("read-only" | "write-capable"). Off by
+// default in every stage.
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -28,94 +22,137 @@ import { dirname, join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-function config(): { url: string; token: string } {
-  let url = process.env.WORKHORSE_BROWSER_URL ?? "";
-  let token = process.env.WORKHORSE_BROWSER_TOKEN ?? "";
-  if (!url || !token) {
-    try {
-      const f = JSON.parse(readFileSync("/root/.workhorse-browser.json", "utf8"));
-      url ||= f.url ?? "";
-      token ||= f.token ?? "";
-    } catch {
-      /* fall through */
-    }
-  }
-  return { url: url.replace(/\/$/, ""), token };
-}
+const WRAPPER = "/usr/local/bin/agent-browser-wrapper";
 
-interface BrowserResult {
-  ok: boolean;
-  tier: string;
-  status?: number;
-  finalUrl?: string;
-  blockedBy?: string | null;
-  content?: string;
-  links?: string[];
-  base64Image?: string;
-  base64Frames?: string[];
-  frameIntervalMs?: number;
-  bytes?: number;
-  note?: string;
-}
-
-async function callBrowser(body: unknown): Promise<BrowserResult> {
-  const { url, token } = config();
-  if (!url || !token) {
-    throw new Error(
-      "Browser plane not configured (WORKHORSE_BROWSER_URL/TOKEN or /root/.workhorse-browser.json).",
-    );
-  }
-  const res = await fetch(`${url}/browser`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  let parsed: BrowserResult;
+function ab(...args: string[]): string {
   try {
-    parsed = JSON.parse(text) as BrowserResult;
-  } catch {
-    throw new Error(`browser plane: HTTP ${res.status} ${text.slice(0, 200)}`);
+    return execFileSync(WRAPPER, args, { timeout: 60_000, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  } catch (e: unknown) {
+    const err = e as { stderr?: string; message?: string };
+    throw new Error(`agent-browser ${args[0]}: ${(err.stderr ?? err.message ?? "").slice(0, 500)}`);
   }
-  return parsed;
 }
 
 const textResult = (t: string) => ({ content: [{ type: "text" as const, text: t }], details: {} });
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool({
-    name: "browser_fetch",
-    label: "Browser: fetch page",
+    name: "browser_open",
+    label: "Browser: open",
     description:
-      "Fetch a live web page through a real headless browser (renders JS). Returns clean " +
-      "visible text by default — use mode 'html' for raw HTML or 'links' for all hyperlinks. " +
-      "Automatically escalates bot-protected sites (PerimeterX/DataDome/Akamai) to an " +
-      "unblocker backend when one is configured; otherwise reports which vendor blocked it. " +
-      "Use for reading docs, verifying deployed pages, extracting content, or research.",
+      "Open or navigate to a URL in the persistent browser session (one per ticket run). " +
+      "Starts the daemon on the first call (~1s); subsequent calls reuse the session. " +
+      "Always call this before browser_snapshot / browser_act / browser_screenshot.",
     parameters: Type.Object({
-      url: Type.String({ description: "Absolute http(s) URL to fetch" }),
-      mode: Type.Optional(
-        Type.Union([Type.Literal("text"), Type.Literal("html"), Type.Literal("links")], {
-          description: "text (clean visible text, default) | html (raw) | links (all hrefs)",
-        }),
+      url: Type.String({ description: "Absolute http(s) URL to navigate to" }),
+      waitMs: Type.Optional(Type.Number({ description: "Extra settle time after load (ms), max 8000" })),
+    }),
+    async execute(_id, params) {
+      const args = ["open", params.url];
+      if (params.waitMs && params.waitMs > 0) args.push("--wait", String(Math.min(params.waitMs, 8000)));
+      const raw = ab(...args);
+      try {
+        const j = JSON.parse(raw) as { url?: string };
+        return textResult(`Browser open: ${j.url ?? params.url}`);
+      } catch {
+        return textResult(raw.trim() || `Opened ${params.url}`);
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "browser_snapshot",
+    label: "Browser: snapshot (AX tree)",
+    description:
+      "Get the accessibility tree of the current page with element refs (@e1, @e2, …). " +
+      "Interactive elements only by default (buttons, inputs, links) — far cheaper in tokens " +
+      "than raw HTML. Use browser_act to interact by ref. Call browser_open first.",
+    parameters: Type.Object({
+      depth: Type.Optional(Type.Number({ description: "Max tree depth (default 10)" })),
+      compact: Type.Optional(Type.Boolean({ description: "Remove empty structural elements (default true)" })),
+    }),
+    async execute() {
+      const raw = ab("snapshot", "-i", "-c", "-d", "10");
+      // agent-browser --json snapshot returns {snapshot: "..."} or raw text.
+      try {
+        const j = JSON.parse(raw) as { snapshot?: string };
+        return textResult(j.snapshot ?? raw);
+      } catch {
+        return textResult(raw);
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "browser_read",
+    label: "Browser: read page",
+    description:
+      "Read the current page's rendered content as text or markdown (JS executed, live DOM). " +
+      "Omit url to read the active tab; pass a URL to navigate+read in one call. " +
+      "For static content prefer web_read (Jina, no browser needed); this tool handles " +
+      "JS-heavy SPAs, authenticated pages, and browser-state-dependent content.",
+    parameters: Type.Object({
+      url: Type.Optional(Type.String({ description: "URL to navigate to before reading (optional)" })),
+      filter: Type.Optional(Type.String({ description: "Filter to matching page sections" })),
+    }),
+    async execute(_id, params) {
+      const args = ["read"];
+      if (params.url) args.push(params.url);
+      if (params.filter) args.push("--filter", params.filter);
+      const raw = ab(...args);
+      try {
+        const j = JSON.parse(raw) as { content?: string; text?: string };
+        return textResult(j.content ?? j.text ?? raw);
+      } catch {
+        return textResult(raw);
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: "browser_act",
+    label: "Browser: act",
+    description:
+      "Perform an action on a page element by its ref from browser_snapshot. " +
+      "Use snapshot refs (@e1, @e2, …) for selectors. Supports: click, dblclick, " +
+      "fill, type, press, hover, scroll, select, check, uncheck. " +
+      "Always snapshot first to get current refs — they change after navigation or DOM mutation.",
+    parameters: Type.Object({
+      action: Type.Union(
+        [
+          Type.Literal("click"),
+          Type.Literal("dblclick"),
+          Type.Literal("fill"),
+          Type.Literal("type"),
+          Type.Literal("press"),
+          Type.Literal("hover"),
+          Type.Literal("scroll"),
+          Type.Literal("select"),
+          Type.Literal("check"),
+          Type.Literal("uncheck"),
+        ],
+        { description: "Action to perform" },
       ),
-      waitMs: Type.Optional(
-        Type.Number({ description: "Extra settle time after load (ms) for JS-heavy pages, max 8000" }),
+      selector: Type.String({ description: "Element ref (@e1) or CSS selector" }),
+      value: Type.Optional(
+        Type.String({
+          description:
+            "Value for fill/type/select/press. For press: key name (Enter, Tab, Escape). " +
+            "For select: option value. For scroll: direction (up/down/left/right) or px.",
+        }),
       ),
     }),
     async execute(_id, params) {
-      const r = await callBrowser({ url: params.url, mode: params.mode ?? "text", waitMs: params.waitMs });
-      if (!r.ok) {
-        const why = r.blockedBy
-          ? `blocked by ${r.blockedBy}`
-          : (r.note ?? `failed (tier ${r.tier}, status ${r.status ?? "n/a"})`);
-        return textResult(`Could not fetch ${params.url}: ${why}.`);
+      const args: string[] = [params.action, params.selector];
+      if (params.value !== undefined) args.push(params.value);
+      const raw = ab(...args);
+      try {
+        const j = JSON.parse(raw) as { url?: string; title?: string };
+        const dest = j.url ? ` → ${j.url}` : "";
+        return textResult(`${params.action} ${params.selector}${dest}`);
+      } catch {
+        return textResult(raw.trim() || `${params.action} ${params.selector}`);
       }
-      const head = `[${params.url}] via ${r.tier}${r.finalUrl && r.finalUrl !== params.url ? ` → ${r.finalUrl}` : ""} (${r.bytes ?? 0} bytes)`;
-      if (params.mode === "links") {
-        return textResult(`${head}\n\n${(r.links ?? []).join("\n")}`);
-      }
-      return textResult(`${head}\n\n${r.content ?? "(empty)"}`);
     },
   });
 
@@ -123,44 +160,48 @@ export default function (pi: ExtensionAPI) {
     name: "browser_screenshot",
     label: "Browser: screenshot",
     description:
-      "Capture a PNG screenshot of a live web page (Browser Rendering tier only). Returns the " +
-      "image for visual inspection — e.g. checking a deployed/preview UI actually renders " +
-      "correctly. Pass savePath to instead write the PNG to a file in the workspace (and get " +
-      "the path back, no inline image) — use that when you intend to upload it with " +
-      "upload_image. Not available for hard bot-walled sites that require the unblocker tier.",
+      "Take a PNG screenshot of the current page. Returns inline image by default; " +
+      "pass savePath to write to disk instead (ideal before upload_image). " +
+      "Call browser_open first.",
     parameters: Type.Object({
-      url: Type.String({ description: "Absolute http(s) URL to screenshot" }),
-      waitMs: Type.Optional(Type.Number({ description: "Settle time after load (ms), max 8000" })),
+      fullPage: Type.Optional(Type.Boolean({ description: "Capture full scrollable page (default false, viewport only)" })),
       savePath: Type.Optional(
         Type.String({
           description:
-            "Write the PNG to this path instead of returning it inline (e.g. /workspace/repo/shot.png). " +
-            "Returns the saved path + byte size — ideal before upload_image.",
+            "Write the PNG to this path instead of returning inline (e.g. /workspace/repo/shot.png). " +
+            "Returns saved path — use with upload_image for a public URL.",
         }),
       ),
     }),
     async execute(_id, params) {
-      const r = await callBrowser({ url: params.url, mode: "screenshot", waitMs: params.waitMs });
-      if (!r.ok || !r.base64Image) {
-        const why = r.blockedBy ? `blocked by ${r.blockedBy}` : (r.note ?? "screenshot failed");
-        return textResult(`Could not screenshot ${params.url}: ${why}.`);
-      }
+      const args = ["screenshot"];
+      if (params.fullPage) args.push("--full");
       if (params.savePath) {
-        try {
-          mkdirSync(dirname(params.savePath), { recursive: true });
-          writeFileSync(params.savePath, Buffer.from(r.base64Image, "base64"));
-        } catch (e) {
-          return textResult(`Screenshot captured but could not write to ${params.savePath}: ${String(e)}`);
-        }
-        return textResult(`Screenshot of ${params.url} saved to ${params.savePath} (${r.bytes ?? 0} bytes). Upload it with upload_image to get a public URL.`);
+        mkdirSync(dirname(params.savePath), { recursive: true });
+        args.push(params.savePath);
+        ab(...args);
+        const size = statSync(params.savePath).size;
+        return textResult(
+          `Screenshot saved to ${params.savePath} (${(size / 1024).toFixed(0)} KiB). ` +
+            "Upload with upload_image for a hosted URL.",
+        );
       }
-      return {
-        content: [
-          { type: "text" as const, text: `Screenshot of ${params.url} (${r.bytes ?? 0} bytes):` },
-          { type: "image" as const, data: r.base64Image, mimeType: "image/png" },
-        ],
-        details: {},
-      };
+      // Inline: save to temp, read, return as image content.
+      const tmp = join(mkdtempSync("/tmp/whshot-"), "shot.png");
+      try {
+        args.push(tmp);
+        ab(...args);
+        const b64 = readFileSync(tmp).toString("base64");
+        return {
+          content: [
+            { type: "text" as const, text: "Screenshot captured:" },
+            { type: "image" as const, data: b64, mimeType: "image/png" },
+          ],
+          details: {},
+        };
+      } finally {
+        rmSync(dirname(tmp), { recursive: true, force: true });
+      }
     },
   });
 
@@ -168,53 +209,53 @@ export default function (pi: ExtensionAPI) {
     name: "browser_record",
     label: "Browser: record GIF",
     description:
-      "Record a short animation of a live web page as a GIF: captures timed frames via the " +
-      "browser plane (optionally running a script first — e.g. a scroll or click — so the " +
-      "recording shows the interaction) and assembles them with ffmpeg. Writes the GIF to " +
-      "savePath and returns it; upload with upload_image for a hosted URL to embed in PRs. " +
-      "Max 12s, 1-4 fps. Not available for hard bot-walled sites.",
+      "Record a short animation of the current page as a GIF. Captures timed screenshot " +
+      "frames via the persistent session (optionally running a script first — e.g. a " +
+      "scroll or click) and assembles them with native ffmpeg. Writes the GIF to " +
+      "savePath; upload with upload_image for a hosted URL. Max 12s, 1–4 fps. " +
+      "Call browser_open first.",
     parameters: Type.Object({
-      url: Type.String({ description: "Absolute http(s) URL to record" }),
-      savePath: Type.String({
-        description: "Where to write the GIF (e.g. /workspace/repo/demo.gif)",
-      }),
+      savePath: Type.String({ description: "Where to write the GIF (e.g. /workspace/repo/demo.gif)" }),
       durationMs: Type.Optional(Type.Number({ description: "Recording length in ms (default 6000, max 12000)" })),
-      fps: Type.Optional(Type.Number({ description: "Frames per second, 1-4 (default 2)" })),
+      fps: Type.Optional(Type.Number({ description: "Frames per second, 1–4 (default 2)" })),
       script: Type.Optional(
         Type.String({
           description:
-            "JS to run in the page right before recording starts — kick off the thing to record, " +
-            'e.g. "window.scrollTo({top: 2000, behavior: \'smooth\'})"',
+            "JS to run in the page before recording — kick off the thing being recorded, " +
+            "e.g. \"window.scrollTo({top: 2000, behavior: 'smooth'})\"",
         }),
       ),
-      waitMs: Type.Optional(Type.Number({ description: "Settle time after load before recording (ms, max 8000)" })),
     }),
     async execute(_id, params) {
-      const r = await callBrowser({
-        url: params.url,
-        mode: "video",
-        waitMs: params.waitMs,
-        durationMs: params.durationMs,
-        fps: params.fps,
-        script: params.script,
-      });
-      if (!r.ok || !r.base64Frames?.length) {
-        const why = r.blockedBy ? `blocked by ${r.blockedBy}` : (r.note ?? "recording failed");
-        return textResult(`Could not record ${params.url}: ${why}.`);
+      const durationMs = Math.min(params.durationMs ?? 6000, 12_000);
+      const fps = Math.min(Math.max(params.fps ?? 2, 1), 4);
+      const intervalMs = Math.round(1000 / fps);
+      const maxFrames = Math.ceil(durationMs / intervalMs);
+
+      if (params.script) {
+        ab("eval", params.script);
+        await new Promise((r) => setTimeout(r, 300));
       }
-      // Assemble with native ffmpeg (baked into the image): palette pass for
-      // quality, frame rate from the actual capture interval.
+
       const tmp = mkdtempSync("/tmp/whrec-");
       try {
-        r.base64Frames.forEach((f, i) => {
-          writeFileSync(join(tmp, `f${String(i).padStart(3, "0")}.jpg`), Buffer.from(f, "base64"));
-        });
-        const fpsActual = Math.max(1, Math.round(1000 / (r.frameIntervalMs ?? 500)));
+        const started = Date.now();
+        let frameIdx = 0;
+        while (Date.now() - started < durationMs && frameIdx < maxFrames) {
+          const tick = Date.now();
+          ab("screenshot", join(tmp, `f${String(frameIdx).padStart(3, "0")}.jpg`));
+          frameIdx++;
+          const elapsed = Date.now() - tick;
+          if (elapsed < intervalMs) await new Promise((r) => setTimeout(r, intervalMs - elapsed));
+        }
+
+        if (frameIdx < 2) return textResult("Recording too short — captured fewer than 2 frames.");
+
         mkdirSync(dirname(params.savePath), { recursive: true });
         execFileSync(
           "ffmpeg",
           [
-            "-y", "-framerate", String(fpsActual), "-i", join(tmp, "f%03d.jpg"),
+            "-y", "-framerate", String(fps), "-i", join(tmp, "f%03d.jpg"),
             "-vf", "split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer",
             "-loop", "0", params.savePath,
           ],
@@ -222,11 +263,11 @@ export default function (pi: ExtensionAPI) {
         );
         const size = statSync(params.savePath).size;
         return textResult(
-          `Recorded ${params.url} → ${params.savePath} (${r.base64Frames.length} frames @ ${fpsActual}fps, ` +
-            `${(size / 1024).toFixed(0)} KiB). Upload it with upload_image to get a public URL for PRs.`,
+          `Recorded ${frameIdx} frames @ ${fps}fps → ${params.savePath} (${(size / 1024).toFixed(0)} KiB). ` +
+            "Upload with upload_image for a hosted URL.",
         );
       } catch (e) {
-        return textResult(`Frames captured but GIF assembly failed: ${String(e).slice(0, 300)}`);
+        return textResult(`GIF assembly failed: ${String(e).slice(0, 300)}`);
       } finally {
         rmSync(tmp, { recursive: true, force: true });
       }

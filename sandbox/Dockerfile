@@ -5,6 +5,12 @@ FROM docker.io/cloudflare/sandbox:0.12.3
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
+# agent-browser: persistent session browser (AX snapshots, click/fill,
+# screenshot, read, tabs, har). Pre-install Chrome during image build
+# so cold sandboxes don't pay the download tax.
+RUN npm install -g agent-browser && agent-browser install
+COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
+
 # Bake the agent runtime into the image so sandboxes don't pay per-run
 # installs (disk is ephemeral; runtime installs are wasted work).
 #
