@@ -202,10 +202,19 @@ export function flueStageRunner(
       registerProvider("anthropic", { apiKey: token });
 
       // OpenCode free models (fallback when Anthropic rate-limits).
-      // Single API key for both zen + go providers.
+      // Non-catalog providers need api + baseUrl explicitly. Zen/Go are
+      // OpenAI-compatible chat/completions endpoints. Single API key for both.
       if (env.OPENCODE_API_KEY) {
-        registerProvider("opencode-zen", { apiKey: env.OPENCODE_API_KEY });
-        registerProvider("opencode-go", { apiKey: env.OPENCODE_API_KEY });
+        registerProvider("opencode-zen", {
+          api: "openai",
+          baseUrl: "https://opencode.ai/zen/v1",
+          apiKey: env.OPENCODE_API_KEY,
+        });
+        registerProvider("opencode-go", {
+          api: "openai",
+          baseUrl: "https://opencode.ai/go/v1",
+          apiKey: env.OPENCODE_API_KEY,
+        });
       }
 
       if (!repo) repo = (await core.getTicket(ticketId))?.repo ?? "";
