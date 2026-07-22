@@ -212,24 +212,36 @@ export function flueStageRunner(
       const pluginTools = assembleStageTools(ctx, input.tools);
       const { tool: submit, wasSubmitted } = submitWorkTool(sandbox, input.dir);
 
-      const model = input.model ?? "claude-sonnet-4-6";
-      // Fallback: override the "anthropic" provider to point to opencode-zen's
-      // gateway when the primary OAuth call 429s. The Anthropic API handler is
-      // already registered (proven by the spike) — just swap baseUrl + apiKey.
-      // opencode-zen hosts Anthropic models at /zen/v1/messages.
-      const providerOverrides = [
-        { baseUrl: undefined, apiKey: undefined }, // primary: OAuth (registered above)
-        ...(env.OPENCODE_API_KEY
-          ? [{ baseUrl: "https://opencode.ai/zen", apiKey: env.OPENCODE_API_KEY }]
+      const primaryModel = input.model ?? "claude-sonnet-4-6";
+      // Fallback chain: Anthropic OAuth (primary) → opencode-zen FREE models.
+      // The free models (mimo/laguna, suffix -free) need NO balance and use
+      // the OpenAI-compatible endpoint (api: openai-completions, /zen/v1),
+      // NOT the Anthropic Messages endpoint — a separate provider, not an
+      // override. Each leg carries its own model ref. Proven reachable by the
+      // /spike/flue provider probe (they answer with structured errors).
+      const zenKey = env.OPENCODE_API_KEY;
+      const legs: Array<{ ref: string; register: () => void }> = [
+        { ref: `anthropic/${primaryModel}`, register: () => registerProvider("anthropic", { apiKey: token }) },
+        ...(zenKey
+          ? [
+              {
+                ref: "opencode-zen/mimo-v2.5-free",
+                register: () =>
+                  registerProvider("opencode-zen", { api: "openai-completions", baseUrl: "https://opencode.ai/zen/v1", apiKey: zenKey }),
+              },
+              {
+                ref: "opencode-zen/laguna-s-2.1-free",
+                register: () =>
+                  registerProvider("opencode-zen", { api: "openai-completions", baseUrl: "https://opencode.ai/zen/v1", apiKey: zenKey }),
+              },
+            ]
           : []),
       ];
       let lastError = "";
-      for (const override of providerOverrides) {
-        if (override.baseUrl) {
-          registerProvider("anthropic", { baseUrl: override.baseUrl, apiKey: override.apiKey });
-        }
+      for (const leg of legs) {
+        leg.register();
         const agent = defineAgent(() => ({
-          model: `anthropic/${model}`,
+          model: leg.ref,
           instructions: input.persona,
           tools: [...builtins, ...pluginTools, submit],
           sandbox: { ...cloudflareSandbox(getSandbox(env.Sandbox, sandboxId) as never, { cwd: input.cwd }), tools: () => [] },
@@ -238,7 +250,7 @@ export function flueStageRunner(
         const ctxFlue = createFlueContext({
           id: sandboxId,
           env: {},
-          agentConfig: { resolveModel: () => resolveModel(`anthropic/${model}`) },
+          agentConfig: { resolveModel: () => resolveModel(leg.ref) },
           createDefaultEnv: async () => {
             throw new Error("no default env — stage agent supplies a sandbox factory");
           },
@@ -271,7 +283,7 @@ export function flueStageRunner(
           return { stats };
         } catch (e) {
           lastError = String((e as Error)?.message ?? e);
-          if (/429|rate.?limit|overloaded|quota|credit|spend/i.test(lastError)) continue;
+          if (/429|rate.?limit|overloaded|quota|credit|spend|balance|usage.?limit/i.test(lastError)) continue;
           return { failure: { kind: "session", detail: lastError.slice(0, 400) } };
         }
       }

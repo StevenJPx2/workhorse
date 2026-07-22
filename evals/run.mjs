@@ -42,7 +42,8 @@ if (cmd === "file") {
           title: `${task.title} [${variant.id}]`,
           repo: corpus.repo,
           prompt: task.prompt,
-          model: variant.model,
+          ...(variant.model ? { model: variant.model } : {}),
+          ...(variant.workflow ? { workflow: variant.workflow } : {}),
         }),
       });
       state.runs.push({ task: task.id, variant: variant.id, ticketId: ticket.id });
@@ -57,9 +58,11 @@ if (cmd === "file") {
   if (!existsSync(statePath)) throw new Error("no .state.json — run `file` first");
   const state = JSON.parse(readFileSync(statePath, "utf8"));
   const rows = [];
+  const results = [];
   for (const run of state.runs) {
     const { ticket } = await api(`/tickets/${run.ticketId}`);
-    let metrics = { tokens: null, stages: null, failedStages: null, wallMs: null };
+    let metrics = { tokens: null, stages: null, failedStages: null, loopbacks: null, wallMs: null };
+    let diff = "";
     try {
       const idx = await api(`/tickets/${run.ticketId}/traces`);
       if (idx.length) {
@@ -70,13 +73,19 @@ if (cmd === "file") {
           tokens: a.usage?.totalTokens ?? null,
           stages: tasks.length,
           failedStages: tasks.filter((t) => t.status === "failed").length,
+          // loopbacks = implement re-runs beyond the first (verify→implement).
+          loopbacks: Math.max(0, tasks.filter((t) => t.id === "implement").length - 1),
           wallMs:
             a.startedAt && a.completedAt
               ? new Date(a.completedAt) - new Date(a.startedAt)
               : null,
         };
+        // The last stage's analysis carries the diff stat + summary — the
+        // artifact the LLM judge scores.
+        diff = tasks.at(-1)?.analysis ?? ticket.result ?? "";
       }
     } catch {}
+    const delivered = ticket.status === "in-review" || ticket.status === "completed" || !!ticket.prUrl;
     rows.push({
       task: run.task,
       variant: run.variant,
@@ -85,7 +94,19 @@ if (cmd === "file") {
       pr: ticket.prUrl ? "yes" : "-",
       ...metrics,
     });
+    results.push({
+      task: run.task,
+      variant: run.variant,
+      ticketId: run.ticketId,
+      status: ticket.status,
+      delivered,
+      prUrl: ticket.prUrl ?? null,
+      ...metrics,
+      diff: String(diff).slice(0, 6000),
+      prompt: (corpus.tasks.find((t) => t.id === run.task) ?? {}).prompt ?? "",
+    });
   }
+  writeFileSync(join(here, ".results.json"), JSON.stringify({ reportedAt: new Date().toISOString(), results }, null, 2));
   console.table(rows);
   // Per-variant rollup.
   const byVariant = {};

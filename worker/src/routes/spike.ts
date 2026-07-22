@@ -212,21 +212,79 @@ async function runEngineProbe(env: Env, model: string): Promise<Record<string, u
   };
 }
 
+/**
+ * Fast provider-registration probe: register an arbitrary provider config
+ * and run a minimal no-tool prompt. Iterating on fallback-provider wiring
+ * (api kind, baseUrl shape, model id) in seconds instead of ticket loops.
+ */
+async function runProviderProbe(
+  env: Env,
+  opts: { provider: string; model: string; api?: string; baseUrl?: string; envKey?: string },
+): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  const apiKey =
+    (opts.envKey ? (env as unknown as Record<string, string | undefined>)[opts.envKey] : undefined) ??
+    env.OPENCODE_API_KEY ??
+    "";
+  registerProvider(opts.provider, {
+    ...(opts.api ? { api: opts.api as never } : {}),
+    ...(opts.baseUrl ? { baseUrl: opts.baseUrl } : {}),
+    apiKey,
+  });
+
+  const ref = `${opts.provider}/${opts.model}`;
+  const agent = defineAgent(() => ({
+    model: ref,
+    instructions: "You are a connectivity probe. Answer via the result shape only.",
+  }));
+  const ctx = createFlueContext({
+    id: `spike-prov-${Date.now()}`,
+    env: {},
+    agentConfig: { resolveModel: () => resolveModel(ref) },
+    createDefaultEnv: async () => memEnv(),
+  });
+  const harness = await ctx.initializeRootHarness(agent);
+  const session = await harness.session();
+  const result = await session.prompt("Report ok=true and note='ready'.", {
+    result: v.object({ ok: v.boolean(), note: v.string() }),
+  });
+  return {
+    ok: true,
+    elapsedMs: Date.now() - started,
+    result: (result as { result?: unknown }).result ?? result,
+  };
+}
+
 export const spikeRoutes: Route[] = [
   {
     method: "POST",
     path: "/spike/flue",
     auth: "master",
     async handler({ request, env }) {
-      const body = (await request.json().catch(() => ({}))) as { model?: string; mode?: string };
+      const body = (await request.json().catch(() => ({}))) as {
+        model?: string;
+        mode?: string;
+        provider?: string;
+        api?: string;
+        baseUrl?: string;
+        envKey?: string;
+      };
       const model = body.model ?? "claude-haiku-4-5";
       try {
         const out =
-          body.mode === "engine"
-            ? await runEngineProbe(env, model)
-            : body.mode === "sandbox"
-              ? await runSandboxProbe(env, model)
-              : await runProbe(env, model);
+          body.mode === "provider"
+            ? await runProviderProbe(env, {
+                provider: body.provider ?? "opencode-zen",
+                model,
+                api: body.api,
+                baseUrl: body.baseUrl,
+                envKey: body.envKey,
+              })
+            : body.mode === "engine"
+              ? await runEngineProbe(env, model)
+              : body.mode === "sandbox"
+                ? await runSandboxProbe(env, model)
+                : await runProbe(env, model);
         return json(out);
       } catch (e) {
         return json(

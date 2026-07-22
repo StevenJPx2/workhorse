@@ -18,8 +18,9 @@
       "prompt": "Create GLOSSARY.md defining every Workhorse-specific term used in the existing markdown files of this repo (scan them first). Each entry: term, one-sentence definition, and the file where it appears."
     }
   ],
+  "$variants": "A variant is one comparison cell: optional `workflow` (defaults to `coding`) and optional `model` (defaults to the worker default). The current cells compare the raw single-stage agent against the staged plan→implement→verify pipeline on the same model. Add a `model` to a cell to also sweep the model axis (e.g. a 2×2).",
   "variants": [
-    { "id": "sonnet", "model": "claude-sonnet-4-6" },
-    { "id": "haiku", "model": "claude-haiku-4-5" }
+    { "id": "raw", "workflow": "coding-raw", "model": "claude-sonnet-4-6" },
+    { "id": "staged", "workflow": "coding", "model": "claude-sonnet-4-6" }
   ]
 }
