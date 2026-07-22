@@ -106,11 +106,9 @@ export interface Env {
   /**
    * Scoped token for the /browser endpoint, injected into ticket sandboxes
    * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if
-   * leaked: someone can drive our browser fetch, not command the fleet.
+   * leaked: someone can read the fleet, not command it.
    */
   BROWSER_TOKEN?: string;
-  /** Browser Rendering binding (tokenless headless Chrome). */
-  BROWSER: Fetcher;
   /**
    * AI Search (AutoRAG) namespace binding — fleet-wide institutional
    * knowledge. One instance ("workhorse-fleet", built-in storage) indexes

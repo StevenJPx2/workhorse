@@ -22,9 +22,7 @@
       "max_instances": 5
     }
   ],
-  "browser": {
-    "binding": "BROWSER"
-  },
+
   // Fleet-wide institutional knowledge: AI Search (AutoRAG) instance with
   // built-in storage. Corpus = archived run traces + ticket outcomes,
   // uploaded at archive time; searched by agents (search_fleet_knowledge)

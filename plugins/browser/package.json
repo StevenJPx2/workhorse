@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cloudflare/puppeteer": "1.1.0",
     "@workhorse/api": "workspace:*"
   },
   "devDependencies": {
