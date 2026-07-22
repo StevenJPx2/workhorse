@@ -58,12 +58,20 @@ export function stageSession(stage: StageSpec, baseAgentMd?: string | null): {
     const line = fm?.[1].match(/^tools:\s*(.+)$/m)?.[1];
     if (line) tools = line.split(",").map((t) => t.trim()).filter(Boolean);
   }
-  return {
-    tools,
-    persona:
-      baseAgentMd?.replace(/^---[\s\S]*?---\s*/, "").trim() ||
-      `You are a focused software engineering agent executing the "${stage.id}" stage of a staged workflow. Work only within this stage's scope.`,
-  };
+  // The completion contract REQUIRES writing analysis.md + control.json —
+  // every stage gets the write tool even when its ceiling is read-only;
+  // read-only discipline then applies to the REPO, stated in the persona.
+  if (tools.length > 0 && !tools.includes("write")) tools.push("write");
+  let persona =
+    baseAgentMd?.replace(/^---[\s\S]*?---\s*/, "").trim() ||
+    `You are a focused software engineering agent executing the "${stage.id}" stage of a staged workflow. Work only within this stage's scope.`;
+  if (stage.readOnly) {
+    persona +=
+      "\n\nThis stage is READ-ONLY with respect to the repository: do not create, modify, or delete " +
+      "any file inside the repo working tree. The ONLY writes permitted are your completion artifacts " +
+      "(analysis.md, control.json) inside the stage directory given in your instructions.";
+  }
+  return { tools, persona };
 }
 
 /** Digest of a completed upstream stage, injected into dependents. */

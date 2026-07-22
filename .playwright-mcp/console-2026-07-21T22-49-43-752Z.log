@@ -1,2 +1,4 @@
 [13308646ms] [ERROR] Hydration completed but contains mismatches. @ https://workhorse-ui.stevenjpx2.workers.dev/_nuxt/BEgElunE.js:1
 [13308732ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://workhorse-ui.stevenjpx2.workers.dev/api/tickets/3df77fc5/diff:0
+[14189798ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://workhorse-ui.stevenjpx2.workers.dev/api/tickets/9e880d9e/diff:0
+[14200323ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://workhorse-ui.stevenjpx2.workers.dev/api/tickets/4affc1c6/diff:0

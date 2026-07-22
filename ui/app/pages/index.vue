@@ -123,17 +123,19 @@ const statusColor: Record<string, string> = {
 </script>
 
 <template>
-  <div class="max-w-3xl w-full mx-auto flex flex-col justify-center gap-4" style="min-height: calc(100vh - 8rem)">
-    <!-- chat transcript -->
-    <div ref="box" class="flex-1 overflow-y-auto space-y-3 pt-2">
-      <div v-if="!messages.length" class="text-center pt-16 space-y-2">
-        <UIcon name="i-lucide-tractor" class="size-10 text-muted" />
-        <p class="text-lg font-medium">What should the fleet work on?</p>
-        <p class="text-muted text-sm">
-          Attach a repo to dispatch a ticket — or just ask about the fleet:
-          <em>"what's running?"</em> · <em>"why did be45ecec fail?"</em>
-        </p>
-      </div>
+  <div class="max-w-3xl w-full mx-auto flex flex-col justify-center gap-4" style="min-height: calc(100dvh - 8rem)">
+    <!-- empty state: sits with the composer in the vertical center -->
+    <div v-if="!messages.length" class="text-center space-y-2">
+      <UIcon name="i-lucide-tractor" class="size-10 text-muted" />
+      <p class="text-lg font-medium">What should the fleet work on?</p>
+      <p class="text-muted text-sm">
+        Attach a repo to dispatch a ticket — or just ask about the fleet:
+        <em>"what's running?"</em> · <em>"why did be45ecec fail?"</em>
+      </p>
+    </div>
+
+    <!-- chat transcript: grows only once a conversation exists -->
+    <div v-else ref="box" class="flex-1 overflow-y-auto space-y-3 pt-2">
       <div v-for="(m, i) in messages" :key="i" class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
         <div
           class="rounded-lg px-3 py-2 max-w-[85%] text-sm"
