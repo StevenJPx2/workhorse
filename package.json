@@ -14,7 +14,9 @@
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
     "deploy": "cd worker && bun run deploy",
-    "dev": "cd worker && bun run dev"
+    "dev": "cd worker && bun run dev",
+    "test": "bun run --filter \"*\" test",
+    "eval": "cd evals && bun run eval:ci"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",
