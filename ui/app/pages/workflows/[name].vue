@@ -75,10 +75,10 @@ function removeStage(id: string) {
   if (selectedId.value === id) selectedId.value = null;
 }
 
-/** Textarea helpers: JSON round-trip for tools / output / from. */
+/** Textarea helper: JSON round-trip for output. */
 function jsonField(stage: StageLite, key: string) {
   return computed({
-    get: () => JSON.stringify(stage[key] ?? (key === "tools" ? [] : {}), null, 1),
+    get: () => JSON.stringify(stage[key] ?? {}, null, 1),
     set(v: string) {
       try {
         stage[key] = JSON.parse(v);
@@ -90,19 +90,70 @@ function jsonField(stage: StageLite, key: string) {
   });
 }
 const jsonErrors = ref<Record<string, string>>({});
-const toolsField = computed(() => (selected.value ? jsonField(selected.value, "tools") : null));
 const outputField = computed(() => (selected.value ? jsonField(selected.value, "output") : null));
 
+// Editor metadata: model list + sandbox tool catalog for the dropdowns.
+const { data: meta } = await useFetch<{
+  models: string[];
+  tools: Array<{ name: string; classification: string; description: string }>;
+}>("/api/meta", { lazy: true, server: false });
+const modelItems = computed(() => ["(default)", ...(meta.value?.models ?? [])]);
+const toolItems = computed(() =>
+  (meta.value?.tools ?? []).map((t) => ({
+    label: t.name,
+    value: t.name,
+    // Non-read-only custom tools need a classification object in the spec.
+    classification: t.classification,
+  })),
+);
+
+const modelField = computed({
+  get: () => (selected.value?.model as string) || "(default)",
+  set(v: string) {
+    if (!selected.value) return;
+    if (v === "(default)") delete selected.value.model;
+    else selected.value.model = v;
+  },
+});
+
+// Tools as a multi-select over the catalog: string entries stay strings;
+// custom tools keep/gain their {name, classification} object form.
+const BUILTINS = new Set(["read", "write", "edit", "bash", "grep", "find", "ls"]);
+const toolsField = computed({
+  get: () => (selected.value?.tools ?? []).map((t) => (typeof t === "string" ? t : (t as { name: string }).name)),
+  set(names: string[]) {
+    if (!selected.value) return;
+    const catalog = new Map(toolItems.value.map((t) => [t.value, t.classification]));
+    selected.value.tools = names.map((n) =>
+      BUILTINS.has(n)
+        ? n
+        : { name: n, classification: catalog.get(n) ?? "read-only", optional: true },
+    ) as never[];
+  },
+});
+
+// from as a multi-select over the other stages.
+const fromItems = computed(() => stages.value.filter((s) => s.id !== selectedId.value).map((s) => s.id));
 const fromField = computed({
   get: () => {
     const f = selected.value?.from;
-    return !f ? "" : Array.isArray(f) ? f.join(", ") : f;
+    return !f ? [] : Array.isArray(f) ? f : [f];
   },
+  set(parts: string[]) {
+    if (!selected.value) return;
+    if (parts.length === 0) delete selected.value.from;
+    else selected.value.from = parts.length === 1 ? parts[0] : parts;
+  },
+});
+
+// writeAllow globs (comma-separated input).
+const writeAllowField = computed({
+  get: () => ((selected.value?.writeAllow as string[]) ?? []).join(", "),
   set(v: string) {
     if (!selected.value) return;
     const parts = v.split(",").map((s) => s.trim()).filter(Boolean);
-    if (parts.length === 0) delete selected.value.from;
-    else selected.value.from = parts.length === 1 ? parts[0] : parts;
+    if (parts.length === 0) delete selected.value.writeAllow;
+    else selected.value.writeAllow = parts;
   },
 });
 
@@ -232,8 +283,8 @@ const rawField = computed({
           <UFormField label="id">
             <UInput v-model="selected.id" size="sm" class="w-full" />
           </UFormField>
-          <UFormField label="from (comma-separated upstream stages)">
-            <UInput v-model="fromField" size="sm" class="w-full" placeholder="(entry stage)" />
+          <UFormField label="from (upstream stages)">
+            <USelectMenu v-model="fromField" :items="fromItems" multiple size="sm" class="w-full" placeholder="(entry stage)" />
           </UFormField>
           <div class="grid grid-cols-2 gap-2">
             <UFormField label="agent">
@@ -248,6 +299,23 @@ const rawField = computed({
               />
             </UFormField>
           </div>
+          <UFormField label="model">
+            <!-- searchable menu — the model list is long -->
+            <USelectMenu v-model="modelField" :items="modelItems" size="sm" class="w-full" />
+          </UFormField>
+          <UFormField label="tools (stage ceiling)">
+            <USelectMenu
+              v-model="toolsField"
+              :items="toolItems.map((t) => t.value)"
+              multiple
+              size="sm"
+              class="w-full"
+              placeholder="(unrestricted)"
+            />
+          </UFormField>
+          <UFormField label="write allow (globs, comma-separated)" hint="empty = unrestricted">
+            <UInput v-model="writeAllowField" size="sm" class="w-full" placeholder="src/**, docs/**" />
+          </UFormField>
           <div class="flex items-center gap-4">
             <UCheckbox
               :model-value="!!selected.readOnly"
@@ -265,12 +333,10 @@ const rawField = computed({
               @update:model-value="selected.prompt = $event"
             />
           </UFormField>
-          <UFormField v-if="toolsField" label="tools (JSON)" :error="jsonErrors.tools || undefined">
-            <UTextarea v-model="toolsField.value" :rows="5" size="sm" class="w-full font-mono text-xs" />
-          </UFormField>
           <UFormField v-if="outputField" label="output (JSON)" :error="jsonErrors.output || undefined">
             <UTextarea v-model="outputField.value" :rows="4" size="sm" class="w-full font-mono text-xs" />
           </UFormField>
+
           <UButton size="xs" color="error" variant="soft" icon="i-lucide-trash-2" @click="removeStage(selected.id)">
             Remove stage
           </UButton>

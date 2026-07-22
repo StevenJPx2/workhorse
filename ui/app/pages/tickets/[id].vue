@@ -281,6 +281,35 @@ async function sendInput(answers: Record<string, unknown>) {
   }
 }
 
+// Attach context to a live ticket (plugin-recognized refs).
+const attachInput = ref("");
+const attaching = ref(false);
+async function attachContext() {
+  const input = attachInput.value.trim();
+  if (!input) return;
+  attaching.value = true;
+  try {
+    const { match } = await $fetch<{ match: { kind: string; ref: string } | null }>(
+      "/api/attachments/match",
+      { method: "POST", body: { input } },
+    );
+    if (!match) {
+      toast.add({ title: "Not a recognized reference", color: "warning" });
+      return;
+    }
+    const r = await $fetch<{ delivered: string }>(`/api/tickets/${id}/attach`, {
+      method: "POST",
+      body: match,
+    });
+    attachInput.value = "";
+    toast.add({ title: `Context attached (${r.delivered})`, color: "success" });
+  } catch (e: unknown) {
+    toast.add({ title: "Attach failed", description: String(e), color: "error" });
+  } finally {
+    attaching.value = false;
+  }
+}
+
 // Acceptance verdicts (report/artifact outcomes).
 const accepting = ref(false);
 async function accept() {
@@ -450,18 +479,33 @@ function taskDot(status: string): string {
           </div>
         </div>
       </div>
-      <div v-if="running" class="p-3 border-t border-default flex gap-2">
-        <UInput
-          v-model="steerText"
-          class="flex-1"
-          size="sm"
-          placeholder="Steer the agent — interrupts the current stage with your instructions…"
-          icon="i-lucide-navigation"
-          @keydown.enter="steer"
-        />
-        <UButton size="sm" variant="soft" :loading="steering" :disabled="!steerText.trim()" @click="steer">
-          Steer
-        </UButton>
+      <div v-if="running" class="p-3 border-t border-default space-y-2">
+        <div class="flex gap-2">
+          <UInput
+            v-model="steerText"
+            class="flex-1"
+            size="sm"
+            placeholder="Steer the agent — delivered into the live session at the next turn…"
+            icon="i-lucide-navigation"
+            @keydown.enter="steer"
+          />
+          <UButton size="sm" variant="soft" :loading="steering" :disabled="!steerText.trim()" @click="steer">
+            Steer
+          </UButton>
+        </div>
+        <div class="flex gap-2">
+          <UInput
+            v-model="attachInput"
+            class="flex-1"
+            size="sm"
+            placeholder="Attach context — PROJ-123, Slack link, owner/repo…"
+            icon="i-lucide-paperclip"
+            @keydown.enter="attachContext"
+          />
+          <UButton size="sm" variant="ghost" :loading="attaching" :disabled="!attachInput.trim()" @click="attachContext">
+            Attach
+          </UButton>
+        </div>
       </div>
     </UCard>
 

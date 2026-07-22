@@ -32,8 +32,11 @@ const knownRepos = computed(() => {
   return [...seen.values()];
 });
 const attachedRepo = ref<string | null>(null);
+// Non-repo attachments (jira/slack/…), recognized by plugin providers.
+const attachments = ref<Array<{ kind: string; ref: string; label?: string; icon?: string }>>([]);
 const showAddRepo = ref(false);
 const newRepo = ref("");
+const matching = ref(false);
 const workflow = ref<string>("coding");
 const workflowItems = computed(() => [
   ...(wfData.value?.workflows ?? []).map((w) => w.name),
@@ -49,12 +52,33 @@ watch(workflow, (w) => {
 function attach(url: string) {
   attachedRepo.value = attachedRepo.value === url ? null : url;
 }
-function addRepo() {
+async function addRef() {
   const r = newRepo.value.trim();
   if (!r) return;
-  attachedRepo.value = /^[\w.-]+\/[\w.-]+$/.test(r) ? `https://github.com/${r}.git` : r;
-  showAddRepo.value = false;
-  newRepo.value = "";
+  matching.value = true;
+  try {
+    // Ask the plugin providers what this is (repo, PROJ-123, Slack link…).
+    const { match } = await $fetch<{ match: { kind: string; ref: string; label: string; icon?: string } | null }>(
+      "/api/attachments/match",
+      { method: "POST", body: { input: r } },
+    );
+    if (match?.kind === "repo") {
+      attachedRepo.value = `https://github.com/${match.ref}.git`;
+    } else if (match) {
+      if (!attachments.value.some((a) => a.kind === match.kind && a.ref === match.ref)) {
+        attachments.value.push(match);
+      }
+    } else if (/^[\w.-]+\/[\w.-]+$/.test(r)) {
+      attachedRepo.value = `https://github.com/${r}.git`;
+    } else {
+      toast.add({ title: "Not a recognized reference", description: "repo, Jira key, or Slack link", color: "warning" });
+      return;
+    }
+    showAddRepo.value = false;
+    newRepo.value = "";
+  } finally {
+    matching.value = false;
+  }
 }
 
 // --- chat / dispatch -------------------------------------------------------
@@ -75,7 +99,14 @@ async function send() {
     try {
       const r = await $fetch<{ ticket: Ticket }>("/api/tickets", {
         method: "POST",
-        body: { repo: attachedRepo.value, prompt: content, workflow: workflow.value },
+        body: {
+          repo: attachedRepo.value,
+          prompt: content,
+          workflow: workflow.value,
+          attachments: attachments.value.length
+            ? attachments.value.map((a) => ({ kind: a.kind, ref: a.ref }))
+            : undefined,
+        },
       });
       messages.value.push({
         role: "assistant",
@@ -175,6 +206,17 @@ const statusColor: Record<string, string> = {
         >
           {{ r.label }}
         </UButton>
+        <UButton
+          v-for="(a, i) in attachments"
+          :key="`${a.kind}:${a.ref}`"
+          size="xs"
+          variant="solid"
+          color="info"
+          :icon="a.icon ?? 'i-lucide-paperclip'"
+          @click="attachments.splice(i, 1)"
+        >
+          {{ a.ref }}
+        </UButton>
         <UButton size="xs" variant="ghost" icon="i-lucide-plus" @click="showAddRepo = !showAddRepo">
           Add new
         </UButton>
@@ -190,11 +232,11 @@ const statusColor: Record<string, string> = {
           v-model="newRepo"
           class="flex-1"
           size="sm"
-          placeholder="owner/repo or full git URL"
-          icon="i-lucide-github"
-          @keydown.enter="addRepo"
+          placeholder="owner/repo · PROJ-123 · Slack link — plugins recognize the rest"
+          icon="i-lucide-paperclip"
+          @keydown.enter="addRef"
         />
-        <UButton size="sm" variant="soft" :disabled="!newRepo.trim()" @click="addRepo">Attach</UButton>
+        <UButton size="sm" variant="soft" :loading="matching" :disabled="!newRepo.trim()" @click="addRef">Attach</UButton>
       </div>
     </div>
 
