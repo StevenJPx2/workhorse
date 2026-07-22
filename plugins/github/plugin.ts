@@ -4,6 +4,8 @@
 // priorities, newly-failed checks) on a push basis instead of polling.
 
 import type { Env, ExternalEvent, WorkhorsePlugin } from "@workhorse/api";
+import { ghProxy } from "./api";
+import { githubTools } from "./tools";
 
 async function hmacValid(secret: string, rawBody: string, signature: string): Promise<boolean> {
   const key = await crypto.subtle.importKey(
@@ -104,50 +106,25 @@ const webhook = {
   },
 };
 
-// ---- sandbox read tools: /github/* proxy --------------------------------
-//
-// The gh_* sandbox tools (extension.ts) call back through this route with
-// the SCOPED token; the fleet GITHUB_TOKEN never enters the sandbox. Read
-// endpoints only — the system talks to GitHub for writes (branch, PR,
-// replies); the agent works in the repo. That separation keeps "the agent
-// can never self-complete" true.
-const GH_ALLOWED = [
-  /^\/repos\/[\w.-]+\/[\w.-]+\/pulls(\/\d+(\/files|\/reviews|\/comments)?)?$/,
-  /^\/repos\/[\w.-]+\/[\w.-]+\/issues(\/\d+(\/comments)?)?$/,
-  /^\/repos\/[\w.-]+\/[\w.-]+\/commits(\/[\w]+)?$/,
-  /^\/repos\/[\w.-]+\/[\w.-]+\/actions\/runs(\/\d+(\/jobs)?)?$/,
-  /^\/repos\/[\w.-]+\/[\w.-]+\/actions\/workflows$/,
-  /^\/search\/code$/,
-  /^\/search\/issues$/,
-];
+// The gh_* read surface (allowlist + fetch) lives in api.ts, shared by the
+// /github proxy route (kept for stateless/legacy callers) and the gh_*
+// stage tools (flue engine, worker-side). Read endpoints only — the system
+// talks to GitHub for writes; that keeps "the agent can never self-complete"
+// true.
 
 export const githubPlugin: WorkhorsePlugin = {
   id: "github",
   webhook,
+  tools: githubTools,
   routes: [
     {
       method: "GET",
       path: "/github",
       auth: "scoped",
       async handler(request, env) {
-        const url = new URL(request.url);
-        const target = url.searchParams.get("path") ?? "";
-        const [pathname, query] = target.split("?");
-        if (!GH_ALLOWED.some((re) => re.test(pathname))) {
-          return Response.json({ error: `path not allowed: ${pathname}` }, { status: 403 });
-        }
-        const r = await fetch(`https://api.github.com${pathname}${query ? `?${query}` : ""}`, {
-          headers: {
-            authorization: `Bearer ${env.GITHUB_TOKEN}`,
-            accept: "application/vnd.github+json",
-            "user-agent": "workhorse",
-          },
-        });
-        const body = await r.text();
-        return new Response(body.slice(0, 400_000), {
-          status: r.status,
-          headers: { "content-type": "application/json" },
-        });
+        const target = new URL(request.url).searchParams.get("path") ?? "";
+        const { status, body } = await ghProxy(env, target);
+        return new Response(body, { status, headers: { "content-type": "application/json" } });
       },
     },
   ],

@@ -15,6 +15,7 @@
 // operator; revisit if multi-tenancy ever arrives.
 
 import type { Core, Env, PluginRoute, WorkhorsePlugin } from "@workhorse/api";
+import { scriptsTools } from "./tools";
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -85,4 +86,5 @@ const routes: PluginRoute[] = [
 export const scriptsPlugin: WorkhorsePlugin = {
   id: "scripts",
   routes,
+  tools: scriptsTools,
 };

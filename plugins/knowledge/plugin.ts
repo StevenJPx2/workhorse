@@ -11,6 +11,7 @@
 // (no R2 to manage) — items upserted by filename `<ticket>-<run>.md`.
 
 import type { Env, WorkhorsePlugin } from "@workhorse/api";
+import { knowledgeTools } from "./tools";
 
 const INSTANCE = "workhorse-fleet";
 
@@ -146,7 +147,7 @@ export interface KnowledgeHit {
  * Search fleet knowledge. Returns compact hits for tool consumption.
  * Never throws — an unavailable index reads as "no results".
  */
-async function searchKnowledge(
+export async function searchKnowledge(
   env: Env,
   query: string,
   limit = 6,
@@ -185,6 +186,7 @@ function json(data: unknown, status = 200): Response {
 
 export const knowledgePlugin: WorkhorsePlugin = {
   id: "knowledge",
+  tools: knowledgeTools,
 
   routes: [
     {
