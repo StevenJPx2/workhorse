@@ -269,6 +269,18 @@ the mention/fire lanes stay plugin-registered trigger sources / channels.
 If adopted, this SUPERSEDES the "What survives → workflows as USER DATA" note
 in the section below.
 
+**Daily-driver workflows (SEPARATE later effort).** The current
+`coding`/`coding-raw`/`screenshot-pr` defs are SCAFFOLDING — they exist to
+prove the mechanism and feed the `agent-vs-workflow` eval (`coding-raw` is the
+baseline), not because they are the workflows the fleet should actually run.
+Once the flue-first mechanism lands, design the real daily drivers as a
+dedicated effort: each a TS `WorkflowDef` + an eval case, measured against the
+raw-agent baseline before it ships. Candidates to design then (not committed):
+a tighter implement→review→fix coding loop, a research→report workflow
+(non-PR outcome), an issue-triage workflow, a dependency-bump/chore workflow.
+The architecture is deliberately workflow-agnostic (see seams below), so
+adding a daily driver is cheap: a def + an eval, no engine change.
+
 ### Flue migration — stages become in-Worker flue sessions
 
 **Decision (2026-07-22).** Adopt [flue](https://flueframework.com)
