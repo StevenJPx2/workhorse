@@ -41,8 +41,8 @@ export async function launchRpcSession(
       // Holder: keeps a rw fd on the fifo open indefinitely.
       `(exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done) & HOLDER=$!`,
       `${envPrefix ? envPrefix + " " : ""}nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log & PI=$!`,
-      // First command: the stage prompt (jq -Rs turns the file into a JSON string).
-      `jq -cn --rawfile p ${opts.promptPath} '{type:"prompt", message:$p}' > ${dir}/cmd.fifo`,
+      // First command: the stage prompt (Node formats JSON — jq isn't in the sandbox image).
+      `node -e "process.stdout.write(JSON.stringify({type:'prompt',message:require('fs').readFileSync('${opts.promptPath}','utf8')}))" > ${dir}/cmd.fifo`,
       `echo "PI=$PI HOLDER=$HOLDER"`,
     ].join(" && "),
     { timeout: 30_000 },
