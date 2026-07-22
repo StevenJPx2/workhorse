@@ -26,16 +26,21 @@ export async function launchRpcSession(
     flags: string[];
     /** The initial prompt (already written to <dir>/prompt.md). */
     promptPath: string;
+    /** Session environment (write gate config, stage dir for submit_work). */
+    env?: Record<string, string>;
   },
 ): Promise<{ pid: number; holderPid: number } | null> {
   const { dir } = opts;
+  const envPrefix = Object.entries(opts.env ?? {})
+    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+    .join(" ");
   const launch = await driver.exec(
     [
       `cd ${opts.cwd}`,
       `mkfifo ${dir}/cmd.fifo 2>/dev/null || true`,
       // Holder: keeps a rw fd on the fifo open indefinitely.
       `(exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done) & HOLDER=$!`,
-      `nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log & PI=$!`,
+      `${envPrefix ? envPrefix + " " : ""}nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log & PI=$!`,
       // First command: the stage prompt (jq -Rs turns the file into a JSON string).
       `jq -cn --rawfile p ${opts.promptPath} '{type:"prompt", message:$p}' > ${dir}/cmd.fifo`,
       `echo "PI=$PI HOLDER=$HOLDER"`,

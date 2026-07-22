@@ -87,8 +87,11 @@ describe("run lifecycle", () => {
     const implPrompt = driver.files.get(`${stageDir("wfrun_test", "implement", 1)}/prompt.md`)!;
     expect(implPrompt).toContain("PLAN ANALYSIS");
     expect(implPrompt).toContain("Upstream stage `plan`");
-    // implement's tool ceiling rides the CLI allowlist.
-    expect(driver.launches.at(-1)!.command).toContain('--tools "read,write,run_script"');
+    // implement's tool ceiling rides the CLI allowlist; submit_work (the
+    // dedicated completion tool) is appended to every ceilinged stage.
+    expect(driver.launches.at(-1)!.command).toContain('--tools "read,write,run_script,submit_work"');
+    // Stage dir exported for submit_work.
+    expect(driver.launches.at(-1)!.command).toContain("WORKHORSE_STAGE_DIR=");
 
     driver.finishSession(stageDir("wfrun_test", "implement", 1), { status: "done" });
     r = await engine.advance("wfrun_test", 0);

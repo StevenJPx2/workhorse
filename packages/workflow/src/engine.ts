@@ -252,6 +252,12 @@ export class WorkflowEngine {
       dir,
       flags,
       promptPath: `${dir}/prompt.md`,
+      env: {
+        // submit_work target (workflow-gate extension).
+        WORKHORSE_STAGE_DIR: dir,
+        // Glob write gate — only when the stage declares writeAllow.
+        ...(session.writeAllow.length ? { WORKHORSE_WRITE_ALLOW: session.writeAllow.join(",") } : {}),
+      },
     });
     if (!launched) {
       const log = (await this.driver.readFile(`${dir}/session.log`)) ?? "";

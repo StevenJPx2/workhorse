@@ -39,3 +39,12 @@ for (const name of existsSync(pluginsDir) ? readdirSync(pluginsDir) : []) {
   count++;
 }
 if (count === 0) throw new Error("no plugin extensions found — wrong build context?");
+
+// Core (engine) extensions: sandbox/extensions/*.ts — infrastructure like
+// the workflow write gate; not plugin capabilities.
+const coreExtDir = join(sandboxDir, "extensions");
+for (const file of existsSync(coreExtDir) ? readdirSync(coreExtDir) : []) {
+  if (!file.endsWith(".ts")) continue;
+  cpSync(join(coreExtDir, file), join(extDir, file));
+  console.log(`core extension: ${file}`);
+}

@@ -64,6 +64,13 @@ export interface StageSpec {
   maxRounds?: number;
   /** Terminal stage: what the run delivers. Default "pr". */
   outcome?: "pr" | "report" | "artifact";
+  /**
+   * Repo-write allowlist (globs, relative to the repo root or absolute).
+   * When set, the sandbox write gate blocks write/edit outside these
+   * patterns. readOnly stages get an empty repo allowlist implicitly;
+   * the stage's own artifact dir is always writable.
+   */
+  writeAllow?: string[];
   /** Accepted for spec compatibility — inert (dependents of a re-run stage always re-run). */
   inputPolicy?: Record<string, unknown>;
 }
