@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Browser plane plugin: tiered fetch (Browser Rendering → unblocker) route + browser_fetch/browser_screenshot sandbox tools.",
+  "description": "Browser plane plugin: stateless Browser-Rendering route + agent-browser sandbox tools (open/snapshot/read/act/screenshot/record).",
   "exports": {
     ".": "./plugin.ts"
   },

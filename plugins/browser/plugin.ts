@@ -1,25 +1,11 @@
 // Browser plane (Worker half).
 //
-// One tiered fetch with automatic escalation:
-//   Tier 1 — Cloudflare Browser Rendering binding (real headless Chrome).
-//            Beats most of the web, including soft/monitor-mode bot walls.
-//   Tier 2 — pluggable commercial unblocker (residential/mobile IP rotation
-//            + challenge solving), activated only when a credential is set.
+// Stateless Browser-Rendering route for one-shot fetches (text/html/links/
+// screenshot). The stateful tier (persistent sessions, AX snapshots, click/
+// fill/record) lives in the sandbox via agent-browser; see extension.ts.
 //
-// Why tiered (empirically established 2026-07-20): Browser Rendering injects
-// non-removable, signed bot-auth headers + published bot-detection IDs, and
-// runs from datacenter IPs. It sails past soft walls (hannaandersson.com →
-// full content) but is hard-denied by strict PerimeterX/DataDome/Akamai
-// deployments (talbots.com) — which also deny a real headed browser on a
-// residential IP. Hard walls are an economic problem, not a code one, so we
-// escalate to the same class of service the anti-bot industry sells against.
-// Until an unblocker credential is configured, hard sites report an honest
-// "blocked" rather than pretending.
-//
-// The unblocker is a URL template so any provider fits with zero code change:
-//   UNBLOCKER_URL = "https://api.scraperapi.com/?api_key={KEY}&url={URL}&render=true"
-// {URL} is percent-encoded, {KEY} is substituted raw. The credential never
-// leaves the Worker plane (mirrors GITHUB_TOKEN custody).
+// For bot-walled sites the agent uses browser_open (agent-browser handles
+// stealth); this route does not escalate.
 
 import puppeteer from "@cloudflare/puppeteer";
 import type { Env, WorkhorsePlugin } from "@workhorse/api";
@@ -34,21 +20,13 @@ declare const document: {
   querySelectorAll(selector: string): Iterable<{ href: string }>;
 };
 
-export type BrowserMode = "text" | "html" | "screenshot" | "links" | "video";
+export type BrowserMode = "text" | "html" | "screenshot" | "links";
 
 export interface BrowserFetchRequest {
   url: string;
   mode?: BrowserMode;
   /** Extra settle time (ms) after load for JS challenges to resolve. */
   waitMs?: number;
-  /** Force the unblocker tier (skip Browser Rendering). */
-  forceUnblocker?: boolean;
-  /** video: recording length in ms (cap 12s). */
-  durationMs?: number;
-  /** video: frames per second (cap 4). */
-  fps?: number;
-  /** video: JS to run after load, before recording (e.g. start a scroll). */
-  script?: string;
 }
 
 export interface BrowserFetchResult {
@@ -56,7 +34,7 @@ export interface BrowserFetchResult {
   finalUrl?: string;
   mode: BrowserMode;
   ok: boolean;
-  /** "browser-rendering" | "unblocker" | "none". */
+  /** "browser-rendering" | "none". */
   tier: string;
   status?: number;
   /** Detected bot-wall vendor when a block was seen, else null. */
@@ -65,10 +43,6 @@ export interface BrowserFetchResult {
   content?: string;
   links?: string[];
   base64Image?: string;
-  /** video: JPEG frames, base64, in capture order. */
-  base64Frames?: string[];
-  /** video: actual capture interval (ms) for GIF timing. */
-  frameIntervalMs?: number;
   bytes?: number;
   note?: string;
 }
@@ -177,31 +151,6 @@ async function viaBrowserRendering(
       const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
       return { url: req.url, finalUrl, mode, ok: true, tier: "browser-rendering", status, base64Image: b64, bytes: buf.byteLength };
     }
-    if (mode === "video") {
-      // Browser Rendering has no video API — record as a timed frame loop
-      // (JPEG for size; the sandbox assembles the GIF with native ffmpeg).
-      const durationMs = Math.min(req.durationMs ?? 6000, 12_000);
-      const fps = Math.min(Math.max(req.fps ?? 2, 1), 4);
-      const intervalMs = Math.round(1000 / fps);
-      if (req.script) {
-        // Kick off an interaction (scroll, click) that the recording watches.
-        await page.evaluate(req.script).catch(() => {});
-      }
-      const frames: string[] = [];
-      const started = Date.now();
-      while (Date.now() - started < durationMs && frames.length < 48) {
-        const tick = Date.now();
-        const buf = (await page.screenshot({ type: "jpeg", quality: 70, fullPage: false })) as unknown as Uint8Array;
-        frames.push(btoa(String.fromCharCode(...new Uint8Array(buf))));
-        const elapsed = Date.now() - tick;
-        if (elapsed < intervalMs) await new Promise((r) => setTimeout(r, intervalMs - elapsed));
-      }
-      const bytes = frames.reduce((n, f) => n + f.length, 0);
-      return {
-        url: req.url, finalUrl, mode, ok: true, tier: "browser-rendering", status,
-        base64Frames: frames, frameIntervalMs: intervalMs, bytes,
-      };
-    }
     if (mode === "links") {
       const links = (await page.evaluate(() =>
         Array.from(document.querySelectorAll("a[href]")).map((a) => a.href),
@@ -221,149 +170,20 @@ async function viaBrowserRendering(
   }
 }
 
-/** Shape a successful unblocker HTML payload into the requested mode. */
-function shapeUnblocker(
-  req: BrowserFetchRequest,
-  mode: BrowserMode,
-  status: number,
-  html: string,
-  note?: string,
-): BrowserFetchResult {
-  if (mode === "html")
-    return { url: req.url, mode, ok: true, tier: "unblocker", status, content: html, bytes: html.length, note };
-  if (mode === "links") {
-    const links = [...new Set([...html.matchAll(/href=["']([^"']+)["']/gi)].map((m) => m[1]))].slice(0, 500);
-    return { url: req.url, mode, ok: true, tier: "unblocker", status, links, bytes: links.join("\n").length, note };
-  }
-  const content = stripHtml(html);
-  return { url: req.url, mode, ok: true, tier: "unblocker", status, content, bytes: content.length, note };
-}
-
-interface ScrapflyEnvelope {
-  result?: {
-    content?: string;
-    status_code?: number;
-    format?: string;
-    error?: { code?: string; message?: string };
-  };
-  message?: string;
-}
 
 /**
- * Scrapfly provider (first-class). Its Anti Scraping Protection (asp=true) is
- * purpose-built for PerimeterX/DataDome/Akamai/Cloudflare: it rotates
- * residential proxies and solves JS/CAPTCHA challenges server-side — the exact
- * capability Browser Rendering structurally cannot have. Returns a JSON
- * envelope with the page in result.content (format=raw). cost_budget caps ASP's
- * dynamic credit escalation; country defaults to us (the hard targets so far
- * are US retailers).
- */
-async function viaScrapfly(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
-  const mode = req.mode ?? "text";
-  const key = env.SCRAPFLY_KEY!;
-  const params = new URLSearchParams({
-    key,
-    url: req.url,
-    asp: "true",
-    render_js: "true",
-    format: "raw",
-    country: env.SCRAPFLY_COUNTRY || "us",
-  });
-  if (req.waitMs && req.waitMs > 0) params.set("rendering_wait", String(Math.min(req.waitMs, 8000)));
-  if (env.SCRAPFLY_COST_BUDGET) params.set("cost_budget", env.SCRAPFLY_COST_BUDGET);
-
-  const resp = await fetch(`https://api.scrapfly.io/scrape?${params.toString()}`);
-  const apiStatus = resp.status;
-  const bodyText = await resp.text();
-  let envelope: ScrapflyEnvelope;
-  try {
-    envelope = JSON.parse(bodyText) as ScrapflyEnvelope;
-  } catch {
-    return { url: req.url, mode, ok: false, tier: "unblocker", status: apiStatus, note: `scrapfly: non-JSON response (HTTP ${apiStatus}) ${bodyText.slice(0, 160)}` };
-  }
-  const result = envelope.result ?? {};
-  const targetStatus = result.status_code ?? apiStatus;
-  let html = typeof result.content === "string" ? result.content : "";
-  // Large object (>5MB): result.content is an authenticated download URL.
-  if (result.format === "clob" && html) {
-    try {
-      const clobUrl = html;
-      const cr = await fetch(`${clobUrl}${clobUrl.includes("?") ? "&" : "?"}key=${encodeURIComponent(key)}`);
-      html = await cr.text();
-    } catch {
-      return { url: req.url, mode, ok: false, tier: "unblocker", status: targetStatus, note: "scrapfly: large-object fetch failed" };
-    }
-  }
-  if (apiStatus >= 400 || !html) {
-    const reject = resp.headers.get("x-scrapfly-reject-code") || result.error?.code || envelope.message;
-    return {
-      url: req.url,
-      mode,
-      ok: false,
-      tier: "unblocker",
-      status: targetStatus,
-      blockedBy: "unblocker-failed",
-      note: `scrapfly could not retrieve the page (HTTP ${apiStatus}${reject ? `, ${reject}` : ""})`,
-    };
-  }
-  const blockedBy = detectBlock(targetStatus, html, req.url);
-  if (blockedBy) {
-    return { url: req.url, mode, ok: false, tier: "unblocker", status: targetStatus, blockedBy, note: `scrapfly ASP did not defeat ${blockedBy}` };
-  }
-  const cost = resp.headers.get("x-scrapfly-api-cost");
-  return shapeUnblocker(req, mode, targetStatus, html, cost ? `scrapfly asp+js, ${cost} credits` : "scrapfly asp+js");
-}
-
-/** Generic template provider (ScraperAPI-style raw-HTML proxies). */
-async function viaGenericUnblocker(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
-  const mode = req.mode ?? "text";
-  const tmpl = env.UNBLOCKER_URL!;
-  const key = env.UNBLOCKER_KEY ?? "";
-  const endpoint = tmpl.replace(/\{URL\}/g, encodeURIComponent(req.url)).replace(/\{KEY\}/g, key);
-  const resp = await fetch(endpoint, { headers: { "user-agent": UA } });
-  const status = resp.status;
-  const html = await resp.text();
-  const blockedBy = detectBlock(status, html, req.url);
-  if (!resp.ok || blockedBy) {
-    return { url: req.url, mode, ok: false, tier: "unblocker", status, blockedBy: blockedBy ?? "generic-block", note: "unblocker could not retrieve the page" };
-  }
-  return shapeUnblocker(req, mode, status, html);
-}
-
-/**
- * Tier 2: pluggable commercial unblocker. Scrapfly is the first-class provider
- * (just set SCRAPFLY_KEY); UNBLOCKER_URL is a generic template fallback for any
- * other raw-HTML proxy. Neither configured => hard sites report an honest block.
- */
-async function viaUnblocker(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
-  if (env.SCRAPFLY_KEY) return viaScrapfly(env, req);
-  if (env.UNBLOCKER_URL) return viaGenericUnblocker(env, req);
-  return {
-    url: req.url,
-    mode: req.mode ?? "text",
-    ok: false,
-    tier: "none",
-    blockedBy: null,
-    note: "unblocker not configured (set SCRAPFLY_KEY, or UNBLOCKER_URL + UNBLOCKER_KEY)",
-  };
-}
-
-/**
- * Tiered browser fetch: Browser Rendering first, escalate to the unblocker
- * when the page is bot-walled (or when forced). Screenshots are only
- * available on the Browser Rendering tier.
+ * Browser fetch via Cloudflare Browser Rendering (stateless, single-shot).
+ * For persistent sessions, interactive flows, and bot-walled sites use
+ * the agent-browser tools (browser_open/snapshot/act/read) instead.
  */
 export async function browserFetch(env: Env, req: BrowserFetchRequest): Promise<BrowserFetchResult> {
   if (!/^https?:\/\//i.test(req.url)) {
     return { url: req.url, mode: req.mode ?? "text", ok: false, tier: "none", note: "url must be http(s)" };
   }
-  if (req.forceUnblocker) return viaUnblocker(env, req);
-
-  let first: BrowserFetchResult;
   try {
-    first = await viaBrowserRendering(env, req);
+    return await viaBrowserRendering(env, req);
   } catch (e) {
-    first = {
+    return {
       url: req.url,
       mode: req.mode ?? "text",
       ok: false,
@@ -371,28 +191,6 @@ export async function browserFetch(env: Env, req: BrowserFetchRequest): Promise<
       note: `browser rendering error: ${String(e).slice(0, 200)}`,
     };
   }
-  if (first.ok) return first;
-
-  // Screenshots only exist on the Browser Rendering tier (the unblocker
-  // returns HTML), so a blocked screenshot/video cannot escalate — report honestly.
-  if ((req.mode ?? "text") === "screenshot" || (req.mode ?? "text") === "video") return first;
-
-  const unblockerConfigured = !!env.SCRAPFLY_KEY || !!env.UNBLOCKER_URL;
-  // Escalate blocks (and browser-rendering errors) to the unblocker tier.
-  if (first.blockedBy || first.note?.startsWith("browser rendering error")) {
-    const second = await viaUnblocker(env, req).catch(() => null);
-    if (second && second.ok) return { ...second, note: `escalated from ${first.tier} (${first.blockedBy ?? "error"})` };
-    // Neither tier worked — return the most informative failure.
-    if (second && second.tier !== "none") return second;
-    return {
-      ...first,
-      note:
-        first.blockedBy && !unblockerConfigured
-          ? `blocked by ${first.blockedBy}; set SCRAPFLY_KEY to fetch hard bot-walled sites`
-          : first.note,
-    };
-  }
-  return first;
 }
 
 export const browserPlugin: WorkhorsePlugin = {
@@ -400,9 +198,8 @@ export const browserPlugin: WorkhorsePlugin = {
 
   routes: [
     {
-      // Tiered fetch (Browser Rendering → unblocker escalation). Scoped
-      // token: ticket sandboxes run untrusted repo code, so the value
-      // injected there must never be the fleet master key.
+      // Stateless Browser-Rendering fetch. For persistent sessions use the
+      // agent-browser sandbox tools (browser_open/snapshot/act) instead.
       method: "POST",
       path: "/browser",
       auth: "scoped",

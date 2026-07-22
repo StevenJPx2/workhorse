@@ -74,7 +74,7 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 - **Fleet UI** — Nuxt 4 + Nuxt UI 4 (`ui/`): fleet list, ticket detail
   (pipeline card, run history, live compute state), chat, comark markdown.
 - **Browser plane** — tiered `browser_fetch` / `browser_screenshot` via the
-  Cloudflare `BROWSER` binding, escalating to a pluggable unblocker when a
+  Cloudflare `BROWSER` binding, with agent-browser handling bot-walled sites
   credential is configured; scoped `BROWSER_TOKEN`; gated into plan + verify.
 - **Screenshot → PR job** — per-ticket `workflow` selector (default `coding`);
   `screenshot-pr` bundle captures a URL, hosts the image (imgup multi-host
@@ -307,7 +307,7 @@ into the registry on a fresh deployment.
   repeated tool calls, tune prompts and tool sets.
 - **Browser hard blocks** — hard-PerimeterX sites (e.g. talbots.com) deny even
   real headed Chrome on a residential IP, so they require a commercial
-  unblocker credential on the Tier-2 escalation. Soft/monitor-mode sites pass
+  Soft/monitor-mode sites pass
   through Tier 1 natively.
 - **Image hosting** — no single keyless host is reliable: catbox throttles
   datacenter IPs to 0-byte serves, 0x0.st has uploads disabled. The upload tool

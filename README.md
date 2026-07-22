@@ -87,7 +87,7 @@ bun run deploy       # deploy worker + container image (from worker/)
 
 Secrets: `SPIKE_TOKEN` (master bearer), `GITHUB_TOKEN`,
 `GITHUB_WEBHOOK_SECRET`, `BROWSER_TOKEN` (scoped sandbox callbacks);
-optional: `SCRAPFLY_KEY` (unblocker), `SLACK_SIGNING_SECRET` +
+optional: `SLACK_SIGNING_SECRET` +
 `SLACK_BOT_TOKEN` (Slack), `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN`/
 `JIRA_WEBHOOK_SECRET`/`JIRA_AGENT_ACCOUNT` (Jira intake), `NTFY_URL` +
 `NTFY_TOPIC` (push), `TAVILY_API_KEY`/`EXA_API_KEY`/`BRAVE_API_KEY` +
