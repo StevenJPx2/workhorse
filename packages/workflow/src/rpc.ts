@@ -48,21 +48,22 @@ export async function launchRpcSession(
   const launcherScript = `#!/bin/bash
 cd ${opts.cwd}
 mkfifo ${dir}/cmd.fifo 2>/dev/null || true
-# Holder keeps the write end open so pi doesn't see EOF.
-nohup bash -c 'exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done' > /dev/null 2>&1 &
+# Holder keeps the WRITE end open so pi doesn't see EOF.
+# Using > (write-only) so the holder never consumes data meant for pi.
+nohup bash -c 'exec 3>${dir}/cmd.fifo; while :; do sleep 3600; done' > /dev/null 2>&1 &
 # Start pi reading from the FIFO (detached with nohup).
 ${envPrefix ? envPrefix + " " : ""}nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log &
 PI=$!
 echo $PI > ${dir}/pi.pid
 # Write the initial prompt into the FIFO (pi is now reading).
-cat ${dir}/prompt.json > ${dir}/cmd.fifo
+(cat ${dir}/prompt.json; echo) > ${dir}/cmd.fifo
 touch ${dir}/cmd.in
 # Command loop: watches cmd.in for new commands, forwards to FIFO.
 # Runs detached — keeps forwarding commands even after this exec returns.
 nohup bash -c '
 while kill -0 $(cat ${dir}/pi.pid 2>/dev/null) 2>/dev/null; do
   if [ -s ${dir}/cmd.in ]; then
-    cat ${dir}/cmd.in > ${dir}/cmd.fifo
+    (cat ${dir}/cmd.in; echo) > ${dir}/cmd.fifo
     > ${dir}/cmd.in
   fi
   sleep 0.3
