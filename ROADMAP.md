@@ -374,6 +374,21 @@ charts, and layout that text parsing loses. Verdict against our stack:
 
 ## Tabled 🅿️
 
+### Cloudflare Shell (dynamic-Workers sandbox)
+Flue's `cloudflare-shell` adapter provides a durable Workspace (files in
+SQLite via `storage.sql`) + a model-facing `code` tool that runs LLM-authored
+JavaScript in a Worker Loader isolate. It explicitly does **not** provide Linux
+command execution (`harness.shell`/`session.shell` are unavailable). That
+disqualifies it as our execution substrate: every coding ticket clones a repo
+and runs its real toolchain (`git`, `bun install`/`test`/`build`, `ffmpeg`, the
+`agent-browser` CLI) through the load-bearing `bash` tool — none of which a
+JS-eval `code` tool can run. The durable Workspace resembles our cold-start /
+R2-depcache pain but doesn't address it (it stores files for the JS tool, not a
+container FS you can `bun install` into). Keep the `@cloudflare/sandbox`
+container adapter. Re-entry trigger: a class of repo-less, JS-expressible
+workflows — not close, since even research/report outcomes lean on
+`web_search`/`web_read`/`knowledge`, not JS eval.
+
 ### A2A / live agent communication
 Graph-mediated handoff already carries typed stage outputs (`control.json` /
 `analysis.md` / `refs.json`), `from` data edges, `sourceProjection.include`,
