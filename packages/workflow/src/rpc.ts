@@ -66,6 +66,16 @@ export async function sendRpc(
 /** One parsed event/response line from events.jsonl. */
 export type RpcEvent = Record<string, unknown> & { type: string };
 
+/** UTF-8 byte length without platform globals (lib-agnostic). */
+function utf8Bytes(s: string): number {
+  let bytes = 0;
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!;
+    bytes += cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+  }
+  return bytes;
+}
+
 /** Read events.jsonl from a byte offset; returns events + the new offset. */
 export async function tailEvents(
   driver: Driver,
@@ -91,7 +101,7 @@ export async function tailEvents(
       /* non-JSON noise — skip */
     }
   }
-  return { events, offset: fromOffset + new TextEncoder().encode(chunk.slice(0, completeBytes)).length };
+  return { events, offset: fromOffset + utf8Bytes(chunk.slice(0, completeBytes)) };
 }
 
 /** Scan a burst's events for the signals the engine acts on. */
