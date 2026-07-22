@@ -1,15 +1,15 @@
 // Browser plane (Worker half).
 //
-// All browser operations live in the sandbox via agent-browser (persistent
-// sessions, AX snapshots, click/fill/record). Stateless reads use jina
-// (web_search/web_read) or lightpanda as fallback.
-//
-// This file exists to provide BROWSER_TOKEN to the sandbox environment
-// (injected during prepareWorkspace) so the extension tools can call back
-// to the worker for auth-gated operations.
+// All browser operations run in the sandbox via agent-browser (persistent
+// sessions, AX snapshots, click/fill/record). Under the flue engine the tool
+// definitions live here as a factory (tools.ts) that the worker assembles;
+// each tool execs the agent-browser wrapper in the container. Stateless
+// reads use jina (web_search/web_read, the search plugin).
 
 import type { WorkhorsePlugin } from "@workhorse/api";
+import { browserTools } from "./tools";
 
 export const browserPlugin: WorkhorsePlugin = {
   id: "browser",
+  tools: browserTools,
 };

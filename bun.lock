@@ -78,7 +78,9 @@
       "name": "@workhorse/browser",
       "version": "0.1.0",
       "dependencies": {
+        "@flue/runtime": "^1.0.0-beta.9",
         "@workhorse/api": "workspace:*",
+        "valibot": "^1.1.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
