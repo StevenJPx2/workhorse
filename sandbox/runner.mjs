@@ -50,7 +50,7 @@ try {
   } = await import("@earendil-works/pi-coding-agent");
 
   // Load extensions from the standard location.
-  const agentDir = process.env.PI_AGENT_DIR || "/opt/agent";
+  const agentDir = process.env.PI_AGENT_DIR || "/root/.pi/agent";
   const extDir = join(agentDir, "extensions");
   let extensionTools = [];
   try {
