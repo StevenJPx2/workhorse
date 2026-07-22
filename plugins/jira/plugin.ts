@@ -185,6 +185,23 @@ async function processEvent(env: Env, core: Core, payload: JiraWebhookPayload): 
     if (marker && (author?.accountId ?? "").toLowerCase() === marker) return;
     const text = adfText(payload.comment?.body).trim();
     if (!text || text.startsWith("Workhorse")) return;
+    // "trigger <name> <input…>" comments fire a registered trigger
+    // (the jira-mention trigger source).
+    const trig = text.match(/^trigger\s+([a-z][a-z0-9-]+)\s*([\s\S]*)$/i);
+    if (trig) {
+      const fired = await core.fireTrigger(trig[1].toLowerCase(), {
+        input: trig[2].trim() || text,
+        issueKey: issue.key,
+      });
+      await comment(
+        env,
+        issue.key,
+        fired.ok
+          ? `Workhorse: trigger "${trig[1]}" fired → ticket ${fired.ticket.id}.`
+          : `Workhorse: trigger "${trig[1]}" failed: ${fired.error}`,
+      );
+      return;
+    }
     const rec = await core.getTicket(mapped);
     if (!rec) return;
     const active = ["queued", "planning", "implementing", "ready-for-review"];
@@ -245,6 +262,13 @@ interface JiraWebhookPayload {
 
 export const jiraPlugin: WorkhorsePlugin = {
   id: "jira",
+
+  triggers: [
+    {
+      kind: "jira-mention",
+      describe: 'a comment starting with "trigger <name>" on any Workhorse-mapped issue',
+    },
+  ],
 
   attachments: [
     {

@@ -81,6 +81,11 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       }
       return getScript(env, "global", name);
     },
+    fireTrigger: async (name, payload) => {
+      const { fireTrigger } = await import("./triggers");
+      const r = await fireTrigger(env, name, payload);
+      return r.ok ? { ok: true, ticket: r.ticket } : { ok: false, error: r.error };
+    },
     registerScript: async (s) => {
       const { validateScript, upsertScript, getScript } = await import("./db");
       const err = validateScript(s);

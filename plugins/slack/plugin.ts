@@ -141,7 +141,30 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
     return;
   }
 
-  // --- unmapped @mention: route to the fleet chat agent ---
+  // --- unmapped @mention: trigger syntax first, then the fleet chat agent ---
+  // "@workhorse trigger <name> <input…>" fires a registered trigger with
+  // the mention text as {{input}} (the slack-mention trigger source).
+  const trig = text.match(/^trigger\s+([a-z][a-z0-9-]+)\s*([\s\S]*)$/i);
+  if (trig) {
+    const fired = await core.fireTrigger(trig[1].toLowerCase(), {
+      input: trig[2].trim() || text,
+      channel,
+      user: e.user ?? "",
+    });
+    await postMessage(
+      env,
+      channel,
+      fired.ok
+        ? `Trigger \`${trig[1]}\` fired → ticket ${fired.ticket.id}. I'll post updates here.`
+        : `Trigger \`${trig[1]}\` failed: ${fired.error}`,
+      threadTs,
+    );
+    if (fired.ok) {
+      await env.TICKETS.put(`slack:${channel}:${threadTs}`, fired.ticket.id);
+      await env.TICKETS.put(`slack-thread:${fired.ticket.id}`, JSON.stringify({ channel, threadTs }));
+    }
+    return;
+  }
   const r = await core.fleetChat([{ role: "user", content: text }]);
   const reply = r.ok ? r.reply : `Fleet agent unavailable: ${r.error}`;
   await postMessage(env, channel, reply, threadTs);
@@ -156,6 +179,13 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
 
 export const slackPlugin: WorkhorsePlugin = {
   id: "slack",
+
+  triggers: [
+    {
+      kind: "slack-mention",
+      describe: "@workhorse trigger <name> <input> in any channel the bot can read",
+    },
+  ],
 
   attachments: [
     {

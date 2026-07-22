@@ -49,6 +49,36 @@ export interface AttachmentProvider {
   resolve(env: Env, core: Core, ref: string): Promise<ResolvedAttachment>;
 }
 
+/** A registered trigger: source + prompt template + workflow + routing. */
+export interface TriggerRecord {
+  /** ^[a-z][a-z0-9-]{1,63}$ — also the fire-endpoint segment. */
+  name: string;
+  /** Source kind: "cron" | "webhook" | a plugin TriggerSource kind. */
+  source: string;
+  /** cron sources: five-field cron expression (UTC). */
+  schedule?: string;
+  /** Prompt template; {{input}} and {{<field>}} interpolate the payload. */
+  template: string;
+  workflow?: string;
+  repo?: string;
+  inputs?: Record<string, string | number | boolean>;
+  attachments?: AttachmentRef[];
+  enabled: boolean;
+  createdAt: string;
+  lastFiredAt?: string;
+}
+
+/**
+ * A plugin-contributed trigger source. Core owns only the plumbing (cron
+ * scan + the generic fire endpoint); plugins own how their surface
+ * produces a firing (Slack mention, Jira mention, …) and call
+ * core.fireTrigger from their webhook handlers.
+ */
+export interface TriggerSource {
+  kind: string;
+  describe?: string;
+}
+
 /** A registered self-extension script (see the scripts plugin). */
 export interface ScriptRecord {
   /** "global" or "repo:<owner/repo>". */
@@ -129,6 +159,15 @@ export interface Core {
   registerScript(
     s: Omit<ScriptRecord, "createdAt" | "updatedAt">,
   ): Promise<{ ok: true; script: ScriptRecord } | { ok: false; error: string }>;
+  /**
+   * Fire a registered trigger with a payload (template-interpolated).
+   * The verb plugin webhook handlers call when their surface produces a
+   * firing (mention, action button, …).
+   */
+  fireTrigger(
+    name: string,
+    payload: Record<string, string>,
+  ): Promise<{ ok: true; ticket: TicketRecord } | { ok: false; error: string }>;
 }
 
 /** Webhook half: POST /webhooks/<plugin id>. */
@@ -212,4 +251,6 @@ export interface WorkhorsePlugin {
   hooks?: PluginHooks;
   /** Attachment sources this plugin contributes (kind must be unique fleet-wide). */
   attachments?: AttachmentProvider[];
+  /** Trigger sources this plugin can fire (documentation + registry validation). */
+  triggers?: TriggerSource[];
 }

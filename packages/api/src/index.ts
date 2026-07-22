@@ -8,6 +8,8 @@ export type {
   ResolvedAttachment,
   RouteAuth,
   ScriptRecord,
+  TriggerRecord,
+  TriggerSource,
   WebhookHandler,
   WorkhorsePlugin,
 } from "./plugin";

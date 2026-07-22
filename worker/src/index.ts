@@ -12,6 +12,7 @@ import { miscRoutes } from "./routes/misc";
 import { registryRoutes } from "./routes/registries";
 import { sandboxCallbackRoutes } from "./routes/sandbox-callbacks";
 import { ticketRoutes } from "./routes/tickets";
+import { triggerRoutes } from "./routes/triggers";
 import { webhookRoutes } from "./routes/webhooks";
 
 export { Sandbox } from "@cloudflare/sandbox";
@@ -24,6 +25,7 @@ const routes: Route[] = [
   ...sandboxCallbackRoutes, // scoped (find, depcache)
   ...registryRoutes, // master (admin, agents, workflows, token, meta)
   ...ticketRoutes, // master (the fleet surface)
+  ...triggerRoutes, // master registry + public secret-gated /fire
   ...miscRoutes, // master (chat, attachments/match, debug)
 ];
 
@@ -57,8 +59,8 @@ export default {
   // still have heal budget. Skips anything a human already terminated.
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const sweep = async () => {
-      // One query instead of a full KV scan: errored tickets outside the
-      // 5-min quiet window (avoids racing a deploy or a human investigating).
+      // Heals: one query instead of a full KV scan; 5-min quiet window
+      // (avoids racing a deploy or a human investigating).
       const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const errored = await listTickets(env, "errored");
       for (const rec of errored) {
@@ -66,6 +68,10 @@ export default {
         const res = await healTicket(env, rec.id);
         console.log(`heal sweep ${rec.id}: ${res.ok ? `re-dispatched as ${res.instance}` : res.reason}`);
       }
+      // Cron triggers: fire schedules that matched this window.
+      const { sweepCronTriggers } = await import("./triggers");
+      const fired = await sweepCronTriggers(env);
+      if (fired.length) console.log(`cron triggers fired: ${fired.join(", ")}`);
     };
     ctx.waitUntil(sweep());
   },

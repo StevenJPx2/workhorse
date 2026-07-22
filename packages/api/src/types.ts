@@ -167,6 +167,8 @@ export interface Env {
   NTFY_URL?: string;
   NTFY_TOPIC?: string;
   NTFY_TOKEN?: string;
+  /** Shared secret for POST /triggers/:name/fire (webhook-style firing). */
+  TRIGGER_SECRET?: string;
   /**
    * Web search providers (all optional — unset providers are skipped by
    * the fallback chain). SEARCH_PROVIDER picks the default (tavily|exa|
