@@ -1,13 +1,14 @@
 /**
- * SDK stage sessions — each stage runs pi-coding-agent programmatically
- * via createAgentSession + prompt. No CLI, no subprocess, no FIFO.
- *
- * The runner script (sandbox/runner.mjs) is a thin shim that imports the
- * SDK, loads extensions, and runs the agent to completion. Events stream
- * to events.jsonl (tailed by the engine between drive bursts).
+ * Stage sessions — each stage runs `pi --mode rpc` with a FIFO for
+ * commands and an append-only events.jsonl. The initial prompt is sent
+ * as a JSONL command. The engine polls events.jsonl for agent_settled
+ * between drive bursts. Steering and promotion restart the session.
  *
  * Layout per stage round dir:
- *   events.jsonl  session events (append-only, tailed by the engine)
+ *   cmd.fifo      command pipe (named pipe)
+ *   cmd.in        command channel (regular file, tailed by command loop)
+ *   prompt.json   initial prompt (written before launch)
+ *   events.jsonl  every event, one JSON per line (append-only)
  *   session.log   stderr (launch failures, crashes)
  *   control.json  stage control (written by submit_work extension)
  *   analysis.md   stage analysis (written by submit_work extension)
@@ -15,11 +16,7 @@
 
 import type { Driver } from "./driver";
 
-/**
- * Launch an SDK session for a stage. The exec blocks until the agent
- * finishes. Returns immediately after starting — the caller should
- * poll events.jsonl for agent_settled.
- */
+/** Launch a pi RPC session for a stage. Returns pid or null on failure. */
 export async function launchSdkSession(
   driver: Driver,
   opts: {
@@ -34,71 +31,77 @@ export async function launchSdkSession(
   const envPrefix = Object.entries(opts.env ?? {})
     .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
     .join(" ");
-  const flagsStr = opts.flags.join(" ");
-  // Run the SDK runner in the foreground. This exec blocks until the
-  // agent finishes (5-20 min). The engine polls events.jsonl for
-  // agent_settled in subsequent advance() calls.
-  // Run the SDK runner from /opt/agent (where node_modules lives) so
-  // bare-specifier imports resolve. The cwd arg tells the runner where
-  // the repo is.
-  const cmd = `cd /opt/agent && ${envPrefix ? envPrefix + " " : ""}node runner.mjs ${dir} ${opts.promptPath} ${flagsStr} 2> ${dir}/session.log`;
-  driver.exec(cmd, { timeout: 30 * 60_000 }).catch(() => {});
-  // Wait a moment for the process to start.
-  await driver.exec(`sleep 2`, { timeout: 5_000 });
-  // Find the node process PID.
-  const ps = await driver.exec(
-    `ps aux | grep "[r]unner.mjs.*${dir}" | head -1 | awk '{print $2}'`,
+  // Write the prompt to a JSONL command file.
+  const promptText = (await driver.readFile(opts.promptPath)) ?? "";
+  const promptJson = JSON.stringify({ type: "prompt", message: promptText });
+  await driver.writeFile(`${dir}/prompt.json`, promptJson);
+  // Launcher: FIFO setup, pi start, prompt write (with newline for JSONL),
+  // command loop. All nohup'd to survive exec returning.
+  const launcher = [
+    `cd ${cwd}`,
+    `mkfifo ${dir}/cmd.fifo 2>/dev/null || true`,
+    // Holder: write-only fd keeps FIFO open (never reads data meant for pi).
+    `nohup bash -c 'exec 3>${dir}/cmd.fifo; while :; do sleep 3600; done' >/dev/null 2>&1 &`,
+    // Start pi reading from FIFO.
+    `${envPrefix ? envPrefix + " " : ""}nohup pi --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log &`,
+    `echo $! > ${dir}/pi.pid`,
+    // Write initial prompt + newline (JSONL reader needs the newline).
+    `(cat ${dir}/prompt.json; echo) > ${dir}/cmd.fifo`,
+    // Command loop for additional commands (steer, abort).
+    `touch ${dir}/cmd.in`,
+    `nohup bash -c 'while kill -0 $(cat ${dir}/pi.pid 2>/dev/null) 2>/dev/null; do if [ -s ${dir}/cmd.in ]; then (cat ${dir}/cmd.in; echo) > ${dir}/cmd.fifo; > ${dir}/cmd.in; fi; sleep 0.3; done' >/dev/null 2>&1 &`,
+    `echo STARTED`,
+  ].join(" && ");
+  await driver.writeFile(`${dir}/launcher.sh`, launcher);
+  const r = await driver.exec(`bash ${dir}/launcher.sh`, { timeout: 15_000 });
+  if (!r.stdout.includes("STARTED")) {
+    const log = (await driver.readFile(`${dir}/session.log`)) ?? "";
+    throw new Error(`launcher failed: ${r.stderr || log.slice(-300)}`);
+  }
+  await driver.exec(`sleep 1`, { timeout: 5_000 });
+  const pidRaw = (await driver.readFile(`${dir}/pi.pid`))?.trim();
+  const pid = pidRaw ? Number(pidRaw) : 0;
+  if (!pid) throw new Error("pi pid not recorded");
+  const alive = await driver.exec(
+    `kill -0 ${pid} 2>/dev/null && echo alive || echo dead`,
     { timeout: 5_000 },
   );
-  const pid = Number(ps.stdout.trim()) || 0;
-  return pid ? { pid } : null;
+  if (!alive.stdout.includes("alive")) {
+    const log = (await driver.readFile(`${dir}/session.log`)) ?? "";
+    throw new Error(`pi died immediately: ${log.slice(-300)}`);
+  }
+  return { pid };
 }
 
-/**
- * Check if the SDK session is still alive (the node process is running).
- */
+/** Check if a session process is still alive. */
 export async function sessionAlive(driver: Driver, pid: number): Promise<boolean> {
   const r = await driver.exec(`kill -0 ${pid} 2>/dev/null && echo alive || echo dead`, { timeout: 5_000 });
   return r.stdout.includes("alive");
 }
 
-/**
- * Send an RPC-style command to a running session. In the SDK approach,
- * commands are written to a command file that the runner reads (if
- * supported). For now, this is a no-op — the SDK runner runs to
- * completion without mid-session commands. Steering and model switching
- * happen between runs (the engine resets and re-launches).
- */
+/** Send a command to a running session via the cmd.in channel. */
 export async function sendCommand(
   driver: Driver,
   dir: string,
   command: Record<string, unknown>,
 ): Promise<boolean> {
-  // Write the command to a file for potential future use.
-  await driver.writeFile(`${dir}/command.json`, JSON.stringify(command));
-  return true;
+  const json = JSON.stringify(command).replace(/'/g, "'\\''");
+  const r = await driver.exec(
+    `printf '%s\\n' '${json}' >> ${dir}/cmd.in && echo SENT`,
+    { timeout: 10_000 },
+  );
+  return r.stdout.includes("SENT");
 }
 
-/**
- * Write a raw event into events.jsonl (for test helpers and the mock driver
- * to simulate SDK responses).
- */
-export function writeEvent(driver: Driver, dir: string, event: Record<string, unknown>): Promise<void> {
-  return driver.writeFile(
-    `${dir}/events.jsonl`,
-    ((driver as unknown as { files?: Map<string, string> }).files?.get(`${dir}/events.jsonl`) ?? "") +
-      JSON.stringify(event) + "\n",
+/** Kill a running session process. */
+export async function killSession(driver: Driver, pid: number): Promise<void> {
+  await driver.exec(
+    `kill ${pid} 2>/dev/null; sleep 0.5; kill -9 ${pid} 2>/dev/null || true`,
+    { timeout: 10_000 },
   );
 }
 
-/**
- * Kill a running SDK session.
- */
-export async function killSession(driver: Driver, pid: number): Promise<void> {
-  await driver.exec(`kill ${pid} 2>/dev/null; sleep 0.5; kill -9 ${pid} 2>/dev/null || true`, { timeout: 10_000 });
-}
-
-// ---- Event utilities (shared by the engine) ----
+// ---- Event utilities (used by the engine) ----
 
 /** One parsed event line from events.jsonl. */
 export type SessionEvent = Record<string, unknown> & { type: string };
@@ -135,11 +138,11 @@ export function digestEvents(events: SessionEvent[]): {
     if (e.type === "agent_settled") settled = true;
     if (e.type === "session_stats") stats = e as unknown as Record<string, unknown>;
     if (e.type === "runner_error") error = String(e.error ?? "");
-    if (e.type === "auto_retry_end" && e.success === false) {
+    if (e.type === "auto_retry_end" && (e as Record<string, unknown>).success === false) {
       modelFailed = true;
       error = String((e as Record<string, unknown>).finalError ?? (e as Record<string, unknown>).error ?? "");
     }
-    if (e.type === "error" || e.type === "agent_error") error = String(e.message ?? e.error ?? "");
+    if (e.type === "error" || e.type === "agent_error") error = String((e as Record<string, unknown>).message ?? e.error ?? "");
   }
   return { settled, stats, modelFailed, error };
 }
@@ -148,15 +151,16 @@ export function digestEvents(events: SessionEvent[]): {
 export function renderEvents(events: SessionEvent[]): string {
   const lines: string[] = [];
   for (const e of events) {
-    const msg = (e as Record<string, unknown>).message as Record<string, unknown> | undefined;
+    const rec = e as Record<string, unknown>;
+    const msg = rec.message as Record<string, unknown> | undefined;
     if (e.type === "message_start" && msg?.role === "assistant") {
       lines.push(`[assistant] ${String(msg.content ?? "").slice(0, 200)}`);
     }
     if (e.type === "tool_execution_start") {
-      lines.push(`[tool: ${(e as Record<string, unknown>).toolName ?? e.name ?? "?"}]`);
+      lines.push(`[tool: ${rec.toolName ?? e.name ?? "?"}]`);
     }
     if (e.type === "turn_end") {
-      const usage = (e as Record<string, unknown>).usage as Record<string, unknown> | undefined;
+      const usage = rec.usage as Record<string, unknown> | undefined;
       if (usage) lines.push(`[turn: ${usage.inputTokens ?? "?"} in / ${usage.outputTokens ?? "?"} out]`);
     }
   }
