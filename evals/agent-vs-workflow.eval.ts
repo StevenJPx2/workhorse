@@ -17,7 +17,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LLMClassifierFromTemplate } from "autoevals";
+import { init, LLMClassifierFromTemplate } from "autoevals";
 import { evalite } from "evalite";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -43,8 +43,28 @@ const loaded: { results: RunResult[] } = existsSync(resultsPath)
   : { results: [] };
 
 // The LLM judge grades whether the recorded change actually satisfies the
-// task. Keep the grader independent of the model under test. Gated on a key.
-const judgeEnabled = !!process.env.OPENAI_API_KEY;
+// task. Keep the grader independent of the model under test. Opt-in: set
+// EVAL_JUDGE_KEY (+ optional EVAL_JUDGE_BASE_URL for an OpenAI-compatible
+// gateway) and have `openai` installed. Default OFF so eval:ci stays green
+// offline on the deterministic scorers alone. NOTE: autoevals routes through
+// its Braintrust proxy unless init({client}) supplies a real client — the
+// bug the mock-results validation caught (401), fixed by the explicit init.
+let judgeEnabled = false;
+if (process.env.EVAL_JUDGE_KEY) {
+  try {
+    const spec = "openai";
+    const { default: OpenAI } = (await import(spec)) as { default: new (o: unknown) => unknown };
+    init({
+      client: new OpenAI({
+        apiKey: process.env.EVAL_JUDGE_KEY,
+        ...(process.env.EVAL_JUDGE_BASE_URL ? { baseURL: process.env.EVAL_JUDGE_BASE_URL } : {}),
+      }) as never,
+    });
+    judgeEnabled = true;
+  } catch {
+    console.warn("[agent-vs-workflow] EVAL_JUDGE_KEY set but `openai` not installed — skipping diff-quality judge");
+  }
+}
 const diffJudge = LLMClassifierFromTemplate<{ prompt: string; diff: string }>({
   name: "diff-quality",
   promptTemplate: `You are grading an autonomous coding agent's work.
