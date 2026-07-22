@@ -30,7 +30,7 @@ flowchart LR
 |---|---|---|
 | Spine | Cloudflare Workflows | one durable instance per ticket: durability plumbing only — bursts, parks (`waitForEvent`), retries, delivery |
 | Engine | `packages/workflow` | the workflow semantics: spec compile + validation, graph routing, per-stage prompt assembly, run state, control verbs (steer / promote / inject-input / cancel), typed failure classification |
-| Muscle | Cloudflare Sandbox | per-ticket Firecracker container; each stage is one bare Pi session with a CLI-enforced tool ceiling; agent-browser for persistent browser sessions (AX snapshots, click/fill/record); jina for stateless reads |
+| Muscle | Cloudflare Sandbox | per-ticket Firecracker container; each stage is one bare Pi session with a CLI-enforced tool ceiling |
 | Brain | Anthropic (Claude subscription OAuth) | Pi + extensions, baked into the sandbox image |
 | Memory | D1 + KV + R2 + Vectorize + AI Search | records in D1; hot state in KV; blobs (traces, repo memory, dep cache) in R2; semantic registries (scripts/workflows/tools) in Vectorize; fleet-wide run knowledge in AI Search |
 | Token custody | MacBook homelab server | holds+refreshes the OAuth refresh token; mints short-lived access tokens |
@@ -52,6 +52,25 @@ stages can park mid-run for operator input (`awaiting-input`) rendered as
 schema-driven forms. Completion signals are pluggable
 (`Core.signalTransition`): PR merge, Jira Done, and the UI's Accept button
 are the same mechanism.
+
+## Plugins
+
+Each plugin is a single `plugins/<name>/` package with an optional worker half (routes, hooks) and an optional sandbox half (Pi extension). Plugins depend only on `@workhorse/api`; the worker is the sole composition point.
+
+| Plugin | What it does |
+|---|---|
+| `browser` | Sandbox: agent-browser tools (persistent sessions — open, AX snapshot, click/fill/type, screenshot, record GIF). Worker: no-op shell (BROWSER_TOKEN for sandbox auth). |
+| `github` | Inbound: PR/issue webhook → fileTicket, thread replies → two-path steer/revise, PR merge → done. Outbound: onStatusChange → PR comments. Sandbox: read-only `gh_pr`/`gh_ci`/`gh_search_code`/`gh_commits` (scoped proxy). |
+| `slack` | Inbound: @mention → fleet chat or `trigger <name>` fire; thread replies → notification bus. Outbound: onStatusChange → thread replies. |
+| `jira` | Inbound: issue assigned/labeled → fileTicket; comments → notification bus. Outbound: transitions + PR-link comments. Sandbox: `search_jira`/`search_confluence` (federated search). |
+| `knowledge` | Sandbox: `search_fleet_knowledge` (AI Search semantic index of every past run). Worker: `POST /knowledge/search`, `/reindex`. |
+| `imgup` | Sandbox: `upload_image` — multi-host image upload chain (imgbb → catbox → …) with serve-verification. |
+| `scripts` | Sandbox: `list_scripts`/`run_script`/`write_script`/`find_script` — agent self-extension from the D1 scripts registry. |
+| `tickets` | Worker: ticket CRUD, dispatch, health, attachments, notification bus routes. |
+| `paste` | Sandbox: `upload_text` — text → curl-able URL (paste.rs → 0x0.st fallback chain). |
+| `ntfy` | Worker: onStatusChange/onTraceArchived → ntfy push (priority-mapped). |
+| `search` | Sandbox: `web_search` (jina → exa fallback chain), `web_read` (jina reader, clean markdown). |
+| `semindex` | Worker: `POST /semindex/query` — Vectorize-backed semantic search over scripts/workflows/tools. Sandbox: `find_script`/`find_tool`. |
 
 ## API (bearer-gated)
 
