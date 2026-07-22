@@ -208,6 +208,100 @@ describe("run lifecycle", () => {
     expect(state.stages[0].model).toBe("claude-opus-4-6");
   });
 
+  it("routes verify fail → back to implement with the verdict embedded; pass → $end", async () => {
+    const branching: WorkflowSpec = {
+      schemaVersion: 1,
+      name: "branchy",
+      artifactGraph: {
+        stages: [
+          { id: "implement", prompt: "Do the work.", tools: ["read", "write"] },
+          {
+            id: "verify",
+            from: "implement",
+            prompt: "Check the work.",
+            output: { controlSchema: { type: "object", required: ["verdict"], properties: { verdict: { enum: ["pass", "fail"] } } } },
+            next: [
+              { when: { verdict: "fail" }, to: "implement" },
+              { when: { verdict: "pass" }, to: "$end" },
+            ],
+            maxLoopbacks: 1,
+          },
+          { id: "polish", from: "verify", prompt: "Only runs when no rule matched.", outcome: "pr" },
+        ],
+      },
+    };
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, branching);
+    await engine.dispatch("Fix the bug", { runId: "wfrun_test" });
+    await engine.advance("wfrun_test", 0);
+    driver.finishSession(stageDir("wfrun_test", "implement", 1), { status: "done" }, "did the work");
+    await engine.advance("wfrun_test", 0); // collect implement, launch verify
+    await engine.advance("wfrun_test", 0);
+
+    // Round 1: verify FAILS → loop back to implement with the verdict.
+    driver.finishSession(
+      stageDir("wfrun_test", "verify", 1),
+      { verdict: "fail", blocking: [{ file: "a.ts", problem: "off-by-one" }] },
+      "found an off-by-one",
+    );
+    let r = await engine.advance("wfrun_test", 0);
+    let state = await engine.load("wfrun_test");
+    // Routing reset implement and the same burst relaunched it (round 2).
+    expect(state.stages[0].status).toBe("running");
+    expect(state.stages[1].loopbacks).toBe(1);
+    expect(r.status).toBe("running");
+
+    // The re-run prompt carries the verify verdict.
+    const rerunPrompt = driver.files.get(`${stageDir("wfrun_test", "implement", 2)}/prompt.md`)!;
+    expect(rerunPrompt).toContain("Routed back from `verify`");
+    expect(rerunPrompt).toContain("off-by-one");
+    driver.finishSession(stageDir("wfrun_test", "implement", 2), { status: "done" }, "fixed");
+    await engine.advance("wfrun_test", 0); // collect implement, launch verify round 2
+    await engine.advance("wfrun_test", 0);
+
+    // Round 2: verify PASSES → $end; polish is SKIPPED, run completes.
+    driver.finishSession(stageDir("wfrun_test", "verify", 2), { verdict: "pass", blocking: [] }, "clean");
+    r = await engine.advance("wfrun_test", 0);
+    state = await engine.load("wfrun_test");
+    expect(state.stages[1].status).toBe("completed");
+    expect(state.stages[2].status).toBe("skipped");
+    expect(state.status).toBe("completed");
+  });
+
+  it("suppresses the loop-back at the cap and proceeds", async () => {
+    const branching: WorkflowSpec = {
+      schemaVersion: 1,
+      name: "capped",
+      artifactGraph: {
+        stages: [
+          { id: "implement", prompt: "Work.", tools: ["read"] },
+          {
+            id: "verify",
+            from: "implement",
+            prompt: "Check.",
+            next: [{ when: { verdict: "fail" }, to: "implement" }],
+            maxLoopbacks: 0, // no loop-backs allowed
+            outcome: "pr",
+          },
+        ],
+      },
+    };
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, branching);
+    await engine.dispatch("task", { runId: "wfrun_test" });
+    await engine.advance("wfrun_test", 0);
+    driver.finishSession(stageDir("wfrun_test", "implement", 1), { status: "done" });
+    await engine.advance("wfrun_test", 0);
+    await engine.advance("wfrun_test", 0);
+    driver.finishSession(stageDir("wfrun_test", "verify", 1), { verdict: "fail" });
+    await engine.advance("wfrun_test", 0);
+    const state = await engine.load("wfrun_test");
+    // Cap 0: route suppressed, verify stays completed, run finishes.
+    expect(state.stages[1].status).toBe("completed");
+    expect(state.stages[1].detail).toContain("loop-back cap");
+    expect(state.status).toBe("completed");
+  });
+
   it("captures session stats at collect (get_session_stats round-trip)", async () => {
     const driver = new MockDriver();
     const engine = new WorkflowEngine(driver, spec());

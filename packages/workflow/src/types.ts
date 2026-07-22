@@ -76,6 +76,20 @@ export interface StageSpec {
    * (queued on the bus) into this stage's prompt at launch.
    */
   notifications?: "read";
+  /**
+   * Conditional routing over the stage's validated control JSON —
+   * deterministic branching (the SYSTEM routes, never the agent's prose).
+   * Rules evaluate in order after the stage completes; first match wins:
+   *   { when: {verdict: "fail"}, to: "implement" }  → loop back (resets the
+   *     target + everything after it; the routed-from stage's control +
+   *     analysis are injected into the target's re-run prompt)
+   *   { when: {verdict: "pass"}, to: "$end" }       → skip remaining stages
+   * `when` is an equality match on top-level control fields; omit it for an
+   * unconditional default. No matching rule = natural graph order.
+   */
+  next?: Array<{ when?: Record<string, unknown>; to: string }>;
+  /** Max times this stage's `next` may route BACKWARD (default 2). */
+  maxLoopbacks?: number;
   /** Accepted for spec compatibility — inert (dependents of a re-run stage always re-run). */
   inputPolicy?: Record<string, unknown>;
 }
@@ -139,6 +153,13 @@ export interface StageState {
   control?: Record<string, unknown>;
   /** Pending operator steer, applied on (re)launch. */
   steer?: string;
+  /**
+   * Routing context from a `next` loop-back: the routed-from stage's
+   * verdict digest, injected into the re-run prompt. Consumed at launch.
+   */
+  routedFrom?: { stage: string; digest: string };
+  /** How many times this stage's `next` has routed backward. */
+  loopbacks?: number;
   /** Input request raised by the stage (awaiting-input only). */
   inputRequest?: { title?: string; schema: JsonSchema };
 }

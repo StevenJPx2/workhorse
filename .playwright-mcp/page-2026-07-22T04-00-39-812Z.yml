@@ -1,0 +1,39 @@
+- generic [ref=f9e3]:
+  - banner [ref=f9e4]:
+    - link "Workhorse" [ref=f9e5] [cursor=pointer]:
+      - /url: /
+    - navigation [ref=f9e8]:
+      - list [ref=f9e10]:
+        - listitem [ref=f9e11]:
+          - link "Home" [ref=f9e12] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=f9e15]:
+          - link "Fleet" [ref=f9e16] [cursor=pointer]:
+            - /url: /tickets
+        - listitem [ref=f9e19]:
+          - link "Workflows" [ref=f9e20] [cursor=pointer]:
+            - /url: /workflows
+        - listitem [ref=f9e23]:
+          - link "Agents" [ref=f9e24] [cursor=pointer]:
+            - /url: /agents
+  - main [ref=f9e27]:
+    - generic [ref=f9e28]:
+      - generic [ref=f9e29]:
+        - heading "coding" [level=1] [ref=f9e30]
+        - generic [ref=f9e31]: seed
+        - generic [ref=f9e32]: "Plan, implement, adversarially verify, then fix a code change in the current repository. Plan+verify are read-only; implement+fix have write tools. Memory tools throughout: search prior solutions first, record durable learnings."
+        - generic [ref=f9e33]:
+          - button "JSON" [ref=f9e34]
+          - textbox "copy-name" [ref=f9e37]
+          - button "Save as" [disabled] [ref=f9e38]
+      - generic [ref=f9e39]: Seed workflows are read-only templates — edit freely, then Save-as under a new name.
+      - generic [ref=f9e43]:
+        - generic [ref=f9e44]:
+          - generic [ref=f9e45]: loading canvas…
+          - button "Add stage" [ref=f9e49]
+        - generic [ref=f9e51]:
+          - generic [ref=f9e52]: Select a stage
+          - generic [ref=f9e55]:
+            - text: Click a node to edit its agent, tools, prompt, and wiring. Connections come from each stage's
+            - code [ref=f9e56]: from
+            - text: field.

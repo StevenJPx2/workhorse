@@ -105,6 +105,8 @@ export interface PromptParts {
   inputs?: Record<string, string | number | boolean>;
   upstream: string[];
   steer?: string;
+  /** Loop-back routing context (the routed-from stage's verdict). */
+  routedFrom?: { stage: string; digest: string };
   /** Rendered unread-notifications section (workflow-declared read point). */
   notifications?: string;
   round: number;
@@ -149,6 +151,14 @@ export function assemblePrompt(
       "## Operator steering (read carefully)\n\n" +
         "A human operator redirected this stage. Their instructions take precedence " +
         `over conflicting parts of the task above:\n\n${parts.steer}`,
+    );
+  }
+  if (parts.routedFrom) {
+    sections.push(
+      `## Routed back from \`${parts.routedFrom.stage}\` (address these findings)\n\n` +
+        "A downstream stage evaluated your previous work and routed the workflow back to " +
+        "this stage. Fix EVERY blocking finding below — the same check runs again after " +
+        `you finish.\n\n${parts.routedFrom.digest}`,
     );
   }
   if (parts.notifications) {

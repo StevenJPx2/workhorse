@@ -234,6 +234,7 @@ export class WorkflowEngine {
       inputs: { ...state.inputs, ...(st.inputRequest ? {} : {}) },
       upstream,
       steer: st.steer,
+      routedFrom: st.routedFrom,
       notifications,
       round,
       maxRounds: spec.maxRounds,
@@ -287,6 +288,7 @@ export class WorkflowEngine {
     st.eventsOffset = 0;
     st.startedAt = st.startedAt ?? new Date().toISOString();
     st.steer = undefined; // consumed
+    st.routedFrom = undefined; // consumed
     state.status = "running";
   }
 
@@ -354,6 +356,77 @@ export class WorkflowEngine {
     }
     st.status = "completed";
     st.completedAt = new Date().toISOString();
+
+    // Conditional routing: deterministic branching over the VALIDATED
+    // control JSON — the system routes, never the agent's prose.
+    await this.route(state, st, spec, control);
+  }
+
+  /** Evaluate a completed stage's `next` rules; first match routes. */
+  private async route(
+    state: RunState,
+    st: StageState,
+    spec: StageSpec,
+    control: Record<string, unknown>,
+  ): Promise<void> {
+    const rule = (spec.next ?? []).find(
+      (r) => !r.when || Object.entries(r.when).every(([k, v]) => control[k] === v),
+    );
+    if (!rule) return;
+
+    if (rule.to === "$end") {
+      // Skip everything not yet run — the run is done.
+      for (const s of state.stages) {
+        if (s.status === "pending") s.status = "skipped";
+      }
+      return;
+    }
+
+    const order = state.stages.map((s) => s.id);
+    const targetIdx = order.indexOf(rule.to);
+    if (targetIdx < 0) return; // validated at upload; belt-and-braces
+    const selfIdx = order.indexOf(st.id);
+
+    if (targetIdx <= selfIdx) {
+      // LOOP-BACK (e.g. verify fail → implement). Bounded.
+      const cap = spec.maxLoopbacks ?? 2;
+      if ((st.loopbacks ?? 0) >= cap) {
+        st.detail = `route ${st.id}→${rule.to} suppressed: loop-back cap (${cap}) reached; proceeding`;
+        return;
+      }
+      st.loopbacks = (st.loopbacks ?? 0) + 1;
+      const target = state.stages[targetIdx];
+      // The routed-from verdict travels INTO the target's re-run prompt.
+      const analysis =
+        (await this.driver.readFile(`${stageDir(state.runId, st.id, st.rounds)}/analysis.md`)) ?? "";
+      target.routedFrom = {
+        stage: st.id,
+        digest:
+          `\`${st.id}\` verdict: ${JSON.stringify(control).slice(0, 1500)}\n\n` +
+          analysis.slice(0, 3000),
+      };
+      // Reset the target and every stage after it (this one included) so
+      // the graph re-runs from the target with the verdict in hand.
+      for (let i = targetIdx; i < state.stages.length; i++) {
+        const s = state.stages[i];
+        if (s.status === "skipped" || s.status === "pending") continue;
+        s.status = "pending";
+        s.control = i === targetIdx ? s.control : undefined;
+        s.completedAt = undefined;
+        s.failureKind = undefined;
+        s.detail = undefined;
+        s.eventsOffset = 0;
+        // Preserve loopback counters — they are the cycle bound.
+      }
+      // Fresh round dirs: bump rounds so artifacts never collide.
+      state.stages[targetIdx].rounds = target.rounds; // launch() adds +1
+    }
+    // Forward jump: mark the stages BETWEEN self and target skipped.
+    else {
+      for (let i = selfIdx + 1; i < targetIdx; i++) {
+        if (state.stages[i].status === "pending") state.stages[i].status = "skipped";
+      }
+    }
   }
 
   private fail(st: StageState, kind: FailureKind, detail: string): void {

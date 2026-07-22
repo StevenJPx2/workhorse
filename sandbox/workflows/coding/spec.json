@@ -127,7 +127,7 @@
             "optional": true
           }
         ],
-        "prompt": "Implement the upstream plan for the runtime task. If you hit anything non-obvious (build quirks, hidden coupling, project-specific conventions), check ctx_search for prior fixes before debugging from scratch. Make the code changes now, following the plan and repo conventions. When done, verify with bash: git add -A && git diff --cached --stat, and include that diff stat in your analysis. FINALLY: if you learned something durable about this repo that future tickets must know (a rule, constraint, gotcha, or convention \u2014 not task-specific detail), record it with ctx_memory(action=\"write\"). ESCALATION: if after genuine effort the implementation exceeds your capability (you cannot make it work, not merely slow going), still leave your best partial work AND set \"delegate\": true with a short \"delegateReason\" in your control block; the orchestrator re-runs this stage on a stronger model. Use list_scripts before hand-writing multi-step shell pipelines \u2014 run_script an existing one when it fits. When you compose a pipeline future runs will need again (build+test incantation, codegen refresh, env setup), package it once with write_script: clear name, description other agents can choose by, args as $ARG_<NAME>.",
+        "prompt": "Implement the upstream plan for the runtime task. If you hit anything non-obvious (build quirks, hidden coupling, project-specific conventions), check ctx_search for prior fixes before debugging from scratch. Make the code changes now, following the plan and repo conventions. When done, verify with bash: git add -A && git diff --cached --stat, and include that diff stat in your analysis. FINALLY: if you learned something durable about this repo that future tickets must know (a rule, constraint, gotcha, or convention \u2014 not task-specific detail), record it with ctx_memory(action=\"write\"). ESCALATION: if after genuine effort the implementation exceeds your capability (you cannot make it work, not merely slow going), still leave your best partial work AND set \"delegate\": true with a short \"delegateReason\" in your control block; the orchestrator re-runs this stage on a stronger model. Use list_scripts before hand-writing multi-step shell pipelines \u2014 run_script an existing one when it fits. When you compose a pipeline future runs will need again (build+test incantation, codegen refresh, env setup), package it once with write_script: clear name, description other agents can choose by, args as $ARG_<NAME>. If your prompt contains a 'Routed back from verify' section, this is a re-run: a verifier rejected the previous attempt \u2014 address every blocking finding on the same branch (the earlier work is in the working tree; refine it, do not start over).",
         "output": {
           "analysis": {
             "required": true
@@ -212,7 +212,7 @@
             "optional": true
           }
         ],
-        "prompt": "You are reviewing another agent's implementation of the runtime task. The change is unstaged/staged in the working tree \u2014 inspect it with: git diff HEAD (or git diff --cached). Adversarially verify it against the original task and the upstream plan: missed requirements, bugs, regressions in touched code paths, convention violations. Run any checks the repo offers via bash (per project memory if ctx_search knows how this repo is verified). If the change affects a web page that is deployed or can be reached at a URL, use browser_fetch to read its live content and browser_screenshot to confirm it actually renders correctly. Report findings in your control block: verdict pass|fail, with blocking[] (each: file, problem, why it matters) and nits[]. Only genuine defects are blocking \u2014 do not invent findings; a sound implementation gets verdict pass with empty blocking.",
+        "prompt": "You are reviewing another agent's implementation of the runtime task. The change is unstaged/staged in the working tree \u2014 inspect it with: git diff HEAD (or git diff --cached). Adversarially verify it against the original task and the upstream plan: missed requirements, bugs, regressions in touched code paths, convention violations. Run any checks the repo offers via bash (per project memory if ctx_search knows how this repo is verified). If the change affects a web page that is deployed or can be reached at a URL, use browser_fetch to read its live content and browser_screenshot to confirm it actually renders correctly. Report findings via submit_work's control: verdict pass|fail. ROUTING IS MECHANICAL: verdict \"fail\" re-runs the implement stage with your blocking[] findings embedded in its prompt (then this verification runs again); verdict \"pass\" completes the run and delivers the PR. Be precise in blocking[] \u2014 the implementer sees exactly what you write, with blocking[] (each: file, problem, why it matters) and nits[]. Only genuine defects are blocking \u2014 do not invent findings; a sound implementation gets verdict pass with empty blocking.",
         "output": {
           "analysis": {
             "required": true
@@ -220,78 +220,23 @@
           "maxDigestChars": 2500,
           "controlSchema": "./schemas/verify-control.schema.json"
         },
-        "notifications": "read"
-      },
-      {
-        "id": "fix",
-        "type": "single",
-        "from": "verify",
-        "inputPolicy": {
-          "invalidateOnDependencyResume": true
-        },
-        "thinking": "low",
-        "tools": [
-          "read",
-          "grep",
-          "find",
-          "ls",
-          "edit",
-          "write",
-          "bash",
+        "notifications": "read",
+        "next": [
           {
-            "name": "ctx_search",
-            "classification": "read-only",
-            "optional": true
+            "when": {
+              "verdict": "fail"
+            },
+            "to": "implement"
           },
           {
-            "name": "ctx_memory",
-            "classification": "write-capable",
-            "optional": true
-          },
-          {
-            "name": "list_scripts",
-            "classification": "read-only",
-            "optional": true
-          },
-          {
-            "name": "run_script",
-            "classification": "write-capable",
-            "optional": true
-          },
-          {
-            "name": "write_script",
-            "classification": "write-capable",
-            "optional": true
-          },
-          {
-            "name": "gh_pr",
-            "classification": "read-only",
-            "optional": true
-          },
-          {
-            "name": "gh_ci",
-            "classification": "read-only",
-            "optional": true
-          },
-          {
-            "name": "find_script",
-            "classification": "read-only",
-            "optional": true
-          },
-          {
-            "name": "find_tool",
-            "classification": "read-only",
-            "optional": true
+            "when": {
+              "verdict": "pass"
+            },
+            "to": "$end"
           }
         ],
-        "prompt": "An adversarial verifier reviewed the implementation; its verdict and findings are in the upstream control data. If verdict is pass with no blocking findings: make NO changes and state in your analysis that verification passed clean. Otherwise: fix every blocking finding now (nits only if trivial), then re-verify with bash: git add -A && git diff --cached --stat, and summarize what you fixed. If a durable repo lesson emerged from a finding, record it with ctx_memory.",
-        "output": {
-          "analysis": {
-            "required": true
-          },
-          "maxDigestChars": 2000
-        },
-        "notifications": "read"
+        "maxLoopbacks": 2,
+        "outcome": "pr"
       }
     ]
   }

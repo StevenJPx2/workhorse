@@ -64,6 +64,16 @@ export function validateWorkflowSpec(spec: unknown): string[] {
       errors.push(`${p}.maxRounds: positive integer required`);
     }
     for (const [j, t] of (st.tools ?? []).entries()) checkTool(t, `${p}.tools[${j}]`, errors);
+    for (const [j, r] of (st.next ?? []).entries()) {
+      const rp = `${p}.next[${j}]`;
+      if (!r || typeof r !== "object" || !r.to) errors.push(`${rp}: needs {to}`);
+      else if (r.when !== undefined && (typeof r.when !== "object" || r.when === null || Array.isArray(r.when))) {
+        errors.push(`${rp}.when: must be an object of control-field equalities`);
+      }
+    }
+    if (st.maxLoopbacks !== undefined && (!Number.isInteger(st.maxLoopbacks) || st.maxLoopbacks < 0)) {
+      errors.push(`${p}.maxLoopbacks: non-negative integer required`);
+    }
   }
 
   // Edges resolve + graph is acyclic.
@@ -71,6 +81,11 @@ export function validateWorkflowSpec(spec: unknown): string[] {
   for (const [i, st] of stages.entries()) {
     for (const f of froms(st)) {
       if (!byId.has(f)) errors.push(`$.artifactGraph.stages[${i}].from: unknown stage "${f}"`);
+    }
+    for (const [j, r] of (st.next ?? []).entries()) {
+      if (r?.to && r.to !== "$end" && !byId.has(r.to)) {
+        errors.push(`$.artifactGraph.stages[${i}].next[${j}].to: unknown stage "${r.to}"`);
+      }
     }
   }
   const seen = new Map<string, number>(); // 1 = visiting, 2 = done

@@ -1,0 +1,111 @@
+- generic [ref=f9e1]:
+  - generic [ref=f9e3]:
+    - banner [ref=f9e4]:
+      - link "Workhorse" [ref=f9e5] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f9e8]:
+        - list [ref=f9e10]:
+          - listitem [ref=f9e11]:
+            - link "Home" [ref=f9e12] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f9e15]:
+            - link "Fleet" [ref=f9e16] [cursor=pointer]:
+              - /url: /tickets
+          - listitem [ref=f9e19]:
+            - link "Workflows" [ref=f9e20] [cursor=pointer]:
+              - /url: /workflows
+          - listitem [ref=f9e23]:
+            - link "Agents" [ref=f9e24] [cursor=pointer]:
+              - /url: /agents
+    - main [ref=f9e27]:
+      - generic [ref=f9e28]:
+        - generic [ref=f9e29]:
+          - heading "coding" [level=1] [ref=f9e30]
+          - generic [ref=f9e31]: seed
+          - generic [ref=f9e32]: "Plan, implement, adversarially verify, then fix a code change in the current repository. Plan+verify are read-only; implement+fix have write tools. Memory tools throughout: search prior solutions first, record durable learnings."
+          - generic [ref=f9e33]:
+            - button "JSON" [ref=f9e34]
+            - textbox "copy-name" [ref=f9e37]
+            - button "Save as" [disabled] [ref=f9e38]
+        - generic [ref=f9e39]: Seed workflows are read-only templates — edit freely, then Save-as under a new name.
+        - generic [ref=f9e43]:
+          - generic [ref=f9e44]:
+            - generic [ref=f9e60]:
+              - generic:
+                - img:
+                  - group "Edge from plan to implement" [ref=f9e61] [cursor=pointer]
+                - img:
+                  - group "Edge from implement to verify" [ref=f9e64] [cursor=pointer]
+                - img:
+                  - group "Edge from verify to fix" [ref=f9e67] [cursor=pointer]
+                - generic:
+                  - group [active] [ref=f9e70]:
+                    - generic [ref=f9e71] [cursor=pointer]:
+                      - generic [ref=f9e72]: plan
+                      - generic [ref=f9e75]:
+                        - generic [ref=f9e76]: default
+                        - generic [ref=f9e77]: 8 tools
+                  - group [ref=f9e78]:
+                    - generic [ref=f9e79] [cursor=pointer]:
+                      - generic [ref=f9e80]: implement
+                      - generic [ref=f9e83]:
+                        - generic [ref=f9e84]: default
+                        - generic [ref=f9e85]: 12 tools
+                  - group [ref=f9e86]:
+                    - generic [ref=f9e87] [cursor=pointer]:
+                      - generic [ref=f9e88]: verify
+                      - generic [ref=f9e91]:
+                        - generic [ref=f9e92]: verifier
+                        - generic [ref=f9e93]: 11 tools
+                  - group [ref=f9e94]:
+                    - generic [ref=f9e95] [cursor=pointer]:
+                      - generic [ref=f9e96]: fix
+                      - generic [ref=f9e99]:
+                        - generic [ref=f9e100]: default
+                        - generic [ref=f9e101]: 12 tools
+            - button "Add stage" [ref=f9e49]
+          - generic [ref=f9e51]:
+            - generic [ref=f9e52]: "Stage: plan"
+            - generic [ref=f9e105]:
+              - generic [ref=f9e106]:
+                - generic [ref=f9e107]: id
+                - textbox "id" [ref=f9e112]: plan
+              - generic [ref=f9e113]:
+                - generic [ref=f9e114]: from (upstream stages)
+                - button "Show popup" [ref=f9e118]:
+                  - generic [ref=f9e119]: (entry stage)
+              - generic [ref=f9e122]:
+                - generic [ref=f9e123]:
+                  - generic [ref=f9e124]: agent
+                  - textbox "agent" [ref=f9e129]:
+                    - /placeholder: default
+                - generic [ref=f9e130]:
+                  - generic [ref=f9e131]: thinking
+                  - combobox "thinking" [ref=f9e135]:
+                    - generic: low
+              - generic [ref=f9e138]:
+                - generic [ref=f9e139]: model
+                - button "Show popup" [ref=f9e143]:
+                  - generic: (default)
+              - generic [ref=f9e146]:
+                - generic [ref=f9e147]: tools (stage ceiling)
+                - button "Show popup" [ref=f9e151]:
+                  - generic: read, grep, find, ls, ctx_search, search_fleet_knowledge, browser_fetch, list_scripts
+              - generic [ref=f9e154]:
+                - generic [ref=f9e156]:
+                  - generic [ref=f9e157]: write allow (globs, comma-separated)
+                  - generic [ref=f9e158]: empty = unrestricted
+                - textbox "write allow (globs, comma-separated)" [ref=f9e161]:
+                  - /placeholder: src/**, docs/**
+              - generic [ref=f9e163]:
+                - checkbox "read-only" [checked] [ref=f9e165]
+                - generic [ref=f9e166]: read-only
+              - generic [ref=f9e168]:
+                - generic [ref=f9e169]: prompt
+                - textbox "prompt" [ref=f9e174]: "FIRST: check list_scripts (the repo's registered tool inventory — prior runs may have packaged the build/test pipelines you need) and search prior work — run ctx_search (this repo's memory) AND search_fleet_knowledge (distilled traces of every past fleet run, all repos) with terms from the task (feature area, file names, error text). Prior tickets may have already mapped the conventions, pitfalls, or even solved something similar; use what you find. If the task references external documentation, an API, or a URL, use browser_fetch to read it (it renders JS and returns clean text). Then study the repository and produce a concise implementation plan for the runtime task: which files change and how, repo conventions to follow, risks, and how to verify. End with the exact list of files to be created or modified. ESCALATION: if after genuine effort this task exceeds your capability (architecture you cannot untangle, reasoning you cannot complete — NOT merely tedious work), still produce your best partial result AND set \"delegate\": true with a short \"delegateReason\" in your control block; the orchestrator re-runs this stage on a stronger model."
+              - generic [ref=f9e175]:
+                - generic [ref=f9e176]: output (JSON)
+                - textbox "output (JSON)" [ref=f9e181]: "{ \"analysis\": { \"required\": true }, \"maxDigestChars\": 2000 }"
+              - button "Remove stage" [ref=f9e182]
+  - region "Notifications (F8)":
+    - list
