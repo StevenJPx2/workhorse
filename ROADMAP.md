@@ -174,16 +174,6 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-### PixelRAG feasibility
-Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
-(if anywhere) it beats the current retrieval stack (AI Search for fleet
-knowledge, semindex for registries, Magic Context in-sandbox). Outcome:
-a short feasibility note; adopt only with a concrete consumer.
-
----
-
-## Tabled 🅿️
-
 ### Knowledge attachments (plugin-provided context)
 Attaching context to a dispatch or ticket is a PLUGIN capability, not a
 core feature: repos, Jira tickets, Slack conversations, PR threads —
@@ -210,6 +200,16 @@ agent acknowledges, collates, replies to each, and the workflow decides
 whether to loop back — by design, not by interrupt. Subsumes today's
 steer (live interrupt) and revision events (park wake) under one queue
 with workflow-declared read points.
+
+### PixelRAG feasibility
+Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
+(if anywhere) it beats the current retrieval stack (AI Search for fleet
+knowledge, semindex for registries, Magic Context in-sandbox). Outcome:
+a short feasibility note; adopt only with a concrete consumer.
+
+---
+
+## Tabled 🅿️
 
 ### A2A / live agent communication
 Graph-mediated handoff already carries typed stage outputs (`control.json` /

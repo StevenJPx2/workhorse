@@ -11,19 +11,17 @@ import { webSearch, type SearchResult } from "@workhorse/search";
 import type { Env } from "@workhorse/api";
 import { searchFixtures, type SearchFixture } from "./fixtures/search-queries";
 
-const PROVIDERS = ["tavily", "exa", "brave"] as const;
+const PROVIDERS = ["jina", "tavily", "exa", "brave"] as const;
+
+const keyFor = (p: string) =>
+  ({ jina: "JINA_API_KEY", tavily: "TAVILY_API_KEY", exa: "EXA_API_KEY", brave: "BRAVE_API_KEY" })[p];
 
 function envFor(provider: string): Env {
   return {
     SEARCH_PROVIDER: provider,
-    TAVILY_API_KEY: provider === "tavily" ? process.env.TAVILY_API_KEY : undefined,
-    EXA_API_KEY: provider === "exa" ? process.env.EXA_API_KEY : undefined,
-    BRAVE_API_KEY: provider === "brave" ? process.env.BRAVE_API_KEY : undefined,
+    [keyFor(provider)!]: process.env[keyFor(provider)!],
   } as unknown as Env;
 }
-
-const keyFor = (p: string) =>
-  ({ tavily: "TAVILY_API_KEY", exa: "EXA_API_KEY", brave: "BRAVE_API_KEY" })[p];
 
 const configured = PROVIDERS.filter((p) => process.env[keyFor(p)!]);
 
@@ -32,7 +30,7 @@ if (configured.length === 0) {
   // reports instead of failing the runner.
   evalite("web search: no providers configured", {
     data: async () => [{ input: "none", expected: "none" }],
-    task: async () => "no provider keys in env — set TAVILY_API_KEY / EXA_API_KEY / BRAVE_API_KEY",
+    task: async () => "no provider keys in env — set JINA_API_KEY / TAVILY_API_KEY / EXA_API_KEY / BRAVE_API_KEY",
     scorers: [{ name: "skipped", description: "placeholder", scorer: () => 1 }],
   });
 }

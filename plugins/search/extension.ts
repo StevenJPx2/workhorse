@@ -63,4 +63,34 @@ export default function (pi: ExtensionAPI) {
       return textResult(`Results via ${data.provider}:\n\n${lines.join("\n\n")}`);
     },
   });
+
+  pi.registerTool({
+    name: "web_read",
+    label: "Web read",
+    description:
+      "Read a web page as clean LLM-ready markdown (Jina Reader) — the follow-up to a " +
+      "web_search hit: pass a URL, get the article/doc content without nav chrome or " +
+      "link noise. Prefer this over browser_fetch for prose/docs; use browser_fetch/" +
+      "browser_screenshot when you need the rendered page itself.",
+    parameters: Type.Object({
+      url: Type.String({ description: "The http(s) URL to read" }),
+      maxChars: Type.Optional(Type.Number({ description: "Truncate the markdown (default 40000)" })),
+    }),
+    async execute(_id, params) {
+      const { url, token } = config();
+      if (!url || !token) return textResult("web_read: not configured (no callback config).");
+      const r = await fetch(`${url}/read`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ url: params.url, maxChars: params.maxChars }),
+      });
+      const data = (await r.json().catch(() => ({}))) as {
+        markdown?: string;
+        truncated?: boolean;
+        error?: string;
+      };
+      if (!r.ok || data.error) return textResult(`web_read failed: ${data.error ?? `HTTP ${r.status}`}`);
+      return textResult(`${data.markdown}${data.truncated ? "\n\n…(truncated)" : ""}`);
+    },
+  });
 }

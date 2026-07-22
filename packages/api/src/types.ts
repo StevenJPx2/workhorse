@@ -171,6 +171,7 @@ export interface Env {
    * brave); the eval report (evals/) decides which to set.
    */
   SEARCH_PROVIDER?: string;
+  JINA_API_KEY?: string;
   TAVILY_API_KEY?: string;
   EXA_API_KEY?: string;
   BRAVE_API_KEY?: string;

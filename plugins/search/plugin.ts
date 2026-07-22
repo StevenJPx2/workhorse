@@ -5,6 +5,8 @@
 // keys (the imgup lesson: single providers are individually unreliable).
 // Keys live worker-side; the sandbox tool calls /search with the scoped
 // token. Provider docs:
+//   jina     GET  https://s.jina.ai/?q=                Bearer key (default)
+//   reader   GET  https://r.jina.ai/<url>              page → clean markdown
 //   tavily   POST https://api.tavily.com/search        {api_key, query}
 //   exa      POST https://api.exa.ai/search            x-api-key header
 //   brave    GET  https://api.search.brave.com/res/v1/web/search?q=
@@ -63,7 +65,28 @@ const brave: Provider = async (env, query, count) => {
   return (data.web?.results ?? []).map((x) => ({ title: x.title, url: x.url, snippet: (x.description ?? "").slice(0, 500) }));
 };
 
-const PROVIDERS: Record<string, Provider> = { tavily, exa, brave };
+const jina: Provider = async (env, query, count) => {
+  if (!env.JINA_API_KEY) return null;
+  const r = await fetch(`https://s.jina.ai/?q=${encodeURIComponent(query)}&num=${count}`, {
+    headers: {
+      authorization: `Bearer ${env.JINA_API_KEY}`,
+      accept: "application/json",
+      "x-respond-with": "no-content", // snippets only — full pages via browser_fetch
+    },
+  });
+  if (!r.ok) return null;
+  const data = (await r.json()) as {
+    data?: Array<{ title?: string; url: string; description?: string; content?: string }>;
+  };
+  return (data.data ?? []).map((x) => ({
+    title: x.title ?? x.url,
+    url: x.url,
+    snippet: (x.description ?? x.content ?? "").slice(0, 500),
+  }));
+};
+
+// jina first by default — override with SEARCH_PROVIDER.
+const PROVIDERS: Record<string, Provider> = { jina, tavily, exa, brave };
 
 /** Provider order: SEARCH_PROVIDER first (when set), then the rest. */
 function order(env: Env): string[] {
@@ -94,6 +117,32 @@ export async function webSearch(
   return { error: `all providers failed: ${tried.join(", ") || "none configured"}` };
 }
 
+/** Jina Reader: any URL → clean LLM-ready markdown. */
+export async function readPage(
+  env: Env,
+  target: string,
+  maxChars = 40_000,
+): Promise<{ markdown: string; truncated: boolean } | { error: string }> {
+  let parsed: URL;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return { error: "invalid url" };
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return { error: "http(s) urls only" };
+  }
+  const r = await fetch(`https://r.jina.ai/${parsed.href}`, {
+    headers: {
+      ...(env.JINA_API_KEY ? { authorization: `Bearer ${env.JINA_API_KEY}` } : {}),
+      "x-md-link-style": "discarded", // agents read prose, not link farms
+    },
+  });
+  if (!r.ok) return { error: `reader failed: HTTP ${r.status}` };
+  const md = await r.text();
+  return { markdown: md.slice(0, maxChars), truncated: md.length > maxChars };
+}
+
 export const searchPlugin: WorkhorsePlugin = {
   id: "search",
   routes: [
@@ -110,6 +159,21 @@ export const searchPlugin: WorkhorsePlugin = {
         };
         if (!query?.trim()) return Response.json({ error: "query required" }, { status: 400 });
         const out = await webSearch(env, query.trim().slice(0, 400), Math.min(count ?? 8, 20));
+        return Response.json(out, { status: "error" in out ? 502 : 200 });
+      },
+    },
+    {
+      // Sandbox web_read tool → Jina Reader (url → markdown).
+      method: "POST",
+      path: "/read",
+      auth: "scoped",
+      async handler(request, env) {
+        const { url: target, maxChars } = (await request.json().catch(() => ({}))) as {
+          url?: string;
+          maxChars?: number;
+        };
+        if (!target?.trim()) return Response.json({ error: "url required" }, { status: 400 });
+        const out = await readPage(env, target.trim(), Math.min(maxChars ?? 40_000, 100_000));
         return Response.json(out, { status: "error" in out ? 502 : 200 });
       },
     },
