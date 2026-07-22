@@ -5,12 +5,16 @@ export type {
   ExternalEvent,
   PluginHooks,
   PluginRoute,
+  PluginToolFactory,
   ResolvedAttachment,
   RouteAuth,
+  SandboxHandle,
   ScriptRecord,
+  ToolFactoryContext,
   TriggerRecord,
   TriggerSource,
   WebhookHandler,
   WorkhorsePlugin,
+  WorkhorseTool,
 } from "./plugin";
 export type { Env, TicketParams, TicketRecord } from "./types";

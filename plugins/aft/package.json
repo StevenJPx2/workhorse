@@ -1,9 +1,9 @@
 {
-  "name": "@workhorse/paste",
+  "name": "@workhorse/aft",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Text/code hosting plugin: upload_text sandbox tool returning raw curl-able URLs (paste.rs fallback chain). Sandbox-only — no worker half.",
+  "description": "AFT stage tools: bashless code intelligence (outline/zoom/search/inspect/edit) that exec the `aft` CLI baked into the sandbox image. Tool definitions run worker-side; the engine runs in the container.",
   "exports": {
     ".": "./plugin.ts"
   },

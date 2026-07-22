@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@cloudflare/sandbox": "^0.12.3",
+    "@flue/runtime": "^1.0.0-beta.9",
     "@workhorse/api": "workspace:*",
     "@workhorse/browser": "workspace:*",
     "@workhorse/github": "workspace:*",
@@ -24,10 +25,13 @@
     "@workhorse/semindex": "workspace:*",
     "@workhorse/slack": "workspace:*",
     "@workhorse/tickets": "workspace:*",
-    "@workhorse/workflow": "workspace:*"
+    "@workhorse/workflow": "workspace:*",
+    "agents": "^0.14.2",
+    "valibot": "^1.4.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",
+    "@flue/cli": "^1.0.0-beta.9",
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2",
     "wrangler": "^4.110.0"

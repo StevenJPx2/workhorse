@@ -10,8 +10,55 @@
 // not dynamic loading. Plugins depend ONLY on @workhorse/api; the worker
 // is the sole composition point that imports concrete plugins.
 
+import type { ToolDefinition } from "@flue/runtime";
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
+
+/**
+ * A stage tool, authored with flue's `defineTool` in a plugin's tools.ts.
+ * Under the flue engine the agent loop runs in the Worker, so a plugin
+ * contributes tools as a FACTORY (below) rather than a sandbox-scanned
+ * extension.ts — the worker composition root assembles them.
+ */
+export type WorkhorseTool = ToolDefinition<any, any>;
+
+/**
+ * Minimal container handle a tool closes over to reach the workspace.
+ * Backed worker-side by the flue SessionEnv (which wraps the Cloudflare
+ * Sandbox); tests pass a mock. This is how sandbox-engine tools port —
+ * e.g. AFT execs the `aft` CLI, agent-browser execs its daemon, scripts
+ * run bash — the tool DEFINITION lives worker-side, the ENGINE runs in
+ * the container.
+ */
+export interface SandboxHandle {
+  exec(command: string, opts?: { timeout?: number }): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  readFile(path: string): Promise<string | null>;
+  writeFile(path: string, content: string): Promise<void>;
+}
+
+/**
+ * Everything a plugin's tools may close over at assembly time. flue's
+ * `run(ctx)` only carries `{ input, signal }`, so anything else a tool
+ * needs (core services, the sandbox, the ticket it serves) is captured
+ * here when the stage builds its tool registry.
+ */
+export interface ToolFactoryContext {
+  env: Env;
+  core: Core;
+  /** The workspace container for this run (exec/read/write). */
+  sandbox: SandboxHandle;
+  /** The ticket + stage the tools serve. */
+  ticket: { id: string; repo: string; stage: string };
+}
+
+/**
+ * A plugin's stage-tool contribution. Returns every tool the plugin
+ * offers; the stage engine intersects this with the stage allowlist
+ * (spec.tools[]) before exposing any to the agent. Keeping the factory
+ * in the plugin (plugins/<name>/tools.ts) is the hard boundary: the
+ * worker imports it, the plugin never imports the worker.
+ */
+export type PluginToolFactory = (ctx: ToolFactoryContext) => WorkhorseTool[];
 
 /** A reference to attachable context, as the operator provides it. */
 export interface AttachmentRef {
@@ -268,4 +315,10 @@ export interface WorkhorsePlugin {
   attachments?: AttachmentProvider[];
   /** Trigger sources this plugin can fire (documentation + registry validation). */
   triggers?: TriggerSource[];
+  /**
+   * Stage tools this plugin contributes (flue engine). The worker assembles
+   * these per stage and intersects with the stage allowlist. Replaces the
+   * old sandbox-scanned extension.ts — the agent loop now runs in the Worker.
+   */
+  tools?: PluginToolFactory;
 }
