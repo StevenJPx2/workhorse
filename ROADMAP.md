@@ -298,10 +298,30 @@ durable step continuation belongs to Cloudflare Workflows.
   4. OAuth: pi-ai natively detects `sk-ant-oat` — custodian token feeds
      `registerProvider('anthropic', { apiKey })`; model chains become
      provider registrations.
-  5. Engine: `launch()` → `invoke(stageWorkflow)`; steer via
-     CallHandle.abort + re-prompt; delete session.ts FIFO machinery.
-     Image slims (no pi, no extension installs, no auth injection —
-     container never holds a model credential again).
+  5. Engine cutover — **UNRESOLVED FORK (surface before building).** A
+     stage's agent loop runs 10–20 min. Two homes, and the choice is
+     load-bearing:
+     - **(a) In-process harness inside `TicketWorkflow.step.do()`** —
+       smallest diff (swap `launch()`+poll for `initializeRootHarness` →
+       `session.prompt(…,{result})`, keep engine+spine). BUT
+       `session.prompt` BLOCKS for the whole loop, and a CF Workflow step
+       caps at ~240s (the exact wall that bit the RPC path, §1753). So
+       this needs the loop to NOT block the step — either flue's own
+       durable checkpointing driving short resumable slices, or running
+       the harness in a longer-lived DO. Only a deploy validates whether
+       flue's in-process durability slices a long loop under the cap.
+     - **(b) Full `flue build` DO runtime + `invoke()`** — the flue-
+       native long-run home: `admitWorkflow` runs the stage in a flue-
+       generated DO with real durability; TicketWorkflow waits on the
+       run. Clean, but big-bang: regenerates wrangler + DO classes +
+       migrations for the live worker; can't be smoke-tested cheaply.
+     Recommendation: spike (a) behind a `FLUE_STAGES` flag on ONE seeded
+     workflow (leave the pi path default) so a broken cutover can't take
+     the fleet down; fall back to (b) only if (a) can't beat the step
+     cap. Then steer via `CallHandle.abort` + re-prompt; delete
+     session.ts FIFO machinery; slim the image (no pi, no extension
+     installs, no auth injection — container never holds a model
+     credential again).
   6. Cutover tails: port `tickets` (fleet-client — needs
      `Core.listTickets` + ticket diff) and `find_script`/`find_tool`
      (need a `Core` semindex query) once the stage path is live; smoke
