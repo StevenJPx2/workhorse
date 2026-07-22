@@ -218,39 +218,74 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-(clear — everything below shipped 2026-07-22; see Shipped)
+### Flue migration — stages become in-Worker flue sessions
 
----
+**Decision (2026-07-22).** Adopt [flue](https://flueframework.com)
+(`@flue/runtime`, earendil — pi's own org) as the worker's application
+framework and stage-execution engine. The deep-dive verdict: flue is
+exactly the layer we kept failing to build — the whole
+launcher saga (FIFO `--mode rpc`, nohup survival, runner.mjs, step-
+timeout dances) is superseded by flue's harness/session +
+`cloudflareSandbox(getSandbox(env.Sandbox, id))`, where the agent loop
+runs **in the Worker** and the container is just hands (every
+bash/read/write is a `sandbox.exec()` RPC). Structured verdicts come
+free: `session.prompt(text, { result: valibotSchema })` replaces
+submit_work + control.json parsing. Durable event streams with offset
+replay replace events.jsonl tailing; `PromptUsage` replaces stats
+scraping; `CallHandle.abort()` replaces kill-by-pid.
 
-## Planned ⏳
+**What survives (the part flue doesn't have):** workflows as USER DATA.
+Flue workflows are code files at build time; ours are uploaded specs in
+a registry with a vue-flow builder and agent blocks. `packages/workflow`
+remains the spec interpreter — conditional `next` rules, loop-back
+routing, parks, outcomes — but `advance()` stops exec'ing pi and instead
+runs one flue session per stage. The ticket lifecycle spine
+(TicketWorkflow on CF Workflows) also survives: flue's own docs say
+durable step continuation belongs to Cloudflare Workflows.
 
-### Browser plane v2 — long-lived sessions (replacement architecture)
-The current plane is STATELESS: every `browser_*` call is one
-Browser-Rendering launch → act → close; no cookies, no login state, no
-multi-step flows. Replace it with a three-tier plane:
+**Architecture constraints (user-pinned):**
+- **Tools stay separated in plugins.** Each plugin keeps its tool half:
+  `plugins/<name>/tools.ts` exports a factory
+  `tools(ctx: { env, core, sandbox }) → ToolDefinition[]` (flue
+  `defineTool`). flue's `ToolContext` is `{input, signal}` only, so
+  workspace-needing tools close over the sandbox at assembly time. The
+  stage workflow assembles: registry from all plugins ∩ stage allowlist.
+  No scoped-token round-trips — tools call core directly.
+- **AFT ports.** Engine-in-sandbox pattern: the `aft` CLI is baked into
+  the image; `plugins/aft/tools.ts` defines aft_outline/aft_zoom/edit/…
+  whose run() execs `aft <cmd> --json` in the container (definition
+  worker-side, engine sandbox-side, same split as agent-browser).
+  Magic Context can follow the same pattern later if wanted.
+- **flue owns the build** (`flue build --target cloudflare` generates
+  wrangler config + DO classes; our router mounts beside `flue()` in
+  app.ts). Accepted.
 
-1. **Stateful tier (new default for interaction)** — a hosted browser
-   vendor with persistent sessions (evaluate Browserbase / Browser Use /
-   Browserless; agent-browser's provider plugins are the integration
-   sketch). New sandbox tools operate on a session: `browser_session`
-   (open/close, returns id), `browser_act` (click/fill/press/scroll by
-   AX ref), `browser_snapshot` (accessibility tree with refs — the
-   token-cheap "what's on this page"), plus session-scoped
-   screenshot/record. Sessions map 1:1 to a ticket run, credentialed
-   worker-side, with recording/replay for the trace archive. Unlocks
-   login flows, "test the signup e2e", stealth/CAPTCHA handling.
-2. **Stateless read tier** — the jina tools (`web_search`, `web_read`)
-   own one-shot "fetch this page as text/markdown"; today's
-   `browser_fetch` text/html/links modes fold into them.
-3. **Fallback/cheap tier** — [Lightpanda](https://lightpanda.io) (or the
-   CF binding retained) for fast headless fetch+screenshot when a full
-   Chrome session is overkill; also the local-dev path.
+**Plan:**
+1. Scaffold: worker becomes a flue project (app.ts = existing router;
+   cloudflare.ts exports Sandbox + TicketWorkflow; migrations for
+   FlueRegistry + FlueStageWorkflow).
+2. `workflows/stage.ts` — ONE flue workflow "run a stage": input
+   {ticketId, stage, prompt, tools, model, resultSchema}; sandbox bound
+   to the ticket's container; `session.prompt(…, { result })` returns
+   the typed control verdict.
+3. Plugin tool factories (browser/aft/search/imgup/knowledge/scripts/
+   github/paste) replacing extension.ts; image slims (no pi, no
+   extension installs, no auth injection — container never holds a
+   model credential again).
+4. OAuth: pi-ai natively detects `sk-ant-oat` (Claude-Code identity
+   headers built in) — custodian token feeds
+   `registerProvider('anthropic', { apiKey })`; model chains become
+   provider registrations.
+5. Engine: `launch()` → `invoke(stageWorkflow)`; steer via
+   CallHandle.abort + re-prompt (later: queued mid-session); delete
+   session.ts FIFO machinery.
+6. Smoke the full matrix (coding e2e, steer, bus, screenshot-pr) on the
+   flue path; delete dead launcher code.
 
-Migration: keep tool names stable where semantics survive
-(`browser_screenshot`/`browser_record` become session-or-oneshot);
-verify-stage steals ride along — content boundaries on all fetched text,
-`browser_diff(url, baseline)` pixel diff, annotated screenshots
-(numbered AX labels) for interactive flows.
+### Browser plane follow-ups (post-flue)
+Verify-stage steals from agent-browser: content boundaries on fetched
+text, `browser_diff(url, baseline)` pixel diff, annotated screenshots
+(numbered AX labels). Lightpanda as cheap fallback tier stays open.
 
 ---
 
