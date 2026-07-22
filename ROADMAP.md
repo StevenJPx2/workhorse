@@ -252,6 +252,20 @@ ticket 22f7cad7 → PR #28, staged coding on haiku):
 - **Trade**: loses runtime authorability; buys type-checked, eval-tested
   workflows — the property data specs never had. User is accepting the trade.
 
+**Intake (three lanes, one seam).** flue's schedules are a pattern, not a
+feature ("Flue does not prescribe a scheduling library"): on Cloudflare a
+Cron Trigger in `wrangler.jsonc` + a `scheduled()` handler. So intake is:
+channels (GitHub/Slack/Jira webhooks, event-driven) + schedules (CF cron,
+time-driven) + fleet UI (human-driven) — all landing at the SAME `fileTicket`
+seam, so a scheduled run is an ordinary ticket (trace, knowledge, bus, UI).
+Deliberate divergence from flue's doc: `scheduled()` calls `fileTicket` (NOT
+`invoke()` — we keep the spine, not flue's generated DO runtime), filing on a
+research-style workflow whose `outcome: "report"` parks awaiting-acceptance
+and the notification bus delivers. That single wiring realizes non-chat
+triggers + non-PR outcomes + the bus together. Reconciliation: the cron lane
+of the triggers system we shipped IS this pattern (point it at `fileTicket`);
+the mention/fire lanes stay plugin-registered trigger sources / channels.
+
 If adopted, this SUPERSEDES the "What survives → workflows as USER DATA" note
 in the section below.
 
