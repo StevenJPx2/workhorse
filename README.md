@@ -64,6 +64,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Worker | No-op shell (BROWSER_TOKEN for sandbox auth) |
 | Sandbox tools | `browser_open`, `browser_snapshot` (AX tree + refs), `browser_read`, `browser_act` (click/fill/type/scroll by ref), `browser_screenshot`, `browser_record` (timed frame capture → GIF) |
 | Implementation | [agent-browser](https://github.com/vercel-labs/agent-browser) CLI daemon, persistent session per run; stateless reads use jina (`web_read`)|
+| Secrets | `BROWSER_TOKEN` (scoped sandbox callback token — auto-injected) |
 
 ### github
 | | |
@@ -72,6 +73,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Inbound | PR/issue webhooks → fileTicket, PR merge → done, PR close → terminated, PR comments → notification bus |
 | Outbound | onStatusChange → PR comments (what changed, revision notes) |
 | Sandbox tools | `gh_pr`, `gh_ci`, `gh_search_code`, `gh_commits` (read-only via scoped proxy) |
+| Secrets | `GITHUB_TOKEN` (fleet GitHub PAT), `GITHUB_WEBHOOK_SECRET` (webhook HMAC) |
 
 ### slack
 | | |
@@ -80,6 +82,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Inbound | @mention → fleet chat or `trigger <name>` fire; thread replies → notification bus (urgent for live runs) |
 | Outbound | onStatusChange → thread replies |
 | Triggers | `slack-mention` (Slack TriggerSource for `Core.fireTrigger`) |
+| Secrets | `SLACK_SIGNING_SECRET` (webhook HMAC), `SLACK_BOT_TOKEN` (bot API) |
 
 ### jira
 | | |
@@ -89,6 +92,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Outbound | onStatusChange → issue transitions + PR-link comments |
 | Sandbox tools | `search_jira` (issues + comments), `search_confluence` (federated search) |
 | Triggers | `jira-mention` (Jira TriggerSource for `Core.fireTrigger`) |
+| Secrets | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` (Jira REST API), `JIRA_WEBHOOK_SECRET` (webhook HMAC), `JIRA_AGENT_ACCOUNT` (agent Jira username) |
 
 ### knowledge
 | | |
@@ -96,12 +100,14 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Package | `plugins/knowledge` |
 | Sandbox tools | `search_fleet_knowledge` (AI Search semantic index of every past run) |
 | Worker routes | `POST /knowledge/search` (federated search), `POST /knowledge/reindex` (backfill) |
+| Bindings | `AI_SEARCH` (AutoRAG namespace), `BLOBS` (R2 bucket for trace storage) |
 
 ### imgup
 | | |
 |---|---|
 | Package | `plugins/imgup` |
 | Sandbox tools | `upload_image` (multi-host chain: imgbb → catbox → …, serve-verified) |
+| Config | `WORKHORSE_IMGUP_BIN` (optional: path to imgup binary, default `/usr/local/bin/imgup`) |
 
 ### scripts
 | | |
@@ -128,12 +134,14 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 |---|---|
 | Package | `plugins/ntfy` |
 | Outbound | onStatusChange/onTraceArchived → ntfy push (priority-mapped; silent when NTFY_URL unset) |
+| Secrets | `NTFY_URL` (ntfy server, e.g. `https://ntfy.stevenjohn.co`), `NTFY_TOPIC` (topic name), `NTFY_TOKEN` (bearer auth, optional) |
 
 ### search
 | | |
 |---|---|
 | Package | `plugins/search` |
 | Sandbox tools | `web_search` (jina → exa fallback chain), `web_read` (jina reader, clean markdown) |
+| Secrets | `JINA_API_KEY` (primary search/reader), `EXA_API_KEY` (fallback search), `TAVILY_API_KEY` / `BRAVE_API_KEY` (additional fallbacks) |
 
 ### semindex
 | | |

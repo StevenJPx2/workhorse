@@ -182,6 +182,19 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   registry (strict validation, repo|global scope, live status gates, args
   as `ARG_<NAME>` env vars); `.workhorse/scripts.toml` seeding at prepare;
   gated into the coding spec (plan lists, implement/fix write, verify runs).
+- **Batch tool calls via scripts** — the agent graduates repeated tool
+  call sequences into parameterized batch scripts: e.g. a "screenshot
+  page" script wraps `browser_open → browser_snapshot → browser_screenshot
+  → upload_image` into one call with `ARG_URL` and `ARG_WAIT_MS` params.
+  Inspired by agent-browser's `batch` command (multiple CLI calls in one
+  invocation, stdin JSON mode). The script service already supports
+  parameterized args (`ARG_<NAME>` env vars); this extends it with a
+  `tools` field declaring which tools the script calls (so the engine can
+  validate the batch against the stage's allowlist) and a `batch` mode
+  where the runner executes each tool call sequentially without an LLM
+  turn between them (pure tool-call execution, zero inference cost per
+  step). First consumer: the screenshot-pr workflow's shoot stage;
+  agents discover the pattern and save it as a reusable script.
 - **ntfy plugin** — hook-only push notifications: PR-up/done/errored/
   terminated + escalation digests, priority-mapped, silent when unset.
 - **Paste plugin** — `upload_text`: raw curl-able text hosting
