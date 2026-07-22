@@ -12,7 +12,16 @@ import { ntfyPlugin } from "@workhorse/ntfy";
 import { pastePlugin } from "@workhorse/paste";
 import { slackPlugin } from "@workhorse/slack";
 import { ticketsPlugin } from "@workhorse/tickets";
-import type { Core, Env, PluginRoute, TicketRecord, WorkhorsePlugin } from "@workhorse/api";
+import type {
+  Core,
+  Env,
+  PluginRoute,
+  SandboxHandle,
+  TicketRecord,
+  ToolFactoryContext,
+  WorkhorsePlugin,
+  WorkhorseTool,
+} from "@workhorse/api";
 import { appendEvents, appendSteer, wakeTicket } from "./events";
 import { runFleetChat } from "./chat";
 
@@ -32,6 +41,41 @@ export const plugins: WorkhorsePlugin[] = [
 
 export function pluginFor(id: string): WorkhorsePlugin | undefined {
   return plugins.find((p) => p.id === id);
+}
+
+/**
+ * Assemble the stage tool registry (flue engine): every plugin's tools(ctx),
+ * intersected by name with the stage allowlist. This is the (agent ∪
+ * services) ∩ stage-allowlist gate expressed in the flue world — a stage
+ * sees ONLY the tools its spec names, regardless of what plugins offer.
+ *
+ * `allow` is the stage spec's tools[] (bare names). Unknown names are
+ * ignored (the workflow validator flags them at upload time). Returns the
+ * flue ToolDefinition[] to attach to the stage agent.
+ */
+export function assembleStageTools(ctx: ToolFactoryContext, allow: readonly string[]): WorkhorseTool[] {
+  const allowed = new Set(allow);
+  const out: WorkhorseTool[] = [];
+  const seen = new Set<string>();
+  for (const p of plugins) {
+    if (!p.tools) continue;
+    for (const tool of p.tools(ctx)) {
+      if (!allowed.has(tool.name) || seen.has(tool.name)) continue;
+      seen.add(tool.name);
+      out.push(tool);
+    }
+  }
+  return out;
+}
+
+/** Build a ToolFactoryContext for a stage from its sandbox + ticket. */
+export function toolContext(
+  env: Env,
+  selfOrigin: string,
+  sandbox: SandboxHandle,
+  ticket: { id: string; repo: string; stage: string },
+): ToolFactoryContext {
+  return { env, core: coreFor(env, selfOrigin), sandbox, ticket };
 }
 
 /** All attachment providers across plugins, keyed by kind. */
