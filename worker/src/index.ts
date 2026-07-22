@@ -437,11 +437,19 @@ export default {
           [...state.stages].reverse().find((s) => s.status !== "pending");
         if (!active) return json({ output: null, note: "no active stage" });
         const round = Math.max(1, active.rounds + (active.status === "running" ? 1 : 0));
-        const r = await driver.exec(
-          `tail -c 12000 /workspace/.workflow/${rec.runId}/stages/${active.id}/round-${round}/session.log 2>/dev/null || true`,
-          { timeout: 15_000 },
-        );
-        return json({ stage: active.id, status: active.status, output: r.stdout || null });
+        const dir = `/workspace/.workflow/${rec.runId}/stages/${active.id}/round-${round}`;
+        // Structured transcript from the RPC event stream (turns, tool
+        // calls, retries); stderr log as the fallback.
+        const { tailEvents, renderEvents } = await import("@workhorse/workflow");
+        const { events } = await tailEvents(driver, dir, 0);
+        let output = events.length ? renderEvents(events).slice(-12000) : null;
+        if (!output) {
+          const r = await driver.exec(`tail -c 12000 ${dir}/session.log 2>/dev/null || true`, {
+            timeout: 15_000,
+          });
+          output = r.stdout || null;
+        }
+        return json({ stage: active.id, status: active.status, output });
       } catch (e) {
         return json({ output: null, note: `unavailable: ${String(e).slice(0, 200)}` });
       }

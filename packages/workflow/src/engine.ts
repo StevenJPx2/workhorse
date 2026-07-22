@@ -16,6 +16,7 @@ import {
   upstreamDigest,
 } from "./compile";
 import { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
+import { digestEvents, killRpcSession, launchRpcSession, renderEvents, sendRpc, tailEvents } from "./rpc";
 import type {
   FailureKind,
   JsonSchema,
@@ -110,17 +111,42 @@ export class WorkflowEngine {
 
     let running = state.stages.find((s) => s.status === "running");
     if (running?.pid) {
-      // Hold the burst while the session works (cheap in-sandbox poll).
-      await this.driver.exec(
-        `for i in $(seq 1 ${Math.max(1, Math.floor(holdMs / 5000))}); do kill -0 ${running.pid} 2>/dev/null || exit 0; sleep 5; done`,
-        { timeout: holdMs + 20_000 },
-      );
+      const dir = stageDir(state.runId, running.id, running.rounds + 1);
+      // Hold the burst until the agent settles, the session dies, or the
+      // hold expires — one in-sandbox watch loop, not a poll storm.
+      if (holdMs > 0) {
+        await this.driver.exec(
+          `for i in $(seq 1 ${Math.max(1, Math.floor(holdMs / 5000))}); do ` +
+            `grep -q '"type":"agent_settled"' ${dir}/events.jsonl 2>/dev/null && exit 0; ` +
+            `kill -0 ${running.pid} 2>/dev/null || exit 0; sleep 5; done`,
+          { timeout: holdMs + 20_000 },
+        );
+      }
+      // Tail this burst's events and act on the digest.
+      const { events, offset } = await tailEvents(this.driver, dir, running.eventsOffset ?? 0);
+      running.eventsOffset = offset;
+      const digest = digestEvents(events);
+      if (digest.stats) running.stats = digest.stats;
       const alive = await this.pidAlive(running.pid);
-      if (alive && this.timedOut(running)) {
-        await this.driver.exec(`kill -9 ${running.pid} 2>/dev/null || true`, { timeout: 10_000 });
-        this.fail(running, "timeout", `stage exceeded ${this.stageTimeoutMs(running)}ms`);
-      } else if (!alive) {
+      if (digest.modelFailure) {
+        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
+        this.fail(running, "model", `model-plane failure: ${digest.modelFailure}`);
+      } else if (digest.settled || !alive) {
+        // Settled (or crashed): capture stats, then collect artifacts.
+        if (alive && !running.stats) {
+          if (await sendRpc(this.driver, dir, { type: "get_session_stats" })) {
+            await this.driver.exec(`sleep 1`, { timeout: 5_000 });
+            const more = await tailEvents(this.driver, dir, running.eventsOffset ?? 0);
+            running.eventsOffset = more.offset;
+            const d2 = digestEvents(more.events);
+            if (d2.stats) running.stats = d2.stats;
+          }
+        }
+        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
         await this.collectStage(state, running);
+      } else if (this.timedOut(running)) {
+        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
+        this.fail(running, "timeout", `stage exceeded ${this.stageTimeoutMs(running)}ms`);
       }
     }
 
@@ -211,7 +237,6 @@ export class WorkflowEngine {
     const model = st.model ?? spec.model ?? this.spec.defaults?.model;
     const thinking = spec.thinking ?? this.spec.defaults?.thinking;
     const flags = [
-      "-p",
       "-np",
       "--no-session",
       `--append-system-prompt ${dir}/persona.md`,
@@ -220,18 +245,23 @@ export class WorkflowEngine {
       ...(session.tools.length ? [`--tools ${JSON.stringify(session.tools.join(","))}`] : []),
       ...(model ? [`--model ${JSON.stringify(model)}`] : []),
       ...(thinking ? [`--thinking ${thinking}`] : []),
-    ].join(" ");
-    const launch = await this.driver.exec(
-      `cd ${this.cwd} && nohup ${this.pi} ${flags} "$(cat ${dir}/prompt.md)" > ${dir}/session.log 2>&1 & echo PID=$!`,
-      { timeout: 30_000 },
-    );
-    const pid = Number(launch.stdout.match(/PID=(\d+)/)?.[1]);
-    if (!pid) {
-      this.fail(st, "session", `launch failed: ${launch.stdout.slice(-300)}`);
+    ];
+    const launched = await launchRpcSession(this.driver, {
+      pi: this.pi,
+      cwd: this.cwd,
+      dir,
+      flags,
+      promptPath: `${dir}/prompt.md`,
+    });
+    if (!launched) {
+      const log = (await this.driver.readFile(`${dir}/session.log`)) ?? "";
+      this.fail(st, "session", `launch failed: ${log.slice(-300)}`);
       return;
     }
     st.status = "running";
-    st.pid = pid;
+    st.pid = launched.pid;
+    st.holderPid = launched.holderPid;
+    st.eventsOffset = 0;
     st.startedAt = st.startedAt ?? new Date().toISOString();
     st.steer = undefined; // consumed
     state.status = "running";
@@ -244,6 +274,7 @@ export class WorkflowEngine {
     const round = st.rounds + 1;
     const dir = stageDir(state.runId, st.id, round);
     st.pid = undefined;
+    st.holderPid = undefined;
 
     const controlRaw = await this.driver.readFile(`${dir}/control.json`);
     if (!controlRaw) {
@@ -293,6 +324,7 @@ export class WorkflowEngine {
       const doneByRounds = spec.maxRounds !== undefined && round >= spec.maxRounds;
       if (!doneByUntil && !doneByRounds) {
         st.status = "pending"; // next advance() launches the next round
+        st.eventsOffset = 0;
         return;
       }
       st.detail = doneByUntil ? `until satisfied after ${round} round(s)` : `maxRounds ${spec.maxRounds} reached`;
@@ -306,6 +338,7 @@ export class WorkflowEngine {
     st.failureKind = kind;
     st.detail = detail.slice(0, 500);
     st.pid = undefined;
+    st.holderPid = undefined;
   }
 
   private finalize(state: RunState): void {
@@ -322,15 +355,37 @@ export class WorkflowEngine {
 
   // ---- control verbs ---------------------------------------------------------
 
-  /** Interrupt the current stage and re-run it with the operator's message. */
+  /**
+   * Steer the run. A LIVE stage gets the message injected at its next
+   * turn boundary — session context intact (RPC steer verb). A dead/
+   * pending stage gets the classic treatment: reset + steer folded into
+   * the relaunch prompt.
+   */
   async steer(runId: string, message: string): Promise<string> {
     const state = await this.load(runId);
+    const live = state.stages.find((s) => s.status === "running");
+    if (live?.pid && (await this.pidAlive(live.pid))) {
+      const dir = stageDir(state.runId, live.id, live.rounds + 1);
+      const sent = await sendRpc(this.driver, dir, {
+        type: "steer",
+        message:
+          "OPERATOR STEERING (takes precedence over conflicting parts of your task):\n" + message,
+      });
+      if (sent) {
+        await this.save(state);
+        return live.id;
+      }
+      // FIFO gone — fall through to the restart path.
+    }
     const target =
-      state.stages.find((s) => s.status === "running") ??
-      state.stages.find((s) => s.status === "pending" || s.status === "failed");
+      live ?? state.stages.find((s) => s.status === "pending" || s.status === "failed");
     if (!target) throw new Error("no steerable stage (run finished?)");
-    if (target.pid) await this.driver.exec(`kill -9 ${target.pid} 2>/dev/null || true`, { timeout: 10_000 });
+    if (target.pid) {
+      const dir = stageDir(state.runId, target.id, target.rounds + 1);
+      await killRpcSession(this.driver, dir, target.pid, target.holderPid);
+    }
     target.pid = undefined;
+    target.holderPid = undefined;
     target.status = "pending";
     target.steer = message;
     target.failureKind = undefined;
@@ -353,8 +408,21 @@ export class WorkflowEngine {
       : state.stages.filter((s) => s.status === "failed");
     if (targets.length === 0) throw new Error(`no stage to promote${stageId ? ` (${stageId})` : ""}`);
     for (const st of targets) {
-      if (st.pid) await this.driver.exec(`kill -9 ${st.pid} 2>/dev/null || true`, { timeout: 10_000 });
+      // A LIVE healthy stage switches models in-session (context intact).
+      if (st.status === "running" && st.pid && (await this.pidAlive(st.pid))) {
+        const dir = stageDir(state.runId, st.id, st.rounds + 1);
+        const [provider, ...rest] = model.includes("/") ? model.split("/") : ["anthropic", model];
+        if (await sendRpc(this.driver, dir, { type: "set_model", provider, modelId: rest.join("/") || model })) {
+          st.model = model;
+          continue;
+        }
+      }
+      if (st.pid) {
+        const dir = stageDir(state.runId, st.id, st.rounds + 1);
+        await killRpcSession(this.driver, dir, st.pid, st.holderPid);
+      }
       st.pid = undefined;
+      st.holderPid = undefined;
       st.status = "pending";
       st.model = model;
       st.failureKind = undefined;
@@ -404,8 +472,12 @@ export class WorkflowEngine {
   async cancel(runId: string): Promise<void> {
     const state = await this.load(runId);
     for (const st of state.stages) {
-      if (st.pid) await this.driver.exec(`kill -9 ${st.pid} 2>/dev/null || true`, { timeout: 10_000 });
+      if (st.pid) {
+        const dir = stageDir(state.runId, st.id, st.rounds + 1);
+        await killRpcSession(this.driver, dir, st.pid, st.holderPid);
+      }
       st.pid = undefined;
+      st.holderPid = undefined;
       if (st.status === "running") this.fail(st, "session", "cancelled");
     }
     state.status = "cancelled";
@@ -417,8 +489,12 @@ export class WorkflowEngine {
     for (const dep of dependents) {
       const st = state.stages.find((x) => x.id === dep.id);
       if (!st || st.status === "pending" || st.status === "skipped") continue;
-      if (st.pid) await this.driver.exec(`kill -9 ${st.pid} 2>/dev/null || true`, { timeout: 10_000 });
+      if (st.pid) {
+        const depDir = stageDir(state.runId, st.id, st.rounds + 1);
+        await killRpcSession(this.driver, depDir, st.pid, st.holderPid);
+      }
       st.pid = undefined;
+      st.holderPid = undefined;
       st.status = "pending";
       st.control = undefined;
       st.completedAt = undefined;
@@ -492,7 +568,11 @@ export class WorkflowEngine {
     const tasks: Array<Record<string, unknown>> = [];
     for (const st of state.stages) {
       const dir = stageDir(runId, st.id, Math.max(1, st.rounds));
-      const log = await this.driver.readFile(`${dir}/session.log`);
+      // Structured transcript from RPC events; stderr as the fallback.
+      let output: string | null = null;
+      const { events } = await tailEvents(this.driver, dir, 0);
+      if (events.length) output = renderEvents(events).slice(-4000);
+      if (!output) output = (await this.driver.readFile(`${dir}/session.log`))?.slice(-4000) ?? null;
       tasks.push({
         id: st.id,
         status: st.status,
@@ -501,7 +581,8 @@ export class WorkflowEngine {
         events: [],
         prompt: (await this.driver.readFile(`${dir}/prompt.md`))?.slice(0, 4000) ?? null,
         analysis: (await this.driver.readFile(`${dir}/analysis.md`))?.slice(-6000) ?? null,
-        output: log?.slice(-4000) ?? null,
+        output,
+        ...(st.stats ? { stats: st.stats } : {}),
         ...(st.detail ? { detail: st.detail } : {}),
         ...(st.failureKind ? { failureKind: st.failureKind } : {}),
       });

@@ -109,6 +109,16 @@ export interface StageState {
   model?: string;
   /** Live session pid inside the sandbox (running only). */
   pid?: number;
+  /** Pid of the FIFO holder keeping the RPC command pipe open. */
+  holderPid?: number;
+  /** Byte offset into the current round's events.jsonl (tail cursor). */
+  eventsOffset?: number;
+  /** Session economics captured at collect (get_session_stats). */
+  stats?: {
+    tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
+    cost?: number;
+    contextPercent?: number | null;
+  };
   startedAt?: string;
   completedAt?: string;
   detail?: string;

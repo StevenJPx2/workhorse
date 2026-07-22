@@ -128,29 +128,98 @@ describe("run lifecycle", () => {
     expect(r.modelFailure).toBe(true);
   });
 
-  it("steer interrupts + re-runs with the message; promote re-runs on a new model", async () => {
+  it("steers a LIVE stage in-session (RPC verb, context intact)", async () => {
     const driver = new MockDriver();
     const engine = new WorkflowEngine(driver, spec());
     await dispatchAndRun(engine, driver);
     await engine.advance("wfrun_test", 0);
 
+    const dir = stageDir("wfrun_test", "plan", 1);
     const steered = await engine.steer("wfrun_test", "Focus only on the parser.");
     expect(steered).toBe("plan");
-    let r = await engine.advance("wfrun_test", 0);
+    // No relaunch — the steer verb went into the live session's fifo.
+    expect(driver.launches.length).toBe(1);
+    const sent = driver.rpcSent.get(dir)!;
+    const steerCmd = sent.find((c) => c.type === "steer");
+    expect(steerCmd?.message).toContain("Focus only on the parser.");
+    const state = await engine.load("wfrun_test");
+    expect(state.stages[0].status).toBe("running");
+  });
+
+  it("steers a DEAD stage by reset + relaunch with the message folded in", async () => {
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, spec());
+    await dispatchAndRun(engine, driver);
+    await engine.advance("wfrun_test", 0);
+    // Session dies without artifacts → steer falls back to restart.
+    driver.crashSession(stageDir("wfrun_test", "plan", 1), "boom");
+    await engine.advance("wfrun_test", 0);
+    const steered = await engine.steer("wfrun_test", "Focus only on the parser.");
+    expect(steered).toBe("plan");
+    const r = await engine.advance("wfrun_test", 0);
     expect(r.tasks[0].status).toBe("running");
-    // Round 2's prompt carries the steer.
+    expect(driver.launches.length).toBe(2);
     const prompt = driver.files.get(`${stageDir("wfrun_test", "plan", 1)}/prompt.md`)!;
     expect(prompt).toContain("Operator steering");
     expect(prompt).toContain("Focus only on the parser.");
+  });
 
-    // Model-plane failure → promote all failed+pending to the fallback model.
-    driver.crashSession(stageDir("wfrun_test", "plan", 1), "credit balance exhausted");
-    r = await engine.advance("wfrun_test", 0);
+  it("classifies model failures from RPC retry events; promote re-runs on a new model", async () => {
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, spec());
+    await dispatchAndRun(engine, driver);
+    await engine.advance("wfrun_test", 0);
+
+    const dir = stageDir("wfrun_test", "plan", 1);
+    // The session's own retry loop gives up — typed signal, no log regex.
+    driver.emit(dir, {
+      type: "auto_retry_end",
+      success: false,
+      attempt: 3,
+      finalError: "529 overloaded_error: Overloaded",
+    });
+    let r = await engine.advance("wfrun_test", 0);
     expect(r.modelFailure).toBe(true);
+    const state = await engine.load("wfrun_test");
+    expect(state.stages[0].failureKind).toBe("model");
+    expect(state.stages[0].detail).toContain("529");
+
     await engine.promote("wfrun_test", "claude-haiku-4-5");
     r = await engine.advance("wfrun_test", 0);
     expect(r.tasks[0].status).toBe("running");
     expect(driver.launches.at(-1)!.command).toContain('--model "claude-haiku-4-5"');
+  });
+
+  it("promotes a LIVE healthy stage in-session via set_model", async () => {
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, spec());
+    await dispatchAndRun(engine, driver);
+    await engine.advance("wfrun_test", 0);
+    const dir = stageDir("wfrun_test", "plan", 1);
+    await engine.promote("wfrun_test", "claude-opus-4-6", "plan");
+    // No relaunch — model switched inside the live session.
+    expect(driver.launches.length).toBe(1);
+    const setModel = driver.rpcSent.get(dir)!.find((c) => c.type === "set_model");
+    expect(setModel?.modelId).toBe("claude-opus-4-6");
+    const state = await engine.load("wfrun_test");
+    expect(state.stages[0].model).toBe("claude-opus-4-6");
+  });
+
+  it("captures session stats at collect (get_session_stats round-trip)", async () => {
+    const driver = new MockDriver();
+    const engine = new WorkflowEngine(driver, spec());
+    await dispatchAndRun(engine, driver);
+    await engine.advance("wfrun_test", 0);
+    const dir = stageDir("wfrun_test", "plan", 1);
+    // Settled but still alive: engine asks for stats before killing.
+    driver.files.set(`${dir}/control.json`, JSON.stringify({ status: "done" }));
+    driver.files.set(`${dir}/analysis.md`, "done");
+    driver.emit(dir, { type: "agent_settled" });
+    await engine.advance("wfrun_test", 0);
+    const state = await engine.load("wfrun_test");
+    expect(state.stages[0].status).toBe("completed");
+    expect(state.stages[0].stats?.tokens?.total).toBe(1200);
+    expect(state.stages[0].stats?.cost).toBe(0.05);
   });
 
   it("delegation surfaces from completed control; promotion re-runs the stage", async () => {

@@ -12,6 +12,7 @@ export {
   untilSatisfied,
 } from "./compile";
 export { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
+export { digestEvents, renderEvents, sendRpc, tailEvents, type RpcEvent } from "./rpc";
 export type {
   FailureKind,
   JsonSchema,
