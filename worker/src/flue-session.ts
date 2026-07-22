@@ -177,9 +177,19 @@ function submitWorkTool(sandbox: SandboxHandle, dir: string) {
   return { tool, wasSubmitted: () => submitted };
 }
 
-/** Transient throttle (wait) vs account-exhaust (skip leg) vs hard (fail). */
-function classifyError(msg: string): "throttle" | "exhaust" | "hard" {
+/**
+ * Classify a leg error:
+ *   throttle — transient capacity (429/rate-limit/overloaded). Wait + retry.
+ *   auth     — expired/invalid credential (401). The custodian re-pushes the
+ *              OAuth token, so it's RECOVERABLE, not hard: try the next leg
+ *              (different credential), and if all legs are auth/throttle,
+ *              surface a wait so the spine re-invokes with a fresh token read.
+ *   exhaust  — account out of credit/balance on a paid leg. Skip to next leg.
+ *   hard     — a real defect (bad request, tool crash). Fail the stage.
+ */
+function classifyError(msg: string): "throttle" | "auth" | "exhaust" | "hard" {
   if (/429|rate.?limit|overloaded|usage.?limit/i.test(msg)) return "throttle";
+  if (/401|authentication|unauthor|access token|re-?authenticate|expired/i.test(msg)) return "auth";
   if (/credit|balance|spend|quota/i.test(msg)) return "exhaust";
   return "hard";
 }
@@ -229,10 +239,11 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
 
     // One pass over the fallback legs. Returns a terminal outcome, or null to
     // signal "all legs throttled" (caller decides retry vs durable park).
-    const attemptChain = async (): Promise<{ done: StageSessionOutcome } | { throttled: number; providers: string[]; detail: string }> => {
+    const attemptChain = async (): Promise<{ done: StageSessionOutcome } | { throttled: number; providers: string[]; detail: string; sawAuth: boolean }> => {
       let throttledMs = 0;
       const throttledProviders: string[] = [];
       let lastThrottle = "";
+      let sawAuth = false;
       for (const leg of legs) {
         leg.register();
         const { tool: submit, wasSubmitted } = submitWorkTool(sandbox, input.dir);
@@ -274,11 +285,19 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
             lastThrottle = msg;
             throttledProviders.push(leg.provider);
             throttledMs = Math.max(throttledMs, parseRetryAfterMs(msg) ?? 0);
+          } else if (kind === "auth") {
+            // Expired/invalid credential — recoverable (custodian re-pushes
+            // the token). Retrying in-process with the SAME token is futile,
+            // so mark it: an all-auth/throttle chain surfaces a wait and the
+            // spine re-invokes with a fresh token read.
+            sawAuth = true;
+            lastThrottle = msg;
+            throttledProviders.push(leg.provider);
           }
-          // throttle or exhaust → try the next leg
+          // throttle / auth / exhaust → try the next leg
         }
       }
-      return { throttled: throttledMs, providers: [...new Set(throttledProviders)], detail: lastThrottle.slice(0, 200) };
+      return { throttled: throttledMs, providers: [...new Set(throttledProviders)], detail: lastThrottle.slice(0, 200), sawAuth };
     };
 
     // Chain attempt + short in-process backoff; surface a long wait for the
@@ -286,6 +305,12 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     for (let round = 0; ; round++) {
       const r = await attemptChain();
       if ("done" in r) return r.done;
+      // Auth failure: in-process retry reuses the SAME expired token and can't
+      // recover — surface the wait now so the spine re-invokes with a fresh
+      // token read (the custodian re-pushes auth:access out of band).
+      if (r.sawAuth) {
+        return { ok: false, throttled: { retryAfterMs: r.throttled || 60_000, providers: r.providers, detail: r.detail || "credential expired; awaiting custodian re-push" } };
+      }
       const waitMs = r.throttled || BACKOFF_MS[Math.min(round, BACKOFF_MS.length - 1)];
       if (waitMs > SHORT_WAIT_MS || round >= BACKOFF_MS.length) {
         return { ok: false, throttled: { retryAfterMs: waitMs, providers: r.providers, detail: r.detail || "all model providers throttled" } };
