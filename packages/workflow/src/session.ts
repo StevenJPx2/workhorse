@@ -1,14 +1,10 @@
 /**
- * SDK stage sessions — replaces the FIFO/RPC launcher.
+ * SDK stage sessions — each stage runs pi-coding-agent programmatically
+ * via createAgentSession + prompt. No CLI, no subprocess, no FIFO.
  *
- * Each stage runs `node /opt/agent/runner.mjs` in a foreground sandbox exec.
- * The runner imports pi-coding-agent's SDK (createAgentSession + prompt),
- * loads extensions, runs the agent to completion, and streams events to
- * events.jsonl. No subprocess management, no FIFO, no nohup.
- *
- * The exec blocks until the agent finishes (5-20 min). The engine's
- * advance() polls for completion by checking if the exec returned and
- * if events.jsonl has an agent_settled line.
+ * The runner script (sandbox/runner.mjs) is a thin shim that imports the
+ * SDK, loads extensions, and runs the agent to completion. Events stream
+ * to events.jsonl (tailed by the engine between drive bursts).
  *
  * Layout per stage round dir:
  *   events.jsonl  session events (append-only, tailed by the engine)
@@ -42,7 +38,10 @@ export async function launchSdkSession(
   // Run the SDK runner in the foreground. This exec blocks until the
   // agent finishes (5-20 min). The engine polls events.jsonl for
   // agent_settled in subsequent advance() calls.
-  const cmd = `cd ${cwd} && ${envPrefix ? envPrefix + " " : ""}node /opt/agent/runner.mjs ${dir} ${opts.promptPath} ${flagsStr} 2> ${dir}/session.log`;
+  // Run the SDK runner from /opt/agent (where node_modules lives) so
+  // bare-specifier imports resolve. The cwd arg tells the runner where
+  // the repo is.
+  const cmd = `cd /opt/agent && ${envPrefix ? envPrefix + " " : ""}node runner.mjs ${dir} ${opts.promptPath} ${flagsStr} 2> ${dir}/session.log`;
   driver.exec(cmd, { timeout: 30 * 60_000 }).catch(() => {});
   // Wait a moment for the process to start.
   await driver.exec(`sleep 2`, { timeout: 5_000 });
@@ -102,18 +101,18 @@ export async function killSession(driver: Driver, pid: number): Promise<void> {
 // ---- Event utilities (shared by the engine) ----
 
 /** One parsed event line from events.jsonl. */
-export type RpcEvent = Record<string, unknown> & { type: string };
+export type SessionEvent = Record<string, unknown> & { type: string };
 
 /** Tail events from a byte offset. Returns new events + new offset. */
 export async function tailEvents(
   driver: Driver,
   dir: string,
   offset: number,
-): Promise<{ events: RpcEvent[]; offset: number }> {
+): Promise<{ events: SessionEvent[]; offset: number }> {
   const raw = (await driver.readFile(`${dir}/events.jsonl`)) ?? "";
   if (raw.length <= offset) return { events: [], offset };
   const chunk = raw.slice(offset);
-  const events: RpcEvent[] = [];
+  const events: SessionEvent[] = [];
   for (const line of chunk.split("\n")) {
     if (!line.trim()) continue;
     try { events.push(JSON.parse(line)); } catch { /* skip malformed */ }
@@ -122,7 +121,7 @@ export async function tailEvents(
 }
 
 /** Digest events into a summary for the engine. */
-export function digestEvents(events: RpcEvent[]): {
+export function digestEvents(events: SessionEvent[]): {
   settled: boolean;
   stats?: Record<string, unknown>;
   modelFailed: boolean;
@@ -146,7 +145,7 @@ export function digestEvents(events: RpcEvent[]): {
 }
 
 /** Render events into a human-readable transcript for live output. */
-export function renderEvents(events: RpcEvent[]): string {
+export function renderEvents(events: SessionEvent[]): string {
   const lines: string[] = [];
   for (const e of events) {
     const msg = (e as Record<string, unknown>).message as Record<string, unknown> | undefined;

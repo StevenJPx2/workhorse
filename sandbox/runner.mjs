@@ -46,7 +46,6 @@ try {
     createAgentSession,
     discoverAndLoadExtensions,
     ExtensionRunner,
-    createCodingTools,
     wrapRegisteredTools,
   } = await import("@earendil-works/pi-coding-agent");
 

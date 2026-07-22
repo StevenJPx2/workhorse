@@ -16,7 +16,7 @@ import {
   upstreamDigest,
 } from "./compile";
 import { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
-import { launchSdkSession, killSession, sessionAlive, sendCommand, tailEvents, digestEvents, renderEvents } from "./rpc";
+import { launchSdkSession, killSession, sessionAlive, sendCommand, tailEvents, digestEvents, renderEvents } from "./session";
 import type {
   FailureKind,
   JsonSchema,
