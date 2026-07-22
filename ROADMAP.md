@@ -266,6 +266,32 @@ triggers + non-PR outcomes + the bus together. Reconciliation: the cron lane
 of the triggers system we shipped IS this pattern (point it at `fileTicket`);
 the mention/fire lanes stay plugin-registered trigger sources / channels.
 
+**Model seam — capacity backoff (never fail on a rate limit).** Terminal case
+of the fallback chain changes from "fail" to "wait". A rate limit is transient
+capacity, not a defect, so:
+- Classify: split TRANSIENT throttle (`429`/rate-limit/overloaded/usage-limit)
+  from HARD failure (auth, malformed, session crash) and from account-exhaust
+  (`credit`/`balance` on a paid leg → just skip to the free leg). Only hard
+  failures fail the stage.
+- When EVERY leg is throttled, `ctx.stage` returns `{ throttled, retryAfterMs,
+  providers }` instead of `{ failure }`. `retryAfterMs` = the SHORTEST reset
+  across throttled legs (parse `Retry-After` / `anthropic-ratelimit-*-reset`
+  when present; else bounded backoff 30s→1m→2m→5m and re-probe — honest: the
+  free-tier 429 body carries no numeric window, so we often back off blind).
+- WHERE the wait lives (CF constraint): SHORT waits (≤ ~2 min, the free-tier
+  per-minute case) retry in-process inside `ctx.stage` (a step's wall-clock is
+  unlimited, a 60s I/O wait is fine). LONG waits unwind to the spine, which
+  does a DURABLE `step.sleep(retryAfterMs)` and resumes the workflow —
+  skipping stages whose artifacts already exist on disk (the same idempotent
+  resume the crash-retry granularity needs). Durable waiting is a lifecycle
+  concern → the spine, never an hour-long in-process `setTimeout`.
+- Bounded + visible: ticket status reflects "waiting for model capacity" while
+  parked (not a hang); after a max cumulative wait it parks as `throttled`
+  (resumable, notified via the bus) rather than waiting forever or erroring.
+
+This reinforces the split: capacity backoff is lifecycle (spine), the throttle
+signal + short retry is stage-level (`ctx.stage`).
+
 If adopted, this SUPERSEDES the "What survives → workflows as USER DATA" note
 in the section below.
 
