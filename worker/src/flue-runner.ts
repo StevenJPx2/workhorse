@@ -205,16 +205,17 @@ export function flueStageRunner(
       // Non-catalog providers need api + baseUrl. OpenCode Zen/Go use the
       // OpenAI-compatible chat/completions wire protocol (flue docs:
       // "openai-completions" for OpenAI-compatible endpoints).
-      // Single API key for both.
+      // Single API key for both. NOTE: openai-completions appends
+      // /v1/chat/completions to baseUrl, so omit the trailing /v1 here.
       if (env.OPENCODE_API_KEY) {
         registerProvider("opencode-zen", {
           api: "openai-completions",
-          baseUrl: "https://opencode.ai/zen/v1",
+          baseUrl: "https://opencode.ai/zen",
           apiKey: env.OPENCODE_API_KEY,
         });
         registerProvider("opencode-go", {
           api: "openai-completions",
-          baseUrl: "https://opencode.ai/go/v1",
+          baseUrl: "https://opencode.ai/go",
           apiKey: env.OPENCODE_API_KEY,
         });
       }
