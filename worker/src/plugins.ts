@@ -34,6 +34,15 @@ export function pluginFor(id: string): WorkhorsePlugin | undefined {
   return plugins.find((p) => p.id === id);
 }
 
+/** All attachment providers across plugins, keyed by kind. */
+export function attachmentProviders() {
+  const out = new Map<string, NonNullable<WorkhorsePlugin["attachments"]>[number]>();
+  for (const p of plugins) {
+    for (const a of p.attachments ?? []) out.set(a.kind, a);
+  }
+  return out;
+}
+
 /** Core services handed to plugin webhooks, routes, and hooks. */
 export function coreFor(env: Env, selfOrigin: string): Core {
   return {

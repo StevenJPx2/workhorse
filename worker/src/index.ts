@@ -324,6 +324,47 @@ export default {
     // interrupts the current stage, and re-runs it with the steer appended
     // to its prompt. Parked (in-review) tickets should use PR feedback
     // instead — steers target the ACTIVE run.
+    // Attachment surface: match a pasted ref against plugin providers.
+    if (url.pathname === "/attachments/match" && request.method === "POST") {
+      const { input } = (await request.json().catch(() => ({}))) as { input?: string };
+      if (!input?.trim()) return json({ match: null });
+      const { attachmentProviders } = await import("./plugins");
+      for (const [kind, p] of attachmentProviders()) {
+        const ref = p.match(input.trim());
+        if (ref) return json({ match: { kind, ref, label: p.label, icon: p.icon } });
+      }
+      return json({ match: null });
+    }
+
+    // Attach context to a LIVE ticket: resolve + deliver via the two-path
+    // model (steer when running, queued event when parked).
+    const attachM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/attach$/);
+    if (attachM && request.method === "POST") {
+      const rec = await getTicket(env, attachM[1]);
+      if (!rec) return json({ error: "not found" }, 404);
+      const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
+      if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
+      const { resolveAttachments } = await import("./tickets");
+      const section = await resolveAttachments(env, url.origin, [{ kind, ref }]);
+      if (!section) return json({ error: "attachment did not resolve" }, 422);
+      const active = ["queued", "planning", "implementing", "ready-for-review"].includes(rec.status);
+      if (active) {
+        await appendSteer(env, attachM[1], `Additional context attached by the operator:\n\n${section}`);
+      } else {
+        await appendEvents(env, [
+          {
+            ticketId: attachM[1],
+            kind: "context-attached",
+            summary: `Operator attached ${kind}:${ref}`,
+            detail: { section: section.slice(0, 4000) },
+            receivedAt: new Date().toISOString(),
+          },
+        ]);
+        ctx.waitUntil(wakeTicket(env, attachM[1]));
+      }
+      return json({ ok: true, delivered: active ? "steer" : "event" });
+    }
+
     // Operator input for an awaiting-input park: inject answers into the
     // engine, then wake the spine's waitForEvent.
     const inputM = url.pathname.match(/^\/tickets\/([a-z0-9-]+)\/input$/);

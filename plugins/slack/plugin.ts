@@ -157,6 +157,41 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
 export const slackPlugin: WorkhorsePlugin = {
   id: "slack",
 
+  attachments: [
+    {
+      kind: "slack",
+      label: "Slack thread",
+      icon: "i-lucide-slack",
+      match(input) {
+        // https://<team>.slack.com/archives/C0123/p1712345678901234
+        const m = input.trim().match(/slack\.com\/archives\/([A-Z0-9]+)\/p(\d{16})/);
+        return m ? `${m[1]}:${m[2].slice(0, 10)}.${m[2].slice(10)}` : null;
+      },
+      async resolve(env, _core, ref) {
+        if (!env.SLACK_BOT_TOKEN) throw new Error("Slack not configured");
+        const [channel, ts] = ref.split(":");
+        const r = await fetch(
+          `https://slack.com/api/conversations.replies?channel=${channel}&ts=${ts}&limit=20`,
+          { headers: { authorization: `Bearer ${env.SLACK_BOT_TOKEN}` } },
+        );
+        const data = (await r.json()) as {
+          ok: boolean;
+          error?: string;
+          messages?: Array<{ user?: string; text?: string }>;
+        };
+        if (!data.ok) throw new Error(`Slack fetch failed: ${data.error}`);
+        const lines = (data.messages ?? [])
+          .map((m) => `- ${m.user ?? "?"}: ${(m.text ?? "").slice(0, 400)}`)
+          .join("\n");
+        return {
+          title: `Slack thread in ${channel}`,
+          summary: `${data.messages?.length ?? 0} messages`,
+          content: `Slack conversation (${channel} @ ${ts}):\n${lines.slice(0, 3500)}`,
+        };
+      },
+    },
+  ],
+
   webhook: {
     async verify(request, rawBody, env) {
       if (!env.SLACK_SIGNING_SECRET) return false;

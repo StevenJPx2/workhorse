@@ -36,6 +36,8 @@ export interface TicketParams {
   resume?: boolean;
   /** Dispatch-time values for the workflow's declared inputs. */
   inputs?: Record<string, string | number | boolean>;
+  /** Context attachments resolved at prepare (plugin-provided). */
+  attachments?: Array<{ kind: string; ref: string }>;
 }
 
 export interface TicketRecord {

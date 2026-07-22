@@ -13,6 +13,42 @@
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
 
+/** A reference to attachable context, as the operator provides it. */
+export interface AttachmentRef {
+  /** Provider kind ("repo" | "jira" | "slack" | ...). */
+  kind: string;
+  /** Canonical id the provider's match() produced (issue key, URL, slug). */
+  ref: string;
+}
+
+/** Resolved, prompt-ready attachment content. */
+export interface ResolvedAttachment {
+  title: string;
+  /** One-line summary for chips/lists. */
+  summary?: string;
+  /** Prompt-ready markdown (bounded by the resolver). */
+  content: string;
+  url?: string;
+}
+
+/**
+ * A plugin-contributed attachment source: recognizes operator-pasted refs
+ * and resolves them into prompt-ready context. Powers the dispatch
+ * composer's chips, ticket-page attach, and fleet-chat ref enrichment.
+ */
+export interface AttachmentProvider {
+  kind: string;
+  label: string;
+  icon?: string;
+  /**
+   * Recognize a pasted string; return the canonical ref or null.
+   * Cheap + synchronous (runs on keystrokes/paste).
+   */
+  match(input: string): string | null;
+  /** Fetch + render the referenced context. Throw on failure. */
+  resolve(env: Env, core: Core, ref: string): Promise<ResolvedAttachment>;
+}
+
 /** A registered self-extension script (see the scripts plugin). */
 export interface ScriptRecord {
   /** "global" or "repo:<owner/repo>". */
@@ -174,4 +210,6 @@ export interface WorkhorsePlugin {
   webhook?: WebhookHandler;
   routes?: PluginRoute[];
   hooks?: PluginHooks;
+  /** Attachment sources this plugin contributes (kind must be unique fleet-wide). */
+  attachments?: AttachmentProvider[];
 }

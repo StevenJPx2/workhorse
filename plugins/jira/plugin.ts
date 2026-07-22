@@ -246,6 +246,44 @@ interface JiraWebhookPayload {
 export const jiraPlugin: WorkhorsePlugin = {
   id: "jira",
 
+  attachments: [
+    {
+      kind: "jira",
+      label: "Jira issue",
+      icon: "i-lucide-square-kanban",
+      match(input) {
+        const s = input.trim();
+        // PROJ-123 or a browse URL.
+        const url = s.match(/atlassian\.net\/browse\/([A-Z][A-Z0-9]+-\d+)/);
+        if (url) return url[1];
+        return /^[A-Z][A-Z0-9]+-\d+$/.test(s) ? s : null;
+      },
+      async resolve(env, _core, ref) {
+        if (!jiraConfigured(env)) throw new Error("Jira not configured");
+        const r = await jiraApi(env, "GET", `/rest/api/3/issue/${ref}?fields=summary,description,status,labels,comment`);
+        if (!r.ok) throw new Error(`Jira fetch failed: HTTP ${r.status}`);
+        const issue = (await r.json()) as JiraIssue & {
+          fields?: { comment?: { comments?: Array<{ author?: { displayName?: string }; body?: unknown }> } };
+        };
+        const desc = adfText(issue.fields?.description).trim();
+        const comments = (issue.fields?.comment?.comments ?? [])
+          .slice(-5)
+          .map((c) => `- ${c.author?.displayName ?? "?"}: ${adfText(c.body).trim().slice(0, 400)}`)
+          .join("\n");
+        return {
+          title: `${ref}: ${issue.fields?.summary ?? ""}`,
+          summary: `Jira · ${issue.fields?.status?.name ?? "?"}`,
+          content: [
+            `Jira issue ${ref} — ${issue.fields?.summary ?? ""} (status: ${issue.fields?.status?.name ?? "?"})`,
+            desc ? `\n${desc.slice(0, 3000)}` : "",
+            comments ? `\nRecent comments:\n${comments}` : "",
+          ].join("\n"),
+          url: `${env.JIRA_BASE_URL}/browse/${ref}`,
+        };
+      },
+    },
+  ],
+
   webhook: {
     // Atlassian cloud webhooks can't sign requests; authenticity = a
     // shared-secret query param on the registered URL, constant-time compared.

@@ -1,8 +1,11 @@
 export type {
+  AttachmentProvider,
+  AttachmentRef,
   Core,
   ExternalEvent,
   PluginHooks,
   PluginRoute,
+  ResolvedAttachment,
   RouteAuth,
   ScriptRecord,
   WebhookHandler,
