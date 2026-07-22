@@ -202,15 +202,15 @@ export function flueStageRunner(
       registerProvider("anthropic", { apiKey: token });
 
       // OpenCode free models (fallback when Anthropic rate-limits).
-      // Non-catalog providers need api + baseUrl. OpenCode Zen/Go use the
-      // OpenAI-compatible chat/completions wire protocol (flue docs:
-      // "openai-completions"). openai-completions appends /chat/completions
-      // to baseUrl, so we include /v1 here (the real endpoint is
-      // https://opencode.ai/zen/v1/chat/completions).
+      // opencode-zen hosts Anthropic models at /zen/v1/messages (same wire
+      // format as the built-in anthropic provider). Use api:'anthropic' +
+      // baseUrl:'https://opencode.ai/zen/v1' so the Anthropic SDK sends to
+      // the right endpoint. For OpenAI-compatible free models (mimo-v2.5-free),
+      // use opencode-go with api:'openai-completions'.
       // Single API key for both.
       if (env.OPENCODE_API_KEY) {
         registerProvider("opencode-zen", {
-          api: "openai-completions",
+          api: "anthropic",
           baseUrl: "https://opencode.ai/zen/v1",
           apiKey: env.OPENCODE_API_KEY,
         });
@@ -240,8 +240,7 @@ export function flueStageRunner(
         { provider: "anthropic", model },
         ...(env.OPENCODE_API_KEY
           ? [
-              { provider: "opencode-zen", model: "mimo-v2.5-free" },
-              { provider: "opencode-zen", model: "laguna-s-2.1-free" },
+              { provider: "opencode-zen", model: "claude-haiku-4-5" },
               { provider: "opencode-go", model: "deepseek-v4-flash" },
             ]
           : []),
