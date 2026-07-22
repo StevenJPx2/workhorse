@@ -30,7 +30,7 @@ flowchart LR
 |---|---|---|
 | Spine | Cloudflare Workflows | one durable instance per ticket: durability plumbing only — bursts, parks (`waitForEvent`), retries, delivery |
 | Engine | `packages/workflow` | the workflow semantics: spec compile + validation, graph routing, per-stage prompt assembly, run state, control verbs (steer / promote / inject-input / cancel), typed failure classification |
-| Muscle | Cloudflare Sandbox | per-ticket Firecracker container; each stage is one bare Pi session with a CLI-enforced tool ceiling |
+| Muscle | Cloudflare Sandbox | per-ticket Firecracker container; each stage is one bare Pi session with a CLI-enforced tool ceiling; agent-browser for persistent browser sessions (AX snapshots, click/fill/record); jina for stateless reads |
 | Brain | Anthropic (Claude subscription OAuth) | Pi + extensions, baked into the sandbox image |
 | Memory | D1 + KV + R2 + Vectorize + AI Search | records in D1; hot state in KV; blobs (traces, repo memory, dep cache) in R2; semantic registries (scripts/workflows/tools) in Vectorize; fleet-wide run knowledge in AI Search |
 | Token custody | MacBook homelab server | holds+refreshes the OAuth refresh token; mints short-lived access tokens |
