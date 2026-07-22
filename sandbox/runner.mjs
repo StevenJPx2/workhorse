@@ -67,8 +67,8 @@ try {
     emit({ type: "extension_load_error", error: String(e).slice(0, 300) });
   }
 
-  // Create the session.
-  const session = await createAgentSession({
+  // Create the session (returns {session, extensionsResult, modelFallbackMessage}).
+  const { session } = await createAgentSession({
     cwd: "/workspace/repo",
     agentDir,
     model: flags.model || undefined,
