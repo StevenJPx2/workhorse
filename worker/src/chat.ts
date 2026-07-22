@@ -12,7 +12,9 @@ export async function runFleetChat(
 ): Promise<{ ok: true; reply: string } | { ok: false; error: string; status: number }> {
   const stored = await env.TICKETS.get("auth:access");
   const auth = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-  if (!auth || auth.expires - Date.now() < 10 * 60 * 1000) {
+  // Usable unless absent, or expiry is KNOWN (>0) and within 10 min. A zero
+  // expiry means the custodian pushed without runway info — treat as usable.
+  if (!auth?.access || (auth.expires > 0 && auth.expires - Date.now() < 10 * 60 * 1000)) {
     return { ok: false, error: "no fresh access token (custodian push stale?)", status: 503 };
   }
   const sandbox = getSandbox(env.Sandbox, "fleet-chat", { sleepAfter: "2m" });

@@ -69,11 +69,18 @@ export async function fileTicket(
     body.repo = `https://github.com/${body.repo}.git`;
   }
   if (!body.accessToken) {
-    // Fall back to the custodian-pushed token.
+    // Fall back to the custodian-pushed token. Refuse only when there is NO
+    // token, or its expiry is KNOWN and within 10 min. A zero/absent expiry
+    // (custodian pushed without runway info) is treated as usable — the flue
+    // runner re-reads auth:access every stage, so mid-run rotation depends on
+    // the custodian keeping KV fresh, not on a file-time runway estimate.
     const stored = await env.TICKETS.get("auth:access");
     const parsed = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-    if (!parsed || parsed.expires - Date.now() < 10 * 60 * 1000) {
-      return { ok: false, error: "no fresh access token available (custodian push stale?)", status: 503 };
+    if (!parsed?.access) {
+      return { ok: false, error: "no access token (custodian has not pushed one)", status: 503 };
+    }
+    if (parsed.expires > 0 && parsed.expires - Date.now() < 10 * 60 * 1000) {
+      return { ok: false, error: "access token near expiry (custodian push stale?)", status: 503 };
     }
     body.accessToken = parsed.access;
   }
