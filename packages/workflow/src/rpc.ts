@@ -40,46 +40,55 @@ export async function launchRpcSession(
     message: await driver.readFile(opts.promptPath) ?? "",
   });
   await driver.writeFile(`${dir}/prompt.json`, promptJson);
-  // Write a launcher script that:
-  // 1. Starts pi reading from a FIFO (background)
-  // 2. Writes the initial prompt into the FIFO
-  // 3. Enters a command loop: watches cmd.in for new lines, writes them
-  //    to the FIFO, truncates cmd.in after each read. Keeps the exec
-  //    alive for the entire session (blocks until pi exits).
+  // Launcher script: starts pi, writes the prompt, enters a command loop.
+  // Runs in a short-lived exec (returns after pi starts) — the CF Workflow
+  // step must complete within its timeout, so we can't block for the full
+  // session. The launcher persists via nohup (detached from the exec's
+  // process group).
   const launcherScript = `#!/bin/bash
 cd ${opts.cwd}
 mkfifo ${dir}/cmd.fifo 2>/dev/null || true
-# Holder keeps the write end open.
-(exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done) &
-${envPrefix ? envPrefix + " " : ""}${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log &
+# Holder keeps the write end open so pi doesn't see EOF.
+nohup bash -c 'exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done' > /dev/null 2>&1 &
+# Start pi reading from the FIFO (detached with nohup).
+${envPrefix ? envPrefix + " " : ""}nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log &
 PI=$!
-# Write the initial prompt.
+echo $PI > ${dir}/pi.pid
+# Write the initial prompt into the FIFO (pi is now reading).
 cat ${dir}/prompt.json > ${dir}/cmd.fifo
 touch ${dir}/cmd.in
-# Command loop: watch cmd.in for new commands, forward to FIFO, truncate.
-while kill -0 $PI 2>/dev/null; do
+# Command loop: watches cmd.in for new commands, forwards to FIFO.
+# Runs detached — keeps forwarding commands even after this exec returns.
+nohup bash -c '
+while kill -0 $(cat ${dir}/pi.pid 2>/dev/null) 2>/dev/null; do
   if [ -s ${dir}/cmd.in ]; then
     cat ${dir}/cmd.in > ${dir}/cmd.fifo
     > ${dir}/cmd.in
   fi
   sleep 0.3
 done
-wait $PI
-echo "EXIT=$?"
+' > /dev/null 2>&1 &
+echo "STARTED"
 `;
   await driver.writeFile(`${dir}/launcher.sh`, launcherScript);
-  // This exec blocks until pi finishes. sendRpc writes to cmd.in from a
-  // separate exec. The sandbox exec timeout must cover the full session.
-  driver.exec(`bash ${dir}/launcher.sh`, { timeout: 30 * 60_000 }).catch(() => {});
-  // Wait a moment for pi to start, then verify it's alive.
-  await driver.exec(`sleep 2`, { timeout: 5_000 });
-  const ps = await driver.exec(`ps aux | grep "[p]i.*rpc" | head -1`, { timeout: 5_000 });
-  const pid = ps.stdout.match(/\s+(\d+)\s+/)?.[1];
-  if (!pid) {
+  // Short-lived exec: starts everything and returns immediately. The
+  // nohup'd processes survive exec cleanup (detached process group).
+  const launch = await driver.exec(`bash ${dir}/launcher.sh`, { timeout: 15_000 });
+  if (!launch.stdout.includes("STARTED")) {
     const log = (await driver.readFile(`${dir}/session.log`)) ?? "";
-    throw new Error(`pi failed to start: ${log.slice(-300)}`);
+    throw new Error(`launcher failed: ${launch.stderr || log.slice(-300)}`);
   }
-  return { pid: Number(pid), holderPid: 0 };
+  // Verify pi is alive.
+  await driver.exec(`sleep 1`, { timeout: 5_000 });
+  const pidRaw = (await driver.readFile(`${dir}/pi.pid`))?.trim();
+  const pid = pidRaw ? Number(pidRaw) : 0;
+  if (!pid) throw new Error("pi pid not recorded");
+  const alive = await driver.exec(`kill -0 ${pid} 2>/dev/null && echo alive || echo dead`, { timeout: 5_000 });
+  if (!alive.stdout.includes("alive")) {
+    const log = (await driver.readFile(`${dir}/session.log`)) ?? "";
+    throw new Error(`pi died immediately: ${log.slice(-300)}`);
+  }
+  return { pid, holderPid: 0 };
 }
 
 /** Send one RPC command (a verb) into the session via the command channel. */
