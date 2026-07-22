@@ -29,7 +29,7 @@ RUN mkdir -p /opt/agent /root/.pi/agent/agents \
   && cp /opt/agent/sandbox/agents/*.md /root/.pi/agent/agents/ \
   && npx -y @cortexkit/aft@latest setup --harness pi \
   && (timeout 300 pi -p -np "warmup" || true) \
-  && ls /root/.pi/agent/npm/node_modules/@agwab /root/.pi/agent/npm/node_modules/@cortexkit
+  && ls /root/.pi/agent/npm/node_modules/@cortexkit
 
 # Magic Context: config + bake the local embedding model (~90MB ONNX) so
 # sandboxes never download it at runtime. The context.db itself is restored

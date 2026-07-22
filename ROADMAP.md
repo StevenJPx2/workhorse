@@ -201,6 +201,12 @@ whether to loop back — by design, not by interrupt. Subsumes today's
 steer (live interrupt) and revision events (park wake) under one queue
 with workflow-declared read points.
 
+### ntfy homelab integration
+Point the fleet's ntfy plugin (deployed, silent) at the homelab's
+existing ntfy (`ntfy.stevenjohn.co`): pick/protect a `workhorse` topic,
+set `NTFY_URL` + `NTFY_TOPIC` (+ `NTFY_TOKEN` if protected), subscribe
+the phone — PR-up/done/errored/escalation pushes go live.
+
 ### PixelRAG feasibility
 Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
 (if anywhere) it beats the current retrieval stack (AI Search for fleet
