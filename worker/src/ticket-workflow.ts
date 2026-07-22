@@ -653,9 +653,19 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           const dep = await restoreDepCache(this.env, sandboxId, t.repo);
           if (dep !== "skip") console.log(`depcache restore ${t.id} rev${round}: ${dep}`);
           await checkoutTicketBranch(this.env, sandboxId, t.repo, branch, this.env.GITHUB_TOKEN);
-          const feedback = events
-            .map((e) => `- [${e.kind}] ${e.summary}`)
-            .join("\n");
+          // Feedback = wake events + everything queued on the notification
+          // bus since the last read point (acknowledge-collate semantics).
+          const { unreadNotifications, markNotificationsRead } = await import("./notifications");
+          const queued = await unreadNotifications(this.env, t.id);
+          if (queued.length) {
+            await markNotificationsRead(this.env, t.id, queued[queued.length - 1].seq);
+          }
+          const feedback = [
+            ...events.map((e) => `- [${e.kind}] ${e.summary}`),
+            ...queued.map(
+              (n) => `- [${n.source}${n.author ? ` · ${n.author}` : ""}] ${n.body.slice(0, 1500)}`,
+            ),
+          ].join("\n");
           const revId = await startWorkflow(
             this.env,
             sandboxId,

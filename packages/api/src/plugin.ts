@@ -135,6 +135,21 @@ export interface Core {
   /** Queue a mid-run steer for a ticket's LIVE run (picked up next burst). */
   appendSteer(ticketId: string, message: string): Promise<void>;
   /**
+   * Queue operator input on the ticket's notification bus. The workflow
+   * reads it at its declared read points (stage `notifications: "read"`
+   * + all parks); `urgent: true` additionally delivers it into the live
+   * session as a steer. THE verb for surface plugins relaying human
+   * input — replaces choosing between appendSteer and appendEvents.
+   */
+  notify(n: {
+    ticketId: string;
+    source: string;
+    kind?: string;
+    body: string;
+    author?: string;
+    urgent?: boolean;
+  }): Promise<void>;
+  /**
    * Emit a ticket transition signal — the pluggable completion/verdict
    * mechanism. Queues the event and wakes the parked run; the workflow
    * decides which signals it honors at which parks. Kinds the core loops

@@ -34,11 +34,20 @@ export interface EngineOptions {
   piBin?: string;
   /** Repo working directory inside the sandbox. */
   cwd?: string;
+  /**
+   * Notification read point: called when launching a stage that declares
+   * `notifications: "read"`; the returned section (rendered unread
+   * notifications) is appended to the stage prompt. The provider marks
+   * them read. Null/empty = nothing pending.
+   */
+  readNotifications?: (stageId: string) => Promise<string | null>;
 }
 
 export class WorkflowEngine {
   private readonly pi: string;
   private readonly cwd: string;
+
+  private readonly readNotifications?: EngineOptions["readNotifications"];
 
   constructor(
     private readonly driver: Driver,
@@ -47,6 +56,7 @@ export class WorkflowEngine {
   ) {
     this.pi = opts.piBin ?? "pi";
     this.cwd = opts.cwd ?? "/workspace/repo";
+    this.readNotifications = opts.readNotifications;
   }
 
   // ---- state I/O -----------------------------------------------------------
@@ -213,11 +223,18 @@ export class WorkflowEngine {
       upstream.push(upstreamDigest(f, analysis, dep.control, maxChars));
     }
 
+    // Notification read point: workflow-declared, injected at launch.
+    let notifications: string | undefined;
+    if (spec.notifications === "read" && this.readNotifications) {
+      notifications = (await this.readNotifications(st.id).catch(() => null)) ?? undefined;
+    }
+
     const prompt = assemblePrompt(spec, dir, {
       task: state.task,
       inputs: { ...state.inputs, ...(st.inputRequest ? {} : {}) },
       upstream,
       steer: st.steer,
+      notifications,
       round,
       maxRounds: spec.maxRounds,
       previousControl: spec.type === "loop" && st.rounds > 0 ? st.control : undefined,

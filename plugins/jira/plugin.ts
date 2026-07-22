@@ -204,24 +204,27 @@ async function processEvent(env: Env, core: Core, payload: JiraWebhookPayload): 
     }
     const rec = await core.getTicket(mapped);
     if (!rec) return;
+    if (["done", "terminated"].includes(rec.status)) return;
+    // Notification bus: live comments are urgent (into the session next
+    // turn); parked tickets read the queue when they wake.
     const active = ["queued", "planning", "implementing", "ready-for-review"];
-    if (active.includes(rec.status)) {
-      await core.appendSteer(mapped, text.slice(0, 4000));
-      await comment(env, issue.key, "Steering the live run with your comment.");
-    } else if (rec.status === "in-review") {
-      await core.appendEvents([
-        {
-          ticketId: mapped,
-          kind: "jira-comment",
-          summary: `Jira comment by ${author?.displayName ?? "someone"}: ${text.slice(0, 500)}`,
-          actor: author?.displayName,
-          detail: { issueKey: issue.key, body: text.slice(0, 2000) },
-          receivedAt: new Date().toISOString(),
-        },
-      ]);
-      await core.wakeTicket(mapped);
-      await comment(env, issue.key, "Got it — waking the agent for a revision.");
-    }
+    const urgent = active.includes(rec.status);
+    await core.notify({
+      ticketId: mapped,
+      source: "jira",
+      kind: "comment",
+      body: text.slice(0, 4000),
+      author: author?.displayName,
+      urgent,
+    });
+    if (!urgent) await core.wakeTicket(mapped);
+    await comment(
+      env,
+      issue.key,
+      urgent
+        ? "Workhorse: delivered into the live session."
+        : "Workhorse: queued — the agent reads it at its next revision.",
+    );
     return;
   }
 

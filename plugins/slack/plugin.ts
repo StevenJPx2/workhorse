@@ -116,28 +116,31 @@ async function processEvent(env: Env, core: Core, e: SlackEvent): Promise<void> 
   if (mapped) {
     const rec = await core.getTicket(mapped);
     if (!rec) return;
-    const active = ["queued", "planning", "implementing", "ready-for-review"];
-    if (active.includes(rec.status)) {
-      // Live run → mid-run steer (picked up on the next drive burst).
-      await core.appendSteer(mapped, text.slice(0, 4000));
-      await postMessage(env, channel, `Steering the live run — the current stage restarts with your instructions within ~1 min.`, threadTs);
-    } else if (rec.status === "in-review") {
-      // Parked → revision event, same as PR feedback.
-      await core.appendEvents([
-        {
-          ticketId: mapped,
-          kind: "slack-comment",
-          summary: `Slack feedback from <@${e.user}>: ${text.slice(0, 500)}`,
-          actor: e.user,
-          detail: { channel, threadTs, text: text.slice(0, 1500) },
-          receivedAt: new Date().toISOString(),
-        },
-      ]);
-      await postMessage(env, channel, "Got it — waking the agent for a revision.", threadTs);
-      await core.wakeTicket(mapped);
-    } else {
+    if (["done", "terminated"].includes(rec.status)) {
       await postMessage(env, channel, `Ticket ${mapped} is ${rec.status} — nothing to steer.`, threadTs);
+      return;
     }
+    // Notification bus: thread replies on a live run are urgent (delivered
+    // into the session next turn); parked tickets read at their wake.
+    const active = ["queued", "planning", "implementing", "ready-for-review"];
+    const urgent = active.includes(rec.status);
+    await core.notify({
+      ticketId: mapped,
+      source: "slack",
+      kind: "comment",
+      body: text.slice(0, 4000),
+      author: e.user,
+      urgent,
+    });
+    if (!urgent) await core.wakeTicket(mapped);
+    await postMessage(
+      env,
+      channel,
+      urgent
+        ? "Delivered into the live session — the agent sees it at its next turn."
+        : "Queued — the agent reads it when it wakes for revision.",
+      threadTs,
+    );
     return;
   }
 

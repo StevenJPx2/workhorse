@@ -81,6 +81,10 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       }
       return getScript(env, "global", name);
     },
+    notify: async (n) => {
+      const { notify } = await import("./notifications");
+      await notify(env, n);
+    },
     fireTrigger: async (name, payload) => {
       const { fireTrigger } = await import("./triggers");
       const r = await fireTrigger(env, name, payload);

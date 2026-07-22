@@ -260,6 +260,41 @@ export const ticketRoutes: Route[] = [
     },
   },
   {
+    // Notification bus queue (read receipts included) for the UI.
+    method: "GET",
+    path: /^\/tickets\/([a-z0-9-]+)\/notifications$/,
+    auth: "master",
+    async handler({ env, match }) {
+      const { listNotifications } = await import("../notifications");
+      return json({ notifications: await listNotifications(env, match[1]) });
+    },
+  },
+  {
+    // Queue operator input on the bus (urgent = also live-steer).
+    method: "POST",
+    path: /^\/tickets\/([a-z0-9-]+)\/notify$/,
+    auth: "master",
+    async handler({ request, env, match }) {
+      const body = (await request.json().catch(() => ({}))) as {
+        body?: string;
+        kind?: string;
+        urgent?: boolean;
+        author?: string;
+      };
+      if (!body.body?.trim()) return json({ error: "body required" }, 400);
+      const { notify } = await import("../notifications");
+      const n = await notify(env, {
+        ticketId: match[1],
+        source: "ui",
+        kind: body.kind,
+        body: body.body.trim(),
+        author: body.author,
+        urgent: body.urgent,
+      });
+      return json({ ok: true, seq: n.seq });
+    },
+  },
+  {
     method: "GET",
     path: /^\/tickets\/([a-z0-9-]+)\/traces$/,
     auth: "master",

@@ -105,6 +105,8 @@ export interface PromptParts {
   inputs?: Record<string, string | number | boolean>;
   upstream: string[];
   steer?: string;
+  /** Rendered unread-notifications section (workflow-declared read point). */
+  notifications?: string;
   round: number;
   maxRounds?: number;
   previousControl?: Record<string, unknown>;
@@ -148,6 +150,9 @@ export function assemblePrompt(
         "A human operator redirected this stage. Their instructions take precedence " +
         `over conflicting parts of the task above:\n\n${parts.steer}`,
     );
+  }
+  if (parts.notifications) {
+    sections.push(parts.notifications);
   }
   sections.push(controlEpilogue(stage, dir));
   return sections.join("\n\n---\n\n");

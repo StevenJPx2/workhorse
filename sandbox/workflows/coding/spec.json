@@ -219,7 +219,8 @@
           },
           "maxDigestChars": 2500,
           "controlSchema": "./schemas/verify-control.schema.json"
-        }
+        },
+        "notifications": "read"
       },
       {
         "id": "fix",
@@ -289,7 +290,8 @@
             "required": true
           },
           "maxDigestChars": 2000
-        }
+        },
+        "notifications": "read"
       }
     ]
   }

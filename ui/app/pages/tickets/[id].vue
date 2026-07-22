@@ -346,8 +346,25 @@ const tabItems = [
   { label: "Result", slot: "result", icon: "i-lucide-file-check" },
   { label: "Task", slot: "task", icon: "i-lucide-clipboard-list" },
   { label: "Pipeline", slot: "pipeline", icon: "i-lucide-list-tree" },
+  { label: "Inbox", slot: "inbox", icon: "i-lucide-inbox" },
   { label: "History", slot: "history", icon: "i-lucide-history" },
 ];
+
+// Notification bus queue (read receipts included).
+interface BusItem {
+  seq: number;
+  source: string;
+  kind: string;
+  body: string;
+  author?: string;
+  urgent: boolean;
+  createdAt: string;
+  readAt?: string;
+}
+const { data: busData, refresh: refreshBus } = await useFetch<{ notifications: BusItem[] }>(
+  `/api/tickets/${id}/notifications`,
+  { lazy: true, server: false },
+);
 
 const running = computed(() =>
   ["queued", "planning", "implementing", "ready-for-review"].includes(
@@ -601,6 +618,39 @@ function taskDot(status: string): string {
     </UCard>
         </div>
       </template>
+      <template #inbox>
+        <div class="space-y-2 pt-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-muted">
+              Operator input from every surface queues here; the workflow reads it at its
+              declared points (parks always read). Urgent items also steer the live session.
+            </p>
+            <UButton size="xs" variant="ghost" icon="i-lucide-refresh-cw" @click="refreshBus()" />
+          </div>
+          <div v-if="!busData?.notifications?.length" class="text-muted text-sm py-6 text-center">
+            Inbox is empty.
+          </div>
+          <ul v-else class="space-y-1.5">
+            <li
+              v-for="n in busData.notifications"
+              :key="n.seq"
+              class="rounded border border-default p-2 text-sm flex items-start gap-2"
+              :class="n.readAt ? 'opacity-60' : ''"
+            >
+              <UBadge size="sm" variant="subtle" :color="n.urgent ? 'warning' : 'neutral'">
+                #{{ n.seq }} · {{ n.source }}{{ n.author ? ` · ${n.author}` : "" }}
+              </UBadge>
+              <span class="flex-1 whitespace-pre-wrap">{{ n.body }}</span>
+              <UIcon
+                :name="n.readAt ? 'i-lucide-check-check' : 'i-lucide-clock'"
+                class="size-4 shrink-0"
+                :class="n.readAt ? 'text-success' : 'text-muted'"
+              />
+            </li>
+          </ul>
+        </div>
+      </template>
+
       <template #history>
         <div class="pt-2">
     <UCard v-if="traces?.length">

@@ -28,7 +28,12 @@ export function sandboxDriver(env: Env, sandboxId: string): Driver {
 }
 
 /** Load the prepared workflow spec from the sandbox and build the engine. */
-export async function engineFor(env: Env, sandboxId: string, workflow = "coding"): Promise<WorkflowEngine> {
+export async function engineFor(
+  env: Env,
+  sandboxId: string,
+  workflow = "coding",
+  ticketId?: string,
+): Promise<WorkflowEngine> {
   const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
   const driver = sandboxDriver(env, sandboxId);
   const raw = await driver.readFile(`/workspace/repo/.pi/workflows/${wf}/spec.json`);
@@ -46,7 +51,23 @@ export async function engineFor(env: Env, sandboxId: string, workflow = "coding"
       }
     }
   }
-  return new WorkflowEngine(driver, spec, { piBin: PI, cwd: "/workspace/repo" });
+  // Ticket-bound engines get the notification read point: stages that
+  // declare `notifications: "read"` receive unread bus items in-prompt
+  // and mark them read.
+  const tid = ticketId ?? sandboxId.replace(/^ticket-/, "");
+  return new WorkflowEngine(driver, spec, {
+    piBin: PI,
+    cwd: "/workspace/repo",
+    readNotifications: async () => {
+      const { unreadNotifications, markNotificationsRead, renderNotifications } = await import(
+        "./notifications"
+      );
+      const items = await unreadNotifications(env, tid);
+      if (items.length === 0) return null;
+      await markNotificationsRead(env, tid, items[items.length - 1].seq);
+      return renderNotifications(items);
+    },
+  });
 }
 
 /** Write the short-lived OAuth access token into the sandbox's Pi home. */

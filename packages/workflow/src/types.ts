@@ -71,6 +71,11 @@ export interface StageSpec {
    * the stage's own artifact dir is always writable.
    */
   writeAllow?: string[];
+  /**
+   * Notification read point: "read" injects unread operator notifications
+   * (queued on the bus) into this stage's prompt at launch.
+   */
+  notifications?: "read";
   /** Accepted for spec compatibility — inert (dependents of a re-run stage always re-run). */
   inputPolicy?: Record<string, unknown>;
 }
