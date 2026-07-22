@@ -103,7 +103,7 @@ export interface Env {
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
   GITHUB_WEBHOOK_SECRET: string;
-  /** OpenCode API key (free models via opencode-go as fallback when Anthropic rate limits). */
+  /** OpenCode API key (free models via opencode-zen + opencode-go as fallback when Anthropic rate limits). */
   OPENCODE_API_KEY?: string;
   /**
    * Flue-stages cutover flag. When a workflow name appears in this

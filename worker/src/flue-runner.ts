@@ -201,6 +201,13 @@ export function flueStageRunner(
       if (!token) return { failure: { kind: "model", detail: "no fresh OAuth token (custodian push stale?)" } };
       registerProvider("anthropic", { apiKey: token });
 
+      // OpenCode free models (fallback when Anthropic rate-limits).
+      // Single API key for both zen + go providers.
+      if (env.OPENCODE_API_KEY) {
+        registerProvider("opencode-zen", { apiKey: env.OPENCODE_API_KEY });
+        registerProvider("opencode-go", { apiKey: env.OPENCODE_API_KEY });
+      }
+
       if (!repo) repo = (await core.getTicket(ticketId))?.repo ?? "";
       const allow = new Set(input.tools);
 
@@ -213,56 +220,69 @@ export function flueStageRunner(
       const { tool: submit, wasSubmitted } = submitWorkTool(sandbox, input.dir);
 
       const model = input.model ?? "claude-sonnet-4-6";
-      const agent = defineAgent(() => ({
-        model: `anthropic/${model}`,
-        instructions: input.persona,
-        tools: [...builtins, ...pluginTools, submit],
-        // Real container; suppress flue's default built-ins (we provide our
-        // own, gated) — SandboxFactory.tools replaces the default set.
-        sandbox: { ...cloudflareSandbox(getSandbox(env.Sandbox, sandboxId) as never, { cwd: input.cwd }), tools: () => [] },
-      }));
+      // Fallback chain: Anthropic (OAuth, primary) → OpenCode Zen free
+      // → OpenCode Go cheap. Single API key for zen+go.
+      // Exactly how the fleet's model-chains work (memory #227).
+      const fallbacks: Array<{ provider: string; model: string }> = [
+        { provider: "anthropic", model },
+        ...(env.OPENCODE_API_KEY
+          ? [
+              { provider: "opencode-zen", model: "mimo-v2.5-free" },
+              { provider: "opencode-zen", model: "laguna-s-2.1-free" },
+              { provider: "opencode-go", model: "deepseek-v4-flash" },
+            ]
+          : []),
+      ];
+      let lastError = "";
+      for (const { provider, model: m } of fallbacks) {
+        const agent = defineAgent(() => ({
+          model: `${provider}/${m}`,
+          instructions: input.persona,
+          tools: [...builtins, ...pluginTools, submit],
+          sandbox: { ...cloudflareSandbox(getSandbox(env.Sandbox, sandboxId) as never, { cwd: input.cwd }), tools: () => [] },
+        }));
 
-      const ctxFlue = createFlueContext({
-        id: sandboxId,
-        env: {},
-        agentConfig: { resolveModel: () => resolveModel(`anthropic/${model}`) },
-        createDefaultEnv: async () => {
-          throw new Error("no default env — stage agent supplies a sandbox factory");
-        },
-      });
+        const ctxFlue = createFlueContext({
+          id: sandboxId,
+          env: {},
+          agentConfig: { resolveModel: () => resolveModel(`${provider}/${m}`) },
+          createDefaultEnv: async () => {
+            throw new Error("no default env — stage agent supplies a sandbox factory");
+          },
+        });
 
-      try {
-        const harness = await ctxFlue.initializeRootHarness(agent);
-        const session = await harness.session();
-        const res = (await session.prompt(input.prompt)) as {
-          usage?: { input: number; output: number; cacheRead: number; cacheWrite: number; totalTokens: number; cost?: { total?: number } };
-        };
-        const stats = res.usage
-          ? {
-              tokens: {
-                input: res.usage.input,
-                output: res.usage.output,
-                cacheRead: res.usage.cacheRead,
-                cacheWrite: res.usage.cacheWrite,
-                total: res.usage.totalTokens,
-              },
-              cost: res.usage.cost?.total,
+        try {
+          const harness = await ctxFlue.initializeRootHarness(agent);
+          const session = await harness.session();
+          const res = (await session.prompt(input.prompt)) as {
+            usage?: { input: number; output: number; cacheRead: number; cacheWrite: number; totalTokens: number; cost?: { total?: number } };
+          };
+          const stats = res.usage
+            ? {
+                tokens: {
+                  input: res.usage.input,
+                  output: res.usage.output,
+                  cacheRead: res.usage.cacheRead,
+                  cacheWrite: res.usage.cacheWrite,
+                  total: res.usage.totalTokens,
+                },
+                cost: res.usage.cost?.total,
+              }
+            : undefined;
+          if (!wasSubmitted()) {
+            const existing = await sandbox.readFile(`${input.dir}/control.json`);
+            if (existing == null) {
+              return { stats, failure: { kind: "control", detail: "stage ended without calling submit_work" } };
             }
-          : undefined;
-        if (!wasSubmitted()) {
-          // No control.json written — collectStage will classify, but give a
-          // clearer signal here.
-          const existing = await sandbox.readFile(`${input.dir}/control.json`);
-          if (existing == null) {
-            return { stats, failure: { kind: "control", detail: "stage ended without calling submit_work" } };
           }
+          return { stats };
+        } catch (e) {
+          lastError = String((e as Error)?.message ?? e);
+          if (/429|rate.?limit|overloaded|quota|credit|spend/i.test(lastError)) continue;
+          return { failure: { kind: "session", detail: lastError.slice(0, 400) } };
         }
-        return { stats };
-      } catch (e) {
-        const msg = String((e as Error)?.message ?? e);
-        const kind = /429|rate.?limit|overloaded|quota|credit|auth/i.test(msg) ? "model" : "session";
-        return { failure: { kind, detail: msg.slice(0, 400) } };
       }
+      return { failure: { kind: "model", detail: `all providers exhausted: ${lastError.slice(0, 200)}` } };
     },
   };
 }
