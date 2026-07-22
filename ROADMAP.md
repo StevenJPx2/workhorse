@@ -253,12 +253,15 @@ A trigger = source + prompt template + workflow + outcome routing,
 stored in the registry (`trigger:<name>`, D1-indexed) and editable in
 the UI:
 
-- **Sources**: `cron` (schedule expression — the worker gains a
-  [scheduled handler](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
-  that scans due triggers), `mention` (Slack app-mention / Jira mention
-  webhooks route through the trigger's template instead of ad-hoc
-  filing), `webhook` (a generic `/triggers/:name/fire` endpoint,
-  secret-gated, body interpolated into the template).
+- **Sources are plugin-registered**: the plugin manifest grows
+  `triggers: TriggerSource[]` — `{kind, describe, fire(env, core,
+  trigger, payload)}` — and core owns only the plumbing: `cron` (the
+  worker's [scheduled handler](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+  scans due triggers) and the generic secret-gated
+  `POST /triggers/:name/fire`. Slack contributes a `slack-mention`
+  source, Jira a `jira-mention` source, ntfy could contribute one —
+  a new trigger kind is a plugin change, never a core change (same
+  pattern as transition signals and attachment providers).
 - **Template**: prompt text with `{{input}}` slots (mention text,
   webhook body fields, cron date); declared workflow + inputs; repo or
   attachment refs.
