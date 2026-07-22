@@ -106,6 +106,16 @@ export interface Env {
   /** OpenCode API key (free models via opencode-go as fallback when Anthropic rate limits). */
   OPENCODE_API_KEY?: string;
   /**
+   * Flue-stages cutover flag. When a workflow name appears in this
+   * comma-separated list (or the value is "all"), that workflow's stages
+   * run via the in-process flue harness (flueStageRunner) instead of the
+   * pi subprocess. Unset/absent = pi path (default). The engine's routing/
+   * loop/collect machinery is identical either way — only how a stage
+   * session runs changes. Rollout guard: keep the fleet on pi while one
+   * seeded workflow is validated on flue.
+   */
+  FLUE_STAGES?: string;
+  /**
    * Scoped token for the /browser endpoint, injected into ticket sandboxes
    * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if
    * leaked: someone can read the fleet, not command it.

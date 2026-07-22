@@ -1,5 +1,6 @@
 export { WorkflowEngine, type EngineOptions } from "./engine";
 export type { Driver, ExecResult } from "./driver";
+export type { StageRunner, StageRunInput, StageRunResult } from "./runner";
 export {
   assemblePrompt,
   initialStages,

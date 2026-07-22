@@ -55,8 +55,19 @@ export async function engineFor(
   // declare `notifications: "read"` receive unread bus items in-prompt
   // and mark them read.
   const tid = ticketId ?? sandboxId.replace(/^ticket-/, "");
+  // Flue-stages cutover: run this workflow's stages via the in-process flue
+  // harness when flagged (FLUE_STAGES = "all" or a comma-list of workflow
+  // names). Default (unset) = pi subprocess path. Engine semantics identical.
+  const flueList = (env.FLUE_STAGES ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const useFlue = flueList.includes("all") || flueList.includes(wf);
+  let runner;
+  if (useFlue && env.SELF_URL) {
+    const { flueStageRunner } = await import("./flue-runner");
+    runner = flueStageRunner(env, sandboxId, env.SELF_URL, tid);
+  }
   return new WorkflowEngine(driver, spec, {
     cwd: "/workspace/repo",
+    runner,
     readNotifications: async () => {
       const { unreadNotifications, markNotificationsRead, renderNotifications } = await import(
         "./notifications"

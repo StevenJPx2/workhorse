@@ -181,10 +181,17 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     const promotedStages = new Set<string>();
     let promotions = 0;
 
+    // Flue mode: one drive burst runs a whole stage to completion in-process
+    // (up to the stage runtime cap), so the step needs stage-length headroom.
+    // Pi mode: a burst returns after the ~50s hold, so the short cap stands.
+    const flueList = (this.env.FLUE_STAGES ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    const useFlue = flueList.includes("all") || (!!workflow && flueList.includes(workflow));
+    const driveTimeout = useFlue ? "30 minutes" : "4 minutes";
+
     for (let burst = 1; burst <= 60; burst++) {
       const res = (await step.do(
         `${label}-drive-${burst}`,
-        { retries: { limit: 2, delay: "10 seconds" }, timeout: "4 minutes" },
+        { retries: { limit: 2, delay: "10 seconds" }, timeout: driveTimeout },
         async () => {
           const r = await driveWorkflow(this.env, sandboxId, runId, 50_000, workflow);
           await setLive(this.env, ticketId, { phase: label, runId, ...r });

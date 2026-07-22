@@ -17,6 +17,7 @@ import {
 } from "./compile";
 import { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
 import { launchSdkSession, killSession, sessionAlive, sendCommand, tailEvents, digestEvents, renderEvents } from "./session";
+import type { StageRunner } from "./runner";
 import type {
   FailureKind,
   JsonSchema,
@@ -39,12 +40,22 @@ export interface EngineOptions {
    * them read. Null/empty = nothing pending.
    */
   readNotifications?: (stageId: string) => Promise<string | null>;
+  /**
+   * Stage runner. When set (flue path), a stage runs to completion IN this
+   * advance() call via an in-process harness and the engine collects the
+   * verdict immediately — no pid, no cross-burst polling. When unset (pi
+   * path, default), the engine launches a pi subprocess and polls it across
+   * bursts. Downstream (collect/route/loop) is identical either way.
+   */
+  runner?: StageRunner;
 }
 
 export class WorkflowEngine {
   private readonly cwd: string;
 
   private readonly readNotifications?: EngineOptions["readNotifications"];
+
+  private readonly runner?: StageRunner;
 
   constructor(
     private readonly driver: Driver,
@@ -53,6 +64,7 @@ export class WorkflowEngine {
   ) {
     this.cwd = opts.cwd ?? "/workspace/repo";
     this.readNotifications = opts.readNotifications;
+    this.runner = opts.runner;
   }
 
   // ---- state I/O -----------------------------------------------------------
@@ -116,7 +128,18 @@ export class WorkflowEngine {
     }
 
     let running = state.stages.find((s) => s.status === "running");
-    if (running?.pid) {
+    if (this.runner) {
+      // Runner mode: a stage runs to completion inside launch() below, so a
+      // "running" stage at burst start means a prior advance() crashed
+      // mid-run. Reset it to pending; the launch block re-runs it fresh
+      // (idempotent — overwrites its round dir). No pid, no poll loop.
+      if (running) {
+        running.pid = undefined;
+        running.status = "pending";
+        running.eventsOffset = 0;
+        running = undefined;
+      }
+    } else if (running?.pid) {
       const dir = stageDir(state.runId, running.id, running.rounds + 1);
       // Hold the burst until the agent settles, the session dies, or the
       // hold expires — one in-sandbox watch loop, not a poll storm.
@@ -165,6 +188,15 @@ export class WorkflowEngine {
       } else {
         this.finalize(state);
       }
+    }
+
+    // Runner mode: launch() ran the stage synchronously (no async gap the pi
+    // path reconciles next burst), so a terminal state may already be reached
+    // THIS advance — finalize when nothing is left running (a failed stage
+    // with no ready successor, or the last stage completing). One stage still
+    // runs per burst; this only avoids a wasted no-op burst / late failure.
+    if (this.runner && state.status === "running" && !state.stages.find((s) => s.status === "running")) {
+      if (!this.nextReady(state)) this.finalize(state);
     }
 
     await this.save(state);
@@ -245,6 +277,41 @@ export class WorkflowEngine {
 
     const model = st.model ?? spec.model ?? this.spec.defaults?.model;
     const thinking = spec.thinking ?? this.spec.defaults?.thinking;
+
+    // Runner mode (flue): run the stage session to completion in-process,
+    // then collect the verdict from the artifacts it wrote — no pid, no
+    // cross-burst poll. The runner leaves control.json + analysis.md in
+    // `dir`; collectStage/route/loop consume them exactly as the pi path.
+    if (this.runner) {
+      st.status = "running";
+      st.startedAt = st.startedAt ?? new Date().toISOString();
+      state.status = "running";
+      const schema = typeof spec.output?.controlSchema === "object" ? spec.output.controlSchema : undefined;
+      const result = await this.runner.runStage({
+        runId: state.runId,
+        stageId: st.id,
+        round,
+        dir,
+        cwd: this.cwd,
+        prompt,
+        persona: session.persona,
+        tools: session.tools,
+        writeAllow: session.writeAllow,
+        model,
+        thinking,
+        controlSchema: schema,
+      });
+      if (result.stats) st.stats = result.stats;
+      st.steer = undefined;
+      st.routedFrom = undefined;
+      if (result.failure) {
+        this.fail(st, result.failure.kind, result.failure.detail);
+        return;
+      }
+      await this.collectStage(state, st);
+      return;
+    }
+
     const flags = [
       "-np",
       "--no-session",
