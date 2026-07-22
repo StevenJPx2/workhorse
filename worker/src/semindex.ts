@@ -54,6 +54,7 @@ export const TOOL_CATALOG: ToolDoc[] = [
   { name: "search_fleet_knowledge", description: "Search distilled traces of every past fleet run — institutional memory across repos", classification: "read-only" },
   { name: "browser_fetch", description: "Fetch a live web page (markdown) via the browser plane", classification: "read-only" },
   { name: "browser_screenshot", description: "Screenshot a live web page to a file", classification: "read-only" },
+  { name: "browser_record", description: "Record a short page interaction (scroll, animation, click flow) as an animated GIF via timed frame capture + ffmpeg; pair with upload_image to embed demos in PRs", classification: "read-only" },
   { name: "upload_image", description: "Host a local image publicly, returns URL (for PR descriptions)", classification: "read-only" },
   { name: "upload_text", description: "Host text/code publicly, returns raw curl-able URL (logs, patches, repro scripts)", classification: "read-only" },
   { name: "list_scripts", description: "List this repo's registered scripts — the fleet's self-built toolbox", classification: "read-only" },

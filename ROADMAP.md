@@ -209,6 +209,25 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ---
 
+## Planned ⏳
+
+### Browser plane v2 (agent-browser steals)
+[agent-browser](https://github.com/vercel-labs/agent-browser) itself is a
+category mismatch (local Rust CLI + Chrome daemon; interactive browsing
+agent). Four of its ideas fit our worker-binding tools:
+1. **AX snapshot mode** — `mode: "snapshot"`: accessibility tree of
+   interactive elements (role/name/ref), far cheaper in tokens than html
+   mode for "what's on this page". The best steal.
+2. **Content boundaries** — wrap `browser_fetch` output in delimiters so
+   the model can distinguish tool output from untrusted page content
+   (prompt-injection hardening).
+3. **Visual diff** — `browser_diff(url, baselinePath)` pixel-diffs
+   against a saved baseline; natural verify-stage tool for UI changes.
+4. **Annotated screenshots** — numbered element labels on the PNG, if
+   interactive flows ever land.
+
+---
+
 ## Feasibility notes
 
 ### PixelRAG (assessed 2026-07-22: not now, one narrow candidate)

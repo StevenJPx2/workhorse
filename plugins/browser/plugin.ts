@@ -34,7 +34,7 @@ declare const document: {
   querySelectorAll(selector: string): Iterable<{ href: string }>;
 };
 
-export type BrowserMode = "text" | "html" | "screenshot" | "links";
+export type BrowserMode = "text" | "html" | "screenshot" | "links" | "video";
 
 export interface BrowserFetchRequest {
   url: string;
@@ -43,6 +43,12 @@ export interface BrowserFetchRequest {
   waitMs?: number;
   /** Force the unblocker tier (skip Browser Rendering). */
   forceUnblocker?: boolean;
+  /** video: recording length in ms (cap 12s). */
+  durationMs?: number;
+  /** video: frames per second (cap 4). */
+  fps?: number;
+  /** video: JS to run after load, before recording (e.g. start a scroll). */
+  script?: string;
 }
 
 export interface BrowserFetchResult {
@@ -59,6 +65,10 @@ export interface BrowserFetchResult {
   content?: string;
   links?: string[];
   base64Image?: string;
+  /** video: JPEG frames, base64, in capture order. */
+  base64Frames?: string[];
+  /** video: actual capture interval (ms) for GIF timing. */
+  frameIntervalMs?: number;
   bytes?: number;
   note?: string;
 }
@@ -166,6 +176,31 @@ async function viaBrowserRendering(
       const buf = (await page.screenshot({ type: "png", fullPage: false })) as unknown as Uint8Array;
       const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
       return { url: req.url, finalUrl, mode, ok: true, tier: "browser-rendering", status, base64Image: b64, bytes: buf.byteLength };
+    }
+    if (mode === "video") {
+      // Browser Rendering has no video API — record as a timed frame loop
+      // (JPEG for size; the sandbox assembles the GIF with native ffmpeg).
+      const durationMs = Math.min(req.durationMs ?? 6000, 12_000);
+      const fps = Math.min(Math.max(req.fps ?? 2, 1), 4);
+      const intervalMs = Math.round(1000 / fps);
+      if (req.script) {
+        // Kick off an interaction (scroll, click) that the recording watches.
+        await page.evaluate(req.script).catch(() => {});
+      }
+      const frames: string[] = [];
+      const started = Date.now();
+      while (Date.now() - started < durationMs && frames.length < 48) {
+        const tick = Date.now();
+        const buf = (await page.screenshot({ type: "jpeg", quality: 70, fullPage: false })) as unknown as Uint8Array;
+        frames.push(btoa(String.fromCharCode(...new Uint8Array(buf))));
+        const elapsed = Date.now() - tick;
+        if (elapsed < intervalMs) await new Promise((r) => setTimeout(r, intervalMs - elapsed));
+      }
+      const bytes = frames.reduce((n, f) => n + f.length, 0);
+      return {
+        url: req.url, finalUrl, mode, ok: true, tier: "browser-rendering", status,
+        base64Frames: frames, frameIntervalMs: intervalMs, bytes,
+      };
     }
     if (mode === "links") {
       const links = (await page.evaluate(() =>
@@ -339,8 +374,8 @@ export async function browserFetch(env: Env, req: BrowserFetchRequest): Promise<
   if (first.ok) return first;
 
   // Screenshots only exist on the Browser Rendering tier (the unblocker
-  // returns HTML), so a blocked screenshot cannot escalate — report honestly.
-  if ((req.mode ?? "text") === "screenshot") return first;
+  // returns HTML), so a blocked screenshot/video cannot escalate — report honestly.
+  if ((req.mode ?? "text") === "screenshot" || (req.mode ?? "text") === "video") return first;
 
   const unblockerConfigured = !!env.SCRAPFLY_KEY || !!env.UNBLOCKER_URL;
   // Escalate blocks (and browser-rendering errors) to the unblocker tier.

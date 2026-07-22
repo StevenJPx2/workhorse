@@ -1,5 +1,10 @@
 FROM docker.io/cloudflare/sandbox:0.12.3
 
+# ffmpeg: browser_record assembles GIFs from browser-plane frame captures
+# (native beats ffmpeg.wasm — this is a full container, no need for wasm).
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
 # Bake the agent runtime into the image so sandboxes don't pay per-run
 # installs (disk is ephemeral; runtime installs are wasted work).
 #

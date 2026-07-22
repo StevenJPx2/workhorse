@@ -10,6 +10,9 @@
 // Tools:
 //   browser_fetch      — fetch a URL as clean text (default), html, or links
 //   browser_screenshot — capture a PNG of a URL (Browser Rendering tier only)
+//   browser_record     — record a short page interaction as an animated GIF
+//                        (frame captures assembled with native ffmpeg; pass
+//                        the GIF to upload_image for a hosted URL)
 //
 // Gating: these are custom tools, so a workflow stage must name them in its
 // tools[] WITH an object-spec classification ("read-only") or pi-workflow
@@ -19,8 +22,9 @@
 // else /root/.workhorse-browser.json { "url": "...", "token": "..." } written
 // into the sandbox at prepare time.
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
@@ -48,6 +52,8 @@ interface BrowserResult {
   content?: string;
   links?: string[];
   base64Image?: string;
+  base64Frames?: string[];
+  frameIntervalMs?: number;
   bytes?: number;
   note?: string;
 }
@@ -155,6 +161,75 @@ export default function (pi: ExtensionAPI) {
         ],
         details: {},
       };
+    },
+  });
+
+  pi.registerTool({
+    name: "browser_record",
+    label: "Browser: record GIF",
+    description:
+      "Record a short animation of a live web page as a GIF: captures timed frames via the " +
+      "browser plane (optionally running a script first — e.g. a scroll or click — so the " +
+      "recording shows the interaction) and assembles them with ffmpeg. Writes the GIF to " +
+      "savePath and returns it; upload with upload_image for a hosted URL to embed in PRs. " +
+      "Max 12s, 1-4 fps. Not available for hard bot-walled sites.",
+    parameters: Type.Object({
+      url: Type.String({ description: "Absolute http(s) URL to record" }),
+      savePath: Type.String({
+        description: "Where to write the GIF (e.g. /workspace/repo/demo.gif)",
+      }),
+      durationMs: Type.Optional(Type.Number({ description: "Recording length in ms (default 6000, max 12000)" })),
+      fps: Type.Optional(Type.Number({ description: "Frames per second, 1-4 (default 2)" })),
+      script: Type.Optional(
+        Type.String({
+          description:
+            "JS to run in the page right before recording starts — kick off the thing to record, " +
+            'e.g. "window.scrollTo({top: 2000, behavior: \'smooth\'})"',
+        }),
+      ),
+      waitMs: Type.Optional(Type.Number({ description: "Settle time after load before recording (ms, max 8000)" })),
+    }),
+    async execute(_id, params) {
+      const r = await callBrowser({
+        url: params.url,
+        mode: "video",
+        waitMs: params.waitMs,
+        durationMs: params.durationMs,
+        fps: params.fps,
+        script: params.script,
+      });
+      if (!r.ok || !r.base64Frames?.length) {
+        const why = r.blockedBy ? `blocked by ${r.blockedBy}` : (r.note ?? "recording failed");
+        return textResult(`Could not record ${params.url}: ${why}.`);
+      }
+      // Assemble with native ffmpeg (baked into the image): palette pass for
+      // quality, frame rate from the actual capture interval.
+      const tmp = mkdtempSync("/tmp/whrec-");
+      try {
+        r.base64Frames.forEach((f, i) => {
+          writeFileSync(join(tmp, `f${String(i).padStart(3, "0")}.jpg`), Buffer.from(f, "base64"));
+        });
+        const fpsActual = Math.max(1, Math.round(1000 / (r.frameIntervalMs ?? 500)));
+        mkdirSync(dirname(params.savePath), { recursive: true });
+        execFileSync(
+          "ffmpeg",
+          [
+            "-y", "-framerate", String(fpsActual), "-i", join(tmp, "f%03d.jpg"),
+            "-vf", "split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer",
+            "-loop", "0", params.savePath,
+          ],
+          { timeout: 60_000, stdio: "pipe" },
+        );
+        const size = statSync(params.savePath).size;
+        return textResult(
+          `Recorded ${params.url} → ${params.savePath} (${r.base64Frames.length} frames @ ${fpsActual}fps, ` +
+            `${(size / 1024).toFixed(0)} KiB). Upload it with upload_image to get a public URL for PRs.`,
+        );
+      } catch (e) {
+        return textResult(`Frames captured but GIF assembly failed: ${String(e).slice(0, 300)}`);
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
     },
   });
 }
