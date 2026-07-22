@@ -34,35 +34,66 @@ export async function launchRpcSession(
   const envPrefix = Object.entries(opts.env ?? {})
     .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
     .join(" ");
-  const launch = await driver.exec(
-    [
-      `cd ${opts.cwd}`,
-      `mkfifo ${dir}/cmd.fifo 2>/dev/null || true`,
-      // Holder: keeps a rw fd on the fifo open indefinitely.
-      `(exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done) & HOLDER=$!`,
-      `${envPrefix ? envPrefix + " " : ""}nohup ${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log & PI=$!`,
-      // First command: the stage prompt (Node formats JSON — jq isn't in the sandbox image).
-      `node -e "process.stdout.write(JSON.stringify({type:'prompt',message:require('fs').readFileSync('${opts.promptPath}','utf8')}))" > ${dir}/cmd.fifo`,
-      `echo "PI=$PI HOLDER=$HOLDER"`,
-    ].join(" && "),
-    { timeout: 30_000 },
-  );
-  const pid = Number(launch.stdout.match(/PI=(\d+)/)?.[1]);
-  const holderPid = Number(launch.stdout.match(/HOLDER=(\d+)/)?.[1]);
-  if (!pid || !holderPid) return null;
-  return { pid, holderPid };
+  // Write the prompt to a file so the launcher can feed it.
+  const promptJson = JSON.stringify({
+    type: "prompt",
+    message: await driver.readFile(opts.promptPath) ?? "",
+  });
+  await driver.writeFile(`${dir}/prompt.json`, promptJson);
+  // Write a launcher script that:
+  // 1. Starts pi reading from a FIFO (background)
+  // 2. Writes the initial prompt into the FIFO
+  // 3. Enters a command loop: watches cmd.in for new lines, writes them
+  //    to the FIFO, truncates cmd.in after each read. Keeps the exec
+  //    alive for the entire session (blocks until pi exits).
+  const launcherScript = `#!/bin/bash
+cd ${opts.cwd}
+mkfifo ${dir}/cmd.fifo 2>/dev/null || true
+# Holder keeps the write end open.
+(exec 3<>${dir}/cmd.fifo; while :; do sleep 3600; done) &
+${envPrefix ? envPrefix + " " : ""}${opts.pi} --mode rpc ${opts.flags.join(" ")} < ${dir}/cmd.fifo > ${dir}/events.jsonl 2> ${dir}/session.log &
+PI=$!
+# Write the initial prompt.
+cat ${dir}/prompt.json > ${dir}/cmd.fifo
+touch ${dir}/cmd.in
+# Command loop: watch cmd.in for new commands, forward to FIFO, truncate.
+while kill -0 $PI 2>/dev/null; do
+  if [ -s ${dir}/cmd.in ]; then
+    cat ${dir}/cmd.in > ${dir}/cmd.fifo
+    > ${dir}/cmd.in
+  fi
+  sleep 0.3
+done
+wait $PI
+echo "EXIT=$?"
+`;
+  await driver.writeFile(`${dir}/launcher.sh`, launcherScript);
+  // This exec blocks until pi finishes. sendRpc writes to cmd.in from a
+  // separate exec. The sandbox exec timeout must cover the full session.
+  driver.exec(`bash ${dir}/launcher.sh`, { timeout: 30 * 60_000 }).catch(() => {});
+  // Wait a moment for pi to start, then verify it's alive.
+  await driver.exec(`sleep 2`, { timeout: 5_000 });
+  const ps = await driver.exec(`ps aux | grep "[p]i.*rpc" | head -1`, { timeout: 5_000 });
+  const pid = ps.stdout.match(/\s+(\d+)\s+/)?.[1];
+  if (!pid) {
+    const log = (await driver.readFile(`${dir}/session.log`)) ?? "";
+    throw new Error(`pi failed to start: ${log.slice(-300)}`);
+  }
+  return { pid: Number(pid), holderPid: 0 };
 }
 
-/** Send one RPC command (a verb) into the session's FIFO. */
+/** Send one RPC command (a verb) into the session via the command channel. */
 export async function sendRpc(
   driver: Driver,
   dir: string,
   command: Record<string, unknown>,
 ): Promise<boolean> {
-  const json = JSON.stringify(command).replace(/'/g, "'\\''");
+  const json = JSON.stringify(command);
+  // Write to cmd.in — the launcher script reads from it and forwards to
+  // the FIFO. This avoids writing to the FIFO directly (which could
+  // deadlock if the FIFO buffer is full and pi isn't reading).
   const r = await driver.exec(
-    // Guard: fifo must exist and pi must still be reading it.
-    `[ -p ${dir}/cmd.fifo ] && printf '%s\\n' '${json}' > ${dir}/cmd.fifo && echo SENT || echo NOFIFO`,
+    `printf '%s\\n' '${json.replace(/'/g, "'\\''")}' >> ${dir}/cmd.in && echo SENT`,
     { timeout: 10_000 },
   );
   return r.stdout.includes("SENT");
