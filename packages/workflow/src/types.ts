@@ -136,7 +136,7 @@ export interface StageState {
   /** Live session pid inside the sandbox (running only). */
   pid?: number;
   /** Pid of the FIFO holder keeping the RPC command pipe open. */
-  holderPid?: number;
+
   /** Byte offset into the current round's events.jsonl (tail cursor). */
   eventsOffset?: number;
   /** Session economics captured at collect (get_session_stats). */

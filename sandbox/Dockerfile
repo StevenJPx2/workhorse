@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 # so cold sandboxes don't pay the download tax.
 RUN npm install -g agent-browser && agent-browser install
 COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
+COPY sandbox/runner.mjs /opt/agent/runner.mjs
 
 # Bake the agent runtime into the image so sandboxes don't pay per-run
 # installs (disk is ephemeral; runtime installs are wasted work).

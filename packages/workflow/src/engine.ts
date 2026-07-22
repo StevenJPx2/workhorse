@@ -16,7 +16,7 @@ import {
   upstreamDigest,
 } from "./compile";
 import { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
-import { digestEvents, killRpcSession, launchRpcSession, renderEvents, sendRpc, tailEvents } from "./rpc";
+import { launchSdkSession, killSession, sessionAlive, sendCommand, tailEvents, digestEvents, renderEvents } from "./rpc";
 import type {
   FailureKind,
   JsonSchema,
@@ -30,8 +30,6 @@ import type {
 const DEFAULT_STAGE_TIMEOUT_MS = 25 * 60 * 1000;
 
 export interface EngineOptions {
-  /** Pi binary (default "pi"). */
-  piBin?: string;
   /** Repo working directory inside the sandbox. */
   cwd?: string;
   /**
@@ -44,7 +42,6 @@ export interface EngineOptions {
 }
 
 export class WorkflowEngine {
-  private readonly pi: string;
   private readonly cwd: string;
 
   private readonly readNotifications?: EngineOptions["readNotifications"];
@@ -54,7 +51,6 @@ export class WorkflowEngine {
     private readonly spec: WorkflowSpec,
     opts: EngineOptions = {},
   ) {
-    this.pi = opts.piBin ?? "pi";
     this.cwd = opts.cwd ?? "/workspace/repo";
     this.readNotifications = opts.readNotifications;
   }
@@ -137,14 +133,14 @@ export class WorkflowEngine {
       running.eventsOffset = offset;
       const digest = digestEvents(events);
       if (digest.stats) running.stats = digest.stats;
-      const alive = await this.pidAlive(running.pid);
-      if (digest.modelFailure) {
-        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
-        this.fail(running, "model", `model-plane failure: ${digest.modelFailure}`);
+      const alive = await sessionAlive(this.driver, running.pid);
+      if (digest.modelFailed) {
+        await killSession(this.driver, running.pid);
+        this.fail(running, "model", `model-plane failure: ${digest.error ?? "unknown"}`);
       } else if (digest.settled || !alive) {
         // Settled (or crashed): capture stats, then collect artifacts.
         if (alive && !running.stats) {
-          if (await sendRpc(this.driver, dir, { type: "get_session_stats" })) {
+          if (await sendCommand(this.driver, dir, { type: "get_session_stats" })) {
             await this.driver.exec(`sleep 1`, { timeout: 5_000 });
             const more = await tailEvents(this.driver, dir, running.eventsOffset ?? 0);
             running.eventsOffset = more.offset;
@@ -152,10 +148,10 @@ export class WorkflowEngine {
             if (d2.stats) running.stats = d2.stats;
           }
         }
-        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
+        await killSession(this.driver, running.pid);
         await this.collectStage(state, running);
       } else if (this.timedOut(running)) {
-        await killRpcSession(this.driver, dir, running.pid, running.holderPid);
+        await killSession(this.driver, running.pid);
         this.fail(running, "timeout", `stage exceeded ${this.stageTimeoutMs(running)}ms`);
       }
     }
@@ -198,12 +194,7 @@ export class WorkflowEngine {
     return !!st.startedAt && Date.now() - new Date(st.startedAt).getTime() > this.stageTimeoutMs(st);
   }
 
-  private async pidAlive(pid: number): Promise<boolean> {
-    const r = await this.driver.exec(`kill -0 ${pid} 2>/dev/null && echo ALIVE || echo DEAD`, {
-      timeout: 10_000,
-    });
-    return r.stdout.includes("ALIVE");
-  }
+
 
   // ---- launch --------------------------------------------------------------
 
@@ -264,16 +255,13 @@ export class WorkflowEngine {
       ...(model ? [`--model ${JSON.stringify(model)}`] : []),
       ...(thinking ? [`--thinking ${thinking}`] : []),
     ];
-    const launched = await launchRpcSession(this.driver, {
-      pi: this.pi,
+    const launched = await launchSdkSession(this.driver, {
       cwd: this.cwd,
       dir,
       flags,
       promptPath: `${dir}/prompt.md`,
       env: {
-        // submit_work target (workflow-gate extension).
         WORKHORSE_STAGE_DIR: dir,
-        // Glob write gate — only when the stage declares writeAllow.
         ...(session.writeAllow.length ? { WORKHORSE_WRITE_ALLOW: session.writeAllow.join(",") } : {}),
       },
     });
@@ -284,7 +272,6 @@ export class WorkflowEngine {
     }
     st.status = "running";
     st.pid = launched.pid;
-    st.holderPid = launched.holderPid;
     st.eventsOffset = 0;
     st.startedAt = st.startedAt ?? new Date().toISOString();
     st.steer = undefined; // consumed
@@ -299,7 +286,6 @@ export class WorkflowEngine {
     const round = st.rounds + 1;
     const dir = stageDir(state.runId, st.id, round);
     st.pid = undefined;
-    st.holderPid = undefined;
 
     const controlRaw = await this.driver.readFile(`${dir}/control.json`);
     if (!controlRaw) {
@@ -434,7 +420,6 @@ export class WorkflowEngine {
     st.failureKind = kind;
     st.detail = detail.slice(0, 500);
     st.pid = undefined;
-    st.holderPid = undefined;
   }
 
   private finalize(state: RunState): void {
@@ -460,28 +445,17 @@ export class WorkflowEngine {
   async steer(runId: string, message: string): Promise<string> {
     const state = await this.load(runId);
     const live = state.stages.find((s) => s.status === "running");
-    if (live?.pid && (await this.pidAlive(live.pid))) {
-      const dir = stageDir(state.runId, live.id, live.rounds + 1);
-      const sent = await sendRpc(this.driver, dir, {
-        type: "steer",
-        message:
-          "OPERATOR STEERING (takes precedence over conflicting parts of your task):\n" + message,
-      });
-      if (sent) {
-        await this.save(state);
-        return live.id;
-      }
-      // FIFO gone — fall through to the restart path.
+    if (live?.pid && (await sessionAlive(this.driver, live.pid))) {
+      // SDK sessions run to completion — steer via restart with the message.
+      // Fall through to the restart path below.
     }
     const target =
       live ?? state.stages.find((s) => s.status === "pending" || s.status === "failed");
     if (!target) throw new Error("no steerable stage (run finished?)");
     if (target.pid) {
-      const dir = stageDir(state.runId, target.id, target.rounds + 1);
-      await killRpcSession(this.driver, dir, target.pid, target.holderPid);
+      await killSession(this.driver, target.pid);
     }
     target.pid = undefined;
-    target.holderPid = undefined;
     target.status = "pending";
     target.steer = message;
     target.failureKind = undefined;
@@ -505,20 +479,13 @@ export class WorkflowEngine {
     if (targets.length === 0) throw new Error(`no stage to promote${stageId ? ` (${stageId})` : ""}`);
     for (const st of targets) {
       // A LIVE healthy stage switches models in-session (context intact).
-      if (st.status === "running" && st.pid && (await this.pidAlive(st.pid))) {
-        const dir = stageDir(state.runId, st.id, st.rounds + 1);
-        const [provider, ...rest] = model.includes("/") ? model.split("/") : ["anthropic", model];
-        if (await sendRpc(this.driver, dir, { type: "set_model", provider, modelId: rest.join("/") || model })) {
-          st.model = model;
-          continue;
-        }
+      if (st.status === "running" && st.pid && (await sessionAlive(this.driver, st.pid))) {
+        // SDK sessions run to completion — promote via restart.
       }
       if (st.pid) {
-        const dir = stageDir(state.runId, st.id, st.rounds + 1);
-        await killRpcSession(this.driver, dir, st.pid, st.holderPid);
+        await killSession(this.driver, st.pid);
       }
       st.pid = undefined;
-      st.holderPid = undefined;
       st.status = "pending";
       st.model = model;
       st.failureKind = undefined;
@@ -569,11 +536,9 @@ export class WorkflowEngine {
     const state = await this.load(runId);
     for (const st of state.stages) {
       if (st.pid) {
-        const dir = stageDir(state.runId, st.id, st.rounds + 1);
-        await killRpcSession(this.driver, dir, st.pid, st.holderPid);
+        await killSession(this.driver, st.pid);
       }
       st.pid = undefined;
-      st.holderPid = undefined;
       if (st.status === "running") this.fail(st, "session", "cancelled");
     }
     state.status = "cancelled";
@@ -586,11 +551,9 @@ export class WorkflowEngine {
       const st = state.stages.find((x) => x.id === dep.id);
       if (!st || st.status === "pending" || st.status === "skipped") continue;
       if (st.pid) {
-        const depDir = stageDir(state.runId, st.id, st.rounds + 1);
-        await killRpcSession(this.driver, depDir, st.pid, st.holderPid);
+        await killSession(this.driver, st.pid);
       }
       st.pid = undefined;
-      st.holderPid = undefined;
       st.status = "pending";
       st.control = undefined;
       st.completedAt = undefined;

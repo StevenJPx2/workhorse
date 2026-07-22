@@ -56,7 +56,6 @@ export async function engineFor(
   // and mark them read.
   const tid = ticketId ?? sandboxId.replace(/^ticket-/, "");
   return new WorkflowEngine(driver, spec, {
-    piBin: PI,
     cwd: "/workspace/repo",
     readNotifications: async () => {
       const { unreadNotifications, markNotificationsRead, renderNotifications } = await import(
@@ -73,7 +72,7 @@ export async function engineFor(
 /** Write the short-lived OAuth access token into the sandbox's Pi home. */
 export async function injectAuth(env: Env, sandboxId: string, accessToken: string) {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  const auth = {
+  const auth: Record<string, unknown> = {
     anthropic: {
       type: "oauth",
       access: accessToken,
@@ -82,6 +81,10 @@ export async function injectAuth(env: Env, sandboxId: string, accessToken: strin
       expires: Date.now() + 4 * 3600 * 1000,
     },
   };
+  // OpenCode free models as fallback when Anthropic rate limits.
+  if (env.OPENCODE_API_KEY) {
+    auth["opencode"] = { type: "api_key", key: env.OPENCODE_API_KEY };
+  }
   await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
 }
 

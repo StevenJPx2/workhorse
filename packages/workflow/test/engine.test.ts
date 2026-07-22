@@ -131,22 +131,18 @@ describe("run lifecycle", () => {
     expect(r.modelFailure).toBe(true);
   });
 
-  it("steers a LIVE stage in-session (RPC verb, context intact)", async () => {
+  it("steers a LIVE stage by killing and relaunching with the message", async () => {
     const driver = new MockDriver();
     const engine = new WorkflowEngine(driver, spec());
     await dispatchAndRun(engine, driver);
     await engine.advance("wfrun_test", 0);
 
-    const dir = stageDir("wfrun_test", "plan", 1);
     const steered = await engine.steer("wfrun_test", "Focus only on the parser.");
     expect(steered).toBe("plan");
-    // No relaunch — the steer verb went into the live session's fifo.
-    expect(driver.launches.length).toBe(1);
-    const sent = driver.rpcSent.get(dir)!;
-    const steerCmd = sent.find((c) => c.type === "steer");
-    expect(steerCmd?.message).toContain("Focus only on the parser.");
+    // SDK approach: steer kills the live session and relaunches.
     const state = await engine.load("wfrun_test");
-    expect(state.stages[0].status).toBe("running");
+    expect(state.stages[0].steer).toBe("Focus only on the parser.");
+    expect(state.stages[0].status).toBe("pending");
   });
 
   it("steers a DEAD stage by reset + relaunch with the message folded in", async () => {
@@ -198,14 +194,11 @@ describe("run lifecycle", () => {
     const engine = new WorkflowEngine(driver, spec());
     await dispatchAndRun(engine, driver);
     await engine.advance("wfrun_test", 0);
-    const dir = stageDir("wfrun_test", "plan", 1);
     await engine.promote("wfrun_test", "claude-opus-4-6", "plan");
-    // No relaunch — model switched inside the live session.
-    expect(driver.launches.length).toBe(1);
-    const setModel = driver.rpcSent.get(dir)!.find((c) => c.type === "set_model");
-    expect(setModel?.modelId).toBe("claude-opus-4-6");
+    // SDK approach: promote kills and relaunches with the new model.
     const state = await engine.load("wfrun_test");
     expect(state.stages[0].model).toBe("claude-opus-4-6");
+    expect(state.stages[0].status).toBe("pending");
   });
 
   it("routes verify fail → back to implement with the verdict embedded; pass → $end", async () => {
@@ -312,6 +305,12 @@ describe("run lifecycle", () => {
     driver.files.set(`${dir}/control.json`, JSON.stringify({ status: "done" }));
     driver.files.set(`${dir}/analysis.md`, "done");
     driver.emit(dir, { type: "agent_settled" });
+    driver.emit(dir, {
+      type: "session_stats",
+      tokens: { input: 1000, output: 200, cacheRead: 0, cacheWrite: 0, total: 1200 },
+      cost: 0.05,
+      contextUsage: { percent: 12 },
+    });
     await engine.advance("wfrun_test", 0);
     const state = await engine.load("wfrun_test");
     expect(state.stages[0].status).toBe("completed");

@@ -103,6 +103,8 @@ export interface Env {
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
   GITHUB_WEBHOOK_SECRET: string;
+  /** OpenCode API key (free models via opencode-go as fallback when Anthropic rate limits). */
+  OPENCODE_API_KEY?: string;
   /**
    * Scoped token for the /browser endpoint, injected into ticket sandboxes
    * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if
