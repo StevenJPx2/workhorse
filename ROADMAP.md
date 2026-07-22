@@ -273,13 +273,28 @@ durable step continuation belongs to Cloudflare Workflows.
   workspace typecheck green.
 - ⏳ **Staged (gated on live OAuth — the only real validation is a stage
   actually running):**
-  1. Scaffold: worker becomes a flue project (app.ts = existing router;
-     cloudflare.ts exports Sandbox + TicketWorkflow; migrations for
-     FlueRegistry + FlueStageWorkflow).
-  2. `workflows/stage.ts` — ONE flue workflow "run a stage": input
-     {ticketId, stage, prompt, tools, model, resultSchema}; sandbox
-     bound to the ticket's container; `session.prompt(…, { result })`
-     returns the typed control verdict; tools = assembleStageTools.
+  1. **Cutover shape — decided by a runtime read (2026-07-22).** flue's
+     `invoke(workflow)` is FIRE-AND-FORGET durable dispatch: it returns a
+     `runId` via `runtime.admitWorkflow()` and needs the `flue build`-
+     generated DO runtime — so "stage = flue *workflow*" forces a
+     big-bang regeneration of the whole worker (DOs, wrangler, entry).
+     REJECTED as the increment. Instead use `initializeRootHarness(agent,
+     config, emitEvent)` (exported from client.ts): it builds a `Harness`
+     IN-PROCESS, so a stage runs inside our existing
+     `TicketWorkflow.step.do()` — engine + spine survive untouched, we
+     swap ONLY the pi-subprocess for an in-process `harness.session()` +
+     `session.prompt(…, { result })`. Low blast radius, incremental, no
+     `flue build`. Config to hand-wire: FlueContextConfig {id, env,
+     agentConfig.resolveModel (pi-ai provider registry, OAuth token),
+     conversationWriter + attachmentStore (R2 or in-memory), sandbox
+     factory = our CF-sandbox→SessionEnv adapter}. The real risk that
+     ONLY a deploy validates: does `initializeRootHarness` run inside a
+     CF Worker/DO with the sandbox binding — so the cutover is a
+     deploy-and-smoke loop, not a local spike.
+  2. Stage runner: `agent = defineAgent({ model, instructions: persona,
+     tools: assembleStageTools(ctx, allow) })`; harness bound to the
+     ticket container; `session.prompt(prompt, { result: controlSchema })`
+     → typed verdict the engine routes on.
   4. OAuth: pi-ai natively detects `sk-ant-oat` — custodian token feeds
      `registerProvider('anthropic', { apiKey })`; model chains become
      provider registrations.
