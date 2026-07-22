@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 RUN npm install -g agent-browser && agent-browser install
 COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
 COPY sandbox/runner.mjs /opt/agent/runner.mjs
+# cache bust: 2026-07-22 SDK session runner
 
 # Bake the agent runtime into the image so sandboxes don't pay per-run
 # installs (disk is ephemeral; runtime installs are wasted work).
