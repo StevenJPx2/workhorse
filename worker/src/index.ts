@@ -11,6 +11,7 @@ import { dispatch, type Route } from "./router";
 import { miscRoutes } from "./routes/misc";
 import { registryRoutes } from "./routes/registries";
 import { sandboxCallbackRoutes } from "./routes/sandbox-callbacks";
+import { spikeRoutes } from "./routes/spike";
 import { ticketRoutes } from "./routes/tickets";
 import { triggerRoutes } from "./routes/triggers";
 import { webhookRoutes } from "./routes/webhooks";
@@ -27,6 +28,7 @@ const routes: Route[] = [
   ...ticketRoutes, // master (the fleet surface)
   ...triggerRoutes, // master registry + public secret-gated /fire
   ...miscRoutes, // master (chat, attachments/match, debug)
+  ...spikeRoutes, // master (TEMPORARY flue-migration probe — delete post-cutover)
 ];
 
 export default {

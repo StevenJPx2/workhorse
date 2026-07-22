@@ -298,30 +298,40 @@ durable step continuation belongs to Cloudflare Workflows.
   4. OAuth: pi-ai natively detects `sk-ant-oat` — custodian token feeds
      `registerProvider('anthropic', { apiKey })`; model chains become
      provider registrations.
-  5. Engine cutover — **UNRESOLVED FORK (surface before building).** A
-     stage's agent loop runs 10–20 min. Two homes, and the choice is
-     load-bearing:
-     - **(a) In-process harness inside `TicketWorkflow.step.do()`** —
-       smallest diff (swap `launch()`+poll for `initializeRootHarness` →
-       `session.prompt(…,{result})`, keep engine+spine). BUT
-       `session.prompt` BLOCKS for the whole loop, and a CF Workflow step
-       caps at ~240s (the exact wall that bit the RPC path, §1753). So
-       this needs the loop to NOT block the step — either flue's own
-       durable checkpointing driving short resumable slices, or running
-       the harness in a longer-lived DO. Only a deploy validates whether
-       flue's in-process durability slices a long loop under the cap.
-     - **(b) Full `flue build` DO runtime + `invoke()`** — the flue-
-       native long-run home: `admitWorkflow` runs the stage in a flue-
-       generated DO with real durability; TicketWorkflow waits on the
-       run. Clean, but big-bang: regenerates wrangler + DO classes +
-       migrations for the live worker; can't be smoke-tested cheaply.
-     Recommendation: spike (a) behind a `FLUE_STAGES` flag on ONE seeded
-     workflow (leave the pi path default) so a broken cutover can't take
-     the fleet down; fall back to (b) only if (a) can't beat the step
-     cap. Then steer via `CallHandle.abort` + re-prompt; delete
-     session.ts FIFO machinery; slim the image (no pi, no extension
-     installs, no auth injection — container never holds a model
-     credential again).
+  5. Engine cutover — **FORK RESOLVED EMPIRICALLY (2026-07-22): PATH
+     (a).** Run a flue in-process harness INSIDE the existing
+     `TicketWorkflow.step.do()`; keep the engine (spec interpreter) + CF
+     spine. NOT `flue build`/`invoke()` (fire-and-forget durable dispatch
+     needing a generated DO runtime — a big-bang). The fork's premise
+     (a ~240s step cap) was FALSE: CF Workflow steps have unlimited
+     wall-clock (I/O waits don't count), only CPU is capped (30s→5min via
+     `limits.cpu_ms`); an agent loop is ~all network I/O ≈ zero CPU. The
+     §1753 "240s" was our own `timeout:"4 minutes"` on the drive step,
+     not a platform wall. Proven by 3 live probes on workerd (throwaway
+     `POST /spike/flue`, `worker/src/routes/spike.ts`): mem
+     (harness+OAuth+typed result, 1.5s) → tool (agent dispatches a
+     host-closure `defineTool`, result feeds back, 2.9s) → sandbox (agent
+     execs in a REAL container via `cloudflareSandbox(getSandbox(...))`,
+     6.9s). Build steps:
+     - `defineAgent({ model, instructions: persona, tools:
+       assembleStageTools(ctx, allow), sandbox: cloudflareSandbox(
+       getSandbox(env.Sandbox, ticketId)) })`; `ctx.initializeRootHarness`
+       (lazy in-memory stores) → `session.prompt(prompt,{result:
+       controlSchema})` → typed verdict the engine routes on.
+     - `registerProvider("anthropic",{apiKey: freshToken()})` (main entry;
+       `createFlueContext`/`resolveModel` from `/internal`). Model chains
+       = provider registrations.
+     - Engine `launch()`→run-a-session; `sessionAlive`/`tailEvents`/
+       digest machinery deleted (session returns the result directly);
+       steer = `CallHandle.abort` + re-prompt.
+     - Persist the conversation to R2 (SqliteConversationStore or a custom
+       adapter) for the live-output pane + resumability, replacing
+       events.jsonl.
+     - Roll out behind `FLUE_STAGES` on ONE seeded workflow (pi path stays
+       default) so a regression can't take the fleet down; then port
+       `tickets` + `find_*`, slim the image (no pi/extension installs/auth
+       injection — container never holds a model credential), delete the
+       spike route + session.ts FIFO machinery.
   6. Cutover tails: port `tickets` (fleet-client — needs
      `Core.listTickets` + ticket diff) and `find_script`/`find_tool`
      (need a `Core` semindex query) once the stage path is live; smoke
