@@ -11,10 +11,12 @@ export {
   stageOrder,
   terminalStage,
   untilSatisfied,
+  upstreamDigest,
 } from "./compile";
 export { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
 export {
   StageFailure,
+  ThrottledPark,
   stageDigest,
   type StageResult,
   type StageInvocation,

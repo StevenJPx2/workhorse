@@ -71,6 +71,24 @@ export class StageFailure extends Error {
   }
 }
 
+/**
+ * Thrown by ctx.stage when every model provider is throttled beyond the
+ * short in-process retry window. It unwinds run() so the SPINE can sleep
+ * durably (step.sleep) and re-invoke run() — completed stages replay from
+ * their on-disk artifacts, so the run resumes at the throttled stage.
+ * Capacity backoff is a lifecycle concern; the spine owns the wait.
+ */
+export class ThrottledPark extends Error {
+  constructor(
+    readonly stageId: string,
+    readonly retryAfterMs: number,
+    readonly providers: string[],
+  ) {
+    super(`stage ${stageId} throttled; retry after ${retryAfterMs}ms`);
+    this.name = "ThrottledPark";
+  }
+}
+
 /** What a workflow delivers when run() returns. */
 export interface WorkflowResult {
   outcome: "pr" | "report" | "artifact";
@@ -86,6 +104,8 @@ export interface WorkflowDef {
   name: string;
   description?: string;
   inputs?: WorkflowInput[];
+  /** Run-wide defaults (agent block, model) — a stage's own value wins. */
+  defaults?: { agent?: string; model?: string; thinking?: StageSpec["thinking"] };
   /** Declarative stage manifest (graph view, live-status tab, tool gating). */
   stages: StageSpec[];
   /** Imperative pipeline: compose ctx.stage() calls with control-flow routing. */
