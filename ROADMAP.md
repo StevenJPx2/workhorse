@@ -201,6 +201,32 @@ whether to loop back — by design, not by interrupt. Subsumes today's
 steer (live interrupt) and revision events (park wake) under one queue
 with workflow-declared read points.
 
+### Engine v1.1 — RPC stage sessions
+Stage sessions move from one-shot `pi -p` to a live `pi --mode rpc`
+process per stage (JSONL commands over a FIFO in, append-only
+`events.jsonl` out) — SDK-grade control that keeps the engine's
+file-shaped, burst-idempotent plumbing:
+
+- **Native steering**: `{"type":"steer"}` delivers at the next turn
+  boundary with the session's context intact — replaces kill-and-re-run,
+  which throws away everything the agent had figured out.
+- **Clean interrupt**: `abort` instead of SIGKILL; promotion via
+  `set_model` mid-session instead of a full stage re-run.
+- **Typed failure signals**: `auto_retry_start/end` events classify
+  model-plane failures from the engine's own event stream — the log-tail
+  regex goes away.
+- **Per-stage economics**: `get_session_stats` (tokens, cost, context%)
+  lands in the run state and trace archive — the eval/trace-mining
+  substrate wants exactly this.
+- **Structured live output**: the ticket page's output pane upgrades from
+  raw log tail to turns/tool-calls with token counts (events.jsonl is
+  already the transport; each drive burst tails from its last offset).
+- Same artifact contract (`control.json` / `analysis.md`); the run-state
+  machine, validator, and spec format don't change. Verify: FIFO holder
+  lifecycle, crash recovery (pi dies mid-stage → session.jsonl +
+  events.jsonl are the record), and non-interactive trust flags under
+  `--mode rpc`.
+
 ### ntfy homelab integration
 Point the fleet's ntfy plugin (deployed, silent) at the homelab's
 existing ntfy (`ntfy.stevenjohn.co`): pick/protect a `workhorse` topic,
