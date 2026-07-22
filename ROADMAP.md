@@ -174,33 +174,6 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
-### Knowledge attachments (plugin-provided context)
-Attaching context to a dispatch or ticket is a PLUGIN capability, not a
-core feature: repos, Jira tickets, Slack conversations, PR threads —
-each is a "knowledge attachment" a plugin contributes (fetch + render +
-prompt-enrichment). The chat-first home's repo chips become one instance
-of a general attachment surface; messaging the fleet agent enriches the
-prompt by resolving attachments through their plugins. Applies to the
-ticket page too (attach more context to a live ticket). A large,
-holistic change — design before build.
-
-### Non-chat triggers (cron + mention-fed prompts)
-With non-PR outcomes (report) and plugin-provided inputs in place,
-triggers generalize beyond chat/API dispatch: cron jobs with a fixed
-prompt + workflow + output ("every Monday, produce a Slack report on
-X"), Slack mentions feeding the prompt directly, Jira mentions doing the
-same. A trigger = source (cron | mention | webhook) + prompt template +
-workflow + outcome routing.
-
-### Notification bus (queued operator input)
-Operator input from ANY surface (Nuxt UI, PR comments, Slack, Jira, …)
-queues in a per-ticket notification bus instead of interrupting
-immediately; when the run reaches a park that reads notifications, the
-agent acknowledges, collates, replies to each, and the workflow decides
-whether to loop back — by design, not by interrupt. Subsumes today's
-steer (live interrupt) and revision events (park wake) under one queue
-with workflow-declared read points.
-
 ### Engine v1.1 — RPC stage sessions
 Stage sessions move from one-shot `pi -p` to a live `pi --mode rpc`
 process per stage (JSONL commands over a FIFO in, append-only
@@ -222,16 +195,104 @@ file-shaped, burst-idempotent plumbing:
   raw log tail to turns/tool-calls with token counts (events.jsonl is
   already the transport; each drive burst tails from its last offset).
 - Same artifact contract (`control.json` / `analysis.md`); the run-state
-  machine, validator, and spec format don't change. Verify: FIFO holder
-  lifecycle, crash recovery (pi dies mid-stage → session.jsonl +
-  events.jsonl are the record), and non-interactive trust flags under
-  `--mode rpc`.
+  machine, validator, and spec format don't change.
+
+Build plan:
+1. `RpcStage` in the engine: launch (`mkfifo` + holder fd + `pi --mode
+   rpc < cmd.fifo >> events.jsonl &`), verb writers (`steer`, `abort`,
+   `set_model`, `get_session_stats`), event tailer with a byte-offset
+   cursor in stage state. MockDriver grows FIFO/event fakes; the 12
+   engine tests extend to cover steer-at-boundary and stats collection.
+2. Completion detection from events (`agent_settled` → collect) instead
+   of PID death; PID stays as the liveness/timeout backstop.
+3. Worker: `steerWorkflow` prefers the live-session steer verb, falls
+   back to re-run when the stage is between rounds; `/tickets/:id/output`
+   serves parsed turns/tool-calls from events.jsonl.
+4. Verify in a real sandbox: FIFO holder lifecycle, crash recovery (pi
+   dies mid-stage → events.jsonl + session .jsonl are the record), trust
+   flags under `--mode rpc` (no `-p` non-interactive default).
 
 ### ntfy homelab integration
 Point the fleet's ntfy plugin (deployed, silent) at the homelab's
 existing ntfy (`ntfy.stevenjohn.co`): pick/protect a `workhorse` topic,
 set `NTFY_URL` + `NTFY_TOPIC` (+ `NTFY_TOKEN` if protected), subscribe
-the phone — PR-up/done/errored/escalation pushes go live.
+the phone — PR-up/done/errored/escalation pushes go live. Config-only;
+no code.
+
+### Knowledge attachments (plugin-provided context)
+Attaching context to work is a PLUGIN capability, not a core feature.
+Today the chat-first home hard-codes repo chips; repos become one
+instance of a general attachment surface that Jira issues, Slack
+threads, PR discussions, paste URLs, and future sources plug into.
+
+- **Contract** (`@workhorse/api`): a plugin declares
+  `attachments: AttachmentProvider[]` —
+  `{kind, label, icon, match(ref) → canonical id, resolve(env, core,
+  ref) → {title, summary, content, url?}}`. `match` recognizes pasted
+  refs (a Jira key, a Slack permalink, a PR URL); `resolve` fetches and
+  renders the content as prompt-ready markdown.
+- **Dispatch**: `TicketParams.attachments: AttachmentRef[]`; at prepare,
+  the worker resolves each through its provider and injects a
+  `## Attached context` section into the task prompt (bounded per
+  attachment, `maxDigestChars`-style). The repo attachment stays special
+  only in that prepare also clones it.
+- **Chat-first home**: the composer's chip row generalizes — typing or
+  pasting anything a provider `match`es offers it as a chip (repo,
+  PROJ-123, a Slack link); `GET /attachments/recent` lists recently used
+  ones per kind. Message + chips → `fileTicket({attachments})`.
+- **Ticket page**: an "Attach context" action on a live ticket resolves
+  the ref and delivers it as a steer (live) or queued event (parked) —
+  same two-path model as feedback.
+- **Fleet chat**: the chat agent resolves attachment refs in-message via
+  the same providers before answering.
+- Jira/Slack plugins ship the first non-repo providers; the repo
+  provider lives in the tickets plugin.
+
+### Non-chat triggers (cron + mention-fed prompts)
+A trigger = source + prompt template + workflow + outcome routing,
+stored in the registry (`trigger:<name>`, D1-indexed) and editable in
+the UI:
+
+- **Sources**: `cron` (schedule expression — the worker gains a
+  [scheduled handler](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+  that scans due triggers), `mention` (Slack app-mention / Jira mention
+  webhooks route through the trigger's template instead of ad-hoc
+  filing), `webhook` (a generic `/triggers/:name/fire` endpoint,
+  secret-gated, body interpolated into the template).
+- **Template**: prompt text with `{{input}}` slots (mention text,
+  webhook body fields, cron date); declared workflow + inputs; repo or
+  attachment refs.
+- **Outcome routing**: where the deliverable goes — a report workflow's
+  result posts back to the triggering surface (the Slack channel that
+  mentioned, the Jira issue, an ntfy topic) via the plugin transition
+  hooks already in place.
+- First real consumer: "every Monday 9:00, run repo-health on <repo>,
+  post the report to #eng" — exercises cron + report outcome + Slack
+  delivery end to end.
+
+### Notification bus (queued operator input)
+Operator input from ANY surface (Nuxt UI, PR comments, Slack, Jira, …)
+queues in a per-ticket bus instead of interrupting immediately; the
+WORKFLOW declares where it reads.
+
+- **Queue**: D1 `notifications` table — `(ticket_id, seq, source, kind,
+  body, author, created_at, read_at)`; every surface that today calls
+  steer/appendEvents writes here instead. `Core.notify(ticketId, …)`
+  replaces the steer-vs-event decision each plugin currently makes.
+- **Read points**: a stage spec opts in with `notifications: "read"`
+  (checked at stage start and at loop-round boundaries) or the workflow
+  relies on parks (in-review / awaiting-acceptance / awaiting-input
+  always read). At a read point the engine injects unread notifications
+  as a `## Operator notifications` prompt section; the agent
+  acknowledges, collates, replies to each (via the source plugin's
+  outbound half), and control routing decides loop-back.
+- **Urgent path**: `urgent: true` preserves today's interrupt semantics
+  (live steer at the next turn boundary once RPC sessions land) — the
+  bus subsumes steers rather than losing them.
+- **Migration**: steers:<ticket> KV and unconsumed-events become bus
+  rows; the two-path model (live steer / park wake) becomes one queue
+  with two priorities. UI shows the queue on the ticket page with
+  read receipts.
 
 ### PixelRAG feasibility
 Evaluate [PixelRAG](https://github.com/StarTrail-org/PixelRAG) — where
