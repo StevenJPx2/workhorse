@@ -99,9 +99,13 @@ export class MockDriver implements Driver {
     this.files.set(`${dir}/events.jsonl`, prev + JSON.stringify(event) + "\n");
   }
 
+  private lastLaunch(dir: string) {
+    return [...this.launches].reverse().find((l) => l.dir === dir) ?? this.launches.at(-1);
+  }
+
   /** Test helper: the fake session finishes — artifacts + settled + exit. */
   finishSession(dir: string, control: Record<string, unknown> | string, analysis = "analysis text"): void {
-    const launch = this.launches.findLast((l) => l.dir === dir) ?? this.launches.at(-1);
+    const launch = this.lastLaunch(dir);
     if (launch) {
       this.alive.delete(launch.pid);
       this.alive.delete(launch.holderPid);
@@ -114,7 +118,7 @@ export class MockDriver implements Driver {
 
   /** Test helper: session dies with no artifacts, leaving a log tail. */
   crashSession(dir: string, logTail: string): void {
-    const launch = this.launches.findLast((l) => l.dir === dir) ?? this.launches.at(-1);
+    const launch = this.lastLaunch(dir);
     if (launch) {
       this.alive.delete(launch.pid);
       this.alive.delete(launch.holderPid);

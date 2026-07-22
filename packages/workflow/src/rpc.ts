@@ -91,7 +91,7 @@ export async function tailEvents(
       /* non-JSON noise — skip */
     }
   }
-  return { events, offset: fromOffset + Buffer.byteLength(chunk.slice(0, completeBytes)) };
+  return { events, offset: fromOffset + new TextEncoder().encode(chunk.slice(0, completeBytes)).length };
 }
 
 /** Scan a burst's events for the signals the engine acts on. */
