@@ -152,7 +152,9 @@ export async function runLoaderSpike(env: Env): Promise<unknown> {
     stage: "spike",
     selfOrigin: env.SELF_URL ?? "",
     sandboxId: "spike-codemode",
-    allow: ["fetch_context"], // a worker-side tool (core call) — no container
+    // worker-side tool (fetch_context) + container tool (bash) — prove BOTH
+    // dispatch through the bridge. `edit` stays out → proves gating.
+    allow: ["fetch_context", "bash"],
     dir: "/tmp/spike",
     writeAllow: [],
   };
@@ -160,12 +162,14 @@ export async function runLoaderSpike(env: Env): Promise<unknown> {
     env,
     props,
     `
-    // real dispatch: fetch_context resolves via core (returns a real string)
+    // worker-side dispatch: fetch_context resolves via core (real string)
     const a = await tools.fetch_context({ kind: "nope", ref: "x" });
-    // gated: bash is not in allow → bridge rejects
-    const b = await tools.bash({ command: "echo hi" });
-    console.log("chained two calls in one program");
-    return { fetchContext: a, bashGated: b };
+    // CONTAINER dispatch: bash execs in the sandbox via the bridge
+    const b = await tools.bash({ command: "echo hello-from-container && uname -s" });
+    // gated: edit is not in allow → bridge rejects
+    const c = await tools.edit({ path: "/tmp/x", oldString: "a", newString: "b" });
+    console.log("chained three calls in one program");
+    return { fetchContext: a, bash: b, editGated: c };
   `,
   );
 }
