@@ -12,7 +12,7 @@ import { getSandbox } from "@cloudflare/sandbox";
 import { defineAgent, defineTool, registerProvider } from "@flue/runtime";
 import { cloudflareSandbox } from "@flue/runtime/cloudflare";
 import { createFlueContext, resolveModel } from "@flue/runtime/internal";
-import type { Env, SandboxHandle } from "@workhorse/api";
+import type { Env, SandboxHandle, WorkhorseTool } from "@workhorse/api";
 import * as v from "valibot";
 import { sandboxDriver } from "./agent-run";
 import { assembleStageTools, toolContext } from "./plugins";
@@ -67,8 +67,8 @@ function writeAllowed(path: string, dir: string, writeAllow: string[]): boolean 
 }
 
 /** Built-in tools over the SandboxHandle, filtered by the stage allowlist. */
-export function builtinTools(sandbox: SandboxHandle, allow: Set<string>, dir: string, writeAllow: string[]) {
-  const tools = [];
+export function builtinTools(sandbox: SandboxHandle, allow: Set<string>, dir: string, writeAllow: string[]): WorkhorseTool[] {
+  const tools: WorkhorseTool[] = [];
   if (allow.has("read"))
     tools.push(
       defineTool({
@@ -224,6 +224,48 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     const ctx = toolContext(env, selfOrigin, sandbox, { id: input.ticketId, repo: input.repo, stage: input.stageId });
     const builtins = builtinTools(sandbox, allow, input.dir, input.writeAllow);
     const pluginTools = assembleStageTools(ctx, input.tools);
+
+    // Code Mode: run_code lets the agent chain THIS stage's tools in one
+    // dynamic-worker program (fewer model round-trips). The bridge is scoped
+    // to the stage's own tools minus run_code/submit_work (no recursion, no
+    // completing from inside a batch), enforced by authentic ctx.props.
+    if (allow.has("run_code")) {
+      const bridgeAllow = input.tools.filter((t) => t !== "run_code" && t !== "submit_work");
+      builtins.push(
+        defineTool({
+          name: "run_code",
+          description:
+            "Run a TypeScript/JavaScript program that calls this stage's tools via `tools.<name>(input)` " +
+            "(each returns the tool's result) and returns a value. Use it to CHAIN multiple tool calls in " +
+            "one step — read several files, grep, run a command, filter results — without a model round-trip " +
+            "per call. The program runs in an isolated sandbox with no network; only your allowed tools reach " +
+            "out. `console.log(...)` is captured. End with `return <value>`. Available tools: " +
+            `${bridgeAllow.join(", ") || "(none)"}.`,
+          input: v.object({ code: v.string() }),
+          async run({ input: args }) {
+            const { runCode } = await import("./codemode");
+            const r = await runCode(
+              env,
+              {
+                ticketId: input.ticketId,
+                repo: input.repo,
+                stage: input.stageId,
+                selfOrigin,
+                sandboxId,
+                allow: bridgeAllow,
+                dir: input.dir,
+                writeAllow: input.writeAllow,
+              },
+              args.code,
+            );
+            const logs = r.logs?.length ? `\n\n--- logs ---\n${r.logs.join("\n")}` : "";
+            if (!r.ok) return `run_code error: ${r.error}${logs}`;
+            const val = typeof r.result === "string" ? r.result : JSON.stringify(r.result, null, 1);
+            return `run_code result:\n${val}${logs}`;
+          },
+        }),
+      );
+    }
     const primaryModel = input.model ?? "claude-sonnet-4-6";
 
     // ONE model plane: Anthropic OAuth. The opencode-zen FREE models were

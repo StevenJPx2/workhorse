@@ -49,6 +49,7 @@ const stages: StageSpec[] = [
       { name: "find_tool", classification: "read-only", optional: true },
       { name: "web_search", classification: "read-only", optional: true },
       { name: "web_read", classification: "read-only", optional: true },
+      { name: "run_code", classification: "read-only", optional: true },
     ],
     prompt:
       "FIRST check prior work: list_scripts (the repo's registered tool inventory) and search (ctx_search for this repo's memory, search_fleet_knowledge for distilled traces of every past fleet run) with terms from the task. Reuse what you find. If the task references external docs or a URL, browser_open + browser_read it. Then study the repository and produce a concise implementation plan for the runtime task: which files change and how, repo conventions, risks, and how to verify. End with the exact list of files to be created or modified.",
@@ -73,6 +74,7 @@ const stages: StageSpec[] = [
       { name: "list_scripts", classification: "read-only", optional: true },
       { name: "run_script", classification: "write-capable", optional: true },
       { name: "write_script", classification: "write-capable", optional: true },
+      { name: "run_code", classification: "write-capable", optional: true },
     ],
     prompt:
       "Implement the upstream plan for the runtime task. Check ctx_search for prior fixes before debugging non-obvious issues. Make the code changes following the plan and repo conventions. When done, verify with bash: git add -A && git diff --cached --stat, and include that diff stat in your analysis. If you learned something durable about this repo (a rule, constraint, gotcha), record it with ctx_memory(action=\"write\"). If your prompt contains a 'Routed back from verify' section, this is a re-run: a verifier rejected the previous attempt — address every blocking finding on the same branch (refine the working-tree work, do not start over).",
@@ -96,6 +98,7 @@ const stages: StageSpec[] = [
       { name: "browser_read", classification: "read-only" },
       { name: "browser_screenshot", classification: "read-only" },
       { name: "gh_ci", classification: "read-only", optional: true },
+      { name: "run_code", classification: "read-only", optional: true },
     ],
     prompt:
       "You are reviewing another agent's implementation of the runtime task. The change is in the working tree — inspect it with git diff HEAD. Adversarially verify against the original task and the upstream plan: missed requirements, bugs, regressions in touched paths, convention violations. Run any checks the repo offers via bash. If the change affects a web page reachable at a URL, use browser_open + browser_read to inspect its live content. Report via control: verdict pass|fail with blocking[] (each: file, problem, why) and nits[]. Only genuine defects are blocking — a sound implementation gets verdict pass with empty blocking.",

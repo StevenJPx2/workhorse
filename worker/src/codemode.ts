@@ -12,7 +12,7 @@
 // Code Mode security model (broker credentials, enforce at the proxy, code
 // can't grant itself permission, control egress).
 
-import { WorkerEntrypoint } from "cloudflare:workers";
+import { WorkerEntrypoint, exports as workerExports } from "cloudflare:workers";
 import type { Env, WorkhorseTool } from "@workhorse/api";
 import { sandboxDriver } from "./agent-run";
 import { builtinTools } from "./flue-session";
@@ -81,9 +81,9 @@ export class ToolBridge extends WorkerEntrypoint<Env, ToolBridgeProps> {
   }
 }
 
-/** ctx.exports shape we rely on (loopback bindings, default since 2025-11-17). */
-interface CtxExports {
-  exports: { ToolBridge: (opts: { props: ToolBridgeProps }) => unknown };
+/** The loopback exports shape we rely on (default since 2025-11-17). */
+interface WorkerExports {
+  ToolBridge: (opts: { props: ToolBridgeProps }) => unknown;
 }
 
 export interface RunCodeResult {
@@ -97,16 +97,12 @@ export interface RunCodeResult {
  * Load a dynamic worker that runs the agent's JS `code`, handing it a
  * props-scoped TOOLS bridge and NO network. The code calls
  * `env.TOOLS.invoke(name, input)` to reach stage tools; its `return` value
- * (and console.log output) come back. Executed from a fetch handler so
- * ctx.exports (the loopback) is available.
+ * (and console.log output) come back. Uses the module-level `exports` from
+ * cloudflare:workers for the loopback binding — so it works inside a
+ * WorkflowEntrypoint (which has no ctx) as well as a fetch handler.
  */
-export async function runCode(
-  env: Env,
-  ctx: ExecutionContext,
-  props: ToolBridgeProps,
-  code: string,
-): Promise<RunCodeResult> {
-  const tools = (ctx as unknown as CtxExports).exports.ToolBridge({ props });
+export async function runCode(env: Env, props: ToolBridgeProps, code: string): Promise<RunCodeResult> {
+  const tools = (workerExports as unknown as WorkerExports).ToolBridge({ props });
 
   // The dynamic worker wraps the agent code in an async fn with a `tools`
   // proxy (each property → env.TOOLS.invoke) and a captured console.log.
@@ -149,7 +145,7 @@ export async function runCode(
  * container needed — uses a worker-side tool). Master-gated; delete once
  * run_code is proven in a real stage.
  */
-export async function runLoaderSpike(env: Env, ctx: ExecutionContext): Promise<unknown> {
+export async function runLoaderSpike(env: Env): Promise<unknown> {
   const props: ToolBridgeProps = {
     ticketId: "spike",
     repo: "",
@@ -162,7 +158,6 @@ export async function runLoaderSpike(env: Env, ctx: ExecutionContext): Promise<u
   };
   return runCode(
     env,
-    ctx,
     props,
     `
     // real dispatch: fetch_context resolves via core (returns a real string)

@@ -11,10 +11,10 @@ export const miscRoutes: Route[] = [
     method: "POST",
     path: "/spike/loader",
     auth: "master",
-    async handler({ env, ctx }) {
+    async handler({ env }) {
       const { runLoaderSpike } = await import("../codemode");
       try {
-        return json({ ok: true, result: await runLoaderSpike(env, ctx) });
+        return json({ ok: true, result: await runLoaderSpike(env) });
       } catch (e) {
         return json({ ok: false, error: String((e as Error)?.message ?? e).slice(0, 500) }, 500);
       }

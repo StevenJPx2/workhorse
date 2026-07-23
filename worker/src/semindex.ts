@@ -66,6 +66,7 @@ export const TOOL_CATALOG: ToolDoc[] = [
   { name: "write_script", description: "Register a persistent script for future runs (self-extension)", classification: "write-capable" },
   { name: "find_script", description: "Semantic search over registered scripts", classification: "read-only" },
   { name: "find_tool", description: "Semantic search over the sandbox tool catalog", classification: "read-only" },
+  { name: "run_code", description: "Code Mode: run a TS/JS program that chains this stage's tools (tools.<name>(input)) in one sandboxed dynamic-worker run — batch reads/greps/commands without a model round-trip per call", classification: "write-capable" },
   { name: "gh_pr", description: "Read a PR's live state: details, files, reviews, comments", classification: "read-only" },
   { name: "gh_ci", description: "Read GitHub Actions runs + failing jobs", classification: "read-only" },
   { name: "gh_issue", description: "Read a GitHub issue or its comments", classification: "read-only" },
