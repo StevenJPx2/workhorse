@@ -269,7 +269,7 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
   // Script seeding: a committed .workhorse/scripts.toml imports into the
   // registry (created_by: seed) — clone-and-go, same pattern as workflows.
   // Parsed sandbox-side with a tiny tolerant reader (name/description/
-  // command/args/status_gates per [[script]] block), registered via db.
+  // code/args/status_gates per [[script]] block), registered via db.
   try {
     const tomlRead = await sandbox.exec(
       `cat /workspace/repo/.workhorse/scripts.toml 2>/dev/null || true`,
@@ -293,7 +293,7 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
           scope,
           name: s.name,
           description: s.description ?? "",
-          command: s.command,
+          code: s.code,
           args: s.args ?? [],
           statusGates: s.statusGates ?? [],
           createdBy: "seed",

@@ -167,8 +167,8 @@ export interface ScriptRecord {
   scope: string;
   name: string;
   description: string;
-  /** Shell command body (bash -c). Args arrive as $ARG_<NAME> env vars. */
-  command: string;
+  /** TypeScript Code Mode body. Args arrive as the `args` object (args.<name>). */
+  code: string;
   /** Declared args: [{name, description, required}] */
   args: Array<{ name: string; description?: string; required?: boolean }>;
   /** Ticket statuses allowed to run this script; empty = any. */
@@ -182,7 +182,7 @@ interface ScriptRow {
   scope: string;
   name: string;
   description: string;
-  command: string;
+  code: string;
   args: string;
   status_gates: string;
   created_by: string;
@@ -195,7 +195,7 @@ function toScript(r: ScriptRow): ScriptRecord {
     scope: r.scope,
     name: r.name,
     description: r.description,
-    command: r.command,
+    code: r.code,
     args: JSON.parse(r.args || "[]"),
     statusGates: JSON.parse(r.status_gates || "[]"),
     createdBy: r.created_by as ScriptRecord["createdBy"],
@@ -216,7 +216,7 @@ const VALID_GATES = new Set([
 /** Validate a script registration; returns an error string or null. */
 export function validateScript(s: {
   name?: string;
-  command?: string;
+  code?: string;
   scope?: string;
   args?: unknown;
   statusGates?: unknown;
@@ -224,8 +224,8 @@ export function validateScript(s: {
   if (!s.name || !SCRIPT_NAME_RE.test(s.name)) {
     return "name must match ^[a-z][a-z0-9_-]{1,63}$";
   }
-  if (!s.command?.trim()) return "command required";
-  if (s.command.length > 16384) return "command too long (16 KiB max)";
+  if (!s.code?.trim()) return "code required";
+  if (s.code.length > 16384) return "code too long (16 KiB max)";
   if (!s.scope || (s.scope !== "global" && !s.scope.startsWith("repo:"))) {
     return 'scope must be "global" or "repo:<owner/repo>"';
   }
@@ -248,11 +248,11 @@ export function validateScript(s: {
 
 export async function upsertScript(env: Env, s: ScriptRecord): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO scripts (scope, name, description, command, args, status_gates, created_by, created_at, updated_at)
+    `INSERT INTO scripts (scope, name, description, code, args, status_gates, created_by, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(scope, name) DO UPDATE SET
        description = excluded.description,
-       command = excluded.command,
+       code = excluded.code,
        args = excluded.args,
        status_gates = excluded.status_gates,
        updated_at = excluded.updated_at`,
@@ -261,7 +261,7 @@ export async function upsertScript(env: Env, s: ScriptRecord): Promise<void> {
       s.scope,
       s.name,
       s.description,
-      s.command,
+      s.code,
       JSON.stringify(s.args),
       JSON.stringify(s.statusGates),
       s.createdBy,

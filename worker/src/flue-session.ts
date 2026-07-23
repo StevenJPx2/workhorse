@@ -15,9 +15,18 @@ import { createFlueContext, resolveModel } from "@flue/runtime/internal";
 import type { Env, SandboxHandle, WorkhorseTool } from "@workhorse/api";
 import * as v from "valibot";
 import { sandboxDriver } from "./agent-run";
+import type { RunCodeResult, ToolBridgeProps } from "./codemode";
 import { assembleStageTools, toolContext } from "./plugins";
 
 const q = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
+
+/** Format a Code Mode run result (shared by run_code + run_script). */
+function fmtCodeResult(label: string, r: RunCodeResult): string {
+  const logs = r.logs?.length ? `\n\n--- logs ---\n${r.logs.join("\n")}` : "";
+  if (!r.ok) return `${label} error: ${r.error}${logs}`;
+  const val = typeof r.result === "string" ? r.result : JSON.stringify(r.result, null, 1);
+  return `${label} result:\n${val}${logs}`;
+}
 
 /** Session economics captured from the flue prompt result. */
 export interface SessionStats {
@@ -264,8 +273,23 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     // dynamic-worker program (fewer model round-trips). The bridge is scoped
     // to the stage's own tools minus run_code/submit_work (no recursion, no
     // completing from inside a batch), enforced by authentic ctx.props.
+    // The bridge is scoped to the stage's own tools minus the Code Mode verbs
+    // + submit_work (no recursion, no completing from inside a batch).
+    const bridgeAllow = input.tools.filter(
+      (t) => t !== "run_code" && t !== "run_script" && t !== "submit_work",
+    );
+    const bridgeProps: ToolBridgeProps = {
+      ticketId: input.ticketId,
+      repo: input.repo,
+      stage: input.stageId,
+      selfOrigin,
+      sandboxId,
+      allow: bridgeAllow,
+      dir: input.dir,
+      writeAllow: input.writeAllow,
+    };
+
     if (allow.has("run_code")) {
-      const bridgeAllow = input.tools.filter((t) => t !== "run_code" && t !== "submit_work");
       const surface = toolSurface([...builtins, ...pluginTools], bridgeAllow);
       builtins.push(
         defineTool({
@@ -278,26 +302,52 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
             "with NO network — only these tools reach out:\n" +
             `declare const tools: {\n${surface || "  // (no tools available)"}\n};`,
           input: v.object({ code: v.string() }),
-          async run({ input: args }) {
+          async run({ input: a }) {
             const { runCode } = await import("./codemode");
-            const r = await runCode(
-              env,
-              {
-                ticketId: input.ticketId,
-                repo: input.repo,
-                stage: input.stageId,
-                selfOrigin,
-                sandboxId,
-                allow: bridgeAllow,
-                dir: input.dir,
-                writeAllow: input.writeAllow,
-              },
-              args.code,
+            return fmtCodeResult("run_code", await runCode(env, bridgeProps, a.code));
+          },
+        }),
+      );
+    }
+
+    // run_script — replay a SAVED Code Mode program deterministically. It's an
+    // engine built-in (not a plugin tool) because it runs through the same
+    // bridge as run_code, which needs the stage's authentic props above; a
+    // plugin ToolContext can't reach them. Registry ops (write/list) stay in
+    // the scripts plugin.
+    if (allow.has("run_script")) {
+      builtins.push(
+        defineTool({
+          name: "run_script",
+          description:
+            "Run a registered script by name (see list_scripts) — a saved Code Mode program that chains " +
+            "this stage's tools deterministically, no fresh reasoning. Pass args as key/value pairs (all " +
+            "string values); they reach the program as the `args` object. Returns its result + logs.",
+          input: v.object({
+            name: v.string(),
+            args: v.optional(v.record(v.string(), v.string())),
+          }),
+          async run({ input: a }) {
+            const script = await ctx.core.getScriptByName(a.name, input.repo || undefined);
+            if (!script) return `run_script: no script named "${a.name}". Use list_scripts.`;
+            // Gate against the ticket's LIVE status (not stale sandbox state).
+            if (script.statusGates.length) {
+              const t = await ctx.core.getTicket(input.ticketId);
+              const status = t?.status;
+              if (status && !script.statusGates.includes(status)) {
+                return `run_script: "${script.name}" is gated to [${script.statusGates.join(", ")}]; ticket status is ${status}.`;
+              }
+            }
+            for (const arg of script.args) {
+              if (arg.required && !(a.args ?? {})[arg.name]) {
+                return `run_script: missing required arg "${arg.name}" (${arg.description ?? ""})`;
+              }
+            }
+            const { runCode } = await import("./codemode");
+            return fmtCodeResult(
+              `run_script "${script.name}"`,
+              await runCode(env, bridgeProps, script.code, a.args ?? {}),
             );
-            const logs = r.logs?.length ? `\n\n--- logs ---\n${r.logs.join("\n")}` : "";
-            if (!r.ok) return `run_code error: ${r.error}${logs}`;
-            const val = typeof r.result === "string" ? r.result : JSON.stringify(r.result, null, 1);
-            return `run_code result:\n${val}${logs}`;
           },
         }),
       );

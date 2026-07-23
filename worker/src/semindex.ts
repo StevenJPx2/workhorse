@@ -9,7 +9,7 @@ import type { Env, ScriptRecord } from "@workhorse/api";
 export const scriptIndex = defineIndex<ScriptRecord>({
   name: "scripts",
   id: (s) => `${s.scope}/${s.name}`,
-  toText: (s) => `${s.name}: ${s.description}\n${s.command.slice(0, 500)}`,
+  toText: (s) => `${s.name}: ${s.description}\n${s.code.slice(0, 500)}`,
   metadata: (s) => ({ name: s.name, scope: s.scope, description: s.description.slice(0, 200) }),
 });
 
@@ -62,8 +62,8 @@ export const TOOL_CATALOG: ToolDoc[] = [
   { name: "upload_image", description: "Host a local image publicly, returns URL (for PR descriptions)", classification: "read-only" },
   { name: "upload_text", description: "Host text/code publicly, returns raw curl-able URL (logs, patches, repro scripts)", classification: "read-only" },
   { name: "list_scripts", description: "List this repo's registered scripts — the fleet's self-built toolbox", classification: "read-only" },
-  { name: "run_script", description: "Run a registered script by name with args", classification: "write-capable" },
-  { name: "write_script", description: "Register a persistent script for future runs (self-extension)", classification: "write-capable" },
+  { name: "run_script", description: "Run a registered script by name with args — a saved Code Mode TS program that chains this stage's tools in one sandboxed run", classification: "write-capable" },
+  { name: "write_script", description: "Save a Code Mode TS program (chaining this stage's tools) as a persistent named script for future runs — self-extension", classification: "write-capable" },
   { name: "find_script", description: "Semantic search over registered scripts", classification: "read-only" },
   { name: "find_tool", description: "Semantic search over the sandbox tool catalog", classification: "read-only" },
   { name: "run_code", description: "Code Mode: run a TS/JS program that chains this stage's tools (tools.<name>(input)) in one sandboxed dynamic-worker run — batch reads/greps/commands without a model round-trip per call", classification: "write-capable" },
@@ -84,7 +84,7 @@ export async function reindexAll(env: Env): Promise<Record<string, number>> {
   // Scripts: all scopes — listScripts(repo) is scoped, so read the table.
   const { results } = await env.DB.prepare("SELECT * FROM scripts").all<Record<string, string>>();
   const scripts: ScriptRecord[] = (results ?? []).map((r) => ({
-    scope: r.scope, name: r.name, description: r.description, command: r.command,
+    scope: r.scope, name: r.name, description: r.description, code: r.code,
     args: JSON.parse(r.args || "[]"), statusGates: JSON.parse(r.status_gates || "[]"),
     createdBy: r.created_by as ScriptRecord["createdBy"], createdAt: r.created_at, updatedAt: r.updated_at,
   }));

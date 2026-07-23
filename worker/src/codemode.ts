@@ -101,20 +101,28 @@ export interface RunCodeResult {
  * cloudflare:workers for the loopback binding — so it works inside a
  * WorkflowEntrypoint (which has no ctx) as well as a fetch handler.
  */
-export async function runCode(env: Env, props: ToolBridgeProps, code: string): Promise<RunCodeResult> {
+export async function runCode(
+  env: Env,
+  props: ToolBridgeProps,
+  code: string,
+  args?: Record<string, string>,
+): Promise<RunCodeResult> {
   const tools = (workerExports as unknown as WorkerExports).ToolBridge({ props });
 
   // The dynamic worker wraps the agent code in an async fn with a `tools`
-  // proxy (each property → env.TOOLS.invoke) and a captured console.log.
+  // proxy (each property → env.TOOLS.invoke), a captured console.log, and the
+  // resolved `args` object (used by saved scripts as args.<name>). args are
+  // string values embedded as a JSON literal — safe, deterministic.
   const wrapper = `
     export default {
       async fetch(request, env) {
         const logs = [];
         const console = { log: (...a) => logs.push(a.map(String).join(" ")), error: (...a) => logs.push("ERR " + a.map(String).join(" ")) };
         const tools = new Proxy({}, { get: (_t, name) => (input) => env.TOOLS.invoke(String(name), input) });
-        const program = async (tools, console) => { ${code}\n };
+        const args = ${JSON.stringify(args ?? {})};
+        const program = async (tools, console, args) => { ${code}\n };
         try {
-          const result = await program(tools, console);
+          const result = await program(tools, console, args);
           return Response.json({ ok: true, result: result ?? null, logs });
         } catch (e) {
           return Response.json({ ok: false, error: String(e && e.message || e).slice(0, 800), logs });

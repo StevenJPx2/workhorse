@@ -1,13 +1,17 @@
 // scripts plugin — agent self-extension (the legacy Workhorse crown jewel,
-// ported to the fleet). Agents author persistent shell-script tools for
-// themselves: repeated command sequences become named, parameterized,
-// auditable tools instead of re-derived bash each run.
+// ported to the fleet). Agents save persistent Code Mode programs for
+// themselves: a chain of tool calls that worked becomes a named,
+// parameterized, auditable script instead of re-derived each run — the
+// "stabilized" rung of Code Mode (run_code discovers, write_script saves,
+// run_script replays deterministically).
 //
 // The registry is DB-authoritative (D1 `scripts` table): registration is
 // strictly validated at the door, listing reads the DB, never the
-// filesystem. Execution is worker-side (tools/run_script): the tool reads
-// {command, args, gates} from Core, gate-checks against the ticket's live
-// status, and runs the body with bash in the container via the sandbox handle.
+// filesystem. This plugin owns the two REGISTRY verbs — write_script (save)
+// and list_scripts (inventory). EXECUTION (run_script) is an engine built-in
+// (worker/src/flue-session.ts), not a plugin tool: running a saved TS program
+// requires the stage's authentic bridge props (allowlist/dir/writeAllow),
+// which only the stage session holds — a plugin ToolContext can't reach them.
 //
 // Scoped-token routes: sandboxes run untrusted repo code — they hold the
 // scoped token, never the master bearer. Scope forgery (repo:X writing
@@ -45,7 +49,7 @@ const routes: PluginRoute[] = [
         scope?: string;
         name?: string;
         description?: string;
-        command?: string;
+        code?: string;
         args?: Array<{ name: string; description?: string; required?: boolean }>;
         statusGates?: string[];
         createdBy?: "agent" | "user";
@@ -55,30 +59,12 @@ const routes: PluginRoute[] = [
         scope: body.scope ?? "global",
         name: body.name ?? "",
         description: body.description ?? "",
-        command: body.command ?? "",
+        code: body.code ?? "",
         args: body.args ?? [],
         statusGates: body.statusGates ?? [],
         createdBy: body.createdBy ?? "agent",
       });
       return r.ok ? json({ ok: true, script: r.script }) : json({ error: r.error }, 422);
-    },
-  },
-  {
-    // Fetch one script (run_script's backend — the sandbox executes it).
-    // Returns the ticket's LIVE status alongside so the gate check uses
-    // fresh state, not whatever was written into the sandbox at prepare.
-    method: "GET",
-    path: "/scripts/get",
-    auth: "scoped",
-    async handler(request, _env, _ctx, core) {
-      const url = new URL(request.url);
-      const name = url.searchParams.get("name") ?? "";
-      const repo = url.searchParams.get("repo") ?? undefined;
-      const ticketId = url.searchParams.get("ticket") ?? "";
-      const script = await core.getScriptByName(name, repo);
-      if (!script) return json({ error: `no script named "${name}"` }, 404);
-      const ticket = ticketId ? await core.getTicket(ticketId) : null;
-      return json({ script, ticketStatus: ticket?.status ?? null });
     },
   },
 ];

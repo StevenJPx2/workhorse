@@ -3,7 +3,7 @@
 
 /**
  * Minimal tolerant parser for .workhorse/scripts.toml — [[script]] blocks
- * with string keys (name/description/command), triple-quoted or basic
+ * with string keys (name/description/code), triple-quoted or basic
  * strings, args = [{name, description, required}] inline tables, and
  * status_gates = ["..."]. Not a general TOML parser; committed seeds are
  * developer-authored and validation rejects anything malformed anyway.
@@ -11,14 +11,14 @@
 export function parseScriptsToml(toml: string): Array<{
   name: string;
   description?: string;
-  command: string;
+  code: string;
   args?: Array<{ name: string; description?: string; required?: boolean }>;
   statusGates?: string[];
 }> {
   const out: Array<{
     name: string;
     description?: string;
-    command: string;
+    code: string;
     args?: Array<{ name: string; description?: string; required?: boolean }>;
     statusGates?: string[];
   }> = [];
@@ -32,9 +32,9 @@ export function parseScriptsToml(toml: string): Array<{
       return one ? one[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").replace(/\\\\/g, "\\") : undefined;
     };
     const name = str("name");
-    const command = str("command");
-    if (!name || !command) continue;
-    const entry: (typeof out)[number] = { name, command, description: str("description") };
+    const code = str("code");
+    if (!name || !code) continue;
+    const entry: (typeof out)[number] = { name, code, description: str("description") };
     const gates = block.match(/^\s*status_gates\s*=\s*\[([^\]]*)\]/m);
     if (gates) {
       entry.statusGates = [...gates[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);

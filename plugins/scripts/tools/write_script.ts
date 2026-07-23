@@ -1,20 +1,23 @@
-// write_script — register/update a persistent script (the self-extension verb).
+// write_script — save a Code Mode program as a persistent script (the
+// self-extension verb; the "stabilized" rung of Code Mode).
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
 
 export default tool({
   name: "write_script",
   description:
-    "Register (or update) a persistent script in the fleet registry — self-extension. When " +
-    "you find yourself composing the same multi-step shell pipeline future runs will need " +
-    "again (build+test incantations, codegen refresh, env setup, release checks), package it " +
-    "once: name, a clear description (other agents choose by it), and declared args (reach the " +
-    "body as ARG_<NAME> env vars). Scope 'repo' (default) or 'global'. Audited by humans in " +
-    "the UI — write them clean.",
+    "Save a Code Mode program as a persistent, named script for future runs — self-extension. " +
+    "When a run_code program worked and future runs will need it again (multi-step build+test " +
+    "chains, codegen refresh, repo triage, release checks), save it once so it can be replayed " +
+    "deterministically via run_script — no fresh reasoning, cheaper, auditable. The `code` is a " +
+    "TypeScript program that chains this stage's tools exactly like run_code (`await tools.<name>(input)`, " +
+    "`console.log(...)`, end with `return`); declared args reach it as the `args` object (`args.<name>`). " +
+    "Give a clear description (other agents choose by it) and declare args. Scope 'repo' (default) or " +
+    "'global'. Audited by humans in the UI — write them clean.",
   input: v.object({
     name: v.string(),
     description: v.string(),
-    command: v.string(),
+    code: v.string(),
     args: v.optional(
       v.array(v.object({ name: v.string(), description: v.optional(v.string()), required: v.optional(v.boolean()) })),
     ),
@@ -27,12 +30,12 @@ export default tool({
       scope,
       name: input.name,
       description: input.description,
-      command: input.command,
+      code: input.code,
       args: input.args ?? [],
       statusGates: input.statusGates ?? [],
       createdBy: "agent",
     });
     if (!res.ok) return `write_script rejected: ${res.error}`;
-    return `Script "${input.name}" registered (${scope}). Future runs can call it via run_script.`;
+    return `Script "${input.name}" saved (${scope}). Future runs can replay it via run_script.`;
   },
 });

@@ -173,8 +173,13 @@ export interface ScriptRecord {
   scope: string;
   name: string;
   description: string;
-  /** Shell command body (bash -c). Args arrive as $ARG_<NAME> env vars. */
-  command: string;
+  /**
+   * TypeScript Code Mode program body. Runs in the same sandboxed dynamic
+   * worker as run_code: chains the stage's tools via `await tools.<name>(input)`,
+   * `console.log(...)` is captured, ends with `return <value>`. Declared args
+   * arrive as the `args` object (`args.<name>`, all string values).
+   */
+  code: string;
   args: Array<{ name: string; description?: string; required?: boolean }>;
   /** Ticket statuses allowed to run this script; empty = any. */
   statusGates: string[];
