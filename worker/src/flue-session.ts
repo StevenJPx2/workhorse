@@ -48,6 +48,41 @@ export type StageSessionOutcome =
   | { ok: false; failure: { kind: "model" | "control" | "session"; detail: string } }
   | { ok: false; throttled: { retryAfterMs: number; providers: string[]; detail: string } };
 
+/** valibot schema → TS type string (shallow; enough for a tool signature). */
+function tsType(s: { type?: string; wrapped?: unknown; options?: unknown[]; item?: unknown; value?: unknown }): string {
+  switch (s?.type) {
+    case "string": return "string";
+    case "number": return "number";
+    case "boolean": return "boolean";
+    case "picklist": return (s.options ?? []).map((o) => JSON.stringify(o)).join(" | ") || "string";
+    case "array": return `${tsType((s.item as never) ?? {})}[]`;
+    case "optional": return tsType((s.wrapped as never) ?? {});
+    case "record": return `Record<string, ${tsType((s.value as never) ?? { type: "string" })}>`;
+    case "object": return "object";
+    default: return "unknown";
+  }
+}
+
+/**
+ * Generate the typed `tools` API surface for run_code's prompt — one line per
+ * tool: `name(input: { field: type }): Promise<string>  // description`. This
+ * is the "tell the agent about the types" step: the model writes far better
+ * chaining code against real signatures than against a bare name list.
+ */
+function toolSurface(tools: WorkhorseTool[], allow: string[]): string {
+  const allowed = new Set(allow);
+  return tools
+    .filter((t) => allowed.has(t.name))
+    .map((t) => {
+      const entries = ((t.input as { entries?: Record<string, { type?: string }> })?.entries) ?? {};
+      const fields = Object.entries(entries)
+        .map(([k, s]) => `${k}${s?.type === "optional" ? "?" : ""}: ${tsType(s as never)}`)
+        .join("; ");
+      return `  ${t.name}(input: { ${fields} }): Promise<string>;  // ${t.description.slice(0, 90)}`;
+    })
+    .join("\n");
+}
+
 /** Minimal glob → anchored regex ('*' = non-slash, '**' = any). */
 function globToRe(glob: string): RegExp {
   const esc = glob
@@ -231,16 +266,17 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     // completing from inside a batch), enforced by authentic ctx.props.
     if (allow.has("run_code")) {
       const bridgeAllow = input.tools.filter((t) => t !== "run_code" && t !== "submit_work");
+      const surface = toolSurface([...builtins, ...pluginTools], bridgeAllow);
       builtins.push(
         defineTool({
           name: "run_code",
           description:
-            "Run a TypeScript/JavaScript program that calls this stage's tools via `tools.<name>(input)` " +
-            "(each returns the tool's result) and returns a value. Use it to CHAIN multiple tool calls in " +
-            "one step — read several files, grep, run a command, filter results — without a model round-trip " +
-            "per call. The program runs in an isolated sandbox with no network; only your allowed tools reach " +
-            "out. `console.log(...)` is captured. End with `return <value>`. Available tools: " +
-            `${bridgeAllow.join(", ") || "(none)"}.`,
+            "Run a TypeScript/JavaScript program that CHAINS this stage's tools in one sandboxed run — " +
+            "read several files, grep, run commands, filter/transform results — without a model round-trip " +
+            "per call. Call tools as `await tools.<name>(input)` (each resolves to the tool's string result); " +
+            "`console.log(...)` is captured; end with `return <value>`. Runs in an isolated dynamic worker " +
+            "with NO network — only these tools reach out:\n" +
+            `declare const tools: {\n${surface || "  // (no tools available)"}\n};`,
           input: v.object({ code: v.string() }),
           async run({ input: args }) {
             const { runCode } = await import("./codemode");
