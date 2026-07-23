@@ -10,48 +10,54 @@ the right tools and context at each workflow stage.
 ```mermaid
 flowchart LR
     OPS["Operators<br/>UI · Slack · GitHub · Jira"]
-    WORKER["Worker (control plane)<br/>ticket API · durable spine<br/>plugins · registries"]
-    ENGINE["@workhorse/workflow<br/>(the workflow engine)"]
-    SANDBOX["Sandbox (per ticket)<br/>bare Pi sessions<br/>on the cloned repo"]
+    WORKER["Worker (control plane + brain)<br/>ticket spine · workflow defs<br/>in-process stage sessions · plugins"]
+    SANDBOX["Sandbox (per ticket)<br/>cloned repo · tool exec (hands)"]
     STATE[("State<br/>D1 · KV · R2 · Vectorize · AI Search")]
     LLM["Anthropic<br/>(subscription OAuth)"]
 
     OPS -->|"tickets · steers · inputs · webhooks"| WORKER
-    WORKER -->|"advance · steer · promote"| ENGINE
-    ENGINE -->|"one session per stage"| SANDBOX
+    WORKER -->|"tool calls: exec / read / write"| SANDBOX
+    WORKER -->|"agent loop (flue harness)"| LLM
     WORKER --> STATE
-    SANDBOX --> LLM
-    SANDBOX -->|"branch + PR / report"| OPS
+    WORKER -->|"branch + PR / report"| OPS
 ```
+
+**Flue-first:** the agent loop runs **in the Worker** (via the
+[flue](https://flueframework.com) harness), not as a subprocess. Each
+workflow stage is one in-process `session.prompt(...)`; its tool calls
+(`bash`/`read`/`write`, plugin tools) execute in the sandbox container over
+RPC. The container is just hands — it holds the cloned repo and never holds a
+model credential.
 
 **Planes:**
 
 | Plane | Runs on | What |
 |---|---|---|
-| Spine | Cloudflare Workflows | one durable instance per ticket: durability plumbing only — bursts, parks (`waitForEvent`), retries, delivery |
-| Engine | `packages/workflow` | the workflow semantics: spec compile + validation, graph routing, per-stage prompt assembly, run state, control verbs (steer / promote / inject-input / cancel), typed failure classification |
-| Muscle | Cloudflare Sandbox | per-ticket Firecracker container; each stage is one bare Pi session with a CLI-enforced tool ceiling |
-| Brain | Anthropic (Claude subscription OAuth) | Pi + extensions, baked into the sandbox image |
+| Spine | Cloudflare Workflows | one durable instance per ticket: dispatch, drive, parks (`waitForEvent`), capacity waits (`step.sleep`), delivery |
+| Engine | `packages/workflow` | hard-coded, eval-tested `WorkflowDef`s (declarative `stages` manifest + imperative `run(ctx)` routing) + the `ctx.stage()` helper. No interpreter, no spec registry. |
+| Stage session | Worker (flue harness) | each `ctx.stage()` is one in-process flue session; tools are the plugins' `tools.ts` factories, intersected with the stage allowlist |
+| Muscle | Cloudflare Sandbox | per-ticket container: the cloned repo + tool exec. No Pi, no baked model credential. |
+| Brain | Anthropic (Claude subscription OAuth) | called from the Worker by the flue harness |
 | Memory | D1 + KV + R2 + Vectorize + AI Search | records in D1; hot state in KV; blobs (traces, repo memory, dep cache) in R2; semantic registries (scripts/workflows/tools) in Vectorize; fleet-wide run knowledge in AI Search |
-| Token custody | MacBook homelab server | holds+refreshes the OAuth refresh token; mints short-lived access tokens |
-| Face | Nuxt UI (`ui/`) | chat-first home, fleet list, run-centric ticket page with live agent output, workflow builder (vue-flow), agent blocks, `/embed` for dashboards |
+| Token custody | homelab server | holds+refreshes the OAuth refresh token; pushes short-lived access tokens to the Worker (`POST /token`) |
+| Face | Nuxt UI (`ui/`) | chat-first home, fleet list, run-centric ticket page with live output, read-only workflow graph, agent blocks, `/embed` for dashboards |
 
 **Workspace (hard boundaries):** `packages/api` is the contract; each
 `plugins/<name>` package depends on it and nothing else (enforced by
 workspace resolution); `worker/` is the only package that imports concrete
-plugins. A plugin's optional `extension.ts` is auto-discovered by the
-sandbox image build.
+plugins. A plugin's stage tools live in `tools.ts` (worker-side flue tools);
+an optional `extension.ts` (Pi tools for the fleet chat) is auto-discovered
+by the sandbox image build.
 
-**Everything user-facing is data, not code:** workflows (repo
-`.workhorse/workflows/<name>/` → KV registry → baked seeds), agent blocks
-(persona + tool ceiling, referenced by `stage.agent`), and scripts (agent
-self-extension, D1 registry) are all registry entries editable from the UI.
-A workflow's terminal stage declares its outcome — `pr` (external merge
-completes), `report`/`artifact` (operator acceptance completes) — and
-stages can park mid-run for operator input (`awaiting-input`) rendered as
-schema-driven forms. Completion signals are pluggable
-(`Core.signalTransition`): PR merge, Jira Done, and the UI's Accept button
-are the same mechanism.
+**Workflows are code; the rest is data.** A workflow is a hard-coded,
+eval-tested `WorkflowDef` in `packages/workflow` — adding one is a def + an
+eval case, never an upload. Agent blocks (persona + tool ceiling, referenced
+by `stage.agent`) and scripts (agent self-extension, D1 registry) remain
+registry data editable from the UI. A workflow's terminal stage declares its
+outcome — `pr` (external merge completes), `report`/`artifact` (operator
+acceptance completes). Completion signals are pluggable
+(`Core.signalTransition`): PR merge, Jira Done, and the UI's Accept button are
+the same mechanism.
 
 ## Plugins
 
@@ -81,6 +87,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Package | `plugins/slack` |
 | Inbound | @mention → fleet chat or `trigger <name>` fire; thread replies → notification bus (urgent for live runs) |
 | Outbound | onStatusChange → thread replies |
+| Attachment providers | `slack` (thread, resolved on demand via `fetch_context`) |
 | Triggers | `slack-mention` (Slack TriggerSource for `Core.fireTrigger`) |
 | Secrets | `SLACK_SIGNING_SECRET` (webhook HMAC), `SLACK_BOT_TOKEN` (bot API) |
 
@@ -90,7 +97,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Package | `plugins/jira` |
 | Inbound | Issue assigned to agent account or labeled `workhorse` → fileTicket; comments → notification bus |
 | Outbound | onStatusChange → issue transitions + PR-link comments |
-| Sandbox tools | `search_jira` (issues + comments), `search_confluence` (federated search) |
+| Attachment providers | `jira` (issue + comments, resolved on demand via `fetch_context`) |
 | Triggers | `jira-mention` (Jira TriggerSource for `Core.fireTrigger`) |
 | Secrets | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` (Jira REST API), `JIRA_WEBHOOK_SECRET` (webhook HMAC), `JIRA_AGENT_ACCOUNT` (agent Jira username) |
 
@@ -113,7 +120,7 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | | |
 |---|---|
 | Package | `plugins/scripts` |
-| Sandbox tools | `list_scripts`, `run_script`, `write_script`, `find_script`, `find_tool` |
+| Sandbox tools | `list_scripts`, `run_script`, `write_script` |
 | Worker routes | `GET/POST /scripts`, `GET /scripts/get?ticket=` |
 | Registry | D1 `scripts` table; `.workhorse/scripts.toml` seeds |
 
@@ -121,7 +128,10 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | | |
 |---|---|
 | Package | `plugins/tickets` |
-| Worker routes | Ticket CRUD, dispatch, health, attachments (`match`/`recent`/`resolve`), notification bus (`notify`/`notifications`) |
+| Stage tools | `fetch_context` (resolve a repo/Jira/Slack ref on demand — the enrichment path; refs are parsed from the task prompt, not manually attached) |
+| Fleet-chat tools (`extension.ts`) | `workhorse_file_ticket`, `workhorse_list_tickets`, `workhorse_ticket_status`, `workhorse_ticket_diff`, `workhorse_find_workflow` (semindex-ranked workflow pick) |
+| Worker routes | ticket CRUD, dispatch, `/refs` (frecency-ranked recent context refs), `/attachments/match`\|`/resolve`, notification bus (`notify`/`notifications`) |
+| Attachment providers | `repo` (the "attach a repo" source) |
 
 ### paste
 | | |
@@ -143,13 +153,13 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | Sandbox tools | `web_search` (jina → exa fallback chain), `web_read` (jina reader, clean markdown) |
 | Secrets | `JINA_API_KEY` (primary search/reader), `EXA_API_KEY` (fallback search), `TAVILY_API_KEY` / `BRAVE_API_KEY` (additional fallbacks) |
 
-### semindex
-| | |
-|---|---|
-| Package | `plugins/semindex` |
-| Worker routes | `POST /semindex/query` (Vectorize-backed semantic search) |
-| Sandbox tools | `find_script`, `find_tool` (semantic registry queries) |
-| Corpora | scripts, workflows, tools (auto-indexed on deploy) |
+## Semantic index (not a plugin)
+
+`packages/semindex` is a reusable Vectorize-backed index toolkit;
+`worker/src/semindex.ts` defines the fleet corpora (scripts, workflows,
+tools), reindexed via `POST /admin/reindex-semindex` and queried through
+`GET /find?corpus=…`. The live query tool is `workhorse_find_workflow` (in the
+tickets fleet-chat extension), which ranks workflows for a task before filing.
 
 ## API (bearer-gated)
 
@@ -162,13 +172,13 @@ POST /tickets/:id/accept · /request-changes → acceptance verdicts (report/art
 POST /tickets/:id/heal · /stop              → re-dispatch errored / terminate
 GET  /tickets/:id/activity · /output · /traces · /diff
 POST /chat {messages}                       → fleet operator agent
-GET/PUT/DELETE /workflows/:name             → workflow registry (engine-validated)
+GET  /workflows · GET /workflows/:name      → hard-coded workflow defs (read-only)
 GET/PUT/DELETE /agents/:name                → agent block registry
 GET  /scripts · POST /scripts               → script registry (scoped)
 GET  /find?corpus=scripts|workflows|tools   → semantic search (scoped)
+GET  /refs                                  → frecency-ranked recent context refs
+POST /token · GET /token                    → custodian OAuth push · freshness
 GET  /github?path=…                         → read-only GitHub proxy (scoped)
-POST /search {query}                        → web search (provider chain)
-POST /knowledge/search {query}              → fleet knowledge (scoped ok)
 POST /webhooks/github · /slack · /jira      → verified sources
 ```
 
@@ -177,8 +187,8 @@ POST /webhooks/github · /slack · /jira      → verified sources
 ```
 bun install
 bun run typecheck    # all workspace packages
-bun run test         # vitest (engine unit tests on a mock driver)
-bun run eval         # evalite (evals/ — validator + search providers)
+bun run test         # vitest (workflow-def routing tests, mock ctx)
+bun run eval         # evalite (evals/ — agent-vs-workflow + search providers)
 bun run dev          # local worker (needs Docker for the sandbox container)
 bun run deploy       # deploy worker + container image (from worker/)
 ```
