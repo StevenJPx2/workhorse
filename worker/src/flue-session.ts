@@ -33,6 +33,8 @@ export interface SessionStats {
   tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
   cost?: number;
   contextPercent?: number | null;
+  /** Code Mode adoption signal: run_code + run_script invocations this stage. */
+  runCodeCalls?: number;
 }
 
 export interface StageSessionInput {
@@ -268,6 +270,8 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     const ctx = toolContext(env, selfOrigin, sandbox, { id: input.ticketId, repo: input.repo, stage: input.stageId });
     const builtins = builtinTools(sandbox, allow, input.dir, input.writeAllow);
     const pluginTools = assembleStageTools(ctx, input.tools);
+    // Code Mode adoption counter (run_code + run_script) — surfaced in stats.
+    let runCodeCalls = 0;
 
     // Code Mode: run_code lets the agent chain THIS stage's tools in one
     // dynamic-worker program (fewer model round-trips). The bridge is scoped
@@ -303,6 +307,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
             `declare const tools: {\n${surface || "  // (no tools available)"}\n};`,
           input: v.object({ code: v.string() }),
           async run({ input: a }) {
+            runCodeCalls++;
             const { runCode } = await import("./codemode");
             return fmtCodeResult("run_code", await runCode(env, bridgeProps, a.code));
           },
@@ -328,6 +333,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
             args: v.optional(v.record(v.string(), v.string())),
           }),
           async run({ input: a }) {
+            runCodeCalls++;
             const script = await ctx.core.getScriptByName(a.name, input.repo || undefined);
             if (!script) return `run_script: no script named "${a.name}". Use list_scripts.`;
             // Gate against the ticket's LIVE status (not stale sandbox state).
@@ -404,12 +410,13 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
               "You have not finished: call the `submit_work` tool now with your `analysis` and a `control` JSON object. Do not reply in prose — the stage only completes when submit_work is called.",
             )) as typeof res;
           }
-          const stats: SessionStats | undefined = res.usage
+          const stats: SessionStats = res.usage
             ? {
                 tokens: { input: res.usage.input, output: res.usage.output, cacheRead: res.usage.cacheRead, cacheWrite: res.usage.cacheWrite, total: res.usage.totalTokens },
                 cost: res.usage.cost?.total,
+                runCodeCalls,
               }
-            : undefined;
+            : { runCodeCalls };
           if (!wasSubmitted() && (await sandbox.readFile(`${input.dir}/control.json`)) == null) {
             // Keep the model + output size in the failure — the signal that
             // caught the empty-free-model bug (an underpowered model returns

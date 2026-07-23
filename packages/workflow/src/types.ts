@@ -144,6 +144,7 @@ export interface StageState {
     tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
     cost?: number;
     contextPercent?: number | null;
+    runCodeCalls?: number;
   };
   startedAt?: string;
   completedAt?: string;

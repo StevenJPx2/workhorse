@@ -25,6 +25,7 @@ export interface StageResult {
     tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
     cost?: number;
     contextPercent?: number | null;
+    runCodeCalls?: number;
   };
 }
 

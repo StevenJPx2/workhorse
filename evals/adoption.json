@@ -1,0 +1,25 @@
+{
+  "$comment": "Code Mode ADOPTION corpus. Explore-heavy tasks on the toolkit fixture (9 src/ modules) where surveying every file rewards batching tool calls. A/B: coding (run_code available) vs coding-nocode (run_code stripped). Same tasks, same model — the delta isolates run_code's effect on adoption + token efficiency.",
+  "repo": "https://github.com/StevenJPx2/workhorse-e2e-test",
+  "tasks": [
+    {
+      "id": "api-table",
+      "title": "eval: document every exported function",
+      "prompt": "Read every module under src/ and create API.md: one markdown table with a row per exported function — columns Module, Function, Signature, One-line purpose. Cover every export across all modules; do not sample."
+    },
+    {
+      "id": "todo-audit",
+      "title": "eval: consolidate all TODO/FIXME",
+      "prompt": "Scan every file under src/ for TODO and FIXME comments. Create TODOS.md listing each one: the file, the exact comment text, and a one-sentence interpretation of what work it implies. Miss none."
+    },
+    {
+      "id": "jsdoc-fill",
+      "title": "eval: add missing JSDoc",
+      "prompt": "Survey every exported function in every src/ module. For each exported function that lacks a JSDoc comment, add a concise one-line JSDoc describing what it does. Do not modify functions that already have one."
+    }
+  ],
+  "variants": [
+    { "id": "code-on", "workflow": "coding", "model": "claude-sonnet-4-6" },
+    { "id": "code-off", "workflow": "coding-nocode", "model": "claude-sonnet-4-6" }
+  ]
+}

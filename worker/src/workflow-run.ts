@@ -85,7 +85,7 @@ export interface DefActivity {
   runId: string;
   workflow: string;
   tasks: Array<{ id: string; status: "completed"; round: number; analysis: string; control: Record<string, unknown> }>;
-  usage: { totalTokens: number; cost: number };
+  usage: { totalTokens: number; cost: number; runCodeCalls: number };
   startedAt: string;
   completedAt: string;
 }
@@ -107,6 +107,7 @@ export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResul
   const tasks: DefActivity["tasks"] = [];
   let tokens = 0;
   let cost = 0;
+  let runCodeCalls = 0;
   const sandbox = sandboxDriver(deps.env, deps.sandboxId);
 
   const ctx = makeWorkflowContext({
@@ -117,6 +118,7 @@ export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResul
         tasks.push({ id: s.id, status: "completed", round: s.round, analysis: s.analysis ?? "", control: s.control ?? {} });
         tokens += s.stats?.tokens?.total ?? 0;
         cost += s.stats?.cost ?? 0;
+        runCodeCalls += s.stats?.runCodeCalls ?? 0;
       }
     },
   });
@@ -125,7 +127,7 @@ export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResul
     runId: deps.runId,
     workflow: deps.def.name,
     tasks,
-    usage: { totalTokens: tokens, cost },
+    usage: { totalTokens: tokens, cost, runCodeCalls },
     startedAt,
     completedAt: new Date().toISOString(),
   });

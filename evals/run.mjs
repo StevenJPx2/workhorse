@@ -13,8 +13,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const corpus = JSON.parse(readFileSync(join(here, "corpus.json"), "utf8"));
-const statePath = join(here, ".state.json");
+// EVAL_CORPUS selects the corpus + state file (default: agent-vs-workflow).
+const corpusFile = process.env.EVAL_CORPUS ?? "corpus.json";
+const corpus = JSON.parse(readFileSync(join(here, corpusFile), "utf8"));
+const statePath = join(here, corpusFile.replace(/\.json$/, ".state.json"));
+const resultsFile = corpusFile.replace(/\.json$/, ".results.json");
 
 const URL_ = process.env.WORKHORSE_URL ?? "https://workhorse-sandbox.stevenjpx2.workers.dev";
 const TOKEN =
@@ -61,7 +64,7 @@ if (cmd === "file") {
   const results = [];
   for (const run of state.runs) {
     const { ticket } = await api(`/tickets/${run.ticketId}`);
-    let metrics = { tokens: null, stages: null, failedStages: null, loopbacks: null, wallMs: null };
+    let metrics = { tokens: null, runCodeCalls: null, stages: null, failedStages: null, loopbacks: null, wallMs: null };
     let diff = "";
     try {
       const idx = await api(`/tickets/${run.ticketId}/traces`);
@@ -71,6 +74,7 @@ if (cmd === "file") {
         const tasks = a.tasks ?? [];
         metrics = {
           tokens: a.usage?.totalTokens ?? null,
+          runCodeCalls: a.usage?.runCodeCalls ?? null,
           stages: tasks.length,
           failedStages: tasks.filter((t) => t.status === "failed").length,
           // loopbacks = implement re-runs beyond the first (verify→implement).
@@ -106,22 +110,24 @@ if (cmd === "file") {
       prompt: (corpus.tasks.find((t) => t.id === run.task) ?? {}).prompt ?? "",
     });
   }
-  writeFileSync(join(here, ".results.json"), JSON.stringify({ reportedAt: new Date().toISOString(), results }, null, 2));
+  writeFileSync(join(here, resultsFile), JSON.stringify({ reportedAt: new Date().toISOString(), results }, null, 2));
   console.table(rows);
   // Per-variant rollup.
   const byVariant = {};
   for (const r of rows) {
-    const v = (byVariant[r.variant] ??= { n: 0, delivered: 0, tokens: 0, wallMs: 0 });
+    const v = (byVariant[r.variant] ??= { n: 0, delivered: 0, tokens: 0, wallMs: 0, runCodeCalls: 0 });
     v.n++;
     if (r.pr === "yes") v.delivered++;
     v.tokens += r.tokens ?? 0;
     v.wallMs += r.wallMs ?? 0;
+    v.runCodeCalls += r.runCodeCalls ?? 0;
   }
   console.table(
     Object.entries(byVariant).map(([variant, v]) => ({
       variant,
       delivered: `${v.delivered}/${v.n}`,
       avgTokens: Math.round(v.tokens / v.n),
+      runCodeCalls: v.runCodeCalls,
       avgWallMin: (v.wallMs / v.n / 60000).toFixed(1),
     })),
   );
