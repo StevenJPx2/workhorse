@@ -19,6 +19,8 @@ import { webhookRoutes } from "./routes/webhooks";
 export { Sandbox } from "@cloudflare/sandbox";
 export { TicketWorkflow } from "./ticket-workflow";
 export { healTicket } from "./heal";
+// Loopback entrypoint for Code Mode dynamic workers (ctx.exports.ToolBridge).
+export { ToolBridge } from "./codemode";
 
 /** Table order = precedence. */
 const routes: Route[] = [

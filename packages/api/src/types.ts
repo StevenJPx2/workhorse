@@ -78,9 +78,39 @@ export interface TicketRecord {
   healAttempts?: number;
 }
 
+/**
+ * Worker Loader (Dynamic Workers) — spin up isolated Workers on demand for
+ * Code Mode. `load()` = fresh one-off isolate (AI-generated code); `get()` =
+ * cached-by-id. The dynamic worker's only outside access is the bindings we
+ * put in `env` + whatever `globalOutbound` allows (null = no network).
+ */
+export interface WorkerCode {
+  compatibilityDate: string;
+  compatibilityFlags?: string[];
+  mainModule: string;
+  modules: Record<string, string>;
+  /** Bindings handed to the dynamic worker (loopback stubs, KV, etc.). */
+  env?: Record<string, unknown>;
+  /** null = no network; a service stub = proxied egress; omitted = inherit. */
+  globalOutbound?: unknown | null;
+  limits?: { cpuMs?: number; subRequests?: number };
+}
+export interface WorkerStubEntrypoint {
+  fetch(request: Request): Promise<Response>;
+}
+export interface WorkerStub {
+  getEntrypoint(name?: string | null, opts?: { props?: unknown; limits?: { cpuMs?: number; subRequests?: number } }): WorkerStubEntrypoint;
+}
+export interface WorkerLoader {
+  load(code: WorkerCode): WorkerStub;
+  get(id: string, getCode: () => Promise<WorkerCode>): WorkerStub;
+}
+
 export interface Env {
   Sandbox: DurableObjectNamespace<Sandbox>;
   TICKETS: KVNamespace;
+  /** Worker Loader binding — Dynamic Workers for Code Mode (run_code). */
+  LOADER: WorkerLoader;
   /**
    * D1: the relational plane. Records with relationships — tickets,
    * escalations, trace index, scripts. KV keeps hot small state (live

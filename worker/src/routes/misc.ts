@@ -6,6 +6,21 @@ import { json, type Route } from "../router";
 
 export const miscRoutes: Route[] = [
   {
+    // Spike: prove the Worker Loader / Code Mode mechanism end-to-end.
+    // Master-gated; delete once run_code is built on the proven path.
+    method: "POST",
+    path: "/spike/loader",
+    auth: "master",
+    async handler({ env, ctx }) {
+      const { runLoaderSpike } = await import("../codemode");
+      try {
+        return json({ ok: true, result: await runLoaderSpike(env, ctx) });
+      } catch (e) {
+        return json({ ok: false, error: String((e as Error)?.message ?? e).slice(0, 500) }, 500);
+      }
+    },
+  },
+  {
     // Fleet chat: a Pi session in a dedicated sandbox with workhorse tools.
     method: "POST",
     path: "/chat",
