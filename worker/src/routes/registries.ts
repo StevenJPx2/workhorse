@@ -2,8 +2,8 @@
 // code) + the custodian token push + admin maintenance.
 
 import type { Env } from "@workhorse/api";
+import { workflowDef, workflowDefs } from "@workhorse/workflow";
 import { backfillFromKV } from "../db";
-import { NAME_RE, deleteWorkflow, getWorkflow, listWorkflows, putWorkflow, seedWorkflows } from "../workflows";
 import { json, type Route } from "../router";
 
 export const registryRoutes: Route[] = [
@@ -77,51 +77,36 @@ export const registryRoutes: Route[] = [
     },
   },
 
-  // ---- workflow registry ----
+  // ---- workflows (hard-coded defs; read-only) ----
+  // Workflows are code, not user data — no upload/registry. These serve the
+  // UI picker + read-only graph view from the static def manifests.
   {
     method: "GET",
     path: "/workflows",
     auth: "master",
-    handler: async ({ env }) => json({ workflows: await listWorkflows(env) }),
+    handler: async () =>
+      json({
+        workflows: Object.values(workflowDefs).map((d) => ({
+          name: d.name,
+          description: d.description,
+          stageCount: d.stages.length,
+        })),
+      }),
   },
   {
-    method: "POST",
-    path: "/workflows/seed",
-    auth: "master",
-    handler: async ({ env }) => json(await seedWorkflows(env)),
-  },
-  {
-    method: "*",
+    method: "GET",
     path: /^\/workflows\/([\w-]+)$/,
     auth: "master",
-    async handler({ request, env, match }) {
-      if (!NAME_RE.test(match[1])) return json({ error: "bad name" }, 400);
-      if (request.method === "GET") {
-        const entry = await getWorkflow(env, match[1]);
-        return entry ? json(entry) : json({ error: "not found" }, 404);
-      }
-      if (request.method === "PUT") {
-        const body = (await request.json().catch(() => null)) as {
-          spec?: Record<string, unknown>;
-          agents?: Record<string, string>;
-          schemas?: Record<string, string>;
-        } | null;
-        if (!body?.spec) return json({ error: "spec required" }, 400);
-        const err = await putWorkflow(env, match[1], {
-          spec: body.spec,
-          agents: body.agents,
-          schemas: body.schemas,
-        });
-        if (err) return json({ error: err }, 422);
-        return json({ ok: true, name: match[1] });
-      }
-      if (request.method === "DELETE") {
-        const entry = await getWorkflow(env, match[1]);
-        if (!entry) return json({ error: "not found" }, 404);
-        await deleteWorkflow(env, match[1]);
-        return json({ ok: true });
-      }
-      return json({ error: "method" }, 405);
+    async handler({ match }) {
+      const d = workflowDef(match[1]);
+      if (!d) return json({ error: "not found" }, 404);
+      // Shape mirrors the old registry entry: a spec the graph view renders.
+      return json({
+        name: d.name,
+        description: d.description,
+        spec: { schemaVersion: 1, name: d.name, description: d.description, inputs: d.inputs, artifactGraph: { stages: d.stages } },
+        readOnly: true,
+      });
     },
   },
 
@@ -162,10 +147,11 @@ export const registryRoutes: Route[] = [
     path: "/meta/editor",
     auth: "master",
     async handler({ env: _env }) {
-      const { PROMOTION_CHAIN } = await import("../model-chains");
       const { TOOL_CATALOG } = await import("../semindex");
+      // Models offered in the dispatch picker (primary → cheaper fallbacks).
+      const models = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-1"];
       return json({
-        models: PROMOTION_CHAIN,
+        models,
         tools: TOOL_CATALOG.map((t) => ({
           name: t.name,
           classification: t.classification,

@@ -129,20 +129,9 @@ export const ticketRoutes: Route[] = [
         answers?: Record<string, unknown>;
       };
       if (!answers) return json({ error: "answers required" }, 400);
-      try {
-        const { engineFor } = await import("../agent-run");
-        const engine = await engineFor(env, `ticket-${match[1]}`, rec.workflow);
-        const stage = await engine.injectInput(rec.runId, answers);
-        try {
-          const inst = await env.TICKET_WF.get(rec.wfInstance ?? match[1]);
-          await inst.sendEvent({ type: "operator-input", payload: {} });
-        } catch {
-          /* instance not parked yet — next burst reads the state anyway */
-        }
-        return json({ ok: true, stage });
-      } catch (e) {
-        return json({ error: String(e instanceof Error ? e.message : e).slice(0, 500) }, 422);
-      }
+      // Awaiting-input parks are a deferred def-path feature — no def workflow
+      // raises one yet, so this is currently unreachable (guard above 409s).
+      return json({ error: "operator-input parks are not supported on the flue-first path yet" }, 501);
     },
   },
   {
@@ -216,10 +205,9 @@ export const ticketRoutes: Route[] = [
       if (stored) return new Response(stored, { headers: { "content-type": "application/json" } });
       const rec = await getTicket(env, match[1]);
       if (!rec) return json({ error: "not found" }, 404);
-      if (!rec.runId) return json({ runId: null, tasks: [], note: "run not started yet" });
-      const { collectActivity } = await import("../agent-run");
-      const live = await collectActivity(env, `ticket-${match[1]}`, rec.runId);
-      return new Response(live, { headers: { "content-type": "application/json" } });
+      // The def path writes activity:<id> on every attempt, so an uncached
+      // read just means the first stage hasn't finished yet.
+      return json({ runId: rec.runId ?? null, tasks: [], note: rec.runId ? "run in progress" : "run not started yet" });
     },
   },
   {
@@ -230,30 +218,26 @@ export const ticketRoutes: Route[] = [
     async handler({ env, match }) {
       const rec = await getTicket(env, match[1]);
       if (!rec?.runId) return json({ output: null, note: "no run yet" });
+      // Flue-first: the stage session runs in the Worker (no on-disk event
+      // stream). Live signal = the live: snapshot (phase/note from onStage);
+      // readable output = the current/last stage's analysis.md on disk.
       try {
-        const { sandboxDriver } = await import("../agent-run");
-        const driver = sandboxDriver(env, `ticket-${match[1]}`);
-        const raw = await driver.readFile(`/workspace/.workflow/${rec.runId}/state.json`);
-        if (!raw) return json({ output: null, note: "no live run state (sandbox cold)" });
-        const state = JSON.parse(raw) as {
-          stages: Array<{ id: string; status: string; rounds: number }>;
-        };
-        const active =
-          state.stages.find((s) => s.status === "running") ??
-          [...state.stages].reverse().find((s) => s.status !== "pending");
-        if (!active) return json({ output: null, note: "no active stage" });
-        const round = Math.max(1, active.rounds + (active.status === "running" ? 1 : 0));
-        const dir = `/workspace/.workflow/${rec.runId}/stages/${active.id}/round-${round}`;
-        const { tailEvents, renderEvents } = await import("@workhorse/workflow");
-        const { events } = await tailEvents(driver, dir, 0);
-        let output = events.length ? renderEvents(events).slice(-12000) : null;
-        if (!output) {
-          const r = await driver.exec(`tail -c 12000 ${dir}/session.log 2>/dev/null || true`, {
-            timeout: 15_000,
-          });
-          output = r.stdout || null;
+        const live = await env.TICKETS.get(`live:${match[1]}`);
+        const snap = live ? (JSON.parse(live) as { phase?: string; note?: string }) : {};
+        const stageId = snap.phase && /^[\w-]+$/.test(snap.phase) ? snap.phase : null;
+        let output: string | null = null;
+        if (stageId) {
+          const { sandboxDriver } = await import("../agent-run");
+          const driver = sandboxDriver(env, `ticket-${match[1]}`);
+          // Latest round's analysis (submit_work writes it at stage completion).
+          const r = await driver.exec(
+            `ls -1dt /workspace/.workflow/${rec.runId}/stages/${stageId}/round-* 2>/dev/null | head -1`,
+            { timeout: 15_000 },
+          );
+          const dir = r.stdout?.trim().split("\n")[0];
+          if (dir) output = (await driver.readFile(`${dir}/analysis.md`))?.slice(-12000) ?? null;
         }
-        return json({ stage: active.id, status: active.status, output });
+        return json({ stage: stageId, status: snap.note ?? null, output });
       } catch (e) {
         return json({ output: null, note: `unavailable: ${String(e).slice(0, 200)}` });
       }

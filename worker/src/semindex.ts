@@ -4,7 +4,7 @@
 
 import { defineIndex } from "@workhorse/semindex";
 import type { Env, ScriptRecord } from "@workhorse/api";
-import type { WorkflowEntry } from "./workflows";
+
 
 export const scriptIndex = defineIndex<ScriptRecord>({
   name: "scripts",
@@ -80,8 +80,6 @@ export const TOOL_CATALOG: ToolDoc[] = [
 /** Rebuild every corpus (admin; idempotent — upserts replace by id). */
 export async function reindexAll(env: Env): Promise<Record<string, number>> {
   const { listScripts } = await import("./db");
-  const { listWorkflows, getWorkflow } = await import("./workflows");
-
   // Scripts: all scopes — listScripts(repo) is scoped, so read the table.
   const { results } = await env.DB.prepare("SELECT * FROM scripts").all<Record<string, string>>();
   const scripts: ScriptRecord[] = (results ?? []).map((r) => ({
@@ -90,13 +88,13 @@ export async function reindexAll(env: Env): Promise<Record<string, number>> {
     createdBy: r.created_by as ScriptRecord["createdBy"], createdAt: r.created_at, updatedAt: r.updated_at,
   }));
 
-  const wfMetas = await listWorkflows(env);
-  const workflows: Array<{ name: string; description?: string; stages: string[] }> = [];
-  for (const m of wfMetas) {
-    const e = (await getWorkflow(env, m.name)) as WorkflowEntry | null;
-    const stages = ((e?.spec as { artifactGraph?: { stages?: Array<{ id: string }> } })?.artifactGraph?.stages ?? []).map((s) => s.id);
-    workflows.push({ name: m.name, description: m.description, stages });
-  }
+  // Workflows are hard-coded defs — index their manifests directly.
+  const { workflowDefs } = await import("@workhorse/workflow");
+  const workflows = Object.values(workflowDefs).map((d) => ({
+    name: d.name,
+    description: d.description,
+    stages: d.stages.map((s) => s.id),
+  }));
 
   return {
     scripts: await scriptIndex.upsert(env, scripts),

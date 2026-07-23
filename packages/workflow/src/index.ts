@@ -1,19 +1,11 @@
-export { WorkflowEngine, type EngineOptions } from "./engine";
+// @workhorse/workflow — hard-coded, eval-tested workflow definitions + the
+// stage-assembly helpers the worker's WorkflowContext uses. No interpreter,
+// no spec registry: a workflow is a TypeScript WorkflowDef, run in-process by
+// the worker spine.
+
 export type { Driver, ExecResult } from "./driver";
-export type { StageRunner, StageRunInput, StageRunResult } from "./runner";
-export {
-  assemblePrompt,
-  initialStages,
-  inputsToSchema,
-  runDir,
-  stageSession,
-  stageDir,
-  stageOrder,
-  terminalStage,
-  untilSatisfied,
-  upstreamDigest,
-} from "./compile";
-export { froms, validateAgainstSchema, validateWorkflowSpec } from "./validate";
+export { assemblePrompt, stageDir, stageSession, upstreamDigest } from "./compile";
+export { validateAgainstSchema } from "./validate";
 export {
   StageFailure,
   ThrottledPark,
@@ -24,17 +16,11 @@ export {
   type WorkflowResult,
   type WorkflowDef,
 } from "./context";
-export { workflowDef, workflowDefs, coding, codingRaw } from "./workflows/index";
-export { digestEvents, renderEvents, sendCommand, tailEvents, launchSdkSession, killSession, sessionAlive, type SessionEvent } from "./session";
+export { workflowDef, workflowDefs, coding, codingRaw, screenshotPr } from "./workflows/index";
 export type {
   FailureKind,
   JsonSchema,
-  RunState,
-  RunStatus,
-  StageDriveReport,
   StageSpec,
-  StageState,
-  StageStatus,
   ToolRef,
   WorkflowDefaults,
   WorkflowInput,

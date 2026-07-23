@@ -1,9 +1,9 @@
-// Spec → executable plan: resolved stage order, per-stage agent files
-// (tool ceilings), and prompt assembly with upstream digests + the
-// control-contract epilogue.
+// Per-stage session assembly: agent files (tool ceilings), prompt assembly
+// with upstream digests + the control-contract epilogue. The worker's
+// WorkflowContext (ctx.stage) uses these to run a hard-coded WorkflowDef's
+// stages; there is no spec interpreter.
 
-import type { JsonSchema, StageSpec, StageState, ToolRef, WorkflowSpec } from "./types";
-import { froms } from "./validate";
+import type { JsonSchema, StageSpec, ToolRef } from "./types";
 
 export const RUN_ROOT = "/workspace/.workflow";
 
@@ -12,29 +12,6 @@ export function runDir(runId: string): string {
 }
 export function stageDir(runId: string, stageId: string, round: number): string {
   return `${runDir(runId)}/stages/${stageId}/round-${round}`;
-}
-
-/** Topological order (stable: declaration order among ready stages). */
-export function stageOrder(spec: WorkflowSpec): StageSpec[] {
-  const stages = spec.artifactGraph.stages;
-  const done = new Set<string>();
-  const out: StageSpec[] = [];
-  while (out.length < stages.length) {
-    const ready = stages.find(
-      (s) => !done.has(s.id) && froms(s).every((f) => done.has(f)),
-    );
-    if (!ready) break; // cycle — validation rejects this upstream
-    done.add(ready.id);
-    out.push(ready);
-  }
-  return out;
-}
-
-/** The terminal stage (no dependents) — owns the run outcome. */
-export function terminalStage(spec: WorkflowSpec): StageSpec {
-  const dependents = new Set(spec.artifactGraph.stages.flatMap((s) => froms(s)));
-  const terminals = spec.artifactGraph.stages.filter((s) => !dependents.has(s.id));
-  return terminals[terminals.length - 1] ?? spec.artifactGraph.stages[spec.artifactGraph.stages.length - 1];
 }
 
 export function toolName(t: ToolRef): string {
@@ -190,41 +167,3 @@ function controlEpilogue(stage: StageSpec, dir: string): string {
   ].join("\n");
 }
 
-/** Loop-until: "$.key == 'value'" | "$.key != 'value'" | "$.key" (truthy). */
-export function untilSatisfied(until: string | undefined, control: Record<string, unknown> | undefined): boolean {
-  if (!until) return false;
-  if (!control) return false;
-  const m = until.trim().match(/^\$\.([\w.]+)\s*(==|!=)?\s*(?:'([^']*)'|"([^"]*)"|(\S+))?$/);
-  if (!m) return false;
-  const [, pathStr, op, sq, dq, bare] = m;
-  let cur: unknown = control;
-  for (const key of pathStr.split(".")) {
-    if (typeof cur !== "object" || cur === null) return false;
-    cur = (cur as Record<string, unknown>)[key];
-  }
-  if (!op) return Boolean(cur);
-  const raw = sq ?? dq ?? bare ?? "";
-  const expected: unknown = raw === "true" ? true : raw === "false" ? false : /^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw;
-  return op === "==" ? cur === expected : cur !== expected;
-}
-
-/** JSON schema for an input request or workflow inputs — shared shape. */
-export function inputsToSchema(inputs: NonNullable<WorkflowSpec["inputs"]>): JsonSchema {
-  const properties: Record<string, JsonSchema> = {};
-  const required: string[] = [];
-  for (const inp of inputs) {
-    properties[inp.name] = {
-      type: inp.type === "choice" ? "string" : inp.type,
-      description: inp.description,
-      ...(inp.type === "choice" ? { enum: inp.options } : {}),
-      ...(inp.default !== undefined ? { default: inp.default } : {}),
-    };
-    if (inp.required) required.push(inp.name);
-  }
-  return { type: "object", properties, ...(required.length ? { required } : {}) };
-}
-
-/** Fresh run-state stage entries in execution order. */
-export function initialStages(spec: WorkflowSpec): StageState[] {
-  return stageOrder(spec).map((s) => ({ id: s.id, status: "pending", rounds: 0 }));
-}

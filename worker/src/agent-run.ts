@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { getSandbox } from "@cloudflare/sandbox";
-import { WorkflowEngine, type Driver, type StageDriveReport, type WorkflowSpec } from "@workhorse/workflow";
+import type { Driver } from "@workhorse/workflow";
 import { parseScriptsToml } from "./scripts-toml";
 import type { Env } from "@workhorse/api";
 
@@ -27,58 +27,6 @@ export function sandboxDriver(env: Env, sandboxId: string): Driver {
   };
 }
 
-/** Load the prepared workflow spec from the sandbox and build the engine. */
-export async function engineFor(
-  env: Env,
-  sandboxId: string,
-  workflow = "coding",
-  ticketId?: string,
-): Promise<WorkflowEngine> {
-  const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
-  const driver = sandboxDriver(env, sandboxId);
-  const raw = await driver.readFile(`/workspace/repo/.pi/workflows/${wf}/spec.json`);
-  if (!raw) throw new Error(`workflow "${wf}" spec not found in workspace (prepare first)`);
-  const spec = JSON.parse(raw) as WorkflowSpec;
-  // Inline schema files referenced by path (engine validates inline only).
-  for (const stage of spec.artifactGraph.stages) {
-    const ref = stage.output?.controlSchema;
-    if (typeof ref === "string") {
-      const schemaRaw = await driver.readFile(`/workspace/repo/.pi/workflows/${wf}/${ref.replace(/^\.\//, "")}`);
-      if (schemaRaw) {
-        try { stage.output!.controlSchema = JSON.parse(schemaRaw); } catch { delete stage.output!.controlSchema; }
-      } else {
-        delete stage.output!.controlSchema;
-      }
-    }
-  }
-  // Ticket-bound engines get the notification read point: stages that
-  // declare `notifications: "read"` receive unread bus items in-prompt
-  // and mark them read.
-  const tid = ticketId ?? sandboxId.replace(/^ticket-/, "");
-  // Flue-stages cutover: run this workflow's stages via the in-process flue
-  // harness when flagged (FLUE_STAGES = "all" or a comma-list of workflow
-  // names). Default (unset) = pi subprocess path. Engine semantics identical.
-  const flueList = (env.FLUE_STAGES ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const useFlue = flueList.includes("all") || flueList.includes(wf);
-  let runner;
-  if (useFlue && env.SELF_URL) {
-    const { flueStageRunner } = await import("./flue-runner");
-    runner = flueStageRunner(env, sandboxId, env.SELF_URL, tid);
-  }
-  return new WorkflowEngine(driver, spec, {
-    cwd: "/workspace/repo",
-    runner,
-    readNotifications: async () => {
-      const { unreadNotifications, markNotificationsRead, renderNotifications } = await import(
-        "./notifications"
-      );
-      const items = await unreadNotifications(env, tid);
-      if (items.length === 0) return null;
-      await markNotificationsRead(env, tid, items[items.length - 1].seq);
-      return renderNotifications(items);
-    },
-  });
-}
 
 /** Write the short-lived OAuth access token into the sandbox's Pi home. */
 export async function injectAuth(env: Env, sandboxId: string, accessToken: string) {
@@ -309,52 +257,21 @@ export async function prepareWorkspace(
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   // Guard the workflow name (it lands in shell paths): letters/digits/-/_ only.
   const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
+  // Workflows are hard-coded defs run in the Worker; the sandbox is just the
+  // workspace (clone + git identity + keep run artifacts out of the diff).
   const result = await sandbox.exec(
     [
       `[ -d /workspace/repo/.git ] || git clone --depth 50 ${JSON.stringify(repo)} /workspace/repo`,
       `cd /workspace/repo`,
-      `mkdir -p .pi/workflows`,
-      // Tier 1/3: repo-versioned workflow wins; baked bundle is the fallback.
-      // (A registry entry, when present, overwrites this copy below.)
-      `if [ -d .workhorse/workflows/${wf} ]; then cp -R .workhorse/workflows/${wf} .pi/workflows/${wf}; ` +
-        `elif [ -d /opt/agent/sandbox/workflows/${wf} ]; then cp -R /opt/agent/sandbox/workflows/${wf} .pi/workflows/${wf}; ` +
-        `else mkdir -p .pi/workflows/${wf}; fi`,
-      `[ -d .workhorse/workflows/${wf} ] && echo WH_SRC=repo || echo WH_SRC=other`,
+      `mkdir -p .workflow`,
       // Keep run artifacts out of diffs/PRs without touching tracked files.
-      `grep -q "^\\.pi/$" .git/info/exclude 2>/dev/null || echo ".pi/" >> .git/info/exclude`,
+      `grep -q "^\\.workflow/$" .git/info/exclude 2>/dev/null || echo ".workflow/" >> .git/info/exclude`,
       `git config user.email "workhorse@stevenjohn.co" && git config user.name "Workhorse"`,
     ].join(" && "),
     { timeout: 180_000 },
   );
   if (result.exitCode !== 0) {
     throw new Error(`workspace prep failed: ${(result.stderr || result.stdout).slice(-500)}`);
-  }
-
-  // Tier 2: KV registry entry — unless the repo versions its own (tier 1).
-  if (!result.stdout.includes("WH_SRC=repo")) {
-    const { getWorkflow } = await import("./workflows");
-    const entry = await getWorkflow(env, wf);
-    if (entry) {
-      const dir = `/workspace/repo/.pi/workflows/${wf}`;
-      await sandbox.writeFile(`${dir}/spec.json`, JSON.stringify(entry.spec, null, 2));
-      for (const [rel, text] of Object.entries(entry.schemas ?? {})) {
-        if (!/^[\w./-]+$/.test(rel) || rel.includes("..")) continue;
-        await sandbox.writeFile(`${dir}/${rel}`, text);
-      }
-      for (const [file, md] of Object.entries(entry.agents ?? {})) {
-        if (!/^[\w.-]+\.md$/.test(file)) continue;
-        await sandbox.writeFile(`/root/.pi/agent/agents/${file}`, md);
-      }
-    }
-  }
-
-  // Sanity: SOME spec must exist now (an unknown name with no registry
-  // entry would otherwise fail at dispatch).
-  const check = await sandbox.exec(`test -f /workspace/repo/.pi/workflows/${wf}/spec.json`, {
-    timeout: 10_000,
-  });
-  if (check.exitCode !== 0) {
-    throw new Error(`workflow "${wf}" not found in repo, registry, or baked bundles`);
   }
 
   // Script seeding: a committed .workhorse/scripts.toml imports into the
@@ -409,87 +326,6 @@ export async function prepareWorkspace(
   }
 }
 
-/** Dispatch the named workflow for a task. Returns the run id. */
-export async function startWorkflow(
-  env: Env,
-  sandboxId: string,
-  task: string,
-  workflow = "coding",
-  inputs?: Record<string, string | number | boolean>,
-): Promise<string> {
-  const engine = await engineFor(env, sandboxId, workflow);
-  const state = await engine.dispatch(task, inputs ? { inputs } : {});
-  return state.runId;
-}
-
-export type DriveReport = StageDriveReport;
-
-/**
- * Drive the run forward for one burst (~drainMs) and report status —
- * engine.advance reconciles the running session, launches ready stages,
- * and holds the burst polling the live session.
- */
-export async function driveWorkflow(
-  env: Env,
-  sandboxId: string,
-  runId: string,
-  drainMs = 50_000,
-  workflow = "coding",
-): Promise<DriveReport> {
-  const engine = await engineFor(env, sandboxId, workflow);
-  return engine.advance(runId, drainMs);
-}
-
-/**
- * Interrupt the run's current stage and re-run it with the operator's steer
- * appended to its prompt. Returns the steered stage's id.
- */
-export async function steerWorkflow(
-  env: Env,
-  sandboxId: string,
-  runId: string,
-  steer: string,
-  workflow = "coding",
-): Promise<string> {
-  const engine = await engineFor(env, sandboxId, workflow);
-  return engine.steer(runId, steer);
-}
-
-/**
- * Escalate the run:
- * - failSpecId + model → capability promotion (re-run that stage one model up).
- * - model only → availability fallback (failed + remaining stages move to it).
- * - neither → plain retry of failed stages (fresh credentials already injected).
- */
-export async function escalateWorkflow(
-  env: Env,
-  sandboxId: string,
-  runId: string,
-  options: { failSpecId?: string; model?: string } = {},
-  workflow = "coding",
-): Promise<string[]> {
-  const engine = await engineFor(env, sandboxId, workflow);
-  if (options.model) return engine.promote(runId, options.model, options.failSpecId);
-  return engine.retry(runId);
-}
-
-/**
- * Collect the run's activity document (per-stage lifecycle, prompts,
- * analyses, session log tails) for the UI + trace archive.
- */
-export async function collectActivity(
-  env: Env,
-  sandboxId: string,
-  runId: string,
-  workflow = "coding",
-): Promise<string> {
-  try {
-    const engine = await engineFor(env, sandboxId, workflow);
-    return JSON.stringify(await engine.activity(runId));
-  } catch (err) {
-    return JSON.stringify({ runId, error: "activity unavailable", detail: String(err).slice(0, 300) });
-  }
-}
 
 /** Ensure the ticket branch exists locally (fresh sandbox after a park). */
 export async function checkoutTicketBranch(
@@ -556,24 +392,3 @@ export async function deliverBranch(
   return { branch, diff, pushed: push.exitCode === 0 };
 }
 
-/** Collect the final artifacts: terminal-stage analysis + the git diff stat. */
-export async function collectResult(
-  env: Env,
-  sandboxId: string,
-  runId: string,
-  workflow = "coding",
-): Promise<{ analysis: string; diffStat: string }> {
-  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  const diff = await sandbox.exec(
-    `cd /workspace/repo && git add -A && git diff --cached --stat | tail -30`,
-    { timeout: 60_000 },
-  );
-  let analysis = "";
-  try {
-    const engine = await engineFor(env, sandboxId, workflow);
-    analysis = (await engine.collect(runId)).analysis;
-  } catch {
-    /* leave empty */
-  }
-  return { analysis: analysis.trim(), diffStat: (diff.stdout ?? "").trim() };
-}

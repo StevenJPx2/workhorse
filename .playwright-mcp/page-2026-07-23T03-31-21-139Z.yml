@@ -1,0 +1,46 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link "Workhorse" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e8]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Home" [ref=e12] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e15]:
+            - link "Fleet" [ref=e16] [cursor=pointer]:
+              - /url: /tickets
+          - listitem [ref=e19]:
+            - link "Workflows" [ref=e20] [cursor=pointer]:
+              - /url: /workflows
+          - listitem [ref=e23]:
+            - link "Agents" [ref=e24] [cursor=pointer]:
+              - /url: /agents
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - paragraph [ref=e31]: What should the fleet work on?
+          - paragraph [ref=e32]:
+            - text: "Attach a repo to dispatch a ticket — or just ask about the fleet:"
+            - emphasis [ref=e33]: "\"what's running?\""
+            - text: ·
+            - emphasis [ref=e34]: "\"why did be45ecec fail?\""
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - textbox "Message the fleet, or attach a repo to dispatch work…" [ref=e38]
+            - button [disabled] [ref=e39]
+          - generic [ref=e41]:
+            - button "stevenjpx2/workhorse-e2e-test" [ref=e42]
+            - button "Add new" [ref=e44]
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]: Running now (0)
+            - generic [ref=e52]:
+              - link "View running agents" [ref=e53] [cursor=pointer]:
+                - /url: /tickets?active=1
+              - link "View all agents" [ref=e54] [cursor=pointer]:
+                - /url: /tickets
+          - generic [ref=e55]: Fleet is idle.
+  - region "Notifications (F8)":
+    - list
