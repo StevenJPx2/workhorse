@@ -247,16 +247,8 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
  *   2. KV registry entry (workflow:<name>)   (fleet-wide, user-managed)
  *   3. baked /opt/agent/sandbox/workflows/   (seed fallback)
  */
-export async function prepareWorkspace(
-  env: Env,
-  sandboxId: string,
-  repo: string,
-  model?: string,
-  workflow = "coding",
-) {
+export async function prepareWorkspace(env: Env, sandboxId: string, repo: string) {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  // Guard the workflow name (it lands in shell paths): letters/digits/-/_ only.
-  const wf = /^[\w-]+$/.test(workflow) ? workflow : "coding";
   // Workflows are hard-coded defs run in the Worker; the sandbox is just the
   // workspace (clone + git identity + keep run artifacts out of the diff).
   const result = await sandbox.exec(
@@ -313,17 +305,8 @@ export async function prepareWorkspace(
   } catch (err) {
     console.warn("scripts.toml seeding failed (non-fatal):", err);
   }
-
-  // Evals: patch the model override into the workspace spec copy.
-  if (model) {
-    const patch = await sandbox.exec(
-      `cd /workspace/repo && node -e 'const f=".pi/workflows/${wf}/spec.json",s=require("/workspace/repo/"+f);s.defaults=s.defaults??{};s.defaults.model=${JSON.stringify(model)};require("fs").writeFileSync(f,JSON.stringify(s,null,2))'`,
-      { timeout: 30_000 },
-    );
-    if (patch.exitCode !== 0) {
-      throw new Error(`model patch failed: ${(patch.stderr || patch.stdout).slice(-300)}`);
-    }
-  }
+  // The model override rides the def path (ctx.stage receives `model`), so
+  // there is no workspace spec to patch here anymore.
 }
 
 

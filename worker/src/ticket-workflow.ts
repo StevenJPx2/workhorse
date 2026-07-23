@@ -181,7 +181,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       async () => {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
-        await prepareWorkspace(this.env, sandboxId, t.repo, t.model, t.workflow);
+        await prepareWorkspace(this.env, sandboxId, t.repo);
         const { installAgentBlocks } = await import("./agents");
         await installAgentBlocks(this.env, sandboxId);
         await restoreMemory(this.env, sandboxId, t.repo);
