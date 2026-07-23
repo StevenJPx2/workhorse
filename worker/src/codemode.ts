@@ -1,16 +1,22 @@
 // Code Mode — the Worker Loader (Dynamic Workers) tool bridge.
 //
 // The agent writes a TS program that chains our tools in ONE sandboxed run,
-// instead of N model round-trips. The program runs in a disposable dynamic
-// worker with NO network (globalOutbound: null); its only outside access is
-// the TOOLS binding — a loopback to `ToolBridge` here. The stage's tool
-// allowlist + ticket context live in `ctx.props` (platform-guaranteed
-// authentic, invisible to the dynamic worker), so generated code can only
-// call tools the stage was granted — the capability gate enforced BELOW the
-// model, exactly per the Code Mode security model.
+// instead of N model round-trips (the ~80% context win). The program runs in
+// a disposable dynamic worker with NO network (globalOutbound: null); its only
+// outside access is the TOOLS binding — a loopback to `ToolBridge` here.
+//
+// The stage's tool allowlist + ticket context live in `ctx.props` — platform-
+// guaranteed authentic (docs: "you can trust the content of ctx.props"),
+// invisible to the dynamic worker. So generated code can only call tools the
+// stage was granted: the capability gate sits BELOW the model, exactly per the
+// Code Mode security model (broker credentials, enforce at the proxy, code
+// can't grant itself permission, control egress).
 
 import { WorkerEntrypoint } from "cloudflare:workers";
-import type { Env } from "@workhorse/api";
+import type { Env, WorkhorseTool } from "@workhorse/api";
+import { sandboxDriver } from "./agent-run";
+import { builtinTools } from "./flue-session";
+import { assembleStageTools, toolContext } from "./plugins";
 
 /** Props handed to a ToolBridge stub — authentic, never visible to the DW. */
 export interface ToolBridgeProps {
@@ -18,75 +24,105 @@ export interface ToolBridgeProps {
   repo: string;
   stage: string;
   selfOrigin: string;
+  /** The sandbox (container) this run's tools exec against. */
+  sandboxId: string;
   /** The stage's tool allowlist — the capability set. */
   allow: string[];
-  /** Spike-only marker to prove props are readable server-side. */
-  marker?: string;
+  /** Stage artifact dir (built-in write-gate anchor). */
+  dir: string;
+  /** Repo-write allowlist globs (empty = open write). */
+  writeAllow: string[];
 }
 
 /**
- * Loopback WorkerEntrypoint the dynamic worker calls as `env.TOOLS.invoke()`.
- * Runs in THIS worker (full ToolContext available); the DW only holds the stub.
+ * Reconstruct the exact stage tool surface (built-ins ∩ allow + plugin tools ∩
+ * allow) for a ToolBridge's props. Same assembly as a stage session, so a
+ * run_code program sees precisely what the stage can call — no more.
+ */
+function stageTools(env: Env, p: ToolBridgeProps): Map<string, WorkhorseTool> {
+  const allow = new Set(p.allow);
+  const sandbox = sandboxDriver(env, p.sandboxId);
+  const ctx = toolContext(env, p.selfOrigin, sandbox, { id: p.ticketId, repo: p.repo, stage: p.stage });
+  const builtins = builtinTools(sandbox, allow, p.dir, p.writeAllow);
+  const plugins = assembleStageTools(ctx, p.allow);
+  const map = new Map<string, WorkhorseTool>();
+  for (const t of [...builtins, ...plugins]) map.set(t.name, t);
+  return map;
+}
+
+/**
+ * Loopback WorkerEntrypoint the dynamic worker calls as `env.TOOLS`. Runs in
+ * THIS worker (full ToolContext available); the DW only holds the stub.
  */
 export class ToolBridge extends WorkerEntrypoint<Env, ToolBridgeProps> {
-  /** Names of tools this run may call (from the authentic props allowlist). */
+  /** Names of tools this run may call (the authentic props allowlist). */
   async tools(): Promise<string[]> {
     return this.ctx.props.allow ?? [];
   }
 
   /**
-   * Invoke one tool by name with its input. Gated by the props allowlist —
-   * a name outside it is rejected here, so generated code cannot escalate.
-   * (Spike: echoes rather than running the real ToolFactory — the real
-   * invoke lands once the mechanism is proven.)
+   * Invoke one tool by name with its input. Gated by the props allowlist +
+   * the assembled surface, so generated code cannot escalate. Returns the
+   * tool's string result (or an { error } object).
    */
   async invoke(name: string, input: unknown): Promise<unknown> {
-    const allow = this.ctx.props.allow ?? [];
-    if (!allow.includes(name)) {
-      return { error: `tool "${name}" not in this stage's allowlist`, allow };
+    const p = this.ctx.props;
+    if (!(p.allow ?? []).includes(name)) {
+      return { error: `tool "${name}" not in this stage's allowlist`, allow: p.allow };
     }
-    // SPIKE: prove the round-trip + props authenticity. Real impl runs
-    // assembleStageTools(ctx) ∩ allow → factory(toolContext).run(input).
-    return { ok: true, name, input, ranAsProp: this.ctx.props.marker ?? null };
+    const tool = stageTools(this.env, p).get(name);
+    if (!tool) return { error: `tool "${name}" is not available to this stage` };
+    try {
+      const run = tool.run as (c: { input: unknown }) => unknown | Promise<unknown>;
+      return await run({ input: input ?? {} });
+    } catch (e) {
+      return { error: `tool "${name}" threw: ${String((e as Error)?.message ?? e).slice(0, 300)}` };
+    }
   }
 }
 
-/** ctx.exports shape we rely on (enable_ctx_exports compat flag). */
+/** ctx.exports shape we rely on (loopback bindings, default since 2025-11-17). */
 interface CtxExports {
   exports: { ToolBridge: (opts: { props: ToolBridgeProps }) => unknown };
 }
 
+export interface RunCodeResult {
+  ok: boolean;
+  result?: unknown;
+  logs?: string[];
+  error?: string;
+}
+
 /**
- * Spike: prove the whole Code Mode mechanism end-to-end on the live worker —
- * load() a dynamic worker, hand it a props-scoped TOOLS binding, block egress,
- * and confirm (1) an allowed tool call returns, (2) a disallowed one is gated,
- * (3) props are invisible to the DW, (4) network is blocked.
+ * Load a dynamic worker that runs the agent's JS `code`, handing it a
+ * props-scoped TOOLS bridge and NO network. The code calls
+ * `env.TOOLS.invoke(name, input)` to reach stage tools; its `return` value
+ * (and console.log output) come back. Executed from a fetch handler so
+ * ctx.exports (the loopback) is available.
  */
-export async function runLoaderSpike(env: Env, ctx: ExecutionContext): Promise<unknown> {
-  const props: ToolBridgeProps = {
-    ticketId: "spike",
-    repo: "",
-    stage: "spike",
-    selfOrigin: env.SELF_URL ?? "",
-    allow: ["web_search"],
-    marker: "prop-visible-server-side",
-  };
+export async function runCode(
+  env: Env,
+  ctx: ExecutionContext,
+  props: ToolBridgeProps,
+  code: string,
+): Promise<RunCodeResult> {
   const tools = (ctx as unknown as CtxExports).exports.ToolBridge({ props });
 
-  const code = `
+  // The dynamic worker wraps the agent code in an async fn with a `tools`
+  // proxy (each property → env.TOOLS.invoke) and a captured console.log.
+  const wrapper = `
     export default {
       async fetch(request, env) {
-        const out = {};
-        // (1) allowed tool call round-trips through the bridge
-        out.allowed = await env.TOOLS.invoke("web_search", { query: "hello" });
-        // (2) disallowed tool is gated below the model
-        out.disallowed = await env.TOOLS.invoke("bash", { command: "rm -rf /" });
-        // (3) the DW cannot see the bridge's props (only method results)
-        out.propsVisible = typeof env.MARKER !== "undefined";
-        // (4) egress is blocked (globalOutbound: null)
-        try { await fetch("https://example.com"); out.egress = "REACHED"; }
-        catch (e) { out.egress = "blocked: " + String(e).slice(0, 60); }
-        return Response.json(out);
+        const logs = [];
+        const console = { log: (...a) => logs.push(a.map(String).join(" ")), error: (...a) => logs.push("ERR " + a.map(String).join(" ")) };
+        const tools = new Proxy({}, { get: (_t, name) => (input) => env.TOOLS.invoke(String(name), input) });
+        const program = async (tools, console) => { ${code}\n };
+        try {
+          const result = await program(tools, console);
+          return Response.json({ ok: true, result: result ?? null, logs });
+        } catch (e) {
+          return Response.json({ ok: false, error: String(e && e.message || e).slice(0, 800), logs });
+        }
       },
     };
   `;
@@ -94,12 +130,47 @@ export async function runLoaderSpike(env: Env, ctx: ExecutionContext): Promise<u
   const worker = env.LOADER.load({
     compatibilityDate: "2026-03-27",
     mainModule: "index.js",
-    modules: { "index.js": code },
+    modules: { "index.js": wrapper },
     env: { TOOLS: tools },
-    globalOutbound: null,
-    limits: { cpuMs: 5_000, subRequests: 20 },
+    globalOutbound: null, // no network — tools are the only outside access
+    limits: { cpuMs: 30_000, subRequests: 100 },
   });
 
-  const res = await worker.getEntrypoint().fetch(new Request("http://dw/run"));
-  return await res.json();
+  try {
+    const res = await worker.getEntrypoint().fetch(new Request("http://dw/run"));
+    return (await res.json()) as RunCodeResult;
+  } catch (e) {
+    return { ok: false, error: `dynamic worker failed: ${String((e as Error)?.message ?? e).slice(0, 400)}` };
+  }
+}
+
+/**
+ * Spike: prove real tool dispatch through the bridge end-to-end (no ticket/
+ * container needed — uses a worker-side tool). Master-gated; delete once
+ * run_code is proven in a real stage.
+ */
+export async function runLoaderSpike(env: Env, ctx: ExecutionContext): Promise<unknown> {
+  const props: ToolBridgeProps = {
+    ticketId: "spike",
+    repo: "",
+    stage: "spike",
+    selfOrigin: env.SELF_URL ?? "",
+    sandboxId: "spike-codemode",
+    allow: ["fetch_context"], // a worker-side tool (core call) — no container
+    dir: "/tmp/spike",
+    writeAllow: [],
+  };
+  return runCode(
+    env,
+    ctx,
+    props,
+    `
+    // real dispatch: fetch_context resolves via core (returns a real string)
+    const a = await tools.fetch_context({ kind: "nope", ref: "x" });
+    // gated: bash is not in allow → bridge rejects
+    const b = await tools.bash({ command: "echo hi" });
+    console.log("chained two calls in one program");
+    return { fetchContext: a, bashGated: b };
+  `,
+  );
 }

@@ -3,9 +3,9 @@
   "name": "workhorse-sandbox",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-27",
-  // enable_ctx_exports: loopback bindings (ctx.exports) for the Code Mode
-  // ToolBridge handed to dynamic workers via the Worker Loader.
-  "compatibility_flags": ["nodejs_compat", "enable_ctx_exports"],
+  // ctx.exports loopback bindings (for the Code Mode ToolBridge) are default
+  // as of compat date 2025-11-17, so no explicit flag is needed.
+  "compatibility_flags": ["nodejs_compat"],
   // Worker Loader: spin up isolated dynamic Workers on demand (Code Mode —
   // the agent writes TS that chains tools in one sandboxed run).
   "worker_loaders": [{ "binding": "LOADER" }],

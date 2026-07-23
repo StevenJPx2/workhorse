@@ -67,7 +67,7 @@ function writeAllowed(path: string, dir: string, writeAllow: string[]): boolean 
 }
 
 /** Built-in tools over the SandboxHandle, filtered by the stage allowlist. */
-function builtinTools(sandbox: SandboxHandle, allow: Set<string>, dir: string, writeAllow: string[]) {
+export function builtinTools(sandbox: SandboxHandle, allow: Set<string>, dir: string, writeAllow: string[]) {
   const tools = [];
   if (allow.has("read"))
     tools.push(
