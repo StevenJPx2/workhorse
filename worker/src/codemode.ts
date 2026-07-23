@@ -147,37 +147,3 @@ export async function runCode(
     return { ok: false, error: `dynamic worker failed: ${String((e as Error)?.message ?? e).slice(0, 400)}` };
   }
 }
-
-/**
- * Spike: prove real tool dispatch through the bridge end-to-end (no ticket/
- * container needed — uses a worker-side tool). Master-gated; delete once
- * run_code is proven in a real stage.
- */
-export async function runLoaderSpike(env: Env): Promise<unknown> {
-  const props: ToolBridgeProps = {
-    ticketId: "spike",
-    repo: "",
-    stage: "spike",
-    selfOrigin: env.SELF_URL ?? "",
-    sandboxId: "spike-codemode",
-    // worker-side tool (fetch_context) + container tool (bash) — prove BOTH
-    // dispatch through the bridge. `edit` stays out → proves gating.
-    allow: ["fetch_context", "bash"],
-    dir: "/tmp/spike",
-    writeAllow: [],
-  };
-  return runCode(
-    env,
-    props,
-    `
-    // worker-side dispatch: fetch_context resolves via core (real string)
-    const a = await tools.fetch_context({ kind: "nope", ref: "x" });
-    // CONTAINER dispatch: bash execs in the sandbox via the bridge
-    const b = await tools.bash({ command: "echo hello-from-container && uname -s" });
-    // gated: edit is not in allow → bridge rejects
-    const c = await tools.edit({ path: "/tmp/x", oldString: "a", newString: "b" });
-    console.log("chained three calls in one program");
-    return { fetchContext: a, bash: b, editGated: c };
-  `,
-  );
-}
