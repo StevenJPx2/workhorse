@@ -225,16 +225,17 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     const builtins = builtinTools(sandbox, allow, input.dir, input.writeAllow);
     const pluginTools = assembleStageTools(ctx, input.tools);
     const primaryModel = input.model ?? "claude-sonnet-4-6";
-    const zenKey = env.OPENCODE_API_KEY;
 
+    // ONE model plane: Anthropic OAuth. The opencode-zen FREE models were
+    // tried as a fallback but proved unusable for agentic stages — they return
+    // empty responses (output≈1 token, no tool calls), so a stage would end
+    // "without submit_work" instead of doing the work. That's worse than
+    // waiting: per the capacity-backoff design, a throttled/expired Anthropic
+    // token should PARK and retry (durable spine sleep + custodian re-push),
+    // not silently produce a broken run on a model that can't drive tools.
+    // Re-add a fallback only for a model that actually supports tool-calling.
     const legs: Array<{ ref: string; provider: string; register: () => void }> = [
       { ref: `anthropic/${primaryModel}`, provider: "anthropic", register: () => registerProvider("anthropic", { apiKey: token }) },
-      ...(zenKey
-        ? [
-            { ref: "opencode-zen/mimo-v2.5-free", provider: "opencode-zen", register: () => registerProvider("opencode-zen", { api: "openai-completions" as never, baseUrl: "https://opencode.ai/zen/v1", apiKey: zenKey }) },
-            { ref: "opencode-zen/laguna-s-2.1-free", provider: "opencode-zen", register: () => registerProvider("opencode-zen", { api: "openai-completions" as never, baseUrl: "https://opencode.ai/zen/v1", apiKey: zenKey }) },
-          ]
-        : []),
     ];
 
     // One pass over the fallback legs. Returns a terminal outcome, or null to
@@ -282,7 +283,19 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
               }
             : undefined;
           if (!wasSubmitted() && (await sandbox.readFile(`${input.dir}/control.json`)) == null) {
-            return { done: { ok: false, failure: { kind: "control", detail: "stage ended without calling submit_work (after nudges)" } } };
+            // Keep the model + output size in the failure — the signal that
+            // caught the empty-free-model bug (an underpowered model returns
+            // ~0 output tokens and never calls submit_work).
+            const outTok = res.usage?.output ?? "?";
+            return {
+              done: {
+                ok: false,
+                failure: {
+                  kind: "control",
+                  detail: `stage ended without submit_work (after nudges); model=${leg.ref} outputTokens=${outTok}`,
+                },
+              },
+            };
           }
           return { done: { ok: true, stats } };
         } catch (e) {
