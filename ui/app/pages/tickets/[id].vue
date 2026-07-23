@@ -464,6 +464,17 @@ function taskDot(status: string): string {
       <span v-if="data.ticket.error" class="text-error">{{ data.ticket.error }}</span>
     </div>
 
+    <!-- capacity park: all model providers throttled/expired; the spine is
+         sleeping and will retry automatically (no action needed). -->
+    <UAlert
+      v-if="data.live?.phase === 'waiting-for-capacity'"
+      color="warning"
+      variant="soft"
+      icon="i-lucide-timer"
+      title="Waiting for model capacity"
+      :description="data.live.note || 'All model providers are throttled; the run is parked and will resume automatically.'"
+    />
+
     <!-- THE RUN: graph + live output, the page's centerpiece while active -->
     <UCard v-if="data.live && data.ticket.status !== 'done'" :ui="{ body: 'p-0 sm:p-0' }">
       <template #header>

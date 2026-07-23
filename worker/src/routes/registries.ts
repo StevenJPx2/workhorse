@@ -137,6 +137,24 @@ export const registryRoutes: Route[] = [
       return json({ ok: true, expires });
     },
   },
+  {
+    // Credential health — freshness of the custodian OAuth token, never the
+    // token itself. Powers the UI's model-credential tile so an expired token
+    // (which silently 401s every run) is visible instead of a mystery.
+    method: "GET",
+    path: "/token",
+    auth: "master",
+    async handler({ env }) {
+      const stored = await env.TICKETS.get("auth:access");
+      if (!stored) return json({ present: false, state: "missing", minutesRemaining: null, expires: null });
+      const { expires } = JSON.parse(stored) as { access: string; expires: number };
+      const msLeft = (expires || 0) - Date.now();
+      const minutesRemaining = expires ? Math.round(msLeft / 60000) : null;
+      // expires=0 means "no runway info" — treat as usable (see fileTicket).
+      const state = !expires ? "unknown" : msLeft <= 0 ? "expired" : msLeft < 10 * 60_000 ? "expiring" : "fresh";
+      return json({ present: true, state, minutesRemaining, expires: expires || null });
+    },
+  },
 
   // ---- editor metadata (models + tool catalog for UI dropdowns) ----
   {
