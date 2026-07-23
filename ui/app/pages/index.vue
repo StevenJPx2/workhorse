@@ -32,11 +32,13 @@ const knownRepos = computed(() => {
   return [...seen.values()];
 });
 const attachedRepo = ref<string | null>(null);
-// Non-repo attachments (jira/slack/…), recognized by plugin providers.
-const attachments = ref<Array<{ kind: string; ref: string; label?: string; icon?: string }>>([]);
-const showAddRepo = ref(false);
-const newRepo = ref("");
-const matching = ref(false);
+// Frecency-ranked context refs (jira/slack/…) the operator has used before —
+// one-tap chips. New refs are just typed into the message and parsed server-
+// side; there is no manual "attach" step.
+const { data: refData, refresh: refreshRefs } = await useFetch<{
+  refs: Array<{ kind: string; ref: string; label?: string; icon?: string }>;
+}>("/api/refs");
+const recentRefs = computed(() => refData.value?.refs ?? []);
 const workflow = ref<string>("coding");
 const workflowItems = computed(() => [
   ...(wfData.value?.workflows ?? []).map((w) => w.name),
@@ -52,33 +54,10 @@ watch(workflow, (w) => {
 function attach(url: string) {
   attachedRepo.value = attachedRepo.value === url ? null : url;
 }
-async function addRef() {
-  const r = newRepo.value.trim();
-  if (!r) return;
-  matching.value = true;
-  try {
-    // Ask the plugin providers what this is (repo, PROJ-123, Slack link…).
-    const { match } = await $fetch<{ match: { kind: string; ref: string; label: string; icon?: string } | null }>(
-      "/api/attachments/match",
-      { method: "POST", body: { input: r } },
-    );
-    if (match?.kind === "repo") {
-      attachedRepo.value = `https://github.com/${match.ref}.git`;
-    } else if (match) {
-      if (!attachments.value.some((a) => a.kind === match.kind && a.ref === match.ref)) {
-        attachments.value.push(match);
-      }
-    } else if (/^[\w.-]+\/[\w.-]+$/.test(r)) {
-      attachedRepo.value = `https://github.com/${r}.git`;
-    } else {
-      toast.add({ title: "Not a recognized reference", description: "repo, Jira key, or Slack link", color: "warning" });
-      return;
-    }
-    showAddRepo.value = false;
-    newRepo.value = "";
-  } finally {
-    matching.value = false;
-  }
+// One-tap a recent ref → drop its token into the message (parsed on send).
+function useRef(r: { kind: string; ref: string }) {
+  const token = r.ref;
+  if (!input.value.includes(token)) input.value = `${input.value} ${token}`.trim();
 }
 
 // --- chat / dispatch -------------------------------------------------------
@@ -99,20 +78,14 @@ async function send() {
     try {
       const r = await $fetch<{ ticket: Ticket }>("/api/tickets", {
         method: "POST",
-        body: {
-          repo: attachedRepo.value,
-          prompt: content,
-          workflow: workflow.value,
-          attachments: attachments.value.length
-            ? attachments.value.map((a) => ({ kind: a.kind, ref: a.ref }))
-            : undefined,
-        },
+        body: { repo: attachedRepo.value, prompt: content, workflow: workflow.value },
       });
       messages.value.push({
         role: "assistant",
         content: `Filed **[${r.ticket.id}](/tickets/${r.ticket.id})** on \`${r.ticket.repo.replace("https://github.com/", "").replace(/\.git$/, "")}\` with the \`${workflow.value}\` workflow. Watch it on the [ticket page](/tickets/${r.ticket.id}).`,
       });
       refreshFleet();
+      refreshRefs(); // refs typed in the message just gained frecency
     } catch (e) {
       messages.value.push({ role: "assistant", content: `⚠️ Filing failed: ${String(e)}` });
     }
@@ -236,20 +209,6 @@ const statusColor: Record<string, string> = {
         >
           {{ r.label }}
         </UButton>
-        <UButton
-          v-for="(a, i) in attachments"
-          :key="`${a.kind}:${a.ref}`"
-          size="xs"
-          variant="solid"
-          color="info"
-          :icon="a.icon ?? 'i-lucide-paperclip'"
-          @click="attachments.splice(i, 1)"
-        >
-          {{ a.ref }}
-        </UButton>
-        <UButton size="xs" variant="ghost" icon="i-lucide-plus" @click="showAddRepo = !showAddRepo">
-          Add new
-        </UButton>
         <template v-if="attachedRepo">
           <div class="ml-auto flex items-center gap-1.5">
             <span class="text-xs text-muted">workflow</span>
@@ -257,16 +216,22 @@ const statusColor: Record<string, string> = {
           </div>
         </template>
       </div>
-      <div v-if="showAddRepo" class="flex gap-2">
-        <UInput
-          v-model="newRepo"
-          class="flex-1"
-          size="sm"
-          placeholder="owner/repo · PROJ-123 · Slack link — plugins recognize the rest"
-          icon="i-lucide-paperclip"
-          @keydown.enter="addRef"
-        />
-        <UButton size="sm" variant="soft" :loading="matching" :disabled="!newRepo.trim()" @click="addRef">Attach</UButton>
+
+      <!-- recent context refs: one tap drops the ref into the message; type a
+           repo/Jira key/Slack link inline and it's parsed on send. -->
+      <div v-if="recentRefs.length" class="flex items-center gap-1.5 flex-wrap">
+        <span class="text-xs text-muted">recent context:</span>
+        <UButton
+          v-for="r in recentRefs"
+          :key="`${r.kind}:${r.ref}`"
+          size="xs"
+          variant="soft"
+          color="info"
+          :icon="r.icon ?? 'i-lucide-paperclip'"
+          @click="useRef(r)"
+        >
+          {{ r.ref }}
+        </UButton>
       </div>
     </div>
 

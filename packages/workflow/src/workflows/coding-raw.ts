@@ -22,6 +22,7 @@ const stages: StageSpec[] = [
       { name: "bash", classification: "read-only" },
       { name: "ctx_search", classification: "read-only", optional: true },
       { name: "ctx_memory", classification: "write-capable", optional: true },
+      { name: "fetch_context", classification: "read-only", optional: true },
       { name: "search_fleet_knowledge", classification: "read-only", optional: true },
       { name: "browser_open", classification: "read-only" },
       { name: "browser_read", classification: "read-only" },

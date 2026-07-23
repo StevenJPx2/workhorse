@@ -35,6 +35,29 @@ export const miscRoutes: Route[] = [
       return json({ match: null });
     },
   },
+  {
+    // Frecency-ranked context refs (repo/jira/slack) for the composer chips.
+    method: "GET",
+    path: "/refs",
+    auth: "master",
+    async handler({ env }) {
+      const { rankedRefs } = await import("../refs");
+      return json({ refs: await rankedRefs(env) });
+    },
+  },
+  {
+    // Resolve one ref's content — backs the agent's fetch_context tool.
+    method: "POST",
+    path: "/attachments/resolve",
+    auth: "scoped",
+    async handler({ request, env, url }) {
+      const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
+      if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
+      const { resolveAttachments } = await import("../tickets");
+      const section = await resolveAttachments(env, url.origin, [{ kind, ref }]);
+      return section ? json({ content: section }) : json({ error: "did not resolve" }, 422);
+    },
+  },
 
   // ---- phase-0 debug endpoints (kept for ops) ----
   {

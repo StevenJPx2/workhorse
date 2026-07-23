@@ -5,11 +5,14 @@
 // (worker), not plugin surface.
 
 import type { WorkhorsePlugin } from "@workhorse/api";
+import { ticketsTools } from "./tools";
 
 const REPO_RE = /^(?:https:\/\/github\.com\/)?([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/;
 
 export const ticketsPlugin: WorkhorsePlugin = {
   id: "tickets",
+
+  tools: ticketsTools,
 
   attachments: [
     {

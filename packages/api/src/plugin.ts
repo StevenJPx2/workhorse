@@ -166,6 +166,13 @@ export interface Core {
   /** Read a ticket record (null when unknown). */
   getTicket(ticketId: string): Promise<TicketRecord | null>;
   /**
+   * Resolve one context ref (kind + ref) to prompt-ready markdown via the
+   * matching attachment provider. Backs the agent's fetch_context tool —
+   * the on-demand enrichment path (nothing is pre-resolved at dispatch).
+   * Returns null when no provider handles the kind or resolution fails.
+   */
+  resolveAttachment(kind: string, ref: string): Promise<ResolvedAttachment | null>;
+  /**
    * File a new ticket (repo + prompt → durable staged run). The intake
    * verb for source plugins that ORIGINATE work (Jira, Slack).
    */

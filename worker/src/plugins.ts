@@ -94,6 +94,15 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       const { getTicket } = await import("./db");
       return getTicket(env, ticketId);
     },
+    resolveAttachment: async (kind, ref) => {
+      const provider = attachmentProviders().get(kind);
+      if (!provider) return null;
+      try {
+        return await provider.resolve(env, coreFor(env, selfOrigin), ref);
+      } catch {
+        return null;
+      }
+    },
     fileTicket: async (body) => {
       const { fileTicket } = await import("./tickets");
       return fileTicket(env, body);

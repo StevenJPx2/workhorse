@@ -2,6 +2,7 @@
 
 import type { Env, TicketParams, TicketRecord } from "@workhorse/api";
 import { insertTicket } from "./db";
+import { parseRefs, recordRefUse } from "./refs";
 
 /**
  * Resolve attachment refs through their plugin providers into a bounded
@@ -53,15 +54,28 @@ export async function fileTicket(
   if (!body.repo || !body.prompt) {
     return { ok: false, error: "repo, prompt required", status: 400 };
   }
-  // Fold resolved attachment context into the task prompt at filing time
-  // (revisions and heals re-use the enriched prompt automatically).
-  if (body.attachments?.some((a) => a.kind !== "repo")) {
-    const section = await resolveAttachments(
-      env,
-      body.selfOrigin ?? env.SELF_URL ?? "",
-      body.attachments,
-    );
-    if (section) body.prompt = `${body.prompt}\n\n${section}`;
+  // Context refs come from the PROMPT itself now (no manual attach step):
+  // parse any repo/jira/slack refs the operator typed, record them for
+  // frecency, and tell the agent what it can enrich on demand. The agent
+  // fetches a ref's content with fetch_context — nothing is pre-resolved,
+  // so a big Jira thread doesn't bloat every prompt. Explicit body.attachments
+  // (e.g. from a trigger) are merged in and still recorded.
+  const parsed = parseRefs(body.prompt);
+  const nonRepoRefs = [
+    ...parsed.filter((r) => r.kind !== "repo"),
+    ...(body.attachments ?? []).filter((a) => a.kind !== "repo").map((a) => ({ kind: a.kind, ref: a.ref, label: a.kind })),
+  ];
+  const seen = new Set<string>();
+  const enrichable = nonRepoRefs.filter((r) => {
+    const k = `${r.kind}:${r.ref}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  if (enrichable.length) {
+    const list = enrichable.map((r) => `- ${r.kind}: ${r.ref}`).join("\n");
+    body.prompt = `${body.prompt}\n\n## Available context\nYou can enrich this task with fetch_context(kind, ref) for:\n${list}`;
+    await recordRefUse(env, enrichable.map((r) => ({ kind: r.kind, ref: r.ref, label: r.label })));
   }
   delete body.selfOrigin;
   // Accept bare "owner/name" slugs as well as full git URLs.
