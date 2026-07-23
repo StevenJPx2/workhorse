@@ -17,7 +17,7 @@ export const workflowIndex = defineIndex<{ name: string; description?: string; s
   name: "workflows",
   id: (w) => w.name,
   toText: (w) => `${w.name}: ${w.description ?? ""} (stages: ${w.stages.join(" → ")})`,
-  metadata: (w) => ({ name: w.name, description: (w.description ?? "").slice(0, 200) }),
+  metadata: (w) => ({ name: w.name, description: (w.description ?? "").slice(0, 200), stages: w.stages.join(" → ") }),
 });
 
 export interface ToolDoc {

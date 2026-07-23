@@ -73,6 +73,12 @@ export default function (pi: ExtensionAPI) {
       repo: Type.String({ description: "GitHub repo URL, e.g. https://github.com/user/repo" }),
       prompt: Type.String({ description: "The task: what to change, constraints, acceptance criteria" }),
       title: Type.Optional(Type.String({ description: "Short ticket title (defaults to prompt head)" })),
+      workflow: Type.Optional(
+        Type.String({
+          description:
+            "Which workflow to run (default: coding). Use workhorse_find_workflow first to pick the best fit for the task.",
+        }),
+      ),
     }),
     async execute(_id, params) {
       const r = (await api("/tickets", {
@@ -82,6 +88,33 @@ export default function (pi: ExtensionAPI) {
       return text(
         `Ticket ${r.ticket.id} filed: "${r.ticket.title}". The fleet is on it — check with workhorse_ticket_status.`,
       );
+    },
+  });
+
+  pi.registerTool({
+    name: "workhorse_find_workflow",
+    label: "Workhorse: find workflow",
+    description:
+      "Semantic search over the fleet's available workflows (each a staged pipeline: " +
+      "e.g. coding = plan→implement→verify→PR; screenshot-pr = capture a page → PR). " +
+      "Use BEFORE filing a ticket to pick the workflow whose shape fits the task, then " +
+      "pass its name to workhorse_file_ticket. Returns ranked {name, description, stages}.",
+    parameters: Type.Object({
+      query: Type.String({ description: "What the task needs, e.g. 'take a screenshot and open a PR'" }),
+    }),
+    async execute(_id, params) {
+      const q = encodeURIComponent(params.query);
+      const r = (await api(`/find?corpus=workflows&q=${q}&topK=5`)) as {
+        hits: Array<{ id: string; score: number; metadata?: { name?: string; description?: string; stages?: string } }>;
+      };
+      if (!r.hits?.length) return text("No workflows matched. Default to 'coding'.");
+      const lines = r.hits.map((h) => {
+        const m = h.metadata ?? {};
+        const name = m.name ?? h.id;
+        const stages = m.stages ? ` [${m.stages}]` : "";
+        return `- ${name} (${h.score.toFixed(2)})${stages}: ${m.description ?? ""}`;
+      });
+      return text(`Workflows ranked for "${params.query}":\n${lines.join("\n")}`);
     },
   });
 
