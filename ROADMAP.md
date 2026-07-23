@@ -266,9 +266,14 @@ triggers + non-PR outcomes + the bus together. Reconciliation: the cron lane
 of the triggers system we shipped IS this pattern (point it at `fileTicket`);
 the mention/fire lanes stay plugin-registered trigger sources / channels.
 
-**Model seam — capacity backoff (never fail on a rate limit).** Terminal case
-of the fallback chain changes from "fail" to "wait". A rate limit is transient
-capacity, not a defect, so:
+**Model seam — capacity backoff (never fail on a rate limit).** SHIPPED as
+Anthropic-only park-and-wait. The opencode-zen FREE models (laguna/mimo) were
+tried as a fallback but proved unusable for agentic stages — they return empty
+responses (≈1 output token, no tool calls), so a stage ends "without
+submit_work" instead of doing the work, which is worse than waiting. So there
+is no free fallback leg; a throttle/auth on Anthropic goes straight to the
+durable wait. Re-add a fallback ONLY for a model that genuinely supports
+tool-calling. A rate limit is transient capacity, not a defect, so:
 - Classify: split TRANSIENT throttle (`429`/rate-limit/overloaded/usage-limit)
   from HARD failure (auth, malformed, session crash) and from account-exhaust
   (`credit`/`balance` on a paid leg → just skip to the free leg). Only hard
