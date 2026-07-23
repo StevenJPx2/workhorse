@@ -100,6 +100,10 @@ export async function fileTicket(
   }
   const id = crypto.randomUUID().slice(0, 8);
   const now = new Date().toISOString();
+  // Default the workflow at the intake seam so BOTH the record and the
+  // workflow-instance params (spread from body below) carry it — the spine
+  // reads params.workflow, which would otherwise be undefined.
+  body.workflow = body.workflow ?? "coding";
   const rec: TicketRecord = {
     id,
     title: body.title ?? body.prompt.slice(0, 60),
