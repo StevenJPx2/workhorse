@@ -264,9 +264,17 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
         try {
           const harness = await flueCtx.initializeRootHarness(agent);
           const session = await harness.session();
-          const res = (await session.prompt(input.prompt)) as {
+          let res = (await session.prompt(input.prompt)) as {
             usage?: { input: number; output: number; cacheRead: number; cacheWrite: number; totalTokens: number; cost?: { total?: number } };
           };
+          // Weak models sometimes end the turn with prose instead of the final
+          // submit_work call. Nudge in the SAME session (context intact) before
+          // failing — cheaper and more reliable than re-running the stage.
+          for (let nudge = 0; nudge < 2 && !wasSubmitted() && (await sandbox.readFile(`${input.dir}/control.json`)) == null; nudge++) {
+            res = (await session.prompt(
+              "You have not finished: call the `submit_work` tool now with your `analysis` and a `control` JSON object. Do not reply in prose — the stage only completes when submit_work is called.",
+            )) as typeof res;
+          }
           const stats: SessionStats | undefined = res.usage
             ? {
                 tokens: { input: res.usage.input, output: res.usage.output, cacheRead: res.usage.cacheRead, cacheWrite: res.usage.cacheWrite, total: res.usage.totalTokens },
@@ -274,7 +282,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
               }
             : undefined;
           if (!wasSubmitted() && (await sandbox.readFile(`${input.dir}/control.json`)) == null) {
-            return { done: { ok: false, failure: { kind: "control", detail: "stage ended without calling submit_work" } } };
+            return { done: { ok: false, failure: { kind: "control", detail: "stage ended without calling submit_work (after nudges)" } } };
           }
           return { done: { ok: true, stats } };
         } catch (e) {
