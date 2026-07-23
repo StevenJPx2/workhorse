@@ -177,24 +177,30 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   runs / wake parked ones; ticket lifecycle mirrored onto the issue
   (transitions + PR-link comment); Jira Done/Closed accepted as external
   completion. Webhook auth via `?secret=` (Atlassian can't sign).
-- **Script service (agent self-extension)** — `plugins/scripts`:
-  `write_script` / `run_script` / `list_scripts` over the D1 `scripts`
-  registry (strict validation, repo|global scope, live status gates, args
-  as `ARG_<NAME>` env vars); `.workhorse/scripts.toml` seeding at prepare;
-  gated into the coding spec (plan lists, implement/fix write, verify runs).
-- **Batch tool calls via scripts** — the agent graduates repeated tool
-  call sequences into parameterized batch scripts: e.g. a "screenshot
-  page" script wraps `browser_open → browser_snapshot → browser_screenshot
-  → upload_image` into one call with `ARG_URL` and `ARG_WAIT_MS` params.
-  Inspired by agent-browser's `batch` command (multiple CLI calls in one
-  invocation, stdin JSON mode). The script service already supports
-  parameterized args (`ARG_<NAME>` env vars); this extends it with a
-  `tools` field declaring which tools the script calls (so the engine can
-  validate the batch against the stage's allowlist) and a `batch` mode
-  where the runner executes each tool call sequentially without an LLM
-  turn between them (pure tool-call execution, zero inference cost per
-  step). First consumer: the screenshot-pr workflow's shoot stage;
-  agents discover the pattern and save it as a reusable script.
+- **Code Mode (Worker Loader)** — `worker/src/codemode.ts`: the `run_code`
+  stage tool runs an agent-authored TypeScript program in a disposable
+  Dynamic Worker with NO network (`globalOutbound: null`), chaining the
+  stage's tools via `await tools.<name>(input)` in one sandboxed run — N
+  tool round-trips collapse to one, the model sees only the final result.
+  The capability gate sits BELOW the model: the stage allowlist + ticket
+  context ride in `ctx.props` (platform-authentic, invisible to generated
+  code) via a `ToolBridge` loopback `WorkerEntrypoint`, so a program can
+  only call tools the stage was granted. Both worker-side tools (core/RPC)
+  and container tools (bash/read/edit) dispatch through the bridge. A typed
+  `tools` surface is generated into the prompt from each tool's schema.
+- **Script service = the "stabilized" rung of Code Mode** —
+  `plugins/scripts` + engine: a saved script is a TypeScript Code Mode
+  program (chains tools via `tools.<name>(input)`, args as the `args`
+  object), not a bash body. `run_code` discovers a working chain,
+  `write_script` saves it, `run_script` replays it deterministically
+  through the same bridge — no fresh reasoning, cheaper, auditable. D1
+  `scripts` registry (strict validation, repo|global scope, live status
+  gates); `.workhorse/scripts.toml` seeding at prepare. `write_script`/
+  `list_scripts` are plugin registry verbs; `run_script` is an engine
+  built-in (it needs the stage's authentic bridge props). This subsumes
+  the earlier "batch tool calls via a batch-mode runner" idea — a Code
+  Mode program IS sequential tool execution with zero inference between
+  steps, with real control flow instead of a fixed batch list.
 - **ntfy plugin** — hook-only push notifications: PR-up/done/errored/
   terminated + escalation digests, priority-mapped, silent when unset.
 - **Paste plugin** — `upload_text`: raw curl-able text hosting
