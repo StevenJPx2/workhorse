@@ -1,8 +1,8 @@
-// tickets plugin: contributes the workhorse_* Pi tools (extension.ts:
-// file/list/status/diff tickets via the worker API) and the REPO
-// attachment provider — the canonical "attach a repo to this work" source
-// for the dispatch composer. The ticket API routes themselves are core
-// (worker), not plugin surface.
+// tickets plugin: contributes the fleet-chat operator tools (tools/:
+// workhorse_file_ticket/list/status/diff/find_workflow, chat surface),
+// fetch_context (stage surface), and the REPO attachment provider — the
+// canonical "attach a repo to this work" source for the dispatch composer.
+// The ticket API routes themselves are core (worker), not plugin surface.
 
 import type { WorkhorsePlugin } from "@workhorse/api";
 import { ticketsTools } from "./tools";

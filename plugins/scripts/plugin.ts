@@ -5,9 +5,9 @@
 //
 // The registry is DB-authoritative (D1 `scripts` table): registration is
 // strictly validated at the door, listing reads the DB, never the
-// filesystem. Execution happens SANDBOX-side (extension.ts): the tool
-// fetches {command, args, gates} from these routes, gate-checks against
-// the ticket's status, and runs the body with bash inside the sandbox.
+// filesystem. Execution is worker-side (tools/run_script): the tool reads
+// {command, args, gates} from Core, gate-checks against the ticket's live
+// status, and runs the body with bash in the container via the sandbox handle.
 //
 // Scoped-token routes: sandboxes run untrusted repo code — they hold the
 // scoped token, never the master bearer. Scope forgery (repo:X writing

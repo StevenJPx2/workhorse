@@ -1,5 +1,5 @@
 {
-  "$comment": "Pi extension PACKAGES baked into the sandbox image (pin versions for fast-moving deps) + Pi settings. Plugin sandbox tools are NOT listed here — install.mjs discovers every plugins/<name>/extension.ts in the workspace automatically. Tools are OFF inside workflow runs unless a stage's tools[] allowlist names them (custom tools need an object spec with a classification) — stage gating is enforced by pi-workflow.",
+  "$comment": "Pi extension PACKAGES baked into the image (auth, magic context, aft-pi) + Pi settings. Under the flue-first engine there are NO sandbox tool extensions — plugin tools run worker-side (plugins/<name>/tools/) over the sandbox handle, gated per stage by the workflow def's tools[] allowlist.",
   "packages": [
     "npm:@gotgenes/pi-anthropic-auth",
     "npm:@cortexkit/aft-pi",

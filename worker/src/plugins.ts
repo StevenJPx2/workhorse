@@ -18,7 +18,7 @@ import type {
   PluginRoute,
   SandboxHandle,
   TicketRecord,
-  ToolFactoryContext,
+  ToolContext,
   WorkhorsePlugin,
   WorkhorseTool,
 } from "@workhorse/api";
@@ -44,38 +44,53 @@ export function pluginFor(id: string): WorkhorsePlugin | undefined {
 }
 
 /**
- * Assemble the stage tool registry (flue engine): every plugin's tools(ctx),
- * intersected by name with the stage allowlist. This is the (agent ∪
- * services) ∩ stage-allowlist gate expressed in the flue world — a stage
- * sees ONLY the tools its spec names, regardless of what plugins offer.
- *
- * `allow` is the stage spec's tools[] (bare names). Unknown names are
- * ignored (the workflow validator flags them at upload time). Returns the
- * flue ToolDefinition[] to attach to the stage agent.
+ * Assemble the stage tool registry (flue engine): every plugin's stage-surface
+ * tools, intersected by name with the stage allowlist. This is the (agent ∪
+ * services) ∩ stage-allowlist gate expressed in the flue world — a stage sees
+ * ONLY the tools its spec names, regardless of what plugins offer. The surface
+ * + allowlist filter runs BEFORE instantiation (ToolFactory carries toolName +
+ * surfaces), so a tool is built only if it's actually exposed.
  */
-export function assembleStageTools(ctx: ToolFactoryContext, allow: readonly string[]): WorkhorseTool[] {
+export function assembleStageTools(ctx: ToolContext, allow: readonly string[]): WorkhorseTool[] {
   const allowed = new Set(allow);
   const out: WorkhorseTool[] = [];
   const seen = new Set<string>();
   for (const p of plugins) {
-    if (!p.tools) continue;
-    for (const tool of p.tools(ctx)) {
-      if (!allowed.has(tool.name) || seen.has(tool.name)) continue;
-      seen.add(tool.name);
-      out.push(tool);
+    for (const f of p.tools ?? []) {
+      if (!f.surfaces.includes("stage") || !allowed.has(f.toolName) || seen.has(f.toolName)) continue;
+      seen.add(f.toolName);
+      out.push(f(ctx));
     }
   }
   return out;
 }
 
-/** Build a ToolFactoryContext for a stage from its sandbox + ticket. */
+/**
+ * Assemble the fleet-chat tool registry: every chat-surface tool across
+ * plugins (no allowlist — chat gets its full set). The operator agent uses
+ * these to command the fleet (file/list/status/diff) + query knowledge.
+ */
+export function assembleChatTools(ctx: ToolContext): WorkhorseTool[] {
+  const out: WorkhorseTool[] = [];
+  const seen = new Set<string>();
+  for (const p of plugins) {
+    for (const f of p.tools ?? []) {
+      if (!f.surfaces.includes("chat") || seen.has(f.toolName)) continue;
+      seen.add(f.toolName);
+      out.push(f(ctx));
+    }
+  }
+  return out;
+}
+
+/** Build a ToolContext for a stage/chat session from its sandbox + ticket. */
 export function toolContext(
   env: Env,
   selfOrigin: string,
   sandbox: SandboxHandle,
   ticket: { id: string; repo: string; stage: string },
-): ToolFactoryContext {
-  return { env, core: coreFor(env, selfOrigin), sandbox, ticket };
+): ToolContext {
+  return { env, core: coreFor(env, selfOrigin), selfOrigin, sandbox, ticket };
 }
 
 /** All attachment providers across plugins, keyed by kind. */
@@ -93,6 +108,19 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     getTicket: async (ticketId) => {
       const { getTicket } = await import("./db");
       return getTicket(env, ticketId);
+    },
+    listTickets: async (status) => {
+      const { listTickets } = await import("./db");
+      return listTickets(env, status);
+    },
+    ticketDiff: async (ticketId) => env.TICKETS.get(`diff:${ticketId}`),
+    findWorkflows: async (query, topK) => {
+      const { workflowIndex } = await import("./semindex");
+      const hits = await workflowIndex.query(env, query.slice(0, 500), { topK: topK ?? 5 });
+      return hits.map((h) => {
+        const m = (h.metadata ?? {}) as { name?: string; description?: string; stages?: string };
+        return { name: m.name ?? h.id, description: m.description, stages: m.stages };
+      });
     },
     resolveAttachment: async (kind, ref) => {
       const provider = attachmentProviders().get(kind);

@@ -1,21 +1,17 @@
-// Build-time sandbox installer: produces the Pi home (settings.json +
-// extensions) inside the Docker build.
+// Build-time sandbox installer: writes the Pi home settings.json inside the
+// Docker build.
 //
-// - pi.json declares Pi extension PACKAGES (npm) + settings.
-// - Sandbox-side plugin tools are DISCOVERED: every plugins/<name>/extension.ts
-//   in the workspace is installed as ~/.pi/agent/extensions/<name>.ts.
-//   Adding a plugin with a sandbox half = drop an extension.ts in its folder.
-//
-// Stage gating is separate and declarative: a plugin's tools only become
-// callable in a workflow stage when that stage's tools[] allowlist names
-// them (pi-workflow enforces this per task).
+// Under the flue-first engine, agent loops run in the Worker (not as Pi
+// subprocesses), so there are NO sandbox-scanned tool extensions anymore —
+// plugin tools live worker-side in plugins/<name>/tools/ and reach the
+// container over the sandbox handle. The remaining Pi packages (auth, magic
+// context, aft-pi) are baked via pi.json for any residual Pi tooling.
 
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const sandboxDir = dirname(fileURLToPath(import.meta.url));
-const root = join(sandboxDir, "..");
 const manifest = JSON.parse(readFileSync(join(sandboxDir, "pi.json"), "utf8"));
 const piHome = process.env.PI_HOME || "/root/.pi/agent";
 
@@ -25,26 +21,3 @@ mkdirSync(piHome, { recursive: true });
 const settings = { packages: manifest.packages ?? [], ...(manifest.settings ?? {}) };
 writeFileSync(join(piHome, "settings.json"), JSON.stringify(settings, null, 2));
 console.log(`settings.json: ${settings.packages.length} packages`);
-
-// Plugin extensions: scan plugins/*/extension.ts → ~/.pi/agent/extensions/<plugin>.ts
-const extDir = join(piHome, "extensions");
-mkdirSync(extDir, { recursive: true });
-const pluginsDir = join(root, "plugins");
-let count = 0;
-for (const name of existsSync(pluginsDir) ? readdirSync(pluginsDir) : []) {
-  const src = join(pluginsDir, name, "extension.ts");
-  if (!existsSync(src)) continue;
-  cpSync(src, join(extDir, `${name}.ts`));
-  console.log(`extension: ${name}`);
-  count++;
-}
-if (count === 0) throw new Error("no plugin extensions found — wrong build context?");
-
-// Core (engine) extensions: sandbox/extensions/*.ts — infrastructure like
-// the workflow write gate; not plugin capabilities.
-const coreExtDir = join(sandboxDir, "extensions");
-for (const file of existsSync(coreExtDir) ? readdirSync(coreExtDir) : []) {
-  if (!file.endsWith(".ts")) continue;
-  cpSync(join(coreExtDir, file), join(extDir, file));
-  console.log(`core extension: ${file}`);
-}

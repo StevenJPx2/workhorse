@@ -10,27 +10,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
 # so cold sandboxes don't pay the download tax.
 RUN npm install -g agent-browser && agent-browser install
 COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
-COPY sandbox/runner.mjs /opt/agent/runner.mjs
-# cache bust: 2026-07-22 SDK session runner
+# cache bust: 2026-07-23 flue-first tool collapse (no sandbox extensions)
 
 # Bake the agent runtime into the image so sandboxes don't pay per-run
 # installs (disk is ephemeral; runtime installs are wasted work).
 #
-# 1. /opt/agent: Pi CLI + a `pi` shim on PATH (pi-subagent spawns `pi`).
-# 2. Pi home via sandbox/install.mjs: packages from sandbox/pi.json;
-#    sandbox tools DISCOVERED from plugins/*/extension.ts (adding a plugin
-#    with a sandbox half = drop an extension.ts in its folder). Build
-#    context is the REPO ROOT (wrangler image_build_context) so the image
-#    sees the plugins workspace. Stage gating stays declarative: a
-#    plugin's tools are callable in a workflow stage only if that stage's
-#    tools[] names them (pi-workflow).
+# Under the flue-first engine the agent loop runs in the Worker; the sandbox
+# is just the workspace + tool exec. So the image bakes toolchains the
+# worker-side tools shell out to (agent-browser, aft, imgup) — NOT Pi tool
+# extensions (there are none anymore).
+#
+# 1. /opt/agent: Pi CLI + a `pi` shim on PATH (residual Pi tooling / warmup).
+# 2. Pi home via sandbox/install.mjs: packages from sandbox/pi.json
+#    (auth, magic context, aft-pi). No extension discovery.
 # 3. AFT (CortexKit) wired via its own installer (also downloads the aft
-#    binary + registers npm:@cortexkit/aft-pi).
+#    binary the aft_* tools exec + registers npm:@cortexkit/aft-pi).
 # 4. Warmup run: Pi installs all settings.json packages into its cache at
-#    build time (exits nonzero without auth — fine). At runtime only
-#    auth.json (short-lived access token) is injected.
+#    build time (exits nonzero without auth — fine).
 COPY sandbox /opt/agent/sandbox
-COPY plugins /opt/agent/plugins
 
 RUN mkdir -p /opt/agent /root/.pi/agent/agents \
   && cd /opt/agent \

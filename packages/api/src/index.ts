@@ -1,3 +1,4 @@
+export { tool } from "./plugin";
 export type {
   AttachmentProvider,
   AttachmentRef,
@@ -5,12 +6,13 @@ export type {
   ExternalEvent,
   PluginHooks,
   PluginRoute,
-  PluginToolFactory,
   ResolvedAttachment,
   RouteAuth,
   SandboxHandle,
   ScriptRecord,
-  ToolFactoryContext,
+  ToolContext,
+  ToolFactory,
+  ToolSurface,
   TriggerRecord,
   TriggerSource,
   WebhookHandler,

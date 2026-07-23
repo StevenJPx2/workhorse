@@ -10,15 +10,14 @@
 // not dynamic loading. Plugins depend ONLY on @workhorse/api; the worker
 // is the sole composition point that imports concrete plugins.
 
-import type { ToolDefinition } from "@flue/runtime";
+import { defineTool } from "@flue/runtime";
+import type { ToolContext as FlueToolContext, ToolDefinition, ToolInputSchema } from "@flue/runtime";
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
 
 /**
- * A stage tool, authored with flue's `defineTool` in a plugin's tools.ts.
- * Under the flue engine the agent loop runs in the Worker, so a plugin
- * contributes tools as a FACTORY (below) rather than a sandbox-scanned
- * extension.ts — the worker composition root assembles them.
+ * A built flue tool. Plugins don't build these directly — they author with
+ * `tool()` (below), which composes the ToolContext in and yields a ToolFactory.
  */
 export type WorkhorseTool = ToolDefinition<any, any>;
 
@@ -37,28 +36,70 @@ export interface SandboxHandle {
 }
 
 /**
- * Everything a plugin's tools may close over at assembly time. flue's
- * `run(ctx)` only carries `{ input, signal }`, so anything else a tool
- * needs (core services, the sandbox, the ticket it serves) is captured
- * here when the stage builds its tool registry.
+ * Which agent surface(s) a tool is exposed to:
+ *   stage — a workflow stage session (gated further by the stage allowlist)
+ *   chat  — the fleet-chat operator agent
+ * A tool may serve both (e.g. search_fleet_knowledge). Default: ["stage"].
  */
-export interface ToolFactoryContext {
+export type ToolSurface = "stage" | "chat";
+
+/**
+ * The context a tool's run() receives, composed in by `tool()`. flue's own
+ * run(ctx) carries only { input }; everything else a tool needs — core
+ * services, the container, the ticket it serves, the worker origin — is
+ * captured here when the surface assembles its tool registry.
+ *
+ * `sandbox`/`ticket` are always present: stage sessions supply the real
+ * container + ticket; fleet chat supplies its lightweight chat container +
+ * a sentinel ticket (chat tools are core calls and don't read them).
+ */
+export interface ToolContext {
   env: Env;
   core: Core;
-  /** The workspace container for this run (exec/read/write). */
+  /** Worker origin for self-referential callbacks. */
+  selfOrigin: string;
+  /** The workspace container (exec/read/write). */
   sandbox: SandboxHandle;
   /** The ticket + stage the tools serve. */
   ticket: { id: string; repo: string; stage: string };
 }
 
 /**
- * A plugin's stage-tool contribution. Returns every tool the plugin
- * offers; the stage engine intersects this with the stage allowlist
- * (spec.tools[]) before exposing any to the agent. Keeping the factory
- * in the plugin (plugins/<name>/tools.ts) is the hard boundary: the
- * worker imports it, the plugin never imports the worker.
+ * A per-tool factory: build the flue tool for a given ToolContext. Tagged
+ * with `toolName` + `surfaces` so the worker can gate (allowlist + surface)
+ * BEFORE instantiating. Produced by `tool()`.
  */
-export type PluginToolFactory = (ctx: ToolFactoryContext) => WorkhorseTool[];
+export interface ToolFactory {
+  (ctx: ToolContext): WorkhorseTool;
+  toolName: string;
+  surfaces: ToolSurface[];
+}
+
+/**
+ * Author one Workhorse tool. Wraps flue's `defineTool` and composes the
+ * ToolContext into run() — so a tool file declares a single tool and reaches
+ * the sandbox/core through its run args, with no per-plugin factory closure.
+ * Lives in plugins/<name>/tools/<tool_name>.ts; the worker (the sole
+ * composition point) assembles the plugin's `tools: ToolFactory[]`.
+ */
+export function tool<const S extends ToolInputSchema>(spec: {
+  name: string;
+  description: string;
+  input: S;
+  surfaces?: ToolSurface[];
+  run(args: { input: FlueToolContext<S>["input"] } & ToolContext): string | Promise<string>;
+}): ToolFactory {
+  const factory = ((ctx: ToolContext) =>
+    defineTool({
+      name: spec.name,
+      description: spec.description,
+      input: spec.input,
+      run: (c) => spec.run({ input: c.input, ...ctx }),
+    })) as ToolFactory;
+  factory.toolName = spec.name;
+  factory.surfaces = spec.surfaces ?? ["stage"];
+  return factory;
+}
 
 /** A reference to attachable context, as the operator provides it. */
 export interface AttachmentRef {
@@ -165,6 +206,12 @@ export interface ExternalEvent {
 export interface Core {
   /** Read a ticket record (null when unknown). */
   getTicket(ticketId: string): Promise<TicketRecord | null>;
+  /** List ticket records (optionally by status), newest first — fleet overview. */
+  listTickets(status?: string): Promise<TicketRecord[]>;
+  /** The persisted git patch of a finished ticket (null when none). */
+  ticketDiff(ticketId: string): Promise<string | null>;
+  /** Semantic search over the fleet's workflow catalog (for workflow selection). */
+  findWorkflows(query: string, topK?: number): Promise<Array<{ name: string; description?: string; stages?: string }>>;
   /**
    * Resolve one context ref (kind + ref) to prompt-ready markdown via the
    * matching attachment provider. Backs the agent's fetch_context tool —
@@ -323,9 +370,11 @@ export interface WorkhorsePlugin {
   /** Trigger sources this plugin can fire (documentation + registry validation). */
   triggers?: TriggerSource[];
   /**
-   * Stage tools this plugin contributes (flue engine). The worker assembles
-   * these per stage and intersects with the stage allowlist. Replaces the
-   * old sandbox-scanned extension.ts — the agent loop now runs in the Worker.
+   * Tools this plugin contributes (flue engine), one ToolFactory per tool
+   * (authored with `tool()` in plugins/<id>/tools/<name>.ts). The worker
+   * assembles them per surface: stage sessions intersect with the stage
+   * allowlist; fleet chat takes every chat-surface tool. Replaces the old
+   * sandbox-scanned extension.ts — the agent loop runs in the Worker.
    */
-  tools?: PluginToolFactory;
+  tools?: ToolFactory[];
 }
