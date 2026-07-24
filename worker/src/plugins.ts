@@ -12,6 +12,7 @@ import { ntfyPlugin } from "@workhorse/ntfy";
 import { pastePlugin } from "@workhorse/paste";
 import { slackPlugin } from "@workhorse/slack";
 import { ticketsPlugin } from "@workhorse/tickets";
+import { todoPlugin } from "@workhorse/todo";
 import type {
   Core,
   Env,
@@ -37,6 +38,7 @@ export const plugins: WorkhorsePlugin[] = [
   searchPlugin,
   slackPlugin,
   ticketsPlugin,
+  todoPlugin,
 ];
 
 export function pluginFor(id: string): WorkhorsePlugin | undefined {

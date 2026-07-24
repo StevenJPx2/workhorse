@@ -76,6 +76,9 @@ export const TOOL_CATALOG: ToolDoc[] = [
   { name: "workhorse_list_tickets", description: "Fleet ticket overview", classification: "read-only" },
   { name: "workhorse_ticket_status", description: "One ticket's record + live status", classification: "read-only" },
   { name: "workhorse_ticket_diff", description: "A finished ticket's patch", classification: "read-only" },
+  { name: "todo_write", description: "Create the run's ordered todo list (+ subtasks) — decompose work into units a coder does one at a time", classification: "write-capable" },
+  { name: "todo_read", description: "Read the run's todo list with current status and subtasks", classification: "read-only" },
+  { name: "todo_update", description: "Update one todo's status (in_progress/done) or tick a subtask — marking done advances the workflow", classification: "write-capable" },
 ];
 
 /** Rebuild every corpus (admin; idempotent — upserts replace by id). */

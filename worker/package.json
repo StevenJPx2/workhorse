@@ -25,6 +25,7 @@
     "@workhorse/semindex": "workspace:*",
     "@workhorse/slack": "workspace:*",
     "@workhorse/tickets": "workspace:*",
+    "@workhorse/todo": "workspace:*",
     "@workhorse/workflow": "workspace:*",
     "agents": "^0.14.2",
     "valibot": "^1.4.2"

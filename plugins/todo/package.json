@@ -1,0 +1,22 @@
+{
+  "name": "@workhorse/todo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Todo plugin: todo_write/todo_read/todo_list stage tools over a per-run workspace JSON file (.workflow/todos.json). Lets a workflow decompose work into todos + subtasks a coder completes one at a time.",
+  "exports": {
+    ".": "./plugin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "@flue/runtime": "^1.0.0-beta.9",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}
