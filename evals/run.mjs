@@ -67,11 +67,11 @@ if (cmd === "file") {
     let metrics = { tokens: null, runCodeCalls: null, stages: null, failedStages: null, loopbacks: null, wallMs: null };
     let diff = "";
     try {
-      const idx = await api(`/tickets/${run.ticketId}/traces`);
-      if (idx.length) {
-        const tr = await api(`/tickets/${run.ticketId}/traces/${idx[0].runId}`);
-        const a = tr.activity ?? {};
-        const tasks = a.tasks ?? [];
+      // /activity holds the full DefActivity (usage incl. runCodeCalls, tasks,
+      // timings) and persists after terminal — the authoritative metric source.
+      const a = await api(`/tickets/${run.ticketId}/activity`);
+      const tasks = a.tasks ?? [];
+      if (tasks.length || a.usage) {
         metrics = {
           tokens: a.usage?.totalTokens ?? null,
           runCodeCalls: a.usage?.runCodeCalls ?? null,
@@ -79,10 +79,7 @@ if (cmd === "file") {
           failedStages: tasks.filter((t) => t.status === "failed").length,
           // loopbacks = implement re-runs beyond the first (verify→implement).
           loopbacks: Math.max(0, tasks.filter((t) => t.id === "implement").length - 1),
-          wallMs:
-            a.startedAt && a.completedAt
-              ? new Date(a.completedAt) - new Date(a.startedAt)
-              : null,
+          wallMs: a.startedAt && a.completedAt ? new Date(a.completedAt) - new Date(a.startedAt) : null,
         };
         // The last stage's analysis carries the diff stat + summary — the
         // artifact the LLM judge scores.
