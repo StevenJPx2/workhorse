@@ -5,9 +5,11 @@ This plan refactors Workhorse from a monolithic worker into a modular architectu
 
 **Key technologies:**
 - **Alchemy** — Infrastructure-as-Effects for Cloudflare deployment
-- **Drizzle** — TypeScript ORM for D1 database
+- **Drizzle** — TypeScript ORM for D1 database (+ Drizzle Studio as the db visual surface)
 - **Valibot** — Schema validation for agent outputs
 - **Effect** — Type-safe functional programming (used by Alchemy)
+- **oxlint** — Fast Rust linter (correctness gate)
+- **fallow** — Codebase intelligence: dead code, cycles, duplication, health score
 
 **Architecture principles:**
 - Each package has a single responsibility
@@ -15,6 +17,38 @@ This plan refactors Workhorse from a monolithic worker into a modular architectu
 - The worker is just the deployment boundary
 - Workflows own their dependencies (plugins)
 - Infrastructure is code (Alchemy), not config (wrangler.toml)
+- Dependency injection over module-level singletons (classes take deps once)
+
+## Hygiene (enforced from phase 0 onward)
+
+Every package carries these three, and they gate each phase:
+
+1. **Vitest test suite** — `vitest run` per package, wired into the root `test` script.
+2. **Observability** — traces, metrics, structured logging per package.
+3. **Visual simulation** — a way to *see* behavior, not just assert it:
+   - `@workhorse/workflow` — render a run's stage graph + transitions from a recorded run
+   - `@workhorse/db` — **Drizzle Studio** (`drizzle-kit studio`) is the visual surface
+   - `@workhorse/server` — route/request inspection
+
+**Toolchain gates** (root scripts):
+```json
+{
+  "lint": "oxlint packages plugins worker evals",
+  "health": "fallow health --score",
+  "audit": "fallow audit",
+  "check": "bun run lint && bun run typecheck && bun run health"
+}
+```
+
+`fallow audit` gates only what a PR changed (pass/warn/fail verdict) — the CI gate.
+`bun run check` is the local pre-commit gate.
+
+**Phase 0 baseline (done):** oxlint + fallow installed; 10 oxlint errors fixed;
+14 unused dependencies removed (10 stale `@flue/runtime` declarations left over
+from the api decoupling, plus `@workhorse/api` in packages/workflow,
+`@workhorse/workflow` in evals, `@vue-flow/controls` in ui, `agents` in worker).
+Health score: **40 F → 61 C**. Remaining deductions are the ones modularization
+itself is meant to fix: circular deps (-23.4), unit size (-10.0).
 
 ## References
 - [Alchemy](https://alchemy.run) — Infrastructure-as-Effects for Cloudflare
@@ -27,6 +61,11 @@ This plan refactors Workhorse from a monolithic worker into a modular architectu
 - [Cloudflare D1](https://developers.cloudflare.com/d1/) — Serverless SQL database
 - [Cloudflare Workers](https://developers.cloudflare.com/workers/) — Serverless platform
 - [Cloudflare AI Search](https://developers.cloudflare.com/ai-search/) — Semantic search (replaces Magic Context)
+- [Drizzle Studio](https://orm.drizzle.team/docs/drizzle-kit-studio) — Visual database browser
+- [oxlint](https://oxc.rs/docs/guide/usage/linter) — Rust-based linter
+- [fallow](https://docs.fallow.tools) — Codebase intelligence (dead code, cycles, health)
+- [gh-image](https://github.com/drogers0/gh-image) — GitHub CLI extension for PR image uploads
+- [Vitest](https://vitest.dev) — Test runner
 
 ## Target Architecture
 
@@ -688,61 +727,101 @@ jobs:
 | `workflows/*` | None (pure TS types) | N/A |
 | `worker` | `alchemy build` | `alchemy deploy` |
 
-## Migration Order
+## Migration Order (hybrid)
 
-### Phase 1: Extract packages (no behavior change)
-1. Create `@workhorse/auth` (extract auth logic)
-2. Create `@workhorse/db` (extract db.ts, use Drizzle)
-3. Create `@workhorse/sandbox` (extract agent-run.ts, codemode.ts)
-4. Create `@workhorse/agents` (extract agents.ts, chat.ts)
-5. Create `@workhorse/events` (extract events.ts, notifications.ts)
-6. Create `@workhorse/tickets` (extract tickets.ts, heal.ts)
-7. Create `@workhorse/server` (extract router.ts + routes/ + plugins.ts + refs.ts + semindex.ts + triggers.ts)
-8. Worker imports from new packages (no logic change)
+**Why hybrid:** pure extraction-first moves ~11 files "with no behavior change,"
+then later phases rewrite much of what was moved (`ctx.run()` replaces
+`ctx.stage()`, AI Search rips `restoreMemory`/`persistMemory` out of
+agent-run.ts, plugin composition dissolves) — moving code twice. So: extract
+only the **low-churn, stable** packages first, then build the new primitives,
+then extract the rest around the shape that proved out.
 
-### Phase 2: Add agent() primitive
+**Every phase must end green on:** `bun run check` (oxlint → typecheck → fallow
+health), `bun run test`, and the phase's own visual-simulation surface.
+
+### Phase 0: Toolchain baseline ✅ DONE
+1. ✅ Install oxlint + fallow at the workspace root
+2. ✅ Fix all oxlint correctness errors (10 found, 10 fixed)
+3. ✅ Remove unused dependencies (14 removed — health 40 F → 61 C)
+4. ✅ Root scripts: `lint`, `lint:fix`, `health`, `audit`, `dead`, `check`
+5. ⏳ Wire `fallow audit` into GitHub Actions as the PR gate
+
+### Phase 1: Stable packages (won't be reshaped later)
+1. Create `@workhorse/db` — Drizzle schema + migrations + **class with DI**
+   - `class Db { constructor(private env: Env) }` — one drizzle instance, injected
+   - Drizzle Studio as the visual simulation surface
+   - Vitest suite against a local D1/SQLite
+2. Create `@workhorse/auth` — **class with DI** (`class Auth { constructor(env) }`)
+3. Worker imports both; no other logic changes
+4. Gate: `bun run check` + `bun run test` + Drizzle Studio opens and shows tables
+
+### Phase 2: New primitives
 1. Add `agent()` to `@workhorse/api`
-2. Add `workflow()` to `@workhorse/workflow`
-3. Add execution logic to `@workhorse/workflow` (from workflow-run.ts, flue-session.ts)
+2. Add `workflow()` builder to `@workhorse/workflow` (discovery + execution phases)
+3. Port execution logic (workflow-run.ts, flue-session.ts) onto `ctx.run()`
+4. Visual simulation: render a discovered workflow graph from a dry-run
+5. Gate: graph render matches the hand-drawn coding pipeline
 
-### Phase 3: Refactor plugins
-1. Add individual tool exports to each plugin
-2. Keep existing `tools` array for backward compatibility
+### Phase 3: Plugins export individual tools
+1. Add individual tool exports to each plugin (`export const browser_open = ...`)
+2. Remove the `tools` array once nothing reads it (greenfield — no back-compat shims)
+3. Gate: `fallow dead-code` shows no orphaned tool factories
 
-### Phase 4: Create workflow packages
-1. Create `workflows/coding/` package
-2. Move agents from `worker/src/agents.ts` to `workflows/coding/agents/`
-3. Test each workflow in isolation
+### Phase 4: First workflow package
+1. Create `workflows/coding/` with agents as TS modules
+2. Move personas from `sandbox/agents/*.md` to `workflows/coding/agents/*.ts`
+3. Prove the whole shape end-to-end on one real ticket → PR
+4. Gate: eval case passes against the `coding-raw` baseline
 
-### Phase 5: Replace Magic Context with AI Search
-1. Remove Magic Context from sandbox image
-2. Remove `restoreMemory()` / `persistMemory()` from agent-run.ts
+### Phase 5: Extract the rest (now that the shape is proven)
+1. `@workhorse/sandbox` (agent-run, codemode)
+2. `@workhorse/agents` (agents, chat)
+3. `@workhorse/events` (events, notifications)
+4. `@workhorse/tickets` (tickets, heal)
+5. `@workhorse/server` (router, routes/, plugins, refs, semindex, triggers)
+6. Gate: `fallow health` circular-deps deduction drops (this is the phase that fixes it)
+
+### Phase 6: AI Search replaces Magic Context
+1. Remove Magic Context from the sandbox image
+2. Remove `restoreMemory()` / `persistMemory()`
 3. Add AI Search integration for per-repo memory
-4. Add domain-specific tools (search_code, search_history, etc.)
+4. Add codebase-intelligence tools (search_code, search_history, search_tests, search_docs)
 
-### Phase 6: Refactor worker
-1. Remove workflow execution logic from worker
-2. Remove plugin composition from worker (workflows own plugins)
-3. Add alchemy config for infrastructure
-4. Add vite config for workflow discovery
-5. Simplify worker to thin shell
+### Phase 7: Worker becomes the deployment boundary
+1. Move `sandbox/Dockerfile` → `worker/Dockerfile` (+ `worker/sandbox/`)
+2. Add `alchemy.run.ts`; delete `wrangler.jsonc`
+3. Add vite config for workflow discovery
+4. GitHub Actions: push→prod, PR→preview, PR-close→destroy
+5. Reduce `worker/src/index.ts` to `createServer({ workflows })`
 
-### Phase 7: Cleanup
-1. Remove dead code from worker
-2. Remove scripts-toml.ts (unnecessary with hard-coded workflows)
-3. Update tests
-4. Update documentation
+### Phase 8: Cleanup
+1. Remove `scripts-toml.ts`
+2. `fallow fix --dry-run` → apply the safe automatic cleanups
+3. Target: fallow health ≥ 85 (B or better)
+4. Update README + ROADMAP
 
 ## Verification
 
-1. `bun run typecheck` — all packages compile
-2. `bun run test` — all tests pass
-3. `bun run deploy` — worker deploys successfully
-4. Manual test: create ticket, run workflow, verify PR
+Per phase:
+1. `bun run check` — oxlint + typecheck + fallow health
+2. `bun run test` — all package Vitest suites
+3. The phase's visual-simulation surface renders correctly
+
+Before ship:
+4. `bun run deploy` — worker deploys
+5. Manual: file ticket → run workflow → verify PR
+
+## Answered Decisions
+
+| Question | Decision |
+|----------|----------|
+| Phase ordering | **Hybrid** — stable packages (db, auth) first, then primitives, then the rest |
+| `@workhorse/db` / `@workhorse/auth` shape | **Class with dependency injection** — constructed once, injected; avoids repeated instantiation |
+| db visual simulation | **Drizzle Studio** |
+| Linting | **oxlint** (correctness category as error) |
+| Codebase intelligence | **fallow** (`audit` as the CI gate, `health` as the local gate) |
 
 ## Open Questions
 
 1. How does the server discover plugins for webhook routes?
-2. Should `@workhorse/db` export functions or a class?
-3. Should `@workhorse/auth` export functions or a class?
-4. How should vite discover workflow packages?
+2. How should vite discover workflow packages?

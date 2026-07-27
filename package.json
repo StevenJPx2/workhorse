@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Controllable autonomous coding agents \u2014 Cloudflare-native fleet orchestrator (Sandbox + Workflows + Pi on Claude subscription)",
+  "description": "Controllable autonomous coding agents — Cloudflare-native fleet orchestrator (Sandbox + Workflows + Pi on Claude subscription)",
   "workspaces": [
     "packages/*",
     "plugins/*",
@@ -13,6 +13,12 @@
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
+    "lint": "oxlint packages plugins worker evals",
+    "lint:fix": "oxlint --fix packages plugins worker evals",
+    "health": "fallow health --score",
+    "audit": "fallow audit",
+    "dead": "fallow dead-code",
+    "check": "bun run lint && bun run typecheck && bun run health",
     "deploy": "cd worker && bun run deploy",
     "dev": "cd worker && bun run dev",
     "test": "bun run --filter \"*\" test",
@@ -22,6 +28,8 @@
     "@cloudflare/workers-types": "^5.20260721.1",
     "autoevals": "^0.3.0",
     "evalite": "^0.19.0",
+    "fallow": "^3.9.1",
+    "oxlint": "^1.75.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },

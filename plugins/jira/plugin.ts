@@ -21,7 +21,7 @@
 // /webhooks/jira?secret=<JIRA_WEBHOOK_SECRET>). Outbound uses
 // JIRA_BASE_URL + JIRA_EMAIL + JIRA_API_TOKEN basic auth.
 
-import type { Core, Env, TicketRecord, WorkhorsePlugin } from "@workhorse/api";
+import type { Core, Env, WorkhorsePlugin } from "@workhorse/api";
 
 // ---------- outbound Jira REST ----------
 

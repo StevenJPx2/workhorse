@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@workhorse/api": "workspace:*",
-    "@workhorse/search": "workspace:*",
-    "@workhorse/workflow": "workspace:*"
+    "@workhorse/search": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",

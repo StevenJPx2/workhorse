@@ -59,7 +59,7 @@ export function defineIndex<T>(def: IndexDef<T>) {
           id: `${def.name}:${def.id(item)}`,
           values: vectors[i],
           namespace: def.name,
-          metadata: { ...(def.metadata?.(item) ?? {}), _id: def.id(item) },
+          metadata: { ...def.metadata?.(item), _id: def.id(item) },
         }));
         for (let i = 0; i < rows.length; i += BATCH) {
           await env.VECTORIZE.upsert(rows.slice(i, i + BATCH));

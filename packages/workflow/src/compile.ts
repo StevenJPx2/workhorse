@@ -3,7 +3,7 @@
 // WorkflowContext (ctx.stage) uses these to run a hard-coded WorkflowDef's
 // stages; there is no spec interpreter.
 
-import type { JsonSchema, StageSpec, ToolRef } from "./types";
+import type { StageSpec, ToolRef } from "./types";
 
 export const RUN_ROOT = "/workspace/.workflow";
 

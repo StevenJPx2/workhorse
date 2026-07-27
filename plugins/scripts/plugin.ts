@@ -18,7 +18,7 @@
 // repo:Y scripts) is accepted for now: all fleet repos belong to the same
 // operator; revisit if multi-tenancy ever arrives.
 
-import type { Core, Env, PluginRoute, WorkhorsePlugin } from "@workhorse/api";
+import type { PluginRoute, WorkhorsePlugin } from "@workhorse/api";
 import { scriptsTools } from "./tools";
 
 function json(data: unknown, status = 200): Response {

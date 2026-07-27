@@ -11,9 +11,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@workhorse/api": "workspace:*"
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",
     "typescript": "^7.0.2",

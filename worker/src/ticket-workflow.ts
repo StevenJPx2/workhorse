@@ -385,7 +385,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     step: WorkflowStep,
     t: TicketParams,
     sandboxId: string,
-    runId: string,
+    _runId: string,
   ) {
     for (let round = 1; round <= MAX_REVISIONS; round++) {
       let events = (await step.do(`acc-check-${round}`, async () =>

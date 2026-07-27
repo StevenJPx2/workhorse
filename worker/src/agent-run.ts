@@ -4,8 +4,6 @@ import type { Driver } from "@workhorse/workflow";
 import { parseScriptsToml } from "./scripts-toml";
 import type { Env } from "@workhorse/api";
 
-const PI = "pi"; // /usr/local/bin/pi shim baked into the image
-
 /** Driver adapter: @workhorse/workflow's sandbox I/O over @cloudflare/sandbox. */
 export function sandboxDriver(env: Env, sandboxId: string): Driver {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });

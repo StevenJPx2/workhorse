@@ -83,7 +83,6 @@ export const TOOL_CATALOG: ToolDoc[] = [
 
 /** Rebuild every corpus (admin; idempotent — upserts replace by id). */
 export async function reindexAll(env: Env): Promise<Record<string, number>> {
-  const { listScripts } = await import("./db");
   // Scripts: all scopes — listScripts(repo) is scoped, so read the table.
   const { results } = await env.DB.prepare("SELECT * FROM scripts").all<Record<string, string>>();
   const scripts: ScriptRecord[] = (results ?? []).map((r) => ({

@@ -96,11 +96,13 @@ function toolSurface(tools: WorkhorseTool[], allow: string[]): string {
 
 /** Minimal glob → anchored regex ('*' = non-slash, '**' = any). */
 function globToRe(glob: string): RegExp {
+  const SENTINEL = "\u0000";
   const esc = glob
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*/g, "\u0000")
+    .replace(/\*\*/g, SENTINEL)
     .replace(/\*/g, "[^/]*")
-    .replace(/\u0000/g, ".*");
+    .split(SENTINEL)
+    .join(".*");
   return new RegExp(`^${esc}$`);
 }
 

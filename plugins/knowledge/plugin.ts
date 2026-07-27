@@ -237,7 +237,8 @@ export const knowledgePlugin: WorkhorsePlugin = {
               JSON.stringify(t.activity),
               t.escalations,
             );
-            ok ? indexed++ : failed++;
+            if (ok) indexed++;
+            else failed++;
           } catch {
             failed++;
           }

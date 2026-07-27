@@ -45,7 +45,7 @@ RUN mkdir -p /opt/agent /root/.pi/agent/agents \
 # sandboxes never download it at runtime. The context.db itself is restored
 # per-repo from KV at prepare and persisted back after each run (agent-run.ts).
 RUN mkdir -p /root/.config/cortexkit \
-  && cp /opt/agent/sandbox/magic-context.jsonc /root/.config/cortexkit/magic-context.jsonc
+  && cp /opt/agent/sandbox/.cortexkit/magic-context.jsonc /root/.config/cortexkit/magic-context.jsonc
 RUN MC_MODELS=/root/.local/share/cortexkit/magic-context/models/Xenova/all-MiniLM-L6-v2 \
   && mkdir -p "$MC_MODELS/onnx" \
   && curl -fsSL -o "$MC_MODELS/config.json" https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json \
