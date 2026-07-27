@@ -10,13 +10,44 @@
 // not dynamic loading. Plugins depend ONLY on @workhorse/api; the worker
 // is the sole composition point that imports concrete plugins.
 
-import { defineTool } from "@flue/runtime";
-import type { ToolContext as FlueToolContext, ToolDefinition, ToolInputSchema } from "@flue/runtime";
+import type { GenericSchema, InferInput, InferOutput } from "valibot";
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
 
+// Tool types — mirrors @flue/runtime's shape so the flue engine accepts
+// our tools via structural typing, without importing @flue/runtime here.
+type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+type ToolInputSchema = GenericSchema<Record<string, unknown>, unknown>;
+type ToolOutputSchema = GenericSchema<any, NonNullable<unknown> | null>;
+type ToolRunResult<S extends ToolOutputSchema | undefined> = S extends ToolOutputSchema ? InferInput<S> : JsonValue | undefined;
+type FlueToolContext<S extends ToolInputSchema | undefined> = {
+  readonly signal?: AbortSignal;
+} & (S extends ToolInputSchema ? { readonly input: InferOutput<S> } : Record<never, never>);
+interface ToolDefinition<
+  TInput extends ToolInputSchema | undefined = ToolInputSchema | undefined,
+  TOutput extends ToolOutputSchema | undefined = ToolOutputSchema | undefined,
+> {
+  readonly name: string;
+  readonly description: string;
+  readonly input: TInput;
+  readonly output: TOutput;
+  run(context: FlueToolContext<TInput>): ToolRunResult<TOutput> | Promise<ToolRunResult<TOutput>>;
+}
+function defineTool<
+  const TInput extends ToolInputSchema | undefined = undefined,
+  const TOutput extends ToolOutputSchema | undefined = undefined,
+>(options: {
+  name: string;
+  description: string;
+  input?: TInput;
+  output?: TOutput;
+  run: ToolDefinition<TInput, TOutput>["run"];
+}): ToolDefinition<TInput, TOutput> {
+  return options as ToolDefinition<TInput, TOutput>;
+}
+
 /**
- * A built flue tool. Plugins don't build these directly — they author with
+ * A built tool. Plugins don't build these directly — they author with
  * `tool()` (below), which composes the ToolContext in and yields a ToolFactory.
  */
 export type WorkhorseTool = ToolDefinition<any, any>;
@@ -76,7 +107,7 @@ export interface ToolFactory {
 }
 
 /**
- * Author one Workhorse tool. Wraps flue's `defineTool` and composes the
+ * Author one Workhorse tool. Wraps `defineTool` and composes the
  * ToolContext into run() — so a tool file declares a single tool and reaches
  * the sandbox/core through its run args, with no per-plugin factory closure.
  * Lives in plugins/<name>/tools/<tool_name>.ts; the worker (the sole
@@ -87,7 +118,7 @@ export function tool<const S extends ToolInputSchema>(spec: {
   description: string;
   input: S;
   surfaces?: ToolSurface[];
-  run(args: { input: FlueToolContext<S>["input"] } & ToolContext): string | Promise<string>;
+  run(args: { input: InferOutput<S> } & ToolContext): string | Promise<string>;
 }): ToolFactory {
   const factory = ((ctx: ToolContext) =>
     defineTool({

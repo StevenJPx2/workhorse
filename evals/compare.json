@@ -1,0 +1,15 @@
+{
+  "$comment": "Head-to-head: the new multi-agent `coding` pipeline (staged) vs the bare single-agent `coding-raw` (raw), on ONE substantive, multi-part task. Multi-part so decomposition (todos) + adversarial review can differentiate from one agent doing it all. Same task, same model — the delta is the workflow.",
+  "repo": "https://github.com/StevenJPx2/workhorse-e2e-test",
+  "tasks": [
+    {
+      "id": "toolkit-utils",
+      "title": "eval: three tested toolkit utilities",
+      "prompt": "Add three small, well-tested utilities to the toolkit, following the repo's existing conventions (ESM, strict TS, exported from src/index.ts, Node's built-in test runner):\n1. In src/async.ts, add `timeout<T>(promise: Promise<T>, ms: number): Promise<T>` that rejects with a clear error if the promise doesn't settle within ms (and clears its timer on success).\n2. In src/arrays.ts, make `chunk` throw a clear error when size <= 0 instead of looping forever / returning wrong results.\n3. In src/numbers.ts, add `range(start: number, end: number): number[]` returning integers [start, end) (empty when start >= end).\nExport all new functions, and add tests covering each — including the timeout rejection and the chunk error case."
+    }
+  ],
+  "variants": [
+    { "id": "raw", "workflow": "coding-raw", "model": "claude-sonnet-4-6" },
+    { "id": "staged", "workflow": "coding", "model": "claude-sonnet-4-6" }
+  ]
+}
