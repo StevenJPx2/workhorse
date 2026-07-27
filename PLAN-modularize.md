@@ -206,8 +206,7 @@ const gh_image = tool({
 
 **Sandbox changes:**
 - Add `gh` CLI + `gh-image` extension to Dockerfile
-- Remove `imgup` from Dockerfile (no Python, no uv)
-- Simpler sandbox image
+- `imgup` stays in Dockerfile (still needed for `upload_image`)
 
 ### 7. AI Search replaces Magic Context
 
