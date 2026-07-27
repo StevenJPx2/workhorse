@@ -1,24 +1,48 @@
 # Plan: Modularize Workhorse Architecture
 
-## Package Naming Decision
+## Overview
+This plan refactors Workhorse from a monolithic worker into a modular architecture where each concern is a separate package. The worker becomes a thin shell that composes everything together.
 
-`@workhorse/workflow` (not `@workhorse/agent`) because:
-- The package's primary purpose is workflow execution
-- `agent()` is used within workflows (not standalone)
-- `workflow()` and `agent()` are tightly coupled (agents run inside workflows)
-- `@workhorse/agent` would imply agents work independently of workflows
+**Key technologies:**
+- **Alchemy** — Infrastructure-as-Effects for Cloudflare deployment
+- **Drizzle** — TypeScript ORM for D1 database
+- **Valibot** — Schema validation for agent outputs
+- **Effect** — Type-safe functional programming (used by Alchemy)
+
+**Architecture principles:**
+- Each package has a single responsibility
+- Packages are composable and testable in isolation
+- The worker is just the deployment boundary
+- Workflows own their dependencies (plugins)
+- Infrastructure is code (Alchemy), not config (wrangler.toml)
+
+## References
+- [Alchemy](https://alchemy.run) — Infrastructure-as-Effects for Cloudflare
+- [Alchemy Docs](https://alchemy.run/what-is-alchemy) — What is Alchemy?
+- [Alchemy GitHub](https://github.com/alchemy-run/alchemy) — Source code
+- [Alchemy GitHub Action](https://github.com/alchemy-run/alchemy#github-action) — Automated deployment
+- [Drizzle ORM](https://orm.drizzle.team) — TypeScript ORM with D1 support
+- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new) — Get started with D1
+- [Valibot](https://valibot.dev) — TypeScript schema validation
+- [Cloudflare D1](https://developers.cloudflare.com/d1/) — Serverless SQL database
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/) — Serverless platform
+- [Cloudflare AI Search](https://developers.cloudflare.com/ai-search/) — Semantic search (replaces Magic Context)
 
 ## Target Architecture
 
 ```
 @workhorse/api         # plugin contract: tool(), agent(), types
-@workhorse/workflow    # workflow execution: ctx.run(), routing, WorkflowContext
+@workhorse/workflow    # core workflow execution: ctx.run(), routing, WorkflowContext
+@workhorse/sandbox     # sandbox I/O + Code Mode (agent-run, codemode)
+@workhorse/agents      # agent management + fleet chat (agents, chat)
+@workhorse/events      # event store + notification bus (events, notifications)
+@workhorse/tickets     # ticket filing + self-healing (tickets, heal)
+@workhorse/db          # database: D1 (Drizzle), tickets, scripts, escalations, traces
 @workhorse/auth        # authentication: bearer tokens, OAuth
-@workhorse/db          # database: D1, tickets, scripts, escalations, traces
-@workhorse/server      # HTTP routes (imports auth + db)
+@workhorse/server      # HTTP routes + plugin composition (router, routes/*, plugins, refs, semindex, triggers)
 plugins/*              # github, todo, search, browser, etc.
 workflows/*            # coding, etc.
-worker                 # entry point + vite + wrangler + deployment
+worker                 # entry point + alchemy + vite + deployment
 ```
 
 ## Key Design Decisions
@@ -139,7 +163,34 @@ workflows/
 }
 ```
 
-### 6. Worker is thin shell + vite + wrangler
+### 6. AI Search replaces Magic Context
+
+Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This removes the local embedding model (~90MB ONNX) from the sandbox image and eliminates context.db persistence/restoration.
+
+**What AI Search provides:**
+- Per-repo memory (namespace by `mc:<owner/repo>`)
+- Fleet-wide institutional knowledge (distilled traces)
+- Hybrid vector+keyword search
+- Cloudflare-managed (no maintenance)
+
+**What gets removed:**
+- Magic Context from sandbox image
+- `restoreMemory()` / `persistMemory()` from agent-run.ts
+- Local embedding model (~90MB ONNX)
+- context.db persistence/restoration
+
+**What stays:**
+- `semindex` — plugin tooling for semantic search across registries (different concern)
+- `search_fleet_knowledge` — fleet-wide trace search (already uses AI Search)
+
+**Domain-specific features for codebase intelligence:**
+- `search_code` — semantic search across source files
+- `search_history` — search git history
+- `search_tests` — search test results
+- `search_docs` — search documentation
+- `search_patterns` — search for patterns/conventions
+
+### 7. Worker is thin shell + alchemy + vite
 
 ```ts
 // worker/src/index.ts
@@ -150,6 +201,11 @@ export default createServer({
   workflows: [coding],
 });
 ```
+
+**Plus:**
+- `alchemy.run.ts` (infrastructure as code)
+- `vite.config.ts` (discovers workflows/)
+- GitHub Actions (automated deployment)
 
 ## Package Breakdown
 
@@ -183,6 +239,74 @@ export interface StageResult {
   stats?: { ... };
 }
 // ... existing exports (compile, validate, etc.)
+```
+
+### `@workhorse/sandbox` (new)
+**Extract from:** `worker/src/agent-run.ts`, `worker/src/codemode.ts`
+
+**Exports:**
+```ts
+export function sandboxDriver(env: Env, sandboxId: string): Driver;
+export function injectAuth(env: Env, sandboxId: string, accessToken: string): Promise<void>;
+export function injectBrowserConfig(env: Env, sandboxId: string): Promise<void>;
+export function injectTicketContext(env: Env, sandboxId: string, ticketId: string, repo: string): Promise<void>;
+export function restoreDepCache(env: Env, sandboxId: string, repo: string): Promise<string>;
+export function saveDepCache(env: Env, sandboxId: string, repo: string): Promise<boolean>;
+export function prepareWorkspace(env: Env, sandboxId: string, repo: string): Promise<void>;
+export function checkoutTicketBranch(env: Env, sandboxId: string, repo: string, branch: string, githubToken: string): Promise<void>;
+export function deliverBranch(env: Env, sandboxId: string, ticketId: string, repo: string, title: string): Promise<{ branch: string; diff: string; pushed: boolean }>;
+export class ToolBridge extends WorkerEntrypoint<Env, ToolBridgeProps> { ... }
+export function runCode(env: Env, props: ToolBridgeProps, code: string, args?: Record<string, string>): Promise<RunCodeResult>;
+```
+
+### `@workhorse/agents` (new)
+**Extract from:** `worker/src/agents.ts`, `worker/src/chat.ts`
+
+**Exports:**
+```ts
+export interface AgentBlock { ... }
+export function getAgentBlock(env: Env, name: string): Promise<AgentBlock | null>;
+export function listAgentBlocks(env: Env): Promise<AgentBlock[]>;
+export function putAgentBlock(env: Env, block: Omit<AgentBlock, "updatedAt">): Promise<string | null>;
+export function deleteAgentBlock(env: Env, name: string): Promise<void>;
+export function seedAgentBlocks(env: Env): Promise<string[]>;
+export function installAgentBlocks(env: Env, sandboxId: string): Promise<void>;
+export function runFleetChat(env: Env, selfOrigin: string, messages: Array<{ role: string; content: string }>): Promise<{ ok: true; reply: string } | { ok: false; error: string; status: number }>;
+```
+
+### `@workhorse/events` (new)
+**Extract from:** `worker/src/events.ts`, `worker/src/notifications.ts`
+
+**Exports:**
+```ts
+// Events
+export function appendEvents(env: Env, events: ExternalEvent[]): Promise<void>;
+export function unconsumedEvents(env: Env, ticketId: string): Promise<ExternalEvent[]>;
+export function consumeEvents(env: Env, ticketId: string): Promise<void>;
+export function wakeTicket(env: Env, ticketId: string, attempts?: number): Promise<void>;
+
+// Steering
+export function appendSteer(env: Env, ticketId: string, message: string): Promise<void>;
+export function pendingSteers(env: Env, ticketId: string): Promise<string[]>;
+export function consumeSteers(env: Env, ticketId: string): Promise<void>;
+
+// Notifications
+export interface Notification { ... }
+export function notify(env: Env, n: { ticketId: string; source: string; kind?: string; body: string; author?: string; urgent?: boolean }): Promise<Notification>;
+export function unreadNotifications(env: Env, ticketId: string): Promise<Notification[]>;
+export function listNotifications(env: Env, ticketId: string, limit?: number): Promise<Notification[]>;
+export function markNotificationsRead(env: Env, ticketId: string, upToSeq: number): Promise<void>;
+export function renderNotifications(items: Notification[]): string;
+```
+
+### `@workhorse/tickets` (new)
+**Extract from:** `worker/src/tickets.ts`, `worker/src/heal.ts`
+
+**Exports:**
+```ts
+export function fileTicket(env: Env, body: Partial<TicketParams> & { selfOrigin?: string }): Promise<FileTicketResult>;
+export function resolveAttachments(env: Env, selfOrigin: string, attachments: Array<{ kind: string; ref: string }>): Promise<string>;
+export function healTicket(env: Env, ticketId: string): Promise<{ ok: boolean; reason?: string; instance?: string }>;
 ```
 
 ### `@workhorse/auth` (new)
@@ -221,7 +345,7 @@ export function listTraceIndex(env: Env, ticketId: string): Promise<Trace[]>;
 ```
 
 ### `@workhorse/server` (new)
-**Extract from:** `worker/src/router.ts`, `worker/src/routes/*`
+**Extract from:** `worker/src/router.ts`, `worker/src/routes/*`, `worker/src/plugins.ts`, `worker/src/refs.ts`, `worker/src/semindex.ts`, `worker/src/triggers.ts`
 
 **Imports:** `@workhorse/auth`, `@workhorse/db`
 
@@ -278,9 +402,9 @@ export default createServer({
 ```
 
 **Plus:**
+- `alchemy.run.ts` (infrastructure as code)
 - `vite.config.ts` (discovers workflows/)
-- `wrangler.toml` (Cloudflare Worker config)
-- Deployment scripts
+- GitHub Actions (automated deployment)
 
 ## Coding Workflow Example
 
@@ -356,13 +480,99 @@ export const coding = workflow({
 });
 ```
 
+## Build and Deployment
+
+### Build Process
+```json
+{
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "build": "alchemy build",
+    "deploy": "alchemy deploy",
+    "deploy:prod": "alchemy deploy --stage prod"
+  }
+}
+```
+
+### Deployment Order
+1. `db:push` — run migrations (schema changes)
+2. `build` — bundle worker with alchemy
+3. `deploy` — deploy to Cloudflare
+
+### Alchemy Infrastructure
+```ts
+// alchemy.run.ts
+import * as Alchemy from "alchemy";
+import * as Cloudflare from "alchemy/Cloudflare";
+import * as Effect from "effect/Effect";
+
+const DB = Cloudflare.D1.Database("workhorse");
+const Worker = Cloudflare.Worker("workhorse", {
+  main: "./worker/src/index.ts",
+  env: { DB },
+});
+
+export default Alchemy.Stack(
+  "Workhorse",
+  { providers: Cloudflare.providers(), state: Cloudflare.state() },
+  Effect.gen(function* () {
+    const db = yield* DB;
+    const worker = yield* Worker;
+    return { url: worker.url };
+  }),
+);
+```
+
+### GitHub Actions
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run db:push
+      - run: bun run build
+      - uses: alchemy-run/alchemy@v1
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Package Build Concerns
+| Package | Build | Deploy |
+|---------|-------|--------|
+| `@workhorse/api` | None (pure TS types) | N/A |
+| `@workhorse/workflow` | None (pure TS types) | N/A |
+| `@workhorse/auth` | None (pure TS types) | N/A |
+| `@workhorse/db` | `drizzle-kit generate` | `drizzle-kit push` (migrations) |
+| `@workhorse/server` | None (imported by worker) | N/A |
+| `plugins/*` | None (pure TS types) | N/A |
+| `workflows/*` | None (pure TS types) | N/A |
+| `worker` | `alchemy build` | `alchemy deploy` |
+
 ## Migration Order
 
 ### Phase 1: Extract packages (no behavior change)
 1. Create `@workhorse/auth` (extract auth logic)
-2. Create `@workhorse/db` (extract db.ts)
-3. Create `@workhorse/server` (extract router.ts + routes/)
-4. Worker imports from new packages (no logic change)
+2. Create `@workhorse/db` (extract db.ts, use Drizzle)
+3. Create `@workhorse/sandbox` (extract agent-run.ts, codemode.ts)
+4. Create `@workhorse/agents` (extract agents.ts, chat.ts)
+5. Create `@workhorse/events` (extract events.ts, notifications.ts)
+6. Create `@workhorse/tickets` (extract tickets.ts, heal.ts)
+7. Create `@workhorse/server` (extract router.ts + routes/ + plugins.ts + refs.ts + semindex.ts + triggers.ts)
+8. Worker imports from new packages (no logic change)
 
 ### Phase 2: Add agent() primitive
 1. Add `agent()` to `@workhorse/api`
@@ -378,16 +588,24 @@ export const coding = workflow({
 2. Move agents from `worker/src/agents.ts` to `workflows/coding/agents/`
 3. Test each workflow in isolation
 
-### Phase 5: Refactor worker
+### Phase 5: Replace Magic Context with AI Search
+1. Remove Magic Context from sandbox image
+2. Remove `restoreMemory()` / `persistMemory()` from agent-run.ts
+3. Add AI Search integration for per-repo memory
+4. Add domain-specific tools (search_code, search_history, etc.)
+
+### Phase 6: Refactor worker
 1. Remove workflow execution logic from worker
 2. Remove plugin composition from worker (workflows own plugins)
-3. Add vite config for workflow discovery
-4. Simplify worker to thin shell
+3. Add alchemy config for infrastructure
+4. Add vite config for workflow discovery
+5. Simplify worker to thin shell
 
-### Phase 6: Cleanup
+### Phase 7: Cleanup
 1. Remove dead code from worker
-2. Update tests
-3. Update documentation
+2. Remove scripts-toml.ts (unnecessary with hard-coded workflows)
+3. Update tests
+4. Update documentation
 
 ## Verification
 

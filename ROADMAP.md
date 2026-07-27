@@ -224,6 +224,58 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
 ## Planned ⏳ (in priority order)
 
+### Modularize architecture — packages + Alchemy + Drizzle + AI Search
+
+Refactor from monolithic worker into modular architecture. Each concern is a
+separate package, worker becomes thin shell. Full plan: `PLAN-modularize.md`.
+
+**New packages:**
+
+| Package | Responsibility | Source |
+|---------|---------------|--------|
+| `@workhorse/api` | Plugin contract: `tool()`, `agent()`, types | refactor |
+| `@workhorse/workflow` | Core workflow execution: `ctx.run()`, routing, `WorkflowContext` | refactor |
+| `@workhorse/sandbox` | Sandbox I/O + Code Mode | `agent-run.ts`, `codemode.ts` |
+| `@workhorse/agents` | Agent management + fleet chat | `agents.ts`, `chat.ts` |
+| `@workhorse/events` | Event store + notification bus | `events.ts`, `notifications.ts` |
+| `@workhorse/tickets` | Ticket filing + self-healing | `tickets.ts`, `heal.ts` |
+| `@workhorse/db` | D1 database (Drizzle) | `db.ts` |
+| `@workhorse/auth` | Authentication | `index.ts` auth logic |
+| `@workhorse/server` | HTTP routes + plugin composition | `router.ts`, `routes/*`, `plugins.ts`, `refs.ts`, `semindex.ts`, `triggers.ts` |
+| `plugins/*` | Individual plugins | existing |
+| `workflows/*` | Individual workflows | new |
+| `worker` | Thin shell + Alchemy + Vite | `index.ts` |
+
+**Key design decisions:**
+- `agent()` defines an agent for a workflow stage (like `tool()`)
+- Tools imported directly from plugins (not string references)
+- `ctx.run(agent, { input, upstream })` executes an agent
+- Stage output is a valibot schema (runtime + compile-time)
+- Each workflow is a package in `workflows/`
+- AI Search replaces Magic Context (removes local embedding model)
+- Alchemy replaces wrangler for deployment
+- Drizzle replaces raw D1 queries
+
+**Technologies:**
+- [Alchemy](https://alchemy.run) — Infrastructure-as-Effects for Cloudflare
+- [Drizzle ORM](https://orm.drizzle.team) — TypeScript ORM with D1 support
+- [Valibot](https://valibot.dev) — TypeScript schema validation
+- [Cloudflare AI Search](https://developers.cloudflare.com/ai-search/) — Semantic search
+
+**Migration phases:**
+1. Extract packages (no behavior change)
+2. Add `agent()` primitive
+3. Refactor plugins (individual tool exports)
+4. Create workflow packages
+5. Replace Magic Context with AI Search
+6. Refactor worker (thin shell + Alchemy)
+7. Cleanup
+
+**Testing per package:**
+- Each package gets its own Vitest test suite
+- Observability (tracing, metrics, logging) per package
+- Visual simulation for testing workflow execution
+
 ### Flue-first: hard-coded, eval-tested workflows (DECISION PENDING — awaiting green light)
 
 A proposed reversal of the "workflows as USER DATA" pillar below. Instead of
