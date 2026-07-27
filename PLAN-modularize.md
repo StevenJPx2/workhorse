@@ -500,7 +500,6 @@ import { writer } from "./agents/writer";
 
 export const coding = workflow({
   name: "coding",
-  agents: [enricher, planner, coder, reviewer, writer],
 
   async run(ctx) {
     // 1. Enrich the task
@@ -557,6 +556,52 @@ export const coding = workflow({
       body: currentBody,
       todosCompleted: completedTodos,
     };
+  },
+});
+```
+
+## Workflow Builder Pattern
+
+`workflow()` is a **builder** that executes the `run()` function once with a **discovery context** to build the workflow graph, then again with a **real context** for execution.
+
+**No explicit `agents` array.** Agents are imported and used directly inside `run()`.
+
+**How it works:**
+
+1. **Discovery phase** — `workflow()` calls `run()` with a mock `ctx`. Each `ctx.run(agent, options)` records:
+   - The agent
+   - Its dependencies (`upstream` array)
+   - A unique stage ID
+
+2. **Graph construction** — The recorded calls build the workflow graph: nodes are agents, edges are `upstream` dependencies.
+
+3. **Execution phase** — The same `run()` function is called with a real `ctx`. `ctx.run()` now executes the agent and returns real results.
+
+**Benefits:**
+- No `agents` array (implicit roster)
+- Readable workflow definition (explicit `ctx.run()` calls)
+- Graph discovery for UI visualization
+- Type-safe
+
+**Caveat:** Loops and conditionals only show the structure discovered in the first iteration. This is enough for the graph view.
+
+**Example:**
+
+```ts
+const coding = workflow({
+  name: "coding",
+  async run(ctx) {
+    const brief = await ctx.run(enricher, { input: { task: ctx.task } });
+    const plan = await ctx.run(planner, { input: { task: ctx.task }, upstream: [brief] });
+
+    for (const todo of plan.output.todos) {
+      const impl = await ctx.run(coder, { input: { todo }, upstream: [brief, plan] });
+      const review = await ctx.run(reviewer, { upstream: [brief, plan, impl] });
+
+      if (review.output.control.verdict === "pass") {
+        await ctx.run(writer, { input: { uiChanges: impl.output.control.uiChanges }, upstream: [brief, plan, impl, review] });
+      }
+    }
   },
 });
 ```
