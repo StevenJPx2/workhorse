@@ -163,7 +163,53 @@ workflows/
 }
 ```
 
-### 6. AI Search replaces Magic Context
+### 6. gh-image for PR image uploads
+
+PR writer uses `gh-image` (GitHub CLI extension) to embed screenshots in PR descriptions. Images are stored in GitHub's user-attachments (private to the repo, no external hosting needed).
+
+**PR writer agent tools:**
+```ts
+const prWriter = agent({
+  name: "pr-writer",
+  tools: (ctx) => {
+    const tools = [read, grep, find, ls, bash];
+
+    if (ctx.input.uiChanges) {
+      tools.push(browser_screenshot, browser_record, gh_image);
+    }
+
+    return tools;
+  },
+});
+```
+
+**`gh_image` tool:**
+```ts
+const gh_image = tool({
+  name: "gh_image",
+  description: "Upload an image to GitHub's user-attachments for embedding in PRs",
+  input: v.object({ path: v.string() }),
+  run: async ({ input }) => {
+    const result = await sandbox.exec(`gh image ${input.path} --repo ${repo}`);
+    return result.stdout; // Returns: ![name](https://github.com/user-attachments/assets/...)
+  },
+});
+```
+
+**What this replaces:**
+- `imgup` for PR image uploads (no external hosting needed)
+- `upload_image` for PRs (gh-image is GitHub-native)
+
+**What stays:**
+- `upload_image` (imgup) — for external image sharing
+- `upload_text` (paste.rs, etc.) — for external text hosting
+
+**Sandbox changes:**
+- Add `gh` CLI + `gh-image` extension to Dockerfile
+- Remove `imgup` from Dockerfile (no Python, no uv)
+- Simpler sandbox image
+
+### 7. AI Search replaces Magic Context
 
 Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This removes the local embedding model (~90MB ONNX) from the sandbox image and eliminates context.db persistence/restoration.
 
@@ -190,7 +236,7 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - `search_docs` — search documentation
 - `search_patterns` — search for patterns/conventions
 
-### 7. Worker is thin shell + alchemy + vite + Dockerfile
+### 8. Worker is thin shell + alchemy + vite + Dockerfile
 
 ```ts
 // worker/src/index.ts
