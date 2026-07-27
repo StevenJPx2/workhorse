@@ -190,7 +190,7 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - `search_docs` — search documentation
 - `search_patterns` — search for patterns/conventions
 
-### 7. Worker is thin shell + alchemy + vite
+### 7. Worker is thin shell + alchemy + vite + Dockerfile
 
 ```ts
 // worker/src/index.ts
@@ -202,9 +202,29 @@ export default createServer({
 });
 ```
 
+**Worker structure:**
+```
+worker/
+  src/
+    index.ts
+  sandbox/
+    agent-browser.sh   # Browser wrapper (or move to plugins/browser)
+    install.mjs        # Pi installer
+    pi.json            # Pi packages
+  Dockerfile           # Container image build (moved from sandbox/)
+  alchemy.run.ts       # Infrastructure as code
+  vite.config.ts       # Discovers workflows/
+  package.json
+```
+
+**Dockerfile references:**
+```dockerfile
+COPY worker/sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
+COPY worker/sandbox /opt/agent/sandbox
+COPY workflows/coding/agents/*.md /root/.pi/agent/agents/
+```
+
 **Plus:**
-- `alchemy.run.ts` (infrastructure as code)
-- `vite.config.ts` (discovers workflows/)
 - GitHub Actions (automated deployment)
 
 ## Package Breakdown
@@ -390,7 +410,7 @@ workflows/
 ```
 
 ### `worker` (refactor)
-**Becomes thin shell:**
+**Becomes thin shell + Dockerfile:**
 
 ```ts
 import { createServer } from "@workhorse/server";
@@ -401,7 +421,23 @@ export default createServer({
 });
 ```
 
+**Structure:**
+```
+worker/
+  src/
+    index.ts
+  sandbox/
+    agent-browser.sh   # Browser wrapper (or move to plugins/browser)
+    install.mjs        # Pi installer
+    pi.json            # Pi packages
+  Dockerfile           # Container image build (moved from sandbox/)
+  alchemy.run.ts       # Infrastructure as code
+  vite.config.ts       # Discovers workflows/
+  package.json
+```
+
 **Plus:**
+- GitHub Actions (automated deployment)
 - `alchemy.run.ts` (infrastructure as code)
 - `vite.config.ts` (discovers workflows/)
 - GitHub Actions (automated deployment)
