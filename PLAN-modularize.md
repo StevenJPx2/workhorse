@@ -1048,9 +1048,36 @@ and the harnesses had to exist before there was anything to test with them.
    which found six shipped bugs a `fakeSandbox` could not see
 6. ✅ **Model eval** — live tool-choice scoring, which reversed the tool
    consolidation decision
-7. ⏳ Colocated tests for the remaining tool surfaces (github, tickets, search,
-   scripts, knowledge, imgup, paste)
-8. ⏳ Contract suites for the other CLI-exec archetypes (aft, imgup, paste)
+7. ✅ Colocated tests for every remaining tool surface (github, tickets, search,
+   scripts, knowledge, imgup, paste) — **445 tests**
+8. ✅ Contract suites for the CLI-exec archetypes (`imgup`, `aft`)
+
+**The aft contract suite found that all five `aft_*` tools are inert.** `aft` is
+a **JSON-RPC-over-stdin server**, not an argv CLI. Our helper shells out as
+`aft outline --json <file>`; the real binary ignores argv, reads a request from
+stdin, sees it closed, and exits **0 with empty stdout** — so the helper reports
+success and each tool returns `"(no output)"`. A silent no-op, not a crash, which
+is why it went unnoticed.
+
+Compounding it: `aftPlugin` is **not registered** in `worker/src/plugins.ts`, so
+the tools are unreachable anyway — while `TOOL_CATALOG` still advertises
+`aft_outline`/`aft_zoom`/`aft_search`/`aft_edit` to `find_tool`, meaning an agent
+can discover tools it cannot call.
+
+The real protocol (verified against aft 0.42.0):
+```
+stdin  {"id":"1","command":"outline","file":"<path>"}
+stdout {"id":"1","success":true,"text":"..."}
+```
+- ids must be **strings** (a numeric id is a parse error)
+- `method` is an accepted alias for `command`; passing both is a parse error
+- params are **top-level**, not nested under `input`
+- commands are `outline` / `zoom` / `inspect` / `configure` — there is **no
+  `search` or `edit`**, so two of our five tools have no counterpart
+- `inspect` requires a prior `configure` call
+
+Fixing this is its own task: a stdin/JSON-RPC transport in `plugins/aft/tools/_shared.ts`,
+plugin registration, and dropping or re-mapping `aft_search`/`aft_edit`.
 
 ### Phase 1: Stable packages (won't be reshaped later)
 1. Create `@workhorse/db` — Drizzle schema + migrations + **class with DI**

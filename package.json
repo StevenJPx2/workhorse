@@ -29,7 +29,9 @@
     "test:watch": "vitest",
     "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts",
     "eval": "cd evals && bun run eval:ci",
-    "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals"
+    "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals",
+    "test:contract:imgup": "IMGUP_CONTRACT=1 vitest run plugins/imgup/tools/__tests__/contract.test.ts",
+    "test:contract:aft": "AFT_CONTRACT=1 vitest run plugins/aft/tools/__tests__/contract.test.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",
