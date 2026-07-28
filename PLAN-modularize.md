@@ -61,6 +61,8 @@ Every package carries these three, and they gate each phase:
   "health:update": "node scripts/health.mjs --update",
   "audit": "fallow audit",
   "check": "bun run lint && bun run typecheck && bun run health",
+  "secrets": "node scripts/secrets.mjs",
+  "secrets:missing": "node scripts/secrets.mjs --missing",
   "test": "vitest run",
   "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts",
   "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals"
@@ -69,6 +71,34 @@ Every package carries these three, and they gate each phase:
 
 `fallow audit` gates only what a PR changed (pass/warn/fail verdict) — the CI gate.
 `bun run check` is the local pre-commit gate.
+
+### Secret contract
+
+`secrets.json` declares every secret and var: its group, purpose, **what breaks
+without it**, and where to obtain it. It never contains values. `bun run secrets`
+audits the deployed worker against it (the Cloudflare API returns names only).
+
+It catches three failure modes that reading code cannot:
+
+| check | why it matters |
+|-------|----------------|
+| **drift** | declared but not deployed, or deployed but undeclared |
+| **partial** | an all-or-nothing group with *some* members set |
+| **guidance** | `--missing` prints purpose, blast radius, and the exact command |
+
+**Partial configuration is the dangerous state.** A Slack signing secret without
+a bot token means the surface verifies deliveries it cannot reply to — worse than
+being switched off, because it looks configured. So `slack` and `jira` are marked
+`allOrNothing`.
+
+The audit found a real orphan on first run: `SCRAPFLY_KEY` was still deployed
+after the Scrapfly unblocker tier was removed in `d342d1a` — a live credential
+for a feature that no longer exists. Deleted.
+
+Bindings (KV, D1, R2, DO, Workflow, AI, Vectorize) are deliberately **not** in
+the manifest: they are declared in `wrangler.jsonc` and provisioned by the
+platform, so tracking them here would be duplicate bookkeeping. The script
+filters them out of the `Env` cross-check by type.
 
 ### Per-package health harness
 
@@ -1108,6 +1138,7 @@ Before ship:
 | Model selection | **Policy, not a string** — `fallback` for availability (same capability, other credential), `promote` for capability (bigger model when the agent stalls). Fallback is exhausted first; all-throttled parks rather than degrades |
 | Browser mode | **Headful on Xvfb** — headless is blocked by bot detection (3/3 on PerimeterX); set via `AGENT_BROWSER_HEADED=1` because `batch` silently drops `--headed` |
 | Browser backend | **Local Chrome in the sandbox** — Kernel was evaluated and is blocked identically to local headless, so it buys nothing for the cost of a credential + per-run fee |
+| Secret management | **`secrets.json` manifest + `bun run secrets` audit** — names only, never values; declares blast radius per entry and flags partial all-or-nothing groups |
 
 ## Open Questions
 

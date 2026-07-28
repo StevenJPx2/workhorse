@@ -18,6 +18,8 @@
     "health": "node scripts/health.mjs",
     "health:update": "node scripts/health.mjs --update",
     "health:root": "fallow health --score",
+    "secrets": "node scripts/secrets.mjs",
+    "secrets:missing": "node scripts/secrets.mjs --missing",
     "audit": "fallow audit",
     "dead": "fallow dead-code",
     "check": "bun run lint && bun run typecheck && bun run health",
@@ -25,8 +27,9 @@
     "dev": "cd worker && bun run dev",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts",
     "eval": "cd evals && bun run eval:ci",
-    "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts"
+    "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",
