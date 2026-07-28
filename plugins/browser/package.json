@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Browser plane plugin: stateless Browser-Rendering route + agent-browser sandbox tools (open/snapshot/read/act/screenshot/record).",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

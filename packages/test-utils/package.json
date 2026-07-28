@@ -3,19 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Testing layer for the Workhorse platform. Domain-separated subpaths: /tools (ToolContext doubles), /workflow (scripted WorkflowContext harness). Test-only — never imported by runtime code.",
+  "description": "Testing layer for the Workhorse platform. Domain-separated subpaths: /tools (ToolContext doubles), /workflow (scripted WorkflowContext harness), /model (live-model tool-choice evaluation). Test-only — never imported by runtime code.",
   "exports": {
     "./tools": "./src/tools/index.ts",
-    "./workflow": "./src/workflow/index.ts"
+    "./workflow": "./src/workflow/index.ts",
+    "./model": "./src/model/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@valibot/to-json-schema": "^1.7.1",
     "@workhorse/api": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",
+    "@types/node": "^26.1.2",
     "typescript": "^7.0.2"
   }
 }

@@ -7,15 +7,20 @@
   "scripts": {
     "eval": "evalite watch",
     "eval:ci": "evalite",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run tool-surface.eval.test.ts"
   },
   "dependencies": {
     "@workhorse/api": "workspace:*",
-    "@workhorse/search": "workspace:*"
+    "@workhorse/search": "workspace:*",
+    "valibot": "^1.1.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",
     "@types/node": "^26.1.1",
+    "@workhorse/aft": "workspace:*",
+    "@workhorse/browser": "workspace:*",
+    "@workhorse/test-utils": "workspace:*",
     "autoevals": "^0.0.131",
     "evalite": "^0.19.0",
     "typescript": "^7.0.2",
