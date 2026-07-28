@@ -66,9 +66,14 @@ const GATHER_TOOLS: StageSpec["tools"] = [
   { name: "ctx_search", classification: "read-only", optional: true },
   { name: "search_fleet_knowledge", classification: "read-only", optional: true },
   { name: "fetch_context", classification: "read-only", optional: true },
-  { name: "browser", classification: "read-only", optional: true },
-  { name: "web", classification: "read-only", optional: true },
-  { name: "gh", classification: "read-only", optional: true },
+  { name: "browser_open", classification: "read-only", optional: true },
+  { name: "browser_read", classification: "read-only", optional: true },
+  { name: "web_search", classification: "read-only", optional: true },
+  { name: "web_read", classification: "read-only", optional: true },
+  { name: "gh_pr", classification: "read-only", optional: true },
+  { name: "gh_ci", classification: "read-only", optional: true },
+  { name: "gh_issue", classification: "read-only", optional: true },
+  { name: "gh_search_code", classification: "read-only", optional: true },
   { name: "run_code", classification: "read-only", optional: true },
 ];
 
@@ -103,15 +108,15 @@ const stages: StageSpec[] = [
       { name: "ls", classification: "read-only" },
       { name: "ctx_search", classification: "read-only", optional: true },
       { name: "fetch_context", classification: "read-only", optional: true },
-      // The planner CREATES the list, so it needs the write half.
-      { name: "todo_write", classification: "write-capable", optional: true },
+      { name: "todo_write", classification: "read-only", optional: true },
+      { name: "todo_read", classification: "read-only", optional: true },
       { name: "run_code", classification: "read-only", optional: true },
     ],
     prompt:
       "Decompose the enriched brief into an ordered list of independent, verifiable todos (optionally with " +
-      "subtasks). Call todo_write with action:'create' and the full ordered list, then restate them in your " +
-      "submit_work control as `todos: [{id, title}]`. The workflow runs the coder once per todo in order, so each " +
-      "must be self-contained and sequenced so earlier todos don't depend on later ones.",
+      "subtasks). Call todo_write with the full ordered list, then restate them in your submit_work control as " +
+      "`todos: [{id, title}]`. The workflow runs the coder once per todo in order, so each must be self-contained " +
+      "and sequenced so earlier todos don't depend on later ones.",
     output: { analysis: { required: true }, maxDigestChars: 2000, controlSchema: TODOS_SCHEMA },
   },
   {
@@ -131,17 +136,18 @@ const stages: StageSpec[] = [
       { name: "ctx_search", classification: "read-only", optional: true },
       { name: "ctx_memory", classification: "write-capable", optional: true },
       { name: "fetch_context", classification: "read-only", optional: true },
-      { name: "todo", classification: "read-only", optional: true },
-      { name: "todo_write", classification: "write-capable", optional: true },
-      { name: "scripts", classification: "write-capable", optional: true },
+      { name: "todo_read", classification: "read-only", optional: true },
+      { name: "todo_update", classification: "write-capable", optional: true },
+      { name: "list_scripts", classification: "read-only", optional: true },
       { name: "run_script", classification: "write-capable", optional: true },
+      { name: "write_script", classification: "write-capable", optional: true },
       { name: "run_code", classification: "write-capable", optional: true },
     ],
     prompt:
-      "Complete exactly ONE todo, then stop. Call todo to see the plan; pick the next pending todo, todo_write it " +
+      "Complete exactly ONE todo, then stop. todo_read to see the plan; pick the next pending todo, todo_update it " +
       "to in_progress. Implement only that todo following the brief and repo conventions — no drive-by changes. " +
       "Verify: run the repo's checks/tests for what you touched, then `git add -A && git diff --cached --stat`. " +
-      "todo_write the todo to done only when it's actually complete. submit_work control MUST include: todoId, " +
+      "todo_update the todo to done only when it's actually complete. submit_work control MUST include: todoId, " +
       "uiChanges (true if the change is something a user sees/interacts with — routes the PR write-up), and " +
       "todosRemaining (count of still-pending todos after this one). If routed back from review, address every " +
       "finding on the same branch.",
@@ -161,8 +167,8 @@ const stages: StageSpec[] = [
       { name: "ls", classification: "read-only" },
       { name: "bash", classification: "read-only" },
       { name: "ctx_search", classification: "read-only", optional: true },
-      { name: "todo", classification: "read-only", optional: true },
-      { name: "gh", classification: "read-only", optional: true },
+      { name: "todo_read", classification: "read-only", optional: true },
+      { name: "gh_ci", classification: "read-only", optional: true },
       { name: "run_code", classification: "read-only", optional: true },
     ],
     prompt:
@@ -185,7 +191,7 @@ const stages: StageSpec[] = [
       { name: "find", classification: "read-only" },
       { name: "ls", classification: "read-only" },
       { name: "bash", classification: "read-only" },
-      { name: "todo", classification: "read-only", optional: true },
+      { name: "todo_read", classification: "read-only", optional: true },
     ],
     prompt:
       "Update the PR body for the just-completed todo (a pure code/logic change — no user-visible surface). You are " +
@@ -208,14 +214,16 @@ const stages: StageSpec[] = [
       { name: "find", classification: "read-only" },
       { name: "ls", classification: "read-only" },
       { name: "bash", classification: "read-only" },
-      { name: "todo", classification: "read-only", optional: true },
-      { name: "browser", classification: "read-only", optional: true },
+      { name: "todo_read", classification: "read-only", optional: true },
+      { name: "browser_open", classification: "read-only", optional: true },
+      { name: "browser_screenshot", classification: "read-only", optional: true },
+      { name: "browser_record", classification: "read-only", optional: true },
       { name: "upload_image", classification: "read-only", optional: true },
     ],
     prompt:
       "Update the PR body for the just-completed todo, which CHANGED SOMETHING A USER SEES. You are given the brief, " +
       "the todo, its diff, the review, and the PR body so far. Prioritize a VISUAL explanation: screenshot the " +
-      "affected page/URL (browser action:'screenshot', or action:'record' for a flow → GIF), upload_image for a public URL, " +
+      "affected page/URL (browser_screenshot, or browser_record for a flow → GIF), upload_image to get a public URL, " +
       "and embed it with ![desc](url). Never fabricate a URL — if capture fails, fall back to a usage example. " +
       "Return the COMPLETE updated body as your analysis: a one-paragraph summary, then one section per todo. GFM.",
     output: { analysis: { required: true }, maxDigestChars: 8000 },
@@ -231,7 +239,7 @@ const stages: StageSpec[] = [
     prompt:
       "The PR parked for review and feedback arrived (in the task). Collate it into ONE grounded revision brief: " +
       "separate signal from noise, ground each actionable point in the current branch/diff (git via bash), PR " +
-      "threads and CI (gh, actions pr + ci), and any referenced Slack/Jira threads (fetch_context). Output an ordered list " +
+      "threads (gh_pr) and CI (gh_ci), and any referenced Slack/Jira threads (fetch_context). Output an ordered list " +
       "of concrete changes to make on the existing branch — what, where, why — plus any conflicts to resolve.",
     output: { analysis: { required: true }, maxDigestChars: 3000 },
     notifications: "read",
@@ -268,7 +276,7 @@ export const coding: WorkflowDef = {
     const cap = Math.min(Math.max(todos.length, 1) + 2, HARD_TODO_CAP);
 
     // Steps 4-7: per-todo loop. The coder self-selects the next pending todo
-    // (via the todo tool); run() drives implement → review↺ → pr-write and stops
+    // (via todo_read); run() drives implement → review↺ → pr-write and stops
     // when the coder reports no todos remaining. The PR body accumulates: each
     // pr-write returns the FULL body, so the last one's analysis is the PR
     // description the spine delivers.

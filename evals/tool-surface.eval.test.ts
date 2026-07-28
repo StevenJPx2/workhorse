@@ -28,48 +28,64 @@ import {
 } from "@workhorse/test-utils/model";
 import { aftTools } from "@workhorse/aft/tools";
 import { browserTools } from "@workhorse/browser/tools";
-import { granularTools } from "./fixtures/granular-tools/index";
+import { consolidatedTools } from "./fixtures/consolidated-tools/index";
 
 const ENABLED = process.env.TOOL_SURFACE_EVAL === "1" && modelAvailable("go");
 const MODEL = process.env.TOOL_SURFACE_MODEL ?? "deepseek-v4-flash";
 const RUNS = Number(process.env.TOOL_SURFACE_RUNS ?? 3);
 
 /**
- * The SHIPPING surface, from the real factories: browser (5 read actions) +
- * browser_interact (10 mutate actions) + aft (4 read actions) + aft_edit.
+ * The SHIPPING surface: 13 granular tools from the real factories, one per
+ * operation. This is what won on accuracy.
  */
-const consolidated: ModelTool[] = toolSurface([...browserTools, ...aftTools]);
+const granular: ModelTool[] = toolSurface([...browserTools, ...aftTools]);
 
 /**
- * The PRE-consolidation surface, from the pinned fixture — the 13 granular
- * tools exactly as they shipped, descriptions and schemas intact.
+ * The REJECTED consolidated surface, from the pinned fixture — 4 tools with
+ * action picklists, exactly as they shipped at c3b058a.
  *
- * An earlier version of this test SYNTHESIZED the granular surface by splitting
- * the consolidated descriptions. That was a strawman: the generated copy was
- * worse than the real thing had been, and the comparison flattered
- * consolidation. Both sides must be real code or the number is meaningless.
+ * Both sides must be REAL code. An earlier version of this test synthesized one
+ * surface by splitting the other's descriptions, and reported the opposite
+ * conclusion off that strawman.
  */
-const granular: ModelTool[] = toolSurface(granularTools);
+const consolidated: ModelTool[] = toolSurface(consolidatedTools);
 
 const byName = (tools: ModelTool[], name: string) => tools.find((t) => t.function.name === name)!;
 
 describe("tool surface", () => {
   it("derives the shipping surface from the real tool definitions", () => {
-    const names = consolidated.map((t) => t.function.name).sort();
-    expect(names).toEqual(["aft", "aft_edit", "browser", "browser_interact"]);
+    const names = granular.map((t) => t.function.name).sort();
+    expect(names).toEqual([
+      "aft_edit",
+      "aft_inspect",
+      "aft_outline",
+      "aft_search",
+      "aft_zoom",
+      "browser_act",
+      "browser_key",
+      "browser_open",
+      "browser_read",
+      "browser_record",
+      "browser_screenshot",
+      "browser_scroll",
+      "browser_snapshot",
+    ]);
 
     // Real descriptions, not test copy.
-    expect(byName(consolidated, "browser").function.description).toContain("persistent browser session");
-    // The help flag is injected by tool(), so it must appear in the schema.
-    const props = (byName(consolidated, "aft").function.parameters as { properties: Record<string, unknown> }).properties;
-    expect(props).toHaveProperty("help");
-    expect(props).toHaveProperty("action");
+    expect(byName(granular, "browser_open").function.description).toContain("persistent browser session");
+    // The help flag is injected by tool(), so it must appear in every schema.
+    for (const t of granular) {
+      const props = (t.function.parameters as { properties?: Record<string, unknown> }).properties ?? {};
+      expect(props, t.function.name).toHaveProperty("help");
+    }
   });
 
-  it("the consolidated surface is materially cheaper per turn", () => {
+  it("consolidation IS cheaper per turn — which is why it was tempting", () => {
     const c = surfaceWeight(consolidated);
     const g = surfaceWeight(granular);
 
+    // Documents the actual trade: consolidation wins on tokens and loses on
+    // accuracy. The saving was real; it just wasn't worth ~12pp.
     expect(c.tools).toBeLessThan(g.tools);
     expect(c.tokens).toBeLessThan(g.tokens);
   });
@@ -92,14 +108,14 @@ describe("tool surface", () => {
 
       const [g, c] = results;
 
-      // THE ASSERTION THAT MATTERS: a surface may not be materially worse at
-      // tool choice than the one it replaced. An absolute floor (">80%") is the
-      // wrong gate — it passed a 12-point regression, which is how the first
+      // THE ASSERTION THAT MATTERS: the SHIPPING surface must not be materially
+      // worse at tool choice than the alternative. An absolute floor (">80%") is
+      // the wrong gate — it passed a 12-point regression, which is how the first
       // version of this test let consolidation look acceptable.
       expect(
-        c.rate,
-        `consolidated (${c.rate.toFixed(1)}%) must not trail granular (${g.rate.toFixed(1)}%) by more than 3pp`,
-      ).toBeGreaterThan(g.rate - 3);
+        g.rate,
+        `granular (${g.rate.toFixed(1)}%) must not trail consolidated (${c.rate.toFixed(1)}%) by more than 3pp`,
+      ).toBeGreaterThan(c.rate - 3);
 
       // An edit request must land on aft_edit, never on the read tool: if a
       // read tool absorbs write intent the stage allowlist stops being a

@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/fallow/schema.json",
+  "entry": ["plugin.ts"],
+  "ignoreExports": [
+    {
+      "file": "tools/_store.ts",
+      "exports": ["TODO_FILE"]
+    }
+  ]
+}

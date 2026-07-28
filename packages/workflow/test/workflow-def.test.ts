@@ -135,9 +135,8 @@ describe("manifests", () => {
   it("only the visual PR writer carries browser/screenshot tools", () => {
     const names = (id: string) =>
       (coding.stages.find((s) => s.id === id)!.tools ?? []).map((t) => (typeof t === "string" ? t : t.name));
-    // The consolidated `browser` tool carries screenshot/record as actions.
-    expect(names("pr-write-visual")).toContain("browser");
-    expect(names("pr-write")).not.toContain("browser");
+    expect(names("pr-write-visual")).toContain("browser_screenshot");
+    expect(names("pr-write")).not.toContain("browser_screenshot");
   });
 
   it("each stage names its agent block; pr-coder is the default", () => {

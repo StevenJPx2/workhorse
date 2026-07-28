@@ -1,13 +1,18 @@
-// aft_edit — structural edit of a file (write-capable; rides the writeAllow gate).
+// aft_edit — structural edit of a file (write-capable).
+//
+// Kept as its own tool, NOT folded into `aft`: it is the write half, and a
+// stage allowlist is the capability gate. Granting read-only code intelligence
+// must never imply the power to modify the tree.
+
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
-import { aft } from "./_shared";
+import { aft } from "./_aft_shared";
 
 export default tool({
   name: "aft_edit",
   description:
-    "Structural edit of a file: find/replace, line-range replace, or whole-symbol replace. " +
-    "Tree-sitter validated; backs up before writing. Subject to the stage's writeAllow gate.",
+    "Structural edit of a file: find/replace, whole-symbol replace, or append. Tree-sitter " +
+    "validated and backed up before writing. Subject to the stage's writeAllow gate.",
   docs: `
 aft_edit — structural, validated file edits. Every edit is parse-checked and
 backed up first, so a malformed change is rejected rather than written.
@@ -40,9 +45,10 @@ EXAMPLES
     content: "function handleRequest() {\\n  return null;\\n}" }
 
 NOTES
-  Writing outside the stage's writeAllow globs is BLOCKED by the sandbox, not by
-  this tool — the rejection comes back as an error string.
-  Run aft_inspect after a batch of edits to catch type errors before tests.
+  Writing outside the stage's writeAllow globs is BLOCKED by the sandbox, not
+  by this tool — the rejection comes back as an error string.
+  After a batch of edits run { action: "inspect" } on \`aft\` to catch type
+  errors before tests.
 `,
   input: v.object({
     filePath: v.string(),
@@ -59,6 +65,7 @@ NOTES
       "--file",
       input.filePath,
       ...(input.symbol ? ["--symbol", input.symbol] : []),
+      // != null, not truthiness: "" is a meaningful value (delete).
       ...(input.oldString != null ? ["--old", input.oldString] : []),
       ...(input.newString != null ? ["--new", input.newString] : []),
       ...(input.content != null ? ["--content", input.content] : []),

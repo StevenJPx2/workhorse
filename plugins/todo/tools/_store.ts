@@ -5,7 +5,7 @@
 
 import type { SandboxHandle } from "@workhorse/api";
 
-const TODO_FILE = "/workspace/.workflow/todos.json";
+export const TODO_FILE = "/workspace/.workflow/todos.json";
 
 export interface Subtask {
   id: string;

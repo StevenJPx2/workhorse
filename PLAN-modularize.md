@@ -286,7 +286,62 @@ alike, and `upload_text` covers text hosting.
 
 **Sandbox:** `imgup` stays in the Dockerfile. No `gh-image` extension.
 
-### 7. AI Search replaces Magic Context
+### 7. Tools stay GRANULAR; token cost is solved by semantic selection
+
+**Many small, precisely-named tools — not few tools with `action` picklists.**
+
+This was measured, not assumed. Consolidating 34 tools into 14 saved ~1170
+prompt tokens per turn and cost **~12 percentage points of tool-choice
+accuracy** (`bun run eval:tools`, deepseek-v4-flash, 14 tasks × 3 runs, real
+definitions on both sides):
+
+| surface | tools | accuracy | surface tokens |
+|---------|-------|----------|----------------|
+| granular | 13 | **100.0%** | 2047 |
+| consolidated | 4 | 88.1% | 873 |
+
+Two failure modes, neither visible to token arithmetic:
+
+1. **Cross-tool confusion.** `fill` and `press` went to `browser` instead of
+   `browser_interact`. That split is *required* by the capability gate, so it
+   cannot be merged away to fix the confusion.
+2. **Action-within-tool confusion.** "Check for compile errors" chose
+   `action: "outline"` instead of `"inspect"` — 0/3. A granular tool NAME
+   encodes the intent; a picklist defers it to a second decision the model gets
+   wrong.
+
+**Consolidation solved the token problem in the wrong layer.** A tool's name is
+the primary retrieval signal a model uses; merging tools destroys it. The right
+layer is *selection*: keep granular names and show the agent only the few tools
+that matter for the current step.
+
+**Three layers, each with a distinct job:**
+
+| layer | mechanism | what it does |
+|-------|-----------|--------------|
+| **capability** | stage allowlist | the security boundary — a read-only stage can never be handed a write tool |
+| **selection** | semantic index over the allowed set | the token boundary — top-N relevant tools per step |
+| **documentation** | `docs` + `help: true` | detail on demand, off the per-turn budget |
+
+The allowlist runs first and is absolute; selection only ever narrows what the
+allowlist already permits, so it can never widen capability.
+
+**`@workhorse/semindex` is the generic index builder** — one `defineIndex()`
+serving any registry: **tools**, **skills**, **scripts**, workflows. Cloudflare
+Vectorize + Workers AI embeddings, hosted, no local model. The
+[toolpick](https://github.com/pontusab/toolpick) pattern is the reference for
+the tool case: index name + description + parameters, hybrid keyword+semantic
+search per step, page to a fresh set on a miss, expose everything as a fallback
+so the agent never gets stuck.
+
+**Every tool carries mandatory `docs`.** `tool()` type-requires the field and
+auto-injects a `help` flag, so `{ help: true }` returns the full reference
+without executing. The one-paragraph `description` is paid every turn; `docs` is
+paid only when asked. This is how granular tools stay cheap *and* well
+documented — 31 tools, ~5000 tokens of documentation, none of it in the default
+prompt.
+
+### 8. AI Search replaces Magic Context
 
 Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This removes the local embedding model (~90MB ONNX) from the sandbox image and eliminates context.db persistence/restoration.
 
@@ -313,7 +368,7 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - `search_docs` — search documentation
 - `search_patterns` — search for patterns/conventions
 
-### 8. Worker is thin shell + alchemy + vite + Dockerfile
+### 9. Worker is thin shell + alchemy + vite + Dockerfile
 
 ```ts
 // worker/src/index.ts

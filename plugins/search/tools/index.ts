@@ -1,8 +1,6 @@
-// search stage tools — ONE tool: web (search + read).
-//
-// Both actions are read-only worker-side fetches, so no capability split is
-// needed. `help: true` documents each action.
+// search stage tools — one ToolFactory per file, collected here.
 import type { ToolFactory } from "@workhorse/api";
-import web from "./web";
+import web_read from "./web_read";
+import web_search from "./web_search";
 
-export const searchTools: ToolFactory[] = [web];
+export const searchTools: ToolFactory[] = [web_search, web_read];
