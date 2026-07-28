@@ -425,7 +425,47 @@ paid only when asked. This is how granular tools stay cheap *and* well
 documented — 31 tools, ~5000 tokens of documentation, none of it in the default
 prompt.
 
-### 9. AI Search replaces Magic Context
+### 9. The browser runs HEADFUL on a virtual display
+
+Bot-detection vendors deny headless Chrome outright. Measured against
+talbots.com (PerimeterX), 3 trials per mode:
+
+| mode | result |
+|------|--------|
+| headless (local Chrome) | **blocked 3/3** — "Access to this page has been denied." |
+| headless (Kernel cloud) | **blocked** — identical PX interstitial |
+| **headful** | **passes 3/3** — 11.7KB of content, 122 interactive refs |
+
+**Headful Chrome requires an X display on Linux.** Without `DISPLAY` it does not
+launch at all — verified in a container: `chromium.launch({ headless: false })`
+fails with "Target page, context or browser has been closed", and succeeds under
+Xvfb. So the sandbox image installs `xvfb`, and the wrapper starts one virtual
+display per container and points Chrome at it.
+
+**Headful is set by env var, not by the `--headed` flag.** `batch` SILENTLY
+DROPS `--headed` — proven by launchHash: `batch --bail "open <url> --headed"`
+produces the *identical* hash to a headless launch, and the page comes back
+blocked. `AGENT_BROWSER_HEADED=1` is read at launch regardless of subcommand, so
+it survives batch. This matters because `browser_open` uses batch for open+wait,
+which is exactly where the flag form would have failed silently.
+
+```bash
+# sandbox/agent-browser.sh
+Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp &   # once per container
+export DISPLAY=:99
+export AGENT_BROWSER_HEADED=1
+exec agent-browser --namespace workhorse --json "$@"
+```
+
+The wrapper only exports `DISPLAY` once the X lock file appears. Pointing Chrome
+at a dead display is *worse* than headless — it cannot launch at all, whereas
+headless at least works on sites that don't bot-check.
+
+**Kernel is not needed.** It was evaluated for exactly this problem and is
+blocked identically to local headless. Local Chrome + Xvfb costs no credential
+in the sandbox and no per-run fee.
+
+### 10. AI Search replaces Magic Context
 
 Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This removes the local embedding model (~90MB ONNX) from the sandbox image and eliminates context.db persistence/restoration.
 
@@ -452,7 +492,7 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - `search_docs` — search documentation
 - `search_patterns` — search for patterns/conventions
 
-### 10. Worker is thin shell + alchemy + vite + Dockerfile
+### 11. Worker is thin shell + alchemy + vite + Dockerfile
 
 ```ts
 // worker/src/index.ts
@@ -1066,6 +1106,8 @@ Before ship:
 | Tool granularity | **Granular** — consolidation measured −5–12pp tool-choice accuracy; token cost belongs to semantic selection |
 | Tool documentation | **Mandatory `docs` + injected `help` flag** — type-enforced, detail off the per-turn budget |
 | Model selection | **Policy, not a string** — `fallback` for availability (same capability, other credential), `promote` for capability (bigger model when the agent stalls). Fallback is exhausted first; all-throttled parks rather than degrades |
+| Browser mode | **Headful on Xvfb** — headless is blocked by bot detection (3/3 on PerimeterX); set via `AGENT_BROWSER_HEADED=1` because `batch` silently drops `--headed` |
+| Browser backend | **Local Chrome in the sandbox** — Kernel was evaluated and is blocked identically to local headless, so it buys nothing for the cost of a credential + per-run fee |
 
 ## Open Questions
 

@@ -2,7 +2,14 @@ FROM docker.io/cloudflare/sandbox:0.12.3
 
 # ffmpeg: browser_record assembles GIFs from browser-plane frame captures
 # (native beats ffmpeg.wasm — this is a full container, no need for wasm).
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+#
+# xvfb: a virtual X display, so Chrome can run HEADFUL. This is not cosmetic —
+# bot-detection vendors (PerimeterX and similar) deny headless Chrome outright.
+# Measured against talbots.com: headless is blocked 3/3, headful passes 3/3
+# (11.7KB of real content, 122 interactive refs). Chrome headful REQUIRES an X
+# display on Linux; without DISPLAY it fails to launch at all, so Xvfb is what
+# makes the capability reachable in a container.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg xvfb \
   && rm -rf /var/lib/apt/lists/*
 
 # agent-browser: persistent session browser (AX snapshots, click/fill,

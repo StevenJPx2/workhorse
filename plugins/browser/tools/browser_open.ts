@@ -4,6 +4,12 @@
 // --headed/--enable/--init-script). Waiting is a separate command — `wait <ms>`
 // / `wait --load <state>` — so a settle delay is expressed as a two-command
 // `batch`, which keeps it to ONE container exec.
+//
+// HEADFUL is NOT requested here. `batch` silently drops --headed (verified by
+// launchHash: `batch --bail "open <url> --headed"` produces the identical hash
+// to a headless launch), and this tool always uses batch when a wait is
+// requested. So headful is set by the sandbox wrapper via AGENT_BROWSER_HEADED
+// + a Xvfb display, which is read at launch regardless of subcommand.
 
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
