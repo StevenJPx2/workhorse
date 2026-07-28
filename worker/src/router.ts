@@ -35,6 +35,17 @@ export function json(data: unknown, status = 200): Response {
 
 const EMPTY_MATCH = [""] as unknown as RegExpMatchArray;
 
+/** The route's captures if it matches this request, else null. */
+function routeMatch(r: Route, method: string, pathname: string): RegExpMatchArray | null {
+  if (r.method !== "*" && r.method !== method) return null;
+
+  // A string path has no captures, but handlers take a uniform shape, so exact
+  // matches get a stand-in match array rather than a special case downstream.
+  if (typeof r.path === "string") return r.path === pathname ? EMPTY_MATCH : null;
+
+  return pathname.match(r.path);
+}
+
 /** First matching route wins (table order is the precedence). */
 export function dispatch(
   routes: Route[],
@@ -42,16 +53,8 @@ export function dispatch(
   tiers: Tiers,
 ): Promise<Response> | Response | null {
   for (const r of routes) {
-    if (r.method !== "*" && r.method !== c.request.method) continue;
-
-    let match: RegExpMatchArray | null = null;
-    if (typeof r.path === "string") {
-      if (r.path !== c.url.pathname) continue;
-      match = EMPTY_MATCH;
-    } else {
-      match = c.url.pathname.match(r.path);
-      if (!match) continue;
-    }
+    const match = routeMatch(r, c.request.method, c.url.pathname);
+    if (!match) continue;
 
     // A matched-but-unauthorized route returns 401 rather than falling through:
     // continuing would let a later, looser route serve the request.

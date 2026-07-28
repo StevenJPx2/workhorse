@@ -24,31 +24,49 @@ export interface ScriptDraft {
   statusGates?: unknown;
 }
 
-/** Validate a script registration. Returns an error string, or null when valid. */
-export function validateScript(s: ScriptDraft): string | null {
-  if (!s.name || !SCRIPT_NAME_RE.test(s.name)) return "name must match ^[a-z][a-z0-9_-]{1,63}$";
+/** One field's check. Returns an error string, or null when the field is fine. */
+type Check = (s: ScriptDraft) => string | null;
+
+const checkName: Check = (s) =>
+  !s.name || !SCRIPT_NAME_RE.test(s.name) ? "name must match ^[a-z][a-z0-9_-]{1,63}$" : null;
+
+const checkCode: Check = (s) => {
   if (!s.code?.trim()) return "code required";
-  if (s.code.length > MAX_CODE_BYTES) return "code too long (16 KiB max)";
+  return s.code.length > MAX_CODE_BYTES ? "code too long (16 KiB max)" : null;
+};
 
-  if (!s.scope || (s.scope !== "global" && !s.scope.startsWith("repo:"))) {
-    return 'scope must be "global" or "repo:<owner/repo>"';
+const checkScope: Check = (s) =>
+  !s.scope || (s.scope !== "global" && !s.scope.startsWith("repo:"))
+    ? 'scope must be "global" or "repo:<owner/repo>"'
+    : null;
+
+const checkArgs: Check = (s) => {
+  if (s.args === undefined) return null;
+  if (!Array.isArray(s.args)) return "args must be an array";
+
+  // A null entry would crash a naive `a.name` read downstream, so the optional
+  // chain here is load-bearing rather than defensive.
+  const bad = (s.args as Array<{ name?: string } | null>).some((a) => !a?.name || !ARG_NAME_RE.test(a.name));
+  return bad ? "each arg needs a name matching ^[A-Za-z][A-Za-z0-9_]{0,31}$" : null;
+};
+
+const checkStatusGates: Check = (s) => {
+  if (s.statusGates === undefined) return null;
+  if (!Array.isArray(s.statusGates)) return "statusGates must be an array";
+
+  const unknown = (s.statusGates as string[]).find((g) => !VALID_GATES.has(g));
+  return unknown === undefined ? null : `unknown status gate "${unknown}"`;
+};
+
+// Order matters: it decides which error a caller sees first for input that is
+// wrong in several ways at once.
+const CHECKS: Check[] = [checkName, checkCode, checkScope, checkArgs, checkStatusGates];
+
+/** Validate a script registration. Returns the first error, or null when valid. */
+export function validateScript(s: ScriptDraft): string | null {
+  for (const check of CHECKS) {
+    const err = check(s);
+    if (err) return err;
   }
-
-  if (s.args !== undefined) {
-    if (!Array.isArray(s.args)) return "args must be an array";
-    for (const a of s.args as Array<{ name?: string }>) {
-      if (!a?.name || !ARG_NAME_RE.test(a.name)) {
-        return "each arg needs a name matching ^[A-Za-z][A-Za-z0-9_]{0,31}$";
-      }
-    }
-  }
-
-  if (s.statusGates !== undefined) {
-    if (!Array.isArray(s.statusGates)) return "statusGates must be an array";
-    for (const g of s.statusGates as string[]) {
-      if (!VALID_GATES.has(g)) return `unknown status gate "${g}"`;
-    }
-  }
-
   return null;
 }

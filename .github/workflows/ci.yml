@@ -53,8 +53,18 @@ jobs:
 
       # --reporter=json feeds the HTML report below; the default reporter still
       # prints to the log so a failure is readable without downloading anything.
+      # --coverage writes Istanbul data that the audit job consumes for accurate
+      # CRAP scoring (without it every function scores as 0% covered).
       - name: Test
-        run: bun run test --reporter=default --reporter=json --outputFile=reports/.vitest.json
+        run: bun run test --coverage --reporter=default --reporter=json --outputFile=reports/.vitest.json
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/coverage-final.json
+          retention-days: 3
 
       # Per-package floors from health-baseline.json. A new package with no
       # recorded floor must score >= 90.
@@ -145,10 +155,17 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
+      # CRAP = cyclomatic² × (1−coverage)³ + cyclomatic. Without coverage data
+      # fallow assumes 0%, so a cyc=5 function scores 30 and trips the default
+      # threshold purely for looking untested. Generated here rather than pulled
+      # from the check job's artifact so this job stays independently runnable.
+      - name: Coverage
+        run: bun run test --coverage --silent
+
       # Gates on findings the changeset INTRODUCED, not inherited debt — so a
       # PR touching worker/ isn't blocked by the circular deps Phase 5 exists
       # to fix.
       - name: Audit
-        run: bun run audit
+        run: bun run audit --coverage coverage/coverage-final.json
         env:
           FALLOW_AUDIT_BASE: ${{ github.event.pull_request.base.sha }}

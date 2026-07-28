@@ -20,7 +20,7 @@
     "health:root": "fallow health --score",
     "secrets": "node scripts/secrets.mjs",
     "secrets:missing": "node scripts/secrets.mjs --missing",
-    "audit": "fallow audit",
+    "audit": "fallow audit --coverage coverage/coverage-final.json",
     "dead": "fallow dead-code",
     "check": "bun run lint && bun run typecheck && bun run health",
     "deploy": "cd worker && bun run deploy",
@@ -39,14 +39,14 @@
     "db:migrate": "cd packages/db && bun run migrate:local",
     "db:migrate:remote": "cd packages/db && bun run migrate:remote",
     "db:studio": "cd packages/db && drizzle-kit studio",
-    "report:assets": "node scripts/report.mjs --assets"
+    "report:assets": "node scripts/report.mjs --assets",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.18.8",
     "@cloudflare/workers-types": "^5.20260721.1",
-    "@types/better-sqlite3": "^7.6.13",
+    "@vitest/coverage-istanbul": "4.1.10",
     "autoevals": "^0.3.0",
-    "better-sqlite3": "12.11.1",
     "drizzle-kit": "0.31.10",
     "drizzle-orm": "0.45.2",
     "evalite": "^0.19.0",

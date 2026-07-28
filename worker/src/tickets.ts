@@ -43,47 +43,70 @@ export type FileTicketResult =
   | { ok: true; ticket: TicketRecord }
   | { ok: false; error: string; status: number };
 
-/** Create the registry record + durable workflow instance for a new ticket. */
-export async function fileTicket(
-  env: Env,
-  body: Partial<TicketParams> & { selfOrigin?: string },
-): Promise<FileTicketResult> {
-  // A repo attachment can stand in for the repo field.
-  if (!body.repo && body.attachments) {
-    const repoAtt = body.attachments.find((a) => a.kind === "repo");
-    if (repoAtt) body.repo = repoAtt.ref;
-  }
-  if (!body.repo || !body.prompt) {
-    return { ok: false, error: "repo, prompt required", status: 400 };
-  }
-  // Context refs come from the PROMPT itself now (no manual attach step):
-  // parse any repo/jira/slack refs the operator typed, record them for
-  // frecency, and tell the agent what it can enrich on demand. The agent
-  // fetches a ref's content with fetch_context — nothing is pre-resolved,
-  // so a big Jira thread doesn't bloat every prompt. Explicit body.attachments
-  // (e.g. from a trigger) are merged in and still recorded.
-  const parsed = parseRefs(body.prompt);
-  const nonRepoRefs = [
-    ...parsed.filter((r) => r.kind !== "repo"),
-    ...(body.attachments ?? []).filter((a) => a.kind !== "repo").map((a) => ({ kind: a.kind, ref: a.ref, label: a.kind })),
+interface EnrichableRef {
+  kind: string;
+  ref: string;
+  label: string;
+}
+
+/**
+ * Context refs the agent may enrich on demand, deduplicated.
+ *
+ * Refs come from the PROMPT itself (no manual attach step) plus any explicit
+ * attachments from a trigger. Nothing is pre-resolved — the agent fetches a
+ * ref's content with fetch_context, so a big Jira thread doesn't bloat every
+ * prompt. The repo is cloned, so repo refs are excluded here.
+ */
+function enrichableRefs(prompt: string, attachments: Array<{ kind: string; ref: string }> = []): EnrichableRef[] {
+  const all: EnrichableRef[] = [
+    ...parseRefs(prompt).filter((r) => r.kind !== "repo"),
+    ...attachments.filter((a) => a.kind !== "repo").map((a) => ({ kind: a.kind, ref: a.ref, label: a.kind })),
   ];
+
   const seen = new Set<string>();
-  const enrichable = nonRepoRefs.filter((r) => {
+  return all.filter((r) => {
     const k = `${r.kind}:${r.ref}`;
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
   });
-  if (enrichable.length) {
-    const list = enrichable.map((r) => `- ${r.kind}: ${r.ref}`).join("\n");
-    body.prompt = `${body.prompt}\n\n## Available context\nYou can enrich this task with fetch_context(kind, ref) for:\n${list}`;
-    await recordRefUse(env, enrichable.map((r) => ({ kind: r.kind, ref: r.ref, label: r.label })));
+}
+
+/** Normalize a repo to a clonable URL, accepting bare "owner/name" slugs. */
+function repoUrl(repo: string): string {
+  return /^[\w.-]+\/[\w.-]+$/.test(repo) ? `https://github.com/${repo}.git` : repo;
+}
+
+/** The repo to clone, from the explicit field or a repo attachment. */
+function resolveRepo(body: Partial<TicketParams>): string | undefined {
+  if (body.repo) return body.repo;
+  return body.attachments?.find((a) => a.kind === "repo")?.ref;
+}
+
+/**
+ * Append the enrichable-refs section to the prompt and record the refs for
+ * frecency. Returns the prompt unchanged when there is nothing to enrich.
+ */
+async function withEnrichableContext(env: Env, prompt: string, attachments?: Array<{ kind: string; ref: string }>) {
+  const enrichable = enrichableRefs(prompt, attachments);
+  if (!enrichable.length) return prompt;
+
+  await recordRefUse(env, enrichable);
+
+  const list = enrichable.map((r) => `- ${r.kind}: ${r.ref}`).join("\n");
+  return `${prompt}\n\n## Available context\nYou can enrich this task with fetch_context(kind, ref) for:\n${list}`;
+}
+
+/** Create the registry record + durable workflow instance for a new ticket. */
+export async function fileTicket(
+  env: Env,
+  body: Partial<TicketParams> & { selfOrigin?: string },
+): Promise<FileTicketResult> {
+  const repo = resolveRepo(body);
+  if (!repo || !body.prompt) {
+    return { ok: false, error: "repo, prompt required", status: 400 };
   }
-  delete body.selfOrigin;
-  // Accept bare "owner/name" slugs as well as full git URLs.
-  if (/^[\w.-]+\/[\w.-]+$/.test(body.repo)) {
-    body.repo = `https://github.com/${body.repo}.git`;
-  }
+
   if (!body.accessToken) {
     // Fall back to the custodian-pushed token, requiring enough runway to START
     // a run. Stages re-read the token every turn, so mid-run rotation is the
@@ -94,12 +117,17 @@ export async function fileTicket(
     }
     body.accessToken = access;
   }
-  const id = crypto.randomUUID().slice(0, 8);
-  const now = new Date().toISOString();
+
+  body.prompt = await withEnrichableContext(env, body.prompt, body.attachments);
+  body.repo = repoUrl(repo);
   // Default the workflow at the intake seam so BOTH the record and the
-  // workflow-instance params (spread from body below) carry it — the spine
+  // workflow-instance params (spread into create below) carry it — the spine
   // reads params.workflow, which would otherwise be undefined.
   body.workflow = body.workflow ?? "coding";
+  delete body.selfOrigin;
+
+  const id = crypto.randomUUID().slice(0, 8);
+  const now = new Date().toISOString();
   const rec: TicketRecord = {
     id,
     title: body.title ?? body.prompt.slice(0, 60),
@@ -111,10 +139,9 @@ export async function fileTicket(
     workflow: body.workflow,
     wfInstance: id,
   };
+
   await db(env).putTicket(rec);
-  await env.TICKET_WF.create({
-    id,
-    params: { ...body, id, title: rec.title } as TicketParams,
-  });
+  await env.TICKET_WF.create({ id, params: { ...body, id, title: rec.title } as TicketParams });
+
   return { ok: true, ticket: rec };
 }

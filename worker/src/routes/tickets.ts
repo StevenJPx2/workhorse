@@ -1,11 +1,37 @@
 // The ticket API — the Workhorse fleet surface. Master-gated.
 
-import type { TicketParams } from "@workhorse/api";
+import type { TicketParams, TicketRecord } from "@workhorse/api";
 import { appendEvents, appendSteer, wakeTicket } from "../events";
 import { fileTicket } from "../tickets";
 import { db } from "../db";
 import { healTicket } from "../heal";
 import { json, type Route } from "../router";
+
+/**
+ * Load a ticket and assert its status, so the "404 then 409" preamble is written
+ * once. Returns the record, or the Response to send.
+ *
+ * Every mutating route needs this shape, and repeating it invites the failure
+ * where one route forgets the status guard and acts on a terminated ticket.
+ */
+async function ticketInState(
+  env: Parameters<typeof db>[0] & object,
+  id: string,
+  allowed: readonly string[],
+  wrongStateError: (status?: string) => string,
+): Promise<{ ok: true; ticket: TicketRecord } | { ok: false; response: Response }> {
+  const ticket = await db(env).getTicket(id);
+  if (!ticket) return { ok: false, response: json({ error: "not found" }, 404) };
+
+  if (!allowed.includes(ticket.status ?? "")) {
+    return { ok: false, response: json({ error: wrongStateError(ticket.status) }, 409) };
+  }
+
+  return { ok: true, ticket };
+}
+
+/** Statuses where a run is live enough to steer. */
+const STEERABLE = ["queued", "planning", "implementing", "ready-for-review"] as const;
 
 export const ticketRoutes: Route[] = [
   {
@@ -99,15 +125,14 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/steer$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await db(env).getTicket(match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      const active = ["queued", "planning", "implementing", "ready-for-review"];
-      if (!active.includes(rec.status ?? "")) {
-        return json(
-          { error: `ticket is ${rec.status}; steering targets a live run (use PR feedback while in-review)` },
-          409,
-        );
-      }
+      const found = await ticketInState(
+        env,
+        match[1],
+        STEERABLE,
+        (status) => `ticket is ${status}; steering targets a live run (use PR feedback while in-review)`,
+      );
+      if (!found.ok) return found.response;
+
       const { message } = (await request.json().catch(() => ({}))) as { message?: string };
       if (!message?.trim()) return json({ error: "message required" }, 400);
       await appendSteer(env, match[1], message.trim().slice(0, 4000));
@@ -120,11 +145,10 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/input$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await db(env).getTicket(match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      if (rec.status !== "awaiting-input" || !rec.runId) {
-        return json({ error: "ticket is not awaiting input" }, 409);
-      }
+      const found = await ticketInState(env, match[1], ["awaiting-input"], () => "ticket is not awaiting input");
+      if (!found.ok) return found.response;
+      if (!found.ticket.runId) return json({ error: "ticket is not awaiting input" }, 409);
+
       const { answers } = (await request.json().catch(() => ({}))) as {
         answers?: Record<string, unknown>;
       };
@@ -140,11 +164,14 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/(accept|request-changes)$/,
     auth: "master",
     async handler({ request, env, ctx, match }) {
-      const rec = await db(env).getTicket(match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      if (rec.status !== "awaiting-acceptance") {
-        return json({ error: "ticket is not awaiting acceptance" }, 409);
-      }
+      const found = await ticketInState(
+        env,
+        match[1],
+        ["awaiting-acceptance"],
+        () => "ticket is not awaiting acceptance",
+      );
+      if (!found.ok) return found.response;
+
       const { comment } = (await request.json().catch(() => ({}))) as { comment?: string };
       const accept = match[2] === "accept";
       if (!accept && !comment?.trim()) {

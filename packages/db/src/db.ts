@@ -5,7 +5,7 @@
 // free, and threading `env` purely to reach the database made every caller
 // depend on the whole environment to do one query.
 
-import type { Env, TicketRecord } from "@workhorse/api";
+import type { TicketRecord } from "@workhorse/api";
 import { and, desc, eq, inArray, isNull, lte, max, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
@@ -32,8 +32,25 @@ import {
  * changing one's type surfaces as a type error here rather than a silently
  * dropped field.
  */
+/**
+ * Columns that are nullable in SQL and optional in the API. Listing them once
+ * keeps the two mappings below as data rather than eighteen hand-written
+ * `?? undefined` branches (which is what pushed this file over the complexity
+ * gate, and is also where a missed field would hide).
+ */
+const NULLABLE_TICKET_FIELDS = [
+  "plan",
+  "result",
+  "error",
+  "branch",
+  "prUrl",
+  "runId",
+  "workflow",
+  "wfInstance",
+] as const satisfies ReadonlyArray<keyof TicketRecord & keyof Ticket>;
+
 export function toTicketRecord(r: Ticket): TicketRecord {
-  return {
+  const rec: TicketRecord = {
     id: r.id,
     title: r.title,
     repo: r.repo,
@@ -41,22 +58,17 @@ export function toTicketRecord(r: Ticket): TicketRecord {
     status: r.status,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
-    plan: r.plan ?? undefined,
-    result: r.result ?? undefined,
-    error: r.error ?? undefined,
-    branch: r.branch ?? undefined,
-    prUrl: r.prUrl ?? undefined,
-    runId: r.runId ?? undefined,
-    workflow: r.workflow ?? undefined,
-    wfInstance: r.wfInstance ?? undefined,
     // 0 means "never healed", which the API represents as absent.
     healAttempts: r.healAttempts || undefined,
   };
+
+  for (const key of NULLABLE_TICKET_FIELDS) rec[key] = r[key] ?? undefined;
+  return rec;
 }
 
 /** The inverse: an API record as an insertable row. */
 function toTicketRow(rec: TicketRecord): Ticket {
-  return {
+  const row: Ticket = {
     id: rec.id,
     title: rec.title,
     repo: rec.repo,
@@ -64,16 +76,21 @@ function toTicketRow(rec: TicketRecord): Ticket {
     status: rec.status,
     createdAt: rec.createdAt,
     updatedAt: rec.updatedAt,
-    plan: rec.plan ?? null,
-    result: rec.result ?? null,
-    error: rec.error ?? null,
-    branch: rec.branch ?? null,
-    prUrl: rec.prUrl ?? null,
-    runId: rec.runId ?? null,
-    workflow: rec.workflow ?? null,
-    wfInstance: rec.wfInstance ?? null,
     healAttempts: rec.healAttempts ?? 0,
+    // Filled from NULLABLE_TICKET_FIELDS below; declared so the object is
+    // complete for the type.
+    plan: null,
+    result: null,
+    error: null,
+    branch: null,
+    prUrl: null,
+    runId: null,
+    workflow: null,
+    wfInstance: null,
   };
+
+  for (const key of NULLABLE_TICKET_FIELDS) row[key] = rec[key] ?? null;
+  return row;
 }
 
 export interface TraceIndexEntry {
@@ -95,11 +112,6 @@ export class Db {
 
   constructor(binding: D1Database) {
     this.d = drizzle(binding);
-  }
-
-  /** Convenience for the common `new Db(env.DB)`. */
-  static from(env: Pick<Env, "DB">): Db {
-    return new Db(env.DB);
   }
 
   // --- tickets -------------------------------------------------------------
