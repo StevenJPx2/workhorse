@@ -23,7 +23,30 @@ This plan refactors Workhorse from a monolithic worker into a modular architectu
 
 Every package carries these three, and they gate each phase:
 
-1. **Vitest test suite** — `vitest run` per package, wired into the root `test` script.
+1. **Tests** — one root `vitest.config.ts` using `projects`, so each package runs
+   isolated (own root, own resolution) under a single vitest install and a single
+   `bun run test`. Adding a package needs no config change; the globs pick up
+   anything with tests. Shared harnesses live in **`@workhorse/test-utils`**,
+   never duplicated per package:
+
+   | subpath | provides |
+   |---------|----------|
+   | `/tools` | `fakeSandbox`, `fakeCore`, `fakeEnv`, `stubFetch`, `runTool` |
+   | `/workflow` | `workflowHarness` — scripted stage verdicts, records call order and loop-backs |
+   | `/model` | `toolSurface`, `modelClient`, `runToolChoiceEval` — live-model scoring off real tool definitions |
+
+   **Three layers, distinct jobs** (a CLI-exec tool needs all three):
+
+   | layer | proves | cost |
+   |-------|--------|------|
+   | mocked | the tool builds the command it intended | free, every CI run |
+   | contract | the real binary accepts it and the response parses | needs the binary — `bun run test:contract` |
+   | model | an agent can pick the tool and fill it in | needs a live model — `bun run eval:tools` |
+
+   Mocked tests alone are not enough: six shipped browser bugs (wrong CLI
+   signatures, a nonexistent flag, unparsed response envelope) were invisible to
+   a `fakeSandbox` because it faithfully returned whatever the tool asked for.
+
 2. **Observability** — traces, metrics, structured logging per package.
 3. **Visual simulation** — a way to *see* behavior, not just assert it:
    - `@workhorse/workflow` — render a run's stage graph + transitions from a recorded run
@@ -37,7 +60,10 @@ Every package carries these three, and they gate each phase:
   "health": "node scripts/health.mjs",
   "health:update": "node scripts/health.mjs --update",
   "audit": "fallow audit",
-  "check": "bun run lint && bun run typecheck && bun run health"
+  "check": "bun run lint && bun run typecheck && bun run health",
+  "test": "vitest run",
+  "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts",
+  "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals"
 }
 ```
 
@@ -68,20 +94,23 @@ A package whose entry points aren't a standard package main (e.g. `evals`,
 whose entries are `*.eval.ts`) gets a package-local `.fallowrc.json`; fallow
 auto-discovers it when scoped.
 
-**Per-package baseline after phase 0 cleanup:**
+Scores are computed with `fallow --production`, which excludes test files — so
+adding coverage can never read as adding debt.
+
+**Current per-package floors** (`health-baseline.json`):
 
 | Package | Score | Package | Score |
 |---------|-------|---------|-------|
 | evals | 100 A | plugins/knowledge | 100 A |
 | packages/api | 100 A | plugins/ntfy | 100 A |
 | packages/semindex | 100 A | plugins/paste | 100 A |
-| packages/workflow | 90 A | plugins/scripts | 100 A |
-| plugins/aft | 100 A | plugins/search | 100 A |
-| plugins/browser | 98.2 A | plugins/slack | 90 A |
-| plugins/github | 90 A | plugins/tickets | 100 A |
-| plugins/imgup | 100 A | plugins/todo | 98.3 A |
-| plugins/jira | 90 A | ui | 87.2 A |
-| | | **worker** | **62.3 C** |
+| packages/test-utils | 100 A | plugins/scripts | 100 A |
+| packages/workflow | 99.7 A | plugins/search | 100 A |
+| plugins/aft | 100 A | plugins/slack | 90 A |
+| plugins/browser | 100 A | plugins/tickets | 100 A |
+| plugins/github | 90 A | plugins/todo | 100 A |
+| plugins/imgup | 100 A | ui | 87.2 A |
+| plugins/jira | 90 A | **worker** | **62.3 C** |
 
 `worker` is the outlier at 62.3 (circular deps −25, unit size −10) — and it is
 precisely what Phase 5 dissolves into packages. Its floor is recorded so it
@@ -406,6 +435,36 @@ COPY workflows/coding/agents/*.md /root/.pi/agent/agents/
 - GitHub Actions (automated deployment)
 
 ## Package Breakdown
+
+### `@workhorse/test-utils` (built)
+
+The platform's testing layer, domain-separated by subpath so a package pulls
+only the harness it needs. Test-only — never imported by runtime code.
+
+**Exports:**
+```ts
+// @workhorse/test-utils/tools
+export function fakeSandbox(options?): FakeSandbox;   // in-memory FS, scriptable exec, records commands
+export function fakeCore(overrides?): FakeCore;       // all Core methods, benign defaults, records args
+export function fakeEnv(overrides?): Env;             // unstubbed bindings throw, naming themselves
+export function stubFetch(routes): void;              // per-URL routing; an unrouted call fails loudly
+export function runTool(factory, input, opts?): Promise<{ output, sandbox, core }>;
+
+// @workhorse/test-utils/workflow
+export function workflowHarness(script, opts?): { ctx, calls, visits };
+export function failingStageHarness(stage, kind, message): { ctx };
+
+// @workhorse/test-utils/model
+export function toolSurface(factories): ModelTool[];  // real valibot schemas -> model-facing JSON Schema
+export function modelClient(options): ModelClient;    // opencode-go by default (flat rate)
+export function runToolChoiceEval(options): Promise<SurfaceResult[]>;
+```
+
+`/workflow` is **structurally typed** — it does not import `@workhorse/workflow`,
+or that package's own tests would create a cycle.
+
+`/model` derives its surface from **real** `ToolFactory` definitions, so a
+model-facing test can never drift from the tools that ship.
 
 ### `@workhorse/api` (refactor)
 **Add:** `agent()` helper (like `tool()`)
@@ -813,6 +872,7 @@ jobs:
 | Package | Build | Deploy |
 |---------|-------|--------|
 | `@workhorse/api` | None (pure TS types) | N/A |
+| `@workhorse/test-utils` | None (pure TS, test-only) | Never deployed |
 | `@workhorse/workflow` | None (pure TS types) | N/A |
 | `@workhorse/auth` | None (pure TS types) | N/A |
 | `@workhorse/db` | `drizzle-kit generate` | `drizzle-kit push` (migrations) |
@@ -849,6 +909,23 @@ health), `bun run test`, and the phase's own visual-simulation surface.
    (`RunState`, `StageDriveReport`, `StageState`, `StageStatus` — the pi-subprocess
    fields `pid`/`eventsOffset` outlived the engine that used them) → 63.6 → 90
 8. ⏳ Wire `fallow audit` + `bun run health` into GitHub Actions as the PR gate
+
+### Phase 0.5: Test foundation ✅ DONE
+
+Built ahead of the package work, because every later phase gates on `bun run test`
+and the harnesses had to exist before there was anything to test with them.
+
+1. ✅ `@workhorse/test-utils` — `/tools`, `/workflow`, `/model` subpaths
+2. ✅ Root `vitest.config.ts` with `projects` (plugins, packages, worker, evals)
+3. ✅ Health harness switched to `fallow --production` so tests never skew scores
+4. ✅ Colocated `__tests__` for the browser, aft, and todo tool surfaces
+5. ✅ **Contract suite** — the real `agent-browser` CLI against a real page,
+   which found six shipped bugs a `fakeSandbox` could not see
+6. ✅ **Model eval** — live tool-choice scoring, which reversed the tool
+   consolidation decision
+7. ⏳ Colocated tests for the remaining tool surfaces (github, tickets, search,
+   scripts, knowledge, imgup, paste)
+8. ⏳ Contract suites for the other CLI-exec archetypes (aft, imgup, paste)
 
 ### Phase 1: Stable packages (won't be reshaped later)
 1. Create `@workhorse/db` — Drizzle schema + migrations + **class with DI**
@@ -907,13 +984,17 @@ health), `bun run test`, and the phase's own visual-simulation surface.
 ## Verification
 
 Per phase:
-1. `bun run check` — oxlint + typecheck + fallow health
-2. `bun run test` — all package Vitest suites
+1. `bun run check` — oxlint + typecheck + per-package fallow health
+2. `bun run test` — every package's vitest suite (one root runner)
 3. The phase's visual-simulation surface renders correctly
 
+When a phase touches CLI-exec tools or tool definitions:
+4. `bun run test:contract` — the real binaries accept what we send
+5. `bun run eval:tools` — a model can still pick the right tool
+
 Before ship:
-4. `bun run deploy` — worker deploys
-5. Manual: file ticket → run workflow → verify PR
+6. `bun run deploy` — worker deploys
+7. Manual: file ticket → run workflow → verify PR
 
 ## Answered Decisions
 
@@ -924,6 +1005,11 @@ Before ship:
 | db visual simulation | **Drizzle Studio** |
 | Linting | **oxlint** (correctness category as error) |
 | Codebase intelligence | **fallow** (`audit` as the CI gate, `health` as the local gate) |
+| Test harness location | **`@workhorse/test-utils`**, one package with per-domain subpaths — not per-plugin helpers (fallow would flag the duplication) |
+| Vitest layout | **One root config with `projects`** — single install, single `bun run test`, no per-package config |
+| Tests in health scoring | **Excluded** (`fallow --production`) so coverage never reads as debt |
+| Tool granularity | **Granular** — consolidation measured −5–12pp tool-choice accuracy; token cost belongs to semantic selection |
+| Tool documentation | **Mandatory `docs` + injected `help` flag** — type-enforced, detail off the per-turn budget |
 
 ## Open Questions
 
