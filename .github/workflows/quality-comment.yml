@@ -12,6 +12,11 @@
 #
 # The digest and PR number arrive via CI's `quality-report` artifact. Nothing from
 # the artifact is executed; it is read as data and posted verbatim.
+#
+# NOTE: `workflow_run` definitions are only read from the DEFAULT BRANCH. This
+# workflow therefore does nothing until it is merged to main — including on the PR
+# that introduces it. That is the trigger's design (it is what stops a fork PR from
+# rewriting the privileged workflow that runs against it), not a misconfiguration.
 
 name: Quality comment
 
