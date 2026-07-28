@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runTool } from "@workhorse/test-utils/tools";
 import browser_screenshot from "../browser_screenshot";
 
-/** Screenshot succeeds; stat reports a fixed byte size. */
+/** Screenshot succeeds; the size probe reports a fixed byte count. */
 const ok = (bytes = 2048) => ({
   sandbox: {
     exec: {
-      "stat -c %s": String(bytes),
+      "wc -c": String(bytes),
       screenshot: "{}",
       "mkdir -p": "",
     },
@@ -35,17 +35,13 @@ describe("browser_screenshot", () => {
     expect(sandbox.execCalls[0].command).toBe("mkdir -p '/deep/nested'");
   });
 
-  it("mkdirs the whole string for a bare filename — the /tmp fallback never fires", async () => {
-    // `path.replace(/\/[^/]+$/, "") || "/tmp"` only strips a trailing /segment.
-    // A relative "shot.png" has no slash, so replace() returns it unchanged and
-    // the || fallback is dead. Harmless in practice (the default path is always
-    // absolute), but the behavior is a directory named after the file.
+  it("falls back to /tmp for a bare filename with no directory", async () => {
+    // dirOf() now handles this: no slash means there is no directory to make.
     const { sandbox } = await runTool(browser_screenshot, { savePath: "shot.png" }, ok());
-    expect(sandbox.execCalls[0].command).toBe("mkdir -p 'shot.png'");
+    expect(sandbox.execCalls[0].command).toBe("mkdir -p '/tmp'");
   });
 
   it("falls back to /tmp for a path at the filesystem root", async () => {
-    // "/shot.png" DOES match, leaving "" — this is where the fallback earns its place.
     const { sandbox } = await runTool(browser_screenshot, { savePath: "/shot.png" }, ok());
     expect(sandbox.execCalls[0].command).toBe("mkdir -p '/tmp'");
   });
@@ -72,13 +68,21 @@ describe("browser_screenshot", () => {
     expect(output).toContain("(2 KiB)");
   });
 
-  it("reports 0 KiB when stat yields nothing", async () => {
+  it("reports 0 KiB when the size probe yields nothing", async () => {
     const { output } = await runTool(
       browser_screenshot,
       { savePath: "/tmp/a.png" },
-      { sandbox: { exec: { "stat -c %s": "", screenshot: "{}", "mkdir -p": "" } } },
+      { sandbox: { exec: { "wc -c": "", screenshot: "{}", "mkdir -p": "" } } },
     );
     expect(output).toContain("(0 KiB)");
+  });
+
+  it("probes size with wc -c, not stat — stat's size flag is not portable", async () => {
+    // GNU stat uses -c %s, BSD uses -f %z; `stat -c` returns nothing on macOS,
+    // which reported every screenshot as 0 KiB. Caught by the contract suite.
+    const { sandbox } = await runTool(browser_screenshot, { savePath: "/tmp/a.png" }, ok());
+    expect(sandbox.ranCommandContaining("wc -c")).toBe(true);
+    expect(sandbox.ranCommandContaining("stat -c")).toBe(false);
   });
 
   it("points the agent at upload_image for a hosted URL", async () => {

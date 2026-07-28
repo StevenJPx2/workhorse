@@ -1,7 +1,7 @@
 // browser_record — timed frame capture → animated GIF (native ffmpeg).
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
-import { ab, q } from "./_shared";
+import { ab, fileKiB, q } from "./_shared";
 
 export default tool({
   name: "browser_record",
@@ -53,8 +53,7 @@ export default tool({
       await sandbox.exec(`rm -rf ${tmp}`);
       return `GIF assembly failed: ${ff.stderr.slice(-300)}`;
     }
-    const stat = await sandbox.exec(`stat -c %s ${q(input.savePath)} 2>/dev/null || echo 0`);
-    const kib = Math.round(Number(stat.stdout.trim() || "0") / 1024);
+    const kib = await fileKiB(sandbox, input.savePath);
     await sandbox.exec(`rm -rf ${tmp}`);
     return `Recorded ${frameIdx} frames @ ${fps}fps → ${input.savePath} (${kib} KiB). Upload with upload_image for a hosted URL.`;
   },

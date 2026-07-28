@@ -17,7 +17,7 @@ const okExec = {
   screenshot: "{}",
   eval: "{}",
   ffmpeg: { exitCode: 0, stdout: "", stderr: "" },
-  "stat -c %s": "10240",
+  "wc -c": "10240",
 };
 
 const realSetTimeout = globalThis.setTimeout;

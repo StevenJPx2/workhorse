@@ -2,34 +2,74 @@ import { describe, expect, it } from "vitest";
 import { runTool } from "@workhorse/test-utils/tools";
 import browser_snapshot from "../browser_snapshot";
 
+const ok = { sandbox: { defaultExec: "{}" } };
+
 describe("browser_snapshot", () => {
-  it("requests interactive-only, compact, depth-10", async () => {
-    const { sandbox } = await runTool(browser_snapshot, {}, { sandbox: { defaultExec: "{}" } });
-    expect(sandbox.lastCommand()).toContain("'snapshot' '-i' '-c' '-d' '10'");
+  it("defaults to interactive-only, compact, depth 10", async () => {
+    const { sandbox } = await runTool(browser_snapshot, {}, ok);
+    expect(sandbox.lastCommand()).toMatch(/'snapshot' '-i' '-c' '-d' '10'$/);
   });
 
-  it("ignores the depth input — the flags are fixed", async () => {
-    // depth/compact are declared in the schema but the CLI call is hard-coded.
-    // Asserting this documents the gap rather than pretending it works.
-    const { sandbox } = await runTool(browser_snapshot, { depth: 3 }, { sandbox: { defaultExec: "{}" } });
-    expect(sandbox.lastCommand()).toContain("'-d' '10'");
+  it("honors a custom depth — the input is no longer ignored", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { depth: 3 }, ok);
+    expect(sandbox.lastCommand()).toContain("'-d' '3'");
+    expect(sandbox.lastCommand()).not.toContain("'10'");
   });
 
-  it("ignores the compact input", async () => {
-    const { sandbox } = await runTool(browser_snapshot, { compact: false }, { sandbox: { defaultExec: "{}" } });
-    expect(sandbox.lastCommand()).toContain("'-c'");
+  it("drops -c when compact is disabled", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { compact: false }, ok);
+    expect(sandbox.lastCommand()).not.toContain("'-c'");
+  });
+
+  it("drops -i when full content is requested", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { interactiveOnly: false }, ok);
+    expect(sandbox.lastCommand()).not.toContain("'-i'");
+  });
+
+  it("adds -u to include link hrefs", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { urls: true }, ok);
+    expect(sandbox.lastCommand()).toContain("'-u'");
+  });
+
+  it("scopes to a selector with -s", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { selector: "#main" }, ok);
+    expect(sandbox.lastCommand()).toContain("'-s' '#main'");
+  });
+
+  it("floors a zero depth to 1", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { depth: 0 }, ok);
+    expect(sandbox.lastCommand()).toContain("'-d' '1'");
+  });
+
+  it("rounds a fractional depth", async () => {
+    const { sandbox } = await runTool(browser_snapshot, { depth: 4.6 }, ok);
+    expect(sandbox.lastCommand()).toContain("'-d' '5'");
+  });
+
+  it("combines every option in CLI order", async () => {
+    const { sandbox } = await runTool(
+      browser_snapshot,
+      { interactiveOnly: true, compact: true, urls: true, selector: "#app", depth: 5 },
+      ok,
+    );
+    expect(sandbox.lastCommand()).toMatch(/'snapshot' '-i' '-c' '-u' '-s' '#app' '-d' '5'$/);
   });
 
   it("unwraps the snapshot field", async () => {
-    const { output } = await runTool(
-      browser_snapshot,
-      {},
-      { sandbox: { defaultExec: '{"snapshot":"@e1 button Submit"}' } },
-    );
+    const { output } = await runTool(browser_snapshot, {}, { sandbox: { defaultExec: '{"snapshot":"@e1 button Submit"}' } });
     expect(output).toBe("@e1 button Submit");
   });
 
-  it("returns the raw payload when the snapshot field is absent", async () => {
+  it("unwraps a snapshot nested in a data envelope", async () => {
+    const { output } = await runTool(
+      browser_snapshot,
+      {},
+      { sandbox: { defaultExec: '{"success":true,"data":{"snapshot":"@e1 link Home"}}' } },
+    );
+    expect(output).toBe("@e1 link Home");
+  });
+
+  it("returns the raw payload when no snapshot field is present", async () => {
     const { output } = await runTool(browser_snapshot, {}, { sandbox: { defaultExec: '{"nope":1}' } });
     expect(output).toBe('{"nope":1}');
   });

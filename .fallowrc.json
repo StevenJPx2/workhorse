@@ -12,5 +12,8 @@
   "workspaces": {
     "patterns": ["packages/*", "plugins/*", "worker", "ui", "evals"]
   },
-  "ignorePatterns": ["**/*.generated.ts", "**/.nuxt/**", "**/.wrangler/**"]
+  "ignorePatterns": ["**/*.generated.ts", "**/.nuxt/**", "**/.wrangler/**"],
+  "ignoreExports": [
+    { "file": "plugins/browser/tools/_shared.ts", "exports": ["WRAPPER"] }
+  ]
 }

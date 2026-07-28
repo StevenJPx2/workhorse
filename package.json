@@ -25,7 +25,8 @@
     "dev": "cd worker && bun run dev",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval": "cd evals && bun run eval:ci"
+    "eval": "cd evals && bun run eval:ci",
+    "test:contract": "BROWSER_CONTRACT=1 vitest run plugins/browser/tools/__tests__/contract.test.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",

@@ -1,7 +1,7 @@
 // browser_read — rendered page text/markdown (JS-capable, live DOM).
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
-import { ab } from "./_shared";
+import { ab, field } from "./_shared";
 
 export default tool({
   name: "browser_read",
@@ -15,11 +15,8 @@ export default tool({
     if (input.url) args.push(input.url);
     if (input.filter) args.push("--filter", input.filter);
     const raw = await ab(sandbox, args);
-    try {
-      const jr = JSON.parse(raw) as { content?: string; text?: string };
-      return jr.content ?? jr.text ?? raw;
-    } catch {
-      return raw;
-    }
+    // The page text lives at data.content — reading a top-level `content`
+    // always missed and handed the agent the whole JSON envelope.
+    return field(raw, "content", "text") ?? raw;
   },
 });
