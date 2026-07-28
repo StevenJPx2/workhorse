@@ -41,6 +41,79 @@ export function fakeKV(seed: Record<string, string> = {}): FakeKV {
   };
 }
 
+/** One AI Search result chunk, in the shape the API actually returns. */
+export interface FakeSearchChunk {
+  filename?: string;
+  score?: number;
+  /** Chunk text arrives as an array of parts, not a bare string. */
+  content?: Array<{ text?: string }>;
+  attributes?: { file?: Record<string, unknown> };
+}
+
+export interface FakeAiSearchOptions {
+  /** Chunks returned by search(). */
+  results?: FakeSearchChunk[];
+  /**
+   * Make info() reject, so the code under test takes the create-on-first-use
+   * path. This is how the real binding signals "instance doesn't exist yet".
+   */
+  missing?: boolean;
+  /** Make create() reject too — the "index unavailable" path. */
+  createFails?: boolean;
+  /** Make search() reject — the "index broken mid-query" path. */
+  searchThrows?: boolean;
+}
+
+export interface FakeAiSearch {
+  get(id: string): unknown;
+  create(spec: unknown): Promise<unknown>;
+  /** Every search() query, in order. */
+  readonly queries: Array<{ query: string; options?: unknown }>;
+  /** Instance ids passed to get(). */
+  readonly gets: string[];
+  /** Specs passed to create(). */
+  readonly creates: unknown[];
+}
+
+/**
+ * In-memory AI Search double (the AI_SEARCH binding backing fleet knowledge).
+ *
+ * Models the real two-step shape: `get(id)` hands back an instance whose
+ * `info()` decides whether it already exists, and `create()` provisions it.
+ */
+export function fakeAiSearch(options: FakeAiSearchOptions = {}): FakeAiSearch {
+  const queries: Array<{ query: string; options?: unknown }> = [];
+  const gets: string[] = [];
+  const creates: unknown[] = [];
+
+  const makeInstance = () => ({
+    async info() {
+      if (options.missing) throw new Error("instance not found");
+      return { id: "fake" };
+    },
+    async search(args: { query: string; ai_search_options?: unknown }) {
+      queries.push({ query: args.query, options: args.ai_search_options });
+      if (options.searchThrows) throw new Error("search backend unavailable");
+      return { data: options.results ?? [] };
+    },
+  });
+
+  return {
+    queries,
+    gets,
+    creates,
+    get(id: string) {
+      gets.push(id);
+      return makeInstance();
+    },
+    async create(spec: unknown) {
+      creates.push(spec);
+      if (options.createFails) throw new Error("create failed");
+      return makeInstance();
+    },
+  };
+}
+
 /** A binding that reports which member was touched instead of crashing opaquely. */
 function unstubbed(binding: string): unknown {
   return new Proxy(

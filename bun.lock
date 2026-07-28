@@ -110,6 +110,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -122,6 +123,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -145,6 +147,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -168,6 +171,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -180,6 +184,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -192,6 +197,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -215,6 +221,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },

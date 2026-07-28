@@ -13,8 +13,8 @@ export type { ExecCall, ExecResponder, ExecResult, FakeSandbox, FakeSandboxOptio
 export { fakeCore, fakeScript, fakeTicket } from "./core";
 export type { CoreCall, FakeCore, FakeCoreOverrides } from "./core";
 
-export { fakeEnv, fakeKV } from "./env";
-export type { FakeEnvOptions, FakeKV } from "./env";
+export { fakeAiSearch, fakeEnv, fakeKV } from "./env";
+export type { FakeAiSearch, FakeAiSearchOptions, FakeEnvOptions, FakeKV, FakeSearchChunk } from "./env";
 
 export { stubFetch } from "./fetch";
 export type { RecordedRequest, RouteResponder, StubFetchHandle } from "./fetch";

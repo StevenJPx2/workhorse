@@ -11,7 +11,16 @@
 export interface RecordedRequest {
   url: string;
   method: string;
+  /**
+   * Request body as text. A `URLSearchParams` is serialized to its encoded
+   * form, so a urlencoded POST is assertable — capturing only `typeof body
+   * === "string"` would silently record `undefined` and make an assertion pass
+   * vacuously. `FormData` is reported as "[FormData: k1, k2]" since its
+   * multipart encoding is not reproducible here; assert on `formFields` instead.
+   */
   body?: string;
+  /** Field names when the body was FormData, in insertion order. */
+  formFields?: string[];
   headers: Record<string, string>;
 }
 
@@ -63,8 +72,18 @@ export function stubFetch(
       headers[k] = v;
     });
 
-    const body = typeof init?.body === "string" ? init.body : undefined;
-    const req: RecordedRequest = { url, method, body, headers };
+    const raw = init?.body;
+    let body: string | undefined;
+    let formFields: string[] | undefined;
+
+    if (typeof raw === "string") body = raw;
+    else if (raw instanceof URLSearchParams) body = raw.toString();
+    else if (typeof FormData !== "undefined" && raw instanceof FormData) {
+      formFields = [...raw.keys()];
+      body = `[FormData: ${formFields.join(", ")}]`;
+    }
+
+    const req: RecordedRequest = { url, method, body, formFields, headers };
     requests.push(req);
 
     for (const [fragment, responder] of patterns) {
