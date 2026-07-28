@@ -1184,20 +1184,148 @@ plugin registration, and dropping or re-mapping `aft_search`/`aft_edit`.
 3. Target: fallow health ≥ 85 (B or better)
 4. Update README + ROADMAP
 
-## Verification
+## Phase SOP
 
-Per phase:
-1. `bun run check` — oxlint + typecheck + per-package fallow health
-2. `bun run test` — every package's vitest suite (one root runner)
-3. The phase's visual-simulation surface renders correctly
+The same seven steps every phase, in order. Steps 1–2 open it, 3–5 do the work,
+6–7 close it. Nothing here is optional; where a step doesn't apply, say why in
+the phase's plan entry rather than skipping it silently.
 
-When a phase touches CLI-exec tools or tool definitions:
-4. `bun run test:contract` — the real binaries accept what we send
-5. `bun run eval:tools` — a model can still pick the right tool
+### 1. Branch
 
-Before ship:
-6. `bun run deploy` — worker deploys
-7. Manual: file ticket → run workflow → verify PR
+```bash
+git switch -c phase-N-<name>
+```
+
+**On a branch, not main.** `fallow audit` is PR-scoped — it diffs against the
+merge-base and is wired to `pull_request` events only. Work pushed straight to
+main never gets audited, so the complexity/duplication/dead-code gate simply
+does not fire.
+
+### 2. Establish the baseline
+
+```bash
+bun run health          # record where every package starts
+bun run report          # refresh the trend series
+```
+
+A phase that moves code between packages will move scores. Knowing the starting
+number is what separates "this extraction introduced debt" from "this debt was
+already there."
+
+### 3. Build, smallest verifiable slice first
+
+Order within a phase: **types → implementation → tests → call sites.** The point
+is that each step is independently checkable, so a failure localizes to the thing
+you just did.
+
+New package? It needs, before anything imports it:
+- `package.json` with `typecheck` (every package has one; `bun run typecheck`
+  fans out via `--filter '*'`)
+- `tsconfig.json` extending the root
+- a `.fallowrc.json` **only if** its entry points aren't a standard package main
+  (e.g. `evals`, whose entries are `*.eval.ts`) — otherwise scoped analysis
+  invents dead code that isn't there
+
+### 4. Test at the right layer
+
+Three layers, and they prove different things:
+
+| layer | proves | when |
+|---|---|---|
+| **mocked** (`fakeSandbox`, `fakeCore`, `fakeEnv`, `stubFetch`) | our logic branches correctly | always |
+| **contract** (real binary, env-gated) | the binary accepts what we send | any CLI-exec tool |
+| **model** (`eval:tools`) | a model still picks the right tool | any tool name/description change |
+
+Mocked tests alone are structurally incapable of catching a wrong CLI signature —
+a fake returns whatever the tool asks for. Six shipped browser bugs and five dead
+`aft_*` tools lived in exactly that blind spot.
+
+### 5. Verify locally
+
+```bash
+bun run check           # oxlint → typecheck → per-package health floors
+bun run test            # every package, one runner
+bun run report          # refresh README badge/graph/table
+```
+
+Then, conditionally:
+
+```bash
+bun run test:contract          # touched a CLI-exec tool
+bun run test:contract:aft      # ... or aft specifically
+bun run test:contract:imgup    # ... or imgup
+bun run eval:tools             # changed a tool name, description, or docs
+bun run secrets                # added a config field the Env interface reads
+```
+
+**Health floors ratchet.** If a package improved, `bun run health:update` locks
+the gain in as its new floor — otherwise the improvement is free to silently
+regress later. If a package got *worse*, fix it now; that's the whole point of
+per-package scoping.
+
+### 6. Open a PR and let the gate run
+
+```bash
+git push -u origin phase-N-<name>
+gh pr create --fill
+```
+
+Two jobs must go green: **check** (lint · typecheck · test · health · secrets)
+and **audit** (`fallow audit` on the diff, gating on findings the changeset
+*introduced*, not inherited debt).
+
+Read the **job summary** on the run page — failed tests by name, packages below
+floor with their specific deductions, and what moved. The `quality-report`
+artifact has the full HTML with SVG trends.
+
+Expect the audit to flag your own new code. It caught `renderSummary` at
+cyclomatic 19 / CRAP 97 the first time it ran — code I had written minutes
+earlier. That is the gate working, not a false positive.
+
+### 7. Close the phase
+
+1. Merge the PR (CI refreshes the README badge, graph, and table on main)
+2. Update this plan's phase entry: ✅, what actually shipped, and **what was
+   found** — the findings are the durable part
+3. `ctx_memory` for anything a future session must know (a protocol, a
+   constraint, a rejected approach and its measurement)
+4. `bun run health:update` if scores improved
+
+### Phase gates
+
+Each phase has one concrete thing that must be true beyond green CI:
+
+| phase | gate |
+|---|---|
+| 1 · db + auth | Drizzle Studio lists every table; a real query round-trips |
+| 2 · primitives | the discovered graph matches the coding pipeline |
+| 3 · plugin tools | `eval:tools` accuracy holds; no orphaned factories |
+| 4 · workflows/coding | eval beats `coding-raw` |
+| 5 · extraction | `worker`'s circular-deps deduction drops |
+| 6 · AI Search | a query returns relevant code from a real index |
+| 7 · worker shell | `alchemy deploy` succeeds; ticket → PR end to end |
+| 8 · cleanup | health ≥ 85 (B) repo-wide |
+
+### Before ship
+
+```bash
+bun run deploy          # worker + container image
+```
+
+Then manually: file a ticket → watch the workflow run → verify the PR. No gate
+substitutes for one real end-to-end run.
+
+### Known gaps in this SOP
+
+- **The audit job has never actually run.** Every push so far has been direct to
+  main, and the job is `pull_request`-only — 5 runs, all `skipped`. Phase 1 is the
+  first real exercise of it, which is itself a reason to branch.
+- **Contract suites don't run in CI.** They need the real `agent-browser`, `aft`,
+  and `imgup` binaries, plus Xvfb + Chrome for the browser. Local-only until a
+  runner has them, so "touched a CLI-exec tool" means *you* run them.
+- **`eval:tools` is manual.** It needs `OPENCODE_API_KEY` and makes hundreds of
+  live calls; cheap under the flat rate, but not free to wire into every PR.
+- **No o11y layer yet.** Deferred to Phase 5, so step 4 has no tracing rung.
 
 ## Answered Decisions
 
