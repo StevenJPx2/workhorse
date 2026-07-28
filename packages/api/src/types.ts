@@ -161,6 +161,13 @@ export interface Env {
   /** This Worker's own public URL, so sandboxes can call back to /browser. */
   SELF_URL?: string;
   /**
+   * imgbb API key — the PRIMARY image host for PR embeds. Injected into the
+   * ticket sandbox's imgup config at prepare so `upload_image` can use the
+   * keyed host first; the keyless fallbacks (imgbox/pixhost/catbox) still
+   * work without it, just less reliably from datacenter IPs.
+   */
+  IMGBB_KEY?: string;
+  /**
    * Slack bot (optional — unset disables the Slack surface). Signing secret
    * verifies /webhooks/slack deliveries; bot token posts replies + status
    * updates. Bot needs app_mentions:read, chat:write, and the message.channels

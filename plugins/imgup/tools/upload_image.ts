@@ -2,15 +2,21 @@
 //
 // CLI-exec archetype: the tool runs worker-side, the `imgup` CLI (baked into
 // the image) runs in the container via the sandbox handle. imgup speaks 30+
-// hosts; we try a chain of PERMANENT, KEYLESS hosts and return the FIRST whose
-// URL actually serves the bytes back — a host can mint a URL yet store nothing
-// (observed with catbox), so we confirm, we don't trust.
+// hosts; we try a chain and return the FIRST whose URL actually serves the
+// bytes back — a host can mint a URL yet store nothing (observed with catbox),
+// so we confirm, we don't trust.
+//
+// imgbb leads the chain: it is API-keyed (IMGBB_KEY, injected into the
+// container at prepare) and proved reliable, where the keyless hosts throttle
+// datacenter IPs and the GitHub user-attachments path did not work out. The
+// keyless hosts remain as fallbacks for when the key is absent.
 
 import { tool } from "@workhorse/api";
 import type { SandboxHandle } from "@workhorse/api";
 import * as v from "valibot";
 
-const DEFAULT_HOSTS = ["imgbox", "pixhost", "catbox"];
+/** imgbb first (keyed, reliable), then the keyless permanent hosts. */
+const DEFAULT_HOSTS = ["imgbb", "imgbox", "pixhost", "catbox"];
 const IMGUP_BIN = "/usr/local/bin/imgup";
 
 /** GET the URL and confirm it serves a non-empty image (mint != stored). */
@@ -38,8 +44,8 @@ export default tool({
   name: "upload_image",
   description:
     "Upload a local image file (in the workspace) to a public image host and return its hosted " +
-    "URL — use it to embed an image (e.g. a screenshot, or a GIF from browser_record) in a PR " +
-    "description or a markdown file. Tries several permanent, keyless hosts in order and returns " +
+    "URL — THE way to embed an image (e.g. a screenshot, or a GIF from browser_record) in a PR " +
+    "description or a markdown file. Tries imgbb first, then permanent keyless hosts, and returns " +
     "the first URL that actually serves the image. Returns the plain URL, or a markdown/html tag.",
   input: v.object({
     path: v.string(),

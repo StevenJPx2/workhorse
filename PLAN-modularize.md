@@ -108,7 +108,7 @@ itself is meant to fix: circular deps (-23.4), unit size (-10.0).
 - [Drizzle Studio](https://orm.drizzle.team/docs/drizzle-kit-studio) — Visual database browser
 - [oxlint](https://oxc.rs/docs/guide/usage/linter) — Rust-based linter
 - [fallow](https://docs.fallow.tools) — Codebase intelligence (dead code, cycles, health)
-- [gh-image](https://github.com/drogers0/gh-image) — GitHub CLI extension for PR image uploads
+- [imgup](https://github.com/DeadNews/images-upload-cli) — Multi-host image upload CLI (imgbb primary)
 - [Vitest](https://vitest.dev) — Test runner
 
 ## Target Architecture
@@ -246,9 +246,17 @@ workflows/
 }
 ```
 
-### 6. gh-image for PR image uploads
+### 6. imgbb (via imgup) for PR image uploads
 
-PR writer uses `gh-image` (GitHub CLI extension) to embed screenshots in PR descriptions. Images are stored in GitHub's user-attachments (private to the repo, no external hosting needed).
+`upload_image` is the single vehicle for embedding screenshots and GIFs in PR
+descriptions, with **imgbb first** in the host chain. imgbb is API-keyed
+(`IMGBB_KEY`) and proved reliable where the keyless hosts throttle datacenter
+IPs; the keyless hosts stay as fallbacks for when no key is configured.
+
+```ts
+// plugins/imgup/tools/upload_image.ts
+const DEFAULT_HOSTS = ["imgbb", "imgbox", "pixhost", "catbox"];
+```
 
 **PR writer agent tools:**
 ```ts
@@ -258,7 +266,7 @@ const prWriter = agent({
     const tools = [read, grep, find, ls, bash];
 
     if (ctx.input.uiChanges) {
-      tools.push(browser_screenshot, browser_record, gh_image);
+      tools.push(browser_screenshot, browser_record, upload_image);
     }
 
     return tools;
@@ -266,30 +274,17 @@ const prWriter = agent({
 });
 ```
 
-**`gh_image` tool:**
-```ts
-const gh_image = tool({
-  name: "gh_image",
-  description: "Upload an image to GitHub's user-attachments for embedding in PRs",
-  input: v.object({ path: v.string() }),
-  run: async ({ input }) => {
-    const result = await sandbox.exec(`gh image ${input.path} --repo ${repo}`);
-    return result.stdout; // Returns: ![name](https://github.com/user-attachments/assets/...)
-  },
-});
-```
+**Key injection:** `injectImgupConfig` writes `IMGBB_KEY` to
+`/root/.config/imgup/.env` at prepare (the path imgup reads on Unix), alongside
+the existing browser/ticket-context injections. It no-ops when the key is
+unset, so a run never fails on its absence.
 
-**What this replaces:**
-- `imgup` for PR image uploads (no external hosting needed)
-- `upload_image` for PRs (gh-image is GitHub-native)
+**One vehicle, not two.** The GitHub user-attachments path (`gh-image`) was
+evaluated and rejected — the pipeline did not work reliably. There is no
+separate "PR images" tool: `upload_image` serves PR embeds and external sharing
+alike, and `upload_text` covers text hosting.
 
-**What stays:**
-- `upload_image` (imgup) — for external image sharing
-- `upload_text` (paste.rs, etc.) — for external text hosting
-
-**Sandbox changes:**
-- Add `gh` CLI + `gh-image` extension to Dockerfile
-- `imgup` stays in Dockerfile (still needed for `upload_image`)
+**Sandbox:** `imgup` stays in the Dockerfile. No `gh-image` extension.
 
 ### 7. AI Search replaces Magic Context
 

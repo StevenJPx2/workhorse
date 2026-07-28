@@ -61,6 +61,19 @@ export async function injectBrowserConfig(env: Env, sandboxId: string): Promise<
 }
 
 /**
+ * Write the imgup credentials file so `upload_image` can use imgbb — the
+ * primary host for PR image embeds. imgup reads `~/.config/imgup/.env` on
+ * Unix. No-ops when no key is configured, leaving the keyless fallback hosts
+ * (imgbox/pixhost/catbox) as the chain.
+ */
+export async function injectImgupConfig(env: Env, sandboxId: string): Promise<void> {
+  if (!env.IMGBB_KEY) return;
+  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+  await sandbox.exec("mkdir -p /root/.config/imgup", { timeout: 10_000 });
+  await sandbox.writeFile("/root/.config/imgup/.env", `IMGBB_KEY=${env.IMGBB_KEY}\n`);
+}
+
+/**
  * Write ticket context for sandbox-half plugin tools: repo slug (script
  * scope resolution) + ticket id (live status gating via the registry).
  */

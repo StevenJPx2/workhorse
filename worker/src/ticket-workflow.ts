@@ -2,6 +2,7 @@ import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:work
 import {
   injectAuth,
   injectBrowserConfig,
+  injectImgupConfig,
   injectTicketContext,
   restoreDepCache,
   saveDepCache,
@@ -186,6 +187,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await installAgentBlocks(this.env, sandboxId);
         await restoreMemory(this.env, sandboxId, t.repo);
         await injectBrowserConfig(this.env, sandboxId);
+        await injectImgupConfig(this.env, sandboxId);
         await injectTicketContext(this.env, sandboxId, t.id, t.repo);
         const dep = await restoreDepCache(this.env, sandboxId, t.repo);
         if (dep !== "skip") console.log(`depcache restore ${t.id}: ${dep}`);
