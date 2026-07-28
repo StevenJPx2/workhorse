@@ -92,8 +92,13 @@ jobs:
       # files move. Push-to-main only: on a PR the base branch isn't ours to
       # write, and the numbers aren't final until it merges.
       #
-      # [skip ci] is load-bearing — without it this commit triggers the workflow
-      # that made it, forever.
+      # The skip marker below is load-bearing — without it this commit triggers
+      # the workflow that made it, forever.
+      #
+      # CAUTION: GitHub matches that marker ANYWHERE in a commit message, body
+      # included. Mentioning it in prose silently skips the run — which is
+      # exactly how the commit that added this step ended up never being tested.
+      # Never write the literal token in a message you want CI to run.
       - name: Commit report assets
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
