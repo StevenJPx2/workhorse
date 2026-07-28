@@ -33,7 +33,8 @@
     "test:contract:imgup": "IMGUP_CONTRACT=1 vitest run plugins/imgup/tools/__tests__/contract.test.ts",
     "test:contract:aft": "AFT_CONTRACT=1 vitest run plugins/aft/tools/__tests__/contract.test.ts",
     "report": "node scripts/report.mjs",
-    "report:open": "node scripts/report.mjs --open"
+    "report:open": "node scripts/report.mjs --open",
+    "report:md": "node scripts/report.mjs --no-tests --markdown"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",

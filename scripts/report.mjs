@@ -9,9 +9,11 @@
 // No runtime deps, no network, no build step — inline CSS and hand-built SVG, so
 // the file works from disk and as a CI artifact.
 //
-//   node scripts/report.mjs            collect + render to reports/index.html
-//   node scripts/report.mjs --open     ... and open it
-//   node scripts/report.mjs --no-tests skip the test run (fast iteration)
+//   node scripts/report.mjs             collect + render to reports/index.html
+//   node scripts/report.mjs --open      ... and open it
+//   node scripts/report.mjs --no-tests  reuse existing test results
+//   node scripts/report.mjs --markdown  ALSO print a markdown digest to stdout,
+//                                       for >> $GITHUB_STEP_SUMMARY
 
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,6 +26,12 @@ const historyPath = join(outDir, "history.json");
 
 const args = new Set(process.argv.slice(2));
 const skipTests = args.has("--no-tests");
+const wantMarkdown = args.has("--markdown");
+
+// The HTML page is the artifact; markdown goes to stdout for the job summary.
+// So in markdown mode every progress line must go to stderr, or it lands in the
+// middle of the summary.
+const log = (msg) => (wantMarkdown ? console.error(msg) : console.log(msg));
 
 /** Run a command for its stdout, returning null instead of throwing. */
 function capture(cmd, cmdArgs, { allowFailure = true } = {}) {
@@ -53,10 +61,10 @@ function captureJson(cmd, cmdArgs) {
 
 // ---- collect ----------------------------------------------------------------
 
-console.log("collecting health…");
+log("collecting health…");
 const health = captureJson("node", ["scripts/health.mjs", "--json"]);
 
-console.log("collecting secret contract…");
+log("collecting secret contract…");
 const secrets = captureJson("node", ["scripts/secrets.mjs", "--json"]);
 
 // Test results come from vitest's JSON reporter. With --no-tests we reuse an
@@ -66,9 +74,9 @@ const testJsonPath = join(outDir, ".vitest.json");
 mkdirSync(outDir, { recursive: true });
 
 if (skipTests) {
-  console.log(existsSync(testJsonPath) ? "reusing existing test results" : "skipping tests (no results available)");
+  log(existsSync(testJsonPath) ? "reusing existing test results" : "skipping tests (no results available)");
 } else {
-  console.log("running tests…");
+  log("running tests…");
   capture("bunx", ["vitest", "run", "--reporter=json", `--outputFile=${testJsonPath}`]);
 }
 
@@ -385,6 +393,113 @@ const html = `<!doctype html>
 </body>
 </html>`;
 
+// ---- markdown digest --------------------------------------------------------
+// For $GITHUB_STEP_SUMMARY, which renders on the run page itself — no download,
+// no publishing. Markdown only, so trends become unicode blocks instead of SVG.
+
+/** Score history as block characters, on the same fixed 0–100 domain as the SVG. */
+function blocks(series) {
+  const pts = series.filter((v) => typeof v === "number");
+  if (pts.length < 2) return "—";
+
+  const bars = "▁▂▃▄▅▆▇█";
+  // Fixed domain: a package flat at 100 reads as a solid wall, which is the
+  // truth. Auto-scaling would turn its noise floor into dramatic peaks.
+  return pts.map((v) => bars[Math.min(7, Math.max(0, Math.round((v / 100) * 7)))]).join("");
+}
+
+/** Signed delta vs the previous run, as plain text. */
+function deltaText(pkg) {
+  const series = history.map((h) => h.scores?.[pkg]).filter((v) => typeof v === "number");
+  if (series.length < 2) return "";
+  const diff = series[series.length - 1] - series[series.length - 2];
+  if (Math.abs(diff) < 0.05) return "";
+  return ` ${diff > 0 ? "+" : ""}${diff.toFixed(1)}`;
+}
+
+function markdown() {
+  const rows = health?.results ?? [];
+  const failing = rows.filter((r) => !r.ok);
+  const moved = rows.filter((r) => deltaText(r.pkg) !== "");
+  const out = [];
+
+  out.push(`## ${allGreen ? "✅" : "⚠️"} Quality report`);
+  out.push("");
+
+  // Headline numbers first — this is the part read at a glance.
+  const testLine = tests
+    ? `**${tests.numPassedTests}** passed${tests.numFailedTests ? ` · **${tests.numFailedTests} failed**` : ""}${tests.numPendingTests ? ` · ${tests.numPendingTests} skipped` : ""}`
+    : "not run";
+  out.push(
+    `| tests | packages | secret contract |`,
+    `|---|---|---|`,
+    `| ${testLine} | ${failing.length ? `**${failing.length} below floor**` : `all ${rows.length} at floor`} | ${secretsBroken ? `**${secretsBroken} issue${secretsBroken === 1 ? "" : "s"}**` : "satisfied"} |`,
+    "",
+  );
+
+  // Failures, named. A summary that says "3 failed" without saying which is a
+  // link to somewhere else, not a summary.
+  const failures = (tests?.testResults ?? [])
+    .flatMap((f) => (f.assertionResults ?? []).filter((a) => a.status === "failed").map((a) => a.fullName || a.title))
+    .slice(0, 15);
+  if (failures.length) {
+    out.push("### Failed tests", "");
+    for (const t of failures) out.push(`- \`${t}\``);
+    out.push("");
+  }
+
+  if (failing.length) {
+    out.push("### Below floor", "", `| package | score | floor | deductions |`, `|---|---:|---:|---|`);
+    for (const r of failing) {
+      const pen = Object.entries(r.penalties ?? {})
+        .map(([k, v]) => `${k} ${v}`)
+        .join(", ");
+      out.push(`| \`${r.pkg}\` | **${r.score.toFixed(1)}** | ${r.floor?.toFixed?.(1) ?? "—"} | ${pen || "—"} |`);
+    }
+    out.push("");
+  }
+
+  if (moved.length) {
+    out.push("### Moved since last run", "", `| package | score | change | trend |`, `|---|---:|---:|---|`);
+    for (const r of moved) {
+      out.push(
+        `| \`${r.pkg}\` | ${r.score.toFixed(1)} | ${deltaText(r.pkg).trim()} | \`${blocks(history.map((h) => h.scores?.[r.pkg]))}\` |`,
+      );
+    }
+    out.push("");
+  }
+
+  // The full table is collapsed: 20 rows of "100.0 A" is noise when nothing
+  // moved, but it's what you want the moment you're looking for one package.
+  out.push("<details><summary>All packages</summary>", "", `| package | grade | score | floor | trend |`, `|---|---|---:|---:|---|`);
+  for (const r of [...rows].sort((a, b) => a.score - b.score)) {
+    out.push(
+      `| \`${r.pkg}\` | ${r.grade} | ${r.score.toFixed(1)}${deltaText(r.pkg)} | ${r.floor?.toFixed?.(1) ?? "—"} | \`${blocks(history.map((h) => h.scores?.[r.pkg]))}\` |`,
+    );
+  }
+  out.push("", "</details>", "");
+
+  const problems = [
+    secrets?.missingRequired?.length && `${secrets.missingRequired.length} required secret(s) missing: ${secrets.missingRequired.join(", ")}`,
+    secrets?.partialGroups?.length &&
+      `${secrets.partialGroups.length} partially configured group(s) — a half-wired surface accepts events it cannot act on`,
+    secrets?.undocumented?.length && `${secrets.undocumented.length} field(s) in \`Env\` but not in the manifest: ${secrets.undocumented.join(", ")}`,
+    secrets?.orphans?.length && `${secrets.orphans.length} deployed but undeclared: ${secrets.orphans.join(", ")}`,
+  ].filter(Boolean);
+
+  if (problems.length) {
+    out.push("### Secret contract", "");
+    for (const p of problems) out.push(`- ${p}`);
+    out.push("");
+  }
+
+  out.push(
+    `<sub>Trends on a fixed 0–100 scale, so a flat line is genuinely flat. Scores exclude test files. Full report with SVG trends is the <strong>quality-report</strong> artifact.</sub>`,
+  );
+
+  return out.join("\n");
+}
+
 // ---- write ------------------------------------------------------------------
 
 mkdirSync(outDir, { recursive: true });
@@ -393,7 +508,9 @@ writeFileSync(historyPath, `${JSON.stringify(history, null, 2)}\n`);
 const outPath = join(outDir, "index.html");
 writeFileSync(outPath, html);
 
-console.log(`\n  ${outPath}`);
-console.log(`  ${history.length} run${history.length === 1 ? "" : "s"} recorded · ${allGreen ? "all green" : "needs attention"}\n`);
+log(`\n  ${outPath}`);
+log(`  ${history.length} run${history.length === 1 ? "" : "s"} recorded · ${allGreen ? "all green" : "needs attention"}\n`);
+
+if (wantMarkdown) console.log(markdown());
 
 if (args.has("--open")) capture("open", [outPath]);

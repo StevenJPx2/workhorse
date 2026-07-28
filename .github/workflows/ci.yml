@@ -68,14 +68,16 @@ jobs:
         run: bun run secrets
 
       # The gates above print to a log that scrolls away. This renders the same
-      # data — per-package scores with trend lines, test results, secret
-      # contract — as one self-contained page, downloadable from the run.
+      # data twice: a markdown digest straight onto the run page (no download),
+      # and the full HTML page as an artifact for the SVG trends.
       #
       # always(): the report is most useful when something FAILED.
       # --no-tests reuses the JSON from the test step instead of re-running.
+      # --markdown puts the digest on stdout and progress on stderr, so the
+      # redirect captures only the summary.
       - name: Quality report
         if: always()
-        run: node scripts/report.mjs --no-tests
+        run: node scripts/report.mjs --no-tests --markdown >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload report
         if: always()

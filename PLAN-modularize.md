@@ -57,9 +57,21 @@ Every package carries these three, and they gate each phase:
    the gates already produce — per-package scores with trend sparklines and
    signed deltas, test results with failures listed, secret contract by group,
    and run history. Self-contained (inline CSS, hand-built SVG), no deps, no
-   network. CI uploads it as an artifact with `if: always()`, because the report
-   matters most when something failed. `reports/history.json` is tracked so the
-   score series survives across machines; the rendered HTML is not.
+   network. `reports/history.json` is tracked so the score series survives
+   across machines; the rendered HTML is not.
+
+   Two CI surfaces, because they answer different questions:
+
+   | surface | question | cost |
+   |---|---|---|
+   | **Job summary** (`--markdown` → `$GITHUB_STEP_SUMMARY`) | "did anything break, and where?" | zero — renders on the run page |
+   | **`quality-report` artifact** (HTML) | "what's the trend across runs?" | download + unzip |
+
+   The digest leads with named failures and packages that MOVED, collapsing the
+   20-row full table behind `<details>` — 20 rows of "100.0 A" is noise when
+   nothing changed. Trends degrade from SVG to unicode blocks (`▁▂▃▄▅▆▇█`) on the
+   same fixed 0–100 domain. Both use `if: always()`, since the report matters
+   most when something failed.
 
    **Per-package, still to build:**
    - `@workhorse/workflow` — render a run's stage graph + transitions from a recorded run
