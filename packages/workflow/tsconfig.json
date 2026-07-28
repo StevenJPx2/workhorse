@@ -1,4 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Needed since this package began importing @workhorse/api, whose plugin
+    // contract references Worker globals (Request, ExecutionContext, AbortSignal).
+    "types": ["@cloudflare/workers-types"]
+  },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }
