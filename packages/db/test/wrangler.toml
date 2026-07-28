@@ -1,0 +1,14 @@
+# Minimal worker config for the D1 test pool. No `main`: the tests import Db
+# directly and never fetch a worker, so an entry file would be an unused file the
+# audit rightly flags. Only the DB binding matters —
+# vitest-pool-workers runs these tests INSIDE workerd against a real (local,
+# per-run) D1 instance, so the queries are executed by the same SQLite that
+# serves production rather than a mock.
+name = "workhorse-db-test"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "workhorse-test"
+database_id = "workhorse-test"

@@ -9,6 +9,8 @@
 // as `throttled` for the spine to sleep durably).
 
 import { getSandbox } from "@cloudflare/sandbox";
+import { STAGE_RUNWAY_MS } from "@workhorse/auth";
+import { modelToken } from "./auth";
 import { defineAgent, defineTool, registerProvider } from "@flue/runtime";
 import { cloudflareSandbox } from "@flue/runtime/cloudflare";
 import { createFlueContext, resolveModel } from "@flue/runtime/internal";
@@ -264,9 +266,12 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
   const sandbox = sandboxDriver(env, sandboxId);
 
   return async function runStageSession(input: StageSessionInput): Promise<StageSessionOutcome> {
-    const stored = await env.TICKETS.get("auth:access");
-    const token = stored ? (JSON.parse(stored) as { access: string }).access : "";
-    if (!token) return { ok: false, failure: { kind: "model", detail: "no OAuth token (custodian push stale?)" } };
+    // STAGE runway, not START: a run already in flight should use a token with
+    // less headroom rather than fail a stage the custodian is about to refresh.
+    // This site previously did NO expiry check at all, so a stage could pick up
+    // an already-dead token and 401 mid-run.
+    const token = await modelToken(env).usable(STAGE_RUNWAY_MS);
+    if (!token) return { ok: false, failure: { kind: "model", detail: "no usable OAuth token (custodian push stale?)" } };
 
     const allow = new Set(input.tools);
     const ctx = toolContext(env, selfOrigin, sandbox, { id: input.ticketId, repo: input.repo, stage: input.stageId });

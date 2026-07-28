@@ -1,6 +1,8 @@
 import { Buffer } from "node:buffer";
 import { getSandbox } from "@cloudflare/sandbox";
 import type { Driver } from "@workhorse/workflow";
+import { db } from "./db";
+import { validateScript } from "@workhorse/db";
 import { parseScriptsToml } from "./scripts-toml";
 import type { Env } from "@workhorse/api";
 
@@ -288,7 +290,6 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
     );
     const toml = tomlRead.stdout?.trim();
     if (toml) {
-      const { validateScript, upsertScript, getScript } = await import("./db");
       const now = new Date().toISOString();
       for (const s of parseScriptsToml(toml)) {
         const scope = `repo:${repoSlug(repo)}`;
@@ -297,10 +298,10 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
           console.warn(`scripts.toml: skipped "${s.name}": ${err}`);
           continue;
         }
-        const existing = await getScript(env, scope, s.name);
+        const existing = await db(env).scripts.get(scope, s.name);
         // Seeds never clobber agent/user entries.
         if (existing && existing.createdBy !== "seed") continue;
-        await upsertScript(env, {
+        await db(env).scripts.upsert({
           scope,
           name: s.name,
           description: s.description ?? "",

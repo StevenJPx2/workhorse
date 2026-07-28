@@ -60,13 +60,24 @@ Every package carries these three, and they gate each phase:
    network. `reports/history.json` is tracked so the score series survives
    across machines; the rendered HTML is not.
 
-   Three surfaces, ordered by how little you have to do to see them:
+   Four surfaces, ordered by how little you have to do to see them:
 
    | surface | question | cost |
    |---|---|---|
+   | **PR comment** — sticky, one per PR | "did my change break anything?" | zero, in the review thread |
    | **README** — shields badge + `reports/health.svg` + package table | "is this repo healthy?" | zero, on the repo front page |
    | **Job summary** (`--markdown` → `$GITHUB_STEP_SUMMARY`) | "did anything break, and where?" | zero, on the run page |
    | **`quality-report` artifact** (HTML) | "what's the full detail?" | download + unzip |
+
+   The PR comment is its own workflow (`.github/workflows/quality-comment.yml`)
+   triggered on **CI's completion**, not on the PR. A `pull_request` workflow from
+   a fork gets a read-only token and cannot comment; a `workflow_run` workflow
+   runs in the base repo's context, which is the documented way to comment on
+   untrusted PRs without granting the PR's own job write access. It is
+   `continue-on-error` — failing to report must never turn a green build red — and
+   upserts by a hidden marker so each push edits one comment instead of appending
+   a new wall of tables. The PR number travels in the artifact, since
+   `workflow_run` does not reliably expose it for forks.
 
    The README assets (`health.svg`, `badge.json`, `history.json`) are **committed**
    — a trend graph only means something as a series, so it has to live in git.
@@ -1333,6 +1344,9 @@ substitutes for one real end-to-end run.
 |----------|----------|
 | Phase ordering | **Hybrid** — stable packages (db, auth) first, then primitives, then the rest |
 | `@workhorse/db` / `@workhorse/auth` shape | **Class with dependency injection** — constructed once, injected; avoids repeated instantiation |
+| db internal structure | **Function per file, bound into repos** — `src/schema/<table>.ts` defines the table; `src/repos/<table>/<operation>.ts` is one plain function taking the connection first; `bind()` applies it and DERIVES the repo type. Surfaced as `db.tickets.list()`. No hand-written interface (it would drift), no base class (it held one field), and adding an operation touches only its own directory. One shared drizzle instance across all repos. |
+| Intra-package imports | **Node subpath imports (`#schema`, `#repos/bind`, `#db`)** wherever a relative path would climb two or more levels. Operations sit three deep, so the alternative was `../../schema` — which names a distance rather than a thing, and breaks on every move. Declared in each package's `imports` field, so they are package-private (`#` cannot be imported from outside) and need no bundler alias: tsc, vite, and workerd all resolve them natively. Single-level `../` stays as-is — it is readable and stable. |
+| `.config/` directory | **Tabled** — no tool in the stack auto-discovers it, and moving `.fallowrc.json` would break per-package health scoping. See Tentative. |
 | db visual simulation | **Drizzle Studio** |
 | Linting | **oxlint** (correctness category as error) |
 | Codebase intelligence | **fallow** (`audit` as the CI gate, `health` as the local gate) |
@@ -1348,6 +1362,47 @@ substitutes for one real end-to-end run.
 | Visual simulation (repo-wide) | **`bun run report`** — one self-contained HTML page from data the gates already produce: per-package scores with trend sparklines, test results, secret contract, run history. No deps, no network; uploaded as a CI artifact on every run. `reports/history.json` is tracked so the series survives |
 | Component-story tooling (Storybook/Histoire) | **Rejected** — nothing to simulate outside `ui/`, which is Nuxt app code outside the modularization path |
 | Real o11y (OpenTelemetry) | **Deferred to Phase 5** — belongs with the `@workhorse/workflow` extraction, when there are spans worth tracing |
+
+## Tentative
+
+### `.config/` directory — tabled
+
+[The `.config/` proposal](https://github.com/pi0/config-dir) puts tool configs in
+one directory instead of a growing pile of root dotfiles. Right problem; wrong
+time for us.
+
+**No tool in our stack auto-discovers it.** Probed each one directly, with only a
+`.config/<name>.<ext>` present and no root config:
+
+| tool | finds `.config/`? |
+|---|---|
+| oxlint | no — silently used defaults |
+| vitest | no — the config's `name` never applied |
+| fallow | no — reported "no config file found" |
+| drizzle-kit | no |
+| wrangler | no |
+| tsconfig `extends` | yes, but that's a path, not discovery |
+
+So adopting today means an explicit `--config`/`-c` on every invocation — in
+scripts, in CI, and in any ad-hoc command. The proposal names exactly this as what
+a standard is meant to remove: *"Some tools offer command line options … This is
+not a proper replacement for a standardized default lookup directory, because the
+tool might be invoked from a number of contexts."*
+
+**One hard blocker:** fallow's per-package `.fallowrc.json` discovery is
+load-bearing. It walks up from whatever root it is scoped to, which is how
+`plugins/aft/.fallowrc.json` applies when `scripts/health.mjs` runs
+`fallow health --root <pkg>`. Moving those files breaks the per-package health
+harness, and no flag fixes it — the harness would have to pass a different `-c`
+per package, reimplementing the discovery the tool already does.
+
+**If revisited**, three files move with zero new flags: `tsconfig.base.json` →
+`.config/typescript.json` (packages already `extends` it by path — verified
+working), plus our own `health-baseline.json` and `secrets.json`, which only our
+scripts read. Root clutter 15 → 12. The remaining tool configs stay until the
+tools support discovery.
+
+**Trigger to revisit:** oxlint or vitest shipping native `.config/` lookup.
 
 ## Open Questions
 

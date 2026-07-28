@@ -1,11 +1,37 @@
 // The ticket API — the Workhorse fleet surface. Master-gated.
 
-import type { TicketParams } from "@workhorse/api";
+import type { TicketParams, TicketRecord } from "@workhorse/api";
 import { appendEvents, appendSteer, wakeTicket } from "../events";
 import { fileTicket } from "../tickets";
-import { getTicket, knownRepos, listTickets, listTraceIndex, patchTicket } from "../db";
+import { db } from "../db";
 import { healTicket } from "../heal";
 import { json, type Route } from "../router";
+
+/**
+ * Load a ticket and assert its status, so the "404 then 409" preamble is written
+ * once. Returns the record, or the Response to send.
+ *
+ * Every mutating route needs this shape, and repeating it invites the failure
+ * where one route forgets the status guard and acts on a terminated ticket.
+ */
+async function ticketInState(
+  env: Parameters<typeof db>[0] & object,
+  id: string,
+  allowed: readonly string[],
+  wrongStateError: (status?: string) => string,
+): Promise<{ ok: true; ticket: TicketRecord } | { ok: false; response: Response }> {
+  const ticket = await db(env).tickets.get(id);
+  if (!ticket) return { ok: false, response: json({ error: "not found" }, 404) };
+
+  if (!allowed.includes(ticket.status ?? "")) {
+    return { ok: false, response: json({ error: wrongStateError(ticket.status) }, 409) };
+  }
+
+  return { ok: true, ticket };
+}
+
+/** Statuses where a run is live enough to steer. */
+const STEERABLE = ["queued", "planning", "implementing", "ready-for-review"] as const;
 
 export const ticketRoutes: Route[] = [
   {
@@ -25,14 +51,14 @@ export const ticketRoutes: Route[] = [
     path: "/tickets",
     auth: "master",
     handler: async ({ env, url }) =>
-      json({ tickets: await listTickets(env, url.searchParams.get("status") ?? undefined) }),
+      json({ tickets: await db(env).tickets.list(url.searchParams.get("status") ?? undefined) }),
   },
   {
     // Repos the fleet has seen, most recent first (home-page chips).
     method: "GET",
     path: "/repos",
     auth: "master",
-    handler: async ({ env }) => json({ repos: await knownRepos(env) }),
+    handler: async ({ env }) => json({ repos: await db(env).tickets.knownRepos() }),
   },
   {
     // Ticket detail (registry + live workflow status + self-heal reconcile).
@@ -40,7 +66,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)$/,
     auth: "master",
     async handler({ env, match }) {
-      let ticket = await getTicket(env, match[1]);
+      let ticket = await db(env).tickets.get(match[1]);
       if (!ticket) return json({ error: "not found" }, 404);
       let wfStatus: { status?: string } | null = null;
       try {
@@ -55,7 +81,7 @@ export const ticketRoutes: Route[] = [
       const deadMap = { errored: "errored", terminated: "terminated" } as const;
       const wf = (wfStatus?.status ?? "") as keyof typeof deadMap;
       if (deadMap[wf] && activeStatuses.includes(ticket.status)) {
-        const r = await patchTicket(env, match[1], {
+        const r = await db(env).tickets.patch(match[1], {
           status: deadMap[wf],
           error: ticket.error || `workflow instance ${wf}`,
         });
@@ -80,7 +106,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/stop$/,
     auth: "master",
     async handler({ env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).tickets.get(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       try {
         const inst = await env.TICKET_WF.get(rec.wfInstance || match[1]);
@@ -88,7 +114,7 @@ export const ticketRoutes: Route[] = [
       } catch (e) {
         return json({ error: `terminate failed: ${e instanceof Error ? e.message : e}` }, 500);
       }
-      await patchTicket(env, match[1], { status: "terminated", error: "stopped by user" });
+      await db(env).tickets.patch(match[1], { status: "terminated", error: "stopped by user" });
       return json({ ok: true });
     },
   },
@@ -99,15 +125,14 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/steer$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await getTicket(env, match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      const active = ["queued", "planning", "implementing", "ready-for-review"];
-      if (!active.includes(rec.status ?? "")) {
-        return json(
-          { error: `ticket is ${rec.status}; steering targets a live run (use PR feedback while in-review)` },
-          409,
-        );
-      }
+      const found = await ticketInState(
+        env,
+        match[1],
+        STEERABLE,
+        (status) => `ticket is ${status}; steering targets a live run (use PR feedback while in-review)`,
+      );
+      if (!found.ok) return found.response;
+
       const { message } = (await request.json().catch(() => ({}))) as { message?: string };
       if (!message?.trim()) return json({ error: "message required" }, 400);
       await appendSteer(env, match[1], message.trim().slice(0, 4000));
@@ -120,11 +145,10 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/input$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await getTicket(env, match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      if (rec.status !== "awaiting-input" || !rec.runId) {
-        return json({ error: "ticket is not awaiting input" }, 409);
-      }
+      const found = await ticketInState(env, match[1], ["awaiting-input"], () => "ticket is not awaiting input");
+      if (!found.ok) return found.response;
+      if (!found.ticket.runId) return json({ error: "ticket is not awaiting input" }, 409);
+
       const { answers } = (await request.json().catch(() => ({}))) as {
         answers?: Record<string, unknown>;
       };
@@ -140,11 +164,14 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/(accept|request-changes)$/,
     auth: "master",
     async handler({ request, env, ctx, match }) {
-      const rec = await getTicket(env, match[1]);
-      if (!rec) return json({ error: "not found" }, 404);
-      if (rec.status !== "awaiting-acceptance") {
-        return json({ error: "ticket is not awaiting acceptance" }, 409);
-      }
+      const found = await ticketInState(
+        env,
+        match[1],
+        ["awaiting-acceptance"],
+        () => "ticket is not awaiting acceptance",
+      );
+      if (!found.ok) return found.response;
+
       const { comment } = (await request.json().catch(() => ({}))) as { comment?: string };
       const accept = match[2] === "accept";
       if (!accept && !comment?.trim()) {
@@ -170,7 +197,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/attach$/,
     auth: "master",
     async handler({ request, env, ctx, url, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).tickets.get(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
       if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
@@ -203,7 +230,7 @@ export const ticketRoutes: Route[] = [
     async handler({ env, match }) {
       const stored = await env.TICKETS.get(`activity:${match[1]}`);
       if (stored) return new Response(stored, { headers: { "content-type": "application/json" } });
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).tickets.get(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       // The def path writes activity:<id> on every attempt, so an uncached
       // read just means the first stage hasn't finished yet.
@@ -216,7 +243,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/output$/,
     auth: "master",
     async handler({ env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).tickets.get(match[1]);
       if (!rec?.runId) return json({ output: null, note: "no run yet" });
       // Flue-first: the stage session runs in the Worker (no on-disk event
       // stream). Live signal = the live: snapshot (phase/note from onStage);
@@ -249,8 +276,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/notifications$/,
     auth: "master",
     async handler({ env, match }) {
-      const { listNotifications } = await import("../notifications");
-      return json({ notifications: await listNotifications(env, match[1]) });
+      return json({ notifications: await db(env).notifications.list(match[1]) });
     },
   },
   {
@@ -282,7 +308,7 @@ export const ticketRoutes: Route[] = [
     method: "GET",
     path: /^\/tickets\/([a-z0-9-]+)\/traces$/,
     auth: "master",
-    handler: async ({ env, match }) => json(await listTraceIndex(env, match[1])),
+    handler: async ({ env, match }) => json(await db(env).traces.list(match[1])),
   },
   {
     // Trace bodies: R2 first; legacy KV fallback (pre-blob-plane archives).

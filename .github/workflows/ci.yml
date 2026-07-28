@@ -53,8 +53,18 @@ jobs:
 
       # --reporter=json feeds the HTML report below; the default reporter still
       # prints to the log so a failure is readable without downloading anything.
+      # --coverage writes Istanbul data that the audit job consumes for accurate
+      # CRAP scoring (without it every function scores as 0% covered).
       - name: Test
-        run: bun run test --reporter=default --reporter=json --outputFile=reports/.vitest.json
+        run: bun run test --coverage --reporter=default --reporter=json --outputFile=reports/.vitest.json
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/coverage-final.json
+          retention-days: 3
 
       # Per-package floors from health-baseline.json. A new package with no
       # recorded floor must score >= 90.
@@ -76,9 +86,25 @@ jobs:
       # --no-tests reuses the JSON from the test step instead of re-running.
       # --markdown puts the digest on stdout and progress on stderr, so the
       # redirect captures only the summary.
+      # --assets (which rewrites the tracked README badge/graph/history) is added
+      # ONLY on main. On a PR it would rewrite three tracked files that main also
+      # rewrites, so every PR would arrive conflicting in exactly those files.
       - name: Quality report
         if: always()
-        run: node scripts/report.mjs --no-tests --markdown >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          assets=""
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            assets="--assets"
+          fi
+          # tee: the digest goes to the run page AND into the artifact, where the
+          # comment workflow picks it up.
+          node scripts/report.mjs --no-tests --markdown $assets | tee reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The comment workflow runs on workflow_run, where the PR number is not
+      # reliably available (notably for forks), so record it here.
+      - name: Record PR number
+        if: always() && github.event_name == 'pull_request'
+        run: echo "${{ github.event.pull_request.number }}" > reports/pr-number.txt
 
       - name: Upload report
         if: always()
@@ -137,9 +163,18 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
+      # CRAP = cyclomatic² × (1−coverage)³ + cyclomatic. Without coverage data
+      # fallow assumes 0%, so a cyc=5 function scores 30 and trips the default
+      # threshold purely for looking untested. Generated here rather than pulled
+      # from the check job's artifact so this job stays independently runnable.
+      - name: Coverage
+        run: bun run test --coverage --silent
+
       # Gates on findings the changeset INTRODUCED, not inherited debt — so a
       # PR touching worker/ isn't blocked by the circular deps Phase 5 exists
       # to fix.
+      # The `audit` script already passes --coverage; repeating it here is a
+      # "cannot be used multiple times" error.
       - name: Audit
         run: bun run audit
         env:

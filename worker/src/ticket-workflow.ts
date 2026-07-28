@@ -16,11 +16,14 @@ import { workflowDef } from "@workhorse/workflow";
 import { runWorkflowDef, type DefRunResult } from "./workflow-run";
 import { unconsumedEvents, consumeEvents } from "./events";
 import { fireHook } from "./plugins";
-import { getTicket, insertEscalation, insertTraceIndex, patchTicket } from "./db";
+import { STAGE_RUNWAY_MS } from "@workhorse/auth";
+import { modelToken } from "./auth";
+import { db } from "./db";
+import { renderNotifications } from "./notifications";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
-  const r = await patchTicket(env, id, patch);
+  const r = await db(env).tickets.patch(id, patch);
   if (!r) return;
   // Lifecycle hook: plugins react to transitions (e.g. slack posts into
   // the ticket's thread). Best-effort by contract.
@@ -44,12 +47,7 @@ const MAX_REVISIONS = 20;
  * custodian-pushed token from KV instead.
  */
 async function freshToken(env: Env, fallback: string): Promise<string> {
-  const stored = await env.TICKETS.get("auth:access");
-  if (stored) {
-    const parsed = JSON.parse(stored) as { access: string; expires: number };
-    if (parsed.expires - Date.now() > 5 * 60 * 1000) return parsed.access;
-  }
-  return fallback;
+  return (await modelToken(env).usable(STAGE_RUNWAY_MS)) ?? fallback;
 }
 
 /** Live observability snapshot pushed to KV after every phase/burst. */
@@ -79,7 +77,7 @@ async function recordEscalation(
   runId: string,
   event: Omit<EscalationEvent, "at">,
 ): Promise<void> {
-  await insertEscalation(env, {
+  await db(env).escalations.insert({
     ticketId,
     runId,
     trigger: event.trigger,
@@ -105,18 +103,7 @@ async function archiveTrace(
 ): Promise<void> {
   try {
     const at = new Date().toISOString();
-    const { results } = await env.DB.prepare(
-      "SELECT trigger_kind, detail, stage, to_model, at FROM escalations WHERE ticket_id = ? AND run_id = ? ORDER BY at",
-    )
-      .bind(ticketId, runId)
-      .all<{ trigger_kind: string; detail: string; stage: string | null; to_model: string | null; at: string }>();
-    const escalations = (results ?? []).map((r) => ({
-      trigger: r.trigger_kind,
-      detail: r.detail,
-      stage: r.stage ?? undefined,
-      toModel: r.to_model ?? undefined,
-      at: r.at,
-    }));
+    const escalations = await db(env).escalations.forRun(ticketId, runId);
     // Trace BODY is an immutable R2 blob (no KV size ceiling); the
     // queryable INDEX is D1.
     await env.BLOBS.put(
@@ -130,7 +117,7 @@ async function archiveTrace(
         activity: JSON.parse(activity),
       }),
     );
-    await insertTraceIndex(env, { ticketId, runId, kind, archivedAt: at });
+    await db(env).traces.insert({ ticketId, runId, kind, archivedAt: at });
     // Lifecycle hook: plugins react to archived traces (e.g. knowledge
     // distills + indexes the run for fleet search). Best-effort by contract.
     await fireHook(env, env.SELF_URL ?? "", "onTraceArchived", {
@@ -248,6 +235,21 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
             task: opts.prompt,
             inputs: t.inputs,
             model: t.model,
+            // Notification read point. Stages declaring notifications: "read"
+            // (enrich, therapist) get the unread queue injected and consume it.
+            // This was previously unwired: the stages declared the read point,
+            // the engine supported it, and nothing supplied the reader — so
+            // operator input queued during a run was never delivered to a stage.
+            readNotifications: async () => {
+              const queued = await db(this.env).notifications.unread(t.id);
+              if (!queued.length) return null;
+
+              // Mark read only after rendering: a stage that fails mid-run
+              // should not silently swallow the operator's message.
+              const rendered = renderNotifications(queued);
+              await db(this.env).notifications.markRead(t.id, queued[queued.length - 1].seq);
+              return rendered;
+            },
             onStage: async (s) => {
               const phase = /^(verify|fix)/.test(s.id) ? "ready-for-review" : "implementing";
               if (s.status === "running") await updateTicket(this.env, t.id, { status: phase });
@@ -355,7 +357,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
 
     // --- healing resume: skip completed phases recorded on the ticket ---
     if (t.resume) {
-      const rec = await step.do("read-resume-state", async () => getTicket(this.env, t.id));
+      const rec = await step.do("read-resume-state", async () => db(this.env).tickets.get(t.id));
       if (rec?.prUrl) {
         // Work was already delivered — jump straight back to the
         // park ↔ revise loop; pending events (if any) wake immediately.
@@ -489,9 +491,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       // Feedback = wake events + everything queued on the notification bus
       // since the last read point (acknowledge-collate semantics).
       const feedback = await step.do(`revise-feedback-${round}`, async () => {
-        const { unreadNotifications, markNotificationsRead } = await import("./notifications");
-        const queued = await unreadNotifications(this.env, t.id);
-        if (queued.length) await markNotificationsRead(this.env, t.id, queued[queued.length - 1].seq);
+        const queued = await db(this.env).notifications.unread(t.id);
+        if (queued.length) await db(this.env).notifications.markRead(t.id, queued[queued.length - 1].seq);
         return [
           ...events.map((e) => `- [${e.kind}] ${e.summary}`),
           ...queued.map((n) => `- [${n.source}${n.author ? ` · ${n.author}` : ""}] ${n.body.slice(0, 1500)}`),

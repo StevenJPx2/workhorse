@@ -14,6 +14,14 @@
 //   node scripts/report.mjs --no-tests  reuse existing test results
 //   node scripts/report.mjs --markdown  ALSO print a markdown digest to stdout,
 //                                       for >> $GITHUB_STEP_SUMMARY
+//   node scripts/report.mjs --assets    ALSO rewrite the COMMITTED README badge,
+//                                       trend SVG, and history series
+//
+// --assets is opt-in and used only by CI on main. Without it, three tracked files
+// (README.md, reports/health.svg, reports/history.json) would be rewritten on
+// every branch that ran a report — and since CI also rewrites them on main, every
+// PR would arrive conflicting in exactly those files. Generated artifacts should
+// have ONE writer.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -27,6 +35,7 @@ const historyPath = join(outDir, "history.json");
 const args = new Set(process.argv.slice(2));
 const skipTests = args.has("--no-tests");
 const wantMarkdown = args.has("--markdown");
+const wantAssets = args.has("--assets");
 
 // The HTML page is the artifact; markdown goes to stdout for the job summary.
 // So in markdown mode every progress line must go to stderr, or it lands in the
@@ -115,6 +124,9 @@ const entry = {
 const sameSha = history.findIndex((h) => h.sha === git.sha);
 if (sameSha === -1) history.push(entry);
 else history[sameSha] = entry;
+
+// The in-memory series always includes this run so the HTML shows current
+// numbers; whether it is PERSISTED depends on --assets.
 
 // ---- render helpers ---------------------------------------------------------
 
@@ -641,18 +653,21 @@ function markdown() {
 // ---- write ------------------------------------------------------------------
 
 mkdirSync(outDir, { recursive: true });
-writeFileSync(historyPath, `${JSON.stringify(history, null, 2)}\n`);
 
+// Always written; gitignored.
 const outPath = join(outDir, "index.html");
 writeFileSync(outPath, html);
 
-// README assets — these ARE committed, unlike index.html. The trend graph and
-// badge only mean anything as a series, so they have to live in git.
-writeFileSync(join(outDir, "health.svg"), trendSvg());
-writeFileSync(join(outDir, "badge.json"), `${JSON.stringify(badgeJson(), null, 2)}\n`);
+// Tracked files. Written ONLY under --assets so that the single writer is CI on
+// main — see the --assets note at the top of this file.
+if (wantAssets) {
+  writeFileSync(historyPath, `${JSON.stringify(history, null, 2)}\n`);
+  writeFileSync(join(outDir, "health.svg"), trendSvg());
+  writeFileSync(join(outDir, "badge.json"), `${JSON.stringify(badgeJson(), null, 2)}\n`);
 
-const readmeChanged = updateReadme(readmeTable());
-if (readmeChanged) log("  README.md updated");
+  if (updateReadme(readmeTable())) log("  README.md updated");
+  log("  committed assets refreshed (history, health.svg, badge.json)");
+}
 
 log(`\n  ${outPath}`);
 log(`  ${history.length} run${history.length === 1 ? "" : "s"} recorded · ${allGreen ? "all green" : "needs attention"}\n`);

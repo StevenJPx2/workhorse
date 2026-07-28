@@ -4,7 +4,8 @@
 // and Sandbox DO classes, which wrangler wires directly).
 
 import type { Env } from "@workhorse/api";
-import { listTickets } from "./db";
+import { permits, resolveTiers } from "@workhorse/auth";
+import { db } from "./db";
 import { healTicket } from "./heal";
 import { coreFor, routeFor } from "./plugins";
 import { dispatch, type Route } from "./router";
@@ -34,24 +35,25 @@ const routes: Route[] = [
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const auth = request.headers.get("authorization") ?? "";
-    const master = auth === `Bearer ${env.SPIKE_TOKEN}`;
-    // Scoped tier: the token injected into ticket sandboxes (untrusted repo
-    // code runs there — it must never hold the fleet master key).
-    const scoped = master || (!!env.BROWSER_TOKEN && auth === `Bearer ${env.BROWSER_TOKEN}`);
+    // Scoped tier: the token injected into ticket sandboxes (untrusted repo code
+    // runs there — it must never hold the fleet master key). Comparison is
+    // constant-time; see @workhorse/auth.
+    const tiers = resolveTiers(request.headers.get("authorization"), {
+      master: env.SPIKE_TOKEN,
+      scoped: env.BROWSER_TOKEN,
+    });
 
-    const hit = dispatch(routes, { request, env, ctx, url }, { scoped, master });
+    const hit = dispatch(routes, { request, env, ctx, url }, tiers);
     if (hit) return hit;
 
     // Plugin-contributed routes (declared auth tier per route).
     const pluginRoute = routeFor(request.method, url.pathname);
     if (pluginRoute) {
-      const ok = pluginRoute.auth === "scoped" ? scoped : master;
-      if (!ok) return new Response("unauthorized", { status: 401 });
+      if (!permits(pluginRoute.auth, tiers)) return new Response("unauthorized", { status: 401 });
       return pluginRoute.handler(request, env, ctx, coreFor(env, url.origin));
     }
 
-    if (!master) return new Response("unauthorized", { status: 401 });
+    if (!tiers.master) return new Response("unauthorized", { status: 401 });
     return new Response(
       "workhorse: POST /tickets {title,repo,prompt} | GET /tickets | GET /tickets/:id | GET /workflows | GET /agents",
     );
@@ -64,7 +66,7 @@ export default {
       // Heals: one query instead of a full KV scan; 5-min quiet window
       // (avoids racing a deploy or a human investigating).
       const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const errored = await listTickets(env, "errored");
+      const errored = await db(env).tickets.list("errored");
       for (const rec of errored) {
         if (rec.updatedAt >= cutoff) continue;
         const res = await healTicket(env, rec.id);

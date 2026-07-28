@@ -21,6 +21,8 @@
     "plugins/todo": 100,
     "ui": 87.2,
     "worker": 62.3,
-    "packages/test-utils": 100
+    "packages/test-utils": 100,
+    "packages/auth": 100,
+    "packages/db": 98.1
   }
 }

@@ -3,17 +3,13 @@
 
 import type { Env } from "@workhorse/api";
 import { workflowDef, workflowDefs } from "@workhorse/workflow";
-import { backfillFromKV } from "../db";
+import { modelToken } from "../auth";
 import { json, type Route } from "../router";
 
 export const registryRoutes: Route[] = [
   // ---- admin maintenance ----
-  {
-    method: "POST",
-    path: "/admin/backfill-d1",
-    auth: "master",
-    handler: async ({ env }) => json(await backfillFromKV(env)),
-  },
+  // POST /admin/backfill-d1 is gone: it was a one-time KV→D1 import that has
+  // already run, and it was the highest-complexity function in the old db layer.
   {
     method: "POST",
     path: "/admin/reindex-semindex",
@@ -117,8 +113,8 @@ export const registryRoutes: Route[] = [
     auth: "master",
     async handler({ request, env }) {
       const { access, expires } = (await request.json()) as { access: string; expires: number };
-      if (!access?.startsWith("sk-ant-oat")) return json({ error: "not an oauth access token" }, 400);
-      await env.TICKETS.put("auth:access", JSON.stringify({ access, expires }));
+      const r = await modelToken(env).write({ access, expires });
+      if (!r.ok) return json({ error: r.error }, 400);
       return json({ ok: true, expires });
     },
   },
@@ -129,16 +125,7 @@ export const registryRoutes: Route[] = [
     method: "GET",
     path: "/token",
     auth: "master",
-    async handler({ env }) {
-      const stored = await env.TICKETS.get("auth:access");
-      if (!stored) return json({ present: false, state: "missing", minutesRemaining: null, expires: null });
-      const { expires } = JSON.parse(stored) as { access: string; expires: number };
-      const msLeft = (expires || 0) - Date.now();
-      const minutesRemaining = expires ? Math.round(msLeft / 60000) : null;
-      // expires=0 means "no runway info" — treat as usable (see fileTicket).
-      const state = !expires ? "unknown" : msLeft <= 0 ? "expired" : msLeft < 10 * 60_000 ? "expiring" : "fresh";
-      return json({ present: true, state, minutesRemaining, expires: expires || null });
-    },
+    handler: async ({ env }) => json(await modelToken(env).health()),
   },
 
   // ---- editor metadata (models + tool catalog for UI dropdowns) ----
