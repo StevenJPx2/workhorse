@@ -165,7 +165,9 @@ jobs:
       # Gates on findings the changeset INTRODUCED, not inherited debt — so a
       # PR touching worker/ isn't blocked by the circular deps Phase 5 exists
       # to fix.
+      # The `audit` script already passes --coverage; repeating it here is a
+      # "cannot be used multiple times" error.
       - name: Audit
-        run: bun run audit --coverage coverage/coverage-final.json
+        run: bun run audit
         env:
           FALLOW_AUDIT_BASE: ${{ github.event.pull_request.base.sha }}
