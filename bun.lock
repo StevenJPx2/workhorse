@@ -50,12 +50,23 @@
         "typescript": "^7.0.2",
       },
     },
+    "packages/test-utils": {
+      "name": "@workhorse/test-utils",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260714.1",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/workflow": {
       "name": "@workhorse/workflow",
       "version": "0.1.0",
       "devDependencies": {
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
-        "vitest": "^4.0.18",
       },
     },
     "plugins/aft": {
@@ -208,6 +219,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
@@ -1221,6 +1233,8 @@
     "@workhorse/semindex": ["@workhorse/semindex@workspace:packages/semindex"],
 
     "@workhorse/slack": ["@workhorse/slack@workspace:plugins/slack"],
+
+    "@workhorse/test-utils": ["@workhorse/test-utils@workspace:packages/test-utils"],
 
     "@workhorse/tickets": ["@workhorse/tickets@workspace:plugins/tickets"],
 

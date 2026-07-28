@@ -23,7 +23,8 @@
     "check": "bun run lint && bun run typecheck && bun run health",
     "deploy": "cd worker && bun run deploy",
     "dev": "cd worker && bun run dev",
-    "test": "bun run --filter \"*\" test",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "eval": "cd evals && bun run eval:ci"
   },
   "devDependencies": {

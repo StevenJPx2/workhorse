@@ -8,11 +8,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
-    "vitest": "^4.0.18"
+    "@workhorse/test-utils": "workspace:*",
+    "typescript": "^7.0.2"
   }
 }

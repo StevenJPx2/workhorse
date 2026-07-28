@@ -79,12 +79,17 @@ function readScore(raw) {
  * Run fallow health for one package. Fallow exits 1 when it has findings (not
  * a crash) and still writes the JSON document to stdout, so both the success
  * and the throw path parse the same payload.
+ *
+ * `--production` excludes test/story/dev files from scoring. Without it,
+ * adding tests would read as adding debt (more files, more units, more
+ * duplication between similar test cases) and every recorded floor would shift
+ * the moment a package gained coverage. Health scores the SHIPPED code.
  */
 function scorePackage(pkgDir) {
   const run = () =>
     execFileSync(
       "bunx",
-      ["fallow", "health", "--score", "--root", pkgDir, "--format", "json", "--quiet"],
+      ["fallow", "health", "--score", "--production", "--root", pkgDir, "--format", "json", "--quiet"],
       { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
     );
   try {

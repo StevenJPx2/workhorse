@@ -1,0 +1,21 @@
+{
+  "name": "@workhorse/test-utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Testing layer for the Workhorse platform. Domain-separated subpaths: /tools (ToolContext doubles), /workflow (scripted WorkflowContext harness). Test-only — never imported by runtime code.",
+  "exports": {
+    "./tools": "./src/tools/index.ts",
+    "./workflow": "./src/workflow/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}
