@@ -1,5 +1,5 @@
-import { type Script, scripts } from "../../schema";
-import type { Conn } from "../bind";
+import { type Script, scripts } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /**
  * Register or rewrite a script.

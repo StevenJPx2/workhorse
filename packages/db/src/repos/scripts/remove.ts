@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { scripts } from "../../schema";
-import type { Conn } from "../bind";
+import { scripts } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /** Delete one script; true when a row was actually removed. */
 export async function remove(d: Conn, scope: string, name: string): Promise<boolean> {

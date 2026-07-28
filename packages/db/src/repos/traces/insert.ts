@@ -1,5 +1,5 @@
-import { traces } from "../../schema";
-import type { Conn } from "../bind";
+import { traces } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /**
  * Index an archived trace. Idempotent on (ticketId, runId): re-archiving the

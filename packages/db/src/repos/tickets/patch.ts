@@ -1,5 +1,5 @@
 import type { TicketRecord } from "@workhorse/api";
-import type { Conn } from "../bind";
+import type { Conn } from "#repos/bind";
 import { get } from "./get";
 import { put } from "./put";
 

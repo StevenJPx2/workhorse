@@ -5,7 +5,7 @@
 import type { TicketRecord } from "@workhorse/api";
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createDb, type Db } from "../../../db";
+import { createDb, type Db } from "#db";
 
 const ticket = (over: Partial<TicketRecord> = {}): TicketRecord => ({
   id: "t1",

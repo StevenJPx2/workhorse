@@ -1,7 +1,7 @@
 import type { TicketRecord } from "@workhorse/api";
 import { desc, eq } from "drizzle-orm";
-import { type TicketStatus, tickets } from "../../schema";
-import type { Conn } from "../bind";
+import { type TicketStatus, tickets } from "#schema";
+import type { Conn } from "#repos/bind";
 import { toTicketRecord } from "./map";
 
 /** Tickets newest first, optionally filtered by status. */

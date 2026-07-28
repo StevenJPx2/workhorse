@@ -3,8 +3,8 @@
 
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createDb, type Db } from "../../../db";
-import type { Script } from "../../../schema";
+import { createDb, type Db } from "#db";
+import type { Script } from "#schema";
 
 const script = (over: Partial<Script> = {}): Script => ({
   scope: "global",

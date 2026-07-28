@@ -1,6 +1,6 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
-import { notifications } from "../../schema";
-import type { Conn } from "../bind";
+import { notifications } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /** Mark notifications read up to a seq (a read point consumed them). */
 export async function markRead(d: Conn, ticketId: string, upToSeq: number): Promise<void> {

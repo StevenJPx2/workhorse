@@ -1345,6 +1345,7 @@ substitutes for one real end-to-end run.
 | Phase ordering | **Hybrid** — stable packages (db, auth) first, then primitives, then the rest |
 | `@workhorse/db` / `@workhorse/auth` shape | **Class with dependency injection** — constructed once, injected; avoids repeated instantiation |
 | db internal structure | **Function per file, bound into repos** — `src/schema/<table>.ts` defines the table; `src/repos/<table>/<operation>.ts` is one plain function taking the connection first; `bind()` applies it and DERIVES the repo type. Surfaced as `db.tickets.list()`. No hand-written interface (it would drift), no base class (it held one field), and adding an operation touches only its own directory. One shared drizzle instance across all repos. |
+| Intra-package imports | **Node subpath imports (`#schema`, `#repos/bind`, `#db`)** wherever a relative path would climb two or more levels. Operations sit three deep, so the alternative was `../../schema` — which names a distance rather than a thing, and breaks on every move. Declared in each package's `imports` field, so they are package-private (`#` cannot be imported from outside) and need no bundler alias: tsc, vite, and workerd all resolve them natively. Single-level `../` stays as-is — it is readable and stable. |
 | `.config/` directory | **Tabled** — no tool in the stack auto-discovers it, and moving `.fallowrc.json` would break per-package health scoping. See Tentative. |
 | db visual simulation | **Drizzle Studio** |
 | Linting | **oxlint** (correctness category as error) |

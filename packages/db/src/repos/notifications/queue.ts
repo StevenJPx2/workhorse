@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { type Notification, notifications } from "../../schema";
-import type { Conn } from "../bind";
+import { type Notification, notifications } from "#schema";
+import type { Conn } from "#repos/bind";
 import { MAX_BODY, type NotificationDraft } from "./types";
 
 /**

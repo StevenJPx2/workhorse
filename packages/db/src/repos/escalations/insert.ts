@@ -1,5 +1,5 @@
-import { escalations, type NewEscalation } from "../../schema";
-import type { Conn } from "../bind";
+import { escalations, type NewEscalation } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /**
  * Record a model swap. Repeated identical escalations are kept: two 429s in one

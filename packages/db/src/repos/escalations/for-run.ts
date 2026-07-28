@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { escalations } from "../../schema";
-import type { Conn } from "../bind";
+import { escalations } from "#schema";
+import type { Conn } from "#repos/bind";
 import type { EscalationEntry } from "./types";
 
 /** Every escalation for one run, chronological — the trace's model history. */

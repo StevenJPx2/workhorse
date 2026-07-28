@@ -1,7 +1,7 @@
 import type { TicketRecord } from "@workhorse/api";
 import { eq } from "drizzle-orm";
-import { tickets } from "../../schema";
-import type { Conn } from "../bind";
+import { tickets } from "#schema";
+import type { Conn } from "#repos/bind";
 import { toTicketRecord } from "./map";
 
 /** One ticket, or null when it does not exist. */

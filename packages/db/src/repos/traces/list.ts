@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { traces } from "../../schema";
-import type { Conn } from "../bind";
+import { traces } from "#schema";
+import type { Conn } from "#repos/bind";
 import type { TraceIndexEntry } from "./types";
 
 /** A ticket's traces, oldest archive first. */

@@ -1,6 +1,6 @@
 import type { TicketRecord } from "@workhorse/api";
-import { tickets } from "../../schema";
-import type { Conn } from "../bind";
+import { tickets } from "#schema";
+import type { Conn } from "#repos/bind";
 import { toTicketRow } from "./map";
 
 /** Insert or fully replace a ticket. */

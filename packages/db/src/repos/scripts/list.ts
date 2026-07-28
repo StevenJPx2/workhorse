@@ -1,6 +1,6 @@
 import { desc, inArray } from "drizzle-orm";
-import { type Script, scripts } from "../../schema";
-import type { Conn } from "../bind";
+import { type Script, scripts } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /**
  * Scripts visible to a repo: its own scope plus global, with the repo-scoped one

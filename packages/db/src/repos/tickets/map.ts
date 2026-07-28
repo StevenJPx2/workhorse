@@ -6,7 +6,7 @@
 // a forgotten field shows up as a type error instead of a silently dropped value.
 
 import type { TicketRecord } from "@workhorse/api";
-import type { Ticket } from "../../schema";
+import type { Ticket } from "#schema";
 
 const NULLABLE_FIELDS = [
   "plan",

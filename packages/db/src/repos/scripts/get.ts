@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { type Script, scripts } from "../../schema";
-import type { Conn } from "../bind";
+import { type Script, scripts } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /** One script by its (scope, name) identity. */
 export async function get(d: Conn, scope: string, name: string): Promise<Script | null> {

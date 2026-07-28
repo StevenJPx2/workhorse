@@ -1,6 +1,6 @@
 import { desc, max } from "drizzle-orm";
-import { tickets } from "../../schema";
-import type { Conn } from "../bind";
+import { tickets } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /** Repos seen in the fleet, most recently used first (home-page chips). */
 export async function knownRepos(d: Conn, limit = 20): Promise<string[]> {

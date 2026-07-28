@@ -7,7 +7,7 @@
 // derivation ever stops narrowing.
 
 import { describe, expect, it } from "vitest";
-import { bind, type Conn } from "../bind";
+import { bind, type Conn } from "#repos/bind";
 
 /** Stand-in connection — the binder never inspects it, only forwards it. */
 const conn = { marker: "conn" } as unknown as Conn;

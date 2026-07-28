@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { type Notification, notifications } from "../../schema";
-import type { Conn } from "../bind";
+import { type Notification, notifications } from "#schema";
+import type { Conn } from "#repos/bind";
 
 /** Full queue including read receipts, newest first (for the UI). */
 export async function list(d: Conn, ticketId: string, limit = 100): Promise<Notification[]> {
