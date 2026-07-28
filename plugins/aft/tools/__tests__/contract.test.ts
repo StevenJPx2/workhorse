@@ -137,15 +137,79 @@ describe.skipIf(!ENABLED)("aft contract", () => {
     expect(String(zoom.message)).toContain("missing required param 'file'");
   }, 60_000);
 
-  it("does NOT implement 'search' or 'edit' as commands", async () => {
-    // Two of our five tools (aft_search, aft_edit) have no counterpart at all
-    // under this protocol — they need a different command name or a different
-    // mechanism entirely.
+  it("has no 'search' or 'edit' command — search is 'grep', and edit does not exist", async () => {
     for (const command of ["search", "edit"]) {
       const reply = await rpc({ id: "1", command });
       expect(reply.code, command).toBe("unknown_command");
     }
   }, 60_000);
+
+  it("'grep' is the search backend — and it is REGEX, not AST", async () => {
+    const regex = await rpc({ id: "1", command: "grep", pattern: "defineTool|defineAgent" });
+    expect(regex.success).toBe(true);
+    expect(Number(regex.total_matches)).toBeGreaterThan(0);
+
+    // ast-grep meta-variables match literally and find nothing. aft_search
+    // previously documented them as supported.
+    const ast = await rpc({ id: "1", command: "grep", pattern: "defineTool($$$)" });
+    expect(ast.total_matches).toBe(0);
+  }, 60_000);
+
+  it("SILENTLY IGNORES unknown params — a made-up filter looks like it works", async () => {
+    const bogus = await rpc({ id: "1", command: "grep", pattern: "tool", totally_bogus_param: "x" });
+
+    // ACCEPTED, not rejected — that is the hazard. This is why aft_search must
+    // not offer a `lang` filter: it would appear scoped while searching
+    // everything. (files_searched is not compared: it varies run to run as the
+    // index warms, so equality would be flaky.)
+    expect(bogus.success).toBe(true);
+    expect(bogus.code).toBeUndefined();
+  }, 60_000);
+
+  it("only 'path' actually narrows a grep", async () => {
+    const all = await rpc({ id: "1", command: "grep", pattern: "tool" });
+    const scoped = await rpc({ id: "1", command: "grep", pattern: "tool", path: "packages" });
+
+    expect(Number(scoped.files_searched)).toBeLessThan(Number(all.files_searched));
+  }, 60_000);
+
+  it("file and directory params are NOT interchangeable", async () => {
+    const dirAsFile = await rpc({ id: "1", command: "outline", file: "packages/api/src" });
+    expect(dirAsFile.success).toBe(false);
+    expect(String(dirAsFile.message)).toContain("Is a directory");
+
+    const fileAsDir = await rpc({ id: "1", command: "outline", directory: "packages/api/src/plugin.ts" });
+    expect(fileAsDir.success).toBe(false);
+  }, 60_000);
+
+  it("inspect works once configure precedes it in the SAME stream", async () => {
+    const child = exec(AFT!, [], { cwd: REPO, timeout: 180_000, maxBuffer: 20 * 1024 * 1024 });
+    child.child.stdin?.end(
+      `${JSON.stringify({ id: "1", command: "configure", harness: "runner", project_root: REPO })}\n` +
+        `${JSON.stringify({ id: "2", command: "inspect" })}\n`,
+    );
+
+    const { stdout } = await child;
+    const lines = stdout
+      .split("\n")
+      .filter((l) => l.trim().startsWith("{"))
+      .map((l) => JSON.parse(l) as Record<string, unknown>);
+
+    // AFT interleaves UNSOLICITED notification lines between replies — this
+    // stream carries a {"type":"configure_warnings"} line with no id. Replies
+    // must therefore be matched BY ID, which is what aftSequence does;
+    // positional pairing would hand request 2 the notification.
+    const notification = lines.find((l) => l.type === "configure_warnings");
+    expect(notification, "aft emits configure_warnings between replies").toBeDefined();
+    expect(notification?.id).toBeUndefined();
+
+    // configure only applies to the process it ran in, so a separate exec
+    // would lose it — the reason aftSequence exists.
+    expect(lines.find((l) => l.id === "1")?.success).toBe(true);
+    const inspected = lines.find((l) => l.id === "2");
+    expect(inspected?.success).toBe(true);
+    expect(inspected?.summary).toBeDefined();
+  }, 240_000);
 
   it("requires 'configure' before inspect", async () => {
     const reply = await rpc({ id: "1", command: "inspect" });

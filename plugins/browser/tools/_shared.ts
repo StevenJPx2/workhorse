@@ -72,3 +72,19 @@ export function field(raw: string, ...names: string[]): string | undefined {
   }
   return undefined;
 }
+
+/**
+ * Read one numeric field (e.g. `record stop` reports `data.frames`).
+ *
+ * Separate from field() because that one filters to strings — a number would
+ * come back undefined there, which is how a frame count silently disappears.
+ */
+export function numField(raw: string, ...names: string[]): number | undefined {
+  const data = unwrap(raw);
+  if (!data) return undefined;
+  for (const name of names) {
+    const v = data[name];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+  }
+  return undefined;
+}

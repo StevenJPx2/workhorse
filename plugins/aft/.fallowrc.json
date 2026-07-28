@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/fallow/schema.json",
+  "entry": ["plugin.ts"],
+  "ignoreExports": [
+    {
+      "file": "tools/_shared.ts",
+      "comment": "aftRequest is the single-request transport, exercised directly by the transport tests. Tools use aft()/aftSequence(); keeping it exported lets the protocol be tested without going through a tool.",
+      "exports": ["aftRequest"]
+    }
+  ]
+}

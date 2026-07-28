@@ -56,7 +56,9 @@ describe("tool surface", () => {
   it("derives the shipping surface from the real tool definitions", () => {
     const names = granular.map((t) => t.function.name).sort();
     expect(names).toEqual([
-      "aft_edit",
+      // No aft_edit: AFT's protocol has no symbol-level edit, and an aft-side
+      // write would bypass the writeAllow gate. Editing is the builtin
+      // edit/write tools' job.
       "aft_inspect",
       "aft_outline",
       "aft_search",

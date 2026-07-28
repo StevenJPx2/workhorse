@@ -1,6 +1,7 @@
 // Composition root: the ONLY place in the workspace that imports concrete
 // plugins. Everything else sees @workhorse/api interfaces.
 
+import { aftPlugin } from "@workhorse/aft";
 import { browserPlugin } from "@workhorse/browser";
 import { githubPlugin } from "@workhorse/github";
 import { imgupPlugin } from "@workhorse/imgup";
@@ -27,6 +28,7 @@ import { appendEvents, appendSteer, wakeTicket } from "./events";
 import { runFleetChat } from "./chat";
 
 export const plugins: WorkhorsePlugin[] = [
+  aftPlugin,
   browserPlugin,
   githubPlugin,
   imgupPlugin,

@@ -1,33 +1,40 @@
-// browser_record drives a real wall-clock frame loop (`while Date.now() -
-// started < durationMs`), so a faithful test would take as long as the
-// recording. Instead we install a VIRTUAL clock: setTimeout resolves on the
-// next macrotask but jumps Date.now() forward by the requested delay, so the
-// loop advances through simulated time instantly and deterministically.
+// browser_record now uses agent-browser's NATIVE record start/stop, so these
+// tests are about sequencing and conversion rather than a frame loop.
 //
-// vitest's fake timers can't do this — shouldAdvanceTime moves the mock clock
-// 1:1 with real time, so a 12s recording still costs 12s.
+// The one thing needing care is the wait between start and stop: it is a real
+// setTimeout, so the clock is stubbed to make it instant. vitest's fake timers
+// advance 1:1 with real time under shouldAdvanceTime, which would make a 30s
+// cap test actually take 30s.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runTool } from "@workhorse/test-utils/tools";
 import browser_record from "../browser_record";
 
+const STOPPED = JSON.stringify({ success: true, data: { frames: 106, path: "/tmp/x.webm" } });
+
 const okExec = {
   "mkdir -p": "",
-  "rm -rf": "",
-  screenshot: "{}",
-  eval: "{}",
-  ffmpeg: { exitCode: 0, stdout: "", stderr: "" },
-  "wc -c": "10240",
+  "rm -f": "",
+  "'record' 'start'": "{}",
+  "'record' 'stop'": STOPPED,
+  "'eval'": "{}",
+  ffmpeg: { exitCode: 0 },
+  "wc -c": "65536",
 };
 
 const realSetTimeout = globalThis.setTimeout;
 
+const record = (input: Record<string, unknown> = {}, exec = okExec) =>
+  runTool(browser_record, { savePath: "/out/demo.gif", ...input }, { sandbox: { exec } });
+
 describe("browser_record", () => {
   beforeEach(() => {
-    let virtualNow = 1_700_000_000_000;
-    vi.spyOn(Date, "now").mockImplementation(() => virtualNow);
+    // Virtual clock: setTimeout resolves on the next macrotask but jumps
+    // Date.now() forward, so a 30s recording completes instantly.
+    let now = 1_700_000_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
     vi.stubGlobal("setTimeout", (fn: () => void, ms = 0) => {
-      virtualNow += ms; // the delay "happens" instantly
+      now += ms;
       return realSetTimeout(fn, 0);
     });
   });
@@ -37,144 +44,126 @@ describe("browser_record", () => {
     vi.restoreAllMocks();
   });
 
-  it("assembles frames into a GIF at the requested path", async () => {
-    const { output, sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/demo.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
+  it("returns documentation for help without touching the browser", async () => {
+    const { output, sandbox } = await runTool(browser_record, { savePath: "/x.gif", help: true });
 
-    expect(sandbox.ranCommandContaining("ffmpeg")).toBe(true);
-    expect(output).toContain("/out/demo.gif");
+    expect(output).toContain("browser_record");
+    expect(sandbox.execCalls).toHaveLength(0);
   });
 
-  it("captures frames as sequentially numbered jpgs", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
+  it("uses the NATIVE record command, not a screenshot loop", async () => {
+    const { sandbox } = await record();
 
-    const shots = sandbox.execCalls.filter((c) => c.command.includes("screenshot"));
-    expect(shots.length).toBeGreaterThanOrEqual(2);
-    expect(shots[0].command).toContain("f000.jpg");
-    expect(shots[1].command).toContain("f001.jpg");
+    expect(sandbox.ranCommandContaining("'record' 'start'")).toBe(true);
+    expect(sandbox.ranCommandContaining("'record' 'stop'")).toBe(true);
+    // The old implementation took one screenshot per frame — dozens of execs.
+    expect(sandbox.ranCommandContaining("screenshot")).toBe(false);
   });
 
-  it("runs the setup script before capturing", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2, script: "window.scrollTo(0,500)" },
-      { sandbox: { exec: okExec } },
-    );
+  it("records to an intermediate .webm, not straight to the gif path", async () => {
+    const { sandbox } = await record();
 
-    const evalIdx = sandbox.execCalls.findIndex((c) => c.command.includes("'eval'"));
-    const shotIdx = sandbox.execCalls.findIndex((c) => c.command.includes("screenshot"));
-    expect(evalIdx).toBeGreaterThanOrEqual(0);
-    expect(evalIdx).toBeLessThan(shotIdx);
+    const start = sandbox.execCalls.find((c) => c.command.includes("'record' 'start'"))!.command;
+    expect(start).toContain(".webm");
+    expect(start).not.toContain(".gif");
   });
 
-  it("skips the eval step when no script is given", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
+  it("orders start → eval → stop so the scripted action is captured", async () => {
+    const { sandbox } = await record({ script: "window.scrollTo(0,800)" });
+
+    const idx = (fragment: string) => sandbox.execCalls.findIndex((c) => c.command.includes(fragment));
+    expect(idx("'record' 'start'")).toBeLessThan(idx("'eval'"));
+    expect(idx("'eval'")).toBeLessThan(idx("'record' 'stop'"));
+  });
+
+  it("skips eval when no script is given", async () => {
+    const { sandbox } = await record();
+
     expect(sandbox.ranCommandContaining("'eval'")).toBe(false);
   });
 
-  it("clamps fps to a maximum of 4", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 60 },
-      { sandbox: { exec: okExec } },
-    );
-    expect(sandbox.execCalls.find((c) => c.command.includes("ffmpeg"))?.command).toContain("-framerate 4");
-  });
-
-  it("clamps fps to a minimum of 1", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 3000, fps: 0 },
-      { sandbox: { exec: okExec } },
-    );
-    expect(sandbox.execCalls.find((c) => c.command.includes("ffmpeg"))?.command).toContain("-framerate 1");
-  });
-
-  it("defaults to 2 fps", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000 },
-      { sandbox: { exec: okExec } },
-    );
-    expect(sandbox.execCalls.find((c) => c.command.includes("ffmpeg"))?.command).toContain("-framerate 2");
-  });
-
-  it("caps duration at 12s worth of frames", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 600_000, fps: 4 },
-      { sandbox: { exec: okExec } },
-    );
-
-    // 12s at 4fps = 48 frames maximum, never the 2400 the input implies.
-    const shots = sandbox.execCalls.filter((c) => c.command.includes("screenshot"));
-    expect(shots.length).toBeLessThanOrEqual(48);
-  });
-
-  it("builds a palette-based ffmpeg filter for GIF quality", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
+  it("converts the webm to a gif — GitHub renders GIF inline, not WebM", async () => {
+    const { sandbox } = await record();
 
     const ff = sandbox.execCalls.find((c) => c.command.includes("ffmpeg"))!.command;
+    expect(ff).toContain(".webm");
+    expect(ff).toContain("/out/demo.gif");
     expect(ff).toContain("palettegen=max_colors=128");
-    expect(ff).toContain("paletteuse=dither=bayer");
     expect(ff).toContain("-loop 0");
   });
 
-  it("cleans up the frame directory on success", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
-    expect(sandbox.ranCommandContaining("rm -rf /tmp/whrec-")).toBe(true);
+  it("downscales and re-times for a sane gif size", async () => {
+    const { sandbox } = await record();
+
+    const ff = sandbox.execCalls.find((c) => c.command.includes("ffmpeg"))!.command;
+    expect(ff).toContain("fps=10");
+    expect(ff).toContain("scale=900:-1");
   });
 
-  it("reports frame count, fps, path, and size", async () => {
-    const { output } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
-    );
+  it("creates the output directory before converting", async () => {
+    const { sandbox } = await record();
 
-    expect(output).toMatch(/Recorded \d+ frames @ 2fps/);
-    expect(output).toContain("/out/a.gif");
-    expect(output).toContain("(10 KiB)");
+    expect(sandbox.execCalls[0].command).toBe("mkdir -p '/out'");
+  });
+
+  it("deletes the intermediate webm — it is several times the gif's size", async () => {
+    const { sandbox } = await record();
+
+    expect(sandbox.ranCommandContaining("rm -f")).toBe(true);
+  });
+
+  it("cleans up the webm even when conversion fails", async () => {
+    const { output, sandbox } = await record({}, { ...okExec, ffmpeg: { exitCode: 1, stderr: "codec missing" } });
+
+    expect(output).toContain("GIF conversion failed");
+    expect(output).toContain("codec missing");
+    expect(sandbox.ranCommandContaining("rm -f")).toBe(true);
+  });
+
+  it("reports duration, frame count, path, and size", async () => {
+    const { output } = await record({ durationMs: 5000 });
+
+    expect(output).toContain("5s");
+    // frames is a NUMBER in the reply; a string-only field reader drops it.
+    expect(output).toContain("106 frames");
+    expect(output).toContain("/out/demo.gif");
+    expect(output).toContain("(64 KiB)");
     expect(output).toContain("upload_image");
   });
 
-  it("reports a GIF assembly failure with stderr context and cleans up", async () => {
-    const { output, sandbox } = await runTool(
-      browser_record,
-      { savePath: "/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: { ...okExec, ffmpeg: { exitCode: 1, stderr: "codec missing" } } } },
-    );
+  it("omits the frame count when the reply lacks one", async () => {
+    const { output } = await record({}, { ...okExec, "'record' 'stop'": '{"success":true,"data":{}}' });
 
-    expect(output).toContain("GIF assembly failed");
-    expect(output).toContain("codec missing");
-    expect(sandbox.ranCommandContaining("rm -rf /tmp/whrec-")).toBe(true);
+    expect(output).toContain("/out/demo.gif");
+    expect(output).not.toContain("frames");
   });
 
-  it("creates the output directory before assembling", async () => {
-    const { sandbox } = await runTool(
-      browser_record,
-      { savePath: "/deep/out/a.gif", durationMs: 1000, fps: 2 },
-      { sandbox: { exec: okExec } },
+  it("caps the recording at 30s", async () => {
+    // Without the virtual clock this assertion would cost 30 real seconds.
+    const { output } = await record({ durationMs: 600_000 });
+
+    expect(output).toContain("30s");
+  });
+
+  it("floors a very short duration to 500ms rather than recording nothing", async () => {
+    const { output } = await record({ durationMs: 10 });
+
+    expect(output).toContain("1s");
+  });
+
+  it("defaults to 5s", async () => {
+    const { output } = await record();
+
+    expect(output).toContain("5s");
+  });
+
+  it("reports a start failure without attempting conversion", async () => {
+    const { output, sandbox } = await record(
+      {},
+      { ...okExec, "'record' 'start'": "error: recording already in progress" },
     );
-    expect(sandbox.ranCommandContaining("mkdir -p '/deep/out'")).toBe(true);
+
+    expect(output).toContain("failed to start");
+    expect(sandbox.ranCommandContaining("ffmpeg")).toBe(false);
   });
 });

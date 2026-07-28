@@ -254,6 +254,7 @@
       "dependencies": {
         "@cloudflare/sandbox": "^0.12.3",
         "@flue/runtime": "^1.0.0-beta.9",
+        "@workhorse/aft": "workspace:*",
         "@workhorse/api": "workspace:*",
         "@workhorse/browser": "workspace:*",
         "@workhorse/github": "workspace:*",
@@ -2808,8 +2809,6 @@
     "@vue/devtools-kit/hookable": ["hookable@5.5.3", "", {}, "sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ=="],
 
     "@workhorse/evals/autoevals": ["autoevals@0.0.131", "", { "dependencies": { "ajv": "^8.17.1", "compute-cosine-similarity": "^1.1.0", "js-levenshtein": "^1.1.6", "js-yaml": "^4.1.0", "linear-sum-assignment": "^1.0.7", "mustache": "^4.2.0", "openai": "^4.104.0", "zod": "^3.25.76", "zod-to-json-schema": "^3.24.6" } }, "sha512-F+3lraja+Ms7n1M2cpWl65N7AYx4sPocRW454H5HlSGabYMfuFOUxw8IXmEYDkQ38BxtZ0Wd5ZAQj9RF59YJWw=="],
-
-    "@workhorse/worker/@types/node": ["@types/node@26.1.1", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw=="],
 
     "ai/@ai-sdk/provider": ["@ai-sdk/provider@3.0.14", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-5X1k57JBJ4H7H1QjX7CnJYAB1I19r/trVZTMcSms7/kLNZ8RaU4Nt2agcwZzv82Hfx6Q7/TOLU7agAKeFfc8cA=="],
 

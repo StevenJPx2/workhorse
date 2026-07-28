@@ -31,13 +31,38 @@ async function servesBytes(url: string): Promise<boolean> {
   }
 }
 
-/** Run imgup for one host in the container; return the first URL it prints, or null. */
-async function uploadVia(sandbox: SandboxHandle, host: string, path: string): Promise<string | null> {
+/**
+ * imgup's exit code distinguishes two very different failures:
+ *   2 = it REJECTED our command line (clap parse error — unknown flag or host)
+ *   1 = it accepted the command line and the upload itself failed
+ *
+ * That difference matters: a rejected command line fails EVERY host identically,
+ * so treating it as "this host failed" would walk the whole chain and report
+ * "every host failed" when the real cause is that our invocation is malformed
+ * (e.g. imgup renamed a flag). One is a host problem; the other is our bug.
+ */
+const EXIT_BAD_INVOCATION = 2;
+
+type UploadResult =
+  | { kind: "url"; url: string }
+  | { kind: "no-url" }
+  | { kind: "failed"; detail: string }
+  | { kind: "bad-invocation"; detail: string };
+
+/** Run imgup for one host in the container and classify the outcome. */
+async function uploadVia(sandbox: SandboxHandle, host: string, path: string): Promise<UploadResult> {
   const q = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
   const r = await sandbox.exec(`${IMGUP_BIN} -H ${q(host)} -f plain --no-clipboard ${q(path)}`, { timeout: 90_000 });
-  if (r.exitCode !== 0) return null;
+
+  if (r.exitCode === EXIT_BAD_INVOCATION) {
+    return { kind: "bad-invocation", detail: (r.stderr || r.stdout).trim().slice(0, 300) };
+  }
+  if (r.exitCode !== 0) {
+    return { kind: "failed", detail: (r.stderr || r.stdout).trim().slice(-200) };
+  }
+
   const m = r.stdout.match(/https?:\/\/\S+/);
-  return m ? m[0] : null;
+  return m ? { kind: "url", url: m[0] } : { kind: "no-url" };
 }
 
 export default tool({
@@ -90,16 +115,37 @@ NOTES
     }
     const hosts = input.hosts?.length ? input.hosts : DEFAULT_HOSTS;
     const tried: string[] = [];
+
     for (const host of hosts) {
-      const url = await uploadVia(sandbox, host, input.path);
-      if (url && (await servesBytes(url))) {
+      const result = await uploadVia(sandbox, host, input.path);
+
+      // A rejected command line is OUR bug, not the host's — every remaining
+      // host would fail the same way, so stop and say what actually happened
+      // instead of burning the chain and blaming the hosts.
+      if (result.kind === "bad-invocation") {
+        return (
+          `upload_image: the imgup CLI rejected our command line (exit 2) — this is a tool bug, ` +
+          `not a host outage, and every host will fail identically. Detail: ${result.detail}`
+        );
+      }
+
+      if (result.kind === "url" && (await servesBytes(result.url))) {
         const alt = input.alt ?? "image";
+        const url = result.url;
         const rendered =
           input.format === "markdown" ? `![${alt}](${url})` : input.format === "html" ? `<img src="${url}" alt="${alt}">` : url;
         return `Uploaded ${input.path} via ${host}:\n${rendered}`;
       }
-      tried.push(url ? `${host}(minted but served empty)` : `${host}(failed)`);
+
+      tried.push(
+        result.kind === "url"
+          ? `${host}(minted but served empty)`
+          : result.kind === "no-url"
+            ? `${host}(no url in output)`
+            : `${host}(failed)`,
+      );
     }
+
     return `upload_image: every host failed for ${input.path}: ${tried.join(", ")}. Do not fabricate a URL — report the failure.`;
   },
 });
