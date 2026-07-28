@@ -60,12 +60,26 @@ Every package carries these three, and they gate each phase:
    network. `reports/history.json` is tracked so the score series survives
    across machines; the rendered HTML is not.
 
-   Two CI surfaces, because they answer different questions:
+   Three surfaces, ordered by how little you have to do to see them:
 
    | surface | question | cost |
    |---|---|---|
-   | **Job summary** (`--markdown` → `$GITHUB_STEP_SUMMARY`) | "did anything break, and where?" | zero — renders on the run page |
-   | **`quality-report` artifact** (HTML) | "what's the trend across runs?" | download + unzip |
+   | **README** — shields badge + `reports/health.svg` + package table | "is this repo healthy?" | zero, on the repo front page |
+   | **Job summary** (`--markdown` → `$GITHUB_STEP_SUMMARY`) | "did anything break, and where?" | zero, on the run page |
+   | **`quality-report` artifact** (HTML) | "what's the full detail?" | download + unzip |
+
+   The README assets (`health.svg`, `badge.json`, `history.json`) are **committed**
+   — a trend graph only means something as a series, so it has to live in git.
+   CI refreshes them on push-to-main with `[skip ci]`, which is load-bearing:
+   without it the commit re-triggers the workflow that made it, forever. The badge
+   is a shields.io *endpoint* reading `reports/badge.json` from raw
+   githubusercontent — live, no third-party service holding our data.
+
+   The SVG uses presentation attributes only (`fill=`, `stroke=`) because GitHub
+   strips `<style>` from markdown-embedded SVG, and mid-tone colours so it reads
+   on both light and dark themes. Its shaded band is the min–max spread across
+   packages, not decoration: a healthy mean hides one package at 62, which is
+   exactly what a single number lets you ignore.
 
    The digest leads with named failures and packages that MOVED, collapsing the
    20-row full table behind `<details>` — 20 rows of "100.0 A" is noise when

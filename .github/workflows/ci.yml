@@ -22,7 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  # write: the check job commits the refreshed README badge/graph back to main.
+  contents: write
 
 jobs:
   check:
@@ -86,6 +87,30 @@ jobs:
           name: quality-report
           path: reports/
           retention-days: 30
+
+      # The README badge, trend graph, and table are only live if the committed
+      # files move. Push-to-main only: on a PR the base branch isn't ours to
+      # write, and the numbers aren't final until it merges.
+      #
+      # [skip ci] is load-bearing — without it this commit triggers the workflow
+      # that made it, forever.
+      - name: Commit report assets
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/health.svg reports/badge.json reports/history.json README.md
+          # --quiet exits 0 when nothing changed, so an unchanged score is not a
+          # failed build and not an empty commit.
+          if git diff --cached --quiet; then
+            echo "report assets unchanged"
+          else
+            git commit -m "chore(report): refresh quality assets [skip ci]"
+            # A push landing during this run would reject a plain push; rebasing
+            # onto it keeps the newer work and re-applies only these assets.
+            git pull --rebase --autostash origin main
+            git push
+          fi
 
   audit:
     name: fallow audit (changed files)

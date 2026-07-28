@@ -393,6 +393,144 @@ const html = `<!doctype html>
 </body>
 </html>`;
 
+// ---- README assets ----------------------------------------------------------
+// The HTML report lives in an artifact nobody opens. These three land on the
+// README, where they're seen without asking for them.
+//
+// SVG CONSTRAINT: GitHub sanitizes markdown-embedded SVG, so this uses
+// presentation attributes (fill=, stroke=) ONLY — no <style>, no CSS, no
+// currentColor. Colours are mid-tones that read on both light and dark.
+
+/** Mean of the numeric values in a run's score map. */
+function meanScore(run) {
+  const vals = Object.values(run.scores ?? {}).filter((v) => typeof v === "number");
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
+/**
+ * Trend chart: mean score per run, with a min–max band showing spread. The band
+ * is the point — a healthy mean can hide one package at 40, and that's exactly
+ * the thing a single number lets you ignore.
+ */
+function trendSvg() {
+  const W = 720;
+  const H = 200;
+  const pad = { t: 18, r: 14, b: 26, l: 34 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
+  const runs = history.filter((h) => meanScore(h) !== null);
+  const series = runs.map((h) => {
+    const vals = Object.values(h.scores).filter((v) => typeof v === "number");
+    return { mean: meanScore(h), min: Math.min(...vals), max: Math.max(...vals), sha: h.sha };
+  });
+
+  // Fixed 0–100 domain, same rule as everywhere else: an auto-scaled axis turns
+  // a 2-point wobble into a cliff.
+  const x = (i) => pad.l + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+  const y = (v) => pad.t + plotH - (v / 100) * plotH;
+
+  const gridLines = [0, 25, 50, 75, 100]
+    .map(
+      (v) =>
+        `<line x1="${pad.l}" y1="${y(v).toFixed(1)}" x2="${W - pad.r}" y2="${y(v).toFixed(1)}" stroke="#8b9ab5" stroke-width="0.5" stroke-opacity="0.25" />` +
+        `<text x="${pad.l - 6}" y="${(y(v) + 3.5).toFixed(1)}" font-size="9" fill="#8b9ab5" text-anchor="end" font-family="ui-monospace, monospace">${v}</text>`,
+    )
+    .join("");
+
+  // Band as one closed path: max across, min back.
+  const band =
+    series.length > 1
+      ? `<path d="${series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(s.max).toFixed(1)}`).join(" ")} ${series
+          .slice()
+          .reverse()
+          .map((s, i) => `L${x(series.length - 1 - i).toFixed(1)},${y(s.min).toFixed(1)}`)
+          .join(" ")} Z" fill="#6366f1" fill-opacity="0.16" stroke="none" />`
+      : "";
+
+  const meanPath =
+    series.length > 1
+      ? `<path d="${series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(s.mean).toFixed(1)}`).join(" ")}" fill="none" stroke="#6366f1" stroke-width="2" stroke-linejoin="round" />`
+      : "";
+
+  const dots = series
+    .map((s, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(s.mean).toFixed(1)}" r="2.5" fill="#6366f1" />`)
+    .join("");
+
+  const last = series[series.length - 1];
+  const worstPkg = [...(health?.results ?? [])].sort((a, b) => a.score - b.score)[0];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Package health trend: mean ${last?.mean.toFixed(1)}, lowest ${last?.min.toFixed(1)}">
+  <text x="${pad.l}" y="12" font-size="11" fill="#8b9ab5" font-family="ui-sans-serif, system-ui, sans-serif">package health · mean ${last ? last.mean.toFixed(1) : "—"} · range ${last ? `${last.min.toFixed(0)}–${last.max.toFixed(0)}` : "—"}${worstPkg ? ` · lowest: ${worstPkg.pkg}` : ""}</text>
+  ${gridLines}
+  ${band}
+  ${meanPath}
+  ${dots}
+  <text x="${pad.l}" y="${H - 8}" font-size="9" fill="#8b9ab5" font-family="ui-monospace, monospace">${series[0]?.sha ?? ""}</text>
+  <text x="${W - pad.r}" y="${H - 8}" font-size="9" fill="#8b9ab5" text-anchor="end" font-family="ui-monospace, monospace">${last?.sha ?? ""}</text>
+  <text x="${W / 2}" y="${H - 8}" font-size="9" fill="#8b9ab5" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">${series.length} run${series.length === 1 ? "" : "s"} · shaded band = spread across packages</text>
+</svg>
+`;
+}
+
+/** shields.io endpoint payload — a live badge without a third-party service. */
+function badgeJson() {
+  const rows = health?.results ?? [];
+  const failing = rows.filter((r) => !r.ok).length;
+  const mean = rows.length ? rows.reduce((a, r) => a + r.score, 0) / rows.length : 0;
+
+  return {
+    schemaVersion: 1,
+    label: "health",
+    // The mean alone would read as "fine" while a package sits below floor, so
+    // a breach is stated in the badge text rather than hidden behind the colour.
+    message: failing ? `${mean.toFixed(1)} · ${failing} below floor` : mean.toFixed(1),
+    color: failing ? "red" : mean >= 95 ? "brightgreen" : mean >= 85 ? "green" : mean >= 70 ? "yellow" : "orange",
+  };
+}
+
+/** Compact per-package table for the README, between HTML markers. */
+function readmeTable() {
+  const rows = [...(health?.results ?? [])].sort((a, b) => a.score - b.score);
+  const out = [];
+
+  const testLine = tests ? `${tests.numPassedTests} passing` : "—";
+  const failing = rows.filter((r) => !r.ok);
+
+  out.push(`![health](reports/health.svg)`, "");
+  out.push(`**${rows.length} packages** · ${testLine} · ${failing.length ? `⚠️ ${failing.length} below floor` : "all at or above floor"}`, "");
+  out.push("| package | grade | score | trend |", "|---|---|---:|---|");
+
+  for (const r of rows) {
+    out.push(`| \`${r.pkg}\` | ${r.grade} | ${r.score.toFixed(1)}${deltaText(r.pkg)} | \`${blocks(history.map((h) => h.scores?.[r.pkg]))}\` |`);
+  }
+
+  out.push("", `<sub>Generated by \`bun run report\` · fixed 0–100 scale · test files excluded from scoring</sub>`);
+  return out.join("\n");
+}
+
+/** Replace the marked block in README.md, leaving everything else untouched. */
+function updateReadme(table) {
+  const path = join(root, "README.md");
+  if (!existsSync(path)) return false;
+
+  const start = "<!-- quality:start -->";
+  const end = "<!-- quality:end -->";
+  const body = readFileSync(path, "utf8");
+
+  // No markers means the README hasn't opted in — silently doing nothing beats
+  // guessing where the section belongs.
+  if (!body.includes(start) || !body.includes(end)) return false;
+
+  const before = body.slice(0, body.indexOf(start) + start.length);
+  const after = body.slice(body.indexOf(end));
+  const next = `${before}\n${table}\n${after}`;
+
+  if (next === body) return false;
+  writeFileSync(path, next);
+  return true;
+}
+
 // ---- markdown digest --------------------------------------------------------
 // For $GITHUB_STEP_SUMMARY, which renders on the run page itself — no download,
 // no publishing. Markdown only, so trends become unicode blocks instead of SVG.
@@ -507,6 +645,14 @@ writeFileSync(historyPath, `${JSON.stringify(history, null, 2)}\n`);
 
 const outPath = join(outDir, "index.html");
 writeFileSync(outPath, html);
+
+// README assets — these ARE committed, unlike index.html. The trend graph and
+// badge only mean anything as a series, so they have to live in git.
+writeFileSync(join(outDir, "health.svg"), trendSvg());
+writeFileSync(join(outDir, "badge.json"), `${JSON.stringify(badgeJson(), null, 2)}\n`);
+
+const readmeChanged = updateReadme(readmeTable());
+if (readmeChanged) log("  README.md updated");
 
 log(`\n  ${outPath}`);
 log(`  ${history.length} run${history.length === 1 ? "" : "s"} recorded · ${allGreen ? "all green" : "needs attention"}\n`);
