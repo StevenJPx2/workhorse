@@ -168,6 +168,7 @@ import { browser_open, browser_screenshot, browser_record } from "@workhorse/plu
 
 const prWriter = agent({
   name: "pr-writer",
+  // A bare string is shorthand for { primary }. See §2 for fallback/promotion.
   model: "anthropic/claude-sonnet-4-6",
   instructions: "Update the PR body for the just-completed todo...",
   output: PR_WRITER_OUTPUT,  // valibot schema for entire output
@@ -184,7 +185,61 @@ const prWriter = agent({
 });
 ```
 
-### 2. Tools are imported directly from plugins (not string references)
+### 2. Model policy: promotion on capability, fallback on availability
+
+An agent declares a model **policy**, not a model string. Two orthogonal axes,
+and conflating them is expensive:
+
+| axis | trigger | moves to | cost |
+|------|---------|----------|------|
+| **fallback** | the provider failed — 429, 401/403, 5xx, network | same capability, different provider/credential | unchanged |
+| **promotion** | the *agent* failed — budget spent, no `submit_work`, self-declared stuck | higher capability | higher |
+
+```ts
+const prCoder = agent({
+  name: "pr-coder",
+  model: {
+    primary: "anthropic/claude-sonnet-4-6",
+    // AVAILABILITY: same model, other credentials. Tried in order.
+    fallback: ["opencode/claude-sonnet-4-6", "bedrock/claude-sonnet-4-6"],
+    // CAPABILITY: a bigger model, only when the work itself stalls.
+    promote: {
+      to: "anthropic/claude-opus-4-1",
+      when: { tokenBudget: 120_000, retriesWithoutSubmit: 2 },
+    },
+  },
+  // ...
+});
+```
+
+**Order matters: exhaust fallback before promoting.** A 429 is not a capability
+problem — promoting on a throttle pays for a bigger model to solve a problem it
+cannot fix. Fallback first (free), promotion only when the agent genuinely
+cannot finish.
+
+**When every leg is throttled, park — don't degrade.** The durable spine sleeps
+and retries (bounded by `MAX_THROTTLE_PARKS`) rather than dropping to a weaker
+model. Waiting produces a correct run late; degrading produces a broken run now.
+
+**A fallback leg must be validated for tool-calling before it is added.** This is
+a constraint learned the hard way: opencode-zen's free models were wired in as a
+fallback and proved unusable for agentic stages — they returned ~1 output token
+and no tool calls, so a stage ended "without `submit_work`" instead of doing the
+work. That is why the leg chain in `flue-session.ts` currently has exactly **one**
+leg. A model that cannot drive tools is not a fallback; it is a silent failure.
+
+**Promotion is designed but unbuilt.** The groundwork exists — the D1
+`escalations` table carries `to_model`, and the escalation trigger enum is
+already `"fallback" | "promotion" | "steer"` — but only `fallback` is ever
+emitted today. Wiring promotion means: track per-stage token spend, count
+`submit_work` misses, and re-run the stage one model up while recording the
+`fromModel → toModel` movement.
+
+**Thresholds should be mined, not guessed.** Escalations are archived into the
+per-run trace, so evals can measure *which stages actually needed a bigger
+model* and set `promote.when` from evidence.
+
+### 3. Tools are imported directly from plugins (not string references)
 
 ```ts
 // Plugins export individual tools
@@ -195,7 +250,7 @@ export const browser_screenshot = tool({ name: "browser_screenshot", ... });
 import { browser_open } from "@workhorse/plugin-browser";
 ```
 
-### 3. `ctx.run()` executes an agent with explicit input
+### 4. `ctx.run()` executes an agent with explicit input
 
 ```ts
 const impl = await ctx.run(prWriter, {
@@ -214,7 +269,7 @@ interface WorkflowContext {
 }
 ```
 
-### 4. Stage output is a valibot schema (runtime + compile-time)
+### 5. Stage output is a valibot schema (runtime + compile-time)
 
 ```ts
 import * as v from "valibot";
@@ -245,7 +300,7 @@ interface StageResult {
 }
 ```
 
-### 5. Each workflow is a package in `workflows/`
+### 6. Each workflow is a package in `workflows/`
 
 ```
 workflows/
@@ -275,7 +330,7 @@ workflows/
 }
 ```
 
-### 6. imgbb (via imgup) for PR image uploads
+### 7. imgbb (via imgup) for PR image uploads
 
 `upload_image` is the single vehicle for embedding screenshots and GIFs in PR
 descriptions, with **imgbb first** in the host chain. imgbb is API-keyed
@@ -315,7 +370,7 @@ alike, and `upload_text` covers text hosting.
 
 **Sandbox:** `imgup` stays in the Dockerfile. No `gh-image` extension.
 
-### 7. Tools stay GRANULAR; token cost is solved by semantic selection
+### 8. Tools stay GRANULAR; token cost is solved by semantic selection
 
 **Many small, precisely-named tools — not few tools with `action` picklists.**
 
@@ -370,7 +425,7 @@ paid only when asked. This is how granular tools stay cheap *and* well
 documented — 31 tools, ~5000 tokens of documentation, none of it in the default
 prompt.
 
-### 8. AI Search replaces Magic Context
+### 9. AI Search replaces Magic Context
 
 Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This removes the local embedding model (~90MB ONNX) from the sandbox image and eliminates context.db persistence/restoration.
 
@@ -397,7 +452,7 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - `search_docs` — search documentation
 - `search_patterns` — search for patterns/conventions
 
-### 9. Worker is thin shell + alchemy + vite + Dockerfile
+### 10. Worker is thin shell + alchemy + vite + Dockerfile
 
 ```ts
 // worker/src/index.ts
@@ -1010,6 +1065,7 @@ Before ship:
 | Tests in health scoring | **Excluded** (`fallow --production`) so coverage never reads as debt |
 | Tool granularity | **Granular** — consolidation measured −5–12pp tool-choice accuracy; token cost belongs to semantic selection |
 | Tool documentation | **Mandatory `docs` + injected `help` flag** — type-enforced, detail off the per-turn budget |
+| Model selection | **Policy, not a string** — `fallback` for availability (same capability, other credential), `promote` for capability (bigger model when the agent stalls). Fallback is exhausted first; all-throttled parks rather than degrades |
 
 ## Open Questions
 
