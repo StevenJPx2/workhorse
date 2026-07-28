@@ -36,7 +36,9 @@ const localD1 = findLocalD1();
 
 export default defineConfig({
   dialect: "sqlite",
-  schema: "./src/schema.ts",
+  // Glob, not a single file: adding a table is a new file in src/schema/ with no
+  // config change. drizzle-kit unions every table it finds.
+  schema: "./src/schema/*.ts",
   // Wrangler looks for migrations here (see worker/wrangler.jsonc migrations_dir).
   out: "../../worker/migrations",
   ...(localD1 ? { dbCredentials: { url: localD1 } } : {}),

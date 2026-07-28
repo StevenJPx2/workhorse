@@ -35,7 +35,7 @@ export async function unconsumedEvents(env: Env, ticketId: string): Promise<Exte
 export async function wakeTicket(env: Env, ticketId: string, attempts = 4): Promise<void> {
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const rec = await db(env).getTicket(ticketId);
+      const rec = await db(env).tickets.get(ticketId);
       const inst = await env.TICKET_WF.get(rec?.wfInstance ?? ticketId);
       await inst.sendEvent({ type: "external-event", payload: {} });
     } catch {

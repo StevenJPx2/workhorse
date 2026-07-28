@@ -32,9 +32,9 @@ describe("json columns", () => {
       { name: "target", description: "what to test", required: true },
       { name: "verbose" },
     ];
-    await db.upsertScript(script({ args }));
+    await db.scripts.upsert(script({ args }));
 
-    const got = await db.getScript("global", "run_tests");
+    const got = await db.scripts.get("global", "run_tests");
     // The old layer returned JSON.parse(...) typed as any; a caller reading
     // .args[0].name got no type checking and a string here would not have failed.
     expect(got?.args).toEqual(args);
@@ -43,13 +43,13 @@ describe("json columns", () => {
   });
 
   it("round-trips statusGates", async () => {
-    await db.upsertScript(script({ statusGates: ["planning", "implementing"] }));
-    expect((await db.getScript("global", "run_tests"))?.statusGates).toEqual(["planning", "implementing"]);
+    await db.scripts.upsert(script({ statusGates: ["planning", "implementing"] }));
+    expect((await db.scripts.get("global", "run_tests"))?.statusGates).toEqual(["planning", "implementing"]);
   });
 
   it("defaults both JSON columns to empty arrays", async () => {
-    await db.upsertScript(script());
-    const got = await db.getScript("global", "run_tests");
+    await db.scripts.upsert(script());
+    const got = await db.scripts.get("global", "run_tests");
 
     expect(got?.args).toEqual([]);
     expect(got?.statusGates).toEqual([]);
@@ -58,20 +58,20 @@ describe("json columns", () => {
 
 describe("upsert", () => {
   it("replaces code and description on conflict", async () => {
-    await db.upsertScript(script({ description: "v1", code: "return 1;" }));
-    await db.upsertScript(script({ description: "v2", code: "return 2;", updatedAt: "2026-07-02T00:00:00.000Z" }));
+    await db.scripts.upsert(script({ description: "v1", code: "return 1;" }));
+    await db.scripts.upsert(script({ description: "v2", code: "return 2;", updatedAt: "2026-07-02T00:00:00.000Z" }));
 
-    const got = await db.getScript("global", "run_tests");
+    const got = await db.scripts.get("global", "run_tests");
     expect(got?.description).toBe("v2");
     expect(got?.code).toBe("return 2;");
     expect(got?.updatedAt).toBe("2026-07-02T00:00:00.000Z");
   });
 
   it("preserves createdAt and createdBy across a rewrite", async () => {
-    await db.upsertScript(script({ createdBy: "seed", createdAt: "2026-01-01T00:00:00.000Z" }));
-    await db.upsertScript(script({ createdBy: "agent", createdAt: "2026-09-09T00:00:00.000Z" }));
+    await db.scripts.upsert(script({ createdBy: "seed", createdAt: "2026-01-01T00:00:00.000Z" }));
+    await db.scripts.upsert(script({ createdBy: "agent", createdAt: "2026-09-09T00:00:00.000Z" }));
 
-    const got = await db.getScript("global", "run_tests");
+    const got = await db.scripts.get("global", "run_tests");
     // Provenance survives: who first created it, and when, is not rewritable by
     // a later upsert.
     expect(got?.createdBy).toBe("seed");
@@ -79,73 +79,73 @@ describe("upsert", () => {
   });
 
   it("treats (scope, name) as the identity — same name in two scopes coexists", async () => {
-    await db.upsertScript(script({ scope: "global" }));
-    await db.upsertScript(script({ scope: "repo:acme/widgets" }));
+    await db.scripts.upsert(script({ scope: "global" }));
+    await db.scripts.upsert(script({ scope: "repo:acme/widgets" }));
 
-    expect(await db.getScript("global", "run_tests")).not.toBeNull();
-    expect(await db.getScript("repo:acme/widgets", "run_tests")).not.toBeNull();
-    expect(await db.allScripts()).toHaveLength(2);
+    expect(await db.scripts.get("global", "run_tests")).not.toBeNull();
+    expect(await db.scripts.get("repo:acme/widgets", "run_tests")).not.toBeNull();
+    expect(await db.scripts.all()).toHaveLength(2);
   });
 });
 
 describe("listScripts", () => {
   it("returns only global when no repo is given", async () => {
-    await db.upsertScript(script({ scope: "global", name: "a" }));
-    await db.upsertScript(script({ scope: "repo:acme/widgets", name: "b" }));
+    await db.scripts.upsert(script({ scope: "global", name: "a" }));
+    await db.scripts.upsert(script({ scope: "repo:acme/widgets", name: "b" }));
 
-    expect((await db.listScripts()).map((s) => s.name)).toEqual(["a"]);
+    expect((await db.scripts.list()).map((s) => s.name)).toEqual(["a"]);
   });
 
   it("merges repo scope with global", async () => {
-    await db.upsertScript(script({ scope: "global", name: "shared" }));
-    await db.upsertScript(script({ scope: "repo:acme/widgets", name: "local" }));
+    await db.scripts.upsert(script({ scope: "global", name: "shared" }));
+    await db.scripts.upsert(script({ scope: "repo:acme/widgets", name: "local" }));
 
-    expect((await db.listScripts("acme/widgets")).map((s) => s.name).sort()).toEqual(["local", "shared"]);
+    expect((await db.scripts.list("acme/widgets")).map((s) => s.name).sort()).toEqual(["local", "shared"]);
   });
 
   it("lets the repo-scoped script shadow a global of the same name", async () => {
-    await db.upsertScript(script({ scope: "global", name: "deploy", code: "GLOBAL" }));
-    await db.upsertScript(script({ scope: "repo:acme/widgets", name: "deploy", code: "REPO" }));
+    await db.scripts.upsert(script({ scope: "global", name: "deploy", code: "GLOBAL" }));
+    await db.scripts.upsert(script({ scope: "repo:acme/widgets", name: "deploy", code: "REPO" }));
 
-    const found = await db.listScripts("acme/widgets");
+    const found = await db.scripts.list("acme/widgets");
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("REPO");
   });
 
   it("ignores another repo's scripts", async () => {
-    await db.upsertScript(script({ scope: "repo:other/thing", name: "secret" }));
-    expect(await db.listScripts("acme/widgets")).toEqual([]);
+    await db.scripts.upsert(script({ scope: "repo:other/thing", name: "secret" }));
+    expect(await db.scripts.list("acme/widgets")).toEqual([]);
   });
 });
 
 describe("allScripts", () => {
   it("returns every scope, unlike the scoped list", async () => {
-    await db.upsertScript(script({ scope: "global", name: "a" }));
-    await db.upsertScript(script({ scope: "repo:x/y", name: "b" }));
-    await db.upsertScript(script({ scope: "repo:p/q", name: "c" }));
+    await db.scripts.upsert(script({ scope: "global", name: "a" }));
+    await db.scripts.upsert(script({ scope: "repo:x/y", name: "b" }));
+    await db.scripts.upsert(script({ scope: "repo:p/q", name: "c" }));
 
     // This is what the semantic index builds from — a scoped read would index
     // only the scripts one repo can see.
-    expect(await db.allScripts()).toHaveLength(3);
+    expect(await db.scripts.all()).toHaveLength(3);
   });
 });
 
 describe("deleteScript", () => {
   it("reports true when a row was removed", async () => {
-    await db.upsertScript(script());
-    expect(await db.deleteScript("global", "run_tests")).toBe(true);
-    expect(await db.getScript("global", "run_tests")).toBeNull();
+    await db.scripts.upsert(script());
+    expect(await db.scripts.delete("global", "run_tests")).toBe(true);
+    expect(await db.scripts.get("global", "run_tests")).toBeNull();
   });
 
   it("reports false when nothing matched", async () => {
-    expect(await db.deleteScript("global", "ghost")).toBe(false);
+    expect(await db.scripts.delete("global", "ghost")).toBe(false);
   });
 
   it("deletes only the named scope", async () => {
-    await db.upsertScript(script({ scope: "global" }));
-    await db.upsertScript(script({ scope: "repo:acme/widgets" }));
+    await db.scripts.upsert(script({ scope: "global" }));
+    await db.scripts.upsert(script({ scope: "repo:acme/widgets" }));
 
-    await db.deleteScript("global", "run_tests");
-    expect(await db.getScript("repo:acme/widgets", "run_tests")).not.toBeNull();
+    await db.scripts.delete("global", "run_tests");
+    expect(await db.scripts.get("repo:acme/widgets", "run_tests")).not.toBeNull();
   });
 });

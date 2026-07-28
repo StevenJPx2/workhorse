@@ -66,7 +66,7 @@ export default {
       // Heals: one query instead of a full KV scan; 5-min quiet window
       // (avoids racing a deploy or a human investigating).
       const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const errored = await db(env).listTickets("errored");
+      const errored = await db(env).tickets.list("errored");
       for (const rec of errored) {
         if (rec.updatedAt >= cutoff) continue;
         const res = await healTicket(env, rec.id);

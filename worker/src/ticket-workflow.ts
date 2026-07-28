@@ -23,7 +23,7 @@ import { renderNotifications } from "./notifications";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
-  const r = await db(env).patchTicket(id, patch);
+  const r = await db(env).tickets.patch(id, patch);
   if (!r) return;
   // Lifecycle hook: plugins react to transitions (e.g. slack posts into
   // the ticket's thread). Best-effort by contract.
@@ -77,7 +77,7 @@ async function recordEscalation(
   runId: string,
   event: Omit<EscalationEvent, "at">,
 ): Promise<void> {
-  await db(env).insertEscalation({
+  await db(env).escalations.insert({
     ticketId,
     runId,
     trigger: event.trigger,
@@ -103,7 +103,7 @@ async function archiveTrace(
 ): Promise<void> {
   try {
     const at = new Date().toISOString();
-    const escalations = await db(env).runEscalations(ticketId, runId);
+    const escalations = await db(env).escalations.forRun(ticketId, runId);
     // Trace BODY is an immutable R2 blob (no KV size ceiling); the
     // queryable INDEX is D1.
     await env.BLOBS.put(
@@ -117,7 +117,7 @@ async function archiveTrace(
         activity: JSON.parse(activity),
       }),
     );
-    await db(env).insertTraceIndex({ ticketId, runId, kind, archivedAt: at });
+    await db(env).traces.insert({ ticketId, runId, kind, archivedAt: at });
     // Lifecycle hook: plugins react to archived traces (e.g. knowledge
     // distills + indexes the run for fleet search). Best-effort by contract.
     await fireHook(env, env.SELF_URL ?? "", "onTraceArchived", {
@@ -241,13 +241,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
             // the engine supported it, and nothing supplied the reader — so
             // operator input queued during a run was never delivered to a stage.
             readNotifications: async () => {
-              const queued = await db(this.env).unreadNotifications(t.id);
+              const queued = await db(this.env).notifications.unread(t.id);
               if (!queued.length) return null;
 
               // Mark read only after rendering: a stage that fails mid-run
               // should not silently swallow the operator's message.
               const rendered = renderNotifications(queued);
-              await db(this.env).markNotificationsRead(t.id, queued[queued.length - 1].seq);
+              await db(this.env).notifications.markRead(t.id, queued[queued.length - 1].seq);
               return rendered;
             },
             onStage: async (s) => {
@@ -357,7 +357,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
 
     // --- healing resume: skip completed phases recorded on the ticket ---
     if (t.resume) {
-      const rec = await step.do("read-resume-state", async () => db(this.env).getTicket(t.id));
+      const rec = await step.do("read-resume-state", async () => db(this.env).tickets.get(t.id));
       if (rec?.prUrl) {
         // Work was already delivered — jump straight back to the
         // park ↔ revise loop; pending events (if any) wake immediately.
@@ -491,8 +491,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       // Feedback = wake events + everything queued on the notification bus
       // since the last read point (acknowledge-collate semantics).
       const feedback = await step.do(`revise-feedback-${round}`, async () => {
-        const queued = await db(this.env).unreadNotifications(t.id);
-        if (queued.length) await db(this.env).markNotificationsRead(t.id, queued[queued.length - 1].seq);
+        const queued = await db(this.env).notifications.unread(t.id);
+        if (queued.length) await db(this.env).notifications.markRead(t.id, queued[queued.length - 1].seq);
         return [
           ...events.map((e) => `- [${e.kind}] ${e.summary}`),
           ...queued.map((n) => `- [${n.source}${n.author ? ` · ${n.author}` : ""}] ${n.body.slice(0, 1500)}`),

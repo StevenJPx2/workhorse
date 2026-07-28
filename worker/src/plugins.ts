@@ -111,8 +111,8 @@ export function attachmentProviders() {
 /** Core services handed to plugin webhooks, routes, and hooks. */
 export function coreFor(env: Env, selfOrigin: string): Core {
   return {
-    getTicket: (ticketId) => db(env).getTicket(ticketId),
-    listTickets: (status) => db(env).listTickets(status),
+    getTicket: (ticketId) => db(env).tickets.get(ticketId),
+    listTickets: (status) => db(env).tickets.list(status),
     ticketDiff: async (ticketId) => env.TICKETS.get(`diff:${ticketId}`),
     findWorkflows: async (query, topK) => {
       const { workflowIndex } = await import("./semindex");
@@ -150,14 +150,14 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       await wakeTicket(env, ticketId);
     },
     fleetChat: (messages) => runFleetChat(env, selfOrigin, messages),
-    listScripts: (repo) => db(env).listScripts(repo),
+    listScripts: (repo) => db(env).scripts.list(repo),
     getScriptByName: async (name, repo) => {
       // repo scope shadows global for the same name.
       if (repo) {
-        const hit = await db(env).getScript(`repo:${repo}`, name);
+        const hit = await db(env).scripts.get(`repo:${repo}`, name);
         if (hit) return hit;
       }
-      return db(env).getScript("global", name);
+      return db(env).scripts.get("global", name);
     },
     notify: async (n) => {
       const { notify } = await import("./notifications");
@@ -172,7 +172,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       const err = validateScript(s);
       if (err) return { ok: false, error: err };
       const now = new Date().toISOString();
-      const existing = await db(env).getScript(s.scope, s.name);
+      const existing = await db(env).scripts.get(s.scope, s.name);
       // Seeded scripts stay pristine: agents/users update their own entries,
       // but a seed is only replaced by an explicit user action.
       if (existing?.createdBy === "seed" && s.createdBy === "agent") {
@@ -184,7 +184,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
-      await db(env).upsertScript(script);
+      await db(env).scripts.upsert(script);
       console.log(`script ${existing ? "updated" : "registered"}: ${s.scope}/${s.name} by ${s.createdBy}`);
       // Semantic discovery: keep the scripts corpus fresh (best-effort).
       const { scriptIndex } = await import("./semindex");

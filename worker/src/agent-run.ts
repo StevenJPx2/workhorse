@@ -298,10 +298,10 @@ export async function prepareWorkspace(env: Env, sandboxId: string, repo: string
           console.warn(`scripts.toml: skipped "${s.name}": ${err}`);
           continue;
         }
-        const existing = await db(env).getScript(scope, s.name);
+        const existing = await db(env).scripts.get(scope, s.name);
         // Seeds never clobber agent/user entries.
         if (existing && existing.createdBy !== "seed") continue;
-        await db(env).upsertScript({
+        await db(env).scripts.upsert({
           scope,
           name: s.name,
           description: s.description ?? "",

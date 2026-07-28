@@ -140,7 +140,7 @@ export async function fileTicket(
     wfInstance: id,
   };
 
-  await db(env).putTicket(rec);
+  await db(env).tickets.put(rec);
   await env.TICKET_WF.create({ id, params: { ...body, id, title: rec.title } as TicketParams });
 
   return { ok: true, ticket: rec };

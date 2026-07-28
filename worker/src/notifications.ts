@@ -28,7 +28,7 @@ export async function notify(
     urgent?: boolean;
   },
 ): Promise<Notification> {
-  const queued = await db(env).queueNotification(n);
+  const queued = await db(env).notifications.queue(n);
 
   if (n.urgent) {
     // Live path: steer the running session; wake if parked.

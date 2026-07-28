@@ -87,7 +87,7 @@ export async function reindexAll(env: Env): Promise<Record<string, number>> {
   // Every scope — listScripts(repo) is deliberately scoped, so the index build
   // reads the whole table. The rows already carry parsed args/statusGates, so
   // the hand-rolled JSON.parse mapping this replaced is gone.
-  const scripts = await db(env).allScripts();
+  const scripts = await db(env).scripts.all();
 
   // Workflows are hard-coded defs — index their manifests directly.
   const { workflowDefs } = await import("@workhorse/workflow");

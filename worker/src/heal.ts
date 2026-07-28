@@ -11,7 +11,7 @@ export async function healTicket(
   env: Env,
   ticketId: string,
 ): Promise<{ ok: boolean; reason?: string; instance?: string }> {
-  const rec = await db(env).getTicket(ticketId);
+  const rec = await db(env).tickets.get(ticketId);
   if (!rec) return { ok: false, reason: "not found" };
   if (rec.status !== "errored") return { ok: false, reason: `status is ${rec.status}, only errored tickets heal` };
   const attempts = rec.healAttempts ?? 0;
@@ -23,7 +23,7 @@ export async function healTicket(
   // re-dispatching it just burns tokens. Those need a steer or a fix, not
   // a heal.
   if (attempts >= 1 && /ended failed/.test(rec.error ?? "")) {
-    const traces = await db(env).listTraceIndex(ticketId);
+    const traces = await db(env).traces.list(ticketId);
     const last = traces[0];
     if (last?.kind?.endsWith("-failed")) {
       return { ok: false, reason: "deterministic failure (failed run twice); needs operator action, not a heal" };
@@ -52,7 +52,7 @@ export async function healTicket(
     resume: true,
   };
   await env.TICKET_WF.create({ id: instance, params });
-  await db(env).patchTicket(ticketId, {
+  await db(env).tickets.patch(ticketId, {
     wfInstance: instance,
     healAttempts: attempts + 1,
     status: "queued",

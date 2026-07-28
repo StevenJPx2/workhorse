@@ -6,7 +6,7 @@
   "description": "D1 relational plane — Drizzle schema, migrations, and the injected query layer",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema.ts"
+    "./schema": "./src/schema/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

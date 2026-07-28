@@ -1333,6 +1333,8 @@ substitutes for one real end-to-end run.
 |----------|----------|
 | Phase ordering | **Hybrid** — stable packages (db, auth) first, then primitives, then the rest |
 | `@workhorse/db` / `@workhorse/auth` shape | **Class with dependency injection** — constructed once, injected; avoids repeated instantiation |
+| db internal structure | **One file per table, composed** — `src/schema/<table>.ts` for the table, `src/repos/<table>.ts` for its queries, surfaced as `db.tickets.list()`. The table is the noun, the method is the verb, and a new table is two files plus one field on `Db` rather than more methods on a class that only grows. One shared drizzle instance across repos. |
+| `.config/` directory | **Tabled** — no tool in the stack auto-discovers it, and moving `.fallowrc.json` would break per-package health scoping. See Tentative. |
 | db visual simulation | **Drizzle Studio** |
 | Linting | **oxlint** (correctness category as error) |
 | Codebase intelligence | **fallow** (`audit` as the CI gate, `health` as the local gate) |
@@ -1348,6 +1350,47 @@ substitutes for one real end-to-end run.
 | Visual simulation (repo-wide) | **`bun run report`** — one self-contained HTML page from data the gates already produce: per-package scores with trend sparklines, test results, secret contract, run history. No deps, no network; uploaded as a CI artifact on every run. `reports/history.json` is tracked so the series survives |
 | Component-story tooling (Storybook/Histoire) | **Rejected** — nothing to simulate outside `ui/`, which is Nuxt app code outside the modularization path |
 | Real o11y (OpenTelemetry) | **Deferred to Phase 5** — belongs with the `@workhorse/workflow` extraction, when there are spans worth tracing |
+
+## Tentative
+
+### `.config/` directory — tabled
+
+[The `.config/` proposal](https://github.com/pi0/config-dir) puts tool configs in
+one directory instead of a growing pile of root dotfiles. Right problem; wrong
+time for us.
+
+**No tool in our stack auto-discovers it.** Probed each one directly, with only a
+`.config/<name>.<ext>` present and no root config:
+
+| tool | finds `.config/`? |
+|---|---|
+| oxlint | no — silently used defaults |
+| vitest | no — the config's `name` never applied |
+| fallow | no — reported "no config file found" |
+| drizzle-kit | no |
+| wrangler | no |
+| tsconfig `extends` | yes, but that's a path, not discovery |
+
+So adopting today means an explicit `--config`/`-c` on every invocation — in
+scripts, in CI, and in any ad-hoc command. The proposal names exactly this as what
+a standard is meant to remove: *"Some tools offer command line options … This is
+not a proper replacement for a standardized default lookup directory, because the
+tool might be invoked from a number of contexts."*
+
+**One hard blocker:** fallow's per-package `.fallowrc.json` discovery is
+load-bearing. It walks up from whatever root it is scoped to, which is how
+`plugins/aft/.fallowrc.json` applies when `scripts/health.mjs` runs
+`fallow health --root <pkg>`. Moving those files breaks the per-package health
+harness, and no flag fixes it — the harness would have to pass a different `-c`
+per package, reimplementing the discovery the tool already does.
+
+**If revisited**, three files move with zero new flags: `tsconfig.base.json` →
+`.config/typescript.json` (packages already `extends` it by path — verified
+working), plus our own `health-baseline.json` and `secrets.json`, which only our
+scripts read. Root clutter 15 → 12. The remaining tool configs stay until the
+tools support discovery.
+
+**Trigger to revisit:** oxlint or vitest shipping native `.config/` lookup.
 
 ## Open Questions
 

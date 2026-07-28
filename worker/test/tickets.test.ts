@@ -13,7 +13,8 @@ const putTicket = vi.fn();
 const usable = vi.fn<() => Promise<string | null>>(async () => "sk-ant-oat01-fresh");
 const recordRefUse = vi.fn();
 
-vi.mock("../src/db", () => ({ db: () => ({ putTicket }) }));
+// Mirrors the composed shape: db.tickets.put(), not db.putTicket().
+vi.mock("../src/db", () => ({ db: () => ({ tickets: { put: putTicket } }) }));
 vi.mock("../src/auth", () => ({ modelToken: () => ({ usable }) }));
 vi.mock("../src/refs", () => ({
   parseRefs: (input: string) =>
