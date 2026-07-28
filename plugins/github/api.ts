@@ -6,7 +6,7 @@
 
 import type { Env } from "@workhorse/api";
 
-export const GH_ALLOWED = [
+const GH_ALLOWED = [
   /^\/repos\/[\w.-]+\/[\w.-]+\/pulls(\/\d+(\/files|\/reviews|\/comments)?)?$/,
   /^\/repos\/[\w.-]+\/[\w.-]+\/issues(\/\d+(\/comments)?)?$/,
   /^\/repos\/[\w.-]+\/[\w.-]+\/commits(\/[\w]+)?$/,

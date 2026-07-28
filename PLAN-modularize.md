@@ -34,7 +34,8 @@ Every package carries these three, and they gate each phase:
 ```json
 {
   "lint": "oxlint packages plugins worker evals",
-  "health": "fallow health --score",
+  "health": "node scripts/health.mjs",
+  "health:update": "node scripts/health.mjs --update",
   "audit": "fallow audit",
   "check": "bun run lint && bun run typecheck && bun run health"
 }
@@ -42,6 +43,49 @@ Every package carries these three, and they gate each phase:
 
 `fallow audit` gates only what a PR changed (pass/warn/fail verdict) — the CI gate.
 `bun run check` is the local pre-commit gate.
+
+### Per-package health harness
+
+`scripts/health.mjs` runs `fallow health` scoped to **each workspace package**
+and gates every one against a floor recorded in `health-baseline.json`. This is
+how the plan's "assess and clean each package before starting the next" rule is
+enforced mechanically rather than by discipline.
+
+```
+bun run health                    # table + gate
+bun run health:update             # lock in improvements as the new floor
+node scripts/health.mjs --only db # scope to one package
+node scripts/health.mjs --json    # machine-readable (CI)
+```
+
+Rules:
+- A package **below** its floor fails the gate (regression).
+- A package **above** its floor prints the gain and suggests `--update`.
+- A **new** package (no recorded floor) must score ≥ **90** — freshly written
+  code has no excuse for debt.
+
+A package whose entry points aren't a standard package main (e.g. `evals`,
+whose entries are `*.eval.ts`) gets a package-local `.fallowrc.json`; fallow
+auto-discovers it when scoped.
+
+**Per-package baseline after phase 0 cleanup:**
+
+| Package | Score | Package | Score |
+|---------|-------|---------|-------|
+| evals | 100 A | plugins/knowledge | 100 A |
+| packages/api | 100 A | plugins/ntfy | 100 A |
+| packages/semindex | 100 A | plugins/paste | 100 A |
+| packages/workflow | 90 A | plugins/scripts | 100 A |
+| plugins/aft | 100 A | plugins/search | 100 A |
+| plugins/browser | 98.2 A | plugins/slack | 90 A |
+| plugins/github | 90 A | plugins/tickets | 100 A |
+| plugins/imgup | 100 A | plugins/todo | 98.3 A |
+| plugins/jira | 90 A | ui | 87.2 A |
+| | | **worker** | **62.3 C** |
+
+`worker` is the outlier at 62.3 (circular deps −25, unit size −10) — and it is
+precisely what Phase 5 dissolves into packages. Its floor is recorded so it
+cannot get *worse* while the earlier phases run.
 
 **Phase 0 baseline (done):** oxlint + fallow installed; 10 oxlint errors fixed;
 14 unused dependencies removed (10 stale `@flue/runtime` declarations left over
@@ -742,9 +786,19 @@ health), `bun run test`, and the phase's own visual-simulation surface.
 ### Phase 0: Toolchain baseline ✅ DONE
 1. ✅ Install oxlint + fallow at the workspace root
 2. ✅ Fix all oxlint correctness errors (10 found, 10 fixed)
-3. ✅ Remove unused dependencies (14 removed — health 40 F → 61 C)
-4. ✅ Root scripts: `lint`, `lint:fix`, `health`, `audit`, `dead`, `check`
-5. ⏳ Wire `fallow audit` into GitHub Actions as the PR gate
+3. ✅ Remove unused dependencies (15 removed, incl. `@flue/cli` — the plan
+   rejected `flue build`, so the CLI was pure weight)
+4. ✅ Root scripts: `lint`, `lint:fix`, `health`, `health:update`, `audit`,
+   `dead`, `check`
+5. ✅ **Per-package health harness** (`scripts/health.mjs` +
+   `health-baseline.json`) — the mechanism that enforces "clean each package
+   before starting the next"
+6. ✅ Break the `knowledge` plugin import cycle (75 → 100) by extracting the
+   read path into a leaf `search.ts`
+7. ✅ Delete interpreter-era dead types from `packages/workflow`
+   (`RunState`, `StageDriveReport`, `StageState`, `StageStatus` — the pi-subprocess
+   fields `pid`/`eventsOffset` outlived the engine that used them) → 63.6 → 90
+8. ⏳ Wire `fallow audit` + `bun run health` into GitHub Actions as the PR gate
 
 ### Phase 1: Stable packages (won't be reshaped later)
 1. Create `@workhorse/db` — Drizzle schema + migrations + **class with DI**

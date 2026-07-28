@@ -5,16 +5,16 @@
 
 import type { StageSpec, ToolRef } from "./types";
 
-export const RUN_ROOT = "/workspace/.workflow";
+const RUN_ROOT = "/workspace/.workflow";
 
-export function runDir(runId: string): string {
+function runDir(runId: string): string {
   return `${RUN_ROOT}/${runId}`;
 }
 export function stageDir(runId: string, stageId: string, round: number): string {
   return `${runDir(runId)}/stages/${stageId}/round-${round}`;
 }
 
-export function toolName(t: ToolRef): string {
+function toolName(t: ToolRef): string {
   return typeof t === "string" ? t : t.name;
 }
 

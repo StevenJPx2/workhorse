@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The Workhorse workflow engine: spec compile, graph routing, run lifecycle, stage execution over bare Pi sessions, control verbs (steer/promote/inject-input/cancel). Sandbox I/O behind a Driver interface.",
+  "description": "Hard-coded, eval-tested workflow definitions plus the stage-assembly helpers the worker's WorkflowContext uses. No interpreter, no spec registry.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -12,7 +12,6 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260714.1",
     "typescript": "^7.0.2",
     "vitest": "^4.0.18"
   }

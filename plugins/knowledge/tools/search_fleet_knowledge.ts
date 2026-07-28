@@ -5,7 +5,7 @@
 
 import { tool } from "@workhorse/api";
 import * as v from "valibot";
-import { searchKnowledge } from "../plugin";
+import { searchKnowledge } from "../search";
 
 export default tool({
   name: "search_fleet_knowledge",
