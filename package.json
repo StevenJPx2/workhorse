@@ -38,7 +38,8 @@
     "db:generate": "cd packages/db && drizzle-kit generate",
     "db:migrate": "cd packages/db && bun run migrate:local",
     "db:migrate:remote": "cd packages/db && bun run migrate:remote",
-    "db:studio": "cd packages/db && drizzle-kit studio"
+    "db:studio": "cd packages/db && drizzle-kit studio",
+    "report:assets": "node scripts/report.mjs --assets"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.18.8",
