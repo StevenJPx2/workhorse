@@ -1150,12 +1150,45 @@ plugin registration, and dropping or re-mapping `aft_search`/`aft_edit`.
 3. Worker imports both; no other logic changes
 4. Gate: `bun run check` + `bun run test` + Drizzle Studio opens and shows tables
 
-### Phase 2: New primitives
-1. Add `agent()` to `@workhorse/api`
-2. Add `workflow()` builder to `@workhorse/workflow` (discovery + execution phases)
-3. Port execution logic (workflow-run.ts, flue-session.ts) onto `ctx.run()`
-4. Visual simulation: render a discovered workflow graph from a dry-run
-5. Gate: graph render matches the hand-drawn coding pipeline
+### Phase 2: New primitives ✅ DONE
+1. ✅ `agent()` in `@workhorse/api` — model **policy** (fallback ≠ promote),
+   valibot output schema, and a `tools` function that receives the invocation's
+   input so one agent covers a conditional surface
+2. ✅ `workflow()` in `@workhorse/workflow` — the graph is **derived** from
+   `run()`, never declared. Discovery is lazy (a workflow package import costs
+   nothing until something asks for the shape) and memoizes the *promise*, so
+   concurrent callers share one walk.
+3. ✅ Visual simulation: `renderMermaid`/`renderText`, snapshot-asserted in the
+   gate. Mermaid because it renders natively in a PR comment, the job summary, and
+   the HTML report.
+4. ✅ Gate: the discovered graph matches the coding pipeline — all seven stages,
+   the real edges, and both loops, with **no model, sandbox, or network**.
+
+**Discovery varies TWO axes, and the second one only exists because the gate
+caught its absence:**
+
+| axis | varies | reaches |
+|---|---|---|
+| stub polarity | stage **output** | a `fail` verdict, a non-empty todo array, `uiChanges: true` |
+| run seed | the **run's identity** | the `-rev` revision arm |
+
+The gate initially failed with the therapist stage missing: `coding` detects a
+revision run as `ctx.runId.includes("-rev")`, and no output stub can reach a branch
+keyed on the run itself. Passes are now seeds × polarities, and a workflow with a
+branch the defaults cannot guess declares its own seed.
+
+**Stated limit:** discovery observes what those combinations reach. A branch on a
+value none of them produces stays unrecorded. That is enough for a graph view and
+tool gating; real routing coverage is the eval's job.
+
+Two honest artifacts in the snapshot, documented at the assertion: the visual
+writer has a self-edge (the per-todo loop feeds each round's PR body into the next,
+so a writer running twice genuinely depends on itself), and its text twin does not
+(the polarity that loops twice is also the one that picks the visual writer).
+
+**Deferred to Phase 4:** porting `workflow-run.ts` / `flue-session.ts` onto
+`ctx.run()`. The primitives + gate prove the target shape first; rewiring execution
+before a workflow uses it would be building against an unvalidated contract.
 
 ### Phase 3: Plugins export individual tools
 1. Add individual tool exports to each plugin (`export const browser_open = ...`)

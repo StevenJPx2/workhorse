@@ -17,12 +17,33 @@ export {
   type WorkflowDef,
 } from "./context";
 export { workflowDef, workflowDefs, coding, codingRaw, screenshotPr } from "./workflows/index";
+export type { FailureKind, JsonSchema, StageSpec, ToolRef, WorkflowInput } from "./types";
+
+// --- Phase 2 primitives: workflow() + graph discovery -----------------------
+// `workflow()` supersedes the hand-written WorkflowDef above; both are exported
+// while the workflows migrate (Phase 4). WorkflowSpec is intentionally NOT
+// re-exported from ./types anymore — the interpreter-era spec shape is dead, and
+// the name now belongs to workflow()'s argument.
+export { workflow } from "./workflow";
 export type {
-  FailureKind,
-  JsonSchema,
-  StageSpec,
-  ToolRef,
-  WorkflowDefaults,
-  WorkflowInput,
+  AgentOutputOf,
+  RunContext,
+  RunOptions,
+  RunResult,
+  WorkflowDefinition,
+  WorkflowOutcome,
   WorkflowSpec,
-} from "./types";
+} from "./workflow";
+export { discoverGraph } from "./discover";
+export type {
+  DiscoverOptions,
+  DiscoveredEdge,
+  DiscoveredGraph,
+  DiscoveredStage,
+  DiscoveryContext,
+  DiscoverySeed,
+} from "./discover";
+export { POLARITIES, stubFromSchema } from "./stub";
+export type { StubPolarity } from "./stub";
+export { renderMermaid, renderText } from "./render";
+export type { RenderOptions } from "./render";

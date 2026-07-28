@@ -1,3 +1,13 @@
+export { agent } from "./agent";
+export type {
+  AgentDefinition,
+  AgentOutput,
+  AgentOutputSchema,
+  AgentSpec,
+  AgentToolContext,
+  ModelPolicy,
+  Thinking,
+} from "./agent";
 export { tool } from "./plugin";
 export type {
   AttachmentProvider,

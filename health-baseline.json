@@ -5,7 +5,7 @@
     "evals": 100,
     "packages/api": 100,
     "packages/semindex": 100,
-    "packages/workflow": 99.7,
+    "packages/workflow": 99.8,
     "plugins/aft": 100,
     "plugins/browser": 100,
     "plugins/github": 90,

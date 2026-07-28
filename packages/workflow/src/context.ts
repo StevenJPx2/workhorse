@@ -13,21 +13,16 @@
 // stage() returns canned results, so routing is validated with no harness.
 
 import type { StageSpec, WorkflowInput } from "./types";
+import type { RunResult } from "./workflow";
 
-/** One stage session's outcome — the typed verdict + economics. */
-export interface StageResult {
-  stageId: string;
-  /** Parsed control.json (the typed verdict the workflow routes on). */
-  control: Record<string, unknown>;
-  /** analysis.md — findings/summary for the next stage + reviewer. */
-  analysis: string;
-  stats?: {
-    tokens?: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
-    cost?: number;
-    contextPercent?: number | null;
-    runCodeCalls?: number;
-  };
-}
+/**
+ * One stage session's outcome — the typed verdict + economics.
+ *
+ * Derived from the Phase 2 {@link RunResult} rather than re-declared: they are the
+ * same value, and the only difference is that a ctx.stage() caller has no schema
+ * to type `output` against. Phase 4 retires this alias with ctx.stage() itself.
+ */
+export type StageResult = Omit<RunResult, "output">;
 
 /** Per-call inputs to a stage: which upstream results feed it + loop context. */
 export interface StageInvocation {

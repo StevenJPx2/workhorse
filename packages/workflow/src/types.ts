@@ -94,23 +94,10 @@ export interface StageSpec {
   inputPolicy?: Record<string, unknown>;
 }
 
-export interface WorkflowDefaults {
-  agent?: string;
-  model?: string;
-  readOnly?: boolean;
-  thinking?: StageSpec["thinking"];
-  maxRuntimeMs?: number;
-  [k: string]: unknown;
-}
-
-export interface WorkflowSpec {
-  schemaVersion: number;
-  name: string;
-  description?: string;
-  defaults?: WorkflowDefaults;
-  inputs?: WorkflowInput[];
-  artifactGraph: { stages: StageSpec[] };
-}
+// WorkflowSpec/WorkflowDefaults are gone: they described the UPLOADED spec the
+// deleted interpreter consumed. `workflow()` now owns the WorkflowSpec name, and
+// keeping a second interface by that name meant two different things were exported
+// under one identifier.
 
 /** Typed failure classification — replaces string-regex sniffing. */
 export type FailureKind = "model" | "control" | "session" | "timeout" | "input";
