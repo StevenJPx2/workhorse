@@ -158,5 +158,39 @@
       "passed": 464,
       "failed": 0
     }
+  },
+  {
+    "at": "2026-07-28T19:33:20.628Z",
+    "sha": "a231e40",
+    "subject": "Merge pull request #13 from StevenJPx2/phase-1-db-auth",
+    "scores": {
+      "evals": 100,
+      "packages/api": 100,
+      "packages/auth": 100,
+      "packages/db": 98.1,
+      "packages/semindex": 100,
+      "packages/test-utils": 100,
+      "packages/workflow": 99.7,
+      "plugins/aft": 100,
+      "plugins/browser": 100,
+      "plugins/github": 90,
+      "plugins/imgup": 100,
+      "plugins/jira": 90,
+      "plugins/knowledge": 100,
+      "plugins/ntfy": 100,
+      "plugins/paste": 100,
+      "plugins/scripts": 100,
+      "plugins/search": 100,
+      "plugins/slack": 90,
+      "plugins/tickets": 100,
+      "plugins/todo": 100,
+      "ui": 87.2,
+      "worker": 62.3
+    },
+    "tests": {
+      "total": 695,
+      "passed": 652,
+      "failed": 0
+    }
   }
 ]
