@@ -122,14 +122,19 @@ const partial = Object.entries(manifest.groups)
   })
   .filter((g) => g.set.length > 0 && g.missing.length > 0);
 
-const missingRequired = rows.filter((r) => r.required && !r.set);
+// Deployment state is UNKNOWABLE without wrangler auth (the common CI case).
+// Treating "can't see it" as "not set" would fail the build on every required
+// secret, so presence checks are only meaningful when the listing succeeded.
+// The manifest-vs-Env cross-check is static and still runs.
+const deploymentKnown = secrets !== null;
+const missingRequired = deploymentKnown ? rows.filter((r) => r.required && !r.set) : [];
 
 if (jsonOut) {
   console.log(
     JSON.stringify(
       {
         worker: manifest.worker,
-        deploymentKnown: secrets !== null,
+        deploymentKnown,
         entries: rows.map(({ name, kind, group, required, set, inEnv }) => ({ name, kind, group, required, set, inEnv })),
         missingRequired: missingRequired.map((r) => r.name),
         partialGroups: partial,
@@ -143,7 +148,14 @@ if (jsonOut) {
   process.exit(missingRequired.length || partial.length ? 1 : 0);
 }
 
-const mark = (r) => (r.set ? "✓" : r.required ? "✗" : "·");
+/** ✓ set · optional-and-unset ✗ required-and-missing ? unknowable (no auth). */
+const mark = (r) => {
+  if (r.set) return "✓";
+  // Without a listing, "unset" is indistinguishable from "unreadable" — showing
+  // ✗ would read as a failure the manifest cannot actually assert.
+  if (!deploymentKnown) return "?";
+  return r.required ? "✗" : "·";
+};
 
 if (missingOnly) {
   const gaps = rows.filter((r) => !r.set);
@@ -162,7 +174,9 @@ if (missingOnly) {
   process.exit(missingRequired.length ? 1 : 0);
 }
 
-console.log(`\nSecret contract — ${manifest.worker}${secrets === null ? "  (deployment state UNKNOWN)" : ""}\n`);
+console.log(
+  `\nSecret contract — ${manifest.worker}${deploymentKnown ? "" : "  (deployment state UNKNOWN — checking the manifest only)"}\n`,
+);
 
 for (const [groupName, group] of Object.entries(manifest.groups)) {
   const members = rows.filter((r) => r.group === groupName);
@@ -203,5 +217,19 @@ if (undocumented.length) {
 }
 
 const clean = !missingRequired.length && !partial.length && !orphans.length && !undocumented.length;
-console.log(clean ? "✓ contract satisfied" : "run with --missing for setup steps");
-process.exit(missingRequired.length || partial.length ? 1 : 0);
+
+if (clean) {
+  console.log(
+    deploymentKnown
+      ? "✓ contract satisfied"
+      : "✓ manifest consistent with the Env interface (deployed secrets not checked)",
+  );
+} else {
+  console.log("run with --missing for setup steps");
+}
+
+// `undocumented` is a STATIC check (manifest vs the Env interface) and gates in
+// CI: an entry the code reads but the manifest never explains is a genuine
+// documentation gap, regardless of what is deployed. Presence and partial-group
+// checks only gate when the deployment was actually visible.
+process.exit(missingRequired.length || partial.length || undocumented.length ? 1 : 0);

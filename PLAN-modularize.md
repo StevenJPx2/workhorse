@@ -1033,7 +1033,19 @@ health), `bun run test`, and the phase's own visual-simulation surface.
 7. ✅ Delete interpreter-era dead types from `packages/workflow`
    (`RunState`, `StageDriveReport`, `StageState`, `StageStatus` — the pi-subprocess
    fields `pid`/`eventsOffset` outlived the engine that used them) → 63.6 → 90
-8. ⏳ Wire `fallow audit` + `bun run health` into GitHub Actions as the PR gate
+8. ✅ GitHub Actions PR gate (`.github/workflows/ci.yml`) — two jobs:
+   - **check**: lint → typecheck → test → per-package health → secret contract
+   - **audit**: `fallow audit` scoped to the PR diff, gating on findings the
+     changeset *introduced* (inherited debt doesn't block, so a PR touching
+     `worker/` isn't held hostage by the circular deps Phase 5 fixes)
+
+   Deliberately excluded: contract suites (need real binaries + Xvfb/Chrome),
+   the model eval (needs a key and hundreds of live calls), and deploy (Phase 7).
+
+   `bun run secrets` had to learn a CI mode first: without wrangler auth the
+   deployed secret list is unreadable, and treating "can't see it" as "not set"
+   would have failed the build on every required secret. It now gates on the
+   static manifest-vs-`Env` check only and marks presence as `?`.
 
 ### Phase 0.5: Test foundation ✅ DONE
 

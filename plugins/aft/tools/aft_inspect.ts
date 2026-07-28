@@ -60,48 +60,62 @@ NOTES
     if ("error" in replies) return `aft error: ${replies.error}`;
 
     const [configured, inspected] = replies;
-    if (configured?.success === false) {
-      return `aft configure failed (${configured.code ?? "unknown"}): ${configured.message ?? ""}`;
-    }
-    if (!inspected) return "aft inspect: no reply";
-    if (inspected.success === false) {
-      return `aft inspect failed (${inspected.code ?? "unknown"}): ${inspected.message ?? ""}`;
-    }
-
-    return renderSummary(inspected);
+    const rejected = firstFailure({ configure: configured, inspect: inspected });
+    return rejected ?? renderSummary(inspected);
   },
 });
 
+/** The first failed step, as a readable message — or null when all succeeded. */
+function firstFailure(steps: Record<string, AftReply | undefined>): string | null {
+  for (const [name, reply] of Object.entries(steps)) {
+    if (!reply) return `aft ${name}: no reply`;
+    if (reply.success === false) return `aft ${name} failed (${reply.code ?? "unknown"}): ${reply.message ?? ""}`;
+  }
+  return null;
+}
+
+type Category = Record<string, unknown>;
+
+/** A count, unless the category couldn't run — those must not read as zero. */
+function countOrUnavailable(key: string, c: Category): string {
+  // A false "0 dead code" is exactly the all-clear a cleanup pass would trust.
+  return c.status === "unavailable" ? `${key}: unavailable (${c.reason ?? "not ready"})` : `${key}: ${c.count ?? 0}`;
+}
+
+/**
+ * One renderer per category, so adding a category is a table entry rather than
+ * another branch. Each returns null when its category is absent.
+ */
+const CATEGORIES: Array<(s: Record<string, Category>) => string | null> = [
+  (s) => {
+    const d = s.diagnostics;
+    if (!d) return null;
+    // "0 errors" while still analyzing is the most dangerous false all-clear,
+    // because it arrives exactly when an agent wants to ship.
+    const pending = d.status === "pending" ? " (still analyzing — not a clean bill of health)" : "";
+    return `diagnostics: ${d.errors ?? 0} errors, ${d.warnings ?? 0} warnings${pending}`;
+  },
+  (s) => {
+    const m = s.metrics;
+    return m ? `metrics: ${m.files ?? 0} files, ${m.symbols ?? 0} symbols, ${m.loc ?? 0} loc` : null;
+  },
+  (s) => (s.todos ? `todos: ${s.todos.count ?? 0}` : null),
+  (s) => (s.dead_code ? countOrUnavailable("dead_code", s.dead_code) : null),
+  (s) => (s.unused_exports ? countOrUnavailable("unused_exports", s.unused_exports) : null),
+  (s) => (s.duplicates ? countOrUnavailable("duplicates", s.duplicates) : null),
+];
+
+/** One line per category present in the summary. */
+function summaryLines(summary: Record<string, Category>): string[] {
+  return CATEGORIES.map((render) => render(summary)).filter((line): line is string => line !== null);
+}
+
 /** Render inspect's nested summary compactly, flagging incomplete categories. */
 function renderSummary(reply: AftReply): string {
-  const summary = reply.summary as Record<string, Record<string, unknown>> | undefined;
+  const summary = reply.summary as Record<string, Category> | undefined;
   if (!summary) return JSON.stringify(reply, null, 1).slice(0, 20_000);
 
-  const lines: string[] = [];
-  const d = summary.diagnostics;
-  if (d) {
-    const status = d.status === "pending" ? " (still analyzing — not a clean bill of health)" : "";
-    lines.push(`diagnostics: ${d.errors ?? 0} errors, ${d.warnings ?? 0} warnings${status}`);
-  }
-
-  const m = summary.metrics;
-  if (m) lines.push(`metrics: ${m.files ?? 0} files, ${m.symbols ?? 0} symbols, ${m.loc ?? 0} loc`);
-
-  const t = summary.todos;
-  if (t) lines.push(`todos: ${t.count ?? 0}`);
-
-  for (const key of ["dead_code", "unused_exports", "duplicates"] as const) {
-    const c = summary[key];
-    if (!c) continue;
-    // An unavailable category must not read as zero — that would be a false
-    // all-clear on exactly the checks a cleanup pass relies on.
-    lines.push(
-      c.status === "unavailable"
-        ? `${key}: unavailable (${c.reason ?? "not ready"})`
-        : `${key}: ${c.count ?? 0}`,
-    );
-  }
-
+  const lines = summaryLines(summary);
   if (reply.complete === false) lines.push("\n(incomplete — re-run for warmed-up results)");
 
   return lines.join("\n") || "(no output)";
