@@ -48,7 +48,20 @@ Every package carries these three, and they gate each phase:
    a `fakeSandbox` because it faithfully returned whatever the tool asked for.
 
 2. **Observability** — traces, metrics, structured logging per package.
-3. **Visual simulation** — a way to *see* behavior, not just assert it:
+   Status: **not started.** Deferred to Phase 5 with the `@workhorse/workflow`
+   extraction, when there are spans worth tracing. The two `@opentelemetry`
+   entries in `bun.lock` are transitive (via `pi-ai` and `vitest`), not ours.
+3. **Visual simulation** — a way to *see* behavior, not just assert it.
+
+   **Repo-wide, built:** `bun run report` renders `reports/index.html` from data
+   the gates already produce — per-package scores with trend sparklines and
+   signed deltas, test results with failures listed, secret contract by group,
+   and run history. Self-contained (inline CSS, hand-built SVG), no deps, no
+   network. CI uploads it as an artifact with `if: always()`, because the report
+   matters most when something failed. `reports/history.json` is tracked so the
+   score series survives across machines; the rendered HTML is not.
+
+   **Per-package, still to build:**
    - `@workhorse/workflow` — render a run's stage graph + transitions from a recorded run
    - `@workhorse/db` — **Drizzle Studio** (`drizzle-kit studio`) is the visual surface
    - `@workhorse/server` — route/request inspection
@@ -1178,6 +1191,9 @@ Before ship:
 | Browser mode | **Headful on Xvfb** — headless is blocked by bot detection (3/3 on PerimeterX); set via `AGENT_BROWSER_HEADED=1` because `batch` silently drops `--headed` |
 | Browser backend | **Local Chrome in the sandbox** — Kernel was evaluated and is blocked identically to local headless, so it buys nothing for the cost of a credential + per-run fee |
 | Secret management | **`secrets.json` manifest + `bun run secrets` audit** — names only, never values; declares blast radius per entry and flags partial all-or-nothing groups |
+| Visual simulation (repo-wide) | **`bun run report`** — one self-contained HTML page from data the gates already produce: per-package scores with trend sparklines, test results, secret contract, run history. No deps, no network; uploaded as a CI artifact on every run. `reports/history.json` is tracked so the series survives |
+| Component-story tooling (Storybook/Histoire) | **Rejected** — nothing to simulate outside `ui/`, which is Nuxt app code outside the modularization path |
+| Real o11y (OpenTelemetry) | **Deferred to Phase 5** — belongs with the `@workhorse/workflow` extraction, when there are spans worth tracing |
 
 ## Open Questions
 

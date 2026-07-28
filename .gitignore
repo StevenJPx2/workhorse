@@ -1,6 +1,15 @@
 node_modules/
 .dev.vars
 .wrangler/
+
+# fallow's analysis caches (~1MB of binary, regenerated on demand)
+.fallow/
+
+# Generated quality report. reports/history.json IS tracked — it's the score
+# series the trend lines are drawn from, and it's worthless if it resets per
+# machine.
+reports/index.html
+reports/.vitest.json
 .playright-mcp/
 ui/.nuxt/
 ui/.output/

@@ -50,8 +50,10 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      # --reporter=json feeds the HTML report below; the default reporter still
+      # prints to the log so a failure is readable without downloading anything.
       - name: Test
-        run: bun run test
+        run: bun run test --reporter=default --reporter=json --outputFile=reports/.vitest.json
 
       # Per-package floors from health-baseline.json. A new package with no
       # recorded floor must score >= 90.
@@ -64,6 +66,24 @@ jobs:
       # gates on the manifest/Env mismatch only.
       - name: Secret contract
         run: bun run secrets
+
+      # The gates above print to a log that scrolls away. This renders the same
+      # data — per-package scores with trend lines, test results, secret
+      # contract — as one self-contained page, downloadable from the run.
+      #
+      # always(): the report is most useful when something FAILED.
+      # --no-tests reuses the JSON from the test step instead of re-running.
+      - name: Quality report
+        if: always()
+        run: node scripts/report.mjs --no-tests
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: reports/
+          retention-days: 30
 
   audit:
     name: fallow audit (changed files)

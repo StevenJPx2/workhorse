@@ -31,7 +31,9 @@
     "eval": "cd evals && bun run eval:ci",
     "eval:tools": "TOOL_SURFACE_EVAL=1 vitest run --project evals",
     "test:contract:imgup": "IMGUP_CONTRACT=1 vitest run plugins/imgup/tools/__tests__/contract.test.ts",
-    "test:contract:aft": "AFT_CONTRACT=1 vitest run plugins/aft/tools/__tests__/contract.test.ts"
+    "test:contract:aft": "AFT_CONTRACT=1 vitest run plugins/aft/tools/__tests__/contract.test.ts",
+    "report": "node scripts/report.mjs",
+    "report:open": "node scripts/report.mjs --open"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",
