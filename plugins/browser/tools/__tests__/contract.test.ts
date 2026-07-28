@@ -1,24 +1,20 @@
 // CONTRACT TESTS — run the REAL agent-browser CLI, not a fake sandbox.
 //
-// Why this file exists: the mocked tests can only prove "we built the string we
+// Why this file exists: mocked tests can only prove "we built the string we
 // intended". They cannot prove the string is one agent-browser accepts, or that
-// the response shape is what we parse. Four shipped bugs lived in exactly that
-// blind spot:
+// the response shape is what we parse. Six shipped bugs lived in that blind
+// spot:
 //
-//   1. browser_act sent `press <selector>` — the CLI takes `press <key>`
-//   2. browser_act sent `scroll <selector>` — the CLI takes `scroll <direction>`
-//   3. browser_open sent `open --wait <ms>` — no such flag exists
-//   4. every tool read payload fields off the top level — they live under `data`
+//   1. press was sent a selector; the CLI takes `press <key>`
+//   2. scroll was sent a selector; the CLI takes `scroll <direction>`
+//   3. open was sent `--wait <ms>`; no such flag exists
+//   4. payload fields were read off the top level; they live under `data`
+//   5. size was probed with `stat -c %s` (GNU-only) → every image read 0 KiB
+//   6. snapshot ignored its own declared depth/compact inputs
 //
-// So this suite drives each tool against a real browser and a local fixture
-// page, and asserts on OBSERVED behavior. It is skipped unless agent-browser is
-// installed, and it opts out of any configured cloud provider so it exercises
-// the same local-Chrome path the sandbox image uses.
-//
-// Run it with:  BROWSER_CONTRACT=1 bunx vitest run plugins/browser
-//
-// It is off by default because it launches a browser (seconds, not
-// milliseconds) and needs a binary CI may not have.
+// So this suite drives the tools against a real browser and a local fixture
+// page and asserts on OBSERVED behavior. Skipped unless agent-browser is
+// installed; run with `bun run test:contract`.
 
 import { execFile } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
@@ -28,13 +24,8 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SandboxHandle } from "@workhorse/api";
 import { runTool } from "@workhorse/test-utils/tools";
-import browser_act from "../browser_act";
-import browser_key from "../browser_key";
-import browser_open from "../browser_open";
-import browser_read from "../browser_read";
-import browser_screenshot from "../browser_screenshot";
-import browser_scroll from "../browser_scroll";
-import browser_snapshot from "../browser_snapshot";
+import browser from "../browser";
+import browser_interact from "../browser_interact";
 import { WRAPPER } from "../_shared";
 
 const exec = promisify(execFile);
@@ -43,14 +34,12 @@ const ENABLED = process.env.BROWSER_CONTRACT === "1";
 const NAMESPACE = "wh-contract";
 
 /**
- * A SandboxHandle backed by the LOCAL machine instead of a container: exec
- * runs the real agent-browser. The tools are unchanged — they just reach a
- * real CLI instead of a fake.
+ * A SandboxHandle backed by the LOCAL machine: exec runs the real
+ * agent-browser. The tools are unchanged — they just reach a real CLI.
  *
- * The wrapper path (/usr/local/bin/agent-browser-wrapper) only exists inside
- * the image, so it is rewritten to the local binary with the same flags the
- * wrapper applies. AGENT_BROWSER_PROVIDER/KERNEL_API_KEY are stripped so a
- * developer's cloud-provider config can't make the run depend on a network
+ * The wrapper path only exists inside the image, so it is rewritten to the
+ * local binary with the same flags. AGENT_BROWSER_PROVIDER/KERNEL_API_KEY are
+ * stripped so a developer's cloud config can't make this depend on a network
  * service the sandbox never uses.
  */
 function localSandbox(): SandboxHandle {
@@ -104,9 +93,8 @@ describe.skipIf(!ENABLED)("agent-browser contract", () => {
     await writeFile(file, FIXTURE, "utf8");
     pageUrl = `file://${file}`;
 
-    // A daemon left over from another provider keeps serving that provider, so
-    // start from a clean session (this is exactly how a stale Kernel daemon
-    // produced 401s on every local command).
+    // A daemon left over from another provider keeps serving that provider —
+    // exactly how a stale Kernel daemon produced 401s on every local command.
     await sandbox.exec(`${WRAPPER} close --all`);
   }, 120_000);
 
@@ -115,121 +103,150 @@ describe.skipIf(!ENABLED)("agent-browser contract", () => {
   });
 
   const opts = () => ({ sandbox });
+  const open = (extra: Record<string, unknown> = {}) =>
+    runTool(browser, { action: "open", url: pageUrl, ...extra }, opts());
 
-  it("browser_open navigates and reports the landed URL", async () => {
-    const { output } = await runTool(browser_open, { url: pageUrl }, opts());
+  // ---- browser (read) ----
+
+  it("open navigates and reports the landed URL", async () => {
+    const { output } = await open();
 
     expect(output).toContain("Browser open:");
-    // Proves the envelope is unwrapped — a top-level read yields the raw JSON.
     expect(output).toContain("fixture.html");
+    // Proves the envelope is unwrapped — a top-level read yields raw JSON.
     expect(output).not.toContain("success");
   }, 120_000);
 
-  it("browser_open accepts a batched settle wait", async () => {
-    const { output } = await runTool(browser_open, { url: pageUrl, waitMs: 300 }, opts());
+  it("open accepts a batched settle wait", async () => {
+    const { output } = await open({ waitMs: 300 });
     expect(output).toContain("fixture.html");
   }, 60_000);
 
-  it("browser_open accepts a load-state wait", async () => {
-    const { output } = await runTool(browser_open, { url: pageUrl, waitFor: "domcontentloaded" }, opts());
+  it("open accepts a load-state wait", async () => {
+    const { output } = await open({ waitFor: "domcontentloaded" });
     expect(output).toContain("fixture.html");
   }, 60_000);
 
-  it("browser_snapshot returns a readable AX tree with refs", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_snapshot, {}, opts());
+  it("snapshot returns a readable AX tree with refs", async () => {
+    await open();
+    const { output } = await runTool(browser, { action: "snapshot" }, opts());
 
     expect(output).toMatch(/ref=e\d+/);
     expect(output).toContain("button");
-    // The tree, not the envelope.
     expect(output).not.toContain('"success"');
   }, 60_000);
 
-  it("browser_snapshot honors a custom depth", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_snapshot, { depth: 1 }, opts());
+  it("snapshot honors a custom depth", async () => {
+    await open();
+    const { output } = await runTool(browser, { action: "snapshot", depth: 1 }, opts());
     expect(output).toBeTruthy();
   }, 60_000);
 
-  it("browser_snapshot scopes to a selector", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_snapshot, { selector: "#dropdown", interactiveOnly: false }, opts());
+  it("snapshot scopes to a selector", async () => {
+    await open();
+    const { output } = await runTool(
+      browser,
+      { action: "snapshot", selector: "#dropdown", interactiveOnly: false },
+      opts(),
+    );
     expect(output).toBeTruthy();
   }, 60_000);
 
-  it("browser_read returns page TEXT, not a JSON envelope", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_read, {}, opts());
+  it("read returns page TEXT, not a JSON envelope", async () => {
+    await open();
+    const { output } = await runTool(browser, { action: "read" }, opts());
 
-    // This is bug #4's regression guard: data.content, not top-level content.
+    // Bug #4's regression guard: data.content, not top-level content.
     expect(output).toContain("quick brown fox");
     expect(output).not.toContain('"contentType"');
   }, 60_000);
 
-  it("browser_act clicks a real element by ref", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const snap = await runTool(browser_snapshot, {}, opts());
+  it("screenshot writes a real file and reports a nonzero size", async () => {
+    await open();
+    const path = join(dir, "shot.png");
+    const { output } = await runTool(browser, { action: "screenshot", savePath: path }, opts());
+
+    expect(output).toContain(path);
+    // Bug #5's regression guard: 0 KiB means the size probe failed.
+    expect(output).not.toContain("(0 KiB)");
+  }, 60_000);
+
+  it("screenshot captures a full page", async () => {
+    await open();
+    const path = join(dir, "full.png");
+    const { output } = await runTool(browser, { action: "screenshot", savePath: path, fullPage: true }, opts());
+    expect(output).not.toContain("(0 KiB)");
+  }, 60_000);
+
+  // ---- browser_interact (mutate) ----
+
+  it("click acts on a real element by ref", async () => {
+    await open();
+    const snap = await runTool(browser, { action: "snapshot" }, opts());
     const ref = snap.output.match(/button "Click me" \[ref=(e\d+)\]/)?.[1];
     expect(ref, "snapshot should expose the button ref").toBeTruthy();
 
-    const { output } = await runTool(browser_act, { action: "click", selector: `@${ref}` }, opts());
+    const { output } = await runTool(browser_interact, { action: "click", selector: `@${ref}` }, opts());
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_act fills a real input", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_act, { action: "fill", selector: "#text", value: "hello" }, opts());
+  it("fill enters text into a real input", async () => {
+    await open();
+    const { output } = await runTool(
+      browser_interact,
+      { action: "fill", selector: "#text", value: "hello" },
+      opts(),
+    );
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_act selects a dropdown option", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_act, { action: "select", selector: "#dropdown", value: "b" }, opts());
+  it("select chooses a dropdown option", async () => {
+    await open();
+    const { output } = await runTool(
+      browser_interact,
+      { action: "select", selector: "#dropdown", value: "b" },
+      opts(),
+    );
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_act checks a checkbox with no value argument", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const { output } = await runTool(browser_act, { action: "check", selector: "#box" }, opts());
+  it("check ticks a checkbox with no value argument", async () => {
+    await open();
+    const { output } = await runTool(browser_interact, { action: "check", selector: "#box" }, opts());
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_key presses a real key — the CLI accepts a KEY, not a selector", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    await runTool(browser_act, { action: "click", selector: "#text" }, opts());
+  it("press sends a real KEY — the CLI takes a key, not a selector", async () => {
+    await open();
+    await runTool(browser_interact, { action: "click", selector: "#text" }, opts());
 
-    // Bug #1's regression guard: this used to send an element ref as the key.
-    const { output } = await runTool(browser_key, { key: "Tab" }, opts());
+    // Bug #1's regression guard.
+    const { output } = await runTool(browser_interact, { action: "press", key: "Tab" }, opts());
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_scroll scrolls the page — the CLI accepts a DIRECTION, not a selector", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-
-    // Bug #2's regression guard: this used to send a ref as the direction.
-    const { output } = await runTool(browser_scroll, { direction: "down", amount: 500 }, opts());
+  it("press accepts a modifier combination", async () => {
+    await open();
+    const { output } = await runTool(browser_interact, { action: "press", key: "Control+a" }, opts());
     expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_screenshot writes a real file and reports a nonzero size", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const path = join(dir, "shot.png");
-    const { output } = await runTool(browser_screenshot, { savePath: path }, opts());
+  it("scroll sends a real DIRECTION — the CLI takes a direction, not a selector", async () => {
+    await open();
 
-    expect(output).toContain(path);
-    // A 0 KiB report means the capture silently failed.
-    expect(output).not.toContain("(0 KiB)");
+    // Bug #2's regression guard.
+    const { output } = await runTool(
+      browser_interact,
+      { action: "scroll", direction: "down", amount: 500 },
+      opts(),
+    );
+    expect(output).not.toContain("error");
   }, 60_000);
 
-  it("browser_screenshot captures a full page", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    const path = join(dir, "full.png");
-    const { output } = await runTool(browser_screenshot, { savePath: path, fullPage: true }, opts());
-    expect(output).not.toContain("(0 KiB)");
-  }, 60_000);
-
-  it("a failed command surfaces as a throw, not a silent success", async () => {
-    await runTool(browser_open, { url: pageUrl }, opts());
-    await expect(runTool(browser_act, { action: "click", selector: "@e9999" }, opts())).rejects.toThrow();
+  it("a failed action surfaces as a throw, not a silent success", async () => {
+    await open();
+    await expect(
+      runTool(browser_interact, { action: "click", selector: "@e9999" }, opts()),
+    ).rejects.toThrow();
   }, 60_000);
 });

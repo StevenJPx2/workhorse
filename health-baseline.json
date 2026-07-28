@@ -7,7 +7,7 @@
     "packages/semindex": 100,
     "packages/workflow": 99.7,
     "plugins/aft": 100,
-    "plugins/browser": 98.7,
+    "plugins/browser": 100,
     "plugins/github": 90,
     "plugins/imgup": 100,
     "plugins/jira": 90,
@@ -18,7 +18,7 @@
     "plugins/search": 100,
     "plugins/slack": 90,
     "plugins/tickets": 100,
-    "plugins/todo": 98.3,
+    "plugins/todo": 100,
     "ui": 87.2,
     "worker": 62.3,
     "packages/test-utils": 100

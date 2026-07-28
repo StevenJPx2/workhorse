@@ -47,6 +47,36 @@ export default tool({
     "URL — THE way to embed an image (e.g. a screenshot, or a GIF from browser_record) in a PR " +
     "description or a markdown file. Tries imgbb first, then permanent keyless hosts, and returns " +
     "the first URL that actually serves the image. Returns the plain URL, or a markdown/html tag.",
+  docs: `
+upload_image — host a local image and get a URL that renders in a PR.
+
+THE vehicle for putting a screenshot or GIF into a PR description. Tries hosts
+in order and returns the first URL that VERIFIABLY serves the bytes back — a
+host can mint a URL and store nothing, so the tool confirms rather than trusts.
+
+ARGUMENTS
+  path    (required) the image file IN THE WORKSPACE (capture it first with the
+          browser tool's screenshot/record actions)
+  format  plain (default) → the bare URL
+          markdown        → ![alt](url), ready to paste in a PR body
+          html            → <img src="url" alt="alt">
+  alt     alt text for markdown/html (default "image")
+  hosts   override the host chain (rarely needed)
+
+HOST CHAIN
+  imgbb first — it is API-keyed and reliable; the keyless hosts (imgbox,
+  pixhost, catbox) follow as fallbacks and can throttle datacenter IPs.
+
+EXAMPLES
+
+  { path: "/tmp/before.png" }
+  { path: "/tmp/demo.gif", format: "markdown", alt: "the new flow" }
+
+NOTES
+  If every host fails the tool says so — report the failure. NEVER fabricate or
+  guess an image URL: a broken embed in a PR is worse than a note saying the
+  upload failed.
+`,
   input: v.object({
     path: v.string(),
     format: v.optional(v.picklist(["plain", "markdown", "html"])),

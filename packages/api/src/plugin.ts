@@ -10,6 +10,7 @@
 // not dynamic loading. Plugins depend ONLY on @workhorse/api; the worker
 // is the sole composition point that imports concrete plugins.
 
+import { boolean, object, optional } from "valibot";
 import type { GenericSchema, InferInput, InferOutput } from "valibot";
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
@@ -117,16 +118,39 @@ export function tool<const S extends ToolInputSchema>(spec: {
   name: string;
   description: string;
   input: S;
+  /**
+   * Long-form documentation, returned when the agent passes `help: true`.
+   * MANDATORY: it is how a consolidated tool stays discoverable without
+   * paying for its full surface in every prompt. Put the per-action detail,
+   * argument semantics, and worked examples here — keep `description` to the
+   * one-paragraph "what and when" the model sees up front.
+   */
+  docs: string;
   surfaces?: ToolSurface[];
   run(args: { input: InferOutput<S> } & ToolContext): string | Promise<string>;
 }): ToolFactory {
+  // Every tool gets `help` in its schema, so the flag is uniform and no tool
+  // author can forget it. Declared as part of the input object because flue
+  // validates input against the schema — an undeclared flag would be rejected.
+  const entries = (spec.input as unknown as { entries?: Record<string, unknown> }).entries;
+  const input = (
+    entries
+      ? object({ ...entries, help: optional(boolean()) } as never)
+      : spec.input
+  ) as unknown as S;
+
   const factory = ((ctx: ToolContext) =>
     defineTool({
       name: spec.name,
-      description: spec.description,
-      input: spec.input,
-      run: (c) => spec.run({ input: c.input, ...ctx }),
+      description: `${spec.description} Pass help:true for full documentation of every action and argument.`,
+      input,
+      run: (c) => {
+        const i = c.input as { help?: boolean } | undefined;
+        if (i?.help === true) return spec.docs.trim();
+        return spec.run({ input: c.input, ...ctx });
+      },
     })) as ToolFactory;
+
   factory.toolName = spec.name;
   factory.surfaces = spec.surfaces ?? ["stage"];
   return factory;

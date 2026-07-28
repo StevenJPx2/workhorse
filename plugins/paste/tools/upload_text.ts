@@ -66,6 +66,33 @@ export default tool({
     "without blowing size limits. Pass either `content` (inline text) or `path` (a file " +
     "in the workspace). Tries several keyless paste hosts and returns the first URL that " +
     "verifiably serves the bytes back. The URL is raw text: `curl <url>` reproduces it exactly.",
+  docs: `
+upload_text — host text or code and get a raw, curl-able URL.
+
+For sharing something too big to inline in a PR comment or chat reply: repro
+scripts, full test output, long logs, patches. The returned URL serves RAW text,
+so \`curl <url>\` reproduces the content byte-for-byte.
+
+ARGUMENTS (pass exactly one source)
+  content  inline text to host
+  path     a file in the workspace to read and host
+  ext      optional extension hint for syntax highlighting (e.g. "ts", "log")
+
+HOST CHAIN
+  paste.rs → 0x0.st → dpaste.org, all keyless. Returns the first URL that
+  VERIFIABLY serves the bytes back — a host can accept an upload and serve
+  nothing.
+
+LIMITS
+  ~1 MB. Truncate or summarize before uploading something larger.
+
+EXAMPLES
+
+  { content: "steps to reproduce:\\n1. …", ext: "md" }
+  { path: "/tmp/test-output.log", ext: "log" }
+
+If every host fails the tool says so — report it. Do not invent a paste URL.
+`,
   input: v.object({
     content: v.optional(v.string()),
     path: v.optional(v.string()),

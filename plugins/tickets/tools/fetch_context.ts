@@ -15,6 +15,26 @@ export default tool({
     "Fetch the content of a context reference the task lists under '## Available context' " +
     "(e.g. a Jira issue or Slack thread). Returns prompt-ready markdown. Use this to pull the " +
     "details of a referenced ticket/thread when they matter to the work — don't guess at them.",
+  docs: `
+fetch_context — pull the body of a context ref the task mentions.
+
+The task prompt lists refs under "## Available context" WITHOUT their content,
+so a large Jira thread doesn't ride along in every stage's prompt. This tool
+fetches one on demand.
+
+ARGUMENTS
+  kind  the ref kind — "jira", "slack", "repo", … (as listed in the task)
+  ref   the canonical id — e.g. "PROJ-123", a Slack thread ref
+
+EXAMPLES
+
+  { kind: "jira",  ref: "PROJ-123" }
+  { kind: "slack", ref: "C123:1700000000.123" }
+
+Returns prompt-ready markdown (title, url, content, truncated at 6000 chars).
+Never guess at a referenced ticket's content — fetch it. An unknown kind or a
+failed fetch is reported, not thrown.
+`,
   input: v.object({
     kind: v.pipe(v.string(), v.description("The ref kind, e.g. 'jira' or 'slack'")),
     ref: v.pipe(v.string(), v.description("The canonical ref id, e.g. 'PROJ-123'")),

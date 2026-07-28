@@ -16,6 +16,36 @@ export default tool({
     "tickets. Ask before solving: similar error messages, the same subsystem, prior attempts " +
     "at this kind of task. Complements ctx_search (per-repo working memory) — this one sees " +
     "what OTHER tickets and repos learned.",
+  docs: `
+search_fleet_knowledge — the fleet's institutional memory.
+
+Indexes a distilled trace of EVERY past Workhorse run across all repos and
+tickets: the task, each stage's analysis, verifier findings, escalations, and
+the final outcome. Hybrid vector + keyword search.
+
+ARGUMENTS
+  query  (required) natural language; an error message pasted verbatim works well
+  limit  optional number of hits
+
+WHEN TO USE
+  Before solving a non-trivial problem — ask whether the fleet has already hit
+  it. Highest value for:
+    - an error message that looks like it has been seen before
+    - a subsystem another ticket already touched
+    - a recurring failure, BEFORE proposing a fix
+
+  This complements ctx_search: ctx_search is THIS repo's working memory, while
+  this sees what OTHER tickets and repos learned.
+
+EXAMPLES
+
+  { query: "TS2741 property docs missing valibot tool" }
+  { query: "why did the sandbox lose node_modules mid-run" }
+  { query: "prior attempts at consolidating plugin tools" }
+
+No hits is a real answer — it means novel territory, so proceed on first
+principles rather than re-querying with variations.
+`,
   input: v.object({ query: v.string(), limit: v.optional(v.number()) }),
   async run({ input, env }) {
     const hits = await searchKnowledge(env, input.query.slice(0, 500), input.limit);

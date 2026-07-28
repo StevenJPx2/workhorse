@@ -1,9 +1,8 @@
-// github stage tools — read-only GitHub, one ToolFactory per file.
+// github stage tools — ONE tool for the whole read surface.
+//
+// No capability split needed: the /github proxy allowlists GET, so every action
+// is read-only by construction. `help: true` documents each action.
 import type { ToolFactory } from "@workhorse/api";
-import gh_ci from "./gh_ci";
-import gh_commits from "./gh_commits";
-import gh_issue from "./gh_issue";
-import gh_pr from "./gh_pr";
-import gh_search_code from "./gh_search_code";
+import gh from "./gh";
 
-export const githubTools: ToolFactory[] = [gh_pr, gh_ci, gh_issue, gh_search_code, gh_commits];
+export const githubTools: ToolFactory[] = [gh];
