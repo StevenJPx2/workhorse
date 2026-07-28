@@ -5,7 +5,8 @@
   "type": "module",
   "description": "GitHub source plugin: PR reviews/comments/CI failures → ticket events.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

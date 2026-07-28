@@ -7,13 +7,31 @@
     "plugins/*/plugin.ts",
     "evals/**/*.eval.ts",
     "evals/run.mjs",
-    "sandbox/install.mjs"
+    "sandbox/install.mjs",
+    "workflows/*/index.ts",
+    "plugins/*/tools/index.ts"
   ],
   "workspaces": {
-    "patterns": ["packages/*", "plugins/*", "worker", "ui", "evals"]
+    "patterns": [
+      "packages/*",
+      "plugins/*",
+      "worker",
+      "ui",
+      "evals",
+      "workflows/*"
+    ]
   },
-  "ignorePatterns": ["**/*.generated.ts", "**/.nuxt/**", "**/.wrangler/**"],
+  "ignorePatterns": [
+    "**/*.generated.ts",
+    "**/.nuxt/**",
+    "**/.wrangler/**"
+  ],
   "ignoreExports": [
-    { "file": "plugins/browser/tools/_shared.ts", "exports": ["WRAPPER"] }
+    {
+      "file": "plugins/browser/tools/_shared.ts",
+      "exports": [
+        "WRAPPER"
+      ]
+    }
   ]
 }

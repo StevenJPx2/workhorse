@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Todo plugin: todo_write/todo_read/todo_list stage tools over a per-run workspace JSON file (.workflow/todos.json). Lets a workflow decompose work into todos + subtasks a coder completes one at a time.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

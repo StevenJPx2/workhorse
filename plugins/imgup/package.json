@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Image hosting plugin: upload_image sandbox tool (imgup multi-host fallback chain). Sandbox-only — no worker half.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

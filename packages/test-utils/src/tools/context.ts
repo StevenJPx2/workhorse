@@ -6,7 +6,7 @@
 // no container. `runTool` collapses that to one line so a test reads as
 // input → output, with the doubles reachable for assertions.
 
-import type { Core, Env, SandboxHandle, ToolContext, ToolFactory } from "@workhorse/api";
+import type { Core, Env, SandboxHandle, ToolContext, ToolFactory, WritePolicy } from "@workhorse/api";
 import { fakeCore, type FakeCore, type FakeCoreOverrides } from "./core";
 import { fakeEnv, type FakeEnvOptions } from "./env";
 import { fakeSandbox, type FakeSandbox, type FakeSandboxOptions } from "./sandbox";
@@ -22,6 +22,14 @@ export interface MockToolContextOptions {
   selfOrigin?: string;
   /** The ticket + stage the tools serve. */
   ticket?: Partial<ToolContext["ticket"]>;
+  /**
+   * The stage's write policy, for the tools that enforce it (write, edit).
+   *
+   * Omitted by default rather than defaulted to something permissive: the gate
+   * treats an absent policy as open, so silently supplying one would make every
+   * test pass whether the tool checks it or not.
+   */
+  policy?: WritePolicy;
 }
 
 export interface MockToolContext extends ToolContext {
@@ -58,6 +66,7 @@ export function mockToolContext(options: MockToolContextOptions = {}): MockToolC
       stage: "implement",
       ...options.ticket,
     },
+    policy: options.policy,
   };
 }
 

@@ -28,5 +28,6 @@ export type {
   WebhookHandler,
   WorkhorsePlugin,
   WorkhorseTool,
+  WritePolicy,
 } from "./plugin";
 export type { Env, TicketParams, TicketRecord } from "./types";

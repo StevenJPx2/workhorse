@@ -1,0 +1,31 @@
+{
+  "name": "@workhorse/workflow-coding",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The coding workflow: a multi-agent PR pipeline",
+  "exports": {
+    ".": "./index.ts",
+    "./agents": "./agents/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "@workhorse/browser": "workspace:*",
+    "@workhorse/core": "workspace:*",
+    "@workhorse/github": "workspace:*",
+    "@workhorse/imgup": "workspace:*",
+    "@workhorse/knowledge": "workspace:*",
+    "@workhorse/scripts": "workspace:*",
+    "@workhorse/search": "workspace:*",
+    "@workhorse/todo": "workspace:*",
+    "@workhorse/workflow": "workspace:*",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "typescript": "^7.0.2"
+  }
+}

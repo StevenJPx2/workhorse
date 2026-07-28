@@ -23,6 +23,8 @@
     "worker": 62.3,
     "packages/test-utils": 100,
     "packages/auth": 100,
-    "packages/db": 98.1
+    "packages/db": 98.1,
+    "plugins/core": 100,
+    "workflows/coding": 100
   }
 }

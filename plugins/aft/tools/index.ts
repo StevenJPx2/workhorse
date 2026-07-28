@@ -18,3 +18,9 @@ import aft_search from "./aft_search";
 import aft_zoom from "./aft_zoom";
 
 export const aftTools: ToolFactory[] = [aft_outline, aft_zoom, aft_search, aft_inspect];
+
+// Named re-exports of the SAME bindings imported above, so an agent can
+// `import { aft_inspect } from "@workhorse/aft/tools"` and a typo is a compile
+// error rather than a silently empty allowlist. The array stays for the plugin
+// contract (chat + stage assembly still read it).
+export { aft_inspect, aft_outline, aft_search, aft_zoom };

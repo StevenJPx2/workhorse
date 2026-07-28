@@ -97,6 +97,7 @@
       "name": "@workhorse/workflow",
       "version": "0.1.0",
       "dependencies": {
+        "@valibot/to-json-schema": "^1.7.1",
         "@workhorse/api": "workspace:*",
       },
       "devDependencies": {
@@ -128,6 +129,19 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
+        "@workhorse/test-utils": "workspace:*",
+        "typescript": "^7.0.2",
+      },
+    },
+    "plugins/core": {
+      "name": "@workhorse/core",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+        "valibot": "^1.1.0",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
         "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
       },
@@ -310,6 +324,27 @@
         "@types/node": "^26.1.1",
         "typescript": "^7.0.2",
         "wrangler": "^4.110.0",
+      },
+    },
+    "workflows/coding": {
+      "name": "@workhorse/workflow-coding",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+        "@workhorse/browser": "workspace:*",
+        "@workhorse/core": "workspace:*",
+        "@workhorse/github": "workspace:*",
+        "@workhorse/imgup": "workspace:*",
+        "@workhorse/knowledge": "workspace:*",
+        "@workhorse/scripts": "workspace:*",
+        "@workhorse/search": "workspace:*",
+        "@workhorse/todo": "workspace:*",
+        "@workhorse/workflow": "workspace:*",
+        "valibot": "^1.1.0",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
+        "typescript": "^7.0.2",
       },
     },
   },
@@ -1281,6 +1316,8 @@
 
     "@workhorse/browser": ["@workhorse/browser@workspace:plugins/browser"],
 
+    "@workhorse/core": ["@workhorse/core@workspace:plugins/core"],
+
     "@workhorse/db": ["@workhorse/db@workspace:packages/db"],
 
     "@workhorse/evals": ["@workhorse/evals@workspace:evals"],
@@ -1314,6 +1351,8 @@
     "@workhorse/worker": ["@workhorse/worker@workspace:worker"],
 
     "@workhorse/workflow": ["@workhorse/workflow@workspace:packages/workflow"],
+
+    "@workhorse/workflow-coding": ["@workhorse/workflow-coding@workspace:workflows/coding"],
 
     "abbrev": ["abbrev@3.0.1", "", {}, "sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg=="],
 
