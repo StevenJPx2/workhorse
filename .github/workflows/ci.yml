@@ -96,7 +96,15 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
             assets="--assets"
           fi
-          node scripts/report.mjs --no-tests --markdown $assets >> "$GITHUB_STEP_SUMMARY"
+          # tee: the digest goes to the run page AND into the artifact, where the
+          # comment workflow picks it up.
+          node scripts/report.mjs --no-tests --markdown $assets | tee reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The comment workflow runs on workflow_run, where the PR number is not
+      # reliably available (notably for forks), so record it here.
+      - name: Record PR number
+        if: always() && github.event_name == 'pull_request'
+        run: echo "${{ github.event.pull_request.number }}" > reports/pr-number.txt
 
       - name: Upload report
         if: always()

@@ -1,0 +1,81 @@
+# Posts the quality digest as a single sticky comment on the PR.
+#
+# Separate workflow, triggered on CI's completion rather than on the PR itself.
+# Two reasons:
+#
+#   1. Security. A `pull_request` workflow from a fork gets a READ-ONLY token, so
+#      it cannot comment. A `workflow_run` workflow runs in the base repo's
+#      context with its own permissions, which is the documented way to comment
+#      on untrusted PRs without giving the PR's own job write access.
+#   2. Separation. CI decides pass/fail; this only reports. A failure to comment
+#      must never turn a green build red — hence `continue-on-error` below.
+#
+# The digest and PR number arrive via CI's `quality-report` artifact. Nothing from
+# the artifact is executed; it is read as data and posted verbatim.
+
+name: Quality comment
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only PR-triggered CI runs have a PR to comment on.
+    if: github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - name: Download the report artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: quality-report
+          path: report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post or update the comment
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f report/pr-number.txt ] || [ ! -f report/summary.md ]; then
+            echo "no PR number or summary in the artifact — nothing to post"
+            exit 0
+          fi
+          pr=$(cat report/pr-number.txt)
+
+          # Hidden marker identifies OUR comment, so each run edits the same one
+          # instead of appending a new wall of tables on every push.
+          marker='<!-- workhorse:quality-report -->'
+
+          {
+            echo "$marker"
+            cat report/summary.md
+            echo
+            echo "<sub>CI: **${CONCLUSION}** · [run details](${RUN_URL}) · full HTML in the \`quality-report\` artifact</sub>"
+          } > body.md
+
+          existing=$(gh api "repos/${REPO}/issues/${pr}/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"${marker}\"))] | .[0].id // empty")
+
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${existing}" \
+              -F body=@body.md >/dev/null
+            echo "updated comment ${existing} on PR #${pr}"
+          else
+            gh api --method POST "repos/${REPO}/issues/${pr}/comments" \
+              -F body=@body.md >/dev/null
+            echo "created comment on PR #${pr}"
+          fi

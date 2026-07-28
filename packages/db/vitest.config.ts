@@ -34,6 +34,9 @@ export default defineConfig({
   ],
   test: {
     name: "db",
-    include: ["test/**/*.test.ts"],
+    // Colocated: each repo directory holds its own __tests__.
+    include: ["src/**/__tests__/**/*.test.ts"],
+    // Migrates and truncates before every test, so no test file has to.
+    setupFiles: ["./test/setup.ts"],
   },
 });

@@ -1,9 +1,13 @@
-// Applies the real generated migrations to the test D1.
+// Registered as vitest `setupFiles`, so every test file gets a migrated, empty
+// database without importing anything.
+//
+// Lives in test/ rather than beside the tests it serves: it is harness wiring
+// (paired with wrangler.toml), not colocated logic, and a non-test file under
+// src/ that only tests import would read as dead code.
 
 import { applyD1Migrations, type D1Migration, env } from "cloudflare:test";
+import { beforeEach } from "vitest";
 
-// The pool's `env` is typed as Cloudflare.Env, so the test bindings are declared
-// in that namespace rather than the older ProvidedEnv interface.
 declare global {
   namespace Cloudflare {
     interface Env {
@@ -16,18 +20,14 @@ declare global {
 
 const TABLES = ["tickets", "escalations", "traces", "notifications", "scripts"] as const;
 
-/**
- * Create the schema from the GENERATED migrations — the same files wrangler
- * applies to production. A schema.ts change that fails to migrate therefore
- * fails the tests, instead of passing against a stale hand-written DDL.
- *
- * Also truncates every table. `isolatedStorage` isolates per test FILE, not per
- * test, so without this rows accumulate across cases in the same file and any
- * assertion on a full list silently reads its neighbours' data.
- */
-export async function applySchema(): Promise<void> {
+beforeEach(async () => {
+  // Schema comes from the GENERATED migrations — the same files wrangler applies
+  // to production — so a schema change that fails to migrate fails the tests
+  // instead of passing against stale hand-written DDL.
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
-  await env.DB.batch(TABLES.map((t) => env.DB.prepare(`DELETE FROM ${t}`)));
-}
 
-export { env };
+  // isolatedStorage isolates per test FILE, not per test. Without this, rows
+  // accumulate across cases in one file and any assertion on a full list
+  // silently reads its neighbours' data.
+  await env.DB.batch(TABLES.map((t) => env.DB.prepare(`DELETE FROM ${t}`)));
+});

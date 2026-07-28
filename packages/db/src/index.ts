@@ -1,9 +1,11 @@
-export { Db } from "./db";
+export { createDb } from "./db";
+export type { Db } from "./db";
 
-export type { EscalationEntry } from "./repos/escalations";
-export type { NotificationDraft } from "./repos/notifications";
-export { toTicketRecord } from "./repos/tickets";
-export type { TraceIndexEntry } from "./repos/traces";
+export type { Bound, Conn } from "./repos/bind";
+export type { EscalationEntry } from "./repos/escalations/types";
+export type { NotificationDraft } from "./repos/notifications/types";
+export { toTicketRecord } from "./repos/tickets/map";
+export type { TraceIndexEntry } from "./repos/traces/types";
 
 export * from "./schema";
 

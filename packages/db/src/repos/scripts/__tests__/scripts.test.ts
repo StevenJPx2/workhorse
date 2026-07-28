@@ -1,10 +1,10 @@
 // Script storage. The interesting behaviour is the JSON columns (which the old
 // layer parsed by hand) and scope shadowing.
 
+import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Db } from "../src/db";
-import type { Script } from "../src/schema";
-import { applySchema, env } from "./setup";
+import { createDb, type Db } from "../../../db";
+import type { Script } from "../../../schema";
 
 const script = (over: Partial<Script> = {}): Script => ({
   scope: "global",
@@ -22,8 +22,7 @@ const script = (over: Partial<Script> = {}): Script => ({
 let db: Db;
 
 beforeEach(async () => {
-  await applySchema();
-  db = new Db(env.DB);
+  db = createDb(env.DB);
 });
 
 describe("json columns", () => {
@@ -133,19 +132,19 @@ describe("allScripts", () => {
 describe("deleteScript", () => {
   it("reports true when a row was removed", async () => {
     await db.scripts.upsert(script());
-    expect(await db.scripts.delete("global", "run_tests")).toBe(true);
+    expect(await db.scripts.remove("global", "run_tests")).toBe(true);
     expect(await db.scripts.get("global", "run_tests")).toBeNull();
   });
 
   it("reports false when nothing matched", async () => {
-    expect(await db.scripts.delete("global", "ghost")).toBe(false);
+    expect(await db.scripts.remove("global", "ghost")).toBe(false);
   });
 
   it("deletes only the named scope", async () => {
     await db.scripts.upsert(script({ scope: "global" }));
     await db.scripts.upsert(script({ scope: "repo:acme/widgets" }));
 
-    await db.scripts.delete("global", "run_tests");
+    await db.scripts.remove("global", "run_tests");
     expect(await db.scripts.get("repo:acme/widgets", "run_tests")).not.toBeNull();
   });
 });

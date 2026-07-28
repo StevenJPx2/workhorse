@@ -2,7 +2,7 @@
 // tool, so these are adversarial inputs, not typos.
 
 import { describe, expect, it } from "vitest";
-import { validateScript } from "../src/validate";
+import { validateScript } from "../validate";
 
 const valid = { name: "run_tests", code: "return 1;", scope: "global" };
 

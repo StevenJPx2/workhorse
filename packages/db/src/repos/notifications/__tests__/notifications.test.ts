@@ -1,15 +1,14 @@
 // The notification bus. Sequence allocation and the boolean column are the two
 // things that were hand-rolled before and are easy to get subtly wrong.
 
+import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Db } from "../src/db";
-import { applySchema, env } from "./setup";
+import { createDb, type Db } from "../../../db";
 
 let db: Db;
 
 beforeEach(async () => {
-  await applySchema();
-  db = new Db(env.DB);
+  db = createDb(env.DB);
 });
 
 describe("sequence allocation", () => {

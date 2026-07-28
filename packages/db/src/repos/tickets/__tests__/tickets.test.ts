@@ -3,9 +3,9 @@
 // pinning it would test drizzle rather than us.
 
 import type { TicketRecord } from "@workhorse/api";
+import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Db } from "../src/db";
-import { applySchema, env } from "./setup";
+import { createDb, type Db } from "../../../db";
 
 const ticket = (over: Partial<TicketRecord> = {}): TicketRecord => ({
   id: "t1",
@@ -21,8 +21,7 @@ const ticket = (over: Partial<TicketRecord> = {}): TicketRecord => ({
 let db: Db;
 
 beforeEach(async () => {
-  await applySchema();
-  db = new Db(env.DB);
+  db = createDb(env.DB);
 });
 
 describe("tickets", () => {

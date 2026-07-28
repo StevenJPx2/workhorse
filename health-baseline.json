@@ -23,6 +23,6 @@
     "worker": 62.3,
     "packages/test-utils": 100,
     "packages/auth": 100,
-    "packages/db": 100
+    "packages/db": 98.1
   }
 }

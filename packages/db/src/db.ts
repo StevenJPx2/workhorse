@@ -1,37 +1,43 @@
-// The relational plane, as one injected object composed of per-table repositories.
+// The relational plane, as one injected object composed of per-table repos.
 //
 // Constructed ONCE per request/run and passed down, rather than every function
 // taking `env` and re-deriving a connection. `drizzle(env.DB)` is cheap but not
 // free, and threading `env` purely to reach the database made every caller depend
 // on the whole environment to do one query.
 //
-// Composition rather than one wide class: `db.tickets.list()` puts the table in
-// the noun position, and a new table is a new file plus one field here — not
-// another method on a class that only grows.
+// Each repo is a directory of plain functions taking the connection first; `bind`
+// applies it once and DERIVES the resulting type, so `db.tickets.list()` is fully
+// typed and adding an operation touches only that directory. No hand-written
+// interface to keep in sync, and no base class holding a single field.
 
 import { drizzle } from "drizzle-orm/d1";
-import { EscalationsRepo } from "./repos/escalations";
-import { NotificationsRepo } from "./repos/notifications";
-import { ScriptsRepo } from "./repos/scripts";
-import { TicketsRepo } from "./repos/tickets";
-import { TracesRepo } from "./repos/traces";
+import { bind, type Bound } from "./repos/bind";
+import * as escalationFns from "./repos/escalations";
+import * as notificationFns from "./repos/notifications";
+import * as scriptFns from "./repos/scripts";
+import * as ticketFns from "./repos/tickets";
+import * as traceFns from "./repos/traces";
 
-export class Db {
-  readonly tickets: TicketsRepo;
-  readonly escalations: EscalationsRepo;
-  readonly traces: TracesRepo;
-  readonly notifications: NotificationsRepo;
-  readonly scripts: ScriptsRepo;
+/** The composed database surface. Inferred — see the note above. */
+export interface Db {
+  tickets: Bound<typeof ticketFns>;
+  escalations: Bound<typeof escalationFns>;
+  traces: Bound<typeof traceFns>;
+  notifications: Bound<typeof notificationFns>;
+  scripts: Bound<typeof scriptFns>;
+}
 
-  constructor(binding: D1Database) {
-    // ONE drizzle instance shared by every repo — a per-repo connection would
-    // multiply setup cost by table count for no benefit.
-    const d = drizzle(binding);
+/** Build the database surface over a D1 binding. */
+export function createDb(binding: D1Database): Db {
+  // ONE drizzle instance shared by every repo — a per-repo connection would
+  // multiply setup cost by table count for no benefit.
+  const d = drizzle(binding);
 
-    this.tickets = new TicketsRepo(d);
-    this.escalations = new EscalationsRepo(d);
-    this.traces = new TracesRepo(d);
-    this.notifications = new NotificationsRepo(d);
-    this.scripts = new ScriptsRepo(d);
-  }
+  return {
+    tickets: bind(d, ticketFns),
+    escalations: bind(d, escalationFns),
+    traces: bind(d, traceFns),
+    notifications: bind(d, notificationFns),
+    scripts: bind(d, scriptFns),
+  };
 }

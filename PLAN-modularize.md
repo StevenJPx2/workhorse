@@ -60,13 +60,24 @@ Every package carries these three, and they gate each phase:
    network. `reports/history.json` is tracked so the score series survives
    across machines; the rendered HTML is not.
 
-   Three surfaces, ordered by how little you have to do to see them:
+   Four surfaces, ordered by how little you have to do to see them:
 
    | surface | question | cost |
    |---|---|---|
+   | **PR comment** — sticky, one per PR | "did my change break anything?" | zero, in the review thread |
    | **README** — shields badge + `reports/health.svg` + package table | "is this repo healthy?" | zero, on the repo front page |
    | **Job summary** (`--markdown` → `$GITHUB_STEP_SUMMARY`) | "did anything break, and where?" | zero, on the run page |
    | **`quality-report` artifact** (HTML) | "what's the full detail?" | download + unzip |
+
+   The PR comment is its own workflow (`.github/workflows/quality-comment.yml`)
+   triggered on **CI's completion**, not on the PR. A `pull_request` workflow from
+   a fork gets a read-only token and cannot comment; a `workflow_run` workflow
+   runs in the base repo's context, which is the documented way to comment on
+   untrusted PRs without granting the PR's own job write access. It is
+   `continue-on-error` — failing to report must never turn a green build red — and
+   upserts by a hidden marker so each push edits one comment instead of appending
+   a new wall of tables. The PR number travels in the artifact, since
+   `workflow_run` does not reliably expose it for forks.
 
    The README assets (`health.svg`, `badge.json`, `history.json`) are **committed**
    — a trend graph only means something as a series, so it has to live in git.
@@ -1333,7 +1344,7 @@ substitutes for one real end-to-end run.
 |----------|----------|
 | Phase ordering | **Hybrid** — stable packages (db, auth) first, then primitives, then the rest |
 | `@workhorse/db` / `@workhorse/auth` shape | **Class with dependency injection** — constructed once, injected; avoids repeated instantiation |
-| db internal structure | **One file per table, composed** — `src/schema/<table>.ts` for the table, `src/repos/<table>.ts` for its queries, surfaced as `db.tickets.list()`. The table is the noun, the method is the verb, and a new table is two files plus one field on `Db` rather than more methods on a class that only grows. One shared drizzle instance across repos. |
+| db internal structure | **Function per file, bound into repos** — `src/schema/<table>.ts` defines the table; `src/repos/<table>/<operation>.ts` is one plain function taking the connection first; `bind()` applies it and DERIVES the repo type. Surfaced as `db.tickets.list()`. No hand-written interface (it would drift), no base class (it held one field), and adding an operation touches only its own directory. One shared drizzle instance across all repos. |
 | `.config/` directory | **Tabled** — no tool in the stack auto-discovers it, and moving `.fallowrc.json` would break per-package health scoping. See Tentative. |
 | db visual simulation | **Drizzle Studio** |
 | Linting | **oxlint** (correctness category as error) |

@@ -10,7 +10,7 @@
 // bindings for every later one.
 
 import type { Env } from "@workhorse/api";
-import { Db } from "@workhorse/db";
+import { createDb, type Db } from "@workhorse/db";
 
 const instances = new WeakMap<object, Db>();
 
@@ -19,7 +19,7 @@ export function db(env: Pick<Env, "DB">): Db {
   const existing = instances.get(env);
   if (existing) return existing;
 
-  const created = new Db(env.DB);
+  const created = createDb(env.DB);
   instances.set(env, created);
   return created;
 }
