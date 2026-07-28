@@ -94,6 +94,23 @@ export interface ToolContext {
   sandbox: SandboxHandle;
   /** The ticket + stage the tools serve. */
   ticket: { id: string; repo: string; stage: string };
+  /**
+   * The stage's write policy. Present so the file-mutating core tools (write,
+   * edit) are ORDINARY tools rather than worker-inlined closures — which is what
+   * lets an agent import them by instance like any other tool.
+   *
+   * Absent for surfaces with no stage (fleet chat), where the tools that read it
+   * are not assembled anyway.
+   */
+  policy?: WritePolicy;
+}
+
+/** Where a stage may write. */
+export interface WritePolicy {
+  /** The stage's own artifact directory — always writable. */
+  dir: string;
+  /** Globs the stage may write, relative to the repo root or absolute. Empty = open. */
+  writeAllow: string[];
 }
 
 /**

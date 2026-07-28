@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Ticket tools plugin: workhorse_* sandbox tools (file/list/status/diff) calling the worker's ticket API. Sandbox-only — the ticket API itself is core.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

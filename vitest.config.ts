@@ -53,6 +53,14 @@ export default defineConfig({
           environment: "node",
         },
       },
+      // Workflow packages: each workflow's discovered graph + tool gating.
+      {
+        test: {
+          name: "workflows",
+          include: ["workflows/*/**/__tests__/**/*.test.ts"],
+          environment: "node",
+        },
+      },
       // Model-driven evals: live-model tool-choice scoring. The scored cases
       // self-skip without TOOL_SURFACE_EVAL=1, so the structural assertions
       // still run in normal CI.

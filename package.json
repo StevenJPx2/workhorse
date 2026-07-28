@@ -9,12 +9,13 @@
     "plugins/*",
     "worker",
     "ui",
-    "evals"
+    "evals",
+    "workflows/*"
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
-    "lint": "oxlint packages plugins worker evals",
-    "lint:fix": "oxlint --fix packages plugins worker evals",
+    "lint": "oxlint packages plugins workflows worker evals",
+    "lint:fix": "oxlint --fix packages plugins workflows worker evals",
     "health": "node scripts/health.mjs",
     "health:update": "node scripts/health.mjs --update",
     "health:root": "fallow health --score",

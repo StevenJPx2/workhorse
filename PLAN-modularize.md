@@ -1190,16 +1190,60 @@ so a writer running twice genuinely depends on itself), and its text twin does n
 `ctx.run()`. The primitives + gate prove the target shape first; rewiring execution
 before a workflow uses it would be building against an unvalidated contract.
 
-### Phase 3: Plugins export individual tools
-1. Add individual tool exports to each plugin (`export const browser_open = ...`)
-2. Remove the `tools` array once nothing reads it (greenfield — no back-compat shims)
-3. Gate: `fallow dead-code` shows no orphaned tool factories
+### Phase 3: Plugins export individual tools ✅ DONE
+1. ✅ Named re-exports in every plugin's `tools/index.ts`, plus a `./tools`
+   subpath export on all 10 plugin manifests
+2. ✅ **`@workhorse/core`** — a new plugin holding `read`/`ls`/`find`/`grep`/
+   `bash`/`write`/`edit`
 
-### Phase 4: First workflow package
-1. Create `workflows/coding/` with agents as TS modules
-2. Move personas from `sandbox/agents/*.md` to `workflows/coding/agents/*.ts`
-3. Prove the whole shape end-to-end on one real ticket → PR
-4. Gate: eval case passes against the `coding-raw` baseline
+   These were **worker-inlined closures** over the SandboxHandle, which meant an
+   agent could only reference them by NAME. That is the blocker Phase 3 actually
+   had to remove: as ordinary `ToolFactory`s they are importable like any other
+   tool, so `tools: [read, grep, edit]` is a dependency the compiler and bundler
+   both see.
+
+   The write gate travelled with them. `ToolContext` gained an optional
+   `policy: WritePolicy`, so `write`/`edit` enforce the stage's allowlist
+   themselves instead of the worker enforcing it around them.
+
+3. ✅ The `tools` array stays — it is the plugin contract the worker's stage and
+   chat assembly still read. Named exports are additive, not a replacement.
+
+### Phase 4: First workflow package ✅ DONE
+1. ✅ `workflows/coding/` — a real package depending on the plugins it uses, with
+   `workflows/*` added to the workspace, lint scope, fallow entries, and vitest
+   projects
+2. ✅ Personas moved from `sandbox/agents/*.md` frontmatter into
+   `workflows/coding/agents/*.ts`, where the tool ceiling is imported instances
+   rather than a comma-separated string
+3. ✅ `agentSession()` in `@workhorse/workflow` compiles an agent into a stage
+   session, deriving the control-contract epilogue from the agent's own valibot
+   schema — so what the model is asked for and what its output is validated
+   against come from ONE declaration
+4. ✅ Gate: 19 assertions on the discovered graph and the resolved tool surfaces,
+   including a Mermaid snapshot
+
+**ONE WRITER, NOT TWO.** The old shape had `pr-write` and `pr-write-visual` as
+separate stages sharing a persona and differing only in tool allowlist. They are
+now one agent whose `tools` is a function of the invocation input, so the
+conditional lives where the difference actually is. The graph confirms it: one
+`pr-write` stage carrying a `uiChanges` input key.
+
+**readOnly had to become stronger than an empty allowlist.** The write gate treats
+an empty allowlist as "no policy declared", which is OPEN — so a `readOnly` agent
+compiles to a sentinel policy that cannot match any real path. Without that, every
+read-only reviewer would have had full write access.
+
+**The test harness silently dropped `policy`.** `runTool` never passed it, so the
+write gate was unreachable in tests and both refusal cases passed while the tool
+happily wrote. Fixed in `@workhorse/test-utils`, and `policy` is deliberately
+undefined by default: defaulting it to something permissive would make a test pass
+whether the tool checks the gate or not.
+
+**Not yet done:** the worker still drives the hand-written `WorkflowDef`s through
+`ctx.stage()`. Wiring the spine onto `ctx.run()` and retiring
+`packages/workflow/src/workflows/` is Phase 5's extraction work, where
+`workflow-run.ts` moves anyway.
 
 ### Phase 5: Extract the rest (now that the shape is proven)
 1. `@workhorse/sandbox` (agent-run, codemode)

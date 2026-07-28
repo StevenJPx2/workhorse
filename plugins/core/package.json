@@ -1,0 +1,23 @@
+{
+  "name": "@workhorse/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Core workspace tools (read, ls, find, grep, bash, write, edit)",
+  "exports": {
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "@workhorse/test-utils": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

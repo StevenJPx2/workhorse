@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Fleet knowledge plugin: AI Search over distilled run traces — routes, archive hook, and the search_fleet_knowledge sandbox tool.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

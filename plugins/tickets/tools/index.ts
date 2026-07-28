@@ -15,3 +15,9 @@ export const ticketsTools: ToolFactory[] = [
   workhorse_ticket_diff,
   workhorse_find_workflow,
 ];
+
+// Named re-exports of the SAME bindings imported above, so an agent can
+// `import { fetch_context } from "@workhorse/tickets/tools"` and a typo is a compile
+// error rather than a silently empty allowlist. The array stays for the plugin
+// contract (chat + stage assembly still read it).
+export { fetch_context, workhorse_file_ticket, workhorse_find_workflow, workhorse_list_tickets, workhorse_ticket_diff, workhorse_ticket_status };

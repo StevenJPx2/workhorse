@@ -19,3 +19,9 @@ export const browserTools: ToolFactory[] = [
   browser_screenshot,
   browser_record,
 ];
+
+// Named re-exports of the SAME bindings imported above, so an agent can
+// `import { browser_act } from "@workhorse/browser/tools"` and a typo is a compile
+// error rather than a silently empty allowlist. The array stays for the plugin
+// contract (chat + stage assembly still read it).
+export { browser_act, browser_key, browser_open, browser_read, browser_record, browser_screenshot, browser_scroll, browser_snapshot };

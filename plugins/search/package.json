@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Web search plugin: provider chain (tavily/exa/brave) behind /search + the web_search sandbox tool. Evals pick the default provider.",
   "exports": {
-    ".": "./plugin.ts"
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

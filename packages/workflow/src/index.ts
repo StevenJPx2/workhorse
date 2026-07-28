@@ -45,5 +45,7 @@ export type {
 } from "./discover";
 export { POLARITIES, stubFromSchema } from "./stub";
 export type { StubPolarity } from "./stub";
+export { agentEpilogue, agentSession } from "./agent-session";
+export type { AgentSession } from "./agent-session";
 export { renderMermaid, renderText } from "./render";
 export type { RenderOptions } from "./render";
