@@ -3,7 +3,7 @@
 import type { TicketParams } from "@workhorse/api";
 import { appendEvents, appendSteer, wakeTicket } from "../events";
 import { fileTicket } from "../tickets";
-import { getTicket, knownRepos, listTickets, listTraceIndex, patchTicket } from "../db";
+import { db } from "../db";
 import { healTicket } from "../heal";
 import { json, type Route } from "../router";
 
@@ -25,14 +25,14 @@ export const ticketRoutes: Route[] = [
     path: "/tickets",
     auth: "master",
     handler: async ({ env, url }) =>
-      json({ tickets: await listTickets(env, url.searchParams.get("status") ?? undefined) }),
+      json({ tickets: await db(env).listTickets(url.searchParams.get("status") ?? undefined) }),
   },
   {
     // Repos the fleet has seen, most recent first (home-page chips).
     method: "GET",
     path: "/repos",
     auth: "master",
-    handler: async ({ env }) => json({ repos: await knownRepos(env) }),
+    handler: async ({ env }) => json({ repos: await db(env).knownRepos() }),
   },
   {
     // Ticket detail (registry + live workflow status + self-heal reconcile).
@@ -40,7 +40,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)$/,
     auth: "master",
     async handler({ env, match }) {
-      let ticket = await getTicket(env, match[1]);
+      let ticket = await db(env).getTicket(match[1]);
       if (!ticket) return json({ error: "not found" }, 404);
       let wfStatus: { status?: string } | null = null;
       try {
@@ -55,7 +55,7 @@ export const ticketRoutes: Route[] = [
       const deadMap = { errored: "errored", terminated: "terminated" } as const;
       const wf = (wfStatus?.status ?? "") as keyof typeof deadMap;
       if (deadMap[wf] && activeStatuses.includes(ticket.status)) {
-        const r = await patchTicket(env, match[1], {
+        const r = await db(env).patchTicket(match[1], {
           status: deadMap[wf],
           error: ticket.error || `workflow instance ${wf}`,
         });
@@ -80,7 +80,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/stop$/,
     auth: "master",
     async handler({ env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       try {
         const inst = await env.TICKET_WF.get(rec.wfInstance || match[1]);
@@ -88,7 +88,7 @@ export const ticketRoutes: Route[] = [
       } catch (e) {
         return json({ error: `terminate failed: ${e instanceof Error ? e.message : e}` }, 500);
       }
-      await patchTicket(env, match[1], { status: "terminated", error: "stopped by user" });
+      await db(env).patchTicket(match[1], { status: "terminated", error: "stopped by user" });
       return json({ ok: true });
     },
   },
@@ -99,7 +99,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/steer$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       const active = ["queued", "planning", "implementing", "ready-for-review"];
       if (!active.includes(rec.status ?? "")) {
@@ -120,7 +120,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/input$/,
     auth: "master",
     async handler({ request, env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       if (rec.status !== "awaiting-input" || !rec.runId) {
         return json({ error: "ticket is not awaiting input" }, 409);
@@ -140,7 +140,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/(accept|request-changes)$/,
     auth: "master",
     async handler({ request, env, ctx, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       if (rec.status !== "awaiting-acceptance") {
         return json({ error: "ticket is not awaiting acceptance" }, 409);
@@ -170,7 +170,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/attach$/,
     auth: "master",
     async handler({ request, env, ctx, url, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
       if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
@@ -203,7 +203,7 @@ export const ticketRoutes: Route[] = [
     async handler({ env, match }) {
       const stored = await env.TICKETS.get(`activity:${match[1]}`);
       if (stored) return new Response(stored, { headers: { "content-type": "application/json" } });
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec) return json({ error: "not found" }, 404);
       // The def path writes activity:<id> on every attempt, so an uncached
       // read just means the first stage hasn't finished yet.
@@ -216,7 +216,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/output$/,
     auth: "master",
     async handler({ env, match }) {
-      const rec = await getTicket(env, match[1]);
+      const rec = await db(env).getTicket(match[1]);
       if (!rec?.runId) return json({ output: null, note: "no run yet" });
       // Flue-first: the stage session runs in the Worker (no on-disk event
       // stream). Live signal = the live: snapshot (phase/note from onStage);
@@ -249,8 +249,7 @@ export const ticketRoutes: Route[] = [
     path: /^\/tickets\/([a-z0-9-]+)\/notifications$/,
     auth: "master",
     async handler({ env, match }) {
-      const { listNotifications } = await import("../notifications");
-      return json({ notifications: await listNotifications(env, match[1]) });
+      return json({ notifications: await db(env).listNotifications(match[1]) });
     },
   },
   {
@@ -282,7 +281,7 @@ export const ticketRoutes: Route[] = [
     method: "GET",
     path: /^\/tickets\/([a-z0-9-]+)\/traces$/,
     auth: "master",
-    handler: async ({ env, match }) => json(await listTraceIndex(env, match[1])),
+    handler: async ({ env, match }) => json(await db(env).listTraceIndex(match[1])),
   },
   {
     // Trace bodies: R2 first; legacy KV fallback (pre-blob-plane archives).

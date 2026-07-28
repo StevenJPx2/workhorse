@@ -1,7 +1,9 @@
 // Ticket filing — shared by the HTTP API and source plugins (Slack).
 
 import type { Env, TicketParams, TicketRecord } from "@workhorse/api";
-import { insertTicket } from "./db";
+import { START_RUNWAY_MS } from "@workhorse/auth";
+import { modelToken } from "./auth";
+import { db } from "./db";
 import { parseRefs, recordRefUse } from "./refs";
 
 /**
@@ -83,20 +85,14 @@ export async function fileTicket(
     body.repo = `https://github.com/${body.repo}.git`;
   }
   if (!body.accessToken) {
-    // Fall back to the custodian-pushed token. Refuse only when there is NO
-    // token, or its expiry is KNOWN and within 10 min. A zero/absent expiry
-    // (custodian pushed without runway info) is treated as usable — the flue
-    // runner re-reads auth:access every stage, so mid-run rotation depends on
-    // the custodian keeping KV fresh, not on a file-time runway estimate.
-    const stored = await env.TICKETS.get("auth:access");
-    const parsed = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-    if (!parsed?.access) {
-      return { ok: false, error: "no access token (custodian has not pushed one)", status: 503 };
+    // Fall back to the custodian-pushed token, requiring enough runway to START
+    // a run. Stages re-read the token every turn, so mid-run rotation is the
+    // custodian's job — this gate only refuses to begin on fumes.
+    const access = await modelToken(env).usable(START_RUNWAY_MS);
+    if (!access) {
+      return { ok: false, error: "no usable access token (custodian push missing or stale?)", status: 503 };
     }
-    if (parsed.expires > 0 && parsed.expires - Date.now() < 10 * 60 * 1000) {
-      return { ok: false, error: "access token near expiry (custodian push stale?)", status: 503 };
-    }
-    body.accessToken = parsed.access;
+    body.accessToken = access;
   }
   const id = crypto.randomUUID().slice(0, 8);
   const now = new Date().toISOString();
@@ -115,7 +111,7 @@ export async function fileTicket(
     workflow: body.workflow,
     wfInstance: id,
   };
-  await insertTicket(env, rec);
+  await db(env).putTicket(rec);
   await env.TICKET_WF.create({
     id,
     params: { ...body, id, title: rec.title } as TicketParams,

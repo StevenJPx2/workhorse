@@ -12,7 +12,9 @@ import { defineAgent, registerProvider } from "@flue/runtime";
 import { cloudflareSandbox } from "@flue/runtime/cloudflare";
 import { createFlueContext, resolveModel } from "@flue/runtime/internal";
 import type { Env } from "@workhorse/api";
+import { START_RUNWAY_MS } from "@workhorse/auth";
 import { sandboxDriver } from "./agent-run";
+import { modelToken } from "./auth";
 import { assembleChatTools, toolContext } from "./plugins";
 
 const SYSTEM = `You are the Workhorse fleet operator agent, chatting with the user from the fleet dashboard.
@@ -26,11 +28,8 @@ export async function runFleetChat(
   selfOrigin: string,
   messages: Array<{ role: string; content: string }>,
 ): Promise<{ ok: true; reply: string } | { ok: false; error: string; status: number }> {
-  const stored = await env.TICKETS.get("auth:access");
-  const auth = stored ? (JSON.parse(stored) as { access: string; expires: number }) : null;
-  // Usable unless absent, or expiry is KNOWN (>0) and within 10 min. A zero
-  // expiry means the custodian pushed without runway info — treat as usable.
-  if (!auth?.access || (auth.expires > 0 && auth.expires - Date.now() < 10 * 60 * 1000)) {
+  const token = await modelToken(env).usable(START_RUNWAY_MS);
+  if (!token) {
     return { ok: false, error: "no fresh access token (custodian push stale?)", status: 503 };
   }
 
@@ -45,7 +44,7 @@ export async function runFleetChat(
   const prompt = `Conversation so far:\n${history}\n\nReply to the last user message.`;
 
   const model = "anthropic/claude-sonnet-4-6";
-  registerProvider("anthropic", { apiKey: auth.access });
+  registerProvider("anthropic", { apiKey: token });
   const agent = defineAgent(() => ({
     model,
     instructions: SYSTEM,

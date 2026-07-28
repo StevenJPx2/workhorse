@@ -1,0 +1,28 @@
+{
+  "name": "@workhorse/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "D1 relational plane — Drizzle schema, migrations, and the injected query layer",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate:local": "wrangler d1 migrations apply workhorse --local",
+    "migrate:remote": "wrangler d1 migrations apply workhorse --remote",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.18.8",
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^7.0.2"
+  }
+}

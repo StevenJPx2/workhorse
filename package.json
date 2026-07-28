@@ -34,11 +34,20 @@
     "test:contract:aft": "AFT_CONTRACT=1 vitest run plugins/aft/tools/__tests__/contract.test.ts",
     "report": "node scripts/report.mjs",
     "report:open": "node scripts/report.mjs --open",
-    "report:md": "node scripts/report.mjs --no-tests --markdown"
+    "report:md": "node scripts/report.mjs --no-tests --markdown",
+    "db:generate": "cd packages/db && drizzle-kit generate",
+    "db:migrate": "cd packages/db && bun run migrate:local",
+    "db:migrate:remote": "cd packages/db && bun run migrate:remote",
+    "db:studio": "cd packages/db && drizzle-kit studio"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.18.8",
     "@cloudflare/workers-types": "^5.20260721.1",
+    "@types/better-sqlite3": "^7.6.13",
     "autoevals": "^0.3.0",
+    "better-sqlite3": "12.11.1",
+    "drizzle-kit": "0.31.10",
+    "drizzle-orm": "0.45.2",
     "evalite": "^0.19.0",
     "fallow": "^3.9.1",
     "oxlint": "^1.75.0",

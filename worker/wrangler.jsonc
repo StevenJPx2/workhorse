@@ -83,7 +83,11 @@
     {
       "binding": "DB",
       "database_name": "workhorse",
-      "database_id": "85f8b551-162f-4ecb-8430-10099f2d3da5"
+      "database_id": "85f8b551-162f-4ecb-8430-10099f2d3da5",
+      // Drizzle generates into worker/migrations from packages/db/src/schema.ts;
+      // wrangler applies them and owns the ledger. This is the default path, but
+      // stated explicitly so the coupling to drizzle.config.ts's `out` is visible.
+      "migrations_dir": "migrations"
     }
   ],
   "workflows": [

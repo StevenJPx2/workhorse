@@ -8,8 +8,9 @@
 //   master — the fleet bearer (SPIKE_TOKEN)
 
 import type { Env } from "@workhorse/api";
+import { type Auth, permits, type Tiers } from "@workhorse/auth";
 
-export type Auth = "public" | "scoped" | "master";
+export type { Auth };
 
 export interface RouteCtx {
   request: Request;
@@ -38,10 +39,11 @@ const EMPTY_MATCH = [""] as unknown as RegExpMatchArray;
 export function dispatch(
   routes: Route[],
   c: Omit<RouteCtx, "match">,
-  tiers: { scoped: boolean; master: boolean },
+  tiers: Tiers,
 ): Promise<Response> | Response | null {
   for (const r of routes) {
     if (r.method !== "*" && r.method !== c.request.method) continue;
+
     let match: RegExpMatchArray | null = null;
     if (typeof r.path === "string") {
       if (r.path !== c.url.pathname) continue;
@@ -50,8 +52,11 @@ export function dispatch(
       match = c.url.pathname.match(r.path);
       if (!match) continue;
     }
-    if (r.auth === "scoped" && !tiers.scoped) return new Response("unauthorized", { status: 401 });
-    if (r.auth === "master" && !tiers.master) return new Response("unauthorized", { status: 401 });
+
+    // A matched-but-unauthorized route returns 401 rather than falling through:
+    // continuing would let a later, looser route serve the request.
+    if (!permits(r.auth, tiers)) return new Response("unauthorized", { status: 401 });
+
     return r.handler({ ...c, match });
   }
   return null;

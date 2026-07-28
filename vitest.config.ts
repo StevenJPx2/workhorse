@@ -19,13 +19,19 @@ export default defineConfig({
         },
       },
       // Package tests: packages/<name>/{src,test}/**
+      // @workhorse/db is excluded here — it needs workerd + real D1, so it
+      // brings its own config (referenced below) rather than running on node.
       {
         test: {
           name: "packages",
           include: ["packages/*/**/__tests__/**/*.test.ts", "packages/*/test/**/*.test.ts"],
+          exclude: ["packages/db/**"],
           environment: "node",
         },
       },
+      // @workhorse/db — runs INSIDE workerd against a real local D1, because a
+      // mocked D1 would accept SQL that SQLite rejects.
+      "./packages/db/vitest.config.ts",
       // Worker tests
       {
         test: {

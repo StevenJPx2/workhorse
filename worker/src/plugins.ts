@@ -1,6 +1,7 @@
 // Composition root: the ONLY place in the workspace that imports concrete
 // plugins. Everything else sees @workhorse/api interfaces.
 
+import { validateScript } from "@workhorse/db";
 import { aftPlugin } from "@workhorse/aft";
 import { browserPlugin } from "@workhorse/browser";
 import { githubPlugin } from "@workhorse/github";
@@ -24,6 +25,7 @@ import type {
   WorkhorsePlugin,
   WorkhorseTool,
 } from "@workhorse/api";
+import { db } from "./db";
 import { appendEvents, appendSteer, wakeTicket } from "./events";
 import { runFleetChat } from "./chat";
 
@@ -109,14 +111,8 @@ export function attachmentProviders() {
 /** Core services handed to plugin webhooks, routes, and hooks. */
 export function coreFor(env: Env, selfOrigin: string): Core {
   return {
-    getTicket: async (ticketId) => {
-      const { getTicket } = await import("./db");
-      return getTicket(env, ticketId);
-    },
-    listTickets: async (status) => {
-      const { listTickets } = await import("./db");
-      return listTickets(env, status);
-    },
+    getTicket: (ticketId) => db(env).getTicket(ticketId),
+    listTickets: (status) => db(env).listTickets(status),
     ticketDiff: async (ticketId) => env.TICKETS.get(`diff:${ticketId}`),
     findWorkflows: async (query, topK) => {
       const { workflowIndex } = await import("./semindex");
@@ -154,17 +150,14 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       await wakeTicket(env, ticketId);
     },
     fleetChat: (messages) => runFleetChat(env, selfOrigin, messages),
-    listScripts: async (repo) => {
-      const { listScripts } = await import("./db");
-      return listScripts(env, repo);
-    },
+    listScripts: (repo) => db(env).listScripts(repo),
     getScriptByName: async (name, repo) => {
-      const { getScript } = await import("./db");
+      // repo scope shadows global for the same name.
       if (repo) {
-        const hit = await getScript(env, `repo:${repo}`, name);
+        const hit = await db(env).getScript(`repo:${repo}`, name);
         if (hit) return hit;
       }
-      return getScript(env, "global", name);
+      return db(env).getScript("global", name);
     },
     notify: async (n) => {
       const { notify } = await import("./notifications");
@@ -176,11 +169,10 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       return r.ok ? { ok: true, ticket: r.ticket } : { ok: false, error: r.error };
     },
     registerScript: async (s) => {
-      const { validateScript, upsertScript, getScript } = await import("./db");
       const err = validateScript(s);
       if (err) return { ok: false, error: err };
       const now = new Date().toISOString();
-      const existing = await getScript(env, s.scope, s.name);
+      const existing = await db(env).getScript(s.scope, s.name);
       // Seeded scripts stay pristine: agents/users update their own entries,
       // but a seed is only replaced by an explicit user action.
       if (existing?.createdBy === "seed" && s.createdBy === "agent") {
@@ -192,7 +184,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
-      await upsertScript(env, script);
+      await db(env).upsertScript(script);
       console.log(`script ${existing ? "updated" : "registered"}: ${s.scope}/${s.name} by ${s.createdBy}`);
       // Semantic discovery: keep the scripts corpus fresh (best-effort).
       const { scriptIndex } = await import("./semindex");

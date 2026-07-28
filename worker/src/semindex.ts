@@ -3,6 +3,7 @@
 // sandbox tools call it).
 
 import { defineIndex } from "@workhorse/semindex";
+import { db } from "./db";
 import type { Env, ScriptRecord } from "@workhorse/api";
 
 
@@ -83,13 +84,10 @@ export const TOOL_CATALOG: ToolDoc[] = [
 
 /** Rebuild every corpus (admin; idempotent — upserts replace by id). */
 export async function reindexAll(env: Env): Promise<Record<string, number>> {
-  // Scripts: all scopes — listScripts(repo) is scoped, so read the table.
-  const { results } = await env.DB.prepare("SELECT * FROM scripts").all<Record<string, string>>();
-  const scripts: ScriptRecord[] = (results ?? []).map((r) => ({
-    scope: r.scope, name: r.name, description: r.description, code: r.code,
-    args: JSON.parse(r.args || "[]"), statusGates: JSON.parse(r.status_gates || "[]"),
-    createdBy: r.created_by as ScriptRecord["createdBy"], createdAt: r.created_at, updatedAt: r.updated_at,
-  }));
+  // Every scope — listScripts(repo) is deliberately scoped, so the index build
+  // reads the whole table. The rows already carry parsed args/statusGates, so
+  // the hand-rolled JSON.parse mapping this replaced is gone.
+  const scripts = await db(env).allScripts();
 
   // Workflows are hard-coded defs — index their manifests directly.
   const { workflowDefs } = await import("@workhorse/workflow");

@@ -3,7 +3,7 @@
 // memory in KV). Used by POST /tickets/:id/heal and the cron sweep.
 
 import type { Env, TicketParams } from "@workhorse/api";
-import { getTicket, listTraceIndex, patchTicket } from "./db";
+import { db } from "./db";
 
 const MAX_HEALS = 3;
 
@@ -11,7 +11,7 @@ export async function healTicket(
   env: Env,
   ticketId: string,
 ): Promise<{ ok: boolean; reason?: string; instance?: string }> {
-  const rec = await getTicket(env, ticketId);
+  const rec = await db(env).getTicket(ticketId);
   if (!rec) return { ok: false, reason: "not found" };
   if (rec.status !== "errored") return { ok: false, reason: `status is ${rec.status}, only errored tickets heal` };
   const attempts = rec.healAttempts ?? 0;
@@ -23,7 +23,7 @@ export async function healTicket(
   // re-dispatching it just burns tokens. Those need a steer or a fix, not
   // a heal.
   if (attempts >= 1 && /ended failed/.test(rec.error ?? "")) {
-    const traces = await listTraceIndex(env, ticketId);
+    const traces = await db(env).listTraceIndex(ticketId);
     const last = traces[0];
     if (last?.kind?.endsWith("-failed")) {
       return { ok: false, reason: "deterministic failure (failed run twice); needs operator action, not a heal" };
@@ -52,7 +52,7 @@ export async function healTicket(
     resume: true,
   };
   await env.TICKET_WF.create({ id: instance, params });
-  await patchTicket(env, ticketId, {
+  await db(env).patchTicket(ticketId, {
     wfInstance: instance,
     healAttempts: attempts + 1,
     status: "queued",
