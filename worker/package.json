@@ -25,6 +25,7 @@
     "@workhorse/jira": "workspace:*",
     "@workhorse/knowledge": "workspace:*",
     "@workhorse/ntfy": "workspace:*",
+    "@workhorse/o11y": "workspace:*",
     "@workhorse/paste": "workspace:*",
     "@workhorse/sandbox": "workspace:*",
     "@workhorse/scripts": "workspace:*",

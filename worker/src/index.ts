@@ -18,6 +18,7 @@
 
 import type { Env } from "@workhorse/api";
 import { db } from "@workhorse/db";
+import { initLogging, log, ticketEvent } from "@workhorse/o11y";
 import { healTicket } from "@workhorse/intake";
 import { createServer, sweepCronTriggers } from "@workhorse/server";
 import { coreFor } from "./core";
@@ -29,6 +30,11 @@ export { healTicket } from "@workhorse/intake";
 export { TicketWorkflow } from "./ticket-workflow";
 // Loopback entrypoint for Code Mode dynamic workers (ctx.exports.ToolBridge).
 export { ToolBridge } from "./codemode";
+
+// Structured logging, configured before the handler is built. Every ticket event
+// carries ticketId (+ runId, stage), so one query returns a whole run rather than
+// a grep across unstructured lines.
+initLogging({ service: "workhorse" });
 
 /** The plugin-derived surface every package receives. */
 const deps = {
@@ -59,11 +65,17 @@ export default {
         if (rec.updatedAt >= cutoff) continue;
 
         const res = await healTicket(env, rec.id);
-        console.log(`heal sweep ${rec.id}: ${res.ok ? `re-dispatched as ${res.instance}` : res.reason}`);
+        log.info(
+          ticketEvent(
+            res.ok
+              ? { ticketId: rec.id, repo: rec.repo, event: "healed", instance: res.instance }
+              : { ticketId: rec.id, repo: rec.repo, event: "heal-skipped", reason: res.reason },
+          ),
+        );
       }
 
       const fired = await sweepCronTriggers(intake, env);
-      if (fired.length) console.log(`cron triggers fired: ${fired.join(", ")}`);
+      if (fired.length) log.info({ event: "cron-fired", triggers: fired });
     };
 
     ctx.waitUntil(sweep());
