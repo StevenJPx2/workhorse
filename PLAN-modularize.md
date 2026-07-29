@@ -1307,11 +1307,82 @@ than the health score.
 4. GitHub Actions: push→prod, PR→preview, PR-close→destroy
 5. Reduce `worker/src/index.ts` to `createServer({ workflows })`
 
-### Phase 8: Cleanup
-1. Remove `scripts-toml.ts`
-2. `fallow fix --dry-run` → apply the safe automatic cleanups
-3. Target: fallow health ≥ 85 (B or better)
-4. Update README + ROADMAP
+### Phase 8: Cleanup ✅ DONE
+
+**Gate met: root health 89 A**, past the ≥ 85 target.
+
+Two of the four items turned out to be wrong, and finding out why produced the
+phase's actual result.
+
+**"Remove `scripts-toml.ts`" — NOT done, because it is live.** The reasoning
+behind the item was that hard-coded TypeScript workflows removed the need to seed
+`.workhorse/scripts.toml`. That was true for *workflows* and false for *scripts*:
+the file seeds the D1 script registry that `list_scripts` / `run_script` /
+`write_script` read, and the coding workflow's coder agent imports two of those
+tools. Phase 6 added six passing tests for the seeding path. Deleting it would
+have removed a working feature on the strength of a stale plan line.
+
+**`fallow fix --dry-run` offered 9 un-exports — none applied.** Every one is used
+inside its own module, so the fix would have hidden the symbol rather than
+removed anything. Un-exporting satisfies the finding and loses the ability to
+test the function directly, which is the opposite of what the finding is for.
+Answered with tests instead: **`cronMatches` / `validateCron` / `renderTemplate`**
+(41 cases — cron decides whether scheduled work runs at all, and month is 1-12
+where a JS `Date`'s is 0-11), and the steer queue's append-only + cursor
+semantics.
+
+**The one that mattered: `pendingSteers` / `consumeSteers` were genuinely dead —
+and that was a shipped bug.** `POST /tickets/:id/steer` validated the ticket
+state, wrote to KV, and answered
+`{ ok: true, note: "steer queued; applied on the next drive burst (<1 min)" }`.
+Nothing read the queue. The interpreter's `steerWorkflow` had been its only
+consumer, deleted in `1f165f3` — so **every mid-run steer since then was accepted
+and silently discarded**, including the urgent-notification path that routes
+through `appendSteer`.
+
+Everything needed to deliver it already existed: `assemblePrompt` had a written
+`parts.steer` section stating that operator instructions take precedence, and
+`workflow-run.ts` had the `readNotifications` injection seam beside it. The fix
+is a `readSteers` read point consulted before **every** stage session —
+unconditional, unlike notifications, because an operator redirecting a run should
+not have to know which stages declared a read point. The cursor advances only
+after the steer is rendered into a prompt.
+
+Also updated: README (package table, the memory plane, `memory_search` /
+`memory_write`) and ROADMAP.
+
+### Phase 7: Alchemy deployment — NOT STARTED (needs a decision)
+
+Deliberately left. Phase 7 replaces `wrangler.jsonc` with `alchemy.run.ts`, and
+unlike every phase before it, its gate (`alchemy deploy` succeeds) is a
+**production mutation** against live infrastructure:
+
+| resource | live state |
+|---|---|
+| D1 `workhorse` | 47 tickets, 143 escalations, 58 traces |
+| Durable Objects | `Sandbox` class with an applied `v1` migration tag |
+| R2, KV, Vectorize, AI Search | populated |
+| Worker | `workhorse-sandbox`, deployed, with secrets set |
+
+The research is done and adoption is supported — Alchemy's default physical name
+is `{app}-{stage}-{id}`, so every resource needs an explicit `name` plus
+`adopt: true` to bind to what exists instead of provisioning a parallel stack.
+`migrationsTable: "drizzle_migrations"` matches the ledger Phase 1 established.
+
+Two open questions worth answering before touching it:
+
+1. **Alchemy 0.93 (`latest`) or 2.0-beta (`next`)?** The docs describe the 2.0
+   Effect-based API; `latest` is the `await`-based one. Writing against the docs
+   means running a beta on the deploy path.
+2. **Is the deploy path worth changing at all right now?** `wrangler deploy`
+   works. The plan's motivation was PR preview environments and typed bindings —
+   real, but neither is blocking, and the container image build is the part most
+   likely to behave differently under a new deploy tool.
+
+A safe first step exists if wanted: write `alchemy.run.ts` with `adopt: true`
+everywhere and run `alchemy deploy --dry-run` (or against a `pr-` stage) to see
+the plan without applying it. That is not a production mutation and would answer
+both questions with evidence.
 
 ## Phase SOP
 

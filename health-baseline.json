@@ -20,7 +20,7 @@
     "plugins/tickets": 100,
     "plugins/todo": 100,
     "ui": 87.2,
-    "worker": 87.4,
+    "worker": 87.8,
     "packages/test-utils": 100,
     "packages/auth": 100,
     "packages/db": 98.1,

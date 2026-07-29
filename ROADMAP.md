@@ -265,19 +265,39 @@ separate package, worker becomes thin shell. Full plan: `PLAN-modularize.md`.
 - [Valibot](https://valibot.dev) — TypeScript schema validation
 - [Cloudflare AI Search](https://developers.cloudflare.com/ai-search/) — Semantic search
 
-**Migration phases:**
-1. Extract packages (no behavior change)
-2. Add `agent()` primitive
-3. Refactor plugins (individual tool exports)
-4. Create workflow packages
-5. Replace Magic Context with AI Search
-6. Refactor worker (thin shell + Alchemy)
-7. Cleanup
+**Migration phases** (SOP + per-phase gates in `PLAN-modularize.md`):
+
+| Phase | | Gate met |
+|---|---|---|
+| 0 · toolchain | ✅ | oxlint + fallow, per-package health floors, CI gate |
+| 0.5 · tests | ✅ | 3 test layers; the contract layer found 5 shipped browser bugs |
+| 0.6 · reporting | ✅ | README badge + trend graph, PR job summary, sticky PR comment |
+| 1 · db + auth | ✅ | Drizzle schema-as-code; prod baseline adopted with zero data loss |
+| 2 · primitives | ✅ | `agent()` + `workflow()`; stage graph DERIVED from `run()` |
+| 3 · plugin tools | ✅ | named tool exports — a typo is a compile error |
+| 4 · workflow package | ✅ | `workflows/coding`; discovered graph matches the real pipeline |
+| 5 · break the cycles | ✅ | **all 6 import cycles gone; worker 62.3 → 87.4 (C → A)** |
+| 6 · AI Search | ✅ | per-repo memory replaces Magic Context (−90MB image, −per-ticket round-trip) |
+| 7 · Alchemy deploy | ⏸ | **needs a decision** — its gate is a production mutation |
+| 8 · cleanup | ✅ | root health **89 A**; found and fixed silently-broken mid-run steering |
+
+Phase 5 did not extract the five packages the plan listed. The cycles were the
+*reason* extraction looked necessary, and they came from two files doing two jobs
+each — so fixing the coupling directly got the whole +25.1 without moving a line.
+The remaining extractions (`sandbox`, `events`, `tickets`, `server`) now have to
+justify themselves on something other than the health score.
 
 **Testing per package:**
-- Each package gets its own Vitest test suite
-- Observability (tracing, metrics, logging) per package
-- Visual simulation for testing workflow execution
+- Vitest — one root config with `projects`; **1065 tests** across 24 packages
+- Three layers, each proving something the others cannot: mocked (our logic),
+  contract (the real binary accepts what we send), model eval (a model still
+  picks the right tool)
+- Coverage feeds `fallow audit`'s CRAP scoring, so an untested branchy function
+  fails the PR gate
+- Observability (tracing, metrics) — **not started**; belongs with the workflow
+  extraction, when there is something worth tracing
+- Visual surface — HTML report + README badge/graph + PR job summary. Storybook
+  was rejected: nothing to simulate outside `ui/`
 
 ### Flue-first: hard-coded, eval-tested workflows (DECISION PENDING — awaiting green light)
 

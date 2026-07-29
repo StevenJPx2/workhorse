@@ -41,16 +41,30 @@ model credential.
 | Stage session | Worker (flue harness) | each `ctx.stage()` is one in-process flue session; tools are the plugins' `tools.ts` factories, intersected with the stage allowlist |
 | Muscle | Cloudflare Sandbox | per-ticket container: the cloned repo + tool exec. No Pi, no baked model credential. |
 | Brain | Anthropic (Claude subscription OAuth) | called from the Worker by the flue harness |
-| Memory | D1 + KV + R2 + Vectorize + AI Search | records in D1; hot state in KV; blobs (traces, repo memory, dep cache) in R2; semantic registries (scripts/workflows/tools) in Vectorize; fleet-wide run knowledge in AI Search |
+| Memory | D1 + KV + R2 + Vectorize + AI Search | records in D1 (Drizzle, `packages/db`); hot state in KV; blobs (traces, dep cache) in R2; semantic registries (scripts/workflows/tools) in Vectorize; fleet-wide run knowledge AND per-repo agent memory in AI Search |
 | Token custody | homelab server | holds+refreshes the OAuth refresh token; pushes short-lived access tokens to the Worker (`POST /token`) |
 | Face | Nuxt UI (`ui/`) | chat-first home, fleet list, run-centric ticket page with live output, read-only workflow graph, agent blocks, `/embed` for dashboards |
 
-**Workspace (hard boundaries):** `packages/api` is the contract; each
-`plugins/<name>` package depends on it and nothing else (enforced by
-workspace resolution); `worker/` is the only package that imports concrete
-plugins. A plugin's stage tools live in `tools.ts` (worker-side flue tools);
-an optional `extension.ts` (Pi tools for the fleet chat) is auto-discovered
-by the sandbox image build.
+**Workspace (hard boundaries):** `packages/api` is the contract — `tool()`,
+`agent()`, and the plugin/Env types. Each `plugins/<name>` package depends on it
+and nothing else (enforced by workspace resolution), exporting its tools both as
+an array (for plugin assembly) and as named bindings, so an agent that imports a
+tool by name gets a compile error on a typo instead of a silently empty
+allowlist. `workflows/<name>` packages compose agents from those tools;
+`worker/` is the only package that registers concrete plugins.
+
+| Package | Owns |
+|---|---|
+| `packages/api` | `tool()`, `agent()`, plugin + Env contract |
+| `packages/db` | Drizzle schema and repos (`db.tickets.list()`), migrations |
+| `packages/auth` | request auth tiers, model-token custody |
+| `packages/workflow` | `workflow()`, stage graph discovery, prompt assembly |
+| `packages/semindex` | `defineIndex` over Vectorize + Workers AI |
+| `packages/test-utils` | the three test layers' doubles and harnesses |
+| `plugins/core` | the workspace tools every stage draws from (read/grep/bash/write/edit) |
+| `plugins/<name>` | one capability each, contract-only dependency |
+| `workflows/<name>` | agents + `run()` routing for one pipeline |
+| `worker/` | composition root, HTTP surface, ticket spine, deployment |
 
 **Workflows are code; the rest is data.** A workflow is a hard-coded,
 eval-tested `WorkflowDef` in `packages/workflow` — adding one is a def + an
@@ -108,9 +122,10 @@ Each plugin is a single `plugins/<name>/` package with an optional worker half (
 | | |
 |---|---|
 | Package | `plugins/knowledge` |
-| Sandbox tools | `search_fleet_knowledge` (AI Search semantic index of every past run) |
+| Sandbox tools | `search_fleet_knowledge` (every past run, all repos), `memory_search` / `memory_write` (this repo's durable facts) |
 | Worker routes | `POST /knowledge/search` (federated search), `POST /knowledge/reindex` (backfill) |
 | Bindings | `AI_SEARCH` (AutoRAG namespace), `BLOBS` (R2 bucket for trace storage) |
+| Corpora | Fleet knowledge (distilled run traces) and per-repo memory, namespaced in one instance. Memory replaced Magic Context: same retrieval stack, committed on write, scoped per repo. |
 
 ### imgup
 | | |

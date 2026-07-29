@@ -17,6 +17,7 @@ import { fireHook } from "./core";
 import { STAGE_RUNWAY_MS } from "@workhorse/auth";
 import { modelToken } from "./auth";
 import { db } from "./db";
+import { consumeSteers, pendingSteers } from "./events";
 import { renderNotifications } from "./notifications";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
@@ -245,6 +246,20 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
               // should not silently swallow the operator's message.
               const rendered = renderNotifications(queued);
               await db(this.env).notifications.markRead(t.id, queued[queued.length - 1].seq);
+              return rendered;
+            },
+            // Steer read point. POST /tickets/:id/steer has been queueing to KV
+            // since the interpreter was removed (1f165f3) — steerWorkflow was the
+            // only consumer, so the endpoint answered ok:true and the message was
+            // never delivered to any stage. Consumed here, before every session.
+            readSteers: async () => {
+              const pending = await pendingSteers(this.env, t.id);
+              if (!pending.length) return null;
+
+              // Cursor advances only after the steer is rendered into a prompt,
+              // so a session that dies before starting does not consume it.
+              const rendered = pending.map((s) => `- ${s}`).join("\n");
+              await consumeSteers(this.env, t.id);
               return rendered;
             },
             onStage: async (s) => {

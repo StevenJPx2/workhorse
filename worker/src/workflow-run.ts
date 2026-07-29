@@ -54,6 +54,14 @@ export interface WorkflowRunDeps {
   }) => Promise<void>;
   /** Notification read point for stages that declare notifications: "read". */
   readNotifications?: (stageId: string) => Promise<string | null>;
+  /**
+   * Operator steering read point, consulted before EVERY stage session.
+   *
+   * Unlike notifications — which only reach stages that declare a read point —
+   * a steer is a human redirecting the run, so it is delivered to whatever stage
+   * runs next.
+   */
+  readSteers?: (stageId: string) => Promise<string | null>;
 }
 
 async function readStageResult(
@@ -199,12 +207,17 @@ export function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
       if (spec.notifications === "read" && deps.readNotifications) {
         notifications = (await deps.readNotifications(id).catch(() => null)) ?? undefined;
       }
+      // Steering is unconditional: an operator redirecting a live run should not
+      // have to know which stages declared a read point.
+      const steer = (await deps.readSteers?.(id).catch(() => null)) ?? undefined;
+
       const prompt = assemblePrompt(spec, dir, {
         task,
         inputs,
         upstream,
         routedFrom: inv?.routedFrom,
         notifications,
+        steer,
         round,
       });
       await sandbox.writeFile(`${dir}/persona.md`, session.persona);
