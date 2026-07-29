@@ -5,12 +5,11 @@
 // both holds the plugin list AND calls into those modules is what created five
 // import cycles.
 
+import { appendEvents, appendSteer, wakeTicket } from "@workhorse/events";
 import type { Core, Env, TicketRecord } from "@workhorse/api";
-import { validateScript } from "@workhorse/db";
-import { runFleetChat } from "./chat";
-import { db } from "./db";
-import { appendEvents, appendSteer, wakeTicket } from "./events";
-import { attachmentProviders, plugins } from "./registry";
+import { db, validateScript } from "@workhorse/db";
+import { runFleetChat } from "@workhorse/server";
+import { assembleChatTools, attachmentProviders, plugins } from "./registry";
 
 /**
  * Register or update a self-extension script.
@@ -49,7 +48,7 @@ async function registerScript(
   // Semantic discovery: keep the scripts corpus fresh. Best-effort — a failed
   // index update must not undo a successful registration.
   try {
-    const { scriptIndex } = await import("./semindex");
+    const { scriptIndex } = await import("@workhorse/server");
     await scriptIndex.upsert(env, [script]);
   } catch (indexErr) {
     console.warn(`script index update failed for ${draft.scope}/${draft.name}:`, indexErr);
@@ -65,7 +64,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     listTickets: (status) => db(env).tickets.list(status),
     ticketDiff: async (ticketId) => env.TICKETS.get(`diff:${ticketId}`),
     findWorkflows: async (query, topK) => {
-      const { workflowIndex } = await import("./semindex");
+      const { workflowIndex } = await import("@workhorse/server");
       const hits = await workflowIndex.query(env, query.slice(0, 500), { topK: topK ?? 5 });
       return hits.map((h) => {
         const m = (h.metadata ?? {}) as { name?: string; description?: string; stages?: string };
@@ -82,8 +81,8 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       }
     },
     fileTicket: async (body) => {
-      const { fileTicket } = await import("./tickets");
-      return fileTicket(env, body);
+      const { intake } = await import("./intake");
+      return intake.fileTicket(env, body);
     },
     appendEvents: (events) => appendEvents(env, events),
     wakeTicket: (ticketId) => wakeTicket(env, ticketId),
@@ -101,7 +100,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     },
     // Hands chat the facade being built rather than making chat import it — the
     // inversion that removes the core <-> chat cycle.
-    fleetChat: (messages) => runFleetChat(env, core, selfOrigin, messages),
+    fleetChat: (messages) => runFleetChat(env, core, selfOrigin, messages, assembleChatTools),
     listScripts: (repo) => db(env).scripts.list(repo),
     getScriptByName: async (name, repo) => {
       // repo scope shadows global for the same name.
@@ -112,12 +111,13 @@ export function coreFor(env: Env, selfOrigin: string): Core {
       return db(env).scripts.get("global", name);
     },
     notify: async (n) => {
-      const { notify } = await import("./notifications");
+      const { notify } = await import("@workhorse/events");
       await notify(env, n);
     },
     fireTrigger: async (name, payload) => {
-      const { fireTrigger } = await import("./triggers");
-      const r = await fireTrigger(env, name, payload);
+      const { fireTrigger } = await import("@workhorse/server");
+      const { intake } = await import("./intake");
+      const r = await fireTrigger(intake, env, name, payload);
       return r.ok ? { ok: true, ticket: r.ticket } : { ok: false, error: r.error };
     },
     registerScript: (s) => registerScript(env, s),

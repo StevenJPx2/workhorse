@@ -26,7 +26,7 @@ import {
   type WorkflowDef,
 } from "@workhorse/workflow";
 import type { Env, SandboxHandle } from "@workhorse/api";
-import { sandboxDriver } from "./agent-run";
+import { sandboxDriver } from "@workhorse/sandbox";
 import { makeStageSession } from "./flue-session";
 
 export interface WorkflowRunDeps {
@@ -160,7 +160,7 @@ export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResul
 }
 
 /** Build the concrete WorkflowContext for one run. */
-export function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
+function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
   const { env, sandboxId, selfOrigin, ticketId, repo, def, runId, task } = deps;
   const cwd = deps.cwd ?? "/workspace/repo";
   const inputs = deps.inputs ?? {};

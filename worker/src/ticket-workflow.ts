@@ -1,3 +1,5 @@
+import { consumeEvents, consumeSteers, pendingSteers, renderNotifications, unconsumedEvents } from "@workhorse/events";
+import { db } from "@workhorse/db";
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
 import {
   injectAuth,
@@ -9,16 +11,11 @@ import {
   prepareWorkspace,
   deliverBranch,
   checkoutTicketBranch,
-} from "./agent-run";
+} from "@workhorse/sandbox";
 import { workflowDef } from "@workhorse/workflow";
 import { runWorkflowDef, type DefRunResult } from "./workflow-run";
-import { unconsumedEvents, consumeEvents } from "./events";
 import { fireHook } from "./core";
-import { STAGE_RUNWAY_MS } from "@workhorse/auth";
-import { modelToken } from "./auth";
-import { db } from "./db";
-import { consumeSteers, pendingSteers } from "./events";
-import { renderNotifications } from "./notifications";
+import { STAGE_RUNWAY_MS, modelToken } from "@workhorse/auth";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
@@ -169,7 +166,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await updateTicket(this.env, t.id, { status: "planning" });
         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
         await prepareWorkspace(this.env, sandboxId, t.repo);
-        const { installAgentBlocks } = await import("./agents");
+        const { installAgentBlocks } = await import("@workhorse/server");
         await installAgentBlocks(this.env, sandboxId);
         await injectBrowserConfig(this.env, sandboxId);
         await injectImgupConfig(this.env, sandboxId);

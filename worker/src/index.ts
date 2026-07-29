@@ -1,83 +1,71 @@
-// Worker entry — thin by design: auth tiers + a route table. Domain logic
-// lives in routes/* (file-per-domain, Nitro-style separation without a
-// framework layer — this entry must also export the WorkflowEntrypoint
-// and Sandbox DO classes, which wrangler wires directly).
+// The composition root.
+//
+// This file exists to answer one question: which concrete plugins does this
+// deployment have? Everything else is a package —
+//
+//   @workhorse/server    the HTTP surface (routes, auth tiers, chat, triggers)
+//   @workhorse/intake    filing and healing tickets
+//   @workhorse/events    the event bus, steers, notifications
+//   @workhorse/sandbox   the container plane and Code Mode
+//   @workhorse/workflow  the stage engine
+//
+// None of them import a plugin. The three things they need from the registry —
+// the Core facade, attachment providers, chat tools — are supplied here, which is
+// what keeps the dependency arrow pointing one way.
+//
+// It also exports the classes the platform instantiates by name: the Sandbox DO,
+// the ticket WorkflowEntrypoint, and the Code Mode loopback bridge.
 
 import type { Env } from "@workhorse/api";
-import { permits, resolveTiers } from "@workhorse/auth";
-import { db } from "./db";
-import { healTicket } from "./heal";
-import { routeFor } from "./registry";
+import { db } from "@workhorse/db";
+import { healTicket } from "@workhorse/intake";
+import { createServer, sweepCronTriggers } from "@workhorse/server";
 import { coreFor } from "./core";
-import { dispatch, type Route } from "./router";
-import { miscRoutes } from "./routes/misc";
-import { registryRoutes } from "./routes/registries";
-import { sandboxCallbackRoutes } from "./routes/sandbox-callbacks";
-import { ticketRoutes } from "./routes/tickets";
-import { triggerRoutes } from "./routes/triggers";
-import { webhookRoutes } from "./routes/webhooks";
+import { intake } from "./intake";
+import { assembleChatTools, attachmentProviders, pluginFor, routeFor } from "./registry";
 
 export { Sandbox } from "@cloudflare/sandbox";
+export { healTicket } from "@workhorse/intake";
 export { TicketWorkflow } from "./ticket-workflow";
-export { healTicket } from "./heal";
 // Loopback entrypoint for Code Mode dynamic workers (ctx.exports.ToolBridge).
 export { ToolBridge } from "./codemode";
 
-/** Table order = precedence. */
-const routes: Route[] = [
-  ...webhookRoutes, // public (per-plugin signatures)
-  ...sandboxCallbackRoutes, // scoped (find, depcache)
-  ...registryRoutes, // master (admin, agents, workflows, token, meta)
-  ...ticketRoutes, // master (the fleet surface)
-  ...triggerRoutes, // master registry + public secret-gated /fire
-  ...miscRoutes, // master (chat, attachments/match, debug)
-];
+/** The plugin-derived surface every package receives. */
+const deps = {
+  core: coreFor,
+  attachmentProviders,
+  assembleChatTools,
+  pluginFor,
+  routeFor,
+  intake,
+};
+
+/** Quiet window before a dead ticket is healed — avoids racing a deploy or a human. */
+const HEAL_QUIET_MS = 5 * 60 * 1000;
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    // Scoped tier: the token injected into ticket sandboxes (untrusted repo code
-    // runs there — it must never hold the fleet master key). Comparison is
-    // constant-time; see @workhorse/auth.
-    const tiers = resolveTiers(request.headers.get("authorization"), {
-      master: env.SPIKE_TOKEN,
-      scoped: env.BROWSER_TOKEN,
-    });
+  fetch: createServer(deps),
 
-    const hit = dispatch(routes, { request, env, ctx, url }, tiers);
-    if (hit) return hit;
-
-    // Plugin-contributed routes (declared auth tier per route).
-    const pluginRoute = routeFor(request.method, url.pathname);
-    if (pluginRoute) {
-      if (!permits(pluginRoute.auth, tiers)) return new Response("unauthorized", { status: 401 });
-      return pluginRoute.handler(request, env, ctx, coreFor(env, url.origin));
-    }
-
-    if (!tiers.master) return new Response("unauthorized", { status: 401 });
-    return new Response(
-      "workhorse: POST /tickets {title,repo,prompt} | GET /tickets | GET /tickets/:id | GET /workflows | GET /agents",
-    );
-  },
-
-  // Self-healing sweep: every 15 min, re-dispatch errored tickets that
-  // still have heal budget. Skips anything a human already terminated.
+  /**
+   * Every 15 minutes: re-dispatch errored tickets that still have heal budget,
+   * then fire any cron triggers whose window matched.
+   */
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const sweep = async () => {
-      // Heals: one query instead of a full KV scan; 5-min quiet window
-      // (avoids racing a deploy or a human investigating).
-      const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const errored = await db(env).tickets.list("errored");
-      for (const rec of errored) {
+      // One query rather than a full KV scan. The quiet window skips anything a
+      // human may still be looking at.
+      const cutoff = new Date(Date.now() - HEAL_QUIET_MS).toISOString();
+      for (const rec of await db(env).tickets.list("errored")) {
         if (rec.updatedAt >= cutoff) continue;
+
         const res = await healTicket(env, rec.id);
         console.log(`heal sweep ${rec.id}: ${res.ok ? `re-dispatched as ${res.instance}` : res.reason}`);
       }
-      // Cron triggers: fire schedules that matched this window.
-      const { sweepCronTriggers } = await import("./triggers");
-      const fired = await sweepCronTriggers(env);
+
+      const fired = await sweepCronTriggers(intake, env);
       if (fired.length) console.log(`cron triggers fired: ${fired.join(", ")}`);
     };
+
     ctx.waitUntil(sweep());
   },
 };

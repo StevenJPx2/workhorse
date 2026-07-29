@@ -72,12 +72,72 @@
         "typescript": "^7.0.2",
       },
     },
+    "packages/events": {
+      "name": "@workhorse/events",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+        "@workhorse/db": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
+        "@workhorse/test-utils": "workspace:*",
+      },
+    },
+    "packages/intake": {
+      "name": "@workhorse/intake",
+      "version": "0.1.0",
+      "dependencies": {
+        "@workhorse/api": "workspace:*",
+        "@workhorse/auth": "workspace:*",
+        "@workhorse/db": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
+        "@workhorse/test-utils": "workspace:*",
+      },
+    },
+    "packages/sandbox": {
+      "name": "@workhorse/sandbox",
+      "version": "0.1.0",
+      "dependencies": {
+        "@cloudflare/sandbox": "^0.12.3",
+        "@workhorse/api": "workspace:*",
+        "@workhorse/db": "workspace:*",
+        "@workhorse/knowledge": "workspace:*",
+        "@workhorse/workflow": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
+        "@workhorse/test-utils": "workspace:*",
+      },
+    },
     "packages/semindex": {
       "name": "@workhorse/semindex",
       "version": "0.1.0",
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260714.1",
         "typescript": "^7.0.2",
+      },
+    },
+    "packages/server": {
+      "name": "@workhorse/server",
+      "version": "0.1.0",
+      "dependencies": {
+        "@cloudflare/sandbox": "^0.12.3",
+        "@flue/runtime": "^1.0.0-beta.9",
+        "@workhorse/api": "workspace:*",
+        "@workhorse/auth": "workspace:*",
+        "@workhorse/db": "workspace:*",
+        "@workhorse/events": "workspace:*",
+        "@workhorse/intake": "workspace:*",
+        "@workhorse/sandbox": "workspace:*",
+        "@workhorse/semindex": "workspace:*",
+        "@workhorse/workflow": "workspace:*",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260721.1",
+        "@workhorse/test-utils": "workspace:*",
       },
     },
     "packages/test-utils": {
@@ -305,15 +365,18 @@
         "@workhorse/browser": "workspace:*",
         "@workhorse/core": "workspace:*",
         "@workhorse/db": "workspace:*",
+        "@workhorse/events": "workspace:*",
         "@workhorse/github": "workspace:*",
         "@workhorse/imgup": "workspace:*",
+        "@workhorse/intake": "workspace:*",
         "@workhorse/jira": "workspace:*",
         "@workhorse/knowledge": "workspace:*",
         "@workhorse/ntfy": "workspace:*",
         "@workhorse/paste": "workspace:*",
+        "@workhorse/sandbox": "workspace:*",
         "@workhorse/scripts": "workspace:*",
         "@workhorse/search": "workspace:*",
-        "@workhorse/semindex": "workspace:*",
+        "@workhorse/server": "workspace:*",
         "@workhorse/slack": "workspace:*",
         "@workhorse/tickets": "workspace:*",
         "@workhorse/todo": "workspace:*",
@@ -1324,9 +1387,13 @@
 
     "@workhorse/evals": ["@workhorse/evals@workspace:evals"],
 
+    "@workhorse/events": ["@workhorse/events@workspace:packages/events"],
+
     "@workhorse/github": ["@workhorse/github@workspace:plugins/github"],
 
     "@workhorse/imgup": ["@workhorse/imgup@workspace:plugins/imgup"],
+
+    "@workhorse/intake": ["@workhorse/intake@workspace:packages/intake"],
 
     "@workhorse/jira": ["@workhorse/jira@workspace:plugins/jira"],
 
@@ -1336,11 +1403,15 @@
 
     "@workhorse/paste": ["@workhorse/paste@workspace:plugins/paste"],
 
+    "@workhorse/sandbox": ["@workhorse/sandbox@workspace:packages/sandbox"],
+
     "@workhorse/scripts": ["@workhorse/scripts@workspace:plugins/scripts"],
 
     "@workhorse/search": ["@workhorse/search@workspace:plugins/search"],
 
     "@workhorse/semindex": ["@workhorse/semindex@workspace:packages/semindex"],
+
+    "@workhorse/server": ["@workhorse/server@workspace:packages/server"],
 
     "@workhorse/slack": ["@workhorse/slack@workspace:plugins/slack"],
 

@@ -9,18 +9,17 @@
 // as `throttled` for the spine to sleep durably).
 
 import { getSandbox } from "@cloudflare/sandbox";
-import { STAGE_RUNWAY_MS } from "@workhorse/auth";
-import { modelToken } from "./auth";
+import { STAGE_RUNWAY_MS, modelToken } from "@workhorse/auth";
 import { defineAgent, defineTool, registerProvider } from "@flue/runtime";
 import { cloudflareSandbox } from "@flue/runtime/cloudflare";
 import { createFlueContext, resolveModel } from "@flue/runtime/internal";
 import type { Env, SandboxHandle, WorkhorseTool } from "@workhorse/api";
 import * as v from "valibot";
-import { sandboxDriver } from "./agent-run";
-import type { RunCodeResult, ToolBridgeProps } from "./codemode";
+import { sandboxDriver } from "@workhorse/sandbox";
+import type { RunCodeResult, ToolBridgeProps } from "@workhorse/sandbox";
 import { assembleStageTools } from "./registry";
 import { coreFor } from "./core";
-import { toolContext } from "./tool-context";
+import { toolContext } from "@workhorse/server";
 
 
 /** Format a Code Mode run result (shared by run_code + run_script). */
@@ -210,7 +209,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
           input: v.object({ code: v.string() }),
           async run({ input: a }) {
             runCodeCalls++;
-            const { runCode } = await import("./codemode");
+            const { runCode } = await import("@workhorse/sandbox");
             return fmtCodeResult("run_code", await runCode(env, bridgeProps, a.code));
           },
         }),
@@ -251,7 +250,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
                 return `run_script: missing required arg "${arg.name}" (${arg.description ?? ""})`;
               }
             }
-            const { runCode } = await import("./codemode");
+            const { runCode } = await import("@workhorse/sandbox");
             return fmtCodeResult(
               `run_script "${script.name}"`,
               await runCode(env, bridgeProps, script.code, a.args ?? {}),

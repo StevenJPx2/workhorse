@@ -1,0 +1,23 @@
+{
+  "name": "@workhorse/sandbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "^0.12.3",
+    "@workhorse/api": "workspace:*",
+    "@workhorse/db": "workspace:*",
+    "@workhorse/knowledge": "workspace:*",
+    "@workhorse/workflow": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "@workhorse/test-utils": "workspace:*"
+  }
+}

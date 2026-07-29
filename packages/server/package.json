@@ -1,0 +1,29 @@
+{
+  "name": "@workhorse/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tool-context": "./src/tool-context.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "^0.12.3",
+    "@flue/runtime": "^1.0.0-beta.9",
+    "@workhorse/api": "workspace:*",
+    "@workhorse/auth": "workspace:*",
+    "@workhorse/db": "workspace:*",
+    "@workhorse/events": "workspace:*",
+    "@workhorse/intake": "workspace:*",
+    "@workhorse/sandbox": "workspace:*",
+    "@workhorse/semindex": "workspace:*",
+    "@workhorse/workflow": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260721.1",
+    "@workhorse/test-utils": "workspace:*"
+  }
+}
