@@ -68,9 +68,12 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   typed pass/fail verdict; fix stage consumes findings.
 - **Evals** — `evals/run.mjs file|report`; per-ticket `model` override;
   corpus × variants mined from traces. First result: haiku matched sonnet 6/6.
-- **Magic Context fleet memory** — `@cortexkit/pi-magic-context` baked in;
-  `context.db` round-trips KV per repo (`mc:<owner/repo>`); `ctx_search`
-  read-only in plan, `+ctx_memory` in implement.
+- **Per-repo agent memory** — AI Search, namespaced per repo. `memory_search`
+  retrieves this repo's recorded rules, constraints, and conventions;
+  `memory_write` records one durable fact, committed the moment the agent writes
+  it. Replaced Magic Context, whose per-ticket SQLite round-trip and baked ~90MB
+  embedding model bought nothing once staging made every stage's context fresh by
+  design.
 - **Fleet UI** — Nuxt 4 + Nuxt UI 4 (`ui/`): fleet list, ticket detail
   (pipeline card, run history, live compute state), chat, comark markdown.
 - **Browser plane** — tiered `browser_fetch` / `browser_screenshot` via the
@@ -122,10 +125,10 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   are single queries now; `GET /tickets?status=` + `GET /repos`;
   `POST /admin/backfill-d1` imported legacy KV (33 tickets, 24 traces).
   Division: D1 records · KV hot small state · R2 blobs · AI Search semantic.
-- **R2 blob plane (core)** — bucket `workhorse-blobs`: Magic Context dbs
-  (`mc/<owner/repo>.db` — the KV 25 MiB cap that silently dropped memories
-  is gone) and trace bodies (`trace/<ticket>/<run>.json`), both with legacy
-  KV read fallbacks. Dependency cache still planned (below).
+- **R2 blob plane (core)** — bucket `workhorse-blobs`: trace bodies
+  (`trace/<ticket>/<run>.json`) and dependency caches. The `mc/<owner/repo>.db`
+  memory blobs are gone with Magic Context; any that remain in the bucket are
+  orphaned and safe to delete.
 - **`@workhorse/workflow` — the workflow engine** — pi-workflow replaced
   outright: spec compile + validation (worker-side at `PUT /workflows`),
   graph routing, run lifecycle, per-stage bare Pi sessions with CLI-level

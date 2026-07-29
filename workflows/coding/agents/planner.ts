@@ -5,7 +5,7 @@
 
 import { agent } from "@workhorse/api";
 import { find, grep, ls, read } from "@workhorse/core/tools";
-import { search_fleet_knowledge } from "@workhorse/knowledge/tools";
+import { memory_search, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { todo_read, todo_write } from "@workhorse/todo/tools";
 import { PLAN_OUTPUT } from "./schemas";
 
@@ -15,7 +15,7 @@ export const planner = agent({
   // Writes todos, not code — todo_write targets the run's workspace JSON, which
   // is outside the repo, so this stage still needs no repo write access.
   readOnly: true,
-  tools: [read, grep, find, ls, search_fleet_knowledge, todo_write, todo_read],
+  tools: [read, grep, find, ls, search_fleet_knowledge, memory_search, todo_write, todo_read],
   output: PLAN_OUTPUT,
   instructions: `
 You are the planner. Decompose the enriched brief into an ordered list of

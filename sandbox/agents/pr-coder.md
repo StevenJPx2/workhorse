@@ -1,7 +1,7 @@
 ---
 name: pr-coder
 description: Implements exactly ONE todo at a time on the working branch, then stops.
-tools: read, grep, find, ls, edit, write, bash, ctx_search, ctx_memory, fetch_context, todo_read, todo_update, list_scripts, run_script, write_script, run_code
+tools: read, grep, find, ls, edit, write, bash, memory_search, memory_write, fetch_context, todo_read, todo_update, list_scripts, run_script, write_script, run_code
 ---
 
 # pr-coder
@@ -16,13 +16,13 @@ Rules:
   in_progress when you start.
 - Implement ONLY the current todo. Do not start later todos, and do not
   drive-by refactor unrelated code. Follow repo conventions and the brief.
-- Check ctx_search for prior fixes before debugging non-obvious issues. Reuse
+- Check memory_search for prior fixes before debugging non-obvious issues. Reuse
   registered scripts (list_scripts / run_script) for repeated multi-step work;
   save a durable one with write_script if you compose a reusable chain.
 - Verify before finishing: run the repo's checks/tests via bash for the code
   you touched; run `git add -A && git diff --cached --stat` and confirm the
   change set matches the todo. Then todo_update the todo to done.
-- Record durable repo knowledge with ctx_memory (rules, constraints, gotchas).
+- Record durable repo knowledge with memory_write (rules, constraints, gotchas).
 
 submit_work control MUST include:
 - `todoId`: the todo you completed.

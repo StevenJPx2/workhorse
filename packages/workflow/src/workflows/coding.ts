@@ -63,7 +63,7 @@ const GATHER_TOOLS: StageSpec["tools"] = [
   { name: "find", classification: "read-only" },
   { name: "ls", classification: "read-only" },
   { name: "bash", classification: "read-only" },
-  { name: "ctx_search", classification: "read-only", optional: true },
+  { name: "memory_search", classification: "read-only", optional: true },
   { name: "search_fleet_knowledge", classification: "read-only", optional: true },
   { name: "fetch_context", classification: "read-only", optional: true },
   { name: "browser_open", classification: "read-only", optional: true },
@@ -87,7 +87,7 @@ const stages: StageSpec[] = [
     tools: [...GATHER_TOOLS, { name: "find_workflow", classification: "read-only", optional: true }],
     prompt:
       "Turn the request into ONE high-quality, self-contained task brief. Read every attached ref " +
-      "(fetch_context), ground it in the actual repository and prior fleet knowledge (ctx_search, " +
+      "(fetch_context), ground it in the actual repository and prior fleet knowledge (memory_search, " +
       "search_fleet_knowledge), and pull any external docs/URLs it points to. Batch wide exploration with " +
       "run_code. Resolve ambiguity by evidence; state any assumption you must make. Output a crisp brief: the " +
       "real objective, constraints, files/areas involved, conventions to honor, risks, and how success is judged.",
@@ -106,7 +106,7 @@ const stages: StageSpec[] = [
       { name: "grep", classification: "read-only" },
       { name: "find", classification: "read-only" },
       { name: "ls", classification: "read-only" },
-      { name: "ctx_search", classification: "read-only", optional: true },
+      { name: "memory_search", classification: "read-only", optional: true },
       { name: "fetch_context", classification: "read-only", optional: true },
       { name: "todo_write", classification: "read-only", optional: true },
       { name: "todo_read", classification: "read-only", optional: true },
@@ -133,8 +133,8 @@ const stages: StageSpec[] = [
       { name: "edit", classification: "write-capable" },
       { name: "write", classification: "write-capable" },
       { name: "bash", classification: "write-capable" },
-      { name: "ctx_search", classification: "read-only", optional: true },
-      { name: "ctx_memory", classification: "write-capable", optional: true },
+      { name: "memory_search", classification: "read-only", optional: true },
+      { name: "memory_write", classification: "write-capable", optional: true },
       { name: "fetch_context", classification: "read-only", optional: true },
       { name: "todo_read", classification: "read-only", optional: true },
       { name: "todo_update", classification: "write-capable", optional: true },
@@ -166,7 +166,7 @@ const stages: StageSpec[] = [
       { name: "find", classification: "read-only" },
       { name: "ls", classification: "read-only" },
       { name: "bash", classification: "read-only" },
-      { name: "ctx_search", classification: "read-only", optional: true },
+      { name: "memory_search", classification: "read-only", optional: true },
       { name: "todo_read", classification: "read-only", optional: true },
       { name: "gh_ci", classification: "read-only", optional: true },
       { name: "run_code", classification: "read-only", optional: true },

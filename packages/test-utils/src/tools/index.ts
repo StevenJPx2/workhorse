@@ -14,7 +14,7 @@ export { fakeCore, fakeScript, fakeTicket } from "./core";
 export type { CoreCall, FakeCore, FakeCoreOverrides } from "./core";
 
 export { fakeAiSearch, fakeEnv, fakeKV } from "./env";
-export type { FakeAiSearch, FakeAiSearchOptions, FakeEnvOptions, FakeKV, FakeSearchChunk } from "./env";
+export type { FakeAiSearch, FakeAiSearchOptions, FakeEnvOptions, FakeKV, FakeSearchChunk, FakeUpload } from "./env";
 
 export { stubFetch } from "./fetch";
 export type { RecordedRequest, RouteResponder, StubFetchHandle } from "./fetch";

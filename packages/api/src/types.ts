@@ -121,8 +121,7 @@ export interface Env {
   /**
    * R2: the blob plane — anything too big or too blob-shaped for KV
    * (25 MiB value cap). Trace bodies (trace/<ticket>/<run>.json),
-   * oversized Magic Context dbs (mc/<owner/repo>.db), dependency caches
-   * (depcache/<owner/repo>/<lockfile-hash>.tar.zst).
+   * and dependency caches (depcache/<owner/repo>/<lockfile-hash>.tar.zst).
    */
   BLOBS: R2Bucket;
   /** Workers AI (embeddings for the semindex toolkit). */

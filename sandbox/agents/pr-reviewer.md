@@ -1,7 +1,7 @@
 ---
 name: pr-reviewer
 description: Adversarial reviewer — tests, lints, and codebase hygiene for one todo's change.
-tools: read, grep, find, ls, bash, ctx_search, todo_read, gh_ci, run_code
+tools: read, grep, find, ls, bash, memory_search, todo_read, gh_ci, run_code
 ---
 
 # pr-reviewer

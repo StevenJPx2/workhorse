@@ -1,8 +1,8 @@
-import { Buffer } from "node:buffer";
 import { getSandbox } from "@cloudflare/sandbox";
 import type { Driver } from "@workhorse/workflow";
 import { db } from "./db";
 import { validateScript } from "@workhorse/db";
+import { repoSlug } from "@workhorse/knowledge";
 import { parseScriptsToml } from "./scripts-toml";
 import type { Env } from "@workhorse/api";
 
@@ -168,88 +168,6 @@ export async function saveDepCache(env: Env, sandboxId: string, repo: string): P
   }
 }
 
-const MC_DIR = "/root/.local/share/cortexkit/magic-context";
-const MC_DB = `${MC_DIR}/context.db`;
-/** Sanity ceiling for a repo memory db in R2 (not a KV cap — just abuse guard). */
-const MC_MAX_BYTES = 512 * 1024 * 1024;
-
-/** Stable per-repo slug for blob keys. */
-function repoSlug(repo: string): string {
-  const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  return m ? `${m[1]}/${m[2]}` : repo.replace(/[^a-zA-Z0-9_/-]/g, "_");
-}
-
-/** R2 object key for a repo's Magic Context db. */
-function memoryBlobKey(repo: string): string {
-  return `mc/${repoSlug(repo)}.db`;
-}
-
-/** Legacy KV key (pre-R2) — read-only fallback for repos not yet migrated. */
-function memoryKVKey(repo: string): string {
-  return `mc:${repoSlug(repo)}`;
-}
-
-/**
- * Restore the repo's Magic Context database into the sandbox so the agent
- * starts with the fleet's accumulated memories for this repo. Memories are
- * keyed to stable project identity (git root commit hash), so the same repo
- * resolves to the same memories in every sandbox.
- */
-export async function restoreMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
-  // R2 is authoritative; legacy KV is a read-only fallback for repos whose
-  // memory predates the blob plane (next persist moves them to R2).
-  let b64: string | null = null;
-  const obj = await env.BLOBS.get(memoryBlobKey(repo));
-  if (obj) {
-    b64 = Buffer.from(await obj.arrayBuffer()).toString("base64");
-  } else {
-    b64 = await env.TICKETS.get(memoryKVKey(repo));
-  }
-  if (!b64) return false;
-  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  await sandbox.writeFile("/workspace/.mc-db.b64", b64);
-  const res = await sandbox.exec(
-    `mkdir -p ${MC_DIR} && base64 -d /workspace/.mc-db.b64 > ${MC_DB} && rm /workspace/.mc-db.b64 && stat -c%s ${MC_DB}`,
-    { timeout: 60_000 },
-  );
-  return res.exitCode === 0;
-}
-
-/**
- * Persist the sandbox's Magic Context database to R2 (WAL-checkpointed via
- * node:sqlite, base64 over the exec channel, stored as raw bytes). No KV
- * size ceiling anymore — the old 25 MiB cap silently dropped memories on
- * chatty repos. Never throws — memory persistence must not fail a ticket.
- */
-export async function persistMemory(env: Env, sandboxId: string, repo: string): Promise<boolean> {
-  try {
-    const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-    const res = await sandbox.exec(
-      [
-        `[ -f ${MC_DB} ] || exit 3`,
-        // Fold WAL into the main file so one file is the whole state.
-        `node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('${MC_DB}');d.exec('PRAGMA wal_checkpoint(TRUNCATE)');d.close()" 2>/dev/null || true`,
-        `[ "$(stat -c%s ${MC_DB})" -le ${MC_MAX_BYTES} ] || exit 4`,
-        `base64 -w0 ${MC_DB}`,
-      ].join(" && "),
-      { timeout: 120_000 },
-    );
-    if (res.exitCode === 3) return false; // no db — MC never ran
-    if (res.exitCode === 4) {
-      console.warn(`MC db for ${repo} exceeds sanity ceiling; skipping persist`);
-      return false;
-    }
-    const b64 = res.stdout.trim();
-    if (res.exitCode !== 0 || b64.length < 100) return false;
-    await env.BLOBS.put(memoryBlobKey(repo), Buffer.from(b64, "base64"));
-    // Retire the legacy KV copy so future restores can't resurrect stale state.
-    await env.TICKETS.delete(memoryKVKey(repo));
-    return true;
-  } catch (err) {
-    console.warn(`MC persist failed for ${repo}:`, err);
-    return false;
-  }
-}
 
 /**
  * Prepare the workspace: clone the repo, install the workflow, and keep
@@ -260,65 +178,86 @@ export async function persistMemory(env: Env, sandboxId: string, repo: string): 
  *   2. KV registry entry (workflow:<name>)   (fleet-wide, user-managed)
  *   3. baked /opt/agent/sandbox/workflows/   (seed fallback)
  */
-export async function prepareWorkspace(env: Env, sandboxId: string, repo: string) {
+/** Clone the repo and set up the workspace. Throws — a run cannot proceed without it. */
+async function cloneRepo(env: Env, sandboxId: string, repo: string): Promise<void> {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  // Workflows are hard-coded defs run in the Worker; the sandbox is just the
-  // workspace (clone + git identity + keep run artifacts out of the diff).
+
   const result = await sandbox.exec(
     [
       `[ -d /workspace/repo/.git ] || git clone --depth 50 ${JSON.stringify(repo)} /workspace/repo`,
       `cd /workspace/repo`,
       `mkdir -p .workflow`,
-      // Keep run artifacts out of diffs/PRs without touching tracked files.
+      // Keep run artifacts out of diffs and PRs without touching tracked files.
       `grep -q "^\\.workflow/$" .git/info/exclude 2>/dev/null || echo ".workflow/" >> .git/info/exclude`,
       `git config user.email "workhorse@stevenjohn.co" && git config user.name "Workhorse"`,
     ].join(" && "),
     { timeout: 180_000 },
   );
+
   if (result.exitCode !== 0) {
     throw new Error(`workspace prep failed: ${(result.stderr || result.stdout).slice(-500)}`);
   }
+}
 
-  // Script seeding: a committed .workhorse/scripts.toml imports into the
-  // registry (created_by: seed) — clone-and-go, same pattern as workflows.
-  // Parsed sandbox-side with a tiny tolerant reader (name/description/
-  // code/args/status_gates per [[script]] block), registered via db.
+/** Register ONE script from a repo's scripts.toml. Returns why it was skipped, or null. */
+async function seedScript(
+  env: Env,
+  scope: string,
+  draft: ReturnType<typeof parseScriptsToml>[number],
+): Promise<string | null> {
+  const err = validateScript({ ...draft, scope });
+  if (err) return err;
+
+  const existing = await db(env).scripts.get(scope, draft.name);
+  // A seed never clobbers an agent's or a user's own entry.
+  if (existing && existing.createdBy !== "seed") return null;
+
+  const now = new Date().toISOString();
+  await db(env).scripts.upsert({
+    scope,
+    name: draft.name,
+    description: draft.description ?? "",
+    code: draft.code,
+    args: draft.args ?? [],
+    statusGates: draft.statusGates ?? [],
+    createdBy: "seed",
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  });
+
+  return null;
+}
+
+/**
+ * Import a committed `.workhorse/scripts.toml` into the script registry as seeds —
+ * clone-and-go, the same pattern as workflows.
+ *
+ * Non-fatal: a malformed file costs the repo its seeded scripts, not its run.
+ */
+async function seedScriptsFromRepo(env: Env, sandboxId: string, repo: string): Promise<void> {
   try {
-    const tomlRead = await sandbox.exec(
-      `cat /workspace/repo/.workhorse/scripts.toml 2>/dev/null || true`,
-      { timeout: 10_000 },
-    );
-    const toml = tomlRead.stdout?.trim();
-    if (toml) {
-      const now = new Date().toISOString();
-      for (const s of parseScriptsToml(toml)) {
-        const scope = `repo:${repoSlug(repo)}`;
-        const err = validateScript({ ...s, scope });
-        if (err) {
-          console.warn(`scripts.toml: skipped "${s.name}": ${err}`);
-          continue;
-        }
-        const existing = await db(env).scripts.get(scope, s.name);
-        // Seeds never clobber agent/user entries.
-        if (existing && existing.createdBy !== "seed") continue;
-        await db(env).scripts.upsert({
-          scope,
-          name: s.name,
-          description: s.description ?? "",
-          code: s.code,
-          args: s.args ?? [],
-          statusGates: s.statusGates ?? [],
-          createdBy: "seed",
-          createdAt: existing?.createdAt ?? now,
-          updatedAt: now,
-        });
-      }
+    const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
+    const read = await sandbox.exec(`cat /workspace/repo/.workhorse/scripts.toml 2>/dev/null || true`, {
+      timeout: 10_000,
+    });
+
+    const toml = read.stdout?.trim();
+    if (!toml) return;
+
+    const scope = `repo:${repoSlug(repo)}`;
+    for (const draft of parseScriptsToml(toml)) {
+      const skipped = await seedScript(env, scope, draft);
+      if (skipped) console.warn(`scripts.toml: skipped "${draft.name}": ${skipped}`);
     }
   } catch (err) {
     console.warn("scripts.toml seeding failed (non-fatal):", err);
   }
-  // The model override rides the def path (ctx.stage receives `model`), so
-  // there is no workspace spec to patch here anymore.
+}
+
+/** Clone the repo, then seed any scripts it ships. */
+export async function prepareWorkspace(env: Env, sandboxId: string, repo: string): Promise<void> {
+  await cloneRepo(env, sandboxId, repo);
+  await seedScriptsFromRepo(env, sandboxId, repo);
 }
 
 

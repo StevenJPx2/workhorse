@@ -9,8 +9,6 @@ import {
   prepareWorkspace,
   deliverBranch,
   checkoutTicketBranch,
-  restoreMemory,
-  persistMemory,
 } from "./agent-run";
 import { workflowDef } from "@workhorse/workflow";
 import { runWorkflowDef, type DefRunResult } from "./workflow-run";
@@ -172,7 +170,6 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         await prepareWorkspace(this.env, sandboxId, t.repo);
         const { installAgentBlocks } = await import("./agents");
         await installAgentBlocks(this.env, sandboxId);
-        await restoreMemory(this.env, sandboxId, t.repo);
         await injectBrowserConfig(this.env, sandboxId);
         await injectImgupConfig(this.env, sandboxId);
         await injectTicketContext(this.env, sandboxId, t.id, t.repo);
@@ -283,8 +280,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         continue; // re-prepare (fresh disk after a long sleep) + re-run
       }
 
+      // Memory needs no collect step anymore: memory_write commits to AI Search at
+      // the moment the agent records a fact, so a memory survives even a run that
+      // later fails — where the old sqlite round-trip lost everything unless the
+      // run reached this point.
       await step.do(`${label}-collect-${attempt}`, async () => {
-        await persistMemory(this.env, sandboxId, t.repo);
         await saveDepCache(this.env, sandboxId, t.repo);
       }).catch(() => {});
       return { outcome: drive.outcome, result: drive.result };
