@@ -20,11 +20,15 @@
     "plugins/tickets": 100,
     "plugins/todo": 100,
     "ui": 87.2,
-    "worker": 87.8,
+    "worker": 88.3,
     "packages/test-utils": 100,
     "packages/auth": 100,
-    "packages/db": 98.1,
+    "packages/db": 98.2,
     "plugins/core": 100,
-    "workflows/coding": 100
+    "workflows/coding": 100,
+    "packages/events": 100,
+    "packages/intake": 100,
+    "packages/sandbox": 100,
+    "packages/server": 100
   }
 }

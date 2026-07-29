@@ -8,7 +8,9 @@
 import { fakeCore, fakeEnv, fakeSandbox } from "@workhorse/test-utils/tools";
 import { describe, expect, it } from "vitest";
 import { assembleChatTools, assembleStageTools, attachmentProviders, pluginFor, plugins, routeFor } from "../src/registry";
-import { toolContext } from "../src/tool-context";
+// The leaf subpath, not the barrel: the barrel also loads chat.ts, whose
+// @cloudflare/sandbox import cannot resolve outside workerd.
+import { toolContext } from "@workhorse/server/tool-context";
 
 const ctx = () =>
   toolContext(fakeEnv(), fakeCore(), "https://workhorse.test", fakeSandbox(), {

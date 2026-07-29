@@ -56,6 +56,10 @@ allowlist. `workflows/<name>` packages compose agents from those tools;
 | Package | Owns |
 |---|---|
 | `packages/api` | `tool()`, `agent()`, plugin + Env contract |
+| `packages/events` | event bus, steers, notification queue |
+| `packages/intake` | ticket filing, self-healing, ref frecency |
+| `packages/sandbox` | container driver, Code Mode |
+| `packages/server` | HTTP surface: routes, auth tiers, chat, triggers, agent blocks |
 | `packages/db` | Drizzle schema and repos (`db.tickets.list()`), migrations |
 | `packages/auth` | request auth tiers, model-token custody |
 | `packages/workflow` | `workflow()`, stage graph discovery, prompt assembly |
@@ -64,7 +68,7 @@ allowlist. `workflows/<name>` packages compose agents from those tools;
 | `plugins/core` | the workspace tools every stage draws from (read/grep/bash/write/edit) |
 | `plugins/<name>` | one capability each, contract-only dependency |
 | `workflows/<name>` | agents + `run()` routing for one pipeline |
-| `worker/` | composition root, HTTP surface, ticket spine, deployment |
+| `worker/` | composition root (which plugins exist), ticket spine, deployment |
 
 **Workflows are code; the rest is data.** A workflow is a hard-coded,
 eval-tested `WorkflowDef` in `packages/workflow` — adding one is a def + an

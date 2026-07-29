@@ -38,7 +38,10 @@ export default defineConfig({
         test: {
           name: "packages",
           include: ["packages/*/**/__tests__/**/*.test.ts", "packages/*/test/**/*.test.ts"],
-          exclude: ["packages/db/**"],
+          // node_modules: workspace links make every dependency's tests visible
+          // through packages/<name>/node_modules/@workhorse/*, so db's suite would
+          // run again here — outside the workers pool it needs.
+          exclude: ["packages/db/**", "**/node_modules/**"],
           environment: "node",
         },
       },

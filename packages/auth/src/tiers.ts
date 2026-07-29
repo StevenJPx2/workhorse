@@ -22,7 +22,7 @@ export interface Tiers {
  * how much of a guessed prefix was correct. That is a real oracle against a
  * bearer token, and it is cheap to remove.
  */
-function safeEqual(a: string, b: string): boolean {
+export function safeEqual(a: string, b: string): boolean {
   // Length is not secret (the tokens have fixed formats), but comparing unequal
   // lengths byte-wise would read out of bounds, so reject early.
   if (a.length !== b.length) return false;

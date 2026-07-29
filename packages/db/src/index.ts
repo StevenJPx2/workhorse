@@ -1,6 +1,9 @@
 export { createDb } from "./db";
 export type { Db } from "./db";
 
+export { db } from "./env";
+export type { DbEnv } from "./env";
+
 export type { Bound, Conn } from "./repos/bind";
 export type { EscalationEntry } from "./repos/escalations/types";
 export type { NotificationDraft } from "./repos/notifications/types";

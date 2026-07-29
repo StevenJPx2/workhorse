@@ -13,29 +13,32 @@ const ticketsGet = vi.fn(async () => null);
 const ticketsList = vi.fn(async () => []);
 const indexUpsert = vi.fn();
 
-vi.mock("../src/db", () => ({
+vi.mock("@workhorse/db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@workhorse/db")>()),
   db: () => ({
     scripts: { get: scriptsGet, upsert: scriptsUpsert },
     tickets: { get: ticketsGet, list: ticketsList },
   }),
 }));
 
-vi.mock("../src/semindex", () => ({
+// ONE mock for the package — semindex and chat both live here now, and a second
+// vi.mock of the same module silently replaces the first.
+vi.mock("@workhorse/server", () => ({
   scriptIndex: { upsert: indexUpsert },
   workflowIndex: { query: async () => [] },
+  runFleetChat: vi.fn(async () => ({ ok: true, reply: "hi" })),
 }));
 
 const hooks: Array<{ id: string; fn: (...a: unknown[]) => Promise<void> }> = [];
 const providers = new Map<string, { kind: string; resolve: (...a: unknown[]) => Promise<unknown> }>();
 
 vi.mock("../src/registry", () => ({
+  assembleChatTools: () => [],
   attachmentProviders: () => providers,
   get plugins() {
     return hooks.map((h) => ({ id: h.id, hooks: { onStatusChange: h.fn } }));
   },
 }));
-
-vi.mock("../src/chat", () => ({ runFleetChat: vi.fn(async () => ({ ok: true, reply: "hi" })) }));
 
 const { coreFor, fireHook } = await import("../src/core");
 

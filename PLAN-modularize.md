@@ -1289,10 +1289,67 @@ protection and hook isolation, and chat's credential gate. Two functions were
 genuinely too branchy and were split (`registerScript` out of `coreFor`,
 `renderAttachment` out of `resolveAttachments`).
 
-**Still to extract, when there is a reason beyond tidiness:** `@workhorse/sandbox`,
-`@workhorse/events`, `@workhorse/tickets`, `@workhorse/server`. The worker is 87.4
-A with no cycles, so a package boundary now has to justify itself on something other
-than the health score.
+### Phase 5b: the four remaining extractions ✅ DONE
+
+**Worker: 19 files → 8, ~3,900 → ~1,540 lines. Plugin imports now exist in exactly
+one file.**
+
+| package | from | what it owns |
+|---|---|---|
+| `@workhorse/events` | events, notifications | the event bus, steers, the notification queue |
+| `@workhorse/intake` | tickets, heal, refs | filing, healing, ref frecency |
+| `@workhorse/sandbox` | agent-run, codemode, scripts-toml | the container plane and Code Mode |
+| `@workhorse/server` | router, routes/, agents, chat, triggers, semindex, tool-context | the whole HTTP surface |
+
+**Named `intake`, not `tickets`** — `@workhorse/tickets` is already the plugin
+exposing ticket tools to agents. Two packages cannot share a name.
+
+**The db and auth seams moved into their packages first.** `db(env)` and
+`modelToken(env)` were worker modules memoizing per-env instances in a WeakMap.
+Every extracted package needs them, so they now live in `@workhorse/db` and
+`@workhorse/auth` — which also means one Db instance per request across all of
+them, rather than each constructing its own.
+
+**Three dependency inversions, because the alternative was importing plugins.**
+
+| what needed the registry | how it gets it now |
+|---|---|
+| `parseRefs`, `resolveAttachments` | `createIntake(providers)` binds them once |
+| `ToolBridge` (Code Mode) | `makeToolBridge(deps)` — a factory, because the PLATFORM constructs the class and cannot pass constructor args |
+| every route | `ServerDeps` on `RouteCtx`: `core`, `attachmentProviders`, `assembleChatTools`, `pluginFor`, `intake` |
+
+The worker binds all three in `index.ts`, `intake.ts`, and `codemode.ts` — three
+small files whose entire job is answering "which plugins does this deployment
+have?".
+
+**This is what made the routes testable.** Every handler previously called
+`coreFor(env, url.origin)`, so a route test meant loading all fourteen plugins.
+`@workhorse/server` now imports **no plugin at all** (verified by grep), and the
+route suites pass fakes.
+
+**The audit went 19 complexity + 4 dead-code findings → 0.** Moving a file
+attributes its whole contents, exposing everything at 0% coverage. Answered with
+**~330 new tests** rather than threshold changes, concentrated on what the
+extraction made reachable for the first time:
+
+- **The Code Mode capability gate** — a refused tool is rejected *before*
+  assembly, `globalOutbound: null`, and `TOOLS` is the only binding
+- **`createServer`'s tier gate** — a scoped sandbox token must not reach a master
+  route, and a plugin route enforces its own declared tier
+- **Webhook signature rejection** — that route is `auth: "public"`, so the
+  signature IS the authentication
+- **Path traversal on `/depcache`** — reachable by untrusted repo code holding the
+  scoped token
+- **`healTicket`'s two guards** — never double-drive a live instance, never
+  re-dispatch a deterministic failure
+
+**One real security fix found on the way.** The `/triggers/:name/fire` route
+compared the master bearer with `===`, which short-circuits at the first differing
+byte and leaks how much of a guess was right. `@workhorse/auth` already had a
+constant-time `safeEqual` — it just wasn't exported. Now it is, the route uses it,
+and a prefix-guess test pins it.
+
+Four packages at **100 A**; worker **88.3 A**; **1234 tests**.
 
 ### Phase 6: AI Search replaces Magic Context
 1. Remove Magic Context from the sandbox image
