@@ -21,10 +21,23 @@
       "workflows/*"
     ]
   },
+  // Imported ONLY by alchemy.run.ts (ignored below) and by the alchemy CLI.
+  // platform-node/platform-bun are upstream peer deps marked optional but
+  // imported unconditionally — the CLI throws ERR_MODULE_NOT_FOUND without them.
+  "ignoreDependencies": [
+    "alchemy",
+    "effect",
+    "@effect/platform-bun",
+    "@effect/platform-node"
+  ],
   "ignorePatterns": [
     "**/*.generated.ts",
     "**/.nuxt/**",
-    "**/.wrangler/**"
+    "**/.wrangler/**",
+    // Phase 7 infra-as-code, NOT the active deploy path (blocked on two Alchemy
+    // v2 gaps, documented at the top of the file). Declaring it an ENTRY instead
+    // would classify it as production code and mis-flag its dev-deps.
+    "alchemy.run.ts"
   ],
   "ignoreExports": [
     {
