@@ -269,3 +269,5 @@ Regenerate with `bun run report`. Every PR gets the same digest on its
 
 Roadmap: [ROADMAP.md](./ROADMAP.md). Legacy Workhorse (TS core, core-v2/v3,
 Rust orchestrator) lives on the `legacy` branch.
+
+Infrastructure is managed by [Alchemy](https://alchemy.run).
