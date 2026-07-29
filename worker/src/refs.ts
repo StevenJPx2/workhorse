@@ -8,7 +8,7 @@
 // on demand via a tool — nothing is pre-resolved at dispatch.
 
 import type { Env } from "@workhorse/api";
-import { attachmentProviders } from "./plugins";
+import { attachmentProviders } from "./registry";
 
 export interface ParsedRef {
   kind: string;

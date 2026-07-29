@@ -1,42 +1,61 @@
 // Ticket filing — shared by the HTTP API and source plugins (Slack).
 
-import type { Env, TicketParams, TicketRecord } from "@workhorse/api";
+import type { Core, Env, ResolvedAttachment, TicketParams, TicketRecord } from "@workhorse/api";
 import { START_RUNWAY_MS } from "@workhorse/auth";
 import { modelToken } from "./auth";
 import { db } from "./db";
 import { parseRefs, recordRefUse } from "./refs";
 
+/** Attachments resolved per prompt, so one over-attached ticket cannot flood it. */
+const MAX_ATTACHMENTS = 8;
+
+/** Per-attachment content budget. */
+const MAX_ATTACHMENT_CHARS = 4000;
+
+/**
+ * Render ONE attachment as a prompt section.
+ *
+ * A failure is a visible note rather than a throw: the operator asked for this
+ * context, and a dispatch that dies because Jira was briefly down is worse than
+ * one that proceeds saying so.
+ */
+async function renderAttachment(
+  env: Env,
+  core: Core,
+  providers: Map<string, { resolve: (env: Env, core: Core, ref: string) => Promise<ResolvedAttachment> }>,
+  attachment: { kind: string; ref: string },
+): Promise<string> {
+  const provider = providers.get(attachment.kind);
+  if (!provider) return `### ${attachment.kind}:${attachment.ref}\n(unknown attachment kind)`;
+
+  try {
+    const resolved = await provider.resolve(env, core, attachment.ref);
+    const heading = `### ${resolved.title}${resolved.url ? ` (${resolved.url})` : ""}`;
+    return `${heading}\n\n${resolved.content.slice(0, MAX_ATTACHMENT_CHARS)}`;
+  } catch (err) {
+    return `### ${attachment.kind}:${attachment.ref}\n(failed to resolve: ${String(err).slice(0, 150)})`;
+  }
+}
+
 /**
  * Resolve attachment refs through their plugin providers into a bounded
- * "## Attached context" prompt section. Unresolvable attachments become
- * a visible note instead of failing the dispatch.
+ * "## Attached context" prompt section.
  */
 export async function resolveAttachments(
   env: Env,
-  selfOrigin: string,
+  core: Core,
   attachments: Array<{ kind: string; ref: string }>,
 ): Promise<string> {
-  const { attachmentProviders, coreFor } = await import("./plugins");
+  const { attachmentProviders } = await import("./registry");
   const providers = attachmentProviders();
-  const core = coreFor(env, selfOrigin);
-  const parts: string[] = [];
-  for (const a of attachments.slice(0, 8)) {
-    if (a.kind === "repo") continue; // the repo is cloned, not inlined
-    const provider = providers.get(a.kind);
-    if (!provider) {
-      parts.push(`### ${a.kind}:${a.ref}\n(unknown attachment kind)`);
-      continue;
-    }
-    try {
-      const resolved = await provider.resolve(env, core, a.ref);
-      parts.push(
-        `### ${resolved.title}${resolved.url ? ` (${resolved.url})` : ""}\n\n${resolved.content.slice(0, 4000)}`,
-      );
-    } catch (err) {
-      parts.push(`### ${a.kind}:${a.ref}\n(failed to resolve: ${String(err).slice(0, 150)})`);
-    }
-  }
-  return parts.length ? `## Attached context\n\n${parts.join("\n\n")}` : "";
+
+  // The repo is cloned into the workspace, so inlining it would duplicate
+  // something the agent can already read.
+  const wanted = attachments.filter((a) => a.kind !== "repo").slice(0, MAX_ATTACHMENTS);
+  if (!wanted.length) return "";
+
+  const parts = await Promise.all(wanted.map((a) => renderAttachment(env, core, providers, a)));
+  return `## Attached context\n\n${parts.join("\n\n")}`;
 }
 
 export type FileTicketResult =

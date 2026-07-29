@@ -18,9 +18,10 @@ import type { Env, SandboxHandle, WorkhorseTool } from "@workhorse/api";
 import * as v from "valibot";
 import { sandboxDriver } from "./agent-run";
 import type { RunCodeResult, ToolBridgeProps } from "./codemode";
-import { assembleStageTools, toolContext } from "./plugins";
+import { assembleStageTools } from "./registry";
+import { coreFor } from "./core";
+import { toolContext } from "./tool-context";
 
-const q = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
 
 /** Format a Code Mode run result (shared by run_code + run_script). */
 function fmtCodeResult(label: string, r: RunCodeResult): string {
@@ -97,116 +98,6 @@ function toolSurface(tools: WorkhorseTool[], allow: string[]): string {
 }
 
 /** Minimal glob → anchored regex ('*' = non-slash, '**' = any). */
-function globToRe(glob: string): RegExp {
-  const SENTINEL = "\u0000";
-  const esc = glob
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*/g, SENTINEL)
-    .replace(/\*/g, "[^/]*")
-    .split(SENTINEL)
-    .join(".*");
-  return new RegExp(`^${esc}$`);
-}
-
-/** Write-gate: stage dir is always writable; else match writeAllow globs. */
-function writeAllowed(path: string, dir: string, writeAllow: string[]): boolean {
-  if (path.startsWith(dir)) return true;
-  if (writeAllow.length === 0) return true; // no policy set = open write
-  const rel = path.replace(/^\/workspace\/repo\//, "");
-  return writeAllow.some((g) => globToRe(g).test(path) || globToRe(g).test(rel));
-}
-
-/** Built-in tools over the SandboxHandle, filtered by the stage allowlist. */
-export function builtinTools(sandbox: SandboxHandle, allow: Set<string>, dir: string, writeAllow: string[]): WorkhorseTool[] {
-  const tools: WorkhorseTool[] = [];
-  if (allow.has("read"))
-    tools.push(
-      defineTool({
-        name: "read",
-        description: "Read a file from the workspace. Returns its full text.",
-        input: v.object({ path: v.string() }),
-        async run({ input }) {
-          const c = await sandbox.readFile(input.path);
-          return c == null ? `read: file not found: ${input.path}` : c.slice(0, 100_000);
-        },
-      }),
-    );
-  if (allow.has("ls"))
-    tools.push(
-      defineTool({
-        name: "ls",
-        description: "List a directory's contents (ls -la).",
-        input: v.object({ path: v.optional(v.string()) }),
-        run: async ({ input }) => (await sandbox.exec(`ls -la ${q(input.path ?? ".")}`)).stdout.slice(0, 20_000),
-      }),
-    );
-  if (allow.has("find"))
-    tools.push(
-      defineTool({
-        name: "find",
-        description: "Find files by name/glob under a path (find <path> -name <pattern>).",
-        input: v.object({ pattern: v.string(), path: v.optional(v.string()) }),
-        run: async ({ input }) =>
-          (await sandbox.exec(`find ${q(input.path ?? ".")} -name ${q(input.pattern)} 2>/dev/null | head -200`)).stdout.slice(0, 20_000) || "(no matches)",
-      }),
-    );
-  if (allow.has("grep"))
-    tools.push(
-      defineTool({
-        name: "grep",
-        description: "Search file contents with a regex (ripgrep-style, recursive).",
-        input: v.object({ pattern: v.string(), path: v.optional(v.string()) }),
-        run: async ({ input }) =>
-          (await sandbox.exec(`grep -rniE ${q(input.pattern)} ${q(input.path ?? ".")} 2>/dev/null | head -200`)).stdout.slice(0, 30_000) || "(no matches)",
-      }),
-    );
-  if (allow.has("bash"))
-    tools.push(
-      defineTool({
-        name: "bash",
-        description: "Run a shell command in the workspace root. Returns stdout+stderr (exit code on failure).",
-        input: v.object({ command: v.string(), timeout: v.optional(v.number()) }),
-        async run({ input }) {
-          const r = await sandbox.exec(input.command, { timeout: Math.min(input.timeout ?? 120_000, 300_000) });
-          const out = [r.stdout, r.stderr].filter(Boolean).join("\n").slice(-30_000);
-          return r.exitCode === 0 ? out || "(exit 0, no output)" : `exit ${r.exitCode}\n${out}`;
-        },
-      }),
-    );
-  if (allow.has("write"))
-    tools.push(
-      defineTool({
-        name: "write",
-        description: "Write (create/overwrite) a file. Subject to the stage's write policy.",
-        input: v.object({ path: v.string(), content: v.string() }),
-        async run({ input }) {
-          if (!writeAllowed(input.path, dir, writeAllow))
-            return `write blocked: ${input.path} is outside this stage's write policy (${writeAllow.join(", ") || "read-only"}).`;
-          await sandbox.writeFile(input.path, input.content);
-          return `wrote ${input.path} (${input.content.length} bytes)`;
-        },
-      }),
-    );
-  if (allow.has("edit"))
-    tools.push(
-      defineTool({
-        name: "edit",
-        description: "Replace an exact substring in a file (first occurrence). Subject to the write policy.",
-        input: v.object({ path: v.string(), oldString: v.string(), newString: v.string() }),
-        async run({ input }) {
-          if (!writeAllowed(input.path, dir, writeAllow))
-            return `edit blocked: ${input.path} is outside this stage's write policy (${writeAllow.join(", ") || "read-only"}).`;
-          const cur = await sandbox.readFile(input.path);
-          if (cur == null) return `edit: file not found: ${input.path}`;
-          if (!cur.includes(input.oldString)) return `edit: oldString not found in ${input.path}`;
-          await sandbox.writeFile(input.path, cur.replace(input.oldString, input.newString));
-          return `edited ${input.path}`;
-        },
-      }),
-    );
-  return tools;
-}
-
 /** submit_work: the completion contract — writes analysis.md + control.json. */
 function submitWorkTool(sandbox: SandboxHandle, dir: string) {
   let submitted = false;
@@ -274,9 +165,13 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     if (!token) return { ok: false, failure: { kind: "model", detail: "no usable OAuth token (custodian push stale?)" } };
 
     const allow = new Set(input.tools);
-    const ctx = toolContext(env, selfOrigin, sandbox, { id: input.ticketId, repo: input.repo, stage: input.stageId });
-    const builtins = builtinTools(sandbox, allow, input.dir, input.writeAllow);
+    // The core workspace tools are ordinary plugin tools now, so ONE assembly
+    // covers everything the stage may call. The write gate rides the context.
+    const ctx = toolContext(env, coreFor(env, selfOrigin), selfOrigin, sandbox, { id: input.ticketId, repo: input.repo, stage: input.stageId }, { dir: input.dir, writeAllow: input.writeAllow });
     const pluginTools = assembleStageTools(ctx, input.tools);
+    // Code Mode verbs stay ENGINE builtins: they run through the bridge, which
+    // needs this stage`s authentic props — a plugin ToolContext cannot reach them.
+    const engineTools: WorkhorseTool[] = [];
     // Code Mode adoption counter (run_code + run_script) — surfaced in stats.
     let runCodeCalls = 0;
 
@@ -301,8 +196,8 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     };
 
     if (allow.has("run_code")) {
-      const surface = toolSurface([...builtins, ...pluginTools], bridgeAllow);
-      builtins.push(
+      const surface = toolSurface(pluginTools, bridgeAllow);
+      engineTools.push(
         defineTool({
           name: "run_code",
           description:
@@ -328,7 +223,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
     // plugin ToolContext can't reach them. Registry ops (write/list) stay in
     // the scripts plugin.
     if (allow.has("run_script")) {
-      builtins.push(
+      engineTools.push(
         defineTool({
           name: "run_script",
           description:
@@ -392,7 +287,7 @@ export function makeStageSession(env: Env, sandboxId: string, selfOrigin: string
         const agent = defineAgent(() => ({
           model: leg.ref,
           instructions: input.persona,
-          tools: [...builtins, ...pluginTools, submit],
+          tools: [...pluginTools, ...engineTools, submit],
           sandbox: { ...cloudflareSandbox(getSandbox(env.Sandbox, sandboxId) as never, { cwd: input.cwd }), tools: () => [] },
         }));
         const flueCtx = createFlueContext({

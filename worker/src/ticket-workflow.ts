@@ -15,7 +15,7 @@ import {
 import { workflowDef } from "@workhorse/workflow";
 import { runWorkflowDef, type DefRunResult } from "./workflow-run";
 import { unconsumedEvents, consumeEvents } from "./events";
-import { fireHook } from "./plugins";
+import { fireHook } from "./core";
 import { STAGE_RUNWAY_MS } from "@workhorse/auth";
 import { modelToken } from "./auth";
 import { db } from "./db";

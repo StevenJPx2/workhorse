@@ -5,6 +5,7 @@ import { appendEvents, appendSteer, wakeTicket } from "../events";
 import { fileTicket } from "../tickets";
 import { db } from "../db";
 import { healTicket } from "../heal";
+import { coreFor } from "../core";
 import { json, type Route } from "../router";
 
 /**
@@ -202,7 +203,7 @@ export const ticketRoutes: Route[] = [
       const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
       if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
       const { resolveAttachments } = await import("../tickets");
-      const section = await resolveAttachments(env, url.origin, [{ kind, ref }]);
+      const section = await resolveAttachments(env, coreFor(env, url.origin), [{ kind, ref }]);
       if (!section) return json({ error: "attachment did not resolve" }, 422);
       const active = ["queued", "planning", "implementing", "ready-for-review"].includes(rec.status);
       if (active) {
