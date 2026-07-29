@@ -96,7 +96,7 @@ export const SandboxNamespace = { kind: "Cloudflare.DurableObject", name: "Sandb
 
 export const Sandbox = Cloudflare.Container("Sandbox", {
   context: import.meta.dirname,
-  dockerfile: "./sandbox/Dockerfile",
+  dockerfile: "./worker/Dockerfile",
   instanceType: "standard-1",
   maxInstances: 5,
 });

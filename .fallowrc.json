@@ -7,7 +7,7 @@
     "plugins/*/plugin.ts",
     "evals/**/*.eval.ts",
     "evals/run.mjs",
-    "sandbox/install.mjs",
+    "worker/sandbox/install.mjs",
     "workflows/*/index.ts",
     "plugins/*/tools/index.ts"
   ],

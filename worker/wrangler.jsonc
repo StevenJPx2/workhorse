@@ -19,7 +19,7 @@
   "containers": [
     {
       "class_name": "Sandbox",
-      "image": "../sandbox/Dockerfile",
+      "image": "./Dockerfile",
       // Repo root: the image build scans plugins/*/extension.ts for
       // sandbox-side plugin tools.
       "image_build_context": "..",

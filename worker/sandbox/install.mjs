@@ -18,6 +18,6 @@ const piHome = process.env.PI_HOME || "/root/.pi/agent";
 mkdirSync(piHome, { recursive: true });
 
 // settings.json: packages + defaults from the manifest.
-const settings = { packages: manifest.packages ?? [], ...(manifest.settings ?? {}) };
+const settings = { packages: manifest.packages ?? [], ...manifest.settings };
 writeFileSync(join(piHome, "settings.json"), JSON.stringify(settings, null, 2));
 console.log(`settings.json: ${settings.packages.length} packages`);

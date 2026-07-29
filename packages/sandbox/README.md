@@ -33,7 +33,7 @@ This turns ten sequential tool calls into one.
 entrypoint by name, so no constructor argument can carry the plugin registry. The
 factory closes over the dependencies instead.
 
-The container image is built from `sandbox/Dockerfile`. Headful Chrome runs under
+The image builds from `worker/Dockerfile`. Headful Chrome runs under
 Xvfb, because bot walls block headless browsers deterministically, not
 probabilistically.
 

@@ -93,7 +93,7 @@ export async function deleteAgentBlock(env: Env, name: string): Promise<void> {
   await env.TICKETS.delete(KEY(name));
 }
 
-/** Seed blocks from the baked sandbox/agents/*.md (user entries kept). */
+/** Seed blocks from the baked worker/sandbox/agents/*.md (user entries kept). */
 export async function seedAgentBlocks(env: Env): Promise<string[]> {
   const sandbox = getSandbox(env.Sandbox, "wf-validate", { sleepAfter: "1m" });
   const res = await sandbox.exec(

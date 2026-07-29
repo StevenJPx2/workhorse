@@ -3,7 +3,7 @@
 // PR + park; on review feedback the spine re-invokes run() with a `-rev` runId,
 // which routes through the therapist to collate feedback back into enrich.
 //
-// Agents (blocks in sandbox/agents/): enricher, planner, pr-coder, pr-reviewer,
+// Agents (blocks in worker/sandbox/agents/): enricher, planner, pr-coder, pr-reviewer,
 // pr-writer, therapist. The visual-vs-text PR write is TWO stages sharing the
 // pr-writer persona but differing in tool allowlist (the stage's tools[] is the
 // gate); run() picks between them on the coder's self-declared uiChanges signal.
