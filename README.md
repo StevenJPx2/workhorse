@@ -166,7 +166,7 @@ depends only on `@workhorse/api`, and the worker is the only composition point.
 | | |
 |---|---|
 | Package | `plugins/scripts` |
-| Sandbox tools | `list_scripts`, `run_script`, `write_script` |
+| Sandbox tools | `list_scripts`, `write_script`. `run_script` is an engine builtin, not a plugin tool, because replaying a saved program needs the stage's authentic bridge props. |
 | Worker routes | `GET/POST /scripts`, `GET /scripts/get?ticket=` |
 | Registry | The D1 `scripts` table. A repo's `.workhorse/scripts.toml` seeds it. |
 

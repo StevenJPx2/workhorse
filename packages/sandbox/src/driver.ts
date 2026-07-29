@@ -168,15 +168,10 @@ export async function saveDepCache(env: Env, sandboxId: string, repo: string): P
 }
 
 
-/**
- * Prepare the workspace: clone the repo, install the workflow, and keep
- * engine run artifacts out of the git diff.
- *
- * Workflows are USER DATA. Resolution order:
- *   1. repo's .workhorse/workflows/<name>/   (teams version their own)
- *   2. KV registry entry (workflow:<name>)   (fleet-wide, user-managed)
- *   3. baked /opt/agent/sandbox/workflows/   (seed fallback)
- */
+// The three-tier workflow resolution this used to describe (repo directory -> KV
+// registry -> baked seed) went with the interpreter. Workflows are hard-coded
+// TypeScript in @workhorse/workflow now, so nothing is installed into the
+// workspace and nothing is resolved at run time.
 /** Clone the repo and set up the workspace. Throws — a run cannot proceed without it. */
 async function cloneRepo(env: Env, sandboxId: string, repo: string): Promise<void> {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
