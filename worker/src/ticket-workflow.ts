@@ -16,6 +16,7 @@ import { workflowDef } from "@workhorse/workflow";
 import { runWorkflowDef, type DefRunResult } from "./workflow-run";
 import { fireHook } from "./core";
 import { STAGE_RUNWAY_MS, modelToken } from "@workhorse/auth";
+import { log, stageEvent, ticketEvent } from "@workhorse/o11y";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
@@ -263,6 +264,11 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
               const phase = /^(verify|fix)/.test(s.id) ? "ready-for-review" : "implementing";
               if (s.status === "running") await updateTicket(this.env, t.id, { status: phase });
               await setLive(this.env, t.id, { phase: s.id, runId, note: `${s.id}: ${s.status}` });
+
+              // The stage trail. This is the reason o11y exists: a run spans a
+              // Worker request, a durable instance, and N sandboxed sessions, and
+              // without a shared runId they correlate only by grepping strings.
+              log.info(stageEvent({ ticketId: t.id, runId, repo: t.repo, stage: s.id, event: `stage-${s.status}` }));
             },
           });
           return JSON.stringify(r);
@@ -288,6 +294,21 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           });
           await setLive(this.env, t.id, { phase: "waiting-for-capacity", runId, note: `all providers throttled; retry in ${Math.round(sleepMs / 1000)}s` });
         });
+
+        // A park is invisible in the ticket record — status stays "implementing"
+        // — so without this a run that spends an hour waiting on capacity looks
+        // identical to one that spent it working.
+        log.warn(
+          ticketEvent({
+            ticketId: t.id,
+            runId,
+            repo: t.repo,
+            event: "throttle-parked",
+            park: parks,
+            waitMs: sleepMs,
+            providers: drive.providers,
+          }),
+        );
         await step.sleep(`${label}-capacity-sleep-${attempt}`, sleepMs);
         continue; // re-prepare (fresh disk after a long sleep) + re-run
       }
