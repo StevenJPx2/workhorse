@@ -62,7 +62,7 @@ export function mockToolContext(options: MockToolContextOptions = {}): MockToolC
     selfOrigin: options.selfOrigin ?? "https://workhorse.test",
     ticket: {
       id: "t-abc123",
-      repo: "acme/widgets",
+      repo: "https://github.com/acme/widgets.git",
       stage: "implement",
       ...options.ticket,
     },

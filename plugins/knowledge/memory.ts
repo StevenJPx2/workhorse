@@ -19,6 +19,7 @@
 // relevant ones by query — rather than being handed the entire database and
 // expected to find them.
 
+import { repoSlug } from "@workhorse/api";
 import type { Env } from "@workhorse/api";
 import { instance, query, str } from "./query";
 
@@ -45,17 +46,9 @@ export const MEMORY_CATEGORIES = [
 
 export type MemoryCategory = (typeof MEMORY_CATEGORIES)[number];
 
-/**
- * Stable per-repo slug for memory keys.
- *
- * Derived from the GitHub owner/name so `git@github.com:acme/x.git` and
- * `https://github.com/acme/x` resolve to the SAME memories — a run should not
- * lose its repo's history because the clone URL was spelled differently.
- */
-export function repoSlug(repo: string): string {
-  const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  return m ? `${m[1]}/${m[2]}` : repo.replace(/[^a-zA-Z0-9_/-]/g, "_");
-}
+// `repoSlug` now lives in @workhorse/api — it is repo identity, not a memory
+// concern, and keeping it here made @workhorse/sandbox depend on this PLUGIN just
+// to build a dependency-cache key.
 
 /** Filename for one memory. The `mem/<repo>/` prefix is what scopes retrieval. */
 function memoryKey(repo: string, createdAt: string, content: string): string {

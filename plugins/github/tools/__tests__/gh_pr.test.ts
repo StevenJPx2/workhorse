@@ -23,7 +23,11 @@ const PR = {
   user: { login: "someone" },
 };
 
-const pr = (input: Record<string, unknown>, ticket = { repo: "acme/widgets" }) =>
+// The default repo is a CLONE URL, because that is what fileTicket stores and
+// therefore what ctx.ticket.repo holds in production. This file previously
+// defaulted to a bare `acme/widgets`, a shape production never produces, which is
+// why five passing tests missed the slug bug the regression test below pins.
+const pr = (input: Record<string, unknown>, ticket = { repo: "https://github.com/acme/widgets.git" }) =>
   runTool(gh_pr, input, { ticket, env: { GITHUB_TOKEN: "gh-token" } });
 
 describe("gh_pr — help", () => {
@@ -212,5 +216,33 @@ describe("gh_pr — request shape and errors", () => {
     stub = stubFetch({}, { fallback: { status: 500 } });
     await expect(pr({ number: 42, repo: "a/b/../../user/repos" })).rejects.toThrow(/github 403|not allowed/);
     expect(stub.requested("api.github.com")).toBe(false);
+  });
+});
+
+describe("gh_pr — repo resolution", () => {
+  it("builds an owner/name path from the CLONE URL the ticket stores", async () => {
+    // THE BUG THIS PINS: ctx.ticket.repo is `https://github.com/acme/widgets.git`
+    // in production, and the resolver returned it verbatim — producing
+    // `/repos/https://github.com/acme/widgets.git/pulls/42`. Every gh tool sent
+    // that to the API. It survived because the fake context used a bare slug.
+    stub = stubFetch({ "/pulls/42": JSON.stringify(PR) });
+
+    await pr({ number: 42 });
+
+    // Assert on the PATH AFTER /repos/, not on the whole URL: `api.github.com`
+    // contains the substring ".git", so a naive not-to-contain check passes even
+    // when the slug is a clone URL.
+    const path = (stub.urls()[0] ?? "").split("/repos/")[1] ?? "";
+    expect(path).toBe("acme/widgets/pulls/42");
+  });
+
+  it("normalizes an explicit repo argument too", async () => {
+    // An agent that copies a URL out of a PR body should not get a different
+    // outcome than one that types the slug.
+    stub = stubFetch({ "/pulls/42": JSON.stringify(PR) });
+
+    await pr({ number: 42, repo: "git@github.com:acme/widgets.git" });
+
+    expect(stub.urls()[0]).toContain("/repos/acme/widgets/pulls/42");
   });
 });

@@ -1,8 +1,8 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import type { Driver } from "@workhorse/workflow";
 import { db, validateScript } from "@workhorse/db";
-import { repoSlug } from "@workhorse/knowledge";
 import { parseScriptsToml } from "./scripts-toml";
+import { repoSlug } from "@workhorse/api";
 import type { Env } from "@workhorse/api";
 
 /** Driver adapter: @workhorse/workflow's sandbox I/O over @cloudflare/sandbox. */

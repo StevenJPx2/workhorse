@@ -16,7 +16,7 @@ import { searchKnowledge } from "./search";
 import { knowledgeTools } from "./tools";
 
 export { searchKnowledge } from "./search";
-export { repoSlug, searchMemory, writeMemory, MEMORY_CATEGORIES } from "./memory";
+export { searchMemory, writeMemory, MEMORY_CATEGORIES } from "./memory";
 export type { MemoryCategory, MemoryHit, RepoMemory } from "./memory";
 export type { KnowledgeHit } from "./search";
 

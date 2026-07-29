@@ -121,7 +121,6 @@
         "@cloudflare/sandbox": "^0.12.3",
         "@workhorse/api": "workspace:*",
         "@workhorse/db": "workspace:*",
-        "@workhorse/knowledge": "workspace:*",
         "@workhorse/workflow": "workspace:*",
       },
       "devDependencies": {

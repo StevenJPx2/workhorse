@@ -6,7 +6,6 @@
 
 import { fakeAiSearch, runTool, type FakeSearchChunk } from "@workhorse/test-utils/tools";
 import { describe, expect, it } from "vitest";
-import { repoSlug } from "../../memory";
 import memory_search from "../memory_search";
 import memory_write from "../memory_write";
 
@@ -24,25 +23,6 @@ const hit = (over: Partial<FakeSearchChunk> = {}): FakeSearchChunk => ({
   content: [{ text: "Releases go through scripts/release.sh" }],
   attributes: { file: { kind: "memory", repo: "acme/widgets", category: "PROJECT_RULES", ticketId: "t0" } },
   ...over,
-});
-
-describe("repoSlug", () => {
-  it("normalizes every spelling of the same GitHub repo", () => {
-    // A run must not lose its repo's memories because the clone URL was written
-    // differently.
-    for (const spelling of [
-      "https://github.com/acme/widgets.git",
-      "https://github.com/acme/widgets",
-      "git@github.com:acme/widgets.git",
-    ]) {
-      expect(repoSlug(spelling)).toBe("acme/widgets");
-    }
-  });
-
-  it("sanitizes a non-GitHub identifier rather than dropping it", () => {
-    expect(repoSlug("https://gitlab.com/acme/x.git")).not.toContain(":");
-    expect(repoSlug("weird name!")).toBe("weird_name_");
-  });
 });
 
 describe("memory_write", () => {

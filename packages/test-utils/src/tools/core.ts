@@ -27,7 +27,7 @@ export function fakeTicket(overrides: Partial<TicketRecord> = {}): TicketRecord 
   return {
     id: "t-abc123",
     title: "Fix the thing",
-    repo: "acme/widgets",
+    repo: "https://github.com/acme/widgets.git",
     prompt: "Fix the thing that is broken",
     status: "queued",
     createdAt: "2026-01-01T00:00:00.000Z",

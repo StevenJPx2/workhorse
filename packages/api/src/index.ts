@@ -8,6 +8,7 @@ export type {
   ModelPolicy,
   Thinking,
 } from "./agent";
+export { repoSlug } from "./repo";
 export { tool } from "./plugin";
 export type {
   AttachmentProvider,
