@@ -1,7 +1,7 @@
 ---
 name: therapist
 description: Collates inbound feedback (PR reviews, failing checks, Slack/Jira) into a grounded revision brief.
-tools: read, grep, find, ls, bash, ctx_search, search_fleet_knowledge, fetch_context, gh_pr, gh_ci, gh_issue, browser_open, browser_read, web_read, run_code
+tools: read, grep, find, ls, bash, memory_search, search_fleet_knowledge, fetch_context, gh_pr, gh_ci, gh_issue, browser_open, browser_read, web_read, run_code
 ---
 
 # therapist

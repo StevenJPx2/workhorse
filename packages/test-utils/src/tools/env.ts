@@ -62,17 +62,28 @@ export interface FakeAiSearchOptions {
   createFails?: boolean;
   /** Make search() reject — the "index broken mid-query" path. */
   searchThrows?: boolean;
+  /** Make items.upload() reject — the "cannot record" path. */
+  uploadThrows?: boolean;
+}
+
+/** One recorded items.upload() call. */
+export interface FakeUpload {
+  filename: string;
+  content: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface FakeAiSearch {
   get(id: string): unknown;
   create(spec: unknown): Promise<unknown>;
-  /** Every search() query, in order. */
-  readonly queries: Array<{ query: string; options?: unknown }>;
+  /** Every search() call, in order — query, retrieval options, and filters. */
+  readonly queries: Array<{ query: string; options?: unknown; filters?: unknown }>;
   /** Instance ids passed to get(). */
   readonly gets: string[];
   /** Specs passed to create(). */
   readonly creates: unknown[];
+  /** Every document written through items.upload(). */
+  readonly uploads: FakeUpload[];
 }
 
 /**
@@ -82,19 +93,28 @@ export interface FakeAiSearch {
  * `info()` decides whether it already exists, and `create()` provisions it.
  */
 export function fakeAiSearch(options: FakeAiSearchOptions = {}): FakeAiSearch {
-  const queries: Array<{ query: string; options?: unknown }> = [];
+  const queries: Array<{ query: string; options?: unknown; filters?: unknown }> = [];
   const gets: string[] = [];
   const creates: unknown[] = [];
+  const uploads: FakeUpload[] = [];
 
   const makeInstance = () => ({
     async info() {
       if (options.missing) throw new Error("instance not found");
       return { id: "fake" };
     },
-    async search(args: { query: string; ai_search_options?: unknown }) {
-      queries.push({ query: args.query, options: args.ai_search_options });
+    async search(args: { query: string; ai_search_options?: unknown; filters?: unknown }) {
+      queries.push({ query: args.query, options: args.ai_search_options, filters: args.filters });
       if (options.searchThrows) throw new Error("search backend unavailable");
       return { data: options.results ?? [] };
+    },
+    // The write path, matching the real two-level shape (instance.items.upload).
+    items: {
+      async upload(filename: string, content: string, opts?: { metadata?: Record<string, unknown> }) {
+        if (options.uploadThrows) throw new Error("upload backend unavailable");
+        uploads.push({ filename, content, metadata: opts?.metadata });
+        return { filename };
+      },
     },
   });
 
@@ -102,6 +122,7 @@ export function fakeAiSearch(options: FakeAiSearchOptions = {}): FakeAiSearch {
     queries,
     gets,
     creates,
+    uploads,
     get(id: string) {
       gets.push(id);
       return makeInstance();

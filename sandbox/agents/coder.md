@@ -1,7 +1,7 @@
 ---
 name: coder
 description: Write-capable implementation agent for repository changes.
-tools: read, grep, find, ls, edit, write, bash, ctx_search, ctx_memory, browser_fetch
+tools: read, grep, find, ls, edit, write, bash, memory_search, memory_write, browser_fetch
 ---
 
 # coder
@@ -24,8 +24,8 @@ Rules:
 Memory (Magic Context):
 
 - Before solving anything non-trivial, search prior fleet knowledge for this
-  repository: `ctx_search` with task keywords. Prior tickets may have already
+  repository: `memory_search` with task keywords. Prior tickets may have already
   solved or mapped it.
-- After implementing, record durable repo knowledge with `ctx_memory` —
+- After implementing, record durable repo knowledge with `memory_write` —
   project rules, constraints, gotchas, conventions. One standalone fact per
   memory; skip task-specific noise.

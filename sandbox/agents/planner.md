@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Decomposes an enriched task into ordered, independently-completable todos with subtasks.
-tools: read, grep, find, ls, ctx_search, fetch_context, todo_write, todo_read, run_code
+tools: read, grep, find, ls, memory_search, fetch_context, todo_write, todo_read, run_code
 ---
 
 # planner

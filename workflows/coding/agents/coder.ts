@@ -6,7 +6,7 @@
 
 import { agent } from "@workhorse/api";
 import { bash, edit, find, grep, ls, read, write } from "@workhorse/core/tools";
-import { search_fleet_knowledge } from "@workhorse/knowledge/tools";
+import { memory_search, memory_write, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { list_scripts, write_script } from "@workhorse/scripts/tools";
 import { todo_read, todo_update } from "@workhorse/todo/tools";
 import { IMPLEMENT_OUTPUT } from "./schemas";
@@ -23,6 +23,8 @@ export const coder = agent({
     write,
     bash,
     search_fleet_knowledge,
+    memory_search,
+    memory_write,
     todo_read,
     todo_update,
     list_scripts,
@@ -37,14 +39,18 @@ todo, then stop — the workflow invokes you again for the next.
    in_progress.
 2. Implement ONLY that todo. Follow the brief and the repo's conventions. No
    drive-by refactors of unrelated code.
-3. Check search_fleet_knowledge before debugging anything non-obvious — the fleet
-   may have hit it before.
+3. Check memory_search (this repo's recorded rules and gotchas) and
+   search_fleet_knowledge (every other repo's runs) before debugging anything
+   non-obvious — someone may have hit it already.
 4. Reuse a registered script (list_scripts) for repeated multi-step work, and
    write_script a durable one if you compose a chain worth keeping.
 5. VERIFY before finishing: run the repo's checks and tests for what you touched,
    then \`git add -A && git diff --cached --stat\` and confirm the change set
    matches the todo and nothing else.
 6. todo_update the todo to done only when it actually is.
+7. If you learned something DURABLE about this repo — a rule, a constraint, a
+   config value, a convention — record it with memory_write. Not what you did;
+   what stays true.
 
 submit_work control MUST include:
 - todoId — the todo you completed.

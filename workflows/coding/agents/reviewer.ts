@@ -7,7 +7,7 @@
 import { agent } from "@workhorse/api";
 import { bash, find, grep, ls, read } from "@workhorse/core/tools";
 import { gh_ci } from "@workhorse/github/tools";
-import { search_fleet_knowledge } from "@workhorse/knowledge/tools";
+import { memory_search, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { todo_read } from "@workhorse/todo/tools";
 import { REVIEW_OUTPUT } from "./schemas";
 
@@ -17,7 +17,7 @@ export const reviewer = agent({
   // It reads and runs checks; it never fixes. A reviewer that could edit would
   // quietly become a second coder and its verdict would stop meaning anything.
   readOnly: true,
-  tools: [read, grep, find, ls, bash, search_fleet_knowledge, todo_read, gh_ci],
+  tools: [read, grep, find, ls, bash, search_fleet_knowledge, memory_search, todo_read, gh_ci],
   output: REVIEW_OUTPUT,
   instructions: `
 You are the reviewer. Adversarially review the current todo's implementation

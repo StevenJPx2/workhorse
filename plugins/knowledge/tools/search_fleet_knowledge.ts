@@ -14,7 +14,7 @@ export default tool({
     "Search the fleet's institutional memory: distilled traces of every past Workhorse run " +
     "(task, per-stage analyses, verifier findings, escalations, outcome) across all repos and " +
     "tickets. Ask before solving: similar error messages, the same subsystem, prior attempts " +
-    "at this kind of task. Complements ctx_search (per-repo working memory) — this one sees " +
+    "at this kind of task. Complements memory_search (per-repo working memory) — this one sees " +
     "what OTHER tickets and repos learned.",
   docs: `
 search_fleet_knowledge — the fleet's institutional memory.
@@ -34,7 +34,7 @@ WHEN TO USE
     - a subsystem another ticket already touched
     - a recurring failure, BEFORE proposing a fix
 
-  This complements ctx_search: ctx_search is THIS repo's working memory, while
+  This complements memory_search: memory_search is THIS repo's working memory, while
   this sees what OTHER tickets and repos learned.
 
 EXAMPLES

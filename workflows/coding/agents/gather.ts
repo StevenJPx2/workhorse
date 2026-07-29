@@ -10,7 +10,7 @@ import type { ToolFactory } from "@workhorse/api";
 import { browser_open, browser_read } from "@workhorse/browser/tools";
 import { bash, find, grep, ls, read } from "@workhorse/core/tools";
 import { gh_ci, gh_issue, gh_pr, gh_search_code } from "@workhorse/github/tools";
-import { search_fleet_knowledge } from "@workhorse/knowledge/tools";
+import { memory_search, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { web_read, web_search } from "@workhorse/search/tools";
 
 export const GATHER_TOOLS: ToolFactory[] = [
@@ -23,7 +23,8 @@ export const GATHER_TOOLS: ToolFactory[] = [
   // is what stops it writing. It is here for `git log`, `git diff`, and running
   // the repo's own checks.
   bash,
-  // Prior fleet knowledge.
+  // Prior knowledge: this repo's own memories, and every other repo's runs.
+  memory_search,
   search_fleet_knowledge,
   // The PR conversation and its CI.
   gh_pr,

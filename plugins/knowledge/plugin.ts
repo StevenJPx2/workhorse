@@ -10,11 +10,14 @@
 // Instance: "workhorse-fleet" in the default namespace, BUILT-IN storage
 // (no R2 to manage) — items upserted by filename `<ticket>-<run>.md`.
 
-import type { Env, WorkhorsePlugin } from "@workhorse/api";
-import { instance, searchKnowledge } from "./search";
+import type { Core, Env, WorkhorsePlugin } from "@workhorse/api";
+import { instance } from "./query";
+import { searchKnowledge } from "./search";
 import { knowledgeTools } from "./tools";
 
 export { searchKnowledge } from "./search";
+export { repoSlug, searchMemory, writeMemory, MEMORY_CATEGORIES } from "./memory";
+export type { MemoryCategory, MemoryHit, RepoMemory } from "./memory";
 export type { KnowledgeHit } from "./search";
 
 interface TraceActivity {
@@ -115,6 +118,95 @@ async function indexRun(
   }
 }
 
+/** One archived trace, as stored in R2 or legacy KV. */
+interface TraceBody {
+  ticketId: string;
+  runId: string;
+  kind: string;
+  activity: unknown;
+  escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>;
+}
+
+export interface ReindexResult {
+  indexed: number;
+  failed: number;
+}
+
+/**
+ * Re-index every archived trace into fleet knowledge.
+ *
+ * Extracted from the route handler so it is testable: it paginates two stores,
+ * de-duplicates across them, and must survive a single corrupt trace — none of
+ * which was reachable while it was an inline closure.
+ *
+ * Idempotent, because indexing upserts by filename.
+ */
+/** Every archived trace body in R2, page by page. */
+async function* r2Traces(env: Env): AsyncGenerator<string> {
+  let cursor: string | undefined;
+  do {
+    const page = await env.BLOBS.list({ prefix: "trace/", cursor });
+    for (const obj of page.objects) {
+      const body = await env.BLOBS.get(obj.key);
+      if (body) yield await body.text();
+    }
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+}
+
+/** Every archived trace body in legacy KV (pre-R2 runs), page by page. */
+async function* kvTraces(env: Env): AsyncGenerator<string> {
+  let cursor: string | undefined;
+  do {
+    const page = await env.TICKETS.list({ prefix: "trace:", cursor });
+    for (const key of page.keys) {
+      const raw = await env.TICKETS.get(key.name);
+      if (raw) yield raw;
+    }
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+}
+
+export async function reindexAll(env: Env, core: Pick<Core, "getTicket">): Promise<ReindexResult> {
+  const result: ReindexResult = { indexed: 0, failed: 0 };
+  // Traces exist in BOTH stores for runs that straddled the blob migration, so
+  // without this a re-index would double-count them.
+  const seen = new Set<string>();
+
+  const indexOne = async (raw: string) => {
+    try {
+      const trace = JSON.parse(raw) as TraceBody;
+      const key = `${trace.ticketId}:${trace.runId}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const ticket = (await core.getTicket(trace.ticketId)) ?? {};
+      const ok = await indexRun(
+        env,
+        ticket,
+        trace.ticketId,
+        trace.runId,
+        trace.kind,
+        JSON.stringify(trace.activity),
+        trace.escalations,
+      );
+
+      if (ok) result.indexed++;
+      else result.failed++;
+    } catch {
+      // One unparseable trace must not abort a backfill over thousands.
+      result.failed++;
+    }
+  };
+
+  // R2 first — authoritative since the blob plane — then legacy KV.
+  for (const source of [r2Traces(env), kvTraces(env)]) {
+    for await (const raw of source) await indexOne(raw);
+  }
+
+  return result;
+}
+
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
@@ -147,58 +239,7 @@ export const knowledgePlugin: WorkhorsePlugin = {
       path: "/knowledge/reindex",
       auth: "master",
       async handler(_request, env, _ctx, core) {
-        let indexed = 0;
-        let failed = 0;
-        const seen = new Set<string>();
-        interface TraceBody {
-          ticketId: string;
-          runId: string;
-          kind: string;
-          activity: unknown;
-          escalations?: Array<{ trigger: string; detail: string; stage?: string; toModel?: string }>;
-        }
-        const index = async (raw: string) => {
-          try {
-            const t = JSON.parse(raw) as TraceBody;
-            if (seen.has(`${t.ticketId}:${t.runId}`)) return;
-            seen.add(`${t.ticketId}:${t.runId}`);
-            const ticket = (await core.getTicket(t.ticketId)) ?? {};
-            const ok = await indexRun(
-              env,
-              ticket,
-              t.ticketId,
-              t.runId,
-              t.kind,
-              JSON.stringify(t.activity),
-              t.escalations,
-            );
-            if (ok) indexed++;
-            else failed++;
-          } catch {
-            failed++;
-          }
-        };
-        // R2 traces (authoritative since the blob plane) …
-        let r2cursor: string | undefined;
-        do {
-          const page = await env.BLOBS.list({ prefix: "trace/", cursor: r2cursor });
-          for (const obj of page.objects) {
-            const body = await env.BLOBS.get(obj.key);
-            if (body) await index(await body.text());
-          }
-          r2cursor = page.truncated ? page.cursor : undefined;
-        } while (r2cursor);
-        // … then legacy KV traces (pre-R2 runs).
-        let kvCursor: string | undefined;
-        do {
-          const page = await env.TICKETS.list({ prefix: "trace:", cursor: kvCursor });
-          for (const key of page.keys) {
-            const raw = await env.TICKETS.get(key.name);
-            if (raw) await index(raw);
-          }
-          kvCursor = page.list_complete ? undefined : page.cursor;
-        } while (kvCursor);
-        return json({ ok: true, indexed, failed });
+        return json({ ok: true, ...(await reindexAll(env, core)) });
       },
     },
   ],
