@@ -262,5 +262,41 @@
       "passed": 853,
       "failed": 0
     }
+  },
+  {
+    "at": "2026-07-29T02:59:23.675Z",
+    "sha": "47471c2",
+    "subject": "refactor(worker): break all 6 import cycles — 62.3 -> 87.4 (C -> A) (#16)",
+    "scores": {
+      "evals": 100,
+      "packages/api": 100,
+      "packages/auth": 100,
+      "packages/db": 98.1,
+      "packages/semindex": 100,
+      "packages/test-utils": 100,
+      "packages/workflow": 99.8,
+      "plugins/aft": 100,
+      "plugins/browser": 100,
+      "plugins/core": 100,
+      "plugins/github": 90,
+      "plugins/imgup": 100,
+      "plugins/jira": 90,
+      "plugins/knowledge": 100,
+      "plugins/ntfy": 100,
+      "plugins/paste": 100,
+      "plugins/scripts": 100,
+      "plugins/search": 100,
+      "plugins/slack": 90,
+      "plugins/tickets": 100,
+      "plugins/todo": 100,
+      "ui": 87.2,
+      "worker": 87.4,
+      "workflows/coding": 100
+    },
+    "tests": {
+      "total": 963,
+      "passed": 920,
+      "failed": 0
+    }
   }
 ]
