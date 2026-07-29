@@ -1,16 +1,36 @@
-// Infrastructure for the Workhorse fleet.
+// Infrastructure for the Workhorse fleet — NOT THE ACTIVE DEPLOY PATH.
 //
-// Replaces worker/wrangler.jsonc. Every resource here ALREADY EXISTS in the
-// account — this stack adopts them rather than provisioning a parallel set, so
-// each one passes the explicit name it is deployed under. Alchemy's default
-// physical name is `{app}-{stage}-{logical-id}`, which would create a second
-// empty D1 beside the one holding 47 tickets.
+// ⚠️  BLOCKED on two Alchemy v2 limitations, both hit on a real prod deploy
+//     (2026-07-29) and both verified against the beta's source. `wrangler deploy`
+//     remains the deploy path; this file is kept because the research is real and
+//     the blockers are upstream-fixable.
 //
-// First deploy against existing infrastructure needs `--adopt`:
+// BLOCKER 1 — containers cannot attach to a plain Durable Object.
+//   v2's `Cloudflare.Container` is Effect-native: it expects to own the class and
+//   binds it as a Tag requiring a runtime instance. Our Sandbox is
+//   @cloudflare/sandbox's DO with an image attached, so `Container("Sandbox", {…})`
+//   fails at plan time with "Service not found: Container<Sandbox>".
+//   Binding the DO structurally (below) makes the deploy SUCCEED but silently
+//   drops the `containers: [{ className }]` script metadata, which Alchemy
+//   collects only from real Container resources. Result: every sandbox call fails
+//   with "Containers have not been enabled for this Durable Object class" — a
+//   green deploy that breaks every ticket.
 //
-//   bun alchemy deploy --stage prod --adopt
+// BLOCKER 2 — an existing Workflow cannot be adopted by name.
+//   For a locally-hosted workflow, WorkerAsyncBindings computes
+//   `makeWorkflowName(scriptName, className)` (a sha256-suffixed name) and
+//   OVERWRITES whatever name is passed here. The prod deploy created
+//   `workhorse-sandbox-ticketworkflow-0aeb8b7a` beside `ticket-workflow` and
+//   repointed the binding at it, orphaning every pre-existing instance.
+//   Passing `scriptName` does not help — it skips registration but still derives.
 //
-// After that the state store knows about them and plain `deploy` suffices.
+// WHAT DID WORK, and is worth keeping: D1/KV/R2/Vectorize/AI-Search adoption with
+// zero data loss, all 12 secrets preserved across the deploy (measured on a
+// throwaway worker first, not assumed), crons, and the Worker Loader binding.
+//
+// When the blockers lift:
+//   bun alchemy deploy --stage prod --adopt    # first time, to adopt
+//   bun alchemy deploy --stage prod            # thereafter
 
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";

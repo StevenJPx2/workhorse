@@ -97,9 +97,13 @@
       "class_name": "TicketWorkflow"
     }
   ],
+  // The Alchemy v2 deploy (2026-07-29) uploaded the worker WITHOUT a migration
+  // tag, clearing the recorded `v1`. Wrangler then tried to re-apply
+  // new_sqlite_classes for a class that already has live objects, which
+  // Cloudflare rejects (10074). `v1` is declared applied via an empty step so
+  // wrangler's tag matches reality; the class itself is untouched.
   "migrations": [
     {
-      "new_sqlite_classes": ["Sandbox"],
       "tag": "v1"
     }
   ]

@@ -24,7 +24,7 @@
     "audit": "fallow audit --coverage coverage/coverage-final.json",
     "dead": "fallow dead-code",
     "check": "bun run lint && bun run typecheck && bun run health",
-    "deploy": "alchemy deploy --stage prod",
+    "deploy": "cd worker && wrangler deploy",
     "dev": "cd worker && bun run dev",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -42,8 +42,7 @@
     "db:studio": "cd packages/db && drizzle-kit studio",
     "report:assets": "node scripts/report.mjs --assets",
     "test:coverage": "vitest run --coverage",
-    "deploy:plan": "alchemy plan --stage prod",
-    "deploy:adopt": "alchemy deploy --stage prod --adopt"
+    "deploy:alchemy:plan": "alchemy deploy --stage prod --adopt --dry-run --yes"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.18.8",
