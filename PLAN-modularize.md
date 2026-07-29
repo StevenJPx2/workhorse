@@ -1245,13 +1245,54 @@ whether the tool checks the gate or not.
 `packages/workflow/src/workflows/` is Phase 5's extraction work, where
 `workflow-run.ts` moves anyway.
 
-### Phase 5: Extract the rest (now that the shape is proven)
-1. `@workhorse/sandbox` (agent-run, codemode)
-2. `@workhorse/agents` (agents, chat)
-3. `@workhorse/events` (events, notifications)
-4. `@workhorse/tickets` (tickets, heal)
-5. `@workhorse/server` (router, routes/, plugins, refs, semindex, triggers)
-6. Gate: `fallow health` circular-deps deduction drops (this is the phase that fixes it)
+### Phase 5: Break the cycles ✅ DONE
+
+**Gate met: all 6 import cycles eliminated. `worker` 62.3 → 87.4 (C → A), +25.1** —
+the largest single deduction in the repo.
+
+The plan called for extracting five packages here. That turned out to be the wrong
+first move: the cycles were the *reason* extraction looked necessary, and they came
+from **two files doing two jobs each**, not from the worker being one package.
+Fixing the coupling directly got the whole gain without moving a line into a new
+package.
+
+**1. `builtinTools` deleted.** `read`/`grep`/`bash`/`write`/`edit` were inlined in
+`flue-session.ts` and imported by `codemode.ts` — while `flue-session` imported
+`codemode` back. Registering `@workhorse/core` (Phase 3) removed the function
+entirely and with it the cycle. Stage assembly is now ONE pass over plugins instead
+of builtins-plus-plugins, and the write gate rides `ToolContext.policy`.
+
+**2. `plugins.ts` split into `registry.ts` + `core.ts`.** It held both the plugin
+LIST and the Core FACADE. The facade legitimately reaches tickets, chat, events and
+the index — so every one of those modules imported the file back to get the plugin
+list. Five cycles from one file with two responsibilities. `registry.ts` now imports
+nothing from its siblings and therefore cannot participate in a cycle.
+
+**3. Dependencies inverted, not dynamically imported.** `chat`, `tickets`, and
+`toolContext` all needed a `Core`. Each now RECEIVES one:
+
+| module | was | now |
+|---|---|---|
+| `toolContext` | imported the facade to build a Core | takes `core: Core` |
+| `runFleetChat` | imported `coreFor` | takes `core: Core` |
+| `resolveAttachments` | dynamically imported `coreFor` | takes `core: Core` |
+
+`coreFor` passes the facade it is building to `runFleetChat`, which is what closes
+the loop without a dynamic import papering over it.
+
+**The audit flagged 8 functions the move exposed** — all pre-existing, all at 0%
+coverage, so their CRAP scores were `cyc² + cyc` exactly. Answered with real tests
+rather than a threshold bump: 60 new worker tests covering the **capability gate**
+(`assembleStageTools` — a stage receiving an ungranted tool is the failure nothing
+would have caught), ref parsing and frecency decay, the Core facade's seed
+protection and hook isolation, and chat's credential gate. Two functions were
+genuinely too branchy and were split (`registerScript` out of `coreFor`,
+`renderAttachment` out of `resolveAttachments`).
+
+**Still to extract, when there is a reason beyond tidiness:** `@workhorse/sandbox`,
+`@workhorse/events`, `@workhorse/tickets`, `@workhorse/server`. The worker is 87.4
+A with no cycles, so a package boundary now has to justify itself on something other
+than the health score.
 
 ### Phase 6: AI Search replaces Magic Context
 1. Remove Magic Context from the sandbox image

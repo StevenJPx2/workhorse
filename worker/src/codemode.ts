@@ -15,8 +15,9 @@
 import { WorkerEntrypoint, exports as workerExports } from "cloudflare:workers";
 import type { Env, WorkhorseTool } from "@workhorse/api";
 import { sandboxDriver } from "./agent-run";
-import { builtinTools } from "./flue-session";
-import { assembleStageTools, toolContext } from "./plugins";
+import { assembleStageTools } from "./registry";
+import { coreFor } from "./core";
+import { toolContext } from "./tool-context";
 
 /** Props handed to a ToolBridge stub — authentic, never visible to the DW. */
 export interface ToolBridgeProps {
@@ -40,13 +41,10 @@ export interface ToolBridgeProps {
  * run_code program sees precisely what the stage can call — no more.
  */
 function stageTools(env: Env, p: ToolBridgeProps): Map<string, WorkhorseTool> {
-  const allow = new Set(p.allow);
   const sandbox = sandboxDriver(env, p.sandboxId);
-  const ctx = toolContext(env, p.selfOrigin, sandbox, { id: p.ticketId, repo: p.repo, stage: p.stage });
-  const builtins = builtinTools(sandbox, allow, p.dir, p.writeAllow);
-  const plugins = assembleStageTools(ctx, p.allow);
+  const ctx = toolContext(env, coreFor(env, p.selfOrigin), p.selfOrigin, sandbox, { id: p.ticketId, repo: p.repo, stage: p.stage }, { dir: p.dir, writeAllow: p.writeAllow });
   const map = new Map<string, WorkhorseTool>();
-  for (const t of [...builtins, ...plugins]) map.set(t.name, t);
+  for (const t of assembleStageTools(ctx, p.allow)) map.set(t.name, t);
   return map;
 }
 

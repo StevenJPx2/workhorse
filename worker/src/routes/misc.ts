@@ -2,6 +2,7 @@
 
 import { getSandbox } from "@cloudflare/sandbox";
 import { runFleetChat } from "../chat";
+import { coreFor } from "../core";
 import { json, type Route } from "../router";
 
 export const miscRoutes: Route[] = [
@@ -14,7 +15,7 @@ export const miscRoutes: Route[] = [
       const { messages } = (await request.json()) as {
         messages: Array<{ role: string; content: string }>;
       };
-      const r = await runFleetChat(env, url.origin, messages);
+      const r = await runFleetChat(env, coreFor(env, url.origin), url.origin, messages);
       if (!r.ok) return json({ error: r.error }, r.status);
       return json({ reply: r.reply });
     },
@@ -27,7 +28,7 @@ export const miscRoutes: Route[] = [
     async handler({ request }) {
       const { input } = (await request.json().catch(() => ({}))) as { input?: string };
       if (!input?.trim()) return json({ match: null });
-      const { attachmentProviders } = await import("../plugins");
+      const { attachmentProviders } = await import("../registry");
       for (const [kind, p] of attachmentProviders()) {
         const ref = p.match(input.trim());
         if (ref) return json({ match: { kind, ref, label: p.label, icon: p.icon } });
@@ -54,7 +55,7 @@ export const miscRoutes: Route[] = [
       const { kind, ref } = (await request.json().catch(() => ({}))) as { kind?: string; ref?: string };
       if (!kind || !ref) return json({ error: "kind, ref required" }, 400);
       const { resolveAttachments } = await import("../tickets");
-      const section = await resolveAttachments(env, url.origin, [{ kind, ref }]);
+      const section = await resolveAttachments(env, coreFor(env, url.origin), [{ kind, ref }]);
       return section ? json({ content: section }) : json({ error: "did not resolve" }, 422);
     },
   },

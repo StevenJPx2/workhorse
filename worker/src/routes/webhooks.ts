@@ -2,7 +2,8 @@
 // a bespoke handle() or the generic parse → events → wake pipeline.
 
 import { appendEvents, wakeTicket } from "../events";
-import { coreFor, pluginFor } from "../plugins";
+import { pluginFor } from "../registry";
+import { coreFor } from "../core";
 import { json, type Route } from "../router";
 
 export const webhookRoutes: Route[] = [
