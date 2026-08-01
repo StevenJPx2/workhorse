@@ -25,7 +25,7 @@ Subpath exports, not a barrel. A tool test should not pull in a model client.
 
 ## /workflow
 
-`workflowHarness` scripts stage verdicts and records the call sequence, visit
+`workflowHarness` scripts agent verdicts and records the call sequence, visit
 counts, and loop-backs. It is structurally typed and does not import
 `@workhorse/workflow`, so that package's own tests can use it without a cycle.
 

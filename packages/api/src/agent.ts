@@ -46,6 +46,20 @@ export interface ModelPolicy {
   };
 }
 
+/**
+ * Tools the ENGINE provides, which cannot be imported as factories.
+ *
+ * Both run inside the Code Mode bridge, which needs the stage's authentic
+ * `ctx.props` — a plugin ToolContext cannot reach those, so there is no factory to
+ * import. A union rather than free strings: the old stage specs asked for
+ * `find_workflow`, which no tool answers to, and a phantom name in a string
+ * allowlist resolves to nothing without complaint.
+ *
+ * `submit_work` is not listed. Every agent gets it, so declaring it would be
+ * ceremony an author could forget.
+ */
+export type EngineTool = "run_code" | "run_script";
+
 /** What an agent's `tools` function may branch on. */
 export interface AgentToolContext {
   /** The typed input this invocation was given by `ctx.run(agent, { input })`. */
@@ -74,6 +88,14 @@ export interface AgentSpec<TOutput extends AgentOutputSchema> {
    * is visual) without becoming two near-identical agents.
    */
   tools?: ToolFactory[] | ((ctx: AgentToolContext) => ToolFactory[]);
+  /**
+   * Engine-provided tools this agent may call, by name.
+   *
+   * Separate from `tools` because these have no importable factory — see
+   * {@link EngineTool}. The union keeps a typo a compile error, which a plain
+   * string allowlist could not.
+   */
+  engineTools?: EngineTool[];
   thinking?: Thinking;
   /** No repo writes at all. Stronger than an empty writeAllow. */
   readOnly?: boolean;
@@ -93,6 +115,7 @@ export interface AgentDefinition<TOutput extends AgentOutputSchema = AgentOutput
   readonly readOnly?: boolean;
   readonly writeAllow?: string[];
   readonly notifications?: "read";
+  readonly engineTools?: EngineTool[];
   /** Resolve the tool surface for one invocation. */
   tools(ctx: AgentToolContext): ToolFactory[];
 }
@@ -127,6 +150,7 @@ export function agent<const TOutput extends AgentOutputSchema>(
     readOnly: spec.readOnly,
     writeAllow: spec.writeAllow,
     notifications: spec.notifications,
+    engineTools: spec.engineTools,
     tools: (ctx: AgentToolContext) => (typeof tools === "function" ? tools(ctx) : tools),
   });
 }

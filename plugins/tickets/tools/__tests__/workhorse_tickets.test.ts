@@ -157,9 +157,9 @@ describe("workhorse_find_workflow", () => {
     runTool(workhorse_find_workflow, { query: "screenshot a page" }, { core: { findWorkflows: async () => hits } });
 
   it("renders name, stages, and description per hit", async () => {
-    const { output } = await find([{ name: "screenshot-pr", stages: "shoot", description: "Capture and open a PR" }]);
+    const { output } = await find([{ name: "coding", stages: "enrich, plan, implement", description: "Implement and review a change" }]);
 
-    expect(output).toContain("- screenshot-pr [shoot]: Capture and open a PR");
+    expect(output).toContain("- coding [enrich, plan, implement]: Implement and review a change");
   });
 
   it("omits the stage bracket when absent", async () => {

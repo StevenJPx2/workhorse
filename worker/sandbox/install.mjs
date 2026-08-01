@@ -5,7 +5,7 @@
 // subprocesses), so there are NO sandbox-scanned tool extensions anymore —
 // plugin tools live worker-side in plugins/<name>/tools/ and reach the
 // container over the sandbox handle. The remaining Pi packages (auth, magic
-// context, aft-pi) are baked via pi.json for any residual Pi tooling.
+// aft-pi) are baked via pi.json for any residual Pi tooling.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

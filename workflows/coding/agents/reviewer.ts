@@ -17,6 +17,7 @@ export const reviewer = agent({
   // It reads and runs checks; it never fixes. A reviewer that could edit would
   // quietly become a second coder and its verdict would stop meaning anything.
   readOnly: true,
+  engineTools: ["run_code"],
   tools: [read, grep, find, ls, bash, search_fleet_knowledge, memory_search, todo_read, gh_ci],
   output: REVIEW_OUTPUT,
   instructions: `

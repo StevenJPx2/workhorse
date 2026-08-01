@@ -12,8 +12,8 @@ import {
   deliverBranch,
   checkoutTicketBranch,
 } from "@workhorse/sandbox";
-import { workflowDef } from "@workhorse/workflow";
-import { runWorkflowDef, type DefRunResult } from "./workflow-run";
+import { workflowFor } from "./registry";
+import { runWorkflow, type WorkflowRunResult } from "./workflow-run";
 import { fireHook } from "./core";
 import { STAGE_RUNWAY_MS, modelToken } from "@workhorse/auth";
 import { log, stageEvent, ticketEvent } from "@workhorse/o11y";
@@ -138,6 +138,8 @@ async function archiveTrace(
  * wake it into a revision run that sees all accumulated feedback.
  */
 export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
+  // Cloudflare constructs this entrypoint by name. No local caller invokes run().
+  // fallow-ignore-next-line unused-class-member
   async run(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
     try {
       await this.runLifecycle(event, step);
@@ -154,8 +156,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   }
 
   /**
-   * Prepare a sandbox for a run: auth, workspace clone, agent blocks, memory,
-   * browser config, ticket context, dep cache. Shared by the engine path's
+   * Prepare a sandbox for a run: auth, workspace clone, memory, browser config,
+   * ticket context, and the dependency cache. Shared by the workflow's
    * "prepare" step and the def path's initial + post-throttle re-prepare
    * (a durable step.sleep past sleepAfter wipes the container disk).
    */
@@ -164,12 +166,10 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       stepName,
       { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
       async () => {
-        await updateTicket(this.env, t.id, { status: "planning" });
-        await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
-        await prepareWorkspace(this.env, sandboxId, t.repo);
-        const { installAgentBlocks } = await import("@workhorse/server");
-        await installAgentBlocks(this.env, sandboxId);
-        await injectBrowserConfig(this.env, sandboxId);
+         await updateTicket(this.env, t.id, { status: "planning" });
+         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
+         await prepareWorkspace(this.env, sandboxId, t.repo);
+         await injectBrowserConfig(this.env, sandboxId);
         await injectImgupConfig(this.env, sandboxId);
         await injectTicketContext(this.env, sandboxId, t.id, t.repo);
         const dep = await restoreDepCache(this.env, sandboxId, t.repo);
@@ -179,16 +179,15 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   }
 
   /**
-   * Flue-first run: drive a hard-coded WorkflowDef to a terminal outcome,
+   * Drive a hard-coded workflow to a terminal outcome,
    * then deliver via the shared PR/report/artifact paths. run(ctx) executes
    * in-process inside a step; a capacity ThrottledPark returns {throttled}
    * and the spine sleeps durably (step.sleep) then re-prepares + re-invokes
-   * (whole-pipeline granularity; completed stages replay from disk when the
-   * sandbox survived, else re-run in the fresh clone). Steering + awaiting-
-   * input parks are engine-path features not yet ported (tracked).
+   * Completed agent stages replay from disk when the sandbox survives, else they
+   * run again in the fresh clone. Steering is delivered before every session.
    */
   /**
-   * Drive one WorkflowDef run to a terminal outcome, handling the capacity
+   * Drive one workflow run to a terminal outcome, handling the capacity
    * throttle-park loop (durable step.sleep + re-prepare + re-invoke). Shared
    * by the initial run and both revision loops. `branch` (revisions) checks
    * out the existing ticket branch after prepare so the agent refines prior
@@ -220,13 +219,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         `${label}-run-${attempt}`,
         { retries: { limit: 1, delay: "10 seconds" }, timeout: "30 minutes" },
         async () => {
-          const r = await runWorkflowDef({
+          const r = await runWorkflow({
             env: this.env,
             sandboxId,
             selfOrigin: this.env.SELF_URL ?? "",
             ticketId: t.id,
             repo: t.repo,
-            def: workflowDef(t.workflow)!,
+            workflow: workflowFor(t.workflow)!,
             runId,
             task: opts.prompt,
             inputs: t.inputs,
@@ -273,7 +272,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
           });
           return JSON.stringify(r);
         },
-      ).then((s) => JSON.parse(s as string))) as DefRunResult;
+      ).then((s) => JSON.parse(s as string))) as WorkflowRunResult;
 
       await step.do(`${label}-trace-${attempt}`, async () => {
         await this.env.TICKETS.put(`activity:${t.id}`, JSON.stringify(drive.activity));
@@ -324,9 +323,9 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     }
   }
 
-  private async runViaDef(step: WorkflowStep, t: TicketParams, sandboxId: string, branch: string) {
+  private async runWorkflowExecution(step: WorkflowStep, t: TicketParams, sandboxId: string, branch: string) {
     const runId = `def-${t.id}`;
-    const { outcome, result } = await this.driveDefRun(step, t, sandboxId, { runId, label: "def", prompt: t.prompt });
+    const { outcome, result } = await this.driveDefRun(step, t, sandboxId, { runId, label: "workflow", prompt: t.prompt });
 
     // --- deliver by outcome kind (shared with the engine path) ---
     if (outcome === "report") {
@@ -402,14 +401,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       // re-run (idempotent — fresh sandbox, branch is force-pushed later).
     }
 
-    // Every workflow is a hard-coded WorkflowDef, run in-process via the
-    // spine (no engine interpreter, no registry). An unknown workflow name
-    // has no def and cannot run.
-    if (!workflowDef(t.workflow)) {
+    // Every workflow is hard-coded TypeScript, run in-process via the spine.
+    // An unknown workflow name has no executable definition and cannot run.
+    if (!workflowFor(t.workflow)) {
       await updateTicket(this.env, t.id, { status: "errored", error: `unknown workflow "${t.workflow}" (no hard-coded def)` });
       throw new Error(`unknown workflow "${t.workflow}"`);
     }
-    await this.runViaDef(step, t, sandboxId, branch);
+    await this.runWorkflowExecution(step, t, sandboxId, branch);
   }
 
   /**

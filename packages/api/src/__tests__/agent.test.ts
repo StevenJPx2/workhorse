@@ -40,12 +40,14 @@ describe("basics", () => {
       readOnly: true,
       writeAllow: ["src/**"],
       notifications: "read",
+      engineTools: ["run_code"],
     });
 
     expect(a.thinking).toBe("high");
     expect(a.readOnly).toBe(true);
     expect(a.writeAllow).toEqual(["src/**"]);
     expect(a.notifications).toBe("read");
+    expect(a.engineTools).toEqual(["run_code"]);
   });
 
   it("is frozen", () => {

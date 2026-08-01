@@ -1,10 +1,7 @@
 // Compile an AgentDefinition into one stage session.
 //
-// The ctx.stage() path resolved a stage's persona from a markdown file in the
-// container and its tool ceiling from a string allowlist. An agent carries both
-// directly: `instructions` IS the persona, and `tools` returns the factory
-// instances, so the ceiling is derived from real imports rather than names that
-// might not correspond to anything.
+// An agent carries its persona and tool factories directly. The ceiling is
+// derived from real imports rather than names that might resolve to nothing.
 //
 // The control contract is derived from the agent's valibot schema, so the epilogue
 // the model reads and the validation its output faces come from ONE declaration.
@@ -60,7 +57,10 @@ function controlJsonSchema(output: unknown): Record<string, unknown> | undefined
  */
 export function agentSession(agent: AgentDefinition, input: Record<string, unknown> = {}): AgentSession {
   const factories = agent.tools({ input });
-  const tools = factories.map((f) => f.toolName);
+  // Engine tools ride the NAME allowlist only. They have no factory to import —
+  // both run through the Code Mode bridge, which needs the stage's authentic
+  // props — so the harness supplies them and the ceiling just has to permit them.
+  const tools = [...factories.map((f) => f.toolName), ...(agent.engineTools ?? [])];
 
   // One tool per task: finishing is submit_work's job, so a stage never needs
   // general write capability just to complete.

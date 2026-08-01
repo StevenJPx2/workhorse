@@ -20,6 +20,8 @@ const graph = await coding.graph();
 const toolNames = (agent: AgentDefinition, input: Record<string, unknown> = {}) =>
   agent.tools({ input }).map((t) => t.toolName);
 
+const engineNames = (agent: AgentDefinition) => agent.engineTools ?? [];
+
 describe("shape", () => {
   it("discovers every agent in the pipeline", async () => {
     expect(graph.stages.map((s) => s.id).sort()).toEqual([
@@ -148,6 +150,14 @@ describe("capability gating", () => {
     // Asymmetric capability between two agents doing the same job is a bug that
     // only shows up as one of them failing to find something.
     expect(toolNames(enricher).sort()).toEqual(toolNames(therapist).sort());
+  });
+
+  it("keeps engine tools explicit and restores attached-context access", () => {
+    expect(engineNames(enricher)).toContain("run_code");
+    expect(engineNames(coder)).toEqual(["run_code", "run_script"]);
+    expect(engineNames(reviewer)).toContain("run_code");
+    expect(toolNames(planner)).toContain("fetch_context");
+    expect(toolNames(coder)).toContain("fetch_context");
   });
 
   it("never grants a tool the workflow does not depend on", async () => {

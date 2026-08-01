@@ -23,7 +23,7 @@ import { healTicket } from "@workhorse/intake";
 import { createServer, sweepCronTriggers } from "@workhorse/server";
 import { coreFor } from "./core";
 import { intake } from "./intake";
-import { assembleChatTools, attachmentProviders, pluginFor, routeFor } from "./registry";
+import { assembleChatTools, attachmentProviders, pluginFor, routeFor, workflowCatalog } from "./registry";
 
 export { Sandbox } from "@cloudflare/sandbox";
 export { healTicket } from "@workhorse/intake";
@@ -44,6 +44,7 @@ const deps = {
   pluginFor,
   routeFor,
   intake,
+  workflows: workflowCatalog,
 };
 
 /** Quiet window before a dead ticket is healed — avoids racing a deploy or a human. */

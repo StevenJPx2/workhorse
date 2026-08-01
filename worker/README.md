@@ -30,7 +30,7 @@ at the top of that file.
 
 The container image builds from `worker/Dockerfile`, with the repository root as its
 build context. `worker/sandbox/` holds what the image bakes in: the Pi installer and
-its package list, the agent-browser wrapper, and the seed agent personas.
+its package list, and the agent-browser wrapper.
 
 ## Notes
 

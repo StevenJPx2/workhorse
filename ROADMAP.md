@@ -79,10 +79,8 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 - **Browser plane** — tiered `browser_fetch` / `browser_screenshot` via the
   Cloudflare `BROWSER` binding, with agent-browser handling bot-walled sites
   credential is configured; scoped `BROWSER_TOKEN`; gated into plan + verify.
-- **Screenshot → PR job** — per-ticket `workflow` selector (default `coding`);
-  `screenshot-pr` bundle captures a URL, hosts the image (imgup multi-host
-  chain with serve-verification: imgbox → pixhost → catbox), embeds it, opens
-  a PR.
+- **Visual PR evidence** — the coding workflow's writer adds browser capture and
+  imgup tools only when the coder reports a user-visible change.
 - **Model fallbacks + delegation** — one stage-restart mechanism, two
   triggers. *Availability*: a stage that dies on the model plane (429 /
   credit exhaustion / expired OAuth — detected from `statusDetail` /
@@ -359,13 +357,13 @@ tool-calling. A rate limit is transient capacity, not a defect, so:
   from HARD failure (auth, malformed, session crash) and from account-exhaust
   (`credit`/`balance` on a paid leg → just skip to the free leg). Only hard
   failures fail the stage.
-- When EVERY leg is throttled, `ctx.stage` returns `{ throttled, retryAfterMs,
+- When EVERY leg is throttled, `ctx.run` returns `{ throttled, retryAfterMs,
   providers }` instead of `{ failure }`. `retryAfterMs` = the SHORTEST reset
   across throttled legs (parse `Retry-After` / `anthropic-ratelimit-*-reset`
   when present; else bounded backoff 30s→1m→2m→5m and re-probe — honest: the
   free-tier 429 body carries no numeric window, so we often back off blind).
 - WHERE the wait lives (CF constraint): SHORT waits (≤ ~2 min, the free-tier
-  per-minute case) retry in-process inside `ctx.stage` (a step's wall-clock is
+  per-minute case) retry in-process inside the agent session (a step's wall-clock is
   unlimited, a 60s I/O wait is fine). LONG waits unwind to the spine, which
   does a DURABLE `step.sleep(retryAfterMs)` and resumes the workflow —
   skipping stages whose artifacts already exist on disk (the same idempotent
@@ -376,22 +374,16 @@ tool-calling. A rate limit is transient capacity, not a defect, so:
   (resumable, notified via the bus) rather than waiting forever or erroring.
 
 This reinforces the split: capacity backoff is lifecycle (spine), the throttle
-signal + short retry is stage-level (`ctx.stage`).
+signal + short retry is agent-session level (`ctx.run`).
 
 If adopted, this SUPERSEDES the "What survives → workflows as USER DATA" note
 in the section below.
 
-**Daily-driver workflows (SEPARATE later effort).** The current
-`coding`/`coding-raw`/`screenshot-pr` defs are SCAFFOLDING — they exist to
-prove the mechanism and feed the `agent-vs-workflow` eval (`coding-raw` is the
-baseline), not because they are the workflows the fleet should actually run.
-Once the flue-first mechanism lands, design the real daily drivers as a
-dedicated effort: each a TS `WorkflowDef` + an eval case, measured against the
-raw-agent baseline before it ships. Candidates to design then (not committed):
-a tighter implement→review→fix coding loop, a research→report workflow
-(non-PR outcome), an issue-triage workflow, a dependency-bump/chore workflow.
-The architecture is deliberately workflow-agnostic (see seams below), so
-adding a daily driver is cheap: a def + an eval, no engine change.
+**Daily-driver workflows.** The `coding`, `coding-nocode`, and `coding-raw`
+workflow packages now run through `workflow()` and typed `ctx.run()` calls.
+`coding-raw` remains the baseline for the `agent-vs-workflow` eval. Future
+workflow packages can add research/report, issue-triage, and dependency-bump
+pipelines without changing the execution engine.
 
 ### Flue migration — stages become in-Worker flue sessions
 
@@ -510,7 +502,7 @@ durable step continuation belongs to Cloudflare Workflows.
   6. Cutover tails: port `tickets` (fleet-client — needs
      `Core.listTickets` + ticket diff) and `find_script`/`find_tool`
      (need a `Core` semindex query) once the stage path is live; smoke
-     the full matrix (coding e2e, steer, bus, screenshot-pr) on flue,
+      the full matrix (coding e2e, steer, and bus) on the typed workflow path,
      then delete dead launcher code.
 
 ### Browser plane follow-ups (post-flue)
@@ -534,7 +526,7 @@ charts, and layout that text parsing loses. Verdict against our stack:
   GPU-ish embedding model + a FAISS/Qdrant service, versus zero-ops
   Workers AI + Vectorize / AI Search.
 - **The narrow candidate: verify-stage visual evidence.** Screenshot-heavy
-  flows (screenshot-pr, future UI-regression workflows) could use
+  flows and future UI-regression workflows could use
   `pixelshot` (their standalone renderer CLI, no index needed) as a
   sandbox tool for tiled full-page captures — our browser plane already
   does CDP screenshots, so this only earns a slot if tiling/PDF handling
@@ -587,11 +579,9 @@ filing/watching tickets.
 
 ## Future workflow specs
 
-Workflows are user data (see Workflow registry): upload a spec via
-`PUT /workflows/:name`, or version one in the target repo under
-`.workhorse/workflows/<name>/`. The baked `sandbox/workflows/` bundles
-(`coding`, `screenshot-pr`) are seeds — `POST /workflows/seed` imports them
-into the registry on a fresh deployment.
+Workflows are code, not user data. Each workflow package exports a typed
+`WorkflowDefinition`; the worker composition root supplies the executable catalog
+to the server. The registry exposes read-only graph metadata.
 
 ---
 

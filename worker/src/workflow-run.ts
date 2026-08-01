@@ -1,32 +1,26 @@
-// Flue-first workflow context — the concrete WorkflowContext the spine passes
-// to a WorkflowDef.run(). Each ctx.stage() reproduces the engine's per-stage
-// assembly (persona from the agent block, tool ceiling, prompt with upstream
-// digests) using the package's pure helpers, then runs the session via the
-// shared flue stage-session core.
+// Run a workflow() definition inside the ticket's sandbox.
 //
-// Idempotent replay: a stage's artifacts are keyed by (stageId, round). If a
-// round's control.json already exists, ctx.stage returns it WITHOUT re-running
-// — so when a ThrottledPark unwinds run() and the spine re-invokes it after a
-// durable sleep, completed stages replay from disk and the run resumes at the
-// throttled stage. Same property covers step crash-retry.
+// A workflow calls ctx.run(agent, options). The agent owns its instructions,
+// output schema, tool factories, and engine-tool declarations. This module owns
+// durable replay, prompt assembly, model execution, and activity reporting.
 
+import type { AgentDefinition, AgentOutput, Env, SandboxHandle } from "@workhorse/api";
 import {
-  assemblePrompt,
-  stageDir,
-  stageSession,
-  upstreamDigest,
-  validateAgainstSchema,
+  agentSession,
+  assembleAgentPrompt,
   StageFailure,
+  stageDir,
   ThrottledPark,
-  type JsonSchema,
-  type StageResult,
-  type StageInvocation,
-  type StageSpec,
-  type WorkflowContext,
-  type WorkflowDef,
+  type AgentOutputOf,
+  type RunContext,
+  type RunOptions,
+  type RunResult,
+  type WorkflowDefinition,
+  type WorkflowOutcome,
+  upstreamDigest,
 } from "@workhorse/workflow";
-import type { Env, SandboxHandle } from "@workhorse/api";
 import { sandboxDriver } from "@workhorse/sandbox";
+import * as v from "valibot";
 import { makeStageSession } from "./flue-session";
 
 export interface WorkflowRunDeps {
@@ -35,133 +29,145 @@ export interface WorkflowRunDeps {
   selfOrigin: string;
   ticketId: string;
   repo: string;
-  def: WorkflowDef;
+  workflow: WorkflowDefinition;
   runId: string;
   task: string;
   inputs?: Record<string, string | number | boolean>;
-  /** Dispatch-time model override. */
   model?: string;
-  /** Repo working dir in the container. */
   cwd?: string;
-  /** Live-status hook: called on each stage transition (UI snapshot + trace). */
-  onStage?: (s: {
+  onStage?: (stage: {
     id: string;
     status: "running" | "completed";
     round: number;
     control?: Record<string, unknown>;
     analysis?: string;
-    stats?: StageResult["stats"];
+    stats?: RunResult["stats"];
   }) => Promise<void>;
-  /** Notification read point for stages that declare notifications: "read". */
   readNotifications?: (stageId: string) => Promise<string | null>;
-  /**
-   * Operator steering read point, consulted before EVERY stage session.
-   *
-   * Unlike notifications — which only reach stages that declare a read point —
-   * a steer is a human redirecting the run, so it is delivered to whatever stage
-   * runs next.
-   */
   readSteers?: (stageId: string) => Promise<string | null>;
 }
 
-async function readStageResult(
-  sandbox: SandboxHandle,
-  spec: StageSpec,
-  dir: string,
-): Promise<StageResult> {
-  const controlRaw = await sandbox.readFile(`${dir}/control.json`);
-  const analysis = (await sandbox.readFile(`${dir}/analysis.md`)) ?? "";
-  let control: Record<string, unknown> = {};
-  if (controlRaw) {
-    try {
-      control = JSON.parse(controlRaw) as Record<string, unknown>;
-    } catch {
-      throw new StageFailure(spec.id, "control", "control.json is not valid JSON");
-    }
-  }
-  // Validate against the stage's inline control contract when declared.
-  const schema = typeof spec.output?.controlSchema === "object" ? (spec.output.controlSchema as JsonSchema) : undefined;
-  if (schema) {
-    const errs = validateAgainstSchema(control, schema);
-    if (errs.length) throw new StageFailure(spec.id, "control", `control failed schema: ${errs.join("; ")}`);
-  }
-  return { stageId: spec.id, control, analysis };
-}
-
-/** Trace-compatible activity doc (matches the engine path's shape). */
-export interface DefActivity {
+export interface WorkflowActivity {
   runId: string;
   workflow: string;
-  tasks: Array<{ id: string; status: "completed"; round: number; analysis: string; control: Record<string, unknown> }>;
+  tasks: Array<{
+    id: string;
+    status: "completed";
+    round: number;
+    analysis: string;
+    control: Record<string, unknown>;
+  }>;
   usage: { totalTokens: number; cost: number; runCodeCalls: number };
   startedAt: string;
   completedAt: string;
 }
 
-export type DefRunResult =
-  | { status: "done"; result: string; outcome: "pr" | "report" | "artifact"; activity: DefActivity }
-  | { status: "throttled"; retryAfterMs: number; providers: string[]; stageId: string; activity: DefActivity };
+export type WorkflowRunResult =
+  | { status: "done"; result: string; outcome: "pr" | "report" | "artifact"; activity: WorkflowActivity }
+  | { status: "throttled"; retryAfterMs: number; providers: string[]; stageId: string; activity: WorkflowActivity };
 
-/**
- * Run one WorkflowDef to completion (one attempt). Accumulates a
- * trace-compatible activity doc via onStage; returns drop-in result/outcome
- * for the shared deliver path. Catches ThrottledPark → {status:"throttled"}
- * (the spine sleeps durably + re-invokes). Hard StageFailure throws (the
- * spine's step fails → run errors). Idempotent: a re-invoke replays completed
- * stages from disk and resumes at the throttled/failed stage.
- */
-export async function runWorkflowDef(deps: WorkflowRunDeps): Promise<DefRunResult> {
+/** Read and validate the artifacts written by submit_work. */
+async function readAgentResult<A extends AgentDefinition>(
+  sandbox: SandboxHandle,
+  agent: A,
+  dir: string,
+): Promise<RunResult<AgentOutputOf<A>>> {
+  const controlRaw = await sandbox.readFile(`${dir}/control.json`);
+  const analysis = (await sandbox.readFile(`${dir}/analysis.md`)) ?? "";
+  let control: Record<string, unknown> = {};
+
+  if (controlRaw) {
+    try {
+      control = JSON.parse(controlRaw) as Record<string, unknown>;
+    } catch {
+      throw new StageFailure(agent.name, "control", "control.json is not valid JSON");
+    }
+  }
+
+  const parsed = v.safeParse(agent.output, { control, analysis });
+  if (!parsed.success) {
+    const detail = parsed.issues.map((issue) => issue.message).join("; ");
+    throw new StageFailure(agent.name, "control", `agent output failed schema: ${detail}`);
+  }
+
+  const output = parsed.output as AgentOutput<A>;
+  const fields = output as { control?: unknown; analysis?: unknown };
+  return {
+    stageId: agent.name,
+    output,
+    control: isRecord(fields.control) ? fields.control : {},
+    analysis: typeof fields.analysis === "string" ? fields.analysis : analysis,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Run one workflow definition to completion, or return a durable throttle park. */
+export async function runWorkflow(deps: WorkflowRunDeps): Promise<WorkflowRunResult> {
   const startedAt = new Date().toISOString();
-  const tasks: DefActivity["tasks"] = [];
+  const tasks: WorkflowActivity["tasks"] = [];
   let tokens = 0;
   let cost = 0;
   let runCodeCalls = 0;
   const sandbox = sandboxDriver(deps.env, deps.sandboxId);
 
-  const ctx = makeWorkflowContext({
-    ...deps,
-    onStage: async (s) => {
-      await deps.onStage?.(s);
-      if (s.status === "completed") {
-        tasks.push({ id: s.id, status: "completed", round: s.round, analysis: s.analysis ?? "", control: s.control ?? {} });
-        tokens += s.stats?.tokens?.total ?? 0;
-        cost += s.stats?.cost ?? 0;
-        runCodeCalls += s.stats?.runCodeCalls ?? 0;
-      }
-    },
+  const context = makeRunContext(deps, async (stage) => {
+    await deps.onStage?.(stage);
+    if (stage.status !== "completed") return;
+
+    tasks.push({
+      id: stage.id,
+      status: "completed",
+      round: stage.round,
+      analysis: stage.analysis ?? "",
+      control: stage.control ?? {},
+    });
+    tokens += stage.stats?.tokens?.total ?? 0;
+    cost += stage.stats?.cost ?? 0;
+    runCodeCalls += stage.stats?.runCodeCalls ?? 0;
   });
 
-  const activity = (): DefActivity => ({
+  const activity = (): WorkflowActivity => ({
     runId: deps.runId,
-    workflow: deps.def.name,
+    workflow: deps.workflow.name,
     tasks,
     usage: { totalTokens: tokens, cost, runCodeCalls },
     startedAt,
     completedAt: new Date().toISOString(),
   });
 
-  let wf;
+  let outcome: WorkflowOutcome;
   try {
-    wf = await deps.def.run(ctx);
-  } catch (e) {
-    if (e instanceof ThrottledPark) {
-      return { status: "throttled", retryAfterMs: e.retryAfterMs, providers: e.providers, stageId: e.stageId, activity: activity() };
+    outcome = await deps.workflow.run(context);
+  } catch (error) {
+    if (error instanceof ThrottledPark) {
+      return {
+        status: "throttled",
+        retryAfterMs: error.retryAfterMs,
+        providers: error.providers,
+        stageId: error.stageId,
+        activity: activity(),
+      };
     }
-    throw e; // hard StageFailure (and anything else) fails the run
+    throw error;
   }
 
   const diff = await sandbox
     .exec(`cd ${deps.cwd ?? "/workspace/repo"} && git add -A && git diff --cached --stat | tail -30`, { timeout: 60_000 })
     .catch(() => ({ stdout: "" }) as { stdout: string });
-  const terminalAnalysis = tasks.at(-1)?.analysis ?? wf.summary ?? "";
+  const terminalAnalysis = tasks.at(-1)?.analysis ?? outcome.summary ?? "";
   const result = `${(diff.stdout ?? "").trim()}\n\n${terminalAnalysis}`.trim();
 
-  return { status: "done", result, outcome: wf.outcome, activity: activity() };
+  return { status: "done", result, outcome: outcome.outcome, activity: activity() };
 }
 
-/** Build the concrete WorkflowContext for one run. */
-function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
-  const { env, sandboxId, selfOrigin, ticketId, repo, def, runId, task } = deps;
+function makeRunContext(
+  deps: WorkflowRunDeps,
+  onStage: NonNullable<WorkflowRunDeps["onStage"]>,
+): RunContext {
+  const { env, sandboxId, selfOrigin, ticketId, repo, runId, task } = deps;
   const cwd = deps.cwd ?? "/workspace/repo";
   const inputs = deps.inputs ?? {};
   const sandbox = sandboxDriver(env, sandboxId);
@@ -174,58 +180,43 @@ function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
     inputs,
     model: deps.model,
 
-    async stage(id: string, inv?: StageInvocation): Promise<StageResult> {
-      const spec = def.stages.find((s) => s.id === id);
-      if (!spec) throw new StageFailure(id, "control", `no stage "${id}" in workflow ${def.name}`);
-
-      const round = (rounds[id] = (rounds[id] ?? 0) + 1);
-      const dir = stageDir(runId, id, round);
+    async run<A extends AgentDefinition>(
+      agent: A,
+      options: RunOptions = {},
+    ): Promise<RunResult<AgentOutputOf<A>>> {
+      const round = (rounds[agent.name] = (rounds[agent.name] ?? 0) + 1);
+      const dir = stageDir(runId, agent.name, round);
       await sandbox.exec(`mkdir -p ${dir}`, { timeout: 15_000 });
 
-      // Idempotent replay: this round already ran (resume after park/crash).
-      // Still fire onStage(completed) so a re-invoke rebuilds a full trace —
-      // replayed stages must not vanish from the accumulated tasks[].
       if ((await sandbox.readFile(`${dir}/control.json`)) != null) {
-        const replayed = await readStageResult(sandbox, spec, dir);
-        await deps.onStage?.({ id, status: "completed", round, control: replayed.control, analysis: replayed.analysis });
+        const replayed = await readAgentResult(sandbox, agent, dir);
+        await onStage({ id: agent.name, status: "completed", round, control: replayed.control, analysis: replayed.analysis });
         return replayed;
       }
 
-      // Persona from the agent block (stage agent > def default); tool ceiling.
-      const agentName = spec.agent ?? def.defaults?.agent;
-      const baseAgentMd = agentName
-        ? await sandbox.readFile(`/root/.pi/agent/agents/${agentName}.md`)
-        : null;
-      const session = stageSession(spec, baseAgentMd);
-
-      // Prompt: task + inputs + upstream digests + (loop-back) routedFrom +
-      // (declared) notifications + the control epilogue.
-      const upstream = (inv?.upstream ?? []).map((r) =>
-        upstreamDigest(r.stageId, r.analysis, r.control, spec.output?.maxDigestChars ?? 2000),
+      const session = agentSession(agent, options.input ?? {});
+      const upstream = (options.upstream ?? []).map((result) =>
+        upstreamDigest(result.stageId, result.analysis, result.control, 2000),
       );
-      let notifications: string | undefined;
-      if (spec.notifications === "read" && deps.readNotifications) {
-        notifications = (await deps.readNotifications(id).catch(() => null)) ?? undefined;
-      }
-      // Steering is unconditional: an operator redirecting a live run should not
-      // have to know which stages declared a read point.
-      const steer = (await deps.readSteers?.(id).catch(() => null)) ?? undefined;
-
-      const prompt = assemblePrompt(spec, dir, {
+      const notifications = agent.notifications === "read" && deps.readNotifications
+        ? (await deps.readNotifications(agent.name).catch(() => null)) ?? undefined
+        : undefined;
+      const steer = (await deps.readSteers?.(agent.name).catch(() => null)) ?? undefined;
+      const prompt = assembleAgentPrompt(agent, session, dir, {
         task,
         inputs,
+        input: options.input,
         upstream,
-        routedFrom: inv?.routedFrom,
+        routedFrom: options.routedFrom,
         notifications,
         steer,
         round,
       });
+
       await sandbox.writeFile(`${dir}/persona.md`, session.persona);
       await sandbox.writeFile(`${dir}/prompt.md`, prompt);
+      await onStage({ id: agent.name, status: "running", round });
 
-      await deps.onStage?.({ id, status: "running", round });
-
-      const model = spec.model ?? def.defaults?.model ?? deps.model;
       const outcome = await runStageSession({
         dir,
         cwd,
@@ -233,20 +224,20 @@ function makeWorkflowContext(deps: WorkflowRunDeps): WorkflowContext {
         persona: session.persona,
         tools: session.tools,
         writeAllow: session.writeAllow,
-        model,
+        model: agent.model?.primary ?? deps.model,
         ticketId,
         repo,
-        stageId: id,
+        stageId: agent.name,
       });
 
       if (!outcome.ok && "throttled" in outcome) {
-        throw new ThrottledPark(id, outcome.throttled.retryAfterMs, outcome.throttled.providers);
+        throw new ThrottledPark(agent.name, outcome.throttled.retryAfterMs, outcome.throttled.providers);
       }
-      if (!outcome.ok) throw new StageFailure(id, outcome.failure.kind, outcome.failure.detail);
+      if (!outcome.ok) throw new StageFailure(agent.name, outcome.failure.kind, outcome.failure.detail);
 
-      const result = await readStageResult(sandbox, spec, dir);
+      const result = await readAgentResult(sandbox, agent, dir);
       result.stats = outcome.stats;
-      await deps.onStage?.({ id, status: "completed", round, control: result.control, analysis: result.analysis, stats: result.stats });
+      await onStage({ id: agent.name, status: "completed", round, control: result.control, analysis: result.analysis, stats: result.stats });
       return result;
     },
   };

@@ -31,7 +31,7 @@ todo, and `review` can send work back to `implement` at most twice.
 | `reviewer` | Accepts the change, or sends it back with blocking findings. |
 | `writer` | Writes the PR body. |
 | `therapist` | Collates review feedback on a revision run. |
-| `gather` | Shared context assembly used by several agents. |
+| `GATHER_TOOLS` | Shared read-only context surface used by the enricher and therapist. |
 
 ## Notes
 

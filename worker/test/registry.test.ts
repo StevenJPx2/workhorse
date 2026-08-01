@@ -7,7 +7,7 @@
 
 import { fakeCore, fakeEnv, fakeSandbox } from "@workhorse/test-utils/tools";
 import { describe, expect, it } from "vitest";
-import { assembleChatTools, assembleStageTools, attachmentProviders, pluginFor, plugins, routeFor } from "../src/registry";
+import { assembleChatTools, assembleStageTools, attachmentProviders, pluginFor, plugins, routeFor, workflowCatalog, workflowFor } from "../src/registry";
 // The leaf subpath, not the barrel: the barrel also loads chat.ts, whose
 // @cloudflare/sandbox import cannot resolve outside workerd.
 import { toolContext } from "@workhorse/server/tool-context";
@@ -133,5 +133,19 @@ describe("routes and attachments", () => {
     const providers = attachmentProviders();
 
     for (const [kind, provider] of providers) expect(provider.kind).toBe(kind);
+  });
+});
+
+describe("workflow catalog", () => {
+  it("resolves the executable workflow variants", async () => {
+    expect(workflowFor("coding")?.name).toBe("coding");
+    expect(workflowFor("coding-nocode")?.name).toBe("coding-nocode");
+    expect(workflowFor("coding-raw")?.name).toBe("coding-raw");
+    expect(workflowFor("screenshot-pr")).toBeUndefined();
+  });
+
+  it("returns graph metadata for the workflow registry", async () => {
+    expect((await workflowCatalog.get("coding"))?.stageCount).toBeGreaterThan(0);
+    expect(await workflowCatalog.get("nope")).toBeUndefined();
   });
 });

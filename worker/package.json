@@ -35,6 +35,7 @@
     "@workhorse/tickets": "workspace:*",
     "@workhorse/todo": "workspace:*",
     "@workhorse/workflow": "workspace:*",
+    "@workhorse/workflow-coding": "workspace:*",
     "valibot": "^1.4.2"
   },
   "devDependencies": {

@@ -1,29 +1,13 @@
-// @workhorse/workflow — hard-coded, eval-tested workflow definitions + the
-// stage-assembly helpers the worker's WorkflowContext uses. No interpreter,
-// no spec registry: a workflow is a TypeScript WorkflowDef, run in-process by
-// the worker spine.
+// @workhorse/workflow — workflow() and agent() execution contracts.
 
 export type { Driver, ExecResult } from "./driver";
-export { assemblePrompt, stageDir, stageSession, upstreamDigest } from "./compile";
-export { validateAgainstSchema } from "./validate";
+export { assembleAgentPrompt, stageDir, upstreamDigest } from "./compile";
+export type { AgentPromptParts } from "./compile";
 export {
   StageFailure,
   ThrottledPark,
-  stageDigest,
-  type StageResult,
-  type StageInvocation,
-  type WorkflowContext,
-  type WorkflowResult,
-  type WorkflowDef,
-} from "./context";
-export { workflowDef, workflowDefs, coding, codingRaw, screenshotPr } from "./workflows/index";
-export type { FailureKind, JsonSchema, StageSpec, ToolRef, WorkflowInput } from "./types";
+} from "./errors";
 
-// --- Phase 2 primitives: workflow() + graph discovery -----------------------
-// `workflow()` supersedes the hand-written WorkflowDef above; both are exported
-// while the workflows migrate (Phase 4). WorkflowSpec is intentionally NOT
-// re-exported from ./types anymore — the interpreter-era spec shape is dead, and
-// the name now belongs to workflow()'s argument.
 export { workflow } from "./workflow";
 export type {
   AgentOutputOf,

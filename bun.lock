@@ -149,7 +149,6 @@
         "@workhorse/intake": "workspace:*",
         "@workhorse/sandbox": "workspace:*",
         "@workhorse/semindex": "workspace:*",
-        "@workhorse/workflow": "workspace:*",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260721.1",
@@ -178,7 +177,6 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260721.1",
-        "@workhorse/test-utils": "workspace:*",
         "typescript": "^7.0.2",
         "valibot": "^1.1.0",
       },
@@ -398,6 +396,7 @@
         "@workhorse/tickets": "workspace:*",
         "@workhorse/todo": "workspace:*",
         "@workhorse/workflow": "workspace:*",
+        "@workhorse/workflow-coding": "workspace:*",
         "valibot": "^1.4.2",
       },
       "devDependencies": {
@@ -420,6 +419,7 @@
         "@workhorse/knowledge": "workspace:*",
         "@workhorse/scripts": "workspace:*",
         "@workhorse/search": "workspace:*",
+        "@workhorse/tickets": "workspace:*",
         "@workhorse/todo": "workspace:*",
         "@workhorse/workflow": "workspace:*",
         "valibot": "^1.1.0",

@@ -21,6 +21,9 @@ import { searchPlugin } from "@workhorse/search";
 import { slackPlugin } from "@workhorse/slack";
 import { ticketsPlugin } from "@workhorse/tickets";
 import { todoPlugin } from "@workhorse/todo";
+import { coding as codingWorkflow, codingNocode, codingRaw } from "@workhorse/workflow-coding";
+import type { WorkflowDefinition } from "@workhorse/workflow";
+import type { WorkflowCatalog } from "@workhorse/server";
 
 export const plugins: WorkhorsePlugin[] = [
   // First: the core workspace tools (read/grep/edit/…) every stage draws from.
@@ -41,6 +44,74 @@ export const plugins: WorkhorsePlugin[] = [
   ticketsPlugin,
   todoPlugin,
 ];
+
+export type WorkflowEntry = WorkflowDefinition;
+
+/**
+ * Resolve executable workflows at the composition root.
+ *
+ * The new coding workflow is imported explicitly from its package. The legacy
+ * eval variants remain available until their agent equivalents replace them.
+ */
+export function workflowFor(name: string | undefined): WorkflowEntry | undefined {
+  if (name === codingWorkflow.name) return codingWorkflow;
+  if (name === codingNocode.name) return codingNocode;
+  if (name === codingRaw.name) return codingRaw;
+  return undefined;
+}
+
+/** Catalog used by the HTTP registry routes. It describes the executable entries. */
+export const workflowCatalog: WorkflowCatalog = {
+  async list() {
+    const codingGraph = await codingWorkflow.graph();
+    const codingEntry = catalogEntry(codingWorkflow.name, codingWorkflow.description, codingGraph.stages.length, codingGraph);
+    const variantEntries = await Promise.all(
+      [codingNocode, codingRaw].map(async (workflow) => {
+        const graph = await workflow.graph();
+        return catalogEntry(workflow.name, workflow.description, graph.stages.length, graph);
+      }),
+    );
+    return [codingEntry, ...variantEntries];
+  },
+  async get(name) {
+    if (name === codingWorkflow.name) {
+      const graph = await codingWorkflow.graph();
+      return catalogEntry(codingWorkflow.name, codingWorkflow.description, graph.stages.length, graph);
+    }
+    if (name === codingNocode.name || name === codingRaw.name) {
+      const workflow = name === codingNocode.name ? codingNocode : codingRaw;
+      const graph = await workflow.graph();
+      return catalogEntry(workflow.name, workflow.description, graph.stages.length, graph);
+    }
+    return undefined;
+  },
+};
+
+function catalogEntry(name: string, description: string | undefined, stageCount: number, graph: unknown) {
+  const discovered = graph as { stages: Array<{ id: string; upstream: string[]; inputKeys: string[]; repeated: boolean }>; edges: unknown[]; loops: string[] };
+  const stages = discovered.stages.map((stage) => stage.id);
+  return {
+    name,
+    description,
+    stageCount,
+    stages,
+    spec: {
+      schemaVersion: 2,
+      name,
+      description,
+      artifactGraph: {
+        stages: discovered.stages.map((stage) => ({
+          id: stage.id,
+          type: stage.repeated ? "loop" : "single",
+          upstream: stage.upstream,
+          inputKeys: stage.inputKeys,
+        })),
+        edges: discovered.edges,
+        loops: discovered.loops,
+      },
+    },
+  };
+}
 
 export function pluginFor(id: string): WorkhorsePlugin | undefined {
   return plugins.find((p) => p.id === id);
@@ -103,4 +174,3 @@ export function routeFor(method: string, pathname: string): PluginRoute | undefi
   }
   return undefined;
 }
-

@@ -14,6 +14,7 @@ export const therapist = agent({
   thinking: "medium",
   readOnly: true,
   notifications: "read",
+  engineTools: ["run_code"],
   tools: GATHER_TOOLS,
   output: PROSE_OUTPUT,
   instructions: `
