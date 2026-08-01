@@ -304,3 +304,4 @@ a `quality-report` artifact that holds the full HTML view.
 
 The roadmap lives in [ROADMAP.md](./ROADMAP.md). The legacy Workhorse, with its
 TypeScript core and Rust orchestrator, lives on the `legacy` branch.
+The typed workflow agent path is live.
