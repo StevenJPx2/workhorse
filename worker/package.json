@@ -5,8 +5,8 @@
   "private": true,
   "description": "Workhorse control plane: ticket lifecycle, sandbox driving, plugin composition root (Cloudflare Worker).",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
+    "deploy": "bunx wrangler deploy",
+    "dev": "bunx wrangler dev",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
