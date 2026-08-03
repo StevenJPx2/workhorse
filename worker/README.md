@@ -28,7 +28,9 @@ bun run deploy   # wrangler deploy, from worker/
 infrastructure-as-code that is not the active path, and its blockers are documented
 at the top of that file.
 
-The container image builds from `sandbox/Dockerfile`.
+The container image builds from `worker/Dockerfile`, with the repository root as its
+build context. `worker/sandbox/` holds what the image bakes in: the Pi installer and
+its package list, and the agent-browser wrapper.
 
 ## Notes
 

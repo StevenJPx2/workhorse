@@ -30,6 +30,21 @@ export interface ServerDeps {
   pluginFor: (id: string) => import("@workhorse/api").WorkhorsePlugin | undefined;
   /** The intake surface, bound to the same providers. */
   intake: import("@workhorse/intake").Intake;
+  /** Optional workflow catalog supplied by the deployment composition root. */
+  workflows?: WorkflowCatalog;
+}
+
+export interface WorkflowCatalogEntry {
+  name: string;
+  description?: string;
+  stageCount: number;
+  stages: string[];
+  spec: unknown;
+}
+
+export interface WorkflowCatalog {
+  list(): Promise<WorkflowCatalogEntry[]> | WorkflowCatalogEntry[];
+  get(name: string): Promise<WorkflowCatalogEntry | undefined> | WorkflowCatalogEntry | undefined;
 }
 
 export interface RouteCtx extends ServerDeps {

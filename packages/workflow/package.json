@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Hard-coded, eval-tested workflow definitions plus the stage-assembly helpers the worker's WorkflowContext uses. No interpreter, no spec registry.",
+  "description": "Workflow and agent contracts, graph discovery, prompt assembly, and session compilation.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",
-    "@workhorse/test-utils": "workspace:*",
     "typescript": "^7.0.2",
     "valibot": "^1.1.0"
   },

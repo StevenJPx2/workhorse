@@ -11,8 +11,9 @@
 
 export { failingStageHarness, workflowHarness } from "./context";
 export type {
-  HarnessStageInvocation,
-  HarnessStageResult,
+  HarnessAgent,
+  HarnessRunOptions,
+  HarnessRunResult,
   HarnessWorkflowContext,
   StageCall,
   StageScript,

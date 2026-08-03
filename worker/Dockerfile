@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg xvfb \
 # screenshot, read, tabs, har). Pre-install Chrome during image build
 # so cold sandboxes don't pay the download tax.
 RUN npm install -g agent-browser && agent-browser install
-COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
+COPY worker/sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
 # cache bust: 2026-07-23 flue-first tool collapse (no sandbox extensions)
 
 # Bake the agent runtime into the image so sandboxes don't pay per-run
@@ -28,22 +28,21 @@ COPY sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
 # extensions (there are none anymore).
 #
 # 1. /opt/agent: Pi CLI + a `pi` shim on PATH (residual Pi tooling / warmup).
-# 2. Pi home via sandbox/install.mjs: packages from sandbox/pi.json
-#    (auth, magic context, aft-pi). No extension discovery.
+# 2. Pi home via worker/sandbox/install.mjs: packages from worker/sandbox/pi.json
+#    (auth and aft-pi). No extension discovery.
 # 3. AFT (CortexKit) wired via its own installer (also downloads the aft
 #    binary the aft_* tools exec + registers npm:@cortexkit/aft-pi).
 # 4. Warmup run: Pi installs all settings.json packages into its cache at
 #    build time (exits nonzero without auth — fine).
-COPY sandbox /opt/agent/sandbox
+COPY worker/sandbox /opt/agent/sandbox
 
-RUN mkdir -p /opt/agent /root/.pi/agent/agents \
+RUN mkdir -p /opt/agent \
   && cd /opt/agent \
   && npm init -y >/dev/null \
   && npm install --omit=dev @earendil-works/pi-coding-agent \
   && printf '#!/bin/sh\nexec node /opt/agent/node_modules/@earendil-works/pi-coding-agent/dist/cli.js "$@"\n' > /usr/local/bin/pi \
   && chmod +x /usr/local/bin/pi \
   && node /opt/agent/sandbox/install.mjs \
-  && cp /opt/agent/sandbox/agents/*.md /root/.pi/agent/agents/ \
   && npx -y @cortexkit/aft@latest setup --harness pi \
   && (timeout 300 pi -p -np "warmup" || true) \
   && ls /root/.pi/agent/npm/node_modules/@cortexkit

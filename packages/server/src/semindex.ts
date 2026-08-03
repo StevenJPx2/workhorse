@@ -83,23 +83,22 @@ export const TOOL_CATALOG: ToolDoc[] = [
 ];
 
 /** Rebuild every corpus (admin; idempotent — upserts replace by id). */
-export async function reindexAll(env: Env): Promise<Record<string, number>> {
+export async function reindexAll(env: Env, workflows?: import("./router").WorkflowCatalog): Promise<Record<string, number>> {
   // Every scope — listScripts(repo) is deliberately scoped, so the index build
   // reads the whole table. The rows already carry parsed args/statusGates, so
   // the hand-rolled JSON.parse mapping this replaced is gone.
   const scripts = await db(env).scripts.all();
 
-  // Workflows are hard-coded defs — index their manifests directly.
-  const { workflowDefs } = await import("@workhorse/workflow");
-  const workflows = Object.values(workflowDefs).map((d) => ({
-    name: d.name,
-    description: d.description,
-    stages: d.stages.map((s) => s.id),
-  }));
+  // Workflows are hard-coded definitions. The composition root supplies the
+  // catalog so this package does not import a workflow implementation.
+  const workflowEntries = workflows ? await workflows.list() : [];
 
   return {
     scripts: await scriptIndex.upsert(env, scripts),
-    workflows: await workflowIndex.upsert(env, workflows),
+    workflows: await workflowIndex.upsert(
+      env,
+      workflowEntries.map((workflow) => ({ name: workflow.name, description: workflow.description, stages: workflow.stages })),
+    ),
     tools: await toolIndex.upsert(env, TOOL_CATALOG),
   };
 }

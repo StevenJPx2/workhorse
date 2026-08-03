@@ -12,6 +12,7 @@ import { bash, find, grep, ls, read } from "@workhorse/core/tools";
 import { gh_ci, gh_issue, gh_pr, gh_search_code } from "@workhorse/github/tools";
 import { memory_search, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { web_read, web_search } from "@workhorse/search/tools";
+import { fetch_context } from "@workhorse/tickets/tools";
 
 export const GATHER_TOOLS: ToolFactory[] = [
   // The repo itself.
@@ -31,7 +32,10 @@ export const GATHER_TOOLS: ToolFactory[] = [
   gh_ci,
   gh_issue,
   gh_search_code,
-  // Anything the task links to.
+  // Anything the task links to. fetch_context resolves the ticket's own attached
+  // refs (Jira issue, Slack thread, repo) on demand — without it an agent cannot
+  // read the material the request was filed against.
+  fetch_context,
   web_search,
   web_read,
   browser_open,

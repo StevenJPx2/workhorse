@@ -5,10 +5,8 @@
 // primitives are sound and Phase 4 can port the real workflow onto them; if it
 // does not, no amount of later work fixes it.
 //
-// The pipeline is rebuilt here rather than imported because the real `coding` is
-// still a hand-written WorkflowDef on ctx.stage(). That is Phase 4's job — this
-// gate proves the target shape works FIRST, which is the whole point of doing
-// primitives before the port.
+// The pipeline is rebuilt here so the primitive remains independently tested. The
+// shipping workflow has the same shape in workflows/coding/.
 
 import { agent } from "@workhorse/api";
 import * as v from "valibot";

@@ -1,24 +1,13 @@
-// Agent blocks — the persona + tool ceiling a stage runs under.
-//
-// Exposed at 0% coverage by the extraction. The frontmatter round-trip is what
-// matters: a block is written as markdown into the sandbox and read back from KV,
-// so a field that does not survive the trip silently changes how a stage behaves.
+// Operator-authored agent block storage.
 
 import { fakeEnv } from "@workhorse/test-utils/tools";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deleteAgentBlock,
   getAgentBlock,
-  installAgentBlocks,
   listAgentBlocks,
   putAgentBlock,
-  seedAgentBlocks,
 } from "../agents";
-
-const writeFile = vi.fn(async () => {});
-const exec = vi.fn(async () => ({ exitCode: 0, stdout: "", stderr: "" }));
-
-vi.mock("@cloudflare/sandbox", () => ({ getSandbox: () => ({ writeFile, exec }) }));
 
 const block = (over: Record<string, unknown> = {}) => ({
   name: "coder",
@@ -129,90 +118,5 @@ describe("deleteAgentBlock", () => {
 
   it("is safe on a block that does not exist", async () => {
     await expect(deleteAgentBlock(fakeEnv(), "nope")).resolves.toBeUndefined();
-  });
-});
-
-describe("installAgentBlocks", () => {
-  it("writes each block into the sandbox's agent dir", async () => {
-    const env = fakeEnv();
-    await putAgentBlock(env, block() as never);
-    await installAgentBlocks(env, "s1");
-
-    const [path, content] = writeFile.mock.calls[0] as unknown as [string, string];
-    expect(path).toBe("/root/.pi/agent/agents/coder.md");
-    expect(content).toContain("You implement exactly one todo.");
-  });
-
-  it("writes every stored block", async () => {
-    const env = fakeEnv();
-    await putAgentBlock(env, block() as never);
-    await putAgentBlock(env, block({ name: "reviewer" }) as never);
-
-    await installAgentBlocks(env, "s1");
-    expect(writeFile).toHaveBeenCalledTimes(2);
-  });
-
-  it("is a no-op with no blocks stored", async () => {
-    await installAgentBlocks(fakeEnv(), "s1");
-    expect(writeFile).not.toHaveBeenCalled();
-  });
-});
-
-describe("seedAgentBlocks", () => {
-  /** The baked *.md files, as the sandbox cat loop emits them. */
-  const baked = (...names: string[]) =>
-    names
-      .map((n) => `===FILE=== ${n}\n---\nname: ${n}\ndescription: the ${n}\ntools: read, write\n---\n\nYou are the ${n}.\n`)
-      .join("");
-
-  it("seeds every baked block", async () => {
-    exec.mockResolvedValue({ exitCode: 0, stdout: baked("coder", "reviewer"), stderr: "" });
-    const env = fakeEnv();
-
-    expect((await seedAgentBlocks(env)).sort()).toEqual(["coder", "reviewer"]);
-  });
-
-  it("parses the frontmatter out of a baked file", async () => {
-    exec.mockResolvedValue({ exitCode: 0, stdout: baked("coder"), stderr: "" });
-    const env = fakeEnv();
-    await seedAgentBlocks(env);
-
-    expect(await getAgentBlock(env, "coder")).toMatchObject({
-      description: "the coder",
-      tools: ["read", "write"],
-      source: "seed",
-    });
-  });
-
-  it("does NOT clobber a user-owned block", async () => {
-    const env = fakeEnv();
-    await putAgentBlock(env, block({ name: "coder", persona: "mine", source: "user" }) as never);
-    exec.mockResolvedValue({ exitCode: 0, stdout: baked("coder"), stderr: "" });
-
-    // Reseeding happens on deploy; overwriting an operator's edit every time
-    // would make the UI's agent editor pointless.
-    expect(await seedAgentBlocks(env)).toEqual([]);
-    expect((await getAgentBlock(env, "coder"))?.persona).toBe("mine");
-  });
-
-  it("DOES replace a previous seed", async () => {
-    const env = fakeEnv();
-    await putAgentBlock(env, block({ name: "coder", persona: "old seed", source: "seed" }) as never);
-    exec.mockResolvedValue({ exitCode: 0, stdout: baked("coder"), stderr: "" });
-
-    expect(await seedAgentBlocks(env)).toEqual(["coder"]);
-    expect((await getAgentBlock(env, "coder"))?.persona).toContain("You are the coder.");
-  });
-
-  it("skips a file whose name is not a valid block name", async () => {
-    exec.mockResolvedValue({ exitCode: 0, stdout: "===FILE=== bad name\n---\n---\n\nbody\n", stderr: "" });
-
-    expect(await seedAgentBlocks(fakeEnv())).toEqual([]);
-  });
-
-  it("seeds nothing when the image has no agent files", async () => {
-    exec.mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-
-    expect(await seedAgentBlocks(fakeEnv())).toEqual([]);
   });
 });

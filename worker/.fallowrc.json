@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/fallow/schema.json",
+  // Package-local entries, discovered when the health harness scopes fallow with
+  // `--root worker`. The ROOT config lists these as `worker/src/index.ts` and
+  // `worker/sandbox/install.mjs`, and those paths do not resolve once the root IS
+  // this directory — which reported install.mjs as an unreachable dead file.
+  //
+  // install.mjs is invoked by the Dockerfile (`node /opt/agent/sandbox/install.mjs`),
+  // so no TypeScript import graph can reach it.
+  "entry": ["src/index.ts", "sandbox/install.mjs"]
+}

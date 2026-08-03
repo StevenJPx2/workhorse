@@ -8,8 +8,7 @@ export default tool({
   name: "workhorse_find_workflow",
   surfaces: ["chat"],
   description:
-    "Semantic search over the fleet's available workflows (each a staged pipeline: e.g. " +
-    "coding = plan→implement→verify→PR; screenshot-pr = capture a page → PR). Use BEFORE " +
+    "Semantic search over the fleet's available workflows. Use BEFORE " +
     "filing a ticket to pick the workflow whose shape fits the task, then pass its name to " +
     "workhorse_file_ticket. Returns ranked {name, description, stages}.",
   docs: `

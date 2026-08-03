@@ -19,8 +19,7 @@
     "@workhorse/events": "workspace:*",
     "@workhorse/intake": "workspace:*",
     "@workhorse/sandbox": "workspace:*",
-    "@workhorse/semindex": "workspace:*",
-    "@workhorse/workflow": "workspace:*"
+    "@workhorse/semindex": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260721.1",

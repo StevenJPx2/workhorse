@@ -13,10 +13,11 @@ at runtime.
 | `workflow(spec)` | Defines a workflow. It returns a definition that can also report its own graph. |
 | `discoverGraph(run, options)` | Derives the stage graph by running `run()` against stub outputs. |
 | `stubFromSchema(schema, polarity)` | Synthesizes a stub output from a valibot schema. |
-| `agentSession(agent, ctx)` | Compiles an agent into a stage session: persona, tool allowlist, output schema. |
-| `assemblePrompt` | Builds a stage prompt: task, inputs, upstream artifacts, steers, notifications, contract. |
+| `agentSession(agent, input)` | Compiles an agent into a session: persona, tool allowlist, write policy, output schema. |
+| `assembleAgentPrompt` | Builds an agent prompt from task data, upstream artifacts, steers, notifications, and the completion contract. |
+| `stageDir` | Builds the stable artifact directory for one agent round. |
+| `upstreamDigest` | Bounds one completed agent's result for the next agent. |
 | `renderMermaid`, `renderText` | Renders a discovered graph. |
-| `workflowDefs`, `workflowDef(name)` | The static registry of shipped workflows. |
 
 ## Graph discovery
 
@@ -37,9 +38,13 @@ workflow's therapist stage only appears once discovery seeds a revision `runId`.
 
 ## Notes
 
-A stage's tools are the intersection of what the agent declares and what the stage
-allows. The allowlist gates by tool NAME, so it cannot express "this tool, but
-read-only". A tool that both reads and writes grants both.
+An agent declares plugin tools as imported factories. It declares engine tools such
+as `run_code` in a typed `engineTools` list, because those tools need bridge props
+that a plugin factory cannot access.
+
+The runtime validates `submit_work` output against the same Valibot schema that
+builds the completion contract. The model cannot advance with an invalid control
+object.
 
 Tool consolidation was tried and reverted. A live model eval showed 31 granular
 tools beat 4 consolidated ones by 5 to 12 points of first-call accuracy. A tool's

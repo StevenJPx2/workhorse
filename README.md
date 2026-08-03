@@ -77,14 +77,13 @@ registers concrete plugins.
 
 ### Workflows are code. The rest is data.
 
-A workflow is a hard-coded, eval-tested definition in `packages/workflow`. To add
-one, write the definition and an eval case. You never upload a workflow. Four
-workflows ship today: `coding`, `coding-nocode`, `coding-raw`, and
-`screenshot-pr`.
+A workflow is a hard-coded, eval-tested definition in `workflows/<name>`. To add
+one, write the definition and an eval case. You never upload a workflow. Three
+workflows ship today: `coding`, `coding-nocode`, and `coding-raw`.
 
-Agent blocks and scripts stay registry data, and you can edit both from the UI.
-An agent block holds a persona and a tool ceiling, and a stage references it
-through `stage.agent`. Scripts let an agent extend itself, and D1 holds them.
+Coding agents live beside their workflow. Each agent carries its instructions,
+output schema, plugin tools, and engine tools. Scripts remain registry data, and
+D1 stores them for reuse.
 
 A workflow's terminal stage declares its outcome. An outcome of `pr` completes
 when somebody merges the PR. An outcome of `report` or `artifact` completes when

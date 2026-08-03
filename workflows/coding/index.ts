@@ -10,8 +10,14 @@
 // spec to interpret, and the stage graph is DERIVED from this function rather than
 // declared beside it.
 
+import type { AgentDefinition, EngineTool } from "@workhorse/api";
+import { agent } from "@workhorse/api";
+import { browser_open, browser_read } from "@workhorse/browser/tools";
+import { web_read, web_search } from "@workhorse/search/tools";
 import { workflow } from "@workhorse/workflow";
 import { coder, enricher, planner, reviewer, therapist, writer } from "./agents";
+import { PROSE_OUTPUT } from "./agents/schemas";
+import { runCoding } from "./pipeline";
 
 /**
  * How many times a failing review may route back to the coder for the SAME todo.
@@ -21,64 +27,59 @@ import { coder, enricher, planner, reviewer, therapist, writer } from "./agents"
  * the code — which the reviewer's findings will say, in the PR, where a human can
  * see it.
  */
-const MAX_REVIEW_LOOPS = 2;
+function variant<A extends AgentDefinition>(source: A, engineTools: EngineTool[]): A {
+  return Object.freeze({ ...source, engineTools }) as A;
+}
 
-/**
- * Absolute ceiling on coder sessions per run, however many todos the planner
- * produced. A runaway plan should cost a bounded amount, not an unbounded one.
- */
-const HARD_TODO_CAP = 25;
+export function makeCodingWorkflow(options: { name?: string; stripEngineTools?: boolean } = {}) {
+  const strip = options.stripEngineTools === true;
+  const enrich = strip ? variant(enricher, []) : enricher;
+  const plan = strip ? variant(planner, []) : planner;
+  const implement = strip ? variant(coder, []) : coder;
+  const review = strip ? variant(reviewer, []) : reviewer;
+  const therapy = strip ? variant(therapist, []) : therapist;
 
-export const coding = workflow({
-  name: "coding",
-  description:
-    "Multi-agent PR pipeline: enrich the request, break it into todos, implement and adversarially review each " +
-    "todo, keep a visual PR body, open a PR, and revise on feedback via a feedback-collating therapist.",
+  return workflow({
+    name: options.name ?? "coding",
+    description:
+      "Multi-agent PR pipeline: enrich the request, break it into todos, implement and adversarially review each " +
+      "todo, keep a visual PR body, open a PR, and revise on feedback via a feedback-collating therapist.",
 
+    run: (ctx) => runCoding(ctx, { enrich, plan, implement, review, therapy, writer }),
+  });
+}
+
+export const coding = makeCodingWorkflow();
+export const codingNocode = makeCodingWorkflow({ name: "coding-nocode", stripEngineTools: true });
+
+/** Single-agent baseline used by the agent-vs-workflow evaluation. */
+const rawCoder = agent({
+  name: "do",
+  thinking: "low",
+  engineTools: ["run_script"],
+  tools: ({ input }) => [
+    ...coder.tools({ input }),
+    browser_open,
+    browser_read,
+    web_search,
+    web_read,
+  ],
+  output: PROSE_OUTPUT,
+  instructions: `
+You are the only agent on this task. Implement the runtime task end to end in one
+session. Study the repository first, then make the requested changes. Check prior
+memory and fleet knowledge before debugging non-obvious behavior. Run the relevant
+tests, lint, and typecheck before you finish. Include the staged diff summary in
+your analysis. Do not invent a completion claim without checking the files.
+`.trim(),
+});
+
+export const codingRaw = workflow({
+  name: "coding-raw",
+  description: "Single-agent baseline: one agent implements and checks the task, then opens a PR.",
   async run(ctx) {
-    // A revision run collates the inbound feedback before re-enriching, so the
-    // brief the coder receives is already reconciled rather than raw.
-    const isRevision = ctx.runId.includes("-rev");
-    const brief = isRevision
-      ? await ctx.run(enricher, { upstream: [await ctx.run(therapist)] })
-      : await ctx.run(enricher);
-
-    const plan = await ctx.run(planner, { upstream: [brief] });
-
-    // +2 headroom over the planner's count: the coder may legitimately discover a
-    // todo the plan missed, and stopping exactly at the planned count would leave
-    // it unfinished.
-    const planned = plan.output.control.todos.length;
-    const cap = Math.min(Math.max(planned, 1) + 2, HARD_TODO_CAP);
-
-    // The PR body accumulates. Each writer session returns the FULL body, so the
-    // last one's analysis is the PR description — seeded with the brief so the
-    // first todo has context to write against.
-    let body = brief;
-
-    for (let todo = 0; todo < cap; todo++) {
-      let impl = await ctx.run(coder, { upstream: [brief, plan] });
-      let review = await ctx.run(reviewer, { upstream: [impl] });
-
-      for (let attempt = 0; attempt < MAX_REVIEW_LOOPS && review.output.control.verdict === "fail"; attempt++) {
-        impl = await ctx.run(coder, {
-          upstream: [brief, plan],
-          routedFrom: { stage: reviewer.name, digest: review.analysis },
-        });
-        review = await ctx.run(reviewer, { upstream: [impl] });
-      }
-
-      // The coder's own judgement decides whether the write-up captures a visual;
-      // the input is what turns the capture tools on.
-      body = await ctx.run(writer, {
-        input: { uiChanges: impl.output.control.uiChanges },
-        upstream: [brief, impl, review, body],
-      });
-
-      if (impl.output.control.todosRemaining <= 0) break;
-    }
-
-    return { outcome: "pr", summary: body.analysis.slice(0, 200) };
+    const result = await ctx.run(rawCoder);
+    return { outcome: "pr", summary: result.analysis.slice(0, 200) };
   },
 });
 

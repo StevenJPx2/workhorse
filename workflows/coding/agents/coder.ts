@@ -8,12 +8,14 @@ import { agent } from "@workhorse/api";
 import { bash, edit, find, grep, ls, read, write } from "@workhorse/core/tools";
 import { memory_search, memory_write, search_fleet_knowledge } from "@workhorse/knowledge/tools";
 import { list_scripts, write_script } from "@workhorse/scripts/tools";
+import { fetch_context } from "@workhorse/tickets/tools";
 import { todo_read, todo_update } from "@workhorse/todo/tools";
 import { IMPLEMENT_OUTPUT } from "./schemas";
 
 export const coder = agent({
   name: "implement",
   thinking: "low",
+  engineTools: ["run_code", "run_script"],
   tools: [
     read,
     grep,
@@ -22,6 +24,7 @@ export const coder = agent({
     edit,
     write,
     bash,
+    fetch_context,
     search_fleet_knowledge,
     memory_search,
     memory_write,

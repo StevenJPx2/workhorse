@@ -5,6 +5,7 @@ export type {
   AgentOutputSchema,
   AgentSpec,
   AgentToolContext,
+  EngineTool,
   ModelPolicy,
   Thinking,
 } from "./agent";

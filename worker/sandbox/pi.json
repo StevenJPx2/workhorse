@@ -1,0 +1,11 @@
+{
+  "$comment": "Pi extension packages baked into the image (auth, aft-pi) plus Pi settings. Under the flue-first engine there are no sandbox-scanned tool extensions. Plugin tools run worker-side over the sandbox handle, gated by each agent's imported tool factories and engineTools.",
+  "packages": [
+    "npm:@gotgenes/pi-anthropic-auth",
+    "npm:@cortexkit/aft-pi"
+  ],
+  "settings": {
+    "defaultProvider": "anthropic",
+    "defaultModel": "claude-sonnet-4-6"
+  }
+}

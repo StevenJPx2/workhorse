@@ -18,15 +18,13 @@ import { triggerRoutes } from "./routes/triggers";
 import { webhookRoutes } from "./routes/webhooks";
 
 export { json } from "./router";
-export type { Auth, Route, RouteCtx, ServerDeps } from "./router";
+export type { Auth, Route, RouteCtx, ServerDeps, WorkflowCatalog, WorkflowCatalogEntry } from "./router";
 
 export {
   deleteAgentBlock,
   getAgentBlock,
-  installAgentBlocks,
   listAgentBlocks,
   putAgentBlock,
-  seedAgentBlocks,
 } from "./agents";
 export type { AgentBlock } from "./agents";
 

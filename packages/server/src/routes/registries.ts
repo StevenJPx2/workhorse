@@ -2,7 +2,6 @@
 // code) + the custodian token push + admin maintenance.
 
 import { modelToken } from "@workhorse/auth";
-import { workflowDef, workflowDefs } from "@workhorse/workflow";
 import { json, type Route } from "../router";
 
 export const registryRoutes: Route[] = [
@@ -13,9 +12,9 @@ export const registryRoutes: Route[] = [
     method: "POST",
     path: "/admin/reindex-semindex",
     auth: "master",
-    handler: async ({ env }) => {
-      const { reindexAll } = await import("../semindex");
-      return json(await reindexAll(env));
+     handler: async ({ env, workflows }) => {
+       const { reindexAll } = await import("../semindex");
+       return json(await reindexAll(env, workflows));
     },
   },
 
@@ -27,15 +26,6 @@ export const registryRoutes: Route[] = [
     handler: async ({ env }) => {
       const { listAgentBlocks } = await import("../agents");
       return json({ agents: await listAgentBlocks(env) });
-    },
-  },
-  {
-    method: "POST",
-    path: "/agents/seed",
-    auth: "master",
-    handler: async ({ env }) => {
-      const { seedAgentBlocks } = await import("../agents");
-      return json({ seeded: await seedAgentBlocks(env) });
     },
   },
   {
@@ -79,29 +69,15 @@ export const registryRoutes: Route[] = [
     method: "GET",
     path: "/workflows",
     auth: "master",
-    handler: async () =>
-      json({
-        workflows: Object.values(workflowDefs).map((d) => ({
-          name: d.name,
-          description: d.description,
-          stageCount: d.stages.length,
-        })),
-      }),
+     handler: async ({ workflows }) => json({ workflows: workflows ? await workflows.list() : [] }),
   },
   {
     method: "GET",
     path: /^\/workflows\/([\w-]+)$/,
     auth: "master",
-    async handler({ match }) {
-      const d = workflowDef(match[1]);
-      if (!d) return json({ error: "not found" }, 404);
-      // Shape mirrors the old registry entry: a spec the graph view renders.
-      return json({
-        name: d.name,
-        description: d.description,
-        spec: { schemaVersion: 1, name: d.name, description: d.description, inputs: d.inputs, artifactGraph: { stages: d.stages } },
-        readOnly: true,
-      });
+     async handler({ match, workflows }) {
+       const entry = await workflows?.get(match[1]);
+       return entry ? json({ ...entry, readOnly: true }) : json({ error: "not found" }, 404);
     },
   },
 

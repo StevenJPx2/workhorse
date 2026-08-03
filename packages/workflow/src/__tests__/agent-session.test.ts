@@ -25,6 +25,12 @@ describe("tool ceiling", () => {
     expect(agentSession(a).tools).toContain("write");
   });
 
+  it("adds typed engine tools to the name ceiling", () => {
+    const a = agent({ name: "s", instructions: "x", output: OUT(), engineTools: ["run_code", "run_script"] });
+
+    expect(agentSession(a).tools).toEqual(["run_code", "run_script", "submit_work"]);
+  });
+
   it("always appends submit_work", () => {
     const a = agent({ name: "s", instructions: "x", output: OUT(), tools: [read] });
 

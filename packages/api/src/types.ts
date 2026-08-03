@@ -24,8 +24,7 @@ export interface TicketParams {
   model?: string;
   /**
    * Which baked workflow bundle to run (bundles/workflows/<workflow>).
-   * Defaults to "coding". e.g. "screenshot-pr" screenshots a URL, uploads
-   * it, and opens a PR embedding the image.
+   * Defaults to "coding". A workflow can specialize the pipeline for a task.
    */
   workflow?: string;
   /**

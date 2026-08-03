@@ -5,7 +5,7 @@
     "evals": 100,
     "packages/api": 100,
     "packages/semindex": 100,
-    "packages/workflow": 99.8,
+    "packages/workflow": 100,
     "plugins/aft": 100,
     "plugins/browser": 100,
     "plugins/github": 90,
@@ -20,7 +20,7 @@
     "plugins/tickets": 100,
     "plugins/todo": 100,
     "ui": 87.2,
-    "worker": 88.3,
+    "worker": 88.5,
     "packages/test-utils": 100,
     "packages/auth": 100,
     "packages/db": 98.2,
@@ -29,6 +29,7 @@
     "packages/events": 100,
     "packages/intake": 100,
     "packages/sandbox": 100,
-    "packages/server": 100
+    "packages/server": 100,
+    "packages/o11y": 100
   }
 }

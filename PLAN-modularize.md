@@ -603,7 +603,6 @@ worker/
 ```dockerfile
 COPY worker/sandbox/agent-browser.sh /usr/local/bin/agent-browser-wrapper
 COPY worker/sandbox /opt/agent/sandbox
-COPY workflows/coding/agents/*.md /root/.pi/agent/agents/
 ```
 
 **Plus:**
@@ -656,21 +655,20 @@ export function tool(spec: ToolSpec): ToolFactory;
 
 **Exports:**
 ```ts
-export function workflow(spec: WorkflowSpec): WorkflowDef;
-export function agent(spec: AgentSpec): AgentFactory;
-export interface WorkflowContext {
-  run(agent: AgentFactory, options?: {
+export function workflow(spec: WorkflowSpec): WorkflowDefinition;
+export interface RunContext {
+  run(agent: AgentDefinition, options?: {
     input?: Record<string, unknown>;
-    upstream?: StageResult[];
-  }): Promise<StageResult>;
-  // ... existing
+    upstream?: RunResult[];
+    routedFrom?: { stage: string; digest: string };
+  }): Promise<RunResult>;
 }
-export interface StageResult {
+export interface RunResult {
   stageId: string;
-  output: Record<string, unknown>;  // validated against stage's output schema
+  output: Record<string, unknown>;  // validated against the agent's output schema
   stats?: { ... };
 }
-// ... existing exports (compile, validate, etc.)
+// ... graph discovery and prompt assembly exports
 ```
 
 ### `@workhorse/sandbox` (new)
@@ -701,8 +699,6 @@ export function getAgentBlock(env: Env, name: string): Promise<AgentBlock | null
 export function listAgentBlocks(env: Env): Promise<AgentBlock[]>;
 export function putAgentBlock(env: Env, block: Omit<AgentBlock, "updatedAt">): Promise<string | null>;
 export function deleteAgentBlock(env: Env, name: string): Promise<void>;
-export function seedAgentBlocks(env: Env): Promise<string[]>;
-export function installAgentBlocks(env: Env, sandboxId: string): Promise<void>;
 export function runFleetChat(env: Env, selfOrigin: string, messages: Array<{ role: string; content: string }>): Promise<{ ok: true; reply: string } | { ok: false; error: string; status: number }>;
 ```
 
@@ -785,7 +781,7 @@ export function listTraceIndex(env: Env, ticketId: string): Promise<Trace[]>;
 ```ts
 export function createServer(config: ServerConfig): ServerHandler;
 export interface ServerConfig {
-  workflows: WorkflowDef[];
+  workflows: WorkflowCatalog;
   plugins: WorkhorsePlugin[];
 }
 export interface ServerHandler {
@@ -1222,6 +1218,9 @@ before a workflow uses it would be building against an unvalidated contract.
    against come from ONE declaration
 4. ✅ Gate: 19 assertions on the discovered graph and the resolved tool surfaces,
    including a Mermaid snapshot
+5. ✅ Worker cutover: `workflow()`, `ctx.run(agent, ...)`, typed engine tools, and
+   schema validation now drive `coding`, `coding-nocode`, and `coding-raw`
+6. ✅ Removed the Markdown persona copy and the legacy `ctx.stage()` runner
 
 **ONE WRITER, NOT TWO.** The old shape had `pr-write` and `pr-write-visual` as
 separate stages sharing a persona and differing only in tool allowlist. They are
@@ -1240,10 +1239,10 @@ happily wrote. Fixed in `@workhorse/test-utils`, and `policy` is deliberately
 undefined by default: defaulting it to something permissive would make a test pass
 whether the tool checks the gate or not.
 
-**Not yet done:** the worker still drives the hand-written `WorkflowDef`s through
-`ctx.stage()`. Wiring the spine onto `ctx.run()` and retiring
-`packages/workflow/src/workflows/` is Phase 5's extraction work, where
-`workflow-run.ts` moves anyway.
+**Completed:** the worker now drives `WorkflowDefinition`s through
+`ctx.run(agent, options)`. The old `WorkflowDef`, `ctx.stage()`, and
+`packages/workflow/src/workflows/` path are gone. The runtime validates each
+agent's output against its Valibot schema before the workflow can advance.
 
 ### Phase 5: Break the cycles ✅ DONE
 
@@ -1397,7 +1396,7 @@ consumer, deleted in `1f165f3` — so **every mid-run steer since then was accep
 and silently discarded**, including the urgent-notification path that routes
 through `appendSteer`.
 
-Everything needed to deliver it already existed: `assemblePrompt` had a written
+Everything needed to deliver it already existed: `assembleAgentPrompt` had a written
 `parts.steer` section stating that operator instructions take precedence, and
 `workflow-run.ts` had the `readNotifications` injection seam beside it. The fix
 is a `readSteers` read point consulted before **every** stage session —

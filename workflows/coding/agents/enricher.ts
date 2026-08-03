@@ -15,6 +15,7 @@ export const enricher = agent({
   // Operator input queued during a previous run is delivered here, at the point
   // where it can still change what gets built.
   notifications: "read",
+  engineTools: ["run_code"],
   tools: GATHER_TOOLS,
   output: PROSE_OUTPUT,
   instructions: `

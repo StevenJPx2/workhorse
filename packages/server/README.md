@@ -14,7 +14,7 @@ need.
 | `toolContext` | Builds a `ToolContext` for a stage or a callback. |
 | `runFleetChat` | The operator chat agent. |
 | `listTriggers`, `fireTrigger`, `sweepCronTriggers`, `cronMatches`, `validateCron`, `renderTemplate` | The trigger registry and its cron sweep. |
-| `getAgentBlock`, `putAgentBlock`, `listAgentBlocks`, `deleteAgentBlock`, `seedAgentBlocks`, `installAgentBlocks` | The agent block registry. |
+| `getAgentBlock`, `putAgentBlock`, `listAgentBlocks`, `deleteAgentBlock` | The operator-authored agent block registry. |
 | `scriptIndex`, `workflowIndex`, `toolIndex` | The fleet's semantic corpora. |
 
 ## Notes
@@ -26,10 +26,9 @@ arrive on `RouteCtx`, and the boundary is checked.
 Route auth is declared per route, not per handler. A `scoped` route accepts the
 sandbox callback token. A `master` route accepts only the fleet token.
 
-Agent blocks seeded from the image are `source: "seed"`. An operator edit makes a
-block `source: "user"`, and re-seeding then skips it on purpose. That is correct for
-a deliberate edit. It also means a rename in the image never reaches an edited block.
-That once left five personas telling agents to call tools that no longer existed.
+Agent blocks are stored for operator-authored data and future custom agents. The
+coding workflow does not read them. Its agents live in the workflow package and
+carry their instructions, tools, and output schemas in TypeScript.
 
 ## Tests
 
