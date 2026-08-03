@@ -492,5 +492,46 @@
       "passed": 1246,
       "failed": 0
     }
+  },
+  {
+    "at": "2026-07-29T08:02:35.995Z",
+    "sha": "f29d211",
+    "subject": "docs: a README for every package, in Simplified Technical English",
+    "scores": {
+      "evals": 100,
+      "packages/api": 100,
+      "packages/auth": 100,
+      "packages/db": 98.2,
+      "packages/events": 100,
+      "packages/intake": 100,
+      "packages/o11y": 100,
+      "packages/sandbox": 100,
+      "packages/semindex": 100,
+      "packages/server": 100,
+      "packages/test-utils": 100,
+      "packages/workflow": 99.8,
+      "plugins/aft": 100,
+      "plugins/browser": 100,
+      "plugins/core": 100,
+      "plugins/github": 90,
+      "plugins/imgup": 100,
+      "plugins/jira": 90,
+      "plugins/knowledge": 100,
+      "plugins/ntfy": 100,
+      "plugins/paste": 100,
+      "plugins/scripts": 100,
+      "plugins/search": 100,
+      "plugins/slack": 90,
+      "plugins/tickets": 100,
+      "plugins/todo": 100,
+      "ui": 87.2,
+      "worker": 88.3,
+      "workflows/coding": 100
+    },
+    "tests": {
+      "total": 1294,
+      "passed": 1251,
+      "failed": 0
+    }
   }
 ]
