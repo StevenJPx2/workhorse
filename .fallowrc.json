@@ -28,7 +28,9 @@
     "alchemy",
     "effect",
     "@effect/platform-bun",
-    "@effect/platform-node"
+    "@effect/platform-node",
+    // The faux provider is imported only by the ignored Node pilot fixture.
+    "@earendil-works/pi-ai"
   ],
   "ignorePatterns": [
     "**/*.generated.ts",
@@ -37,7 +39,10 @@
     // Phase 7 infra-as-code, NOT the active deploy path (blocked on two Alchemy
     // v2 gaps, documented at the top of the file). Declaring it an ENTRY instead
     // would classify it as production code and mis-flag its dev-deps.
-    "alchemy.run.ts"
+    "alchemy.run.ts",
+    // Standalone Node pilot fixture; it is executed by the root Vitest worker
+    // project but is not a production entry.
+    "worker/test/flue-v2-pilot.test.ts"
   ],
   "ignoreExports": [
     {
