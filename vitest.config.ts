@@ -56,6 +56,9 @@ export default defineConfig({
           environment: "node",
         },
       },
+      // Flue v2's Cloudflare adapter imports `cloudflare:workers`, so it must be
+      // exercised inside workerd rather than the Node worker project.
+      "./worker/vitest.config.ts",
       // Workflow packages: each workflow's discovered graph + tool gating.
       {
         test: {

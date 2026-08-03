@@ -39,7 +39,10 @@
     "valibot": "^1.4.2"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.18.8",
     "@cloudflare/workers-types": "^5.20260714.1",
+    "@earendil-works/pi-ai": "^0.83.0",
+    "@flue/runtime-v2": "npm:@flue/runtime@2.0.0",
     "@types/node": "^26.1.1",
     "@workhorse/test-utils": "workspace:*",
     "typescript": "^7.0.2",
