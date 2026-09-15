@@ -1,6 +1,0 @@
-build/
-fixture/
-tool/tool.js
-tool/node_modules/
-host/target/
-host/Cargo.lock

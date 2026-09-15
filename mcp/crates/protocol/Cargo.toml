@@ -1,5 +1,5 @@
 [package]
-name = "wrkhse-mcp-protocol"
+name = "workhorse-mcp-protocol"
 version = "0.1.0"
 description = "Wire contracts for the Workhorse MCP capability daemon"
 edition.workspace = true

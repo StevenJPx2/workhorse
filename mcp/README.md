@@ -16,4 +16,4 @@ See [`docs/architecture.md`](docs/architecture.md).
 
 ## Workspace
 
-The first crate is [`wrkhse-mcp-protocol`](crates/protocol), which defines provider manifests and the generic daemon wire messages. Runtime crates will be added only as their first vertical slice is implemented.
+The first crate is [`workhorse-mcp-protocol`](crates/protocol), which defines provider manifests and the generic daemon wire messages. Runtime crates will be added only as their first vertical slice is implemented.
