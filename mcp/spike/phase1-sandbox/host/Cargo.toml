@@ -1,0 +1,16 @@
+# Standalone package: its own `[workspace]` detaches it from the mcp workspace
+# so the heavy wasmtime dependency never touches the protocol crate's builds.
+[workspace]
+
+[package]
+name = "wrkhse-spike-phase1-host"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+wasmtime = "48"
+
+[[bin]]
+name = "host"
+path = "src/main.rs"

@@ -1,0 +1,18 @@
+package wrkhse:spike;
+
+/// The only door to the outside world the guest is given. The host implements
+/// it and scopes every call; the guest has no other filesystem or network
+/// reach.
+interface host-fs {
+  read-text: func(path: string) -> result<string, string>;
+}
+
+world tool {
+  import host-fs;
+
+  /// Read a project file through the granted capability.
+  export run: func(path: string) -> string;
+
+  /// Attempt a path the host is expected to deny; returns the host's refusal.
+  export try-escape: func(path: string) -> string;
+}

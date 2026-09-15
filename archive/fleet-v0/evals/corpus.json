@@ -1,0 +1,34 @@
+{
+  "$comment": "Eval ticket corpus: identical tasks filed once per variant. Keep tasks small, deterministic-ish, and verifiable so differences reflect the variant, not task luck.",
+  "repo": "StevenJPx2/workhorse-e2e-test",
+  "tasks": [
+    {
+      "id": "docs-link",
+      "title": "eval: link docs from README",
+      "prompt": "Add a Documentation section to README.md linking every markdown documentation file in the repository root, each with a one-line description. Every link must point to a file that actually exists."
+    },
+    {
+      "id": "gitignore",
+      "title": "eval: add gitignore",
+      "prompt": "Add a .gitignore appropriate for a plain markdown/documentation repository (editor swap files, OS cruft, log files). Keep it under 20 lines."
+    },
+    {
+      "id": "glossary",
+      "title": "eval: add glossary",
+      "prompt": "Create GLOSSARY.md defining every Workhorse-specific term used in the existing markdown files of this repo (scan them first). Each entry: term, one-sentence definition, and the file where it appears."
+    }
+  ],
+  "$variants": "A variant is one comparison cell: optional `workflow` (defaults to `coding`) and optional `model` (defaults to the worker default). The current cells compare the raw single-stage agent against the staged plan\u2192implement\u2192verify pipeline on the same model. Add a `model` to a cell to also sweep the model axis (e.g. a 2\u00d72).",
+  "variants": [
+    {
+      "id": "raw",
+      "workflow": "coding-raw",
+      "model": "deepseek-v4-flash"
+    },
+    {
+      "id": "staged",
+      "workflow": "coding",
+      "model": "deepseek-v4-flash"
+    }
+  ]
+}

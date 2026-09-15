@@ -1,0 +1,15 @@
+[package]
+name = "wrkhse-mcp-protocol"
+version = "0.1.0"
+description = "Wire contracts for the Workhorse MCP capability daemon"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

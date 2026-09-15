@@ -1,0 +1,13 @@
+{
+  "name": "wrkhse-spike-phase1-tool",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 1 sandbox spike: TypeScript MCP tool componentized to WASM",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@bytecodealliance/componentize-js": "^0.22.0"
+  }
+}
