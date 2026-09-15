@@ -15,19 +15,18 @@ flowchart LR
     OPS["Operators<br/>UI · Slack · GitHub · Jira"]
     WORKER["Worker (control plane + brain)<br/>ticket spine · workflow defs<br/>in-process stage sessions · plugins"]
     SANDBOX["Sandbox (per ticket)<br/>cloned repo · tool exec (hands)"]
-    STATE[("State<br/>D1 · KV · R2 · Vectorize · AI Search")]
-    LLM["Anthropic<br/>(subscription OAuth)"]
+    STATE[("State<br/>D1 · KV · R2 · AI Search")]
+    LLM["OpenCode<br/>(opencode-go subscription)"]
 
     OPS -->|"tickets · steers · inputs · webhooks"| WORKER
     WORKER -->|"tool calls: exec / read / write"| SANDBOX
-    WORKER -->|"agent loop (flue harness)"| LLM
+    WORKER -->|"agent loop (Pi session)"| LLM
     WORKER --> STATE
     WORKER -->|"branch + PR / report"| OPS
 ```
 
-The agent loop runs inside the Worker through the
-[flue](https://flueframework.com) harness. It does not run as a subprocess. Each
-workflow stage is one in-process `session.prompt(...)` call. The tool calls from
+The agent loop runs inside the Worker through the Pi SDK. It does not run as a
+subprocess. Each workflow stage is one in-process Pi session. The tool calls from
 that stage run in the sandbox container over RPC. The container is only hands. It
 holds the cloned repo, and it never holds a model credential.
 
@@ -37,11 +36,10 @@ holds the cloned repo, and it never holds a model credential.
 |---|---|---|
 | Spine | Cloudflare Workflows | One durable instance per ticket. It dispatches the run, drives it, parks it on `waitForEvent`, waits out capacity limits with `step.sleep`, and delivers the result. |
 | Engine | `packages/workflow` | Hard-coded, eval-tested workflow definitions. Each one pairs a declarative `stages` manifest with imperative `run(ctx)` routing. No interpreter. No spec registry. |
-| Stage session | Worker (flue harness) | Each stage is one in-process flue session. Its tools are the plugin tool factories, cut down to the stage allowlist. |
+| Stage session | Worker (Pi SDK) | Each stage is one in-process Pi session. Its tools are the plugin tool factories, cut down to the stage allowlist. |
 | Muscle | Cloudflare Sandbox | The per-ticket container. It holds the cloned repo and runs the tools. It holds no model credential. |
-| Brain | Anthropic Claude (subscription OAuth) | The flue harness calls the model from the Worker. |
-| Memory | D1, KV, R2, Vectorize, AI Search | D1 holds the records through Drizzle. KV holds hot state. R2 holds traces and the dependency cache. Vectorize holds the semantic registries. AI Search holds fleet run knowledge and per-repo agent memory. |
-| Token custody | Homelab server | It holds the OAuth refresh token and keeps it fresh. It pushes short-lived access tokens to the Worker through `POST /token`. |
+| Brain | OpenCode `opencode-go` / `deepseek-v4-flash` | Pi sessions call the model from the Worker using `OPENCODE_API_KEY`. Capacity throttles park durably; there is no token custodian or fallback leg. |
+| Memory | D1, KV, R2, AI Search | D1 holds records through Drizzle. KV holds hot state. R2 holds traces and the dependency cache. AI Search holds fleet knowledge, per-repo memory, and the script/workflow/tool registries. |
 | Face | Nuxt UI (`ui/`) | A chat-first home page, the fleet list, a run-centric ticket page with live output, a read-only workflow graph, agent blocks, and `/embed` for dashboards. |
 
 ### Workspace boundaries
@@ -60,14 +58,13 @@ registers concrete plugins.
 | Package | Owns |
 |---|---|
 | `packages/api` | `tool()`, `agent()`, and the plugin and Env contract |
-| `packages/auth` | Request auth tiers and model-token custody |
+| `packages/auth` | Request auth tiers and constant-time secret comparison |
 | `packages/db` | Drizzle schema, repos such as `db.tickets.list()`, and migrations |
 | `packages/events` | The event bus, steers, and the notification queue |
 | `packages/intake` | Ticket filing, self-healing, and ref frecency |
 | `packages/o11y` | Structured events on evlog, keyed by ticket, run, and stage |
 | `packages/sandbox` | The container driver and Code Mode |
-| `packages/semindex` | `defineIndex` over Vectorize and Workers AI |
-| `packages/server` | The HTTP surface: routes, auth tiers, chat, triggers, agent blocks |
+| `packages/server` | The HTTP surface: routes, auth tiers, chat, triggers, agent blocks, and AI Search registries |
 | `packages/test-utils` | The doubles and harnesses for all three test layers |
 | `packages/workflow` | `workflow()`, stage graph discovery, and prompt assembly |
 | `plugins/core` | The workspace tools every stage draws from: read, grep, bash, write, edit |
@@ -191,7 +188,7 @@ depends only on `@workhorse/api`, and the worker is the only composition point.
 |---|---|
 | Package | `plugins/tickets` |
 | Stage tools | `fetch_context` resolves one repo, Jira, or Slack ref on demand. Workhorse parses refs out of the task prompt, so nobody attaches them by hand. |
-| Fleet-chat tools | `workhorse_file_ticket`, `workhorse_list_tickets`, `workhorse_ticket_status`, `workhorse_ticket_diff`, `workhorse_find_workflow` (semindex picks the workflow) |
+| Fleet-chat tools | `workhorse_file_ticket`, `workhorse_list_tickets`, `workhorse_ticket_status`, `workhorse_ticket_diff`, `workhorse_find_workflow` (AI Search picks the workflow) |
 | Worker routes | Ticket CRUD, dispatch, `/refs` (recent refs ranked by frecency), `/attachments/match` and `/resolve`, and the notification bus |
 | Attachment providers | `repo`, the source behind "attach a repo" |
 
@@ -202,13 +199,15 @@ depends only on `@workhorse/api`, and the worker is the only composition point.
 | Sandbox tools | `todo_write` (create the ordered list), `todo_read`, `todo_update` |
 | Store | One JSON file per run at `/workspace/.workflow/todos.json`. The planner writes the list. The coder works through it one item at a time. |
 
-## Semantic index
+## Semantic Search
 
-`packages/semindex` is a reusable toolkit over Vectorize.
-`packages/server/src/semindex.ts` defines the fleet corpora: scripts, workflows,
-and tools. `POST /admin/reindex-semindex` rebuilds them, and
-`GET /find?corpus=…` queries them. The live tool is `workhorse_find_workflow`,
-which ranks workflows for a task before Workhorse files the ticket.
+The registry corpora live in AI Search: separate `scripts`, `workflows`, and
+`tools` instances are maintained by `packages/server/src/aisearch.ts`.
+`POST /admin/reindex-registries` rebuilds them, and
+`GET /find?corpus=…` queries them. The live tool is
+`workhorse_find_workflow`, which ranks workflows for a task before Workhorse
+files the ticket. Fleet knowledge and per-repo memory use the same AI Search
+platform through `plugins/knowledge`.
 
 ## API
 
@@ -228,7 +227,6 @@ GET/PUT/DELETE /agents/:name                → agent block registry
 GET  /scripts · POST /scripts               → script registry (scoped)
 GET  /find?corpus=scripts|workflows|tools   → semantic search (scoped)
 GET  /refs                                  → frecency-ranked recent context refs
-POST /token · GET /token                    → custodian OAuth push · freshness
 GET  /github?path=…                         → read-only GitHub proxy (scoped)
 POST /webhooks/github · /slack · /jira      → verified sources
 ```
@@ -260,39 +258,39 @@ live in `.dev.vars`, which git ignores.
 <!-- quality:start -->
 ![health](reports/health.svg)
 
-**29 packages** · 1222 passing · all at or above floor
+**29 packages** · 1220 passing · all at or above floor
 
 | package | grade | score | trend |
 |---|---|---:|---|
-| `ui` | A | 87.2 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
-| `worker` | A | 88.5 | `▅▅▅▅▅▅▅▅▇▇▇▇▇▇▇▇▇▇` |
-| `plugins/github` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
-| `plugins/jira` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
-| `plugins/slack` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
-| `packages/db` | A | 98.2 | `█████████████` |
-| `evals` | A | 100.0 | `██████████████████` |
-| `packages/api` | A | 100.0 | `██████████████████` |
-| `packages/auth` | A | 100.0 | `█████████████` |
-| `packages/events` | A | 100.0 | `███████` |
-| `packages/intake` | A | 100.0 | `███████` |
-| `packages/o11y` | A | 100.0 | `██████` |
-| `packages/sandbox` | A | 100.0 | `███████` |
-| `packages/semindex` | A | 100.0 | `██████████████████` |
-| `packages/server` | A | 100.0 | `███████` |
-| `packages/test-utils` | A | 100.0 | `██████████████████` |
-| `packages/workflow` | A | 100.0 | `██████████████████` |
-| `plugins/aft` | A | 100.0 | `██████████████████` |
-| `plugins/browser` | A | 100.0 | `██████████████████` |
-| `plugins/core` | A | 100.0 | `███████████` |
-| `plugins/imgup` | A | 100.0 | `██████████████████` |
-| `plugins/knowledge` | A | 100.0 | `██████████████████` |
-| `plugins/ntfy` | A | 100.0 | `██████████████████` |
-| `plugins/paste` | A | 100.0 | `██████████████████` |
-| `plugins/scripts` | A | 100.0 | `██████████████████` |
-| `plugins/search` | A | 100.0 | `██████████████████` |
-| `plugins/tickets` | A | 100.0 | `██████████████████` |
-| `plugins/todo` | A | 100.0 | `██████████████████` |
-| `workflows/coding` | A | 100.0 | `███████████` |
+| `ui` | A | 87.2 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
+| `worker` | A | 88.5 +0.2 | `▅▅▅▅▅▅▅▅▇▇▇▇▇▇▇▇▇` |
+| `plugins/github` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
+| `plugins/jira` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
+| `plugins/slack` | A | 90.0 | `▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇` |
+| `packages/db` | A | 98.2 | `████████████` |
+| `evals` | A | 100.0 | `█████████████████` |
+| `packages/api` | A | 100.0 | `█████████████████` |
+| `packages/auth` | A | 100.0 | `████████████` |
+| `packages/events` | A | 100.0 | `██████` |
+| `packages/intake` | A | 100.0 | `██████` |
+| `packages/o11y` | A | 100.0 | `█████` |
+| `packages/sandbox` | A | 100.0 | `██████` |
+| `packages/semindex` | A | 100.0 | `█████████████████` |
+| `packages/server` | A | 100.0 | `██████` |
+| `packages/test-utils` | A | 100.0 | `█████████████████` |
+| `packages/workflow` | A | 100.0 +0.2 | `█████████████████` |
+| `plugins/aft` | A | 100.0 | `█████████████████` |
+| `plugins/browser` | A | 100.0 | `█████████████████` |
+| `plugins/core` | A | 100.0 | `██████████` |
+| `plugins/imgup` | A | 100.0 | `█████████████████` |
+| `plugins/knowledge` | A | 100.0 | `█████████████████` |
+| `plugins/ntfy` | A | 100.0 | `█████████████████` |
+| `plugins/paste` | A | 100.0 | `█████████████████` |
+| `plugins/scripts` | A | 100.0 | `█████████████████` |
+| `plugins/search` | A | 100.0 | `█████████████████` |
+| `plugins/tickets` | A | 100.0 | `█████████████████` |
+| `plugins/todo` | A | 100.0 | `█████████████████` |
+| `workflows/coding` | A | 100.0 | `██████████` |
 
 <sub>Generated by `bun run report` · fixed 0–100 scale · test files excluded from scoring</sub>
 <!-- quality:end -->

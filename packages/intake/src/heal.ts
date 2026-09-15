@@ -47,7 +47,6 @@ export async function healTicket(
     title: rec.title,
     repo: rec.repo,
     prompt: rec.prompt,
-    accessToken: "", // freshToken() pulls the custodian token from KV
     workflow: rec.workflow,
     resume: true,
   };

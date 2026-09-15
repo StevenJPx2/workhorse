@@ -7,10 +7,10 @@ const search = (input: Record<string, unknown>, ai: ReturnType<typeof fakeAiSear
   runTool(search_fleet_knowledge, input, { env: { AI_SEARCH: ai } });
 
 const hit = (over: Partial<FakeSearchChunk> = {}): FakeSearchChunk => ({
-  filename: "t-abc-run1.md",
+  id: "t-abc-run1.md",
   score: 0.87,
-  content: [{ text: "The sandbox lost node_modules mid-run." }],
-  attributes: { file: { ticketId: "t-abc", repo: "acme/widgets" } },
+  text: "The sandbox lost node_modules mid-run.",
+  item: { key: "t-abc-run1.md", metadata: { ticketId: "t-abc", repo: "acme/widgets" } },
   ...over,
 });
 
@@ -38,7 +38,7 @@ describe("search_fleet_knowledge — querying", () => {
 
   it("numbers multiple hits and separates them", async () => {
     const ai = fakeAiSearch({
-      results: [hit({ filename: "a.md" }), hit({ filename: "b.md" }), hit({ filename: "c.md" })],
+      results: [hit({ item: { key: "a.md" } }), hit({ item: { key: "b.md" } }), hit({ item: { key: "c.md" } })],
     });
     const { output } = await search({ query: "x" }, ai);
 
@@ -48,12 +48,12 @@ describe("search_fleet_knowledge — querying", () => {
     expect(output.split("\n\n").length).toBeGreaterThanOrEqual(3);
   });
 
-  it("joins multi-part chunk content", async () => {
-    const ai = fakeAiSearch({ results: [hit({ content: [{ text: "first" }, { text: "second" }] })] });
+  it("joins multi-part chunk content (legacy parts array tolerated)", async () => {
+    const ai = fakeAiSearch({ results: [hit({ text: [{ text: "first" }, { text: "second" }] })] });
     const { output } = await search({ query: "x" }, ai);
 
-    // Content arrives as an array of parts; concatenating with a space would
-    // lose the line structure the agent reads.
+    // Text may arrive as a bare string (current API) or a parts array;
+    // concatenating with a space would lose the line structure the agent reads.
     expect(output).toContain("first\nsecond");
   });
 
@@ -97,7 +97,7 @@ describe("search_fleet_knowledge — querying", () => {
   });
 
   it("truncates a very long hit body", async () => {
-    const ai = fakeAiSearch({ results: [hit({ content: [{ text: "z".repeat(5000) }] })] });
+    const ai = fakeAiSearch({ results: [hit({ text: "z".repeat(5000) })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).toContain("z".repeat(2500));
@@ -107,7 +107,7 @@ describe("search_fleet_knowledge — querying", () => {
 
 describe("search_fleet_knowledge — missing metadata", () => {
   it("omits the repo suffix when the hit has none", async () => {
-    const ai = fakeAiSearch({ results: [hit({ attributes: { file: {} } })] });
+    const ai = fakeAiSearch({ results: [hit({ item: { metadata: {} } })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).toContain("### 1. t-abc-run1.md");
@@ -123,14 +123,14 @@ describe("search_fleet_knowledge — missing metadata", () => {
   });
 
   it("falls back to 'unknown' when no filename is present", async () => {
-    const ai = fakeAiSearch({ results: [hit({ filename: undefined, attributes: { file: {} } })] });
+    const ai = fakeAiSearch({ results: [hit({ item: { metadata: {} }, id: undefined })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).toContain("### 1. unknown");
   });
 
-  it("handles a hit with no content array", async () => {
-    const ai = fakeAiSearch({ results: [hit({ content: undefined })] });
+  it("handles a hit with no text", async () => {
+    const ai = fakeAiSearch({ results: [hit({ text: undefined })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).toContain("### 1. t-abc-run1.md");

@@ -1,6 +1,6 @@
 // Minimal live-model client for integration tests.
 //
-// Deliberately NOT flue: a flue harness runs a whole agent loop (sessions,
+// Deliberately NOT a stage session: a stage runner owns a whole agent loop (sessions,
 // sandbox, conversation store), which is far more machinery than "given these
 // tools and this prompt, what does the model call?". These tests need one
 // request and one answer, so they speak the provider's chat-completions wire

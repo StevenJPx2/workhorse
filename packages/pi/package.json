@@ -1,0 +1,23 @@
+{
+  "name": "@workhorse/pi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "pi adapters for the Workhorse fleet — the shared bridge between Workhorse's valibot tool surface and pi's typebox tool plane, plus the opencode-go model runtime and the persona extension. Used by the worker stage harness (pi-session) and the fleet chat runner (chat.ts).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "@earendil-works/pi-ai": "0.84.1",
+    "@earendil-works/pi-coding-agent": "0.84.1",
+    "typebox": "1.1.38"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2"
+  }
+}

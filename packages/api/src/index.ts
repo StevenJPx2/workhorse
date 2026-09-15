@@ -12,6 +12,8 @@ export type {
 export { repoSlug } from "./repo";
 export { tool } from "./plugin";
 export type {
+  AgentExtension,
+  AgentExtensionAPI,
   AttachmentProvider,
   AttachmentRef,
   Core,

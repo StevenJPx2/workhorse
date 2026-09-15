@@ -9,7 +9,7 @@ import { appendEvents, appendSteer, wakeTicket } from "@workhorse/events";
 import type { Core, Env, TicketRecord } from "@workhorse/api";
 import { db, validateScript } from "@workhorse/db";
 import { runFleetChat } from "@workhorse/server";
-import { assembleChatTools, attachmentProviders, plugins } from "./registry";
+import { assembleChatExtensions, assembleChatTools, attachmentProviders, plugins } from "./registry";
 
 /**
  * Register or update a self-extension script.
@@ -48,8 +48,8 @@ async function registerScript(
   // Semantic discovery: keep the scripts corpus fresh. Best-effort — a failed
   // index update must not undo a successful registration.
   try {
-    const { scriptIndex } = await import("@workhorse/server");
-    await scriptIndex.upsert(env, [script]);
+    const { upsertScriptDoc } = await import("@workhorse/server");
+    await upsertScriptDoc(env, script);
   } catch (indexErr) {
     console.warn(`script index update failed for ${draft.scope}/${draft.name}:`, indexErr);
   }
@@ -64,8 +64,8 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     listTickets: (status) => db(env).tickets.list(status),
     ticketDiff: async (ticketId) => env.TICKETS.get(`diff:${ticketId}`),
     findWorkflows: async (query, topK) => {
-      const { workflowIndex } = await import("@workhorse/server");
-      const hits = await workflowIndex.query(env, query.slice(0, 500), { topK: topK ?? 5 });
+      const { queryRegistry } = await import("@workhorse/server");
+      const hits = await queryRegistry(env, "workflows", query.slice(0, 500), topK ?? 5);
       return hits.map((h) => {
         const m = (h.metadata ?? {}) as { name?: string; description?: string; stages?: string };
         return { name: m.name ?? h.id, description: m.description, stages: m.stages };
@@ -100,7 +100,7 @@ export function coreFor(env: Env, selfOrigin: string): Core {
     },
     // Hands chat the facade being built rather than making chat import it — the
     // inversion that removes the core <-> chat cycle.
-    fleetChat: (messages) => runFleetChat(env, core, selfOrigin, messages, assembleChatTools),
+    fleetChat: (messages) => runFleetChat(env, core, selfOrigin, messages, assembleChatTools, assembleChatExtensions),
     listScripts: (repo) => db(env).scripts.list(repo),
     getScriptByName: async (name, repo) => {
       // repo scope shadows global for the same name.

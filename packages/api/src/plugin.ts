@@ -15,13 +15,13 @@ import type { GenericSchema, InferInput, InferOutput } from "valibot";
 import type { Env } from "./types";
 import type { TicketRecord } from "./types";
 
-// Tool types — mirrors @flue/runtime's shape so the flue engine accepts
-// our tools via structural typing, without importing @flue/runtime here.
+// Tool types — mirror pi's tool shape so the engine accepts our tools via
+// structural typing, without importing pi's packages here.
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type ToolInputSchema = GenericSchema<Record<string, unknown>, unknown>;
 type ToolOutputSchema = GenericSchema<any, NonNullable<unknown> | null>;
 type ToolRunResult<S extends ToolOutputSchema | undefined> = S extends ToolOutputSchema ? InferInput<S> : JsonValue | undefined;
-type FlueToolContext<S extends ToolInputSchema | undefined> = {
+type PluginToolContext<S extends ToolInputSchema | undefined> = {
   readonly signal?: AbortSignal;
 } & (S extends ToolInputSchema ? { readonly input: InferOutput<S> } : Record<never, never>);
 interface ToolDefinition<
@@ -32,7 +32,7 @@ interface ToolDefinition<
   readonly description: string;
   readonly input: TInput;
   readonly output: TOutput;
-  run(context: FlueToolContext<TInput>): ToolRunResult<TOutput> | Promise<ToolRunResult<TOutput>>;
+  run(context: PluginToolContext<TInput>): ToolRunResult<TOutput> | Promise<ToolRunResult<TOutput>>;
 }
 function defineTool<
   const TInput extends ToolInputSchema | undefined = undefined,
@@ -55,7 +55,7 @@ export type WorkhorseTool = ToolDefinition<any, any>;
 
 /**
  * Minimal container handle a tool closes over to reach the workspace.
- * Backed worker-side by the flue SessionEnv (which wraps the Cloudflare
+ * Backed worker-side by the pi session (which wraps the Cloudflare
  * Sandbox); tests pass a mock. This is how sandbox-engine tools port —
  * e.g. AFT execs the `aft` CLI, agent-browser execs its daemon, scripts
  * run bash — the tool DEFINITION lives worker-side, the ENGINE runs in
@@ -76,7 +76,7 @@ export interface SandboxHandle {
 export type ToolSurface = "stage" | "chat";
 
 /**
- * The context a tool's run() receives, composed in by `tool()`. flue's own
+ * The context a tool's run() receives, composed in by `tool()`. pi's own
  * run(ctx) carries only { input }; everything else a tool needs — core
  * services, the container, the ticket it serves, the worker origin — is
  * captured here when the surface assembles its tool registry.
@@ -114,7 +114,7 @@ export interface WritePolicy {
 }
 
 /**
- * A per-tool factory: build the flue tool for a given ToolContext. Tagged
+ * A per-tool factory: build the pi tool for a given ToolContext. Tagged
  * with `toolName` + `surfaces` so the worker can gate (allowlist + surface)
  * BEFORE instantiating. Produced by `tool()`.
  */
@@ -147,7 +147,7 @@ export function tool<const S extends ToolInputSchema>(spec: {
   run(args: { input: InferOutput<S> } & ToolContext): string | Promise<string>;
 }): ToolFactory {
   // Every tool gets `help` in its schema, so the flag is uniform and no tool
-  // author can forget it. Declared as part of the input object because flue
+  // author can forget it. Declared as part of the input object because pi
   // validates input against the schema — an undeclared flag would be rejected.
   const entries = (spec.input as unknown as { entries?: Record<string, unknown> }).entries;
   const input = (
@@ -171,6 +171,32 @@ export function tool<const S extends ToolInputSchema>(spec: {
   factory.toolName = spec.name;
   factory.surfaces = spec.surfaces ?? ["stage"];
   return factory;
+}
+
+/**
+ * The pi extension surface, structurally typed so the api contract stays free
+ * of pi's dependency graph. Typed event payloads (ToolCallEvent,
+ * ToolCallEventResult, BeforeAgentStartEvent, ...) are re-exported by
+ * @workhorse/pi for plugin authors who want them.
+ */
+export interface AgentExtensionAPI {
+  /** Subscribe to a pi agent event (before_agent_start, tool_call, tool_result, ...). */
+  on(event: string, handler: (event: any, result?: any) => any): void;
+  /** Register an LLM-callable tool at install time (typed ToolDefinition in @workhorse/pi). */
+  registerTool?(tool: unknown): void;
+}
+
+/**
+ * One agent extension: a named install() into a live pi session. The worker
+ * collects every plugin's extensions (deduped by name) and installs them at
+ * session creation — the sanctioned path for a plugin to modify the agent
+ * directly (gate tool calls, rewrite tool results, add tools, steer the
+ * system prompt).
+ */
+export interface AgentExtension {
+  /** Stable name; the first install wins across plugins. */
+  name: string;
+  install(api: AgentExtensionAPI): void;
 }
 
 /** A reference to attachable context, as the operator provides it. */
@@ -447,11 +473,21 @@ export interface WorkhorsePlugin {
   /** Trigger sources this plugin can fire (documentation + registry validation). */
   triggers?: TriggerSource[];
   /**
-   * Tools this plugin contributes (flue engine), one ToolFactory per tool
+   * Tools this plugin contributes (pi engine), one ToolFactory per tool
    * (authored with `tool()` in plugins/<id>/tools/<name>.ts). The worker
    * assembles them per surface: stage sessions intersect with the stage
    * allowlist; fleet chat takes every chat-surface tool. Replaces the old
    * sandbox-scanned extension.ts — the agent loop runs in the Worker.
    */
   tools?: ToolFactory[];
+  /**
+   * Agent extensions this plugin contributes, one AgentExtension per concern
+   * (authored with `extension()` in plugins/<id>/extensions/<name>.ts). The
+   * worker installs them into every pi agent session (stage + chat) at
+   * session creation, in plugin order, deduped by name — so a plugin can
+   * modify the agent directly: subscribe to tool_call/tool_result to gate or
+   * rewrite calls, register tools at install time, or tweak the system
+   * prompt via before_agent_start.
+   */
+  extensions?: (ctx: ToolContext) => AgentExtension[];
 }

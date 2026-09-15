@@ -23,7 +23,7 @@ import { healTicket } from "@workhorse/intake";
 import { createServer, sweepCronTriggers } from "@workhorse/server";
 import { coreFor } from "./core";
 import { intake } from "./intake";
-import { assembleChatTools, attachmentProviders, pluginFor, routeFor, workflowCatalog } from "./registry";
+import { assembleAllTools, assembleChatExtensions, assembleChatTools, attachmentProviders, pluginFor, routeFor, workflowCatalog } from "./registry";
 
 export { Sandbox } from "@cloudflare/sandbox";
 export { healTicket } from "@workhorse/intake";
@@ -41,6 +41,8 @@ const deps = {
   core: coreFor,
   attachmentProviders,
   assembleChatTools,
+  assembleAllTools,
+  assembleChatExtensions,
   pluginFor,
   routeFor,
   intake,
@@ -58,6 +60,7 @@ export default {
    * then fire any cron triggers whose window matched.
    */
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    // fallow-ignore-next-line complexity
     const sweep = async () => {
       // One query rather than a full KV scan. The quiet window skips anything a
       // human may still be looking at.

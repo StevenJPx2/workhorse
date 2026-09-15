@@ -59,6 +59,8 @@ let currentPlugin: ReturnType<typeof plugin> | undefined;
 const deps = {
   core: () => ({}) as never,
   attachmentProviders: () => new Map(),
+  assembleAllTools: () => [],
+  assembleChatExtensions: () => [],
   assembleChatTools: () => [],
   pluginFor: () => currentPlugin as never,
   intake: { fileTicket: vi.fn(async () => ({ ok: true, ticket: { id: "t1" } })) } as never,

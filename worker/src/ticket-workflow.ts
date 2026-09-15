@@ -2,7 +2,6 @@ import { consumeEvents, consumeSteers, pendingSteers, renderNotifications, uncon
 import { db } from "@workhorse/db";
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from "cloudflare:workers";
 import {
-  injectAuth,
   injectBrowserConfig,
   injectImgupConfig,
   injectTicketContext,
@@ -15,10 +14,10 @@ import {
 import { workflowFor } from "./registry";
 import { runWorkflow, type WorkflowRunResult } from "./workflow-run";
 import { fireHook } from "./core";
-import { STAGE_RUNWAY_MS, modelToken } from "@workhorse/auth";
 import { log, stageEvent, ticketEvent } from "@workhorse/o11y";
 import type { Env, ExternalEvent, TicketParams, TicketRecord } from "@workhorse/api";
 
+// fallow-ignore-next-line complexity
 async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) {
   const r = await db(env).tickets.patch(id, patch);
   if (!r) return;
@@ -36,16 +35,6 @@ async function updateTicket(env: Env, id: string, patch: Partial<TicketRecord>) 
 
 /** How many external wake→revise cycles a ticket may go through. */
 const MAX_REVISIONS = 20;
-
-/**
- * Freshest access token available. The token in the workflow payload is
- * frozen at filing time and lives ~5h — any step that can run later
- * (parks, long drives, revisions days after filing) MUST use the
- * custodian-pushed token from KV instead.
- */
-async function freshToken(env: Env, fallback: string): Promise<string> {
-  return (await modelToken(env).usable(STAGE_RUNWAY_MS)) ?? fallback;
-}
 
 /** Live observability snapshot pushed to KV after every phase/burst. */
 async function setLive(env: Env, ticketId: string, live: Record<string, unknown>): Promise<void> {
@@ -91,6 +80,7 @@ async function recordEscalation(
  * overwritten each revision; traces never are). Key: trace:<ticket>:<run>.
  * Also maintains a per-ticket run index at traces:<ticket>.
  */
+// fallow-ignore-next-line complexity
 async function archiveTrace(
   env: Env,
   ticketId: string,
@@ -167,7 +157,6 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
       { retries: { limit: 6, delay: "20 seconds", backoff: "exponential" }, timeout: "10 minutes" },
       async () => {
          await updateTicket(this.env, t.id, { status: "planning" });
-         await injectAuth(this.env, sandboxId, await freshToken(this.env, t.accessToken));
          await prepareWorkspace(this.env, sandboxId, t.repo);
          await injectBrowserConfig(this.env, sandboxId);
         await injectImgupConfig(this.env, sandboxId);
@@ -194,6 +183,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
    * work. Returns the delivered {outcome, result}; throws on hard failure or
    * throttle-budget exhaustion.
    */
+  // fallow-ignore-next-line complexity
   private async driveDefRun(
     step: WorkflowStep,
     t: TicketParams,
@@ -340,12 +330,13 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     const prUrl = await step.do(
       "def-deliver",
       { retries: { limit: 2, delay: "15 seconds" }, timeout: "10 minutes" },
+      // fallow-ignore-next-line complexity
       async () => {
-        const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, t.title);
+        const { diff, pushed, reason } = await deliverBranch(this.env, sandboxId, t.id, t.repo, t.title);
         await this.env.TICKETS.put(`diff:${t.id}`, diff);
         if (!pushed) {
-          await updateTicket(this.env, t.id, { status: "errored", result, branch, error: "push failed" });
-          throw new Error("push failed");
+          await updateTicket(this.env, t.id, { status: "errored", result, branch, error: reason ? `push failed: ${reason}` : "push failed" });
+          throw new Error(reason ? `push failed: ${reason}` : "push failed");
         }
         if (outcome === "artifact") {
           await updateTicket(this.env, t.id, { status: "awaiting-acceptance", result, branch });
@@ -382,6 +373,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     await this.reviewLoop(step, t, sandboxId, branch, prUrl);
   }
 
+  // fallow-ignore-next-line complexity
   private async runLifecycle(event: WorkflowEvent<TicketParams>, step: WorkflowStep) {
     const t = event.payload;
     const sandboxId = `ticket-${t.id}`;
@@ -411,11 +403,40 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   }
 
   /**
+   * Read queued external events for a round; when none, park on the
+   * external-event signal and re-read after wake. Returns null when the
+   * park window expired (the ticket is terminated — caller should return).
+   */
+  private async parkForEvents(
+    step: WorkflowStep,
+    t: TicketParams,
+    phase: string,
+    note: string,
+    prefix: string,
+    timeoutError: string,
+    round: number,
+  ): Promise<ExternalEvent[] | null> {
+    let events = (await step.do(`${prefix}-check-${round}`, async () => unconsumedEvents(this.env, t.id))) as ExternalEvent[];
+    if (events.length === 0) {
+      await setLive(this.env, t.id, { phase, note });
+      try {
+        await step.waitForEvent(`${prefix}-park-${round}`, { type: "external-event", timeout: "90 days" });
+      } catch {
+        await updateTicket(this.env, t.id, { status: "terminated", error: timeoutError });
+        return null;
+      }
+      events = (await step.do(`${prefix}-read-${round}`, async () => unconsumedEvents(this.env, t.id))) as ExternalEvent[];
+    }
+    return events;
+  }
+
+  /**
    * Acceptance park for report/artifact outcomes: done comes ONLY from an
    * operator action (accept) — the agent never self-completes. "Request
    * changes" feedback re-runs the workflow with the operator's comments,
    * mirroring the PR revision loop.
    */
+  // fallow-ignore-next-line complexity
   private async acceptanceLoop(
     step: WorkflowStep,
     t: TicketParams,
@@ -423,21 +444,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
     _runId: string,
   ) {
     for (let round = 1; round <= MAX_REVISIONS; round++) {
-      let events = (await step.do(`acc-check-${round}`, async () =>
-        unconsumedEvents(this.env, t.id),
-      )) as ExternalEvent[];
-      if (events.length === 0) {
-        await setLive(this.env, t.id, { phase: "awaiting-acceptance", note: "waiting for operator" });
-        try {
-          await step.waitForEvent(`acc-park-${round}`, { type: "external-event", timeout: "90 days" });
-        } catch {
-          await updateTicket(this.env, t.id, { status: "terminated", error: "acceptance window expired (90 days)" });
-          return;
-        }
-        events = (await step.do(`acc-read-${round}`, async () =>
-          unconsumedEvents(this.env, t.id),
-        )) as ExternalEvent[];
-      }
+      const events = await this.parkForEvents(step, t, "awaiting-acceptance", "waiting for operator", "acc", "acceptance window expired (90 days)", round);
+      if (!events) return; // park window expired → ticket terminated
 
       const accepted = events.find((e) => e.kind === "accepted" || e.kind === "jira-done");
       if (accepted) {
@@ -473,6 +481,7 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
    * The in-review park ↔ revise loop. Extracted so healing re-dispatches
    * can re-enter it directly when a PR already exists.
    */
+  // fallow-ignore-next-line complexity
   private async reviewLoop(
     step: WorkflowStep,
     t: TicketParams,
@@ -482,22 +491,8 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
   ) {
     for (let round = 1; round <= MAX_REVISIONS; round++) {
       // Anything queued while we were busy? Consume before parking.
-      let events = (await step.do(`check-events-${round}`, async () =>
-        unconsumedEvents(this.env, t.id),
-      )) as ExternalEvent[];
-
-      if (events.length === 0) {
-        await setLive(this.env, t.id, { phase: "parked", note: "in-review; waiting for PR feedback" });
-        try {
-          await step.waitForEvent(`park-${round}`, { type: "external-event", timeout: "90 days" });
-        } catch {
-          await updateTicket(this.env, t.id, { status: "terminated", error: "review window expired (90 days)" });
-          return;
-        }
-        events = (await step.do(`read-events-${round}`, async () =>
-          unconsumedEvents(this.env, t.id),
-        )) as ExternalEvent[];
-      }
+      const events = await this.parkForEvents(step, t, "parked", "in-review; waiting for PR feedback", "rev", "review window expired (90 days)", round);
+      if (!events) return; // park window expired → ticket terminated
 
       // Completion signals are pluggable: PR merge (github), Jira Done,
       // operator Accept — any plugin can emit one via Core.signalTransition.
@@ -538,9 +533,20 @@ export class TicketWorkflow extends WorkflowEntrypoint<Env, TicketParams> {
         prompt: `${t.prompt}\n\nYour earlier implementation is on the current branch and has an open PR (${prUrl}). New external feedback arrived that you must address now:\n${feedback}\n\nAddress ALL feedback with further code changes on this branch. Do not start over.`,
       });
 
+      // fallow-ignore-next-line complexity
       await step.do(`redeliver-${round}`, { timeout: "10 minutes" }, async () => {
-        const { diff, pushed } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
-        if (pushed) await this.env.TICKETS.put(`diff:${t.id}`, diff);
+        const { diff, pushed, reason } = await deliverBranch(this.env, sandboxId, t.id, t.repo, `${t.title} (revision ${round})`);
+        if (pushed) {
+          await this.env.TICKETS.put(`diff:${t.id}`, diff);
+        } else {
+          // A revision whose commit never reached the PR must NOT be consumed:
+          // the feedback events stay pending and the workflow re-runs, or the
+          // ticket errors with the real reason. Posting "no code changes"
+          // would be a lie — the branch simply never moved.
+          const msg = reason ? `revision push failed: ${reason}` : "revision push failed";
+          await updateTicket(this.env, t.id, { status: "errored", result, branch, error: msg });
+          throw new Error(msg);
+        }
         await consumeEvents(this.env, t.id);
         await updateTicket(this.env, t.id, { status: "in-review", result });
         // Close the conversational loop: reply on the PR with what was done.

@@ -10,17 +10,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const putTicket = vi.fn();
-const usable = vi.fn<() => Promise<string | null>>(async () => "sk-ant-oat01-fresh");
 const recordRefUse = vi.fn();
 
 // Mirrors the composed shape: db.tickets.put(), not db.putTicket().
 vi.mock("@workhorse/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@workhorse/db")>()),
   db: () => ({ tickets: { put: putTicket } }),
-}));
-vi.mock("@workhorse/auth", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@workhorse/auth")>()),
-  modelToken: () => ({ usable }),
 }));
 vi.mock("../refs", () => ({
   // Providers come FIRST now (they are injected, not imported), so the stand-in
@@ -48,7 +43,6 @@ const env = { TICKET_WF: { create }, TICKETS: {}, DB: {} } as never;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  usable.mockResolvedValue("sk-ant-oat01-fresh");
 });
 
 describe("validation", () => {
@@ -75,34 +69,6 @@ describe("validation", () => {
     });
 
     expect(r.ok).toBe(true);
-  });
-});
-
-describe("credential gate", () => {
-  it("refuses with 503 when no usable token exists", async () => {
-    usable.mockResolvedValue(null);
-    const r = await fileTicket(env, { repo: "acme/widgets", prompt: "go" });
-
-    expect(r).toMatchObject({ ok: false, status: 503 });
-  });
-
-  it("does NOT persist a ticket when the credential gate fails", async () => {
-    usable.mockResolvedValue(null);
-    await fileTicket(env, { repo: "acme/widgets", prompt: "go" });
-
-    // The ordering that matters: a ticket written before the gate would sit in
-    // the registry as `queued` with no workflow instance ever created —
-    // permanently stuck and invisible to the heal sweep, which only looks at
-    // `errored`.
-    expect(putTicket).not.toHaveBeenCalled();
-    expect(create).not.toHaveBeenCalled();
-  });
-
-  it("uses an explicitly supplied token without consulting the store", async () => {
-    await fileTicket(env, { repo: "acme/widgets", prompt: "go", accessToken: "sk-ant-oat01-given" });
-
-    expect(usable).not.toHaveBeenCalled();
-    expect(create.mock.calls[0][0].params.accessToken).toBe("sk-ant-oat01-given");
   });
 });
 

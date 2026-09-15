@@ -150,6 +150,8 @@ export const Worker = Cloudflare.Worker("Worker", {
      * points at it.
      */
     SELF_URL: `https://${WORKER_NAME}.stevenjpx2.workers.dev`,
+    // Host SourceFed daemon (M3d) — empty until the daemon is deployed.
+    SOURCEFED_DAEMON_URL: "",
   },
 });
 

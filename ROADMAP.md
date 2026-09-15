@@ -7,17 +7,33 @@ autonomous-but-staged, observable-and-conversational, and a fleet.
 
 Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
 
+## Current Status (2026-08)
+
+- **Modularization:** phases 0–6 and 8 are shipped. The worker-boundary part of
+  Phase 7 is shipped; only the optional Alchemy deployment remains paused.
+- **Runtime:** stages run through in-process Pi sessions in the Worker. The old
+  Flue runtime and model-token custodian are removed.
+- **Semantic state:** AI Search owns fleet knowledge, per-repo memory, and the
+  scripts/workflows/tools registries. The former `packages/semindex` package and
+  Vectorize registry path are gone.
+- **Deployment:** `worker/wrangler.jsonc` and `bun run deploy` are active.
+  `alchemy.run.ts` is retained as a non-active experiment because upstream
+  container attachment and Workflow adoption issues still block it.
+- **SourceFed:** M1–M3e is shipped. Keep both the always-on GitHub/Jira webhook
+  path and the workstation polling bridge; the latter is not a replacement for
+  the former.
+
+The historical milestones below are retained for context. This status block and
+the current source files are authoritative when an older milestone conflicts.
+
 ---
 
-## Shipped ✅
+## Shipped History ✅
 
-- **Engine v1.1 — RPC stage sessions** — every stage is a live
-  `pi --mode rpc` process (FIFO command pipe + append-only events.jsonl
-  tailed by byte offset). Native steer at turn boundaries (context
-  intact; kill-and-re-run only for dead stages), in-session `set_model`
-  promotion, `agent_settled` completion, typed `auto_retry` model-failure
-  classification, per-stage token/cost/context stats into state + traces,
-  structured live transcripts for `/output` and activity.
+- **Engine — in-process Pi stage sessions** — every stage runs through the Pi
+  SDK inside the Worker with plugin and engine tools assembled from the stage
+  allowlist. Throttles retry briefly in-process and surface a durable park to
+  the ticket spine; there is one validated `opencode-go` model leg.
 - **One tool per task: submit_work + write gate** — the workflow-gate
   sandbox extension owns stage completion (`submit_work` writes
   analysis.md + control.json; read-only stages need zero general write
@@ -81,19 +97,11 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   credential is configured; scoped `BROWSER_TOKEN`; gated into plan + verify.
 - **Visual PR evidence** — the coding workflow's writer adds browser capture and
   imgup tools only when the coder reports a user-visible change.
-- **Model fallbacks + delegation** — one stage-restart mechanism, two
-  triggers. *Availability*: a stage that dies on the model plane (429 /
-  credit exhaustion / expired OAuth — detected from `statusDetail` /
-  `failureKind`) re-injects a fresh custodian OAuth token and resumes
-  (OAuth-only fleet; two retries, step delay as backoff). *Capability*:
-  any stage can set
-  `"delegate": true` (+ `delegateReason`) in its control block; the
-  orchestrator marks the stage failed, patches the next model up the
-  promotion chain (haiku → sonnet → opus, cap 2/run) into the compiled
-  plan, and `resumeRun`s — downstream stages re-run via
-  `invalidateOnDependencyResume`, upstream artifacts intact. Every
-  escalation lands in `esc:<ticket>:<run>` and merges into the trace
-  archive, so **evals reveal which stages genuinely need a bigger model**.
+- **Model capacity policy** — throttles park and retry with bounded backoff;
+  `OPENCODE_API_KEY` is a static opencode-go subscription key, so auth failures
+  fail the stage rather than waiting for a token refresh. Capability promotion
+  remains designed but unbuilt; the current runtime intentionally has no
+  unvalidated fallback leg.
 - **AI Search fleet knowledge** — every archived run is distilled
   (task, per-stage analyses, verifier verdict, escalations, outcome) and
   indexed into an AI Search instance (`workhorse-fleet`, built-in storage,
@@ -110,29 +118,20 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   Thread replies become mid-run steers (live run) or revision events
   (parked in-review). Outbound: status transitions post into the thread.
   Config: `SLACK_SIGNING_SECRET` + `SLACK_BOT_TOKEN` secrets.
-- **Workflow registry (user-configurable workflows)** — workflows are
-  USER DATA: KV-registered entries (`workflow:<name>` — spec + agents +
-  schemas) uploadable via `PUT /workflows/:name`, validated at upload with
-  pi-workflow's own parser (run inside a sandbox). Resolution at prepare:
-  repo's `.workhorse/workflows/<name>/` → KV registry → baked seed
-  bundles; `POST /workflows/seed` imports the baked bundles (never
-  clobbers user entries). New pipelines need no rebuild/redeploy.
-- **D1 structured store** — database `workhorse`: `tickets` (status/repo/
-  updated indexes), `escalations`, `traces` index, `scripts` (ready for the
-  script service). Data layer `worker/src/db.ts`; heal sweep + fleet list
-  are single queries now; `GET /tickets?status=` + `GET /repos`;
-  `POST /admin/backfill-d1` imported legacy KV (33 tickets, 24 traces).
-  Division: D1 records · KV hot small state · R2 blobs · AI Search semantic.
+- **Workflow catalog** — workflows are typed code packages, not uploaded user
+  data. `GET /workflows` and `GET /workflows/:name` expose the read-only graph
+  catalog; new pipelines require a package build and deployment.
+- **D1 structured store** — database `workhorse`: `tickets`, `escalations`,
+  `traces` index, `scripts`, and `notifications`, accessed through
+  `@workhorse/db` repositories. Division: D1 records · KV hot state · R2 blobs
+  · AI Search semantic state.
 - **R2 blob plane (core)** — bucket `workhorse-blobs`: trace bodies
   (`trace/<ticket>/<run>.json`) and dependency caches. The `mc/<owner/repo>.db`
   memory blobs are gone with Magic Context; any that remain in the bucket are
   orphaned and safe to delete.
-- **`@workhorse/workflow` — the workflow engine** — pi-workflow replaced
-  outright: spec compile + validation (worker-side at `PUT /workflows`),
-  graph routing, run lifecycle, per-stage bare Pi sessions with CLI-level
-  tool ceilings, typed FailureKind classification, control verbs (steer/
-  promote/inject-input/retry/cancel), loop-until stages — 12 vitest
-  tests on a mock Driver. The CF spine is durability plumbing.
+- **`@workhorse/workflow` — the workflow engine** — typed workflow definitions,
+  graph discovery, prompt assembly, per-stage Pi sessions, tool ceilings, and
+  schema-validated control output. The CF spine is durability plumbing.
 - **Non-PR outcomes + workflow inputs + awaiting-input** — terminal-stage
   `outcome: pr|report|artifact`; report/artifact park as
   awaiting-acceptance with Accept/Request-changes (revisions loop);
@@ -148,9 +147,9 @@ Status legend: ✅ shipped · ⏳ planned · 🅿️ tabled
   honors jira-done/accepted alongside pr-merged).
 - **GitHub read tools** — gh_pr/gh_ci/gh_issue/gh_search_code/gh_commits
   via a scoped /github proxy (GET allowlist; no self-completing actions).
-- **semindex** — @workhorse/semindex over Workers AI embeddings +
-  Vectorize; scripts/workflows/tools corpora; find_script + find_tool
-  sandbox tools; GET /find; reindex admin route. Verified live.
+- **AI Search registries** — separate scripts/workflows/tools corpora power
+  `find_script`, `find_tool`, `workhorse_find_workflow`, `GET /find`, and
+  `POST /admin/reindex-registries`.
 - **Web search plugin** — tavily/exa/brave chain behind /search +
   web_search tool (keys worker-side; SEARCH_PROVIDER picks the default).
 - **evals/** — evalite on vitest: workflow-validator eval (8/8 green,
@@ -462,9 +461,8 @@ durable step continuation belongs to Cloudflare Workflows.
      tools: assembleStageTools(ctx, allow) })`; harness bound to the
      ticket container; `session.prompt(prompt, { result: controlSchema })`
      → typed verdict the engine routes on.
-  4. OAuth: pi-ai natively detects `sk-ant-oat` — custodian token feeds
-     `registerProvider('anthropic', { apiKey })`; model chains become
-     provider registrations.
+  4. OAuth: RETIRED (2026-08) — the fleet runs opencode-go/deepseek-v4-flash
+     on a static `OPENCODE_API_KEY`; no custodian, no token store.
   5. Engine cutover — **FORK RESOLVED EMPIRICALLY (2026-07-22): PATH
      (a).** Run a flue in-process harness INSIDE the existing
      `TicketWorkflow.step.do()`; keep the engine (spec interpreter) + CF

@@ -4,7 +4,6 @@
   "floors": {
     "evals": 100,
     "packages/api": 100,
-    "packages/semindex": 100,
     "packages/workflow": 100,
     "plugins/aft": 100,
     "plugins/browser": 100,
@@ -20,7 +19,7 @@
     "plugins/tickets": 100,
     "plugins/todo": 100,
     "ui": 87.2,
-    "worker": 88.5,
+    "worker": 90,
     "packages/test-utils": 100,
     "packages/auth": 100,
     "packages/db": 98.2,
@@ -30,6 +29,8 @@
     "packages/intake": 100,
     "packages/sandbox": 100,
     "packages/server": 100,
-    "packages/o11y": 100
+    "packages/o11y": 100,
+    "packages/pi": 100,
+    "plugins/sourcefed": 100
   }
 }

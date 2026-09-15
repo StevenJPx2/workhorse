@@ -1,7 +1,6 @@
 // Master-gated registries: agent blocks + workflows (user data, not core
-// code) + the custodian token push + admin maintenance.
+// code) + admin maintenance.
 
-import { modelToken } from "@workhorse/auth";
 import { json, type Route } from "../router";
 
 export const registryRoutes: Route[] = [
@@ -9,12 +8,38 @@ export const registryRoutes: Route[] = [
   // POST /admin/backfill-d1 is gone: it was a one-time KV→D1 import that has
   // already run, and it was the highest-complexity function in the old db layer.
   {
-    method: "POST",
-    path: "/admin/reindex-semindex",
+    // Ops visibility: what a registries corpus instance actually holds.
+    method: "GET",
+    path: "/admin/registries",
     auth: "master",
-     handler: async ({ env, workflows }) => {
-       const { reindexAll } = await import("../semindex");
-       return json(await reindexAll(env, workflows));
+    // fallow-ignore-next-line complexity
+    handler: async ({ env, url }) => {
+      const raw = url.searchParams.get("corpus") ?? "scripts";
+      if (raw !== "scripts" && raw !== "workflows" && raw !== "tools") {
+        return json({ error: "corpus must be scripts|workflows|tools" }, 400);
+      }
+      const kind = raw as "scripts" | "workflows" | "tools";
+      const { registriesInstance } = await import("../aisearch");
+      const inst = await registriesInstance(env, kind);
+      if (!inst) return json({ error: "AI_SEARCH unavailable" }, 503);
+      const [stats, list] = await Promise.allSettled([inst.stats(), inst.items.list()]);
+      const items = list.status === "fulfilled" ? (list.value as { result?: Array<{ key?: string; name?: string }> }).result : null;
+      return json({
+        stats: stats.status === "fulfilled" ? stats.value : String(stats.reason),
+        items: items ? items.map((i) => i.key ?? i.name ?? "?") : list.status === "rejected" ? String(list.reason) : "no items",
+      });
+    },
+  },
+  {
+    // Rebuild the AI Search registries corpora (scripts from D1, workflows
+    // from the catalog, tools from the static catalog). Runs upserts with
+    // uploadAndPoll so the corpus is searchable when the route returns.
+    method: "POST",
+    path: "/admin/reindex-registries",
+    auth: "master",
+    handler: async ({ env, workflows }) => {
+      const { reindexAll } = await import("../aisearch");
+      return json(await reindexAll(env, workflows));
     },
   },
 
@@ -81,37 +106,15 @@ export const registryRoutes: Route[] = [
     },
   },
 
-  // ---- custodian token push ----
-  {
-    method: "POST",
-    path: "/token",
-    auth: "master",
-    async handler({ request, env }) {
-      const { access, expires } = (await request.json()) as { access: string; expires: number };
-      const r = await modelToken(env).write({ access, expires });
-      if (!r.ok) return json({ error: r.error }, 400);
-      return json({ ok: true, expires });
-    },
-  },
-  {
-    // Credential health — freshness of the custodian OAuth token, never the
-    // token itself. Powers the UI's model-credential tile so an expired token
-    // (which silently 401s every run) is visible instead of a mystery.
-    method: "GET",
-    path: "/token",
-    auth: "master",
-    handler: async ({ env }) => json(await modelToken(env).health()),
-  },
-
   // ---- editor metadata (models + tool catalog for UI dropdowns) ----
   {
     method: "GET",
     path: "/meta/editor",
     auth: "master",
     async handler({ env: _env }) {
-      const { TOOL_CATALOG } = await import("../semindex");
-      // Models offered in the dispatch picker (primary → cheaper fallbacks).
-      const models = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-1"];
+      const { TOOL_CATALOG } = await import("../aisearch");
+      // ONE model plane: opencode-go / deepseek-v4-flash, fleet-wide.
+      const models = ["deepseek-v4-flash"];
       return json({
         models,
         tools: TOOL_CATALOG.map((t) => ({

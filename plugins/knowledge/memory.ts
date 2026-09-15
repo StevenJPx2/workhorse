@@ -122,14 +122,9 @@ export async function searchMemory(env: Env, repo: string, query_: string, limit
     limit,
     // Scoped by BOTH kind and repo. Without the repo filter another project's
     // conventions would surface as this one's — the worst failure this plane can
-    // have, because the answer looks authoritative.
-    filters: {
-      type: "and",
-      filters: [
-        { type: "eq", key: "kind", value: "memory" },
-        { type: "eq", key: "repo", value: repoSlug(repo) },
-      ],
-    },
+    // have, because the answer looks authoritative. AI Search accepts the
+    // metadata filter as a plain field/value map.
+    filters: { kind: "memory", repo: repoSlug(repo) },
     maxChars: 2000,
   });
 

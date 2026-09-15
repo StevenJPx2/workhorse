@@ -6,7 +6,6 @@
 
 import { db } from "@workhorse/db";
 import type { AttachmentProvider, Core, Env, TicketParams, TicketRecord } from "@workhorse/api";
-import { START_RUNWAY_MS, modelToken } from "@workhorse/auth";
 import { parseRefs, recordRefUse } from "./refs";
 
 /** Attachment providers contributed by plugins, keyed by kind. */
@@ -138,17 +137,6 @@ export async function fileTicket(
   const repo = resolveRepo(body);
   if (!repo || !body.prompt) {
     return { ok: false, error: "repo, prompt required", status: 400 };
-  }
-
-  if (!body.accessToken) {
-    // Fall back to the custodian-pushed token, requiring enough runway to START
-    // a run. Stages re-read the token every turn, so mid-run rotation is the
-    // custodian's job — this gate only refuses to begin on fumes.
-    const access = await modelToken(env).usable(START_RUNWAY_MS);
-    if (!access) {
-      return { ok: false, error: "no usable access token (custodian push missing or stale?)", status: 503 };
-    }
-    body.accessToken = access;
   }
 
   body.prompt = await withEnrichableContext(providers, env, body.prompt, body.attachments);

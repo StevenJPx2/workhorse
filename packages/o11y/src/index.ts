@@ -12,3 +12,5 @@
 export { initLogging, log } from "./logger";
 export type { StageEvent, TicketEvent } from "./events";
 export { stageEvent, ticketEvent } from "./events";
+export { withSpan } from "./span";
+export type { SpanLike, TracingLike } from "./span";

@@ -18,6 +18,8 @@ let pluginRoute: { auth: string; handler: ReturnType<typeof vi.fn> } | undefined
 const deps = {
   core: () => ({}) as never,
   attachmentProviders: () => new Map(),
+  assembleAllTools: () => [],
+  assembleChatExtensions: () => [],
   assembleChatTools: () => [],
   pluginFor: () => undefined,
   intake: {} as never,

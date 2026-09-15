@@ -1,8 +1,8 @@
 // Build-time sandbox installer: writes the Pi home settings.json inside the
 // Docker build.
 //
-// Under the flue-first engine, agent loops run in the Worker (not as Pi
-// subprocesses), so there are NO sandbox-scanned tool extensions anymore —
+// Agent loops run in the Worker (not as Pi subprocesses), so there are NO
+// sandbox-scanned tool extensions anymore —
 // plugin tools live worker-side in plugins/<name>/tools/ and reach the
 // container over the sandbox handle. The remaining Pi packages (auth, magic
 // aft-pi) are baked via pi.json for any residual Pi tooling.

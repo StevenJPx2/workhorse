@@ -27,25 +27,6 @@ export function sandboxDriver(env: Env, sandboxId: string): Driver {
 }
 
 
-/** Write the short-lived OAuth access token into the sandbox's Pi home. */
-export async function injectAuth(env: Env, sandboxId: string, accessToken: string) {
-  const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
-  const auth: Record<string, unknown> = {
-    anthropic: {
-      type: "oauth",
-      access: accessToken,
-      refresh: "",
-      // Pi only checks expiry locally; real expiry is enforced server-side.
-      expires: Date.now() + 4 * 3600 * 1000,
-    },
-  };
-  // OpenCode free models as fallback when Anthropic rate limits.
-  if (env.OPENCODE_API_KEY) {
-    auth["opencode"] = { type: "api_key", key: env.OPENCODE_API_KEY };
-  }
-  await sandbox.writeFile("/root/.pi/agent/auth.json", JSON.stringify(auth));
-}
-
 /**
  * Write the browser plane's callback config into the sandbox: the Worker's
  * own public URL + the SCOPED browser token (never the master token). The
@@ -285,13 +266,14 @@ export async function checkoutTicketBranch(
  * Worker-held GitHub token (never persisted in the sandbox — used inline
  * in the push URL for a single command). Returns branch + full diff.
  */
+// fallow-ignore-next-line complexity
 export async function deliverBranch(
   env: Env,
   sandboxId: string,
   ticketId: string,
   repo: string,
   title: string,
-): Promise<{ branch: string; diff: string; pushed: boolean }> {
+): Promise<{ branch: string; diff: string; pushed: boolean; reason?: string }> {
   const sandbox = getSandbox(env.Sandbox, sandboxId, { sleepAfter: "2m" });
   const branch = `workhorse/${ticketId}`;
   const m = repo.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
@@ -313,10 +295,24 @@ export async function deliverBranch(
   }
   const diff = commit.stdout.replace(/^.*?diff --git/s, "diff --git");
 
+  // Push with the exit code PRESERVED: piping through `tail` would mask git's
+  // status (the pipe's exit code is tail's), turning a rejected push into a
+  // "success" that later fails PR creation with GitHub's opaque
+  // "Validation Failed". Capture stderr separately so the real reason lands
+  // in the ticket error.
   const push = await sandbox.exec(
-    `cd /workspace/repo && git push -f ${JSON.stringify(pushUrl)} ${branch}:${branch} 2>&1 | tail -3`,
+    `cd /workspace/repo && { git push -f ${JSON.stringify(pushUrl)} ${branch}:${branch} 2>&1; echo "__EXIT:$?__"; } | tail -4`,
     { timeout: 120_000 },
   );
-  return { branch, diff, pushed: push.exitCode === 0 };
+  const pushOut = (push.stdout ?? "") + (push.stderr ?? "");
+  const exitMatch = pushOut.match(/__EXIT:(\d+)__/);
+  const gitExit = exitMatch ? Number(exitMatch[1]) : push.exitCode;
+  if (gitExit !== 0) {
+    // Git echoes the authenticated URL (token included) on transport errors —
+    // strip the token before the reason lands in the ticket/logs.
+    const redacted = pushOut.replace(new RegExp(env.GITHUB_TOKEN, "g"), "***").replace(/__EXIT:\d+__/, "").slice(-400);
+    return { branch, diff, pushed: false, reason: redacted };
+  }
+  return { branch, diff, pushed: true };
 }
 

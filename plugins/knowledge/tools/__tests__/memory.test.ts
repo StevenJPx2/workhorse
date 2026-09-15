@@ -20,8 +20,8 @@ const search = (input: Record<string, unknown>, ai: ReturnType<typeof fakeAiSear
 const hit = (over: Partial<FakeSearchChunk> = {}): FakeSearchChunk => ({
   filename: "mem/acme/widgets/2026-07-29-abc.md",
   score: 0.9,
-  content: [{ text: "Releases go through scripts/release.sh" }],
-  attributes: { file: { kind: "memory", repo: "acme/widgets", category: "PROJECT_RULES", ticketId: "t0" } },
+  text: "Releases go through scripts/release.sh",
+  item: { key: "mem/acme/widgets/2026-07-29-abc.md", metadata: { kind: "memory", repo: "acme/widgets", category: "PROJECT_RULES", ticketId: "t0" } },
   ...over,
 });
 
@@ -135,7 +135,7 @@ describe("memory_search", () => {
   });
 
   it("omits provenance when absent rather than printing undefined", async () => {
-    const ai = fakeAiSearch({ results: [hit({ attributes: { file: { category: "NAMING" } } })] });
+    const ai = fakeAiSearch({ results: [hit({ item: { metadata: { category: "NAMING" } } })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).not.toContain("undefined");
@@ -172,14 +172,14 @@ describe("memory_search", () => {
   });
 
   it("truncates a long memory", async () => {
-    const ai = fakeAiSearch({ results: [hit({ content: [{ text: "z".repeat(5000) }] })] });
+    const ai = fakeAiSearch({ results: [hit({ text: "z".repeat(5000) })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output.length).toBeLessThan(2200);
   });
 
   it("labels a memory with no category as UNKNOWN", async () => {
-    const ai = fakeAiSearch({ results: [hit({ attributes: { file: {} } })] });
+    const ai = fakeAiSearch({ results: [hit({ item: { metadata: {} } })] });
     const { output } = await search({ query: "x" }, ai);
 
     expect(output).toContain("UNKNOWN");

@@ -1,6 +1,6 @@
 // Shared GitHub read surface — the allowlist + fetch used by BOTH the
 // /github proxy route (stateless/legacy callers) and the gh_* stage tools
-// (flue engine, worker-side). Read endpoints only: the system talks to
+// (pi engine, worker-side). Read endpoints only: the system talks to
 // GitHub for writes (branch, PR, replies); the agent works in the repo.
 // That separation keeps "the agent can never self-complete" true.
 

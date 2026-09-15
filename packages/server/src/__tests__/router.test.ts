@@ -41,6 +41,8 @@ const deps: ServerDeps = {
   attachmentProviders: () => {
     throw new Error("dispatch must not read attachment providers");
   },
+  assembleAllTools: () => [],
+  assembleChatExtensions: () => [],
   assembleChatTools: () => {
     throw new Error("dispatch must not assemble chat tools");
   },

@@ -9,7 +9,7 @@
 // strictly validated at the door, listing reads the DB, never the
 // filesystem. This plugin owns the two REGISTRY verbs — write_script (save)
 // and list_scripts (inventory). EXECUTION (run_script) is an engine built-in
-// (worker/src/flue-session.ts), not a plugin tool: running a saved TS program
+// (worker/src/pi-session.ts), not a plugin tool: running a saved TS program
 // requires the stage's authentic bridge props (allowlist/dir/writeAllow),
 // which only the stage session holds — a plugin ToolContext can't reach them.
 //

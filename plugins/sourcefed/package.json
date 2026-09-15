@@ -1,0 +1,24 @@
+{
+  "name": "@workhorse/sourcefed",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SourceFed channel plugin: the host daemon's event bridge (monitors \u2192 tickets \u2192 worker). Receives DaemonEventFrames over the /webhooks/sourcefed endpoint, verifies a shared secret, appends ticket events (waking parked runs) and fires monitor triggers.",
+  "exports": {
+    ".": "./plugin.ts",
+    "./tools": "./tools/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@workhorse/api": "workspace:*",
+    "@workhorse/events": "workspace:*",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2",
+    "@workhorse/test-utils": "workspace:*"
+  }
+}

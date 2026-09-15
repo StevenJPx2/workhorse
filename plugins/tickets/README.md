@@ -11,7 +11,7 @@ Ticket CRUD, the attachment surface, and the fleet-chat tools.
 | `workhorse_list_tickets` | chat | Lists the fleet. |
 | `workhorse_ticket_status` | chat | Reports one ticket. |
 | `workhorse_ticket_diff` | chat | Shows a run's diff. |
-| `workhorse_find_workflow` | chat | Ranks workflows for a task through semindex. |
+| `workhorse_find_workflow` | chat | Ranks workflows for a task through the AI Search registry. |
 
 The `workhorse_*` tools belong to the chat surface. No stage allowlist includes
 them, which is what stops an agent from filing tickets for itself.

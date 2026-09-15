@@ -10,7 +10,7 @@ Agent self-extension: a saved program that a later run replays.
 | `write_script` | Saves a composed pipeline for future runs. |
 
 `run_script` is not here. Execution is an engine builtin in
-`worker/src/flue-session.ts`. Replaying a saved Code Mode program needs the stage's
+`worker/src/pi-session.ts`. Replaying a saved Code Mode program needs the stage's
 authentic bridge props, and a plugin tool context cannot reach them.
 
 ## Routes

@@ -10,16 +10,9 @@ export interface TicketParams {
   /** The task description given to the agent. */
   prompt: string;
   /**
-   * Short-lived Anthropic OAuth ACCESS token minted by the dispatcher
-   * (a machine that holds the auto-refreshing auth.json — the MacBook or
-   * the laptop). Never a refresh token. Runs are far shorter than the
-   * ~5h token lifetime.
-   */
-  accessToken: string;
-  /**
    * Optional model override for the run (evals: compare model X vs Y on
-   * the same corpus). Patched into the workspace copy of the workflow
-   * spec's defaults.model at prepare; per-stage spec models still win.
+   * the same corpus). Defaults to deepseek-v4-flash (opencode-go) when
+   * unset.
    */
   model?: string;
   /**
@@ -123,26 +116,16 @@ export interface Env {
    * and dependency caches (depcache/<owner/repo>/<lockfile-hash>.tar.zst).
    */
   BLOBS: R2Bucket;
-  /** Workers AI (embeddings for the semindex toolkit). */
-  AI: Ai;
-  /** Vectorize: one index, namespaced per corpus (scripts/workflows/tools). */
-  VECTORIZE: VectorizeIndex;
   TICKET_WF: Workflow;
   SPIKE_TOKEN: string;
   GITHUB_TOKEN: string;
   GITHUB_WEBHOOK_SECRET: string;
-  /** OpenCode API key (free models via opencode-zen + opencode-go as fallback when Anthropic rate limits). */
+  /** Shared secret for the SourceFed daemon bridge (X-SourceFed-Secret). */
+  SOURCEFED_WEBHOOK_SECRET?: string;
+  /** Host SourceFed daemon base URL (the monitors RPC target). */
+  SOURCEFED_DAEMON_URL?: string;
+  /** OpenCode subscription key for the single opencode-go model plane. */
   OPENCODE_API_KEY?: string;
-  /**
-   * Flue-stages cutover flag. When a workflow name appears in this
-   * comma-separated list (or the value is "all"), that workflow's stages
-   * run via the in-process flue harness (flueStageRunner) instead of the
-   * pi subprocess. Unset/absent = pi path (default). The engine's routing/
-   * loop/collect machinery is identical either way — only how a stage
-   * session runs changes. Rollout guard: keep the fleet on pi while one
-   * seeded workflow is validated on flue.
-   */
-  FLUE_STAGES?: string;
   /**
    * Scoped token for the /browser endpoint, injected into ticket sandboxes
    * so untrusted repo code never sees the master SPIKE_TOKEN. Worst case if

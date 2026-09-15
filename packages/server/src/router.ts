@@ -7,7 +7,7 @@
 //   scoped — sandbox callback token (untrusted repo code holds it) or master
 //   master — the fleet bearer (SPIKE_TOKEN)
 
-import type { AttachmentProvider, Core, Env, WorkhorseTool } from "@workhorse/api";
+import type { AgentExtension, AttachmentProvider, Core, Env, WorkhorseTool } from "@workhorse/api";
 import { type Auth, permits, type Tiers } from "@workhorse/auth";
 
 export type { Auth };
@@ -26,6 +26,10 @@ export interface ServerDeps {
   attachmentProviders: () => Map<string, AttachmentProvider>;
   /** Chat-surface tools across plugins. */
   assembleChatTools: (ctx: import("@workhorse/api").ToolContext) => WorkhorseTool[];
+  /** Every tool across plugins (chat ∪ stage, deduped) — for the MCP surface. */
+  assembleAllTools: (ctx: import("@workhorse/api").ToolContext) => WorkhorseTool[];
+  /** Agent extensions across plugins, for fleet chat sessions. */
+  assembleChatExtensions: (ctx: import("@workhorse/api").ToolContext) => AgentExtension[];
   /** One plugin by id — webhook routes dispatch to its verifier. */
   pluginFor: (id: string) => import("@workhorse/api").WorkhorsePlugin | undefined;
   /** The intake surface, bound to the same providers. */

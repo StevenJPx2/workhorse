@@ -55,6 +55,8 @@ const { ticketRoutes } = await import("../routes/tickets");
 const deps = {
   core: () => ({}) as never,
   attachmentProviders: () => new Map(),
+  assembleAllTools: () => [],
+  assembleChatExtensions: () => [],
   assembleChatTools: () => [],
   pluginFor: () => undefined,
   intake: { fileTicket, resolveAttachments } as never,

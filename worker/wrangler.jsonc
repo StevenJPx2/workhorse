@@ -1,7 +1,8 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "workhorse-sandbox",
-  "main": "src/index.ts",
+  "main": "dist/worker.mjs",
+  "no_bundle": true,
   "compatibility_date": "2026-03-27",
   // ctx.exports loopback bindings (for the Code Mode ToolBridge) are default
   // as of compat date 2025-11-17, so no explicit flag is needed.
@@ -10,7 +11,10 @@
   // the agent writes TS that chains tools in one sandboxed run).
   "worker_loaders": [{ "binding": "LOADER" }],
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
   },
   "triggers": {
     // Self-healing sweep: re-dispatch errored tickets with heal budget left.
@@ -41,7 +45,9 @@
   ],
   "vars": {
     // This Worker's own public URL, so ticket sandboxes can call POST /browser.
-    "SELF_URL": "https://workhorse-sandbox.stevenjpx2.workers.dev"
+    "SELF_URL": "https://workhorse-sandbox.stevenjpx2.workers.dev",
+    // Host SourceFed daemon — set when the daemon (M3d) is deployed.
+    "SOURCEFED_DAEMON_URL": ""
   },
   "durable_objects": {
     "bindings": [
@@ -68,17 +74,8 @@
       "bucket_name": "workhorse-blobs"
     }
   ],
-  // Semantic plane: Workers AI embeddings + one Vectorize index namespaced
-  // per corpus (scripts, workflows, tools) — the semindex toolkit.
-  "ai": {
-    "binding": "AI"
-  },
-  "vectorize": [
-    {
-      "binding": "VECTORIZE",
-      "index_name": "workhorse-semindex"
-    }
-  ],
+  // Semantic plane: AI Search (hybrid) hosts the registries corpora
+  // (scripts/workflows/tools) + fleet knowledge + per-repo memory.
   "d1_databases": [
     {
       "binding": "DB",

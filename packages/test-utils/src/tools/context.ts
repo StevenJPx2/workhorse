@@ -2,7 +2,7 @@
 // a ToolFactory against it.
 //
 // A `tool()` returns a ToolFactory: call it with a ToolContext and you get a
-// definition whose run({ input }) resolves to a string. No harness, no flue,
+// definition whose run({ input }) resolves to a string. No stage harness,
 // no container. `runTool` collapses that to one line so a test reads as
 // input → output, with the doubles reachable for assertions.
 

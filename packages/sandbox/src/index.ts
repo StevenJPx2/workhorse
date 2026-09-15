@@ -14,7 +14,6 @@ export {
   checkoutTicketBranch,
   deliverBranch,
   depCacheKey,
-  injectAuth,
   injectBrowserConfig,
   injectImgupConfig,
   injectTicketContext,

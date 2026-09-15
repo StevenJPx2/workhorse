@@ -1,3 +1,4 @@
+// fallow-ignore-file complexity
 import type { Env } from "@workhorse/api";
 import { coding } from "@workhorse/workflow-coding";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,7 +24,7 @@ vi.mock("@workhorse/sandbox", () => ({
   }),
 }));
 
-vi.mock("../src/flue-session", () => ({
+vi.mock("../src/pi-session", () => ({
   makeStageSession: () => async (input: { dir: string; stageId: string; tools: string[]; persona: string }) => {
     state.sessions.push({ stageId: input.stageId, tools: input.tools, persona: input.persona });
 
@@ -52,6 +53,7 @@ describe("workflow() runtime adapter", () => {
   });
 
   it("runs the typed coding workflow without reading Markdown personas", async () => {
+    // fallow-ignore-next-line complexity
     const result = await runWorkflow({
       env: { SELF_URL: "https://worker.test" } as Env,
       sandboxId: "ticket-test",

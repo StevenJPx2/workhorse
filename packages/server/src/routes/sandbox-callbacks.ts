@@ -3,22 +3,23 @@
 // routes expose exactly what the tools need, nothing else.
 
 import { json, type Route } from "../router";
+import { withSpan } from "@workhorse/o11y";
 
 export const sandboxCallbackRoutes: Route[] = [
   {
-    // Semantic find: sandbox tools query the semindex corpora.
+    // Semantic find: sandbox tools query the AI Search registries.
     method: "GET",
     path: "/find",
     auth: "scoped",
-    async handler({ env, url }) {
+    async handler({ env, url, ctx }) {
       const corpus = url.searchParams.get("corpus") ?? "";
       const q = url.searchParams.get("q") ?? "";
       if (!q.trim()) return json({ error: "q required" }, 400);
-      const { scriptIndex, workflowIndex, toolIndex } = await import("../semindex");
-      const index = { scripts: scriptIndex, workflows: workflowIndex, tools: toolIndex }[corpus];
-      if (!index) return json({ error: "corpus must be scripts|workflows|tools" }, 400);
+      const kind = { scripts: "scripts", workflows: "workflows", tools: "tools" }[corpus] as import("../aisearch").RegistryCorpus | undefined;
+      if (!kind) return json({ error: "corpus must be scripts|workflows|tools" }, 400);
       const topK = Math.min(Number(url.searchParams.get("topK") ?? 5) || 5, 20);
-      return json({ hits: await index.query(env, q, { topK }) });
+      const { queryRegistry } = await import("../aisearch");
+      return json({ hits: await withSpan(ctx, "semantic_find", { corpus, query: q }, () => queryRegistry(env, kind, q, topK)) });
     },
   },
   {

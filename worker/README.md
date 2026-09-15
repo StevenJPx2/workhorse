@@ -15,7 +15,7 @@ This is the only package that imports concrete plugins. Everything else depends 
 | `intake.ts` | Binds the intake surface to the registry's attachment providers. |
 | `ticket-workflow.ts` | The durable Workflow: dispatch, drive, park, deliver. |
 | `workflow-run.ts` | The concrete workflow context that runs stages. |
-| `flue-session.ts` | Stage session construction and the engine builtins. |
+| `pi-session.ts` | Stage session construction, capacity backoff, and engine builtins. |
 | `codemode.ts` | The `ToolBridge` export the platform constructs by name. |
 
 ## Deployment
@@ -43,7 +43,9 @@ deploy cleared the recorded tag, after which wrangler tried to re-apply
 `new_sqlite_classes` for a class that already had live objects, which Cloudflare
 rejects.
 
-`freshToken` only reads. An external custodian keeps the model token fresh.
+Model plane is ONE static key: `OPENCODE_API_KEY` (opencode-go subscription,
+deepseek-v4-flash). There is no custodian and no token push — a 401 is a
+config defect that fails the stage rather than waiting for a refresh.
 
 ## Tests
 

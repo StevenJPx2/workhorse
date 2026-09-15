@@ -43,11 +43,15 @@ export function fakeKV(seed: Record<string, string> = {}): FakeKV {
 
 /** One AI Search result chunk, in the shape the API actually returns. */
 export interface FakeSearchChunk {
-  filename?: string;
+  id?: string;
+  type?: string;
   score?: number;
-  /** Chunk text arrives as an array of parts, not a bare string. */
-  content?: Array<{ text?: string }>;
-  attributes?: { file?: Record<string, unknown> };
+  /** Chunk text arrives as a bare string (current API), parts were legacy. */
+  text?: string | Array<{ text?: string }>;
+  item?: {
+    key?: string;
+    metadata?: Record<string, unknown>;
+  };
 }
 
 export interface FakeAiSearchOptions {
@@ -104,9 +108,14 @@ export function fakeAiSearch(options: FakeAiSearchOptions = {}): FakeAiSearch {
       return { id: "fake" };
     },
     async search(args: { query: string; ai_search_options?: unknown; filters?: unknown }) {
-      queries.push({ query: args.query, options: args.ai_search_options, filters: args.filters });
+      const retrieval = (args.ai_search_options as { retrieval?: { filters?: unknown } } | undefined)?.retrieval;
+      queries.push({
+        query: args.query,
+        options: args.ai_search_options,
+        filters: retrieval?.filters ?? args.filters,
+      });
       if (options.searchThrows) throw new Error("search backend unavailable");
-      return { data: options.results ?? [] };
+      return { query_kind: "text", search_query: args.query, chunks: options.results ?? [] };
     },
     // The write path, matching the real two-level shape (instance.items.upload).
     items: {
@@ -172,12 +181,11 @@ export function fakeEnv(options: FakeEnvOptions = {}): Env {
     LOADER: unstubbed("LOADER"),
     DB: unstubbed("DB"),
     BLOBS: unstubbed("BLOBS"),
-    AI: unstubbed("AI"),
-    VECTORIZE: unstubbed("VECTORIZE"),
     TICKET_WF: unstubbed("TICKET_WF"),
     SPIKE_TOKEN: "test-spike-token",
     GITHUB_TOKEN: "test-github-token",
     GITHUB_WEBHOOK_SECRET: "test-webhook-secret",
+    OPENCODE_API_KEY: "test-opencode-key",
   };
 
   return { ...base, ...overrides } as unknown as Env;

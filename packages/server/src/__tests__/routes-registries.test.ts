@@ -1,8 +1,4 @@
-// Registry routes: agent blocks, workflow defs, and the model-token push.
-//
-// The token route is the one that matters — the homelab custodian POSTs the
-// fleet's short-lived Anthropic access token here every 30 minutes, and a
-// malformed value accepted silently would break every run until someone noticed.
+// Registry routes: agent blocks, workflow defs, and editor metadata.
 
 import { fakeEnv } from "@workhorse/test-utils/tools";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,6 +13,8 @@ const { registryRoutes } = await import("../routes/registries");
 const deps = {
   core: () => ({}) as never,
   attachmentProviders: () => new Map(),
+  assembleAllTools: () => [],
+  assembleChatExtensions: () => [],
   assembleChatTools: () => [],
   pluginFor: () => undefined,
   intake: {} as never,
@@ -44,45 +42,6 @@ async function call(method: string, path: string, init: RequestInit = {}, env = 
 }
 
 beforeEach(() => vi.clearAllMocks());
-
-describe("POST /token", () => {
-  const push = (body: unknown, env = fakeEnv()) =>
-    call("POST", "/token", { body: JSON.stringify(body) }, env);
-
-  it("stores a valid OAuth access token", async () => {
-    const expires = Date.now() + 8 * 3600_000;
-    const r = await push({ access: "sk-ant-oat01-abc", expires });
-
-    expect(r.body).toMatchObject({ ok: true, expires });
-    expect(await r.env.TICKETS.get("auth:access")).toContain("sk-ant-oat01-abc");
-  });
-
-  it("REJECTS anything that is not an oauth access token", async () => {
-    // The custodian pushes an oat01 token. An api key or a refresh token here
-    // would be stored and then fail on every model call instead of at the push.
-    for (const access of ["sk-ant-api03-xyz", "not-a-token", ""]) {
-      const r = await push({ access, expires: Date.now() });
-      expect(r.status).toBe(400);
-    }
-  });
-
-  it("does not store a rejected token", async () => {
-    const env = fakeEnv();
-    await push({ access: "nope", expires: Date.now() }, env);
-
-    expect(await env.TICKETS.get("auth:access")).toBeNull();
-  });
-
-  it("overwrites the previous token", async () => {
-    const env = fakeEnv();
-    await push({ access: "sk-ant-oat01-old", expires: 1 }, env);
-    await push({ access: "sk-ant-oat01-new", expires: 2 }, env);
-
-    const stored = (await env.TICKETS.get("auth:access")) ?? "";
-    expect(stored).toContain("sk-ant-oat01-new");
-    expect(stored).not.toContain("old");
-  });
-});
 
 describe("GET /agents", () => {
   it("lists agent blocks", async () => {

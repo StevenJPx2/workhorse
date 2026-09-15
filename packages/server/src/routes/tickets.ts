@@ -5,6 +5,7 @@ import { appendEvents, appendSteer, wakeTicket } from "@workhorse/events";
 import { db } from "@workhorse/db";
 import type { Env, TicketParams, TicketRecord } from "@workhorse/api";
 import { json, type Route } from "../router";
+import { withSpan } from "@workhorse/o11y";
 
 /**
  * Load a ticket and assert its status, so the "404 then 409" preamble is written
@@ -60,9 +61,11 @@ export const ticketRoutes: Route[] = [
     method: "POST",
     path: "/tickets",
     auth: "master",
-    async handler({ request, env, url, intake }) {
+    async handler({ request, env, url, ctx, intake }) {
       const body = (await request.json()) as Partial<TicketParams>;
-      const r = await intake.fileTicket(env, { ...body, selfOrigin: url.origin });
+      const r = await withSpan(ctx, "file_ticket", { repo: body.repo ?? "" }, () =>
+        intake.fileTicket(env, { ...body, selfOrigin: url.origin }),
+      );
       if (!r.ok) return json({ error: r.error }, r.status);
       return json({ ok: true, ticket: r.ticket });
     },
@@ -176,7 +179,7 @@ export const ticketRoutes: Route[] = [
       if (!answers) return json({ error: "answers required" }, 400);
       // Awaiting-input parks are a deferred def-path feature — no def workflow
       // raises one yet, so this is currently unreachable (guard above 409s).
-      return json({ error: "operator-input parks are not supported on the flue-first path yet" }, 501);
+      return json({ error: "operator-input parks are not supported on the pi-first path yet" }, 501);
     },
   },
   {
@@ -267,9 +270,8 @@ export const ticketRoutes: Route[] = [
       if (!rec?.runId) return json({ output: null, note: "no run yet" });
 
       try {
-        // Flue-first: the stage session runs in the Worker, so there is no on-disk
-        // event stream. The live: snapshot is the signal; the stage's analysis.md
-        // is the readable output.
+        // Pi sessions run in the Worker, so there is no on-disk event stream. The
+        // live: snapshot is the signal; the stage's analysis.md is the readable output.
         const live = await env.TICKETS.get(`live:${match[1]}`);
         const snap = live ? (JSON.parse(live) as { phase?: string; note?: string }) : {};
         const stageId = snap.phase && /^[\w-]+$/.test(snap.phase) ? snap.phase : null;

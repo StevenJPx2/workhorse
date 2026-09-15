@@ -1,0 +1,19 @@
+{
+  "name": "@workhorse/spike-computer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "M5 spike: does @cloudflare/computer's workspace (durable VFS in a DO + isolate shell) cover Workhorse's sandbox needs? Scratch worker, NOT part of the fleet.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/computer": "0.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260714.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.114.0"
+  }
+}

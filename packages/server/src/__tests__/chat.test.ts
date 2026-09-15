@@ -1,69 +1,62 @@
 // Fleet chat's guard rails.
 //
-// The harness itself belongs to flue, so what's worth testing here is everything
-// AROUND it: the credential gate, prompt rendering, and turning a thrown harness
-// error into an HTTP status instead of a 500 with a stack trace.
+// The agent loop itself belongs to pi, so what's worth testing here is
+// everything AROUND it: the credential gate, prompt rendering, and turning a
+// thrown session error into an HTTP status instead of a 500 with a stack trace.
 
 import { fakeCore, fakeEnv } from "@workhorse/test-utils/tools";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const usable = vi.fn<() => Promise<string | null>>(async () => "sk-ant-oat01-fresh");
-const prompt = vi.fn<(p: string) => Promise<{ text?: string }>>(async () => ({ text: "a reply" }));
-const initializeRootHarness = vi.fn(async () => ({ session: async () => ({ prompt }) }));
-
-vi.mock("@workhorse/auth", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@workhorse/auth")>()),
-  modelToken: () => ({ usable }),
+// The agent's last turn: the reply is read from the session transcript
+// (pi's prompt resolves to void), so the mock's state mirrors the prompt.
+let lastReply: string | undefined = "a reply";
+const prompt = vi.fn<(p: string) => Promise<{ text?: string }>>(async () => ({ text: lastReply }));
+const piSessionMock = vi.fn(async () => ({
+  prompt,
+  dispose: vi.fn(),
+  state: {
+    get messages() {
+      return [{ role: "assistant", content: lastReply ?? "" }];
+    },
+  },
 }));
+
 // The whole package, not just the driver: its barrel also exports codemode,
 // which imports `cloudflare:workers` — unavailable outside workerd.
 vi.mock("@workhorse/sandbox", () => ({
   sandboxDriver: () => ({ exec: async () => ({ exitCode: 0, stdout: "", stderr: "" }) }),
 }));
 vi.mock("@cloudflare/sandbox", () => ({ getSandbox: () => ({}) }));
-vi.mock("@flue/runtime", () => ({ defineAgent: (f: unknown) => f, registerProvider: vi.fn() }));
-vi.mock("@flue/runtime/cloudflare", () => ({ cloudflareSandbox: () => ({}) }));
-vi.mock("@flue/runtime/internal", () => ({
-  createFlueContext: () => ({ initializeRootHarness }),
-  resolveModel: (m: string) => m,
+// The pi adapter is mocked at the module boundary: a real piSession would
+// spin up a live model runtime and call the provider with the fake key.
+vi.mock("@workhorse/pi", () => ({
+  piSession: piSessionMock,
+  toPiTool: (t: unknown) => t,
 }));
 
 const { runFleetChat } = await import("../chat");
 
 const env = fakeEnv();
 const core = fakeCore();
-const chat = (messages = [{ role: "user", content: "how many tickets are open?" }]) =>
+const chat = (messages = [{ role: "user", content: "how many tickets are open?" }], e = env) =>
   // Chat tools are injected now (they read the plugin registry), so the suite
   // supplies an empty surface rather than mocking a module.
-  runFleetChat(env, core, "https://workhorse.test", messages, () => []);
+  runFleetChat(e, core, "https://workhorse.test", messages, () => [], () => []);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  usable.mockResolvedValue("sk-ant-oat01-fresh");
   prompt.mockResolvedValue({ text: "a reply" });
-  initializeRootHarness.mockResolvedValue({ session: async () => ({ prompt }) });
 });
 
-describe("credential gate", () => {
-  it("refuses with 503 when no usable token exists", async () => {
-    usable.mockResolvedValue(null);
-
-    expect(await chat()).toMatchObject({ ok: false, status: 503 });
+describe("key gate", () => {
+  it("refuses with 503 when OPENCODE_API_KEY is unset", async () => {
+    expect(await chat(undefined, { ...env, OPENCODE_API_KEY: undefined })).toMatchObject({ ok: false, status: 503 });
   });
 
-  it("does not start a harness without a token", async () => {
-    usable.mockResolvedValue(null);
-    await chat();
+  it("does not start a harness without the key", async () => {
+    await chat(undefined, { ...env, OPENCODE_API_KEY: undefined });
 
-    expect(initializeRootHarness).not.toHaveBeenCalled();
-  });
-
-  it("requires START runway, not stage runway", async () => {
-    await chat();
-
-    // Chat is a fresh interaction, so it should refuse to begin on fumes rather
-    // than start and die mid-reply.
-    expect(usable).toHaveBeenCalledWith(10 * 60 * 1000);
+    expect(piSessionMock).not.toHaveBeenCalled();
   });
 });
 
@@ -73,13 +66,13 @@ describe("replies", () => {
   });
 
   it("trims the reply", async () => {
-    prompt.mockResolvedValue({ text: "  padded  \n" });
+    lastReply = "  padded  \n";
 
     expect(await chat()).toEqual({ ok: true, reply: "padded" });
   });
 
   it("treats an empty reply as 502, not success", async () => {
-    prompt.mockResolvedValue({ text: "   " });
+    lastReply = "   ";
 
     // An empty string would render as a blank chat bubble, which reads as the
     // fleet ignoring the operator.
@@ -87,7 +80,7 @@ describe("replies", () => {
   });
 
   it("treats a missing text field as 502", async () => {
-    prompt.mockResolvedValue({});
+    lastReply = undefined;
 
     expect(await chat()).toMatchObject({ ok: false, status: 502 });
   });
@@ -121,8 +114,8 @@ describe("prompt rendering", () => {
 });
 
 describe("failure handling", () => {
-  it("turns a harness failure into a 500 with a bounded message", async () => {
-    initializeRootHarness.mockRejectedValue(new Error("x".repeat(2000)));
+  it("turns a session failure into a 500 with a bounded message", async () => {
+    piSessionMock.mockRejectedValueOnce(new Error("x".repeat(2000)));
     const r = await chat();
 
     expect(r).toMatchObject({ ok: false, status: 500 });

@@ -93,8 +93,8 @@ describe("bash", () => {
   });
 
   it("reports the exit code on failure instead of throwing", async () => {
-    const sandbox = fakeSandbox({ exec: { "bun test": { exitCode: 1, stdout: "2 failed", stderr: "" } } });
-    const { output } = await runTool(bash, { command: "bun test" }, { sandbox });
+    const sandbox = fakeSandbox({ exec: { "bun run test": { exitCode: 1, stdout: "2 failed", stderr: "" } } });
+    const { output } = await runTool(bash, { command: "bun run test" }, { sandbox });
 
     // A non-zero exit is information the agent must read, not an exception that
     // aborts the stage.

@@ -16,7 +16,7 @@ ARGUMENTS
 
 EXAMPLES
 
-  { command: "bun test" }
+  { command: "bun run test" }
   { command: "git add -A && git diff --cached --stat" }
   { command: "bun run build", timeout: 300000 }
 

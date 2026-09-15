@@ -11,6 +11,7 @@ import type { Env } from "@workhorse/api";
 import { permits, resolveTiers } from "@workhorse/auth";
 import { dispatch, type Route, type ServerDeps } from "./router";
 import { miscRoutes } from "./routes/misc";
+import { mcpRoutes } from "./routes/mcp";
 import { registryRoutes } from "./routes/registries";
 import { sandboxCallbackRoutes } from "./routes/sandbox-callbacks";
 import { ticketRoutes } from "./routes/tickets";
@@ -29,7 +30,7 @@ export {
 export type { AgentBlock } from "./agents";
 
 export { runFleetChat } from "./chat";
-export { scriptIndex, toolIndex, workflowIndex } from "./semindex";
+export { queryRegistry, reindexAll, TOOL_CATALOG, upsertScriptDoc } from "./aisearch";
 export { toolContext } from "./tool-context";
 export { cronMatches, fireTrigger, listTriggers, renderTemplate, sweepCronTriggers, validateCron } from "./triggers";
 
@@ -38,6 +39,7 @@ const routes: Route[] = [
   ...webhookRoutes, // public (per-plugin signatures)
   ...sandboxCallbackRoutes, // scoped (find, depcache)
   ...registryRoutes, // master (admin, agents, workflows, token, meta)
+  ...mcpRoutes, // master (MCP streamable HTTP)
   ...ticketRoutes, // master (the fleet surface)
   ...triggerRoutes, // master registry + public secret-gated /fire
   ...miscRoutes, // master (chat, attachments/match, debug)

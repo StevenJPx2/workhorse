@@ -11,7 +11,8 @@ const scriptsGet = vi.fn<() => Promise<unknown>>(async () => null);
 const scriptsUpsert = vi.fn();
 const ticketsGet = vi.fn(async () => null);
 const ticketsList = vi.fn(async () => []);
-const indexUpsert = vi.fn();
+const scriptDocUpsert = vi.fn(async () => true);
+const findWorkflows = vi.fn(async () => []);
 
 vi.mock("@workhorse/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@workhorse/db")>()),
@@ -21,11 +22,11 @@ vi.mock("@workhorse/db", async (importOriginal) => ({
   }),
 }));
 
-// ONE mock for the package — semindex and chat both live here now, and a second
-// vi.mock of the same module silently replaces the first.
+// ONE mock for the package — registries + chat both live here now, and a
+// second vi.mock of the same module silently replaces the first.
 vi.mock("@workhorse/server", () => ({
-  scriptIndex: { upsert: indexUpsert },
-  workflowIndex: { query: async () => [] },
+  upsertScriptDoc: scriptDocUpsert,
+  queryRegistry: findWorkflows,
   runFleetChat: vi.fn(async () => ({ ok: true, reply: "hi" })),
 }));
 
@@ -115,7 +116,7 @@ describe("registerScript", () => {
   });
 
   it("keeps the registration when the semantic index fails", async () => {
-    indexUpsert.mockRejectedValue(new Error("Vectorize down"));
+    scriptDocUpsert.mockRejectedValueOnce(new Error("AI Search down"));
     const r = await core().registerScript(draft());
 
     // The index is a discovery nicety. Failing the write because it could not be
@@ -127,7 +128,7 @@ describe("registerScript", () => {
   it("indexes the stored script, not the raw draft", async () => {
     await core().registerScript(draft());
 
-    const indexed = (indexUpsert.mock.calls[0][1] as Array<{ updatedAt?: string }>)[0];
+    const indexed = scriptDocUpsert.mock.calls[0][1] as { updatedAt?: string };
     expect(indexed.updatedAt).toBeTruthy();
   });
 });

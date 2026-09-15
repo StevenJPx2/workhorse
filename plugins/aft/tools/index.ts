@@ -5,7 +5,7 @@
 //      whole-file only), so there was nothing to call.
 //   2. It was never in any workflow's tool allowlist, so it was unreachable.
 //   3. It would BYPASS the write gate. The builtin `edit`/`write` tools route
-//      through writeAllowed() in flue-session.ts, which enforces the stage's
+//      through writeAllowed() in pi-session.ts, which enforces the stage's
 //      writeAllow globs; an aft-side write happens inside the container and the
 //      worker never sees the path. Wiring it would have handed a read-only
 //      stage an ungated write path.

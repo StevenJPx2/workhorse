@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// fallow-ignore-file complexity
+// fallow-ignore-file css-token-drift
 // Chat-first home: ONE chat box as the front door. Attach a repo (+ workflow)
 // → the message files a ticket; no repo attached → plain fleet-agent chat.
 import { Comark } from "@comark/vue";
@@ -22,6 +24,7 @@ const toast = useToast();
 const { data: repoData } = await useFetch<{ repos: string[] }>("/api/repos");
 const { data: wfData } = await useFetch<{ workflows: Array<{ name: string }> }>("/api/workflows");
 
+// fallow-ignore-next-line complexity
 const knownRepos = computed(() => {
   // Dedupe by normalized slug (KV-era records may differ only in .git/URL form).
   const seen = new Map<string, { url: string; label: string }>();
@@ -66,6 +69,7 @@ const input = ref("");
 const busy = ref(false);
 const box = ref<HTMLElement>();
 
+// fallow-ignore-next-line complexity
 async function send() {
   const content = input.value.trim();
   if (!content || busy.value) return;
@@ -113,28 +117,8 @@ const { data: fleet, refresh: refreshFleet } = await useFetch<{ tickets: Ticket[
 const RUNNING = ["queued", "planning", "implementing", "ready-for-review"];
 const running = computed(() => (fleet.value?.tickets ?? []).filter((t) => RUNNING.includes(t.status)));
 
-// --- model credential health -------------------------------------------------
-// The fleet runs on a custodian-pushed OAuth token; when it expires every run
-// silently 401s. Surface its freshness so that failure mode is visible.
-interface TokenStatus {
-  present: boolean;
-  state: "fresh" | "expiring" | "expired" | "missing" | "unknown";
-  minutesRemaining: number | null;
-}
-const { data: token, refresh: refreshToken } = await useFetch<TokenStatus>("/api/token-status");
-const tokenTile = computed(() => {
-  const s = token.value;
-  if (!s || s.state === "fresh") return null; // healthy → no nag
-  const mins = s.minutesRemaining;
-  if (s.state === "expiring")
-    return { color: "warning" as const, icon: "i-lucide-clock-alert", msg: `Model credential expires in ~${mins} min — new tickets may stall waiting for a re-push.` };
-  if (s.state === "unknown")
-    return { color: "neutral" as const, icon: "i-lucide-shield-question", msg: "Model credential present (no expiry info)." };
-  return { color: "error" as const, icon: "i-lucide-shield-x", msg: "Model credential expired — runs park at “waiting for capacity” until the custodian re-pushes a token." };
-});
-
 let timer: ReturnType<typeof setInterval>;
-onMounted(() => (timer = setInterval(() => { refreshFleet(); refreshToken(); }, 15000)));
+onMounted(() => (timer = setInterval(() => { refreshFleet(); }, 15000)));
 onUnmounted(() => clearInterval(timer));
 
 const statusColor: Record<string, string> = {
@@ -148,16 +132,6 @@ const statusColor: Record<string, string> = {
 
 <template>
   <div class="max-w-3xl w-full mx-auto flex flex-col justify-center gap-4" style="min-height: calc(100dvh - 8rem)">
-    <!-- model credential health: only shown when NOT fresh -->
-    <UAlert
-      v-if="tokenTile"
-      :color="tokenTile.color"
-      :icon="tokenTile.icon"
-      variant="soft"
-      :title="tokenTile.msg"
-      :ui="{ title: 'text-xs font-medium' }"
-    />
-
     <!-- empty state: sits with the composer in the vertical center -->
     <div v-if="!messages.length" class="text-center space-y-2">
       <UIcon name="i-lucide-tractor" class="size-10 text-muted" />

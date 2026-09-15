@@ -21,7 +21,7 @@ import {
 } from "@workhorse/workflow";
 import { sandboxDriver } from "@workhorse/sandbox";
 import * as v from "valibot";
-import { makeStageSession } from "./flue-session";
+import { makeStageSession } from "./pi-session";
 
 export interface WorkflowRunDeps {
   env: Env;

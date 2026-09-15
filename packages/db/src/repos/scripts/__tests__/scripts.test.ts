@@ -10,7 +10,7 @@ const script = (over: Partial<Script> = {}): Script => ({
   scope: "global",
   name: "run_tests",
   description: "run the suite",
-  code: "return await tools.bash({ cmd: 'bun test' });",
+   code: "return await tools.bash({ cmd: 'bun run test' });",
   args: [],
   statusGates: [],
   createdBy: "agent",

@@ -2,7 +2,7 @@
 //
 // The provider chain lives in providers.ts (shared by these routes and the
 // web_search/web_read stage tools). Routes stay for the stateless callback
-// path and any non-flue caller; the flue engine calls the tools directly.
+// path and any non-Pi caller; the Pi engine calls the tools directly.
 
 import type { WorkhorsePlugin } from "@workhorse/api";
 import { readPage, webSearch } from "./providers";

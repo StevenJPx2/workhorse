@@ -3,6 +3,7 @@
 import { getSandbox } from "@cloudflare/sandbox";
 import { runFleetChat } from "../chat";
 import { json, type Route } from "../router";
+import { withSpan } from "@workhorse/o11y";
 
 export const miscRoutes: Route[] = [
   {
@@ -10,11 +11,13 @@ export const miscRoutes: Route[] = [
     method: "POST",
     path: "/chat",
     auth: "master",
-    async handler({ request, env, url, core, assembleChatTools }) {
+    async handler({ request, env, url, ctx, core, assembleChatTools, assembleChatExtensions }) {
       const { messages } = (await request.json()) as {
         messages: Array<{ role: string; content: string }>;
       };
-      const r = await runFleetChat(env, core(env, url.origin), url.origin, messages, assembleChatTools);
+      const r = await withSpan(ctx, "fleet_chat", { messages: messages.length }, () =>
+        runFleetChat(env, core(env, url.origin), url.origin, messages, assembleChatTools, assembleChatExtensions),
+      );
       if (!r.ok) return json({ error: r.error }, r.status);
       return json({ reply: r.reply });
     },

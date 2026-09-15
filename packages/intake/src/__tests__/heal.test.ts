@@ -192,14 +192,6 @@ describe("the new instance", () => {
     expect(wfCreate.mock.calls[0][0].params).toMatchObject({ workflow: "coding-raw" });
   });
 
-  it("passes an EMPTY token so the custodian's is used", async () => {
-    ticketsGet.mockResolvedValue(errored());
-    await healTicket(env, "t1");
-
-    // A heal can happen hours later; the token recorded at filing is long expired.
-    expect(wfCreate.mock.calls[0][0].params.accessToken).toBe("");
-  });
-
   it("repoints the record at the new instance and clears the error", async () => {
     ticketsGet.mockResolvedValue(errored({ healAttempts: 1 }));
     await healTicket(env, "t1");

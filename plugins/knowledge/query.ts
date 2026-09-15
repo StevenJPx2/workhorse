@@ -78,24 +78,28 @@ export async function query(env: Env, q: string, options: QueryOptions = {}): Pr
         retrieval: {
           max_num_results: Math.min(Math.max(limit, MIN_RESULTS), MAX_RESULTS),
           ...(contextExpansion ? { context_expansion: contextExpansion } : {}),
+          ...(filters ? { filters } : {}),
         },
       },
-      ...(filters ? { filters } : {}),
     } as never);
 
-    const data = (res as { data?: Array<Record<string, unknown>> }).data ?? [];
+    const chunks = (res as { chunks?: Array<Record<string, unknown>> }).chunks ?? [];
 
-    return data.map((chunk) => {
-      const parts = (chunk.content as Array<{ text?: string }> | undefined) ?? [];
-      const attributes = (chunk.attributes as { file?: Record<string, unknown> } | undefined)?.file ?? {};
+    return chunks.map((chunk) => {
+      // Current API: text is a bare string; legacy parts arrays tolerated.
+      const raw = chunk.text;
+      const text = Array.isArray(raw)
+        ? (raw as Array<{ text?: string }>).map((p) => p.text ?? "").join("\n")
+        : typeof raw === "string"
+          ? raw
+          : "";
+      const item = (chunk.item as { key?: string; metadata?: Record<string, unknown> } | undefined) ?? {};
+      const attributes = item.metadata ?? {};
 
       return {
-        filename: String(chunk.filename ?? attributes.filename ?? "unknown"),
+        filename: String(item.key ?? chunk.id ?? attributes.filename ?? "unknown"),
         score: typeof chunk.score === "number" ? chunk.score : undefined,
-        text: parts
-          .map((p) => p.text ?? "")
-          .join("\n")
-          .slice(0, maxChars),
+        text: text.slice(0, maxChars),
         attributes,
       };
     });

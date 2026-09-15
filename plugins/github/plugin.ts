@@ -108,7 +108,7 @@ const webhook = {
 
 // The gh_* read surface (allowlist + fetch) lives in api.ts, shared by the
 // /github proxy route (kept for stateless/legacy callers) and the gh_*
-// stage tools (flue engine, worker-side). Read endpoints only — the system
+// stage tools (pi engine, worker-side). Read endpoints only — the system
 // talks to GitHub for writes; that keeps "the agent can never self-complete"
 // true.
 

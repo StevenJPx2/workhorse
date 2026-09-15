@@ -3,20 +3,26 @@
 ## Overview
 This plan refactors Workhorse from a monolithic worker into a modular architecture where each concern is a separate package. The worker becomes a thin shell that composes everything together.
 
+**Status (2026-08):** Phases 0–6 and 8 are shipped. The worker-boundary part of
+Phase 7 is shipped; the Alchemy deployment part remains deliberately paused
+because the active Wrangler deployment is safer and two upstream Alchemy gaps
+still block adoption. The phase ledger below records the historical work, while
+this status note is the current source of truth.
+
 **Key technologies:**
-- **Alchemy** — Infrastructure-as-Effects for Cloudflare deployment
+- **Wrangler** — active Cloudflare deployment path; Alchemy remains an adoption experiment
 - **Drizzle** — TypeScript ORM for D1 database (+ Drizzle Studio as the db visual surface)
 - **Valibot** — Schema validation for agent outputs
-- **Effect** — Type-safe functional programming (used by Alchemy)
+- **Effect** — Type-safe functional programming (used only by the inactive Alchemy experiment)
 - **oxlint** — Fast Rust linter (correctness gate)
 - **fallow** — Codebase intelligence: dead code, cycles, duplication, health score
 
 **Architecture principles:**
 - Each package has a single responsibility
 - Packages are composable and testable in isolation
-- The worker is just the deployment boundary
+- The worker is the composition and deployment boundary
 - Workflows own their dependencies (plugins)
-- Infrastructure is code (Alchemy), not config (wrangler.toml)
+- Infrastructure bindings remain in `worker/wrangler.jsonc`; Alchemy is not the active deploy path
 - Dependency injection over module-level singletons (classes take deps once)
 
 ## Hygiene (enforced from phase 0 onward)
@@ -48,9 +54,9 @@ Every package carries these three, and they gate each phase:
    a `fakeSandbox` because it faithfully returned whatever the tool asked for.
 
 2. **Observability** — traces, metrics, structured logging per package.
-   Status: **not started.** Deferred to Phase 5 with the `@workhorse/workflow`
-   extraction, when there are spans worth tracing. The two `@opentelemetry`
-   entries in `bun.lock` are transitive (via `pi-ai` and `vitest`), not ours.
+   Status: **shipped.** `@workhorse/o11y` owns structured events and the worker
+   initializes it at composition time; Cloudflare observability is enabled in
+   `worker/wrangler.jsonc`.
 3. **Visual simulation** — a way to *see* behavior, not just assert it.
 
    **Repo-wide, built:** `bun run report` renders `reports/index.html` from data
@@ -145,7 +151,7 @@ The audit found a real orphan on first run: `SCRAPFLY_KEY` was still deployed
 after the Scrapfly unblocker tier was removed in `d342d1a` — a live credential
 for a feature that no longer exists. Deleted.
 
-Bindings (KV, D1, R2, DO, Workflow, AI, Vectorize) are deliberately **not** in
+Bindings (KV, D1, R2, DO, Workflow, AI Search) are deliberately **not** in
 the manifest: they are declared in `wrangler.jsonc` and provisioned by the
 platform, so tracking them here would be duplicate bookkeeping. The script
 filters them out of the `Env` cross-check by type.
@@ -183,7 +189,7 @@ adding coverage can never read as adding debt.
 |---------|-------|---------|-------|
 | evals | 100 A | plugins/knowledge | 100 A |
 | packages/api | 100 A | plugins/ntfy | 100 A |
-| packages/semindex | 100 A | plugins/paste | 100 A |
+| packages/pi | 100 A | plugins/paste | 100 A |
 | packages/test-utils | 100 A | plugins/scripts | 100 A |
 | packages/workflow | 99.7 A | plugins/search | 100 A |
 | plugins/aft | 100 A | plugins/slack | 90 A |
@@ -226,15 +232,16 @@ itself is meant to fix: circular deps (-23.4), unit size (-10.0).
 @workhorse/api         # plugin contract: tool(), agent(), types
 @workhorse/workflow    # core workflow execution: ctx.run(), routing, WorkflowContext
 @workhorse/sandbox     # sandbox I/O + Code Mode (agent-run, codemode)
-@workhorse/agents      # agent management + fleet chat (agents, chat)
 @workhorse/events      # event store + notification bus (events, notifications)
-@workhorse/tickets     # ticket filing + self-healing (tickets, heal)
+@workhorse/intake      # ticket filing + self-healing (tickets, heal, refs)
 @workhorse/db          # database: D1 (Drizzle), tickets, scripts, escalations, traces
-@workhorse/auth        # authentication: bearer tokens, OAuth
-@workhorse/server      # HTTP routes + plugin composition (router, routes/*, plugins, refs, semindex, triggers)
+@workhorse/auth        # authentication: bearer tokens and constant-time comparison
+@workhorse/o11y        # structured logging and ticket/run/stage events
+@workhorse/pi          # Pi session/runtime adapters and extensions
+@workhorse/server      # HTTP routes, chat, triggers, agent blocks, and AI Search registries
 plugins/*              # github, todo, search, browser, etc.
 workflows/*            # coding, etc.
-worker                 # entry point + alchemy + vite + deployment
+worker                 # composition root, ticket spine, and Wrangler deployment
 ```
 
 ## Key Design Decisions
@@ -305,7 +312,7 @@ model. Waiting produces a correct run late; degrading produces a broken run now.
 a constraint learned the hard way: opencode-zen's free models were wired in as a
 fallback and proved unusable for agentic stages — they returned ~1 output token
 and no tool calls, so a stage ended "without `submit_work`" instead of doing the
-work. That is why the leg chain in `flue-session.ts` currently has exactly **one**
+ work. That is why the leg chain in `pi-session.ts` currently has exactly **one**
 leg. A model that cannot drive tools is not a fallback; it is a silent failure.
 
 **Promotion is designed but unbuilt.** The groundwork exists — the D1
@@ -490,13 +497,12 @@ that matter for the current step.
 The allowlist runs first and is absolute; selection only ever narrows what the
 allowlist already permits, so it can never widen capability.
 
-**`@workhorse/semindex` is the generic index builder** — one `defineIndex()`
-serving any registry: **tools**, **skills**, **scripts**, workflows. Cloudflare
-Vectorize + Workers AI embeddings, hosted, no local model. The
+**AI Search is the registry index** — separate hybrid corpora serve **tools**,
+**scripts**, and workflows. The
 [toolpick](https://github.com/pontusab/toolpick) pattern is the reference for
 the tool case: index name + description + parameters, hybrid keyword+semantic
-search per step, page to a fresh set on a miss, expose everything as a fallback
-so the agent never gets stuck.
+search, and an explicit allowlist so semantic selection can never widen
+capability.
 
 **Every tool carries mandatory `docs`.** `tool()` type-requires the field and
 auto-injects a `help` flag, so `{ help: true }` returns the full reference
@@ -562,17 +568,16 @@ Magic Context (per-repo agent memory) is replaced by Cloudflare AI Search. This 
 - context.db persistence/restoration
 
 **What stays:**
-- `semindex` — plugin tooling for semantic search across registries (different concern)
-- `search_fleet_knowledge` — fleet-wide trace search (already uses AI Search)
+- AI Search registry corpora for scripts, workflows, and tools
+- `search_fleet_knowledge` — fleet-wide trace search
+- `memory_search` / `memory_write` — per-repo durable memory
+- AFT code intelligence tools and the read-only GitHub search tools
 
-**Domain-specific features for codebase intelligence:**
-- `search_code` — semantic search across source files
-- `search_history` — search git history
-- `search_tests` — search test results
-- `search_docs` — search documentation
-- `search_patterns` — search for patterns/conventions
+The proposed `search_code`, `search_history`, `search_tests`, `search_docs`, and
+`search_patterns` tool family was not added; AFT, GitHub reads, and the existing
+test/report surfaces cover the concrete use cases without another abstraction.
 
-### 11. Worker is thin shell + alchemy + vite + Dockerfile
+### 11. Worker is thin shell + Wrangler + Dockerfile
 
 ```ts
 // worker/src/index.ts
@@ -594,8 +599,7 @@ worker/
     install.mjs        # Pi installer
     pi.json            # Pi packages
   Dockerfile           # Container image build (moved from sandbox/)
-  alchemy.run.ts       # Infrastructure as code
-  vite.config.ts       # Discovers workflows/
+  ../wrangler.jsonc    # Active infrastructure bindings
   package.json
 ```
 
@@ -606,7 +610,8 @@ COPY worker/sandbox /opt/agent/sandbox
 ```
 
 **Plus:**
-- GitHub Actions (automated deployment)
+- GitHub Actions (check, audit, report)
+- `alchemy.run.ts` at the repository root as a paused adoption experiment only
 
 ## Package Breakdown
 
@@ -651,7 +656,8 @@ export function tool(spec: ToolSpec): ToolFactory;
 ```
 
 ### `@workhorse/workflow` (refactor)
-**Add:** Execution logic from `worker/src/workflow-run.ts`, `worker/src/flue-session.ts`
+**Shipped:** Execution logic from `worker/src/workflow-run.ts` and the former
+`worker/src/flue-session.ts` now lives in the workflow and Pi packages.
 
 **Exports:**
 ```ts
@@ -1050,7 +1056,7 @@ jobs:
 | `@workhorse/server` | None (imported by worker) | N/A |
 | `plugins/*` | None (pure TS types) | N/A |
 | `workflows/*` | None (pure TS types) | N/A |
-| `worker` | `alchemy build` | `alchemy deploy` |
+| `worker` | `node pi-build.mjs` | `wrangler deploy` |
 
 ## Migration Order (hybrid)
 
@@ -1137,14 +1143,15 @@ stdout {"id":"1","success":true,"text":"..."}
 Fixing this is its own task: a stdin/JSON-RPC transport in `plugins/aft/tools/_shared.ts`,
 plugin registration, and dropping or re-mapping `aft_search`/`aft_edit`.
 
-### Phase 1: Stable packages (won't be reshaped later)
-1. Create `@workhorse/db` — Drizzle schema + migrations + **class with DI**
-   - `class Db { constructor(private env: Env) }` — one drizzle instance, injected
-   - Drizzle Studio as the visual simulation surface
-   - Vitest suite against a local D1/SQLite
-2. Create `@workhorse/auth` — **class with DI** (`class Auth { constructor(env) }`)
-3. Worker imports both; no other logic changes
-4. Gate: `bun run check` + `bun run test` + Drizzle Studio opens and shows tables
+### Phase 1: Stable packages ✅ DONE
+1. ✅ Created `@workhorse/db` with Drizzle schema, migrations, one connection per
+   environment, and per-table repository functions. Drizzle Studio remains the
+   database visual surface.
+2. ✅ Created `@workhorse/auth` with bearer tiers and constant-time secret
+   comparison. Model-token custody was removed rather than moved into the package.
+3. ✅ The worker and extracted packages share the same package seams; no class
+   wrapper or duplicated connection abstraction was needed.
+4. ✅ Gate: `bun run check` + `bun run test`; package health floor is 98.2 for db.
 
 ### Phase 2: New primitives ✅ DONE
 1. ✅ `agent()` in `@workhorse/api` — model **policy** (fallback ≠ promote),
@@ -1182,9 +1189,9 @@ writer has a self-edge (the per-todo loop feeds each round's PR body into the ne
 so a writer running twice genuinely depends on itself), and its text twin does not
 (the polarity that loops twice is also the one that picks the visual writer).
 
-**Deferred to Phase 4:** porting `workflow-run.ts` / `flue-session.ts` onto
-`ctx.run()`. The primitives + gate prove the target shape first; rewiring execution
-before a workflow uses it would be building against an unvalidated contract.
+**Historical note:** porting `workflow-run.ts` / the former `flue-session.ts` onto
+`ctx.run()` is complete. The primitives + gate proved the target shape, and the
+live stage runner is now `worker/src/pi-session.ts`.
 
 ### Phase 3: Plugins export individual tools ✅ DONE
 1. ✅ Named re-exports in every plugin's `tools/index.ts`, plus a `./tools`
@@ -1256,7 +1263,7 @@ Fixing the coupling directly got the whole gain without moving a line into a new
 package.
 
 **1. `builtinTools` deleted.** `read`/`grep`/`bash`/`write`/`edit` were inlined in
-`flue-session.ts` and imported by `codemode.ts` — while `flue-session` imported
+the former stage session and imported by `codemode.ts` — while that session imported
 `codemode` back. Registering `@workhorse/core` (Phase 3) removed the function
 entirely and with it the cycle. Stage assembly is now ONE pass over plugins instead
 of builtins-plus-plugins, and the write gate rides `ToolContext.policy`.
@@ -1350,18 +1357,26 @@ and a prefix-guess test pins it.
 
 Four packages at **100 A**; worker **88.3 A**; **1234 tests**.
 
-### Phase 6: AI Search replaces Magic Context
-1. Remove Magic Context from the sandbox image
-2. Remove `restoreMemory()` / `persistMemory()`
-3. Add AI Search integration for per-repo memory
-4. Add codebase-intelligence tools (search_code, search_history, search_tests, search_docs)
+### Phase 6: AI Search replaces Magic Context ✅ DONE
+1. ✅ Removed Magic Context from the sandbox image and runtime.
+2. ✅ Removed `restoreMemory()` / `persistMemory()`.
+3. ✅ Added AI Search integration for per-repo memory, scoped by repository and
+   memory kind.
+4. ✅ Added AI Search-backed registry corpora for scripts, workflows, and tools.
+   The originally proposed `search_code`, `search_history`, `search_tests`, and
+   `search_docs` names were superseded by AFT's code intelligence tools and the
+   existing GitHub read surface; they are not missing implementation work.
 
-### Phase 7: Worker becomes the deployment boundary
-1. Move `sandbox/Dockerfile` → `worker/Dockerfile` (+ `worker/sandbox/`)
-2. Add `alchemy.run.ts`; delete `wrangler.jsonc`
-3. Add vite config for workflow discovery
-4. GitHub Actions: push→prod, PR→preview, PR-close→destroy
-5. Reduce `worker/src/index.ts` to `createServer({ workflows })`
+### Phase 7: Worker becomes the deployment boundary ✅ DONE
+1. ✅ Moved the image definition to `worker/Dockerfile` with `worker/sandbox/`.
+2. ✅ Made `worker/` the composition root and deployment boundary. Wrangler remains
+   active; `alchemy.run.ts` is retained only as the blocked adoption experiment.
+3. ✅ Replaced Vite workflow discovery with an explicit registry in
+   `worker/src/registry.ts`; the workflow catalog is read-only and type-checked.
+4. ⏸ Preview/destroy deployments remain intentionally unadopted while Wrangler is
+   the production path.
+5. ✅ Reduced the worker to the composition root, ticket spine, runtime session,
+   and platform entrypoints; concrete plugin imports exist only in `registry.ts`.
 
 ### Phase 8: Cleanup ✅ DONE
 
@@ -1407,9 +1422,10 @@ after the steer is rendered into a prompt.
 Also updated: README (package table, the memory plane, `memory_search` /
 `memory_write`) and ROADMAP.
 
-### Phase 7: Alchemy deployment — NOT STARTED (needs a decision)
+### Phase 7b: Alchemy deployment — PAUSED (upstream blockers)
 
-Deliberately left. Phase 7 replaces `wrangler.jsonc` with `alchemy.run.ts`, and
+Deliberately left. This optional adoption replaces `wrangler.jsonc` with
+`alchemy.run.ts`, and
 unlike every phase before it, its gate (`alchemy deploy` succeeds) is a
 **production mutation** against live infrastructure:
 
@@ -1425,20 +1441,19 @@ is `{app}-{stage}-{id}`, so every resource needs an explicit `name` plus
 `adopt: true` to bind to what exists instead of provisioning a parallel stack.
 `migrationsTable: "drizzle_migrations"` matches the ledger Phase 1 established.
 
-Two open questions worth answering before touching it:
+Two upstream blockers must be resolved before touching production:
 
-1. **Alchemy 0.93 (`latest`) or 2.0-beta (`next`)?** The docs describe the 2.0
-   Effect-based API; `latest` is the `await`-based one. Writing against the docs
-   means running a beta on the deploy path.
-2. **Is the deploy path worth changing at all right now?** `wrangler deploy`
-   works. The plan's motivation was PR preview environments and typed bindings —
-   real, but neither is blocking, and the container image build is the part most
-   likely to behave differently under a new deploy tool.
+1. Alchemy's container resource must preserve the existing Sandbox Durable Object
+   class metadata instead of deploying a worker without the container attachment.
+2. Alchemy's Workflow resource must adopt the existing binding by stable name
+   instead of hashing the name and orphaning live instances.
 
-A safe first step exists if wanted: write `alchemy.run.ts` with `adopt: true`
-everywhere and run `alchemy deploy --dry-run` (or against a `pr-` stage) to see
-the plan without applying it. That is not a production mutation and would answer
-both questions with evidence.
+The deployment-path decision is separate: `wrangler deploy` works today, while
+preview environments and typed bindings are useful but not production blockers.
+
+Do not run the Alchemy adoption until those upstream issues are fixed. A safe
+follow-up is `alchemy deploy --dry-run` with explicit `adopt: true` resources,
+then a separately approved production smoke test.
 
 ## Phase SOP
 
