@@ -290,7 +290,9 @@ Lightness is a gated property, measured where the design is meant to win: the co
 | Additional RSS per active session | ≤ 1 MB | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it |
 | Additional RSS per idle session | ≈ 0, evicted to SQLite | Eviction and restore observed (spike 3) |
 | Additional RSS per loaded app, shared across sessions | ≤ 2 MB | Not yet measured |
-| Rules package | ≤ 20 KB gzip | 3 KB gzip (core-shape comparison) |
+| Rules package (`core`) | ≤ 20 KB gzip | Not yet measured. The core-shape comparison's whole bundle, mailbox rules plus shell, was 3.2 KB gzip |
+| Daemon bundle (`worker`, with `core` and Effect) | Set from slice 1's first measurement | Not yet measured |
+| SDK (`sdk`) | Set from slice 1's first measurement | Not yet measured |
 
 | Rule | Decision |
 |---|---|
