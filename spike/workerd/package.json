@@ -1,0 +1,17 @@
+{
+  "name": "spike-workerd",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:ts": "bun build worker/src/entry-ts.ts --outfile dist-ts/index.js --target browser --format esm --external 'cloudflare:*'",
+    "build:rust2": "wasm-pack build core-wasm --target web --release --out-dir ../worker/gen --no-pack && bun build worker/src/entry-rust2.ts --outfile dist-rust2/index.js --target browser --format esm --external 'cloudflare:*' --external '*.wasm' && cp worker/gen/spike_core_wasm_bg.wasm dist-rust2/",
+    "build:rust1": "wasm-pack build core-one --target web --release --out-dir ../worker/gen-one --no-pack && bun build worker/src/entry-rust1.ts --outfile dist-rust1/index.js --target browser --format esm --external 'cloudflare:*' --external '*.wasm' && cp worker/gen-one/spike_core_one_bg.wasm dist-rust1/",
+    "build": "bun run build:ts && bun run build:rust2 && bun run build:rust1",
+    "test": "bun test/run.ts"
+  },
+  "devDependencies": {
+    "cf": "^1.0.0-beta.18",
+    "workerd": "1.20261019.1",
+    "wrangler": "^4.151.2"
+  }
+}

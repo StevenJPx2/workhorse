@@ -1,0 +1,12 @@
+[workspace]
+members = ["core", "core-wasm", "core-one"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+publish = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
