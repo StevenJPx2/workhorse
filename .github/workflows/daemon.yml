@@ -23,7 +23,8 @@ jobs:
       - uses: voidzero-dev/setup-vp@v1.21.2
         with:
           working-directory: daemon
-          node-version-file: daemon/.node-version
+          # Relative to working-directory.
+          node-version-file: .node-version
           run-install: false
       - run: bun install --frozen-lockfile
       - run: bun run check
