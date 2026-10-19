@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "composite": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "anyUnknownInErrorContext": "error",
+          "classSelfMismatch": "error",
+          "duplicatePackage": "error",
+          "floatingEffect": "error",
+          "floatingEffectInVitest": "error",
+          "missingEffectContext": "error",
+          "missingEffectError": "error",
+          "missingLayerContext": "error",
+          "missingStarInYieldEffectGen": "error",
+          "outdatedApi": "error",
+          "promiseInEffectSuccess": "error",
+          "unsafeEffectTypeAssertion": "error",
+          "asyncFunction": "error",
+          "newPromise": "error",
+          "lazyPromiseInEffectSync": "error",
+          "globalFetch": "error",
+          "globalFetchInEffect": "error",
+          "globalTimers": "error",
+          "globalTimersInEffect": "error",
+          "processEnv": "error",
+          "processEnvInEffect": "error",
+          "globalDate": "error",
+          "globalDateInEffect": "error",
+          "globalRandom": "error",
+          "globalRandomInEffect": "error",
+          "globalConsole": "error",
+          "globalConsoleInEffect": "error",
+          "runEffectInsideEffect": "error",
+          "tryCatchInEffectGen": "error",
+          "globalErrorInEffectFailure": "error",
+          "globalErrorInEffectCatch": "error",
+          "leakingRequirements": "error",
+          "strictEffectProvide": "error"
+        }
+      }
+    ]
+  }
+}

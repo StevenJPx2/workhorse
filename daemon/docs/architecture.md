@@ -12,12 +12,12 @@ flowchart TB
     Daemon --> Cloud["Cloudflare"]
 ```
 
-| Part | What it is | State |
-|---|---|---|
-| `core` | A pure state machine that holds every rule: policy, leases, routing, mailboxes, tasks | None; it performs no I/O |
-| daemon | A Workers app that performs the effects `core` returns | Durable Objects |
-| Apps | Workers apps that implement the protocol and provide operations, such as `sourcefed.monitor.create` | Through the daemon |
-| `workhorse` CLI | Installs and starts the daemon, regenerates its configuration, and relays stdio for MCP hosts | None |
+| Part            | What it is                                                                                          | State                    |
+| --------------- | --------------------------------------------------------------------------------------------------- | ------------------------ |
+| `core`          | A pure state machine that holds every rule: policy, leases, routing, mailboxes, tasks               | None; it performs no I/O |
+| daemon          | A Workers app that performs the effects `core` returns                                              | Durable Objects          |
+| Apps            | Workers apps that implement the protocol and provide operations, such as `sourcefed.monitor.create` | Through the daemon       |
+| `workhorse` CLI | Installs and starts the daemon, regenerates its configuration, and relays stdio for MCP hosts       | None                     |
 
 The daemon uses only the platform subset that workerd and Cloudflare share: Durable Objects (SQLite, alarms, WebSockets), `fetch`, and Dynamic Workers. The same bundle runs unchanged on every machine.
 
@@ -26,7 +26,11 @@ The daemon uses only the platform subset that workerd and Cloudflare share: Dura
 The core takes the current state and an input, and returns the next state and the effects to perform:
 
 ```ts
-const { state: next, effects } = handle(state, { type: "publish", key: "github:pr42:comment:1", event });
+const { state: next, effects } = handle(state, {
+  type: "publish",
+  key: "github:pr42:comment:1",
+  event,
+});
 // effects: [{ type: "persist", seq: 1, … }, { type: "deliver", seq: 1, … }, { type: "reply", … }]
 ```
 
@@ -61,23 +65,23 @@ JSON-RPC over Cap'n Proto and Cap'n Web: it is a stable open standard, it shares
 {"jsonrpc":"2.0","id":3,"error":{"code":-32001,"message":"denied","data":{"capability":"fs.read","reason":"outside_root"}}}
 ```
 
-| Rule | Decision |
-|---|---|
-| Source | One TypeScript schema per message. Other languages use the JSON Schema exported from it |
-| Methods | `capability.operation`. The daemon routes by prefix to the owner of the name |
-| Lease | Bound to the connection after `attach`. Calls carry no lease ID. Durable work belongs to the identity |
-| Errors | `-32001 denied` (policy refused), `-32002 failed` (allowed, but the operation failed), `-32003 unavailable` (the owner cannot be reached before the deadline), `-32004 limited` (a quota is reached) |
-| Push | JSON-RPC notifications on the same connection |
-| Versions | `hello` negotiates the version. An unsupported version gets a clear refusal |
-| Limits | Maximum frame size, maximum read size, maximum connections, and a deadline on every call. Oversized input is rejected, never truncated |
+| Rule     | Decision                                                                                                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source   | One TypeScript schema per message. Other languages use the JSON Schema exported from it                                                                                                              |
+| Methods  | `capability.operation`. The daemon routes by prefix to the owner of the name                                                                                                                         |
+| Lease    | Bound to the connection after `attach`. Calls carry no lease ID. Durable work belongs to the identity                                                                                                |
+| Errors   | `-32001 denied` (policy refused), `-32002 failed` (allowed, but the operation failed), `-32003 unavailable` (the owner cannot be reached before the deadline), `-32004 limited` (a quota is reached) |
+| Push     | JSON-RPC notifications on the same connection                                                                                                                                                        |
+| Versions | `hello` negotiates the version. An unsupported version gets a clear refusal                                                                                                                          |
+| Limits   | Maximum frame size, maximum read size, maximum connections, and a deadline on every call. Oversized input is rejected, never truncated                                                               |
 
 ## Identity
 
-| Connection | How the daemon knows it | What it may do |
-|---|---|---|
-| Apps and their MCP servers | The daemon loads each one from its manifest as a Dynamic Worker | Every internal feature for its own data, and the outside-world access that the policy grants to that manifest |
-| Outside clients: host adapters, the CLI, the stdio relay | Unknown; it is "local user" | The public operations that apps expose. No outside-world access of its own |
-| Other daemons and devices | An Ed25519 key, paired through the policy | What the policy grants to that key |
+| Connection                                               | How the daemon knows it                                         | What it may do                                                                                                |
+| -------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Apps and their MCP servers                               | The daemon loads each one from its manifest as a Dynamic Worker | Every internal feature for its own data, and the outside-world access that the policy grants to that manifest |
+| Outside clients: host adapters, the CLI, the stdio relay | Unknown; it is "local user"                                     | The public operations that apps expose. No outside-world access of its own                                    |
+| Other daemons and devices                                | An Ed25519 key, paired through the policy                       | What the policy grants to that key                                                                            |
 
 An agent host reaches an app's MCP server through MCP's HTTP transport, or through `workhorse mcp sourcefed`, a stdio relay, for hosts that speak only stdio. No connection ever claims an identity.
 
@@ -85,10 +89,10 @@ An agent host reaches an app's MCP server through MCP's HTTP transport, or throu
 
 The policy governs access to the outside world and nothing else. Internal features need no grant.
 
-| Kind | Examples | Rule |
-|---|---|---|
-| Outside world | Files, network, secrets, other daemons and devices | Denied unless the policy grants it. A grant is the intersection of the policy and the request; everything else is reported in `denied`, never silently widened. `ask` rules go to an approver |
-| Internal | State, tasks, mailboxes, the app's own audit records, calls to other apps' public operations | Always available, limited to the caller's own data, and bounded by daemon-wide quotas. A reached quota returns `limited` |
+| Kind          | Examples                                                                                     | Rule                                                                                                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Outside world | Files, network, secrets, other daemons and devices                                           | Denied unless the policy grants it. A grant is the intersection of the policy and the request; everything else is reported in `denied`, never silently widened. `ask` rules go to an approver |
+| Internal      | State, tasks, mailboxes, the app's own audit records, calls to other apps' public operations | Always available, limited to the caller's own data, and bounded by daemon-wide quotas. A reached quota returns `limited`                                                                      |
 
 ```json
 {
@@ -109,30 +113,30 @@ A policy change regenerates the daemon's configuration and sandbox, then causes 
 
 Outside apps, such as chauffeur or the Workhorse suite, extend the daemon through two abilities. The daemon itself contains no judgment logic.
 
-| Ability | What it does |
-|---|---|
-| Decide | Answers `ask` rules for outside-world access with allow or deny. "Always allow" becomes a policy edit, which causes a controlled restart |
-| Watch | Receives the full audit trail live, including background work that no agent started |
+| Ability | What it does                                                                                                                             |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Decide  | Answers `ask` rules for outside-world access with allow or deny. "Always allow" becomes a policy edit, which causes a controlled restart |
+| Watch   | Receives the full audit trail live, including background work that no agent started                                                      |
 
-| Rule | Decision |
-|---|---|
-| Who registers | Only apps the daemon loads, so their identity is proven |
-| Failure | A decider that crashes or misses its deadline means deny |
-| Scope | A decider answers allow or deny; it cannot change a request |
-| Record | The audit trail names the decider and its answer for every decision |
+| Rule          | Decision                                                            |
+| ------------- | ------------------------------------------------------------------- |
+| Who registers | Only apps the daemon loads, so their identity is proven             |
+| Failure       | A decider that crashes or misses its deadline means deny            |
+| Scope         | A decider answers allow or deny; it cannot change a request         |
+| Record        | The audit trail names the decider and its answer for every decision |
 
 ## Base capabilities
 
 The daemon owns a small, fixed set. Apps provide everything else.
 
-| Capability | Grant | Contract |
-|---|---|---|
-| `fs` | Yes | Reads and writes inside granted roots, through one workerd disk directory per root. `.` and `..` never resolve; the OS sandbox stops symlinks that point outside the grants |
-| `net.fetch` | Yes | Host allowlist, timeouts, and credentials added by the daemon: `{"method":"net.fetch","params":{"url":"https://api.github.com/…","auth":"GH_TOKEN"}}`. The app never receives the secret |
-| `state` | No | Per-app durable key-value data |
-| `task` | No | Scheduled and recurring work. Tasks are saved state, so they survive restarts; they can run, pause, and be removed |
-| `mailbox` | No | Durable delivery of events to targets, as specified below |
-| `audit` | No | One trail of every call, grant, denial, and effect. An app reads its own records |
+| Capability  | Grant | Contract                                                                                                                                                                                 |
+| ----------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fs`        | Yes   | Reads and writes inside granted roots, through one workerd disk directory per root. `.` and `..` never resolve; the OS sandbox stops symlinks that point outside the grants              |
+| `net.fetch` | Yes   | Host allowlist, timeouts, and credentials added by the daemon: `{"method":"net.fetch","params":{"url":"https://api.github.com/…","auth":"GH_TOKEN"}}`. The app never receives the secret |
+| `state`     | No    | Per-app durable key-value data                                                                                                                                                           |
+| `task`      | No    | Scheduled and recurring work. Tasks are saved state, so they survive restarts; they can run, pause, and be removed                                                                       |
+| `mailbox`   | No    | Durable delivery of events to targets, as specified below                                                                                                                                |
+| `audit`     | No    | One trail of every call, grant, denial, and effect. An app reads its own records                                                                                                         |
 
 ## Mailboxes
 
@@ -143,15 +147,15 @@ An app publishes an event to a target, such as one agent session. The daemon kee
 {"jsonrpc":"2.0","id":9,"method":"mailbox.ack","params":{"target":"opencode-session:abc","seq":17}}
 ```
 
-| Rule | Decision |
-|---|---|
-| Key | Every publish carries a key derived from the upstream fact, never from the path that found it. A poll and a webhook for the same comment produce the same key. A publish without a key is rejected |
-| Deduplication | The mailbox remembers every accepted key for its retention window, including keys already acknowledged |
-| Atomicity | Checking the key, assigning the sequence number, and saving happen in one step. Retrying a publish is always safe |
-| Order | First in, first out per mailbox, with a sequence number on every event |
-| Effect | Delivery is at least once. The client SDK saves the last sequence it processed and skips anything at or below it, so each event takes effect exactly once |
-| Consumers | One active consumer per mailbox. A new consumer replaces the old one |
-| Limits | A maximum count and age per mailbox. When old events are dropped, the next delivery carries a gap marker with the number missed |
+| Rule          | Decision                                                                                                                                                                                           |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key           | Every publish carries a key derived from the upstream fact, never from the path that found it. A poll and a webhook for the same comment produce the same key. A publish without a key is rejected |
+| Deduplication | The mailbox remembers every accepted key for its retention window, including keys already acknowledged                                                                                             |
+| Atomicity     | Checking the key, assigning the sequence number, and saving happen in one step. Retrying a publish is always safe                                                                                  |
+| Order         | First in, first out per mailbox, with a sequence number on every event                                                                                                                             |
+| Effect        | Delivery is at least once. The client SDK saves the last sequence it processed and skips anything at or below it, so each event takes effect exactly once                                          |
+| Consumers     | One active consumer per mailbox. A new consumer replaces the old one                                                                                                                               |
+| Limits        | A maximum count and age per mailbox. When old events are dropped, the next delivery carries a gap marker with the number missed                                                                    |
 
 Proof for these rules has three layers:
 
@@ -183,17 +187,17 @@ const notes = mcp((ctx) => ({ tools: [ctx.tools.read] }));
 
 The OS service manager runs workerd inside the OS sandbox tool. `workhorse install` generates both from the policy.
 
-| Platform | Supervisor | Sandbox |
-|---|---|---|
-| macOS | launchd agent | `sandbox-exec` profile: the storage folder, the socket folder, and the `fs` roots; outbound network; no Unix sockets except its own |
-| Linux | `systemd --user` unit | bubblewrap: a private mount namespace containing only the storage folder, the socket folder, and the `fs` roots, so host sockets such as `nscd` and `docker.sock` do not exist inside it; shared network |
+| Platform | Supervisor            | Sandbox                                                                                                                                                                                                  |
+| -------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS    | launchd agent         | `sandbox-exec` profile: the storage folder, the socket folder, and the `fs` roots; outbound network; no Unix sockets except its own                                                                      |
+| Linux    | `systemd --user` unit | bubblewrap: a private mount namespace containing only the storage folder, the socket folder, and the `fs` roots, so host sockets such as `nscd` and `docker.sock` do not exist inside it; shared network |
 
-| Rule | Decision |
-|---|---|
-| Ceiling | The OS sandbox is the ceiling for the whole daemon. Apps are isolated from each other inside it by Dynamic Workers |
-| Symlinks | workerd's disk directories follow symlinks. The OS sandbox blocks any target outside the grants |
-| Hostnames | Kernel sandboxes cannot filter by hostname. `net.fetch` enforces host allowlists |
-| Startup grants | workerd also receives its own binary, the system library paths, and `/dev/null`; without them it cannot start |
+| Rule           | Decision                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Ceiling        | The OS sandbox is the ceiling for the whole daemon. Apps are isolated from each other inside it by Dynamic Workers |
+| Symlinks       | workerd's disk directories follow symlinks. The OS sandbox blocks any target outside the grants                    |
+| Hostnames      | Kernel sandboxes cannot filter by hostname. `net.fetch` enforces host allowlists                                   |
+| Startup grants | workerd also receives its own binary, the system library paths, and `/dev/null`; without them it cannot start      |
 
 ## Remote links
 
@@ -209,21 +213,21 @@ The daemon runs a pinned workerd version with `--experimental`, which Dynamic Wo
 
 ## Deployments
 
-| Setup | What runs where |
-|---|---|
-| Single machine | Laptop: workerd with the daemon and its apps, under launchd or `systemd --user`. No network links |
-| Laptop and home | Home runs sourcefed continuously and keeps mailboxes while the laptop sleeps. The laptop keeps its files |
-| Laptop and cloud | The same daemon on Cloudflare in place of home |
-| Phone | iOS and Android apps call public operations on the home daemon and read their mailboxes |
-| Unattended | A daemon on Cloudflare runs agents. The laptop watches the audit trail |
+| Setup            | What runs where                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| Single machine   | Laptop: workerd with the daemon and its apps, under launchd or `systemd --user`. No network links        |
+| Laptop and home  | Home runs sourcefed continuously and keeps mailboxes while the laptop sleeps. The laptop keeps its files |
+| Laptop and cloud | The same daemon on Cloudflare in place of home                                                           |
+| Phone            | iOS and Android apps call public operations on the home daemon and read their mailboxes                  |
+| Unattended       | A daemon on Cloudflare runs agents. The laptop watches the audit trail                                   |
 
 ## Harnesses and the agent loop
 
 Harnesses sit on top of the daemon and outside the base. Each one reaches the daemon's apps over MCP, through the HTTP transport or the stdio relay, so the daemon's sandbox, secrets, mailboxes, and durable tasks serve every harness the same way.
 
-| Harness | Relationship |
-|---|---|
-| Equestrian, Stable, Mule, Polo | Workhorse's own harnesses, built on the agent loop below |
+| Harness                              | Relationship                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Equestrian, Stable, Mule, Polo       | Workhorse's own harnesses, built on the agent loop below                                      |
 | fx, pi, opencode, Claude Code, Codex | Use the daemon over MCP. Workhorse supplies the base and does not duplicate their agent loops |
 
 The agent loop is one Rust library, compiled to native code and to wasm:
@@ -237,12 +241,12 @@ flowchart TB
     Others["fx, pi, opencode, Claude Code, Codex"] -->|"MCP"| Daemon
 ```
 
-| Rule | Decision |
-|---|---|
-| One implementation | The same library serves native hosts and agents inside the daemon |
-| Coarse boundary | Callers cross into the loop once per model turn or tool call, never per small operation |
+| Rule               | Decision                                                                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One implementation | The same library serves native hosts and agents inside the daemon                                                                                          |
+| Coarse boundary    | Callers cross into the loop once per model turn or tool call, never per small operation                                                                    |
 | Orchestration only | The loop calls models and decides the next step. Tools, codemode, and capabilities run in the daemon; codemode runs agent-written code in a Dynamic Worker |
-| Reuse first | Spike 5 runs a harness on libfx against the daemon. The loop is built only for what libfx lacks |
+| Reuse first        | Spike 5 runs a harness on libfx against the daemon. The loop is built only for what libfx lacks                                                            |
 
 The loop is a sibling project of the daemon in this repository, with its own Rust workspace and gates.
 
@@ -259,60 +263,62 @@ daemon/
 │   ├── conformance/   black-box suite, run against any daemon
 │   ├── sdk/           TypeScript client, including mailbox sequence tracking
 │   └── cli/           workhorse: install, start, daemon, mcp relay
+├── tools/             vendored anti-slop Oxlint rules and test setup
 └── docs/
 ```
 
 A package exists where it enforces a boundary through its dependencies and lint rules:
 
-| Package | Depends on | Boundary |
-|---|---|---|
-| `protocol` | Effect Schema | Contracts and protocol invariants only |
-| `core` | Types from `protocol` only | Lint bans `fetch`, `Date`, timers, `crypto`, and every runtime import, so I/O cannot be written. `tsc` checks that every input and effect is handled |
-| `worker` | `core`, `protocol` | The only package that touches Durable Objects, sockets, and disk directories |
-| `conformance` | `protocol` | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon |
-| `sdk` | `protocol` | A client for apps and adapters that carries no rules |
-| `cli` | `protocol` | Generates configuration and relays stdio; holds no rules |
+| Package       | Depends on                 | Boundary                                                                                                                                             |
+| ------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocol`    | Effect Schema              | Contracts and protocol invariants only                                                                                                               |
+| `core`        | Types from `protocol` only | Lint bans `fetch`, `Date`, timers, `crypto`, and every runtime import, so I/O cannot be written. `tsc` checks that every input and effect is handled |
+| `worker`      | `core`, `protocol`         | The only package that touches Durable Objects, sockets, and disk directories                                                                         |
+| `conformance` | `protocol`                 | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon                                                          |
+| `sdk`         | `protocol`                 | A client for apps and adapters that carries no rules                                                                                                 |
+| `cli`         | `protocol`                 | Generates configuration and relays stdio; holds no rules                                                                                             |
 
 Nothing in the base imports an app.
 
 ## Proof
 
-A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and the repository gates passing: `tsc`, Oxlint with the vendored anti-slop rules, Vitest, Fallow, and the budget job in [Budgets](#budgets).
+A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and `bun run check` passing. Its gates run in order: oxfmt, Oxlint with the vendored anti-slop rules and zero warnings, `tsc -b`, Effect diagnostics through `@effect/tsgo` with policy checks as errors, Vitest, `fallow audit`, `bun audit`, and the budget job in [Budgets](#budgets). Installs use the frozen lockfile and exact versions.
 
 ## Budgets
 
 Lightness is a gated property, measured where the design is meant to win: the cost of each additional and each idle agent, shared app memory, and tokens per task. A single native process such as fx will start faster and use less memory than one JavaScript runtime; the budgets do not compete on that axis.
 
-| Budget | Limit | Evidence today |
-|---|---|---|
-| Daemon idle RSS | ≤ 40 MB | 28–31 MB on workerd (spike 3) |
-| Cold start to first request | ≤ 50 ms | 17–37 ms (spike 3) |
-| Additional RSS per active session | ≤ 1 MB | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it |
-| Additional RSS per idle session | ≈ 0, evicted to SQLite | Eviction and restore observed (spike 3) |
-| Additional RSS per loaded app, shared across sessions | ≤ 2 MB | Not yet measured |
-| Rules package (`core`) | ≤ 20 KB gzip | Not yet measured. The core-shape comparison's whole bundle, mailbox rules plus shell, was 3.2 KB gzip |
-| Daemon bundle (`worker`, with `core` and Effect) | Set from slice 1's first measurement | Not yet measured |
-| SDK (`sdk`) | Set from slice 1's first measurement | Not yet measured |
+| Budget                                                | Limit                                | Evidence today                                                                                        |
+| ----------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Daemon idle RSS                                       | ≤ 40 MB                              | 28–31 MB on workerd (spike 3)                                                                         |
+| Cold start to first request                           | ≤ 50 ms                              | 17–37 ms (spike 3)                                                                                    |
+| Additional RSS per active session                     | ≤ 1 MB                               | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it                              |
+| Additional RSS per idle session                       | ≈ 0, evicted to SQLite               | Eviction and restore observed (spike 3)                                                               |
+| Additional RSS per loaded app, shared across sessions | ≤ 2 MB                               | Not yet measured                                                                                      |
+| Rules package (`core`)                                | ≤ 20 KB gzip                         | Not yet measured. The core-shape comparison's whole bundle, mailbox rules plus shell, was 3.2 KB gzip |
+| Daemon bundle (`worker`, with `core` and Effect)      | Set from slice 1's first measurement | Not yet measured                                                                                      |
+| SDK (`sdk`)                                           | Set from slice 1's first measurement | Not yet measured                                                                                      |
 
-| Rule | Decision |
-|---|---|
-| Gate | A CI job measures every budget on each pull request and fails when one is exceeded |
-| Direction | Budgets only tighten |
+| Rule                    | Decision                                                                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gate                    | A CI job measures every budget on each pull request and fails when one is exceeded                                                                                                                                                                                         |
+| Direction               | Budgets only tighten                                                                                                                                                                                                                                                       |
 | Cross-harness benchmark | The same workload of 1, 10, and 50 sessions with the same MCP server attached runs on Workhorse, fx, pi, opencode, Claude Code, and Codex. It records RSS, idle RSS, and tool memory. It is reported, not gated, because the other harnesses change on their own schedules |
-| Token evaluation | A fixed task suite runs on each harness with the same model and records input, output, and cached tokens, wall time, and success. It runs nightly and on demand, because model calls cost money |
+| Token evaluation        | A fixed task suite runs on each harness with the same model and records input, output, and cached tokens, wall time, and success. It runs nightly and on demand, because model calls cost money                                                                            |
 
 ## Delivery
 
 Spikes under `spike/`:
 
 1. **nono.** A process sandboxing itself. **Done**: file limits, inheritance, and no widening hold on macOS and Linux; on Linux, Unix sockets stay open to a self-sandboxed process and UDP needs seccomp. Evidence in `spike/sandbox/FINDINGS.md`.
-2. **Remote transport.** Stopped without results: in a workerd-only daemon, iroh needs a native gateway, and only a real-phone test could justify one. WebSocket is the transport; the real-phone test runs when a phone is available.
+2. **Remote transport.** **Done** on the LAN and across a simulated network switch: iroh recovered 780 ms faster at the median, under the 2-second rule, and added 241 crates against 53, 11 MB binaries against 2 MB, and a relay process. WebSocket is the transport; the real-phone test runs when a phone is available. Evidence in `spike/transport/FINDINGS.md`.
 3. **workerd.** One bundle on plain workerd and on Cloudflare. **Passed**. The core-shape comparison in the same spike measured TypeScript rules against Rust compiled to wasm: TypeScript ran the rules about 20× faster with about 19× less CPU, a 10 KB bundle against 116 KB, less memory, and the same end-to-end latency. Evidence in `spike/workerd/FINDINGS.md`.
 4. **workerd-only daemon.** workerd listening on a Unix socket under `sandbox-exec` on macOS and bubblewrap on the homelab, started by launchd and `systemd --user`. It proves: `fs` through disk directories; a symlink pointing outside a root is blocked by the OS sandbox; a host Unix socket outside the grants is unreachable; MCP over HTTP reaches a Worker app; the stdio relay's memory; a restart through the service manager.
 
 Slices:
 
-1. The Bun workspace replaces this directory's Rust workspace and its CI gates. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness.
+0. **Done.** The Bun workspace with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
+1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness.
 2. The home link over WebSocket and TLS: key pairing, remote routes, and `unavailable`.
 3. The same daemon on Cloudflare, with the conformance suite passing there.
 4. Mailboxes, tasks, and state as core transitions, with the full mailbox proof.
@@ -331,23 +337,24 @@ The budget job starts in slice 1 with the budgets that exist then, and gains eac
 
 Dependencies:
 
-| Item | Status |
-|---|---|
-| The `workerd` runtime, Effect, Vitest, Oxlint, Fallow | Approved |
-| The `cf` CLI and wrangler, as deploy tooling | Approved |
+| Item                                                                      | Status                                              |
+| ------------------------------------------------------------------------- | --------------------------------------------------- |
+| The `workerd` runtime, Effect, Vitest, Oxlint, Fallow                     | Approved                                            |
+| TypeScript 7, oxfmt, `@oxlint/plugins`, `@effect/tsgo`, `@types/node`     | Approved as gate tooling, pinned exactly            |
+| The `cf` CLI and wrangler, as deploy tooling                              | Approved                                            |
 | `sandbox-exec` (built into macOS) and bubblewrap (a Linux system package) | Used by the generated sandbox; confirmed in spike 4 |
-| A property-testing library for the mailbox simulation | Requires approval before slice 4 |
-| `iroh` | Not used. Reconsidered only after a real-phone test |
-| `uniffi` and the loop's model-client crates | Require approval before slice 13 |
+| A property-testing library for the mailbox simulation                     | Requires approval before slice 4                    |
+| `iroh`                                                                    | Not used. Reconsidered only after a real-phone test |
+| `uniffi` and the loop's model-client crates                               | Require approval before slice 13                    |
 
 ## Limits
 
-| Limit | Reason |
-|---|---|
-| Malware that already runs as the user | It can edit the policy file. A user-level daemon cannot prevent that |
-| Possibly-malicious code | workerd states that it is not a hardened sandbox and recommends a virtual machine for possibly-malicious code. The OS sandbox is a process sandbox, not a virtual machine |
-| `sandbox-exec` | Apple marks it deprecated without a replacement; it still works and other agent sandboxes rely on it |
-| bubblewrap | It needs unprivileged user namespaces, which some Linux distributions disable |
-| Apps that need a real process | Not supported. A capability that needs one is designed as a base capability with its own sandbox, or served over HTTP by a service the user runs |
-| Hostname filtering | Kernel sandboxes filter by port, not host. `net.fetch` is the host boundary |
-| Memory per live mailbox | workerd idles at about 30 MB and grows about 0.7 MB per active mailbox without returning it. The daemon bounds the number of live mailboxes |
+| Limit                                 | Reason                                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Malware that already runs as the user | It can edit the policy file. A user-level daemon cannot prevent that                                                                                                      |
+| Possibly-malicious code               | workerd states that it is not a hardened sandbox and recommends a virtual machine for possibly-malicious code. The OS sandbox is a process sandbox, not a virtual machine |
+| `sandbox-exec`                        | Apple marks it deprecated without a replacement; it still works and other agent sandboxes rely on it                                                                      |
+| bubblewrap                            | It needs unprivileged user namespaces, which some Linux distributions disable                                                                                             |
+| Apps that need a real process         | Not supported. A capability that needs one is designed as a base capability with its own sandbox, or served over HTTP by a service the user runs                          |
+| Hostname filtering                    | Kernel sandboxes filter by port, not host. `net.fetch` is the host boundary                                                                                               |
+| Memory per live mailbox               | workerd idles at about 30 MB and grows about 0.7 MB per active mailbox without returning it. The daemon bounds the number of live mailboxes                               |

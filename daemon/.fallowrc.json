@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // Vendored lint policy: maintained as upstream code, not analysed as ours.
+  "ignorePatterns": ["tools/oxlint/anti-slop/**"],
+  // Imported by 35 files in the vendored plugin above, which analysis excludes.
+  "ignoreDependencies": ["@oxlint/plugins"]
+}

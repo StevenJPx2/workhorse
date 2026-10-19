@@ -18,7 +18,11 @@ See [`docs/architecture.md`](docs/architecture.md).
 
 ## Workspace
 
-The daemon is a Bun workspace of TypeScript packages, described in [`docs/architecture.md`](docs/architecture.md#repository-layout). Slice 1 replaces the Rust crates below, which proved deny-by-default grants in-process.
+The daemon is a Bun workspace of TypeScript packages, described in [`docs/architecture.md`](docs/architecture.md#repository-layout). Packages are added only when a slice needs them.
 
-- [`workhorse-mcp-broker`](crates/broker) — the capability broker: a client can invoke only the capabilities it was granted, and each grant enforces its own scope. The first slice proves this in-process with one capability, `fs.read`, scoped to a root directory.
-- [`workhorse-mcp-protocol`](crates/protocol) — an empty placeholder for the wire contract.
+```sh
+bun install --frozen-lockfile
+bun run check   # oxfmt, Oxlint, tsc, Effect diagnostics, Vitest, Fallow, bun audit
+```
+
+`tools/oxlint/anti-slop/` holds the vendored anti-slop rules; [`UPSTREAM.md`](tools/oxlint/anti-slop/UPSTREAM.md) records their source and local changes.
