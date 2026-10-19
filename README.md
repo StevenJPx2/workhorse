@@ -6,7 +6,7 @@ Projects live under the [`wrkhse`](https://github.com/wrkhse) GitHub organizatio
 
 ## Projects
 
-- [`mcp/`](mcp/) — a shared capability daemon and framework for modular MCP servers.
+- [`daemon/`](daemon/) — a shared capability daemon and framework for modular MCP servers.
 
 ## Archive
 

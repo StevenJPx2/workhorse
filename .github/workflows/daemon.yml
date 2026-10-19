@@ -1,15 +1,15 @@
-name: mcp
+name: daemon
 
 on:
   push:
     branches: [main]
-    paths: ["mcp/**", ".github/workflows/mcp.yml"]
+    paths: ["daemon/**", ".github/workflows/daemon.yml"]
   pull_request:
-    paths: ["mcp/**", ".github/workflows/mcp.yml"]
+    paths: ["daemon/**", ".github/workflows/daemon.yml"]
 
 defaults:
   run:
-    working-directory: mcp
+    working-directory: daemon
 
 jobs:
   gate:
@@ -20,7 +20,7 @@ jobs:
         run: rustup show active-toolchain || rustup toolchain install nightly
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: mcp
+          workspaces: daemon
       - name: Install gate tools
         uses: taiki-e/install-action@v2
         with:
@@ -46,5 +46,5 @@ jobs:
           rustup override set "$msrv"
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: mcp
+          workspaces: daemon
       - run: cargo check --workspace --all-features --locked
