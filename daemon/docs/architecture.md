@@ -217,6 +217,35 @@ The daemon runs a pinned workerd version with `--experimental`, which Dynamic Wo
 | Phone | iOS and Android apps call public operations on the home daemon and read their mailboxes |
 | Unattended | A daemon on Cloudflare runs agents. The laptop watches the audit trail |
 
+## Harnesses and the agent loop
+
+Harnesses sit on top of the daemon and outside the base. Each one reaches the daemon's apps over MCP, through the HTTP transport or the stdio relay, so the daemon's sandbox, secrets, mailboxes, and durable tasks serve every harness the same way.
+
+| Harness | Relationship |
+|---|---|
+| Equestrian, Stable, Mule, Polo | Workhorse's own harnesses, built on the agent loop below |
+| fx, pi, opencode, Claude Code, Codex | Use the daemon over MCP. Workhorse supplies the base and does not duplicate their agent loops |
+
+The agent loop is one Rust library, compiled to native code and to wasm:
+
+```mermaid
+flowchart TB
+    Loop["agent loop<br/>one Rust library"] --> Native["native: CLI harnesses, iOS and Android via uniffi, desktop"]
+    Loop --> Wasm["wasm: agents inside the daemon"]
+    Native --> Daemon["daemon<br/>tools, codemode, capabilities"]
+    Wasm --> Daemon
+    Others["fx, pi, opencode, Claude Code, Codex"] -->|"MCP"| Daemon
+```
+
+| Rule | Decision |
+|---|---|
+| One implementation | The same library serves native hosts and agents inside the daemon |
+| Coarse boundary | Callers cross into the loop once per model turn or tool call, never per small operation |
+| Orchestration only | The loop calls models and decides the next step. Tools, codemode, and capabilities run in the daemon; codemode runs agent-written code in a Dynamic Worker |
+| Reuse first | Spike 5 runs a harness on libfx against the daemon. The loop is built only for what libfx lacks |
+
+The loop is a sibling project of the daemon in this repository, with its own Rust workspace and gates.
+
 ## Repository layout
 
 A Bun workspace:
@@ -248,7 +277,27 @@ Nothing in the base imports an app.
 
 ## Proof
 
-A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and the repository gates passing: `tsc`, Oxlint with the vendored anti-slop rules, Vitest, and Fallow.
+A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and the repository gates passing: `tsc`, Oxlint with the vendored anti-slop rules, Vitest, Fallow, and the budget job in [Budgets](#budgets).
+
+## Budgets
+
+Lightness is a gated property, measured where the design is meant to win: the cost of each additional and each idle agent, shared app memory, and tokens per task. A single native process such as fx will start faster and use less memory than one JavaScript runtime; the budgets do not compete on that axis.
+
+| Budget | Limit | Evidence today |
+|---|---|---|
+| Daemon idle RSS | ≤ 40 MB | 28–31 MB on workerd (spike 3) |
+| Cold start to first request | ≤ 50 ms | 17–37 ms (spike 3) |
+| Additional RSS per active session | ≤ 1 MB | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it |
+| Additional RSS per idle session | ≈ 0, evicted to SQLite | Eviction and restore observed (spike 3) |
+| Additional RSS per loaded app, shared across sessions | ≤ 2 MB | Not yet measured |
+| Rules package | ≤ 20 KB gzip | 3 KB gzip (core-shape comparison) |
+
+| Rule | Decision |
+|---|---|
+| Gate | A CI job measures every budget on each pull request and fails when one is exceeded |
+| Direction | Budgets only tighten |
+| Cross-harness benchmark | The same workload of 1, 10, and 50 sessions with the same MCP server attached runs on Workhorse, fx, pi, opencode, Claude Code, and Codex. It records RSS, idle RSS, and tool memory. It is reported, not gated, because the other harnesses change on their own schedules |
+| Token evaluation | A fixed task suite runs on each harness with the same model and records input, output, and cached tokens, wall time, and success. It runs nightly and on demand, because model calls cost money |
 
 ## Delivery
 
@@ -272,6 +321,11 @@ Slices:
 9. sourcefed as an app.
 10. The MCP framework, over MCP's HTTP transport and the stdio relay.
 11. chauffeur.
+12. Spike 5, libfx: one harness on libfx against the daemon decides what the agent loop must add.
+13. The agent loop: native and wasm builds, with uniffi bindings for Swift and Kotlin.
+14. The cross-harness benchmark and the token evaluation.
+
+The budget job starts in slice 1 with the budgets that exist then, and gains each budget as its slice lands.
 
 Dependencies:
 
@@ -282,6 +336,7 @@ Dependencies:
 | `sandbox-exec` (built into macOS) and bubblewrap (a Linux system package) | Used by the generated sandbox; confirmed in spike 4 |
 | A property-testing library for the mailbox simulation | Requires approval before slice 4 |
 | `iroh` | Not used. Reconsidered only after a real-phone test |
+| `uniffi` and the loop's model-client crates | Require approval before slice 13 |
 
 ## Limits
 
