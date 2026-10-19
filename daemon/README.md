@@ -16,4 +16,7 @@ See [`docs/architecture.md`](docs/architecture.md).
 
 ## Workspace
 
-The first crate is [`workhorse-mcp-protocol`](crates/protocol), which defines provider manifests and the generic daemon wire messages. Runtime crates will be added only as their first vertical slice is implemented.
+Crates are added only when a vertical slice needs them.
+
+- [`workhorse-mcp-broker`](crates/broker) — the capability broker: a client can invoke only the capabilities it was granted, and each grant enforces its own scope. The first slice proves this in-process with one capability, `fs.read`, scoped to a root directory.
+- [`workhorse-mcp-protocol`](crates/protocol) — the wire contract between a client and the daemon. Empty until the slice that splits the broker across a socket defines the messages it actually needs.
