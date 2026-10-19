@@ -22,7 +22,8 @@ The daemon is a Bun workspace of TypeScript packages, described in [`docs/archit
 
 ```sh
 bun install --frozen-lockfile
-bun run check   # oxfmt, Oxlint, tsc, Effect diagnostics, Vitest, Fallow, bun audit
+bun run check   # vp check, tsc, vp test, Effect diagnostics, Fallow, bun audit
+bun run fix     # format and apply lint autofixes
 ```
 
 `tools/oxlint/anti-slop/` holds the vendored anti-slop rules; [`UPSTREAM.md`](tools/oxlint/anti-slop/UPSTREAM.md) records their source and local changes.

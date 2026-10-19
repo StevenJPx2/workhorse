@@ -264,6 +264,7 @@ daemon/
 │   ├── sdk/           TypeScript client, including mailbox sequence tracking
 │   └── cli/           workhorse: install, start, daemon, mcp relay
 ├── tools/             vendored anti-slop Oxlint rules and test setup
+├── vite.config.ts     Vite+: format, lint, test, and task configuration
 └── docs/
 ```
 
@@ -282,7 +283,19 @@ Nothing in the base imports an app.
 
 ## Proof
 
-A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and `bun run check` passing. Its gates run in order: oxfmt, Oxlint with the vendored anti-slop rules and zero warnings, `tsc -b`, Effect diagnostics through `@effect/tsgo` with policy checks as errors, Vitest, `fallow audit`, `bun audit`, and the budget job in [Budgets](#budgets). Installs use the frozen lockfile and exact versions.
+A daemon is any implementation that passes the conformance suite. The suite talks to the daemon only through the protocol and runs against the daemon on workerd and on Cloudflare. Every slice ends with the suite passing through the real runtime and `bun run check` passing. The toolchain is Vite+, configured in `vite.config.ts`. Its gates run in order:
+
+| Gate                                                 | Command                                                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Format, lint, and type-check our code                | `vp check`: oxfmt, Oxlint with the vendored anti-slop rules and zero warnings, and type checks through tsgolint |
+| Type-check the whole project, vendored code included | `vp run types`: `tsc -b --force`                                                                                |
+| Tests                                                | `vp test run`                                                                                                   |
+| Effect diagnostics, policy checks as errors          | `vp run effect`: `@effect/tsgo`                                                                                 |
+| Repository health                                    | `vp run health`: `fallow audit`                                                                                 |
+| Dependency advisories                                | `vp run audit`: `bun audit`                                                                                     |
+| Budgets                                              | The budget job in [Budgets](#budgets)                                                                           |
+
+Vite+ caches `types` and `effect` with explicit inputs: automatic file tracking missed a new source file for these Go-based tools. `health` and `audit` never cache. Installs use the frozen lockfile and exact versions.
 
 ## Budgets
 
@@ -317,7 +330,7 @@ Spikes under `spike/`:
 
 Slices:
 
-0. **Done.** The Bun workspace with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
+0. **Done.** The Bun workspace on Vite+ with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
 1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness.
 2. The home link over WebSocket and TLS: key pairing, remote routes, and `unavailable`.
 3. The same daemon on Cloudflare, with the conformance suite passing there.
@@ -337,15 +350,15 @@ The budget job starts in slice 1 with the budgets that exist then, and gains eac
 
 Dependencies:
 
-| Item                                                                      | Status                                              |
-| ------------------------------------------------------------------------- | --------------------------------------------------- |
-| The `workerd` runtime, Effect, Vitest, Oxlint, Fallow                     | Approved                                            |
-| TypeScript 7, oxfmt, `@oxlint/plugins`, `@effect/tsgo`, `@types/node`     | Approved as gate tooling, pinned exactly            |
-| The `cf` CLI and wrangler, as deploy tooling                              | Approved                                            |
-| `sandbox-exec` (built into macOS) and bubblewrap (a Linux system package) | Used by the generated sandbox; confirmed in spike 4 |
-| A property-testing library for the mailbox simulation                     | Requires approval before slice 4                    |
-| `iroh`                                                                    | Not used. Reconsidered only after a real-phone test |
-| `uniffi` and the loop's model-client crates                               | Require approval before slice 13                    |
+| Item                                                                                          | Status                                              |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| The `workerd` runtime, Effect, Vitest, Oxlint, Fallow                                         | Approved                                            |
+| Vite+ (bundling oxfmt, Oxlint, tsgolint, Vitest), TypeScript 7, `@effect/tsgo`, `@types/node` | Approved as gate tooling, pinned exactly            |
+| The `cf` CLI and wrangler, as deploy tooling                                                  | Approved                                            |
+| `sandbox-exec` (built into macOS) and bubblewrap (a Linux system package)                     | Used by the generated sandbox; confirmed in spike 4 |
+| A property-testing library for the mailbox simulation                                         | Requires approval before slice 4                    |
+| `iroh`                                                                                        | Not used. Reconsidered only after a real-phone test |
+| `uniffi` and the loop's model-client crates                                                   | Require approval before slice 13                    |
 
 ## Limits
 

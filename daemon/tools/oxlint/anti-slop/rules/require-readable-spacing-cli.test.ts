@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { it } from "vitest";
+import { it } from "vite-plus/test";
 
 it("fixes spacing through the Oxlint CLI and stays stable", () => {
 const probeRoot = mkdtempSync(join(tmpdir(), "anti-slop-spacing-"));

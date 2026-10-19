@@ -19,8 +19,11 @@ jobs:
         with:
           # fallow audit compares against the merge base.
           fetch-depth: 0
-      - uses: oven-sh/setup-bun@v2
+      # Installs Node from .node-version, Bun from packageManager, and Vite+ from package.json.
+      - uses: voidzero-dev/setup-vp@v1.21.2
         with:
-          bun-version-file: daemon/package.json
+          working-directory: daemon
+          node-version-file: daemon/.node-version
+          run-install: false
       - run: bun install --frozen-lockfile
       - run: bun run check

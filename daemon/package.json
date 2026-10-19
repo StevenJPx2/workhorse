@@ -6,25 +6,23 @@
   ],
   "type": "module",
   "scripts": {
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run effect && bun run test && bun run health && bun run audit",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check",
-    "lint": "oxlint --deny-warnings",
-    "typecheck": "tsc -b",
-    "effect": "effect-tsgo diagnostics --project tools/tsconfig.json --strict",
-    "test": "vitest run",
-    "health": "fallow audit",
-    "audit": "bun audit"
+    "check": "vp check && vp run types && vp test run && vp run effect && vp run health && vp run audit",
+    "fix": "vp check --fix"
   },
   "devDependencies": {
     "@effect/tsgo": "0.53.4",
-    "@oxlint/plugins": "1.88.0",
     "@types/node": "26.2.0",
     "fallow": "3.34.1",
-    "oxfmt": "0.73.0",
-    "oxlint": "1.88.0",
     "typescript": "7.0.2",
-    "vitest": "5.0.5"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
-  "packageManager": "bun@1.4.3"
+  "overrides": {
+    "vite": "catalog:"
+  },
+  "packageManager": "bun@1.4.3",
+  "catalog": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
+    "vite-plus": "1.3.0"
+  }
 }
