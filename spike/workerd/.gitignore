@@ -1,7 +1,0 @@
-dist/
-dist-*/
-data/
-worker/gen/
-worker/gen-one/
-.cloudflare/
-.wrangler/

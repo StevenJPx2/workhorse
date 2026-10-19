@@ -1,5 +1,7 @@
 # Spike 3: one daemon build on workerd and Cloudflare
 
+The spike's code is in commit `698c2b27` (`git checkout 698c2b27 -- spike/workerd` restores it).
+
 **Verdict: the single-daemon shape holds.** One bundle — a `no_std` Rust core compiled to wasm, wrapped by a TypeScript Durable Object — passed every check on plain workerd (laptop, local disk) and on Cloudflare, unchanged.
 
 ## What was built

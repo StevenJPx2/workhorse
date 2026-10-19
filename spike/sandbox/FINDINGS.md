@@ -1,5 +1,7 @@
 # Spike 1: bridge self-sandboxing with `nono` 0.80.0
 
+The spike's code is in commit `698c2b27` (`git show 698c2b27:spike/sandbox/src/main.rs`).
+
 Evidence, not production design. Question: can the bridge sandbox **itself** at startup with
 `nono` so that it, and every child it launches, is confined to the policy's union of grants:
 read roots, read-write roots, state dir, socket dir, and network denied or loopback-only?
