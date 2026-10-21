@@ -12,12 +12,12 @@ flowchart TB
     Daemon --> Cloud["Cloudflare"]
 ```
 
-| Part            | What it is                                                                                          | State                    |
-| --------------- | --------------------------------------------------------------------------------------------------- | ------------------------ |
-| `core`          | A pure state machine that holds every rule: policy, leases, routing, mailboxes, tasks               | None; it performs no I/O |
-| daemon          | A Workers app that performs the effects `core` returns                                              | Durable Objects          |
-| Apps            | Workers apps that implement the protocol and provide operations, such as `sourcefed.monitor.create` | Through the daemon       |
-| `workhorse` CLI | Installs and starts the daemon, regenerates its configuration, and relays stdio for MCP hosts       | None                     |
+| Part            | What it is                                                                                                                            | State                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `core`          | A pure state machine that holds every rule: policy, leases, routing, mailboxes, tasks                                                 | None; it performs no I/O |
+| daemon          | A Workers app that performs the effects `core` returns                                                                                | Durable Objects          |
+| Apps            | Workers apps that implement the protocol and provide operations, such as `sourcefed.monitor.create`                                   | Through the daemon       |
+| `workhorse` CLI | Installs and starts the daemon, and regenerates its configuration. Its native stdio relay connects stdio-only MCP hosts to the socket | None                     |
 
 The daemon uses only the platform subset that workerd and Cloudflare share: Durable Objects (SQLite, alarms, WebSockets), `fetch`, and Dynamic Workers. The same bundle runs unchanged on every machine.
 
@@ -83,7 +83,7 @@ JSON-RPC over Cap'n Proto and Cap'n Web: it is a stable open standard, it shares
 | Outside clients: host adapters, the CLI, the stdio relay | Unknown; it is "local user"                                     | The public operations that apps expose. No outside-world access of its own                                    |
 | Other daemons and devices                                | An Ed25519 key, paired through the policy                       | What the policy grants to that key                                                                            |
 
-An agent host reaches an app's MCP server through MCP's HTTP transport, or through `workhorse mcp sourcefed`, a stdio relay, for hosts that speak only stdio. No connection ever claims an identity.
+An agent host reaches an app's tools through the daemon, which serves MCP for every app in two framings: MCP's Streamable HTTP transport, and newline-delimited JSON-RPC on the Unix socket, the framing the MCP specification recommends for custom transports over Unix sockets. Hosts that speak only stdio run `workhorse mcp sourcefed`, a native relay that copies bytes between stdio and the socket and parses nothing. No connection ever claims an identity.
 
 ## Policy and leases
 
@@ -177,27 +177,31 @@ An app is harness-agnostic. It speaks the Workhorse protocol, and its MCP server
 }
 ```
 
-Every app runs as a Dynamic Worker with `globalOutbound: null`: its only path to anything outside is the bindings the daemon gives it, so apps are isolated from each other and from the network. An MCP server built with the framework receives its lease as `ctx`, so it can offer only granted capabilities as tools:
+Every app runs as a Dynamic Worker with `globalOutbound: null`: its only path to anything outside is the bindings the daemon gives it, so apps are isolated from each other and from the network.
+
+The daemon speaks MCP; apps do not. An app declares its tools, each with a name, a description, an input schema, and a function. The daemon serves them over MCP, handles protocol versions in one place, and calls the function over Workers RPC, so every tool call passes through policy and the audit trail. The app receives its lease as `ctx`, so it can offer only granted capabilities as tools:
 
 ```ts
 const notes = mcp((ctx) => ({ tools: [ctx.tools.read] }));
 ```
 
+An app that bundled its own MCP server would cost about 28 MB more per loaded app (spike 4), against about 2 MB for the app's isolate. Apps can use the MCP features the framework exposes: tools, resources, and prompts.
+
 ## Sandboxing
 
 The OS service manager runs workerd inside the OS sandbox tool. `workhorse install` generates both from the policy.
 
-| Platform | Supervisor            | Sandbox                                                                                                                                                                                                  |
-| -------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| macOS    | launchd agent         | `sandbox-exec` profile: the storage folder, the socket folder, and the `fs` roots; outbound network; no Unix sockets except its own                                                                      |
-| Linux    | `systemd --user` unit | bubblewrap: a private mount namespace containing only the storage folder, the socket folder, and the `fs` roots, so host sockets such as `nscd` and `docker.sock` do not exist inside it; shared network |
+| Platform | Supervisor                                | Sandbox                                                                                                                                                                                                                                       |
+| -------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS    | launchd agent                             | `sandbox-exec` profile: the storage folder, the socket folder, and the `fs` roots; outbound network; no Unix sockets except its own and the system DNS resolver                                                                               |
+| Linux    | `systemd --user` socket and service units | bubblewrap: a private mount namespace containing only the storage folder, the socket folder, the `fs` roots, glibc, the DNS files, and the CA bundle, so host sockets such as `nscd` and `docker.sock` do not exist inside it; shared network |
 
-| Rule           | Decision                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Ceiling        | The OS sandbox is the ceiling for the whole daemon. Apps are isolated from each other inside it by Dynamic Workers |
-| Symlinks       | workerd's disk directories follow symlinks. The OS sandbox blocks any target outside the grants                    |
-| Hostnames      | Kernel sandboxes cannot filter by hostname. `net.fetch` enforces host allowlists                                   |
-| Startup grants | workerd also receives its own binary, the system library paths, and `/dev/null`; without them it cannot start      |
+| Rule           | Decision                                                                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Ceiling        | The OS sandbox is the ceiling for the whole daemon. Apps are isolated from each other inside it by Dynamic Workers                                                                                                                                                             |
+| Symlinks       | workerd's disk directories follow symlinks. The OS sandbox blocks any target outside the grants. A blocked access reaches the daemon as an opaque internal error, so `fs` checks paths in `core` and reports `denied` before touching the disk; the OS sandbox is the backstop |
+| Hostnames      | Kernel sandboxes cannot filter by hostname. `net.fetch` enforces host allowlists                                                                                                                                                                                               |
+| Startup grants | workerd also receives its own binary, the system library paths, `/dev/null`, a directory handle on `/` (top-level names only, on macOS), and its configuration folder as the working directory; without them it cannot start. On Linux it also needs the CA bundle             |
 
 ## Remote links
 
@@ -207,7 +211,14 @@ WebSocket over iroh: workerd cannot run iroh, so iroh would need a native gatewa
 
 ## Lifecycle
 
-`workhorse install` writes the workerd configuration, the sandbox profile, and the service definition, then registers the daemon with launchd or `systemd --user`. The service manager keeps one instance running and restarts it on failure. A client that finds no daemon runs `workhorse start`, which asks the service manager to start it. `workhorse daemon` runs in the foreground for development. An upgrade or a policy change regenerates the files, drains, restarts, and resumes; clients reconnect and receive unacknowledged mailbox events again.
+`workhorse install` writes the workerd configuration, the sandbox profile, and the service definition, then registers the daemon with launchd or `systemd --user`. The service manager keeps one instance running and restarts it on failure, in about 100 ms (spike 4).
+
+| Platform | Rule                                                                                                                                                                                                                                                                       |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Both     | workerd does not remove a stale socket file, so after a crash it cannot bind again unless the service manager handles the socket                                                                                                                                           |
+| macOS    | The service removes the socket file, then starts the sandbox. launchd runs one instance, so this cannot remove another daemon's socket. `ThrottleInterval` is 1 second; the default 10 seconds delays recovery after a crash                                               |
+| Linux    | A socket unit owns the socket and passes it to workerd (`--socket-fd`), so connections wait during a restart. Start limits are set deliberately, since a crash loop otherwise disables the service. The install enables lingering so the daemon keeps running after logout |
+| NixOS    | The npm workerd binary expects a standard dynamic loader. The install points it at the store's glibc, or uses `nix-ld`                                                                                                                                                     | A client that finds no daemon runs `workhorse start`, which asks the service manager to start it. `workhorse daemon` runs in the foreground for development. An upgrade or a policy change regenerates the files, drains, restarts, and resumes; clients reconnect and receive unacknowledged mailbox events again. |
 
 The daemon runs a pinned workerd version with `--experimental`, which Dynamic Workers require. workerd marks on-disk Durable Object storage as experimental, so a workerd upgrade is tested against saved data before it ships. The cloud daemon deploys with the `cf` CLI.
 
@@ -223,7 +234,7 @@ The daemon runs a pinned workerd version with `--experimental`, which Dynamic Wo
 
 ## Harnesses and the agent loop
 
-Harnesses sit on top of the daemon and outside the base. Each one reaches the daemon's apps over MCP, through the HTTP transport or the stdio relay, so the daemon's sandbox, secrets, mailboxes, and durable tasks serve every harness the same way.
+Harnesses sit on top of the daemon and outside the base. Each one reaches the daemon's apps over MCP, through the HTTP transport, the socket, or the stdio relay, so the daemon's sandbox, secrets, mailboxes, and durable tasks serve every harness the same way.
 
 | Harness                              | Relationship                                                                                  |
 | ------------------------------------ | --------------------------------------------------------------------------------------------- |
@@ -262,7 +273,7 @@ daemon/
 │   ├── worker/        the daemon: performs core's effects in workerd and Cloudflare
 │   ├── conformance/   black-box suite, run against any daemon
 │   ├── sdk/           TypeScript client, including mailbox sequence tracking
-│   └── cli/           workhorse: install, start, daemon, mcp relay
+│   └── cli/           workhorse: install, start, daemon
 ├── tools/             vendored anti-slop Oxlint rules and test setup
 ├── vite.config.ts     Vite+: format, lint, test, and task configuration
 └── docs/
@@ -270,14 +281,14 @@ daemon/
 
 A package exists where it enforces a boundary through its dependencies and lint rules:
 
-| Package       | Depends on                 | Boundary                                                                                                                                             |
-| ------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `protocol`    | Effect Schema              | Contracts and protocol invariants only                                                                                                               |
-| `core`        | Types from `protocol` only | Lint bans `fetch`, `Date`, timers, `crypto`, and every runtime import, so I/O cannot be written. `tsc` checks that every input and effect is handled |
-| `worker`      | `core`, `protocol`         | The only package that touches Durable Objects, sockets, and disk directories                                                                         |
-| `conformance` | `protocol`                 | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon                                                          |
-| `sdk`         | `protocol`                 | A client for apps and adapters that carries no rules                                                                                                 |
-| `cli`         | `protocol`                 | Generates configuration and relays stdio; holds no rules                                                                                             |
+| Package       | Depends on                 | Boundary                                                                                                                                                                                               |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `protocol`    | Effect Schema              | Contracts and protocol invariants only                                                                                                                                                                 |
+| `core`        | Types from `protocol` only | Lint bans `fetch`, `Date`, timers, `crypto`, and every runtime import, so I/O cannot be written. `tsc` checks that every input and effect is handled                                                   |
+| `worker`      | `core`, `protocol`         | The only package that touches Durable Objects, sockets, and disk directories                                                                                                                           |
+| `conformance` | `protocol`                 | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon                                                                                                            |
+| `sdk`         | `protocol`                 | A client for apps and adapters that carries no rules                                                                                                                                                   |
+| `cli`         | `protocol`                 | Generates configuration; holds no rules. `workhorse mcp` runs a separate native relay binary, because a JavaScript runtime costs about 24 MB per relay and a stdio host runs one per session (spike 4) |
 
 Nothing in the base imports an app.
 
@@ -301,16 +312,17 @@ Vite+ caches `types` and `effect` with explicit inputs: automatic file tracking 
 
 Lightness is a gated property, measured where the design is meant to win: the cost of each additional and each idle agent, shared app memory, and tokens per task. A single native process such as fx will start faster and use less memory than one JavaScript runtime; the budgets do not compete on that axis.
 
-| Budget                                                | Limit                                | Evidence today                                                                                        |
-| ----------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| Daemon idle RSS                                       | ≤ 40 MB                              | 28–31 MB on workerd (spike 3)                                                                         |
-| Cold start to first request                           | ≤ 50 ms                              | 17–37 ms (spike 3)                                                                                    |
-| Additional RSS per active session                     | ≤ 1 MB                               | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it                              |
-| Additional RSS per idle session                       | ≈ 0, evicted to SQLite               | Eviction and restore observed (spike 3)                                                               |
-| Additional RSS per loaded app, shared across sessions | ≤ 2 MB                               | Not yet measured                                                                                      |
-| Rules package (`core`)                                | ≤ 20 KB gzip                         | Not yet measured. The core-shape comparison's whole bundle, mailbox rules plus shell, was 3.2 KB gzip |
-| Daemon bundle (`worker`, with `core` and Effect)      | Set from slice 1's first measurement | Not yet measured                                                                                      |
-| SDK (`sdk`)                                           | Set from slice 1's first measurement | Not yet measured                                                                                      |
+| Budget                                                | Limit                                 | Evidence today                                                                                                                                                      |
+| ----------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Daemon idle RSS                                       | ≤ 40 MB                               | macOS: 28–33 MB (spikes 3 and 4). Linux x86_64: 48–50 MB, sandboxed or not, **over the budget**; investigated in slice 1                                            |
+| Cold start to first request                           | ≤ 50 ms                               | macOS: 17–37 ms unsandboxed, 44–61 ms under `sandbox-exec` (spikes 3 and 4). Linux x86_64: 51–60 ms, sandboxed or not, **over the budget**; investigated in slice 1 |
+| Additional RSS per active session                     | ≤ 1 MB                                | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it                                                                                            |
+| Additional RSS per idle session                       | ≈ 0, evicted to SQLite                | Eviction and restore observed (spike 3)                                                                                                                             |
+| Additional RSS per loaded app, shared across sessions | ≤ 2 MB                                | A trivial Dynamic Worker: 1.96 MB each over 50 (spike 4). An app bundling the MCP SDK: about 29 MB, which is why the daemon speaks MCP for apps                     |
+| stdio relay, per process                              | Set from slice 10's first measurement | A Bun relay: 24 MB. A byte pipe (`nc -U`): 2.5 MB (spike 4)                                                                                                         |
+| Rules package (`core`)                                | ≤ 20 KB gzip                          | Not yet measured. The core-shape comparison's whole bundle, mailbox rules plus shell, was 3.2 KB gzip                                                               |
+| Daemon bundle (`worker`, with `core` and Effect)      | Set from slice 1's first measurement  | Not yet measured                                                                                                                                                    |
+| SDK (`sdk`)                                           | Set from slice 1's first measurement  | Not yet measured                                                                                                                                                    |
 
 | Rule                    | Decision                                                                                                                                                                                                                                                                   |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -326,12 +338,12 @@ Spikes under `spike/`:
 1. **nono.** A process sandboxing itself. **Done**: file limits, inheritance, and no widening hold on macOS and Linux; on Linux, Unix sockets stay open to a self-sandboxed process and UDP needs seccomp. Evidence in `spike/sandbox/FINDINGS.md`.
 2. **Remote transport.** **Done** on the LAN and across a simulated network switch: iroh recovered 780 ms faster at the median, under the 2-second rule, and added 241 crates against 53, 11 MB binaries against 2 MB, and a relay process. WebSocket is the transport; the real-phone test runs when a phone is available. Evidence in `spike/transport/FINDINGS.md`.
 3. **workerd.** One bundle on plain workerd and on Cloudflare. **Passed**. The core-shape comparison in the same spike measured TypeScript rules against Rust compiled to wasm: TypeScript ran the rules about 20× faster with about 19× less CPU, a 10 KB bundle against 116 KB, less memory, and the same end-to-end latency. Evidence in `spike/workerd/FINDINGS.md`.
-4. **workerd-only daemon.** workerd listening on a Unix socket under `sandbox-exec` on macOS and bubblewrap on the homelab, started by launchd and `systemd --user`. It proves: `fs` through disk directories; a symlink pointing outside a root is blocked by the OS sandbox; a host Unix socket outside the grants is unreachable; MCP over HTTP reaches a Worker app; the stdio relay's memory; a restart through the service manager.
+4. **workerd-only daemon.** **Done**: workerd on a Unix socket under `sandbox-exec` with launchd and under bubblewrap with `systemd --user` passed all 13 checks before and after restarts, and without a sandbox the symlink and host-socket escapes succeeded. Restarts take about 100 ms. It also showed that an app bundling the MCP SDK costs about 29 MB, a Bun stdio relay 24 MB, and workerd on Linux x86_64 exceeds the idle-memory and cold-start budgets. Evidence in `spike/daemon/FINDINGS.md`.
 
 Slices:
 
 0. **Done.** The Bun workspace on Vite+ with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
-1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness.
+1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness. It also finds why workerd on Linux exceeds the idle-memory and cold-start budgets.
 2. The home link over WebSocket and TLS: key pairing, remote routes, and `unavailable`.
 3. The same daemon on Cloudflare, with the conformance suite passing there.
 4. Mailboxes, tasks, and state as core transitions, with the full mailbox proof.
@@ -340,7 +352,7 @@ Slices:
 7. Phone clients for iOS and Android.
 8. The TypeScript SDK.
 9. sourcefed as an app.
-10. The MCP framework, over MCP's HTTP transport and the stdio relay.
+10. The MCP framework: the daemon serves apps' tools over MCP's HTTP transport and as newline-delimited JSON-RPC on the socket, plus the native stdio relay. Its language is chosen in this slice.
 11. chauffeur.
 12. Spike 5, libfx: one harness on libfx against the daemon decides what the agent loop must add.
 13. The agent loop: native and wasm builds, with uniffi bindings for Swift and Kotlin.
@@ -356,6 +368,7 @@ Dependencies:
 | Vite+ (bundling oxfmt, Oxlint, tsgolint, Vitest), TypeScript 7, `@effect/tsgo`, `@types/node` | Approved as gate tooling, pinned exactly            |
 | The `cf` CLI and wrangler, as deploy tooling                                                  | Approved                                            |
 | `sandbox-exec` (built into macOS) and bubblewrap (a Linux system package)                     | Used by the generated sandbox; confirmed in spike 4 |
+| The relay's native toolchain                                                                  | Requires approval in slice 10                       |
 | A property-testing library for the mailbox simulation                                         | Requires approval before slice 4                    |
 | `iroh`                                                                                        | Not used. Reconsidered only after a real-phone test |
 | `uniffi` and the loop's model-client crates                                                   | Require approval before slice 13                    |
