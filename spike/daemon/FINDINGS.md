@@ -13,7 +13,7 @@
 | `service.sh` | Starts the daemon through the service manager, probes it, times SIGKILL and controlled restarts, and on Linux inspects the sandbox's filesystem view through `/proc/<pid>/root` |
 | `relay.ts`, `relay-probe.ts` | `workhorse mcp <app>`: stdio to HTTP over the Unix socket, driven by the SDK's `StdioClientTransport` |
 
-The spike's code is in the commit that added this file.
+The spike's code is in commit `d5ceec80` (`git checkout d5ceec80 -- spike/daemon` restores it).
 
 Versions: workerd 1.20261019.1, MCP SDK 2.3.1 (`@modelcontextprotocol/client` and `server`), zod 4.2.1, Bun 1.4.3 (macOS) and 1.4.2 (NixOS), bubblewrap 0.12.0. Hosts: macOS 15.7.4 arm64 (M1 Max); NixOS 26.11, kernel 6.12.82 x86_64 (`steven@192.168.0.40`).
 
