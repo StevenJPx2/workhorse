@@ -36,3 +36,6 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: bun install --frozen-lockfile
       - run: bun run check
+      # Lightness budgets on the runner, sandbox included (budgets/limits.ts).
+      - name: Budgets
+        run: bun budgets/measure.ts
