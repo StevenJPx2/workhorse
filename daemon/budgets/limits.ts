@@ -17,7 +17,7 @@ export const BUDGETS = {
     limit: { darwin: 20, linux: 20 },
   },
   // Process start to the first answered hello, sandbox included, median of the runs. Linux CI
-  // runners vary: medians of 43.1, 37.9 and 55.0 ms, slowest sample 58 ms; 70 ms leaves headroom.
+  // runners vary: medians of 37.9 to 56.0 ms over four runs, slowest sample 63.8 ms.
   coldStart: {
     name: "cold start to first answer",
     unit: "ms",
