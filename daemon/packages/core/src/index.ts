@@ -1,12 +1,8 @@
-export {
-  type Action,
-  type Apps,
-  type Connection,
-  deny,
-  type DenyReason,
-  handle,
-  newConnection,
-  type Step,
-} from "./connection.ts";
+/** Public API for pure capability decisions and client-protocol state transitions. */
+export { deny, handle, newConnection } from "./connection/index.ts";
 
-export { decideRead, MAX_PATH_LENGTH, type ReadDecision } from "./fs.ts";
+export type { Action, Apps, Connection, DenyReason, Step } from "./connection/index.ts";
+
+export { decideRead, MAX_PATH_LENGTH } from "./fs/index.ts";
+
+export type { ReadDecision } from "./fs/index.ts";

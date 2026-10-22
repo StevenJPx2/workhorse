@@ -1,7 +1,7 @@
 import { ErrorCode } from "@workhorse/protocol/constants";
 import type { Inbound } from "@workhorse/protocol";
 import { describe, expect, it } from "vite-plus/test";
-import { type Apps, type Connection, handle, newConnection } from "../src/connection.ts";
+import { type Apps, type Connection, handle, newConnection } from "../src/index.ts";
 
 const apps: Apps = new Map([["notes", new Set(["read"])]]);
 const ready: Connection = { phase: "ready", version: 1 };

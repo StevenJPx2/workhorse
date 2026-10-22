@@ -1,6 +1,6 @@
 import type { FsGrant } from "@workhorse/protocol";
 import { describe, expect, it } from "vite-plus/test";
-import { decideRead, MAX_PATH_LENGTH } from "../src/fs.ts";
+import { decideRead, MAX_PATH_LENGTH } from "../src/index.ts";
 
 const grant: FsGrant = { roots: { notes: "/home/me/notes" }, mode: "read" };
 

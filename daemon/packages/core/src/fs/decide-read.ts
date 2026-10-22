@@ -1,15 +1,13 @@
 import type { FsGrant } from "@workhorse/protocol";
+import { MAX_PATH_LENGTH } from "./limits.ts";
 
-// Paths from apps are hostile. A path is relative to a named root and is a list of plain
-// names: `.`, `..`, empty segments, absolute paths and NUL never resolve.
-
-export const MAX_PATH_LENGTH = 1024;
-
+/** Result of checking a requested path against a filesystem grant. */
 export type ReadDecision =
   | { readonly type: "allowed"; readonly root: string; readonly segments: readonly string[] }
   | { readonly type: "denied"; readonly reason: "no_grant" | "outside_root" }
   | { readonly type: "invalid_path" };
 
+/** Decide whether a relative path is authorized by a named filesystem root grant. */
 export function decideRead(grant: FsGrant | undefined, root: string, path: string): ReadDecision {
   // hasOwn: a root named "constructor" or "__proto__" must not reach Object.prototype.
   if (grant === undefined || !Object.hasOwn(grant.roots, root))
