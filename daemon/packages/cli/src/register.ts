@@ -73,6 +73,8 @@ function stopService(platform: Platform, label: string): void {
   }
 
   run("systemctl", ["--user", "disable", "--now", `${label}.socket`, `${label}.service`]);
+  // A crash loop leaves the units failed with their start limit hit, which blocks a reinstall.
+  run("systemctl", ["--user", "reset-failed", `${label}.socket`, `${label}.service`]);
 }
 
 // Without lingering, systemd stops user services at logout; a home server needs it on.
