@@ -7,6 +7,7 @@
     { "path": "./packages/worker/tsconfig.json" },
     { "path": "./packages/cli/tsconfig.json" },
     { "path": "./smoke/tsconfig.json" },
+    { "path": "./budgets/tsconfig.json" },
     { "path": "./packages/conformance/tsconfig.json" }
   ]
 }

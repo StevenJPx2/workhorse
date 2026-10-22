@@ -51,15 +51,18 @@ const systemdWord = (arg: string) => `"${arg.replaceAll("%", "%%")}"`;
 
 // Linux. The socket unit owns the listening socket and passes it as fd 3, so no stale file
 // survives a crash and clients wait during a restart. A crash loop stops after 10 failed starts
-// in 60 s instead of retrying forever.
+// in 60 s instead of retrying forever. The service also starts at login, like the launchd agent,
+// and `warm` runs after every start; its failure ("-") never fails the service.
 export function systemdUnits(
   home: string,
   label: string,
   layout: Layout,
   command: readonly string[],
+  warm: readonly string[],
 ): readonly ServiceFile[] {
   const dir = join(home, ".config", "systemd", "user");
   const exec = [...command, "--socket-fd", "main=3"].map(systemdWord).join(" ");
+  const warmUp = warm.map(systemdWord).join(" ");
 
   return [
     {
@@ -68,7 +71,7 @@ export function systemdUnits(
     },
     {
       path: join(dir, `${label}.service`),
-      content: `[Unit]\nDescription=Workhorse daemon (${label})\nRequires=${label}.socket\nStartLimitIntervalSec=60\nStartLimitBurst=10\n\n[Service]\nWorkingDirectory=${layout.etc}\nExecStart=${exec}\nRestart=always\nRestartSec=0\n`,
+      content: `[Unit]\nDescription=Workhorse daemon (${label})\nRequires=${label}.socket\nStartLimitIntervalSec=60\nStartLimitBurst=10\n\n[Service]\nWorkingDirectory=${layout.etc}\nExecStart=${exec}\nExecStartPost=-${warmUp}\nRestart=always\nRestartSec=0\n\n[Install]\nWantedBy=default.target\n`,
     },
   ];
 }

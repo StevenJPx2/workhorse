@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { Console, Effect } from "effect";
 import { InstallError } from "./inputs.ts";
 import type { Layout } from "./layout.ts";
@@ -11,6 +11,16 @@ export type Platform = "darwin" | "linux";
 
 const uid = () => String(process.getuid?.() ?? 0);
 
+// `workhorse warm` with the runtime and CLI that installed the service. A release ships a
+// standalone CLI; until then the service refers to this checkout.
+const warmCommand = (layout: Layout) => [
+  process.execPath,
+  join(import.meta.dirname, "main.ts"),
+  "warm",
+  "--base",
+  layout.base,
+];
+
 export function serviceFiles(
   platform: Platform,
   label: string,
@@ -19,7 +29,7 @@ export function serviceFiles(
 ): readonly ServiceFile[] {
   return platform === "darwin"
     ? [launchdAgent(homedir(), label, layout, command)]
-    : systemdUnits(homedir(), label, layout, command);
+    : systemdUnits(homedir(), label, layout, command, warmCommand(layout));
 }
 
 // Writes the service files and starts the daemon under the service manager, replacing any
@@ -47,7 +57,9 @@ export const register = Effect.fnUntraced(function* (
   }
 
   yield* must("systemctl", ["--user", "daemon-reload"]);
+  // The socket first, so the service receives it when it starts now and at every login.
   yield* must("systemctl", ["--user", "enable", "--now", `${label}.socket`]);
+  yield* must("systemctl", ["--user", "enable", "--now", `${label}.service`]);
   yield* warnWithoutLinger();
 });
 

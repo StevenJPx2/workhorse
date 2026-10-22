@@ -3,6 +3,7 @@
 //                   [--service os|none] [--label <name>] [--loader <ld.so>]
 // workhorse daemon --base <dir>           run the installed daemon in the foreground
 // workhorse uninstall [--label <name>]    stop the service and remove its files
+// workhorse warm --base <dir>             load the daemon's code now (the service runs this)
 import { realpathSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { Console, Effect, type Option, Schema } from "effect";
@@ -11,6 +12,7 @@ import { InstallError } from "./inputs.ts";
 import { install, platformOf } from "./install.ts";
 import { layoutOf } from "./layout.ts";
 import { serviceFiles, unregister } from "./register.ts";
+import { warm } from "./warm.ts";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -74,6 +76,11 @@ const installCommand = Effect.gen(function* () {
 
 const daemonCommand = Effect.flatMap(base, (dir) => runDaemon(layoutOf(realpathSync(dir))));
 
+const warmCommand = Effect.as(
+  Effect.flatMap(base, (dir) => warm(layoutOf(realpathSync(dir)).socket)),
+  0,
+);
+
 const uninstallCommand = Effect.gen(function* () {
   const platform = yield* platformOf(process.platform);
   const name = yield* label;
@@ -84,21 +91,22 @@ const uninstallCommand = Effect.gen(function* () {
   return 0;
 });
 
-function commandOf(name: string | undefined): Effect.Effect<number, InstallError> {
-  if (name === "install") return installCommand;
+const COMMANDS: ReadonlyMap<string, Effect.Effect<number, InstallError>> = new Map([
+  ["install", installCommand],
+  ["daemon", daemonCommand],
+  ["uninstall", uninstallCommand],
+  ["warm", warmCommand],
+]);
 
-  if (name === "daemon") return daemonCommand;
-
-  if (name === "uninstall") return uninstallCommand;
-
-  return Effect.fail(
+const command =
+  COMMANDS.get(positionals[0] ?? "") ??
+  Effect.fail(
     new InstallError({
-      message: `unknown command ${String(name)}; use install, daemon or uninstall`,
+      message: `unknown command ${String(positionals[0])}; use ${[...COMMANDS.keys()].join(", ")}`,
     }),
   );
-}
 
-const program = Effect.catchTag(commandOf(positionals[0]), "InstallError", (error) =>
+const program = Effect.catchTag(command, "InstallError", (error) =>
   Effect.as(Console.error(`workhorse: ${error.message}`), 1),
 );
 

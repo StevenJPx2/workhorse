@@ -102,10 +102,13 @@ describe("launchdAgent", () => {
 });
 
 describe("systemdUnits", () => {
-  const [socket, service] = systemdUnits("/home/me", "workhorse", layout, [
-    "/usr/bin/bwrap",
-    "/a b/workerd",
-  ]);
+  const [socket, service] = systemdUnits(
+    "/home/me",
+    "workhorse",
+    layout,
+    ["/usr/bin/bwrap", "/a b/workerd"],
+    ["/bin/bun", "/cli/main.ts", "warm", "--base", "/home/me/.workhorse"],
+  );
 
   it("lets the socket unit own a private socket", () => {
     expect(socket?.path).toBe("/home/me/.config/systemd/user/workhorse.socket");
@@ -120,5 +123,12 @@ describe("systemdUnits", () => {
     );
     expect(service?.content).toContain("StartLimitIntervalSec=60\nStartLimitBurst=10");
     expect(service?.content).toContain("Restart=always");
+  });
+
+  it("starts at login and warms after every start without failing the service on a warm error", () => {
+    expect(service?.content).toContain("[Install]\nWantedBy=default.target");
+    expect(service?.content).toContain(
+      'ExecStartPost=-"/bin/bun" "/cli/main.ts" "warm" "--base" "/home/me/.workhorse"',
+    );
   });
 });

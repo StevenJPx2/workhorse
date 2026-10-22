@@ -10,6 +10,7 @@ import { type Layout, layoutOf, MAX_SOCKET_PATH } from "./layout.ts";
 import { type Platform, register, serviceFiles } from "./register.ts";
 import { must } from "./run.ts";
 import { type Sandbox, sandboxedArgs, seatbeltProfile } from "./sandbox.ts";
+import { warm } from "./warm.ts";
 
 export type InstallOptions = {
   readonly base: string;
@@ -69,12 +70,15 @@ export const install = Effect.fnUntraced(function* (
     writeFileSync(layout.command, JSON.stringify(command));
   });
 
-  if (options.service === "os")
+  if (options.service === "os") {
     yield* register(
       platform,
       options.label,
       serviceFiles(platform, options.label, layout, command),
     );
+    // Loads the daemon's code now rather than on a client's first connection.
+    yield* warm(layout.socket);
+  }
 
   return { layout, command, service: options.service === "os" };
 });
