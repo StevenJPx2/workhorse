@@ -1,17 +1,31 @@
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import type { AppSpec, Deployment, Policy } from "@workhorse/protocol";
-import { Effect } from "effect";
-import { diskRoots, renderConfig } from "./config.ts";
+import { Config, Effect } from "effect";
+import { type DiskRoot, diskRoots, renderConfig } from "./config.ts";
 import { InstallError, readApp, readPolicy } from "./inputs.ts";
 import { type Layout, layoutOf, MAX_SOCKET_PATH } from "./layout.ts";
+import { type Platform, register, serviceFiles } from "./register.ts";
+import { must } from "./run.ts";
+import { type Sandbox, sandboxedArgs, seatbeltProfile } from "./sandbox.ts";
 
 export type InstallOptions = {
   readonly base: string;
   readonly policy: string | undefined;
   readonly apps: readonly string[];
+  readonly sandbox: "os" | "none";
+  readonly service: "os" | "none";
+  readonly label: string;
+  // A glibc dynamic loader for systems whose loader is not at the standard path (NixOS).
+  readonly loader: string | undefined;
+};
+
+export type Installed = {
+  readonly layout: Layout;
+  readonly command: readonly string[];
+  readonly service: boolean;
 };
 
 // Development builds bundle the worker from this workspace; a release ships the bundle.
@@ -19,7 +33,8 @@ const WORKER_ENTRY = join(import.meta.dirname, "..", "..", "worker", "src", "ind
 
 export const install = Effect.fnUntraced(function* (
   options: InstallOptions,
-): Effect.fn.Return<Layout, InstallError> {
+): Effect.fn.Return<Installed, InstallError> {
+  const platform = yield* platformOf(process.platform);
   const layout = yield* prepare(options.base);
 
   const policy: Policy =
@@ -28,15 +43,43 @@ export const install = Effect.fnUntraced(function* (
   const apps = yield* Effect.forEach(options.apps, readApp);
   yield* checkApps(policy, apps);
   const deployment: Deployment = { policy, apps };
+  const roots = diskRoots(policy);
   yield* attempt("copy the workerd binary", () => copyFileSync(workerdBinary(), layout.workerd));
+
+  if (options.loader !== undefined) {
+    yield* must("patchelf", [
+      "--set-interpreter",
+      options.loader,
+      "--set-rpath",
+      dirname(options.loader),
+      layout.workerd,
+    ]);
+  }
+
   yield* bundleWorker(layout.bundle);
+  const sandbox = yield* chooseSandbox(options, platform, layout, roots);
+  const command = sandboxedArgs(sandbox, layout, roots);
   yield* attempt("write the configuration", () => {
     writeFileSync(layout.deployment, JSON.stringify(deployment));
-    writeFileSync(layout.config, renderConfig(layout, diskRoots(policy)));
+    writeFileSync(layout.config, renderConfig(layout, roots));
+    writeFileSync(layout.command, JSON.stringify(command));
   });
 
-  return layout;
+  if (options.service === "os")
+    yield* register(
+      platform,
+      options.label,
+      serviceFiles(platform, options.label, layout, command),
+    );
+
+  return { layout, command, service: options.service === "os" };
 });
+
+export function platformOf(platform: NodeJS.Platform): Effect.Effect<Platform, InstallError> {
+  return platform === "darwin" || platform === "linux"
+    ? Effect.succeed(platform)
+    : Effect.fail(new InstallError({ message: `unsupported platform ${platform}` }));
+}
 
 const prepare = Effect.fnUntraced(function* (base: string): Effect.fn.Return<Layout, InstallError> {
   yield* attempt(`create ${base}`, () => mkdirSync(base, { recursive: true }));
@@ -51,9 +94,50 @@ const prepare = Effect.fnUntraced(function* (base: string): Effect.fn.Return<Lay
   yield* attempt("create the daemon's folders", () => {
     for (const dir of [layout.bin, layout.etc, layout.state, layout.sock, layout.log])
       mkdirSync(dir, { recursive: true });
+    // Every connection is treated as the local user, so no other user may reach the socket.
+    chmodSync(layout.base, 0o700);
+    chmodSync(layout.sock, 0o700);
   });
 
   return layout;
+});
+
+const chooseSandbox = Effect.fnUntraced(function* (
+  options: InstallOptions,
+  platform: Platform,
+  layout: Layout,
+  roots: readonly DiskRoot[],
+): Effect.fn.Return<Sandbox, InstallError> {
+  if (options.sandbox === "none") return { type: "none" };
+
+  if (platform === "darwin") {
+    const profile = join(layout.etc, "sandbox.sb");
+    yield* attempt("write the sandbox profile", () =>
+      writeFileSync(profile, seatbeltProfile(layout, roots)),
+    );
+
+    return { type: "seatbelt", profile };
+  }
+
+  return { type: "bubblewrap", bwrap: yield* findOnPath("bwrap"), loader: options.loader };
+});
+
+// An absolute path, because the service manager does not run with the user's PATH.
+const findOnPath = Effect.fnUntraced(function* (
+  program: string,
+): Effect.fn.Return<string, InstallError> {
+  const path = yield* Effect.orElseSucceed(Config.String("PATH"), () => "");
+
+  const found = path
+    .split(delimiter)
+    .map((dir) => join(dir, program))
+    .find((candidate) => spawnSync(candidate, ["--version"]).status === 0);
+
+  return yield* Effect.mapError(
+    Effect.fromNullishOr(found),
+    () =>
+      new InstallError({ message: `${program} is not installed; it is needed for the sandbox` }),
+  );
 });
 
 // A grant for an app that is not installed is a mistake in the policy, not something to ignore.

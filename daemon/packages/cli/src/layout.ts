@@ -12,6 +12,8 @@ export type Layout = {
   readonly config: string;
   readonly bundle: string;
   readonly deployment: string;
+  // The exact command the service manager runs, sandbox included; `workhorse daemon` runs it too.
+  readonly command: string;
   readonly socket: string;
 };
 
@@ -33,6 +35,7 @@ export function layoutOf(base: string): Layout {
     config: join(etc, "config.capnp"),
     bundle: join(etc, "daemon.js"),
     deployment: join(etc, "deployment.json"),
+    command: join(etc, "command.json"),
     socket: join(sock, "daemon.sock"),
   };
 }

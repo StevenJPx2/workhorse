@@ -32,8 +32,10 @@ const waitUntilListening = (socket: string) =>
 
 function install(base: string): Effect.Effect<void, DaemonDidNotStart> {
   const fixtures = writeFixtures(join(base, "data"));
+  // Sandboxed (the default) but not registered with the service manager: the suite runs the
+  // installed command itself, so no launchd or systemd state outlives a test run.
   const args = [cli, "install", "--base", base, "--policy", fixtures.policy, "--app", fixtures.app];
-  const result = spawnSync("bun", args, { stdio: "inherit" });
+  const result = spawnSync("bun", [...args, "--service", "none"], { stdio: "inherit" });
 
   return result.status === 0
     ? Effect.void

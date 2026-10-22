@@ -9,7 +9,6 @@ type FsProps = { readonly app: string };
 
 // The file capability an app receives as `env.FS`. `props.app` names the caller.
 export class Fs extends WorkerEntrypoint<Env, FsProps> {
-  // fallow-ignore-next-line unused-class-member -- apps call this over Workers RPC
   read(root: Schema.Json, path: Schema.Json): Promise<Outcome> {
     return Effect.runPromise(readFile(this.env, this.ctx.props.app, [root, path]));
   }
