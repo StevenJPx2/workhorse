@@ -20,6 +20,8 @@ export type Layout = {
   // Its self-signed TLS key and certificate for links, also made once and kept.
   readonly tlsKey: string;
   readonly tlsCertificate: string;
+  // The `host:port` links are accepted on, when installed with --listen; `workhorse pair` reads it.
+  readonly listen: string;
 };
 
 // sockaddr_un holds 104 bytes on macOS (108 on Linux), including the terminating NUL.
@@ -45,6 +47,7 @@ export function layoutOf(base: string): Layout {
     identity: join(etc, "identity.json"),
     tlsKey: join(etc, "tls-key.pem"),
     tlsCertificate: join(etc, "tls-certificate.pem"),
+    listen: join(etc, "listen"),
   };
 }
 

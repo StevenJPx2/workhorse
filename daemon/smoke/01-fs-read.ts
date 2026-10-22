@@ -8,17 +8,10 @@ import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { type Client, connect } from "@workhorse/conformance/client";
+import { connect } from "@workhorse/conformance/client";
 import { ESCAPE_FILE, NOTE, writeFixtures } from "@workhorse/conformance/fixtures";
-import type { Json } from "@workhorse/protocol";
-import { Console, Effect, Schedule, Schema } from "effect";
-
-class SmokeFailed extends Schema.TaggedError<
-  SmokeFailed,
-  { readonly SmokeFailed: unique symbol }
->()("SmokeFailed", {
-  message: Schema.String,
-}) {}
+import { Console, Effect, Schedule } from "effect";
+import { oneLiner, runSmoke, show, SmokeFailed } from "./show.ts";
 
 const LABEL = "dev.workhorse.smoke-1";
 const BASE = join(tmpdir(), "workhorse-smoke-1");
@@ -50,19 +43,6 @@ const daemon = Effect.tryPromise({
   catch: () => new SmokeFailed({ message: `nothing is listening on ${SOCKET}` }),
 }).pipe(Effect.retry({ times: 300, schedule: Schedule.spaced("20 millis") }));
 
-function show(client: Client, method: string, params: Json): Effect.Effect<void, SmokeFailed> {
-  return Effect.tryPromise({
-    try: () => client.request(method, params),
-    catch: (cause) => new SmokeFailed({ message: String(cause) }),
-  }).pipe(
-    Effect.flatMap((response) =>
-      Console.log(
-        `→ ${JSON.stringify({ jsonrpc: "2.0", id: response.id, method, params })}\n← ${JSON.stringify(response)}\n`,
-      ),
-    ),
-  );
-}
-
 const up = Effect.gen(function* () {
   yield* down;
   const fixtures = writeFixtures(join(BASE, "data"));
@@ -91,8 +71,7 @@ const up = Effect.gen(function* () {
   client.close();
   yield* Console.log(`The daemon is still running. Try it yourself:
 
-  printf '%s\\n' '{"jsonrpc":"2.0","id":1,"method":"hello","params":{"protocol":[1]}}' \\
-    '{"jsonrpc":"2.0","id":2,"method":"notes.read","params":{"path":"todo.md"}}' | nc -U -w 1 ${SOCKET}
+${oneLiner(SOCKET, "notes.read", { path: NOTE.path })}
 
 or from a file of your own: save this as smoke/try.ts (git ignores it), then run bun smoke/try.ts
 
@@ -104,9 +83,4 @@ or from a file of your own: save this as smoke/try.ts (git ignores it), then run
 Remove it with: bun smoke/01-fs-read.ts --down`);
 });
 
-const program = (values.down ? down : up).pipe(
-  Effect.as(0),
-  Effect.catchTag("SmokeFailed", (error) => Effect.as(Console.error(`smoke: ${error.message}`), 1)),
-);
-
-process.exitCode = await Effect.runPromise(program);
+process.exitCode = await runSmoke(values.down ? down : up);

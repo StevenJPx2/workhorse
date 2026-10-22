@@ -7,6 +7,7 @@ import {
   mkdirSync,
   openSync,
   realpathSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
@@ -94,6 +95,9 @@ export const install = Effect.fnUntraced(function* (
 
     for (const peer of links.dialed)
       writeFileSync(join(layout.etc, peerCertificateFile(peer.name)), peer.certificate);
+
+    if (options.listen === undefined) rmSync(layout.listen, { force: true });
+    else writeFileSync(layout.listen, options.listen);
   });
 
   if (options.service === "os") {

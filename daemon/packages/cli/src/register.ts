@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { Console, Effect } from "effect";
+import { Console, Effect, Schedule } from "effect";
 import { InstallError } from "./inputs.ts";
 import type { Layout } from "./layout.ts";
 import { must, run } from "./run.ts";
@@ -72,7 +72,21 @@ export const unregister = Effect.fnUntraced(function* (
   for (const file of files) rmSync(file.path, { force: true });
 
   if (platform === "linux") yield* must("systemctl", ["--user", "daemon-reload"]);
+
+  if (platform === "darwin") yield* untilUnloaded(label);
 });
+
+// `launchctl bootout` returns before the agent is gone, and bootstrapping the same label until
+// then fails ("Bootstrap failed: 5"). Waits for launchd to forget it: every 100 ms, at most 10 s.
+function untilUnloaded(label: string): Effect.Effect<void, InstallError> {
+  const gone = Effect.suspend(() =>
+    run("launchctl", ["print", `gui/${uid()}/${label}`]).ok
+      ? Effect.fail(new InstallError({ message: `launchd still has ${label} after 10 s` }))
+      : Effect.void,
+  );
+
+  return Effect.retry(gone, { times: 100, schedule: Schedule.spaced("100 millis") });
+}
 
 // Best effort: the service may not be registered at all.
 function stopService(platform: Platform, label: string): void {
