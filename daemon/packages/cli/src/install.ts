@@ -44,7 +44,11 @@ export const install = Effect.fnUntraced(function* (
   yield* checkApps(policy, apps);
   const deployment: Deployment = { policy, apps };
   const roots = diskRoots(policy);
-  yield* attempt("copy the workerd binary", () => copyFileSync(workerdBinary(), layout.workerd));
+  yield* attempt("copy the workerd binary", () => {
+    copyFileSync(workerdBinary(), layout.workerd);
+    // The package may ship it world-writable; the daemon's binary is writable by its owner only.
+    chmodSync(layout.workerd, 0o755);
+  });
 
   if (options.loader !== undefined) {
     yield* must("patchelf", [

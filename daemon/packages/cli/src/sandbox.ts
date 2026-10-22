@@ -70,9 +70,10 @@ ${rootGrants.join("\n")}
 `;
 }
 
-// Linux system files workerd needs: libraries, DNS, and CA certificates. Missing ones are skipped.
-// The bundle file is listed too: on NixOS it is a symlink into the store, and binding the file
-// itself follows the link (spike 4).
+// Linux system files workerd needs: libraries, DNS, and the CA bundle (Debian and NixOS path, then
+// Fedora's). Missing ones are skipped. Only the bundle file is bound, not its folder: on NixOS the
+// file is a symlink into the store, binding it follows the link, and bubblewrap cannot mount onto
+// a symlink inside an already-bound folder.
 const LINUX_SYSTEM = [
   "/usr",
   "/lib",
@@ -81,8 +82,8 @@ const LINUX_SYSTEM = [
   "/etc/resolv.conf",
   "/etc/hosts",
   "/etc/nsswitch.conf",
-  "/etc/ssl/certs",
   "/etc/ssl/certs/ca-certificates.crt",
+  "/etc/pki/tls/certs/ca-bundle.crt",
 ];
 
 // Linux: a private mount namespace containing only the grants, so host sockets such as nscd and

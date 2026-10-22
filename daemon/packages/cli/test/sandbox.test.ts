@@ -54,6 +54,9 @@ describe("bubblewrapArgs", () => {
       ]),
     );
     expect(mounts(args).filter((mount) => / \/(home|run)$/.test(mount))).toEqual([]);
+    // A file bound inside a bound folder fails when the file is a symlink (NixOS).
+    expect(mounts(args)).toContain("--ro-bind-try /etc/ssl/certs/ca-certificates.crt");
+    expect(mounts(args)).not.toContain("--ro-bind-try /etc/ssl/certs");
   });
 
   it("also mounts a custom loader's store folder", () => {
