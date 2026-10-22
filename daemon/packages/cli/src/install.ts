@@ -1,5 +1,14 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  closeSync,
+  copyFileSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { delimiter, dirname, join } from "node:path";
 import type { AppSpec, Deployment, Policy } from "@workhorse/protocol";
@@ -61,6 +70,13 @@ export const install = Effect.fnUntraced(function* (
     ]);
   }
 
+  // Durable before the service can start it. Until written back, a freshly copied binary's pages
+  // also count as the daemon's own dirty memory on Linux (40 MB, slice 1).
+  yield* attempt("flush the workerd binary", () => {
+    const file = openSync(layout.workerd, "r");
+    fsyncSync(file);
+    closeSync(file);
+  });
   yield* bundleWorker(layout.bundle);
   const sandbox = yield* chooseSandbox(options, platform, layout, roots);
   const command = sandboxedArgs(sandbox, layout, roots);
