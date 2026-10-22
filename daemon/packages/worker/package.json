@@ -1,0 +1,18 @@
+{
+  "name": "@workhorse/worker",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@workhorse/core": "workspace:*",
+    "@workhorse/protocol": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261019.1",
+    "@effect/vitest": "4.0.5",
+    "vitest": "5.0.5"
+  }
+}

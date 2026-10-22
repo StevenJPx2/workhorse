@@ -1,0 +1,16 @@
+{
+  "name": "@workhorse/conformance",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.ts"
+  },
+  "dependencies": {
+    "@workhorse/protocol": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.5",
+    "vitest": "5.0.5"
+  }
+}

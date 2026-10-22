@@ -1,0 +1,12 @@
+{
+  "name": "@workhorse/protocol",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "dependencies": {
+    "effect": "4.0.5"
+  }
+}

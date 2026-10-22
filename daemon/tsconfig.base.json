@@ -8,7 +8,9 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "composite": true,
-    "noEmit": true,
+    // Project references need emit; only declarations are written, beside each project.
+    "emitDeclarationOnly": true,
+    "outDir": "${configDir}/.tsbuild",
     "skipLibCheck": true,
 
     "strict": true,
@@ -57,7 +59,9 @@
           "globalErrorInEffectCatch": "error",
           "leakingRequirements": "error",
           "strictEffectProvide": "error"
-        }
+        },
+        // Test-only harness, pinned to an exact version; a breaking change fails the suite.
+        "allowedUnstableApis": ["@effect/vitest#it"]
       }
     ]
   }

@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   // Vendored lint policy: maintained as upstream code, not analysed as ours.
   "ignorePatterns": ["tools/oxlint/anti-slop/**"],
-  // Runs the `effect` task defined in vite.config.ts, which Fallow does not read.
-  "ignoreDependencies": ["@effect/tsgo"]
+  // @effect/tsgo: runs the `effect` task in vite.config.ts, which Fallow does not read.
+  // workerd: the CLI resolves its platform binary by path (packages/cli/src/install.ts).
+  "ignoreDependencies": ["@effect/tsgo", "workerd"]
 }

@@ -1,4 +1,11 @@
 {
   "files": [],
-  "references": [{ "path": "./tools/tsconfig.json" }]
+  "references": [
+    { "path": "./tools/tsconfig.json" },
+    { "path": "./packages/protocol/tsconfig.json" },
+    { "path": "./packages/core/tsconfig.json" },
+    { "path": "./packages/worker/tsconfig.json" },
+    { "path": "./packages/cli/tsconfig.json" },
+    { "path": "./packages/conformance/tsconfig.json" }
+  ]
 }

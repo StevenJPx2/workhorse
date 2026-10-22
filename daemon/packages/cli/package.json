@@ -1,0 +1,17 @@
+{
+  "name": "@workhorse/cli",
+  "private": true,
+  "bin": {
+    "workhorse": "./src/main.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "@workhorse/protocol": "workspace:*",
+    "effect": "4.0.5",
+    "workerd": "1.20261019.1"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.5",
+    "vitest": "5.0.5"
+  }
+}

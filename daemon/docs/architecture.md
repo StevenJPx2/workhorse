@@ -59,21 +59,23 @@ JSON-RPC over Cap'n Proto and Cap'n Web: it is a stable open standard, it shares
 ```json
 {"jsonrpc":"2.0","id":1,"method":"hello","params":{"protocol":[1]}}
 {"jsonrpc":"2.0","id":1,"result":{"protocol":1}}
-{"jsonrpc":"2.0","id":2,"method":"attach","params":{"request":[{"capability":"fs.read","root":"~/notes"}]}}
-{"jsonrpc":"2.0","id":2,"result":{"granted":[{"capability":"fs.read","root":"~/notes"}],"denied":[]}}
-{"jsonrpc":"2.0","id":3,"method":"fs.read","params":{"path":"../secrets.txt"}}
+{"jsonrpc":"2.0","id":2,"method":"notes.read","params":{"path":"todo.md"}}
+{"jsonrpc":"2.0","id":2,"result":{"text":"buy milk\n"}}
+{"jsonrpc":"2.0","id":3,"method":"notes.read","params":{"path":"../secrets.txt"}}
 {"jsonrpc":"2.0","id":3,"error":{"code":-32001,"message":"denied","data":{"capability":"fs.read","reason":"outside_root"}}}
+{"jsonrpc":"2.0","id":4,"method":"fs.read","params":{"root":"notes","path":"todo.md"}}
+{"jsonrpc":"2.0","id":4,"error":{"code":-32001,"message":"denied","data":{"capability":"fs.read","reason":"no_grant"}}}
 ```
 
-| Rule     | Decision                                                                                                                                                                                             |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source   | One TypeScript schema per message. Other languages use the JSON Schema exported from it                                                                                                              |
-| Methods  | `capability.operation`. The daemon routes by prefix to the owner of the name                                                                                                                         |
-| Lease    | Bound to the connection after `attach`. Calls carry no lease ID. Durable work belongs to the identity                                                                                                |
-| Errors   | `-32001 denied` (policy refused), `-32002 failed` (allowed, but the operation failed), `-32003 unavailable` (the owner cannot be reached before the deadline), `-32004 limited` (a quota is reached) |
-| Push     | JSON-RPC notifications on the same connection                                                                                                                                                        |
-| Versions | `hello` negotiates the version. An unsupported version gets a clear refusal                                                                                                                          |
-| Limits   | Maximum frame size, maximum read size, maximum connections, and a deadline on every call. Oversized input is rejected, never truncated                                                               |
+| Rule     | Decision                                                                                                                                                                                                                                                                                 |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source   | One TypeScript schema per message. Other languages use the JSON Schema exported from it                                                                                                                                                                                                  |
+| Methods  | `capability.operation`. The daemon routes by prefix to the owner of the name                                                                                                                                                                                                             |
+| Lease    | An app receives its lease when the daemon loads it from its manifest. Calls carry no lease ID. Durable work belongs to the identity. An outside client has no lease: it reaches the outside world only through apps' public operations, as in the example, where `notes` holds the grant |
+| Errors   | `-32001 denied` (policy refused), `-32002 failed` (allowed, but the operation failed), `-32003 unavailable` (the owner cannot be reached before the deadline), `-32004 limited` (a quota is reached)                                                                                     |
+| Push     | JSON-RPC notifications on the same connection                                                                                                                                                                                                                                            |
+| Versions | `hello` negotiates the version and must come first; any other call before it is refused. An unsupported version gets a clear refusal listing the supported versions                                                                                                                      |
+| Limits   | Maximum frame size, maximum read size, maximum connections, and a deadline on every call. Oversized input is rejected, never truncated                                                                                                                                                   |
 
 ## Identity
 
@@ -101,7 +103,7 @@ The policy governs access to the outside world and nothing else. Internal featur
       "net.fetch": { "hosts": ["api.github.com"], "secrets": ["GH_TOKEN"] }
     },
     "chauffeur": {
-      "fs": { "roots": ["~/.cache/chauffeur/skills"], "mode": "read-write" }
+      "fs": { "roots": { "skills": "~/.cache/chauffeur/skills" }, "mode": "read-write" }
     }
   }
 }
@@ -129,14 +131,14 @@ Outside apps, such as chauffeur or the Workhorse suite, extend the daemon throug
 
 The daemon owns a small, fixed set. Apps provide everything else.
 
-| Capability  | Grant | Contract                                                                                                                                                                                 |
-| ----------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fs`        | Yes   | Reads and writes inside granted roots, through one workerd disk directory per root. `.` and `..` never resolve; the OS sandbox stops symlinks that point outside the grants              |
-| `net.fetch` | Yes   | Host allowlist, timeouts, and credentials added by the daemon: `{"method":"net.fetch","params":{"url":"https://api.github.com/…","auth":"GH_TOKEN"}}`. The app never receives the secret |
-| `state`     | No    | Per-app durable key-value data                                                                                                                                                           |
-| `task`      | No    | Scheduled and recurring work. Tasks are saved state, so they survive restarts; they can run, pause, and be removed                                                                       |
-| `mailbox`   | No    | Durable delivery of events to targets, as specified below                                                                                                                                |
-| `audit`     | No    | One trail of every call, grant, denial, and effect. An app reads its own records                                                                                                         |
+| Capability  | Grant | Contract                                                                                                                                                                                                                                                                                                                                                   |
+| ----------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fs`        | Yes   | Reads and writes inside granted roots, through one workerd disk directory per root. The policy names each root, and an app reads by name and relative path (`ctx.fs.read("skills", "a.md")`), so app code never holds a real path and can name only its own roots. `.` and `..` never resolve; the OS sandbox stops symlinks that point outside the grants |
+| `net.fetch` | Yes   | Host allowlist, timeouts, and credentials added by the daemon: `{"method":"net.fetch","params":{"url":"https://api.github.com/…","auth":"GH_TOKEN"}}`. The app never receives the secret                                                                                                                                                                   |
+| `state`     | No    | Per-app durable key-value data                                                                                                                                                                                                                                                                                                                             |
+| `task`      | No    | Scheduled and recurring work. Tasks are saved state, so they survive restarts; they can run, pause, and be removed                                                                                                                                                                                                                                         |
+| `mailbox`   | No    | Durable delivery of events to targets, as specified below                                                                                                                                                                                                                                                                                                  |
+| `audit`     | No    | One trail of every call, grant, denial, and effect. An app reads its own records                                                                                                                                                                                                                                                                           |
 
 ## Mailboxes
 
@@ -274,6 +276,7 @@ daemon/
 │   ├── conformance/   black-box suite, run against any daemon
 │   ├── sdk/           TypeScript client, including mailbox sequence tracking
 │   └── cli/           workhorse: install, start, daemon
+├── smoke/             one hand-run demo per slice: 01-fs-read.ts, …
 ├── tools/             vendored anti-slop Oxlint rules and test setup
 ├── vite.config.ts     Vite+: format, lint, test, and task configuration
 └── docs/
@@ -281,14 +284,14 @@ daemon/
 
 A package exists where it enforces a boundary through its dependencies and lint rules:
 
-| Package       | Depends on                 | Boundary                                                                                                                                                                                               |
-| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `protocol`    | Effect Schema              | Contracts and protocol invariants only                                                                                                                                                                 |
-| `core`        | Types from `protocol` only | Lint bans `fetch`, `Date`, timers, `crypto`, and every runtime import, so I/O cannot be written. `tsc` checks that every input and effect is handled                                                   |
-| `worker`      | `core`, `protocol`         | The only package that touches Durable Objects, sockets, and disk directories                                                                                                                           |
-| `conformance` | `protocol`                 | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon                                                                                                            |
-| `sdk`         | `protocol`                 | A client for apps and adapters that carries no rules                                                                                                                                                   |
-| `cli`         | `protocol`                 | Generates configuration; holds no rules. `workhorse mcp` runs a separate native relay binary, because a JavaScript runtime costs about 24 MB per relay and a stdio host runs one per session (spike 4) |
+| Package       | Depends on                                                        | Boundary                                                                                                                                                                                                                      |
+| ------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocol`    | Effect Schema                                                     | Contracts and protocol invariants only                                                                                                                                                                                        |
+| `core`        | Types from `protocol`, and its dependency-free `constants` module | Lint bans `fetch`, `Date`, timers, `crypto`, `process`, `Math.random`, and every other runtime import, so I/O cannot be written and Effect never enters the rules bundle. `tsc` checks that every input and effect is handled |
+| `worker`      | `core`, `protocol`                                                | The only package that touches Durable Objects, sockets, and disk directories                                                                                                                                                  |
+| `conformance` | `protocol`                                                        | Sees only the protocol, so it proves behaviour from the outside and runs against any daemon                                                                                                                                   |
+| `sdk`         | `protocol`                                                        | A client for apps and adapters that carries no rules                                                                                                                                                                          |
+| `cli`         | `protocol`                                                        | Generates configuration; holds no rules. `workhorse mcp` runs a separate native relay binary, because a JavaScript runtime costs about 24 MB per relay and a stdio host runs one per session (spike 4)                        |
 
 Nothing in the base imports an app.
 
@@ -305,6 +308,8 @@ A daemon is any implementation that passes the conformance suite. The suite talk
 | Repository health                                    | `vp run health`: `fallow audit`                                                                                 |
 | Dependency advisories                                | `vp run audit`: `bun audit`                                                                                     |
 | Budgets                                              | The budget job in [Budgets](#budgets)                                                                           |
+
+Every slice also adds a smoke file in `smoke/`, numbered by slice, for running by hand. `bun smoke/01-fs-read.ts` installs a throwaway daemon in a temporary folder, prints each request and reply, and leaves the daemon running; `--down` removes it. Smoke files import the same small client as the conformance suite, so a file of your own can call the running daemon the same way. CI does not run them: the conformance suite is the proof, and the smoke files show the behaviour.
 
 Vite+ caches `types` and `effect` with explicit inputs: automatic file tracking missed a new source file for these Go-based tools. `health` and `audit` never cache. Installs use the frozen lockfile and exact versions.
 
@@ -343,7 +348,7 @@ Spikes under `spike/`:
 Slices:
 
 0. **Done.** The Bun workspace on Vite+ with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
-1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness. It also finds why workerd on Linux exceeds the idle-memory and cold-start budgets.
+1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness. A fixture app loaded from a manifest holds the `fs.read` grant, and the suite reaches it through the app's public operation, so outside clients still have no outside-world access of their own. A minimal `cli` package provides `workhorse install`. It also finds why workerd on Linux exceeds the idle-memory and cold-start budgets.
 2. The home link over WebSocket and TLS: key pairing, remote routes, and `unavailable`.
 3. The same daemon on Cloudflare, with the conformance suite passing there.
 4. Mailboxes, tasks, and state as core transitions, with the full mailbox proof.

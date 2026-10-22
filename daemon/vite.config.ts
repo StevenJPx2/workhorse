@@ -56,6 +56,48 @@ export default defineConfig({
       "anti-slop-effect/no-service-constructor-imports": "error",
       "anti-slop-effect/prefer-effect-match": "error",
     },
+    overrides: [
+      {
+        // core holds the rules and performs no I/O (docs/architecture.md, "Repository layout").
+        files: ["packages/core/src/**"],
+        rules: {
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                {
+                  group: ["**", "!./**", "!@workhorse/protocol/constants"],
+                  allowTypeImports: true,
+                  message:
+                    "core imports only relative files, types, and @workhorse/protocol/constants.",
+                },
+              ],
+            },
+          ],
+          "no-restricted-globals": [
+            "error",
+            ...[
+              "fetch",
+              "Date",
+              "setTimeout",
+              "setInterval",
+              "queueMicrotask",
+              "crypto",
+              "performance",
+              "process",
+            ].map((name) => ({ name, message: "core performs no I/O; return an effect instead." })),
+          ],
+          "no-restricted-properties": [
+            "error",
+            {
+              object: "Math",
+              property: "random",
+              message: "core is deterministic; take randomness as input.",
+            },
+          ],
+        },
+      },
+    ],
   },
   test: {
     projects: [
@@ -66,6 +108,21 @@ export default defineConfig({
           setupFiles: ["tools/vitest/rule-tester.ts"],
         },
       },
+      {
+        test: {
+          name: "unit",
+          include: ["packages/*/test/**/*.test.ts"],
+          exclude: ["packages/conformance/**"],
+        },
+      },
+      // Black-box tests against a real daemon: a throwaway one, or yours via WORKHORSE_SOCKET.
+      {
+        test: {
+          name: "conformance",
+          include: ["packages/conformance/test/**/*.test.ts"],
+          globalSetup: ["packages/conformance/test/global-setup.ts"],
+        },
+      },
     ],
   },
   run: {
@@ -74,7 +131,8 @@ export default defineConfig({
       // --force: tsc's own up-to-date check compares mtimes and skipped a new file with an older mtime.
       types: { command: "tsc -b --force", cache: { input: typeInputs, output: [] } },
       effect: {
-        command: "effect-tsgo diagnostics --project tools/tsconfig.json --strict",
+        // The root project follows its references, so every package is checked.
+        command: "effect-tsgo diagnostics --project tsconfig.json --strict",
         cache: { input: typeInputs, output: [] },
       },
       // Compares against the merge base, so a cached result could be stale.
