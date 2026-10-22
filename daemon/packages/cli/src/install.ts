@@ -1,26 +1,16 @@
 import { spawnSync } from "node:child_process";
-import {
-  chmodSync,
-  closeSync,
-  copyFileSync,
-  fsyncSync,
-  mkdirSync,
-  openSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, join } from "node:path";
 import type { AppSpec, Deployment, Policy } from "@workhorse/protocol";
 import { Config, Effect } from "effect";
 import { checkLinks } from "./check-links/index.ts";
 import { type DiskRoot, diskRoots, linkConfig, renderConfig } from "./config.ts";
 import { ensureIdentity } from "./identity/ensure-identity.ts";
 import { InstallError, readApp, readPolicy } from "./inputs.ts";
+import { installWorkerd } from "./install-workerd.ts";
 import { type Layout, layoutOf, MAX_SOCKET_PATH, peerCertificateFile } from "./layout.ts";
 import { type Platform, register, serviceFiles } from "./register.ts";
-import { must } from "./run.ts";
 import { type Sandbox, sandboxedArgs, seatbeltProfile } from "./sandbox.ts";
 import { warm } from "./warm.ts";
 
@@ -62,29 +52,7 @@ export const install = Effect.fnUntraced(function* (
   const deployment: Deployment = { policy, apps };
   const roots = diskRoots(policy);
   const links = linkConfig(policy, options.listen);
-  yield* attempt("copy the workerd binary", () => {
-    copyFileSync(workerdBinary(), layout.workerd);
-    // The package may ship it world-writable; the daemon's binary is writable by its owner only.
-    chmodSync(layout.workerd, 0o755);
-  });
-
-  if (options.loader !== undefined) {
-    yield* must("patchelf", [
-      "--set-interpreter",
-      options.loader,
-      "--set-rpath",
-      dirname(options.loader),
-      layout.workerd,
-    ]);
-  }
-
-  // Durable before the service can start it. Until written back, a freshly copied binary's pages
-  // also count as the daemon's own dirty memory on Linux (40 MB, slice 1).
-  yield* attempt("flush the workerd binary", () => {
-    const file = openSync(layout.workerd, "r");
-    fsyncSync(file);
-    closeSync(file);
-  });
+  yield* installWorkerd(workerdBinary(), layout.workerd, options.loader);
   yield* bundleWorker(layout.bundle);
   const sandbox = yield* chooseSandbox(options, platform, layout, roots);
   const command = sandboxedArgs(sandbox, layout, roots);

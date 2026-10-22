@@ -1,11 +1,13 @@
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
+import { PassThrough } from "node:stream";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Exit, Option, Schema } from "effect";
 import { acceptPairing } from "../src/pair/accept-pairing.ts";
 import { addPeer } from "../src/pair/add-peer.ts";
+import { confirm } from "../src/pair/confirm.ts";
 import { dialPairing } from "../src/pair/dial-pairing.ts";
 import { fingerprint } from "../src/pair/fingerprint.ts";
 import { hostPort } from "../src/pair/host-port.ts";
@@ -104,6 +106,34 @@ describe("the exchange", () => {
 
       server.close();
       expect(Exit.isFailure(exit) ? String(exit.cause) : "ok").toContain("not valid");
+    }),
+  );
+});
+
+// Answers arrive later, as from a person or a pipe; the prompt itself is discarded.
+const answer = (typed: string | undefined) =>
+  Effect.gen(function* () {
+    const input = new PassThrough();
+    const asked = confirm("Do they match? ", input, new PassThrough());
+
+    yield* Effect.forkChild(
+      Effect.delay(
+        Effect.sync(() => (typed === undefined ? input.end() : input.write(typed))),
+        "20 millis",
+      ),
+    );
+
+    return yield* asked;
+  });
+
+describe("confirm", () => {
+  it.live("counts only y or yes, after closing the prompt, and treats ended input as no", () =>
+    Effect.gen(function* () {
+      expect(yield* answer("y\n")).toBe(true);
+      expect(yield* answer(" YES \n")).toBe(true);
+      expect(yield* answer("no\n")).toBe(false);
+      expect(yield* answer("\n")).toBe(false);
+      expect(yield* answer(undefined)).toBe(false);
     }),
   );
 });
