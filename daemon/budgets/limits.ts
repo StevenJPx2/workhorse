@@ -1,6 +1,6 @@
 // The lightness budgets this job gates (docs/architecture.md, "Budgets"). Limits only tighten.
 // `undefined` means "not set yet": the job reports the measurement without failing, and the first
-// measurement on the CI runner becomes the limit.
+// measurement on the CI runner becomes the limit (for budgets added by later slices).
 
 export type Budget = {
   readonly name: string;
@@ -9,23 +9,25 @@ export type Budget = {
 };
 
 export const BUDGETS = {
-  // Memory the idle daemon itself uses: Linux Private_Clean + Private_Dirty, macOS phys_footprint.
-  // Resident pages of the workerd binary are shared and reclaimable, so RSS is reported, not gated.
+  // Memory the idle daemon wrote: Linux Private_Dirty, macOS phys_footprint. Not RSS: resident
+  // pages of the 140 MB workerd binary are file-backed and reclaimable, and dominate RSS on Linux.
   privateMemory: {
     name: "daemon idle private memory",
     unit: "MB",
     limit: { darwin: 20, linux: 20 },
   },
-  // Process start to the first answered hello, sandbox included, median of the runs.
+  // Process start to the first answered hello, sandbox included, median of the runs. The first CI
+  // run measured 43.1 ms on Linux x64, so Linux keeps the design's 50 ms.
   coldStart: {
     name: "cold start to first answer",
     unit: "ms",
-    limit: { darwin: 50, linux: undefined },
+    limit: { darwin: 50, linux: 50 },
   },
   rules: { name: "core (rules) bundle, gzip", unit: "KB", limit: { darwin: 20, linux: 20 } },
+  // Set from slice 1's first measurement: 32.8 KB (mostly Effect).
   daemonBundle: {
     name: "daemon bundle, gzip",
     unit: "KB",
-    limit: { darwin: undefined, linux: undefined },
+    limit: { darwin: 33, linux: 33 },
   },
 } as const satisfies Record<string, Budget>;

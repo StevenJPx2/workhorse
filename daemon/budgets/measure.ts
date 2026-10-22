@@ -102,7 +102,9 @@ const stop = (child: ChildProcess) =>
     child.kill();
   });
 
-// Linux: Private_Clean + Private_Dirty. macOS: phys_footprint, the figure Activity Monitor shows.
+// Memory the daemon wrote and the OS cannot drop: Linux Private_Dirty, macOS phys_footprint (the
+// figure Activity Monitor shows). Private_Clean is left out: it also holds the workerd binary's own
+// pages whenever no other process maps that file, and those are file-backed and reclaimable.
 function privateMegabytes(workerd: string): number | undefined {
   const pid = spawnSync("pgrep", ["-n", "-f", `^${workerd} serve`], {
     encoding: "utf8",
@@ -113,11 +115,11 @@ function privateMegabytes(workerd: string): number | undefined {
   return platform === "linux" ? linuxPrivate(pid) : macFootprint(pid);
 }
 
-function linuxPrivate(pid: string): number {
+function linuxPrivate(pid: string): number | undefined {
   const rollup = readFileSync(`/proc/${pid}/smaps_rollup`, "utf8");
-  const lines = [...rollup.matchAll(/^Private_(?:Clean|Dirty):\s+(\d+) kB$/gm)];
+  const kilobytes = /^Private_Dirty:\s+(\d+) kB$/m.exec(rollup)?.[1];
 
-  return lines.reduce((sum, line) => sum + Number(line[1]), 0) / 1024;
+  return kilobytes === undefined ? undefined : Number(kilobytes) / 1024;
 }
 
 const MEGABYTES_PER: ReadonlyMap<string, number> = new Map([
