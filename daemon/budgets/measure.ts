@@ -106,13 +106,20 @@ const stop = (child: ChildProcess) =>
 // figure Activity Monitor shows). Private_Clean is left out: it also holds the workerd binary's own
 // pages whenever no other process maps that file, and those are file-backed and reclaimable.
 function privateMegabytes(workerd: string): number | undefined {
+  const pid = newestPid(workerd);
+
+  if (pid === undefined) return undefined;
+
+  return platform === "linux" ? linuxPrivate(pid) : macFootprint(pid);
+}
+
+// The workerd process itself; under bubblewrap its parent's command line also names workerd.
+function newestPid(workerd: string): string | undefined {
   const pid = spawnSync("pgrep", ["-n", "-f", `^${workerd} serve`], {
     encoding: "utf8",
   }).stdout.trim();
 
-  if (pid === "") return undefined;
-
-  return platform === "linux" ? linuxPrivate(pid) : macFootprint(pid);
+  return pid === "" ? undefined : pid;
 }
 
 function linuxPrivate(pid: string): number | undefined {
@@ -155,6 +162,7 @@ function coreBundle(): Uint8Array {
 const measure = Effect.fnUntraced(function* (daemon: Daemon) {
   const starts: number[] = [];
   let memory: number | undefined;
+  const notes: string[] = [];
 
   for (let run = 0; run < RUNS; run += 1) {
     const { ms, child } = yield* coldStart(daemon);
@@ -162,21 +170,41 @@ const measure = Effect.fnUntraced(function* (daemon: Daemon) {
 
     if (run === RUNS - 1) {
       yield* Effect.sleep("3 seconds");
-      memory = privateMegabytes(join(daemon.base, "bin", "workerd"));
+      const workerd = join(daemon.base, "bin", "workerd");
+      memory = privateMegabytes(workerd);
+
+      if (platform === "linux") notes.push(linuxMemoryDetail(workerd));
     }
 
     yield* stop(child);
   }
 
+  notes.push(`cold start samples (ms): ${starts.map((ms) => ms.toFixed(1)).join(" ")}`);
   const median = starts.toSorted((a, b) => a - b)[Math.floor(RUNS / 2)];
 
-  return [
+  const results = [
     [BUDGETS.privateMemory, memory],
     [BUDGETS.coldStart, median],
     [BUDGETS.rules, gzipKilobytes(coreBundle())],
     [BUDGETS.daemonBundle, gzipKilobytes(readFileSync(join(daemon.base, "etc", "daemon.js")))],
   ] as const satisfies ReadonlyArray<readonly [Budget, number | undefined]>;
+
+  return { results, notes };
 });
+
+// Transparent huge pages can turn reserved V8 memory into dirty 2 MB pages, so the mode and the
+// huge-page share are reported beside the Linux figure.
+function linuxMemoryDetail(workerd: string): string {
+  const pid = newestPid(workerd);
+  const rollup = pid === undefined ? "" : readFileSync(`/proc/${pid}/smaps_rollup`, "utf8");
+
+  const field = (name: string) =>
+    `${(Number(new RegExp(`^${name}:\\s+(\\d+) kB$`, "m").exec(rollup)?.[1] ?? 0) / 1024).toFixed(1)} MB`;
+
+  const thp = readFileSync("/sys/kernel/mm/transparent_hugepage/enabled", "utf8").trim();
+
+  return `linux memory: Rss ${field("Rss")}, Private_Dirty ${field("Private_Dirty")}, AnonHugePages ${field("AnonHugePages")}; transparent hugepages: ${thp}`;
+}
 
 type Verdict = { readonly line: string; readonly over: boolean };
 
@@ -194,14 +222,14 @@ function verdict(budget: Budget, value: number | undefined): Verdict {
 const program = Effect.gen(function* () {
   const daemon = yield* install();
 
-  const results = yield* Effect.ensuring(
+  const { results, notes } = yield* Effect.ensuring(
     measure(daemon),
     Effect.sync(() => rmSync(join(daemon.base, ".."), { recursive: true, force: true })),
   );
 
   const verdicts = results.map(([budget, value]) => verdict(budget, value));
   yield* Console.log(
-    `budgets on ${platform} ${process.arch}, ${RUNS} starts:\n${verdicts.map((v) => v.line).join("\n")}`,
+    `budgets on ${platform} ${process.arch}, ${RUNS} starts:\n${[...verdicts.map((v) => v.line), ...notes].join("\n")}`,
   );
 
   return verdicts.some((v) => v.over) ? 1 : 0;
