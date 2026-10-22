@@ -36,6 +36,10 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: bun install --frozen-lockfile
       - run: bun run check
-      # Lightness budgets on the runner, sandbox included (budgets/limits.ts).
+      # Lightness budgets on the runner, sandbox included (budgets/limits.ts). Runners differ in
+      # transparent huge pages; "always" adds about 12 MB of huge pages to the idle daemon, so the
+      # job measures the common default, "madvise". The report still shows AnonHugePages.
       - name: Budgets
-        run: bun budgets/measure.ts
+        run: |
+          echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+          bun budgets/measure.ts
