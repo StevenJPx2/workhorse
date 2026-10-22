@@ -38,7 +38,7 @@ flowchart LR
 - `bun budgets/measure.ts` on the Mac: 13.0 MB idle private memory; 40.1 ms median first answer; core 1.9 KB gzip; daemon 41.0 KB gzip.
 - `bun budgets/link-memory.ts`: opens a real authenticated link and waits for a remote app answer. The accepting app is warmed before the baseline, so app loading is not counted as link overhead.
 - Gate proof: temporarily setting the accepted-link limit to zero produced `FAIL ... 1.00 MB (limit 0 MB)` and exit 1. The 1 MB limit was restored.
-- Previous Linux CI commit `14453745`: 562 tests, 13.8 MB idle private memory, 61.3 ms cold start, daemon 41.0 KB gzip. The new accepted-link budget awaits its first CI run.
+- Linux CI commit `45769aa3` ([run 39772779221](https://github.com/StevenJPx2/workhorse/actions/runs/39772779221)): 565 tests, 13.9 MB idle private memory, 60.4 ms cold start, daemon 41.0 KB gzip, and **0.49 MB per accepted link** (15.78 → 16.27 MB). Every gate passed.
 
 ## Bugs reproduced and fixed during the live test
 
