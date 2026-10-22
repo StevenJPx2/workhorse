@@ -26,5 +26,13 @@ jobs:
           # Relative to working-directory.
           node-version-file: .node-version
           run-install: false
+      # The conformance suite runs the daemon inside bubblewrap. Ubuntu restricts unprivileged user
+      # namespaces through AppArmor; this runner is thrown away after the job, so the restriction
+      # is lifted here rather than the suite running unsandboxed.
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: bun install --frozen-lockfile
       - run: bun run check
