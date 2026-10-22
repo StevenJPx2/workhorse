@@ -12,6 +12,7 @@ import { connect } from "@workhorse/conformance/client";
 import { writeFixtures } from "@workhorse/conformance/fixtures";
 import { Console, Effect, Schedule, Schema } from "effect";
 import { BUDGETS, type Budget } from "./limits.ts";
+import { newestPid, privateMegabytes } from "./memory/index.ts";
 
 class MeasureFailed extends Schema.TaggedError<
   MeasureFailed,
@@ -101,47 +102,6 @@ const stop = (child: ChildProcess) =>
     child.once("exit", () => resume(Effect.void));
     child.kill();
   });
-
-// Memory the daemon wrote and the OS cannot drop: Linux Private_Dirty, macOS phys_footprint (the
-// figure Activity Monitor shows). Private_Clean is left out: it also holds the workerd binary's own
-// pages whenever no other process maps that file, and those are file-backed and reclaimable.
-function privateMegabytes(workerd: string): number | undefined {
-  const pid = newestPid(workerd);
-
-  if (pid === undefined) return undefined;
-
-  return platform === "linux" ? linuxPrivate(pid) : macFootprint(pid);
-}
-
-// The workerd process itself; under bubblewrap its parent's command line also names workerd.
-function newestPid(workerd: string): string | undefined {
-  const pid = spawnSync("pgrep", ["-n", "-f", `^${workerd} serve`], {
-    encoding: "utf8",
-  }).stdout.trim();
-
-  return pid === "" ? undefined : pid;
-}
-
-function linuxPrivate(pid: string): number | undefined {
-  const rollup = readFileSync(`/proc/${pid}/smaps_rollup`, "utf8");
-  const kilobytes = /^Private_Dirty:\s+(\d+) kB$/m.exec(rollup)?.[1];
-
-  return kilobytes === undefined ? undefined : Number(kilobytes) / 1024;
-}
-
-const MEGABYTES_PER: ReadonlyMap<string, number> = new Map([
-  ["KB", 1 / 1024],
-  ["MB", 1],
-  ["GB", 1024],
-]);
-
-function macFootprint(pid: string): number | undefined {
-  const footprint = spawnSync("footprint", ["-p", pid], { encoding: "utf8" }).stdout;
-  const [, amount, unit] = /phys_footprint:\s+([\d.]+)\s*(KB|MB|GB)/.exec(footprint) ?? [];
-  const scale = MEGABYTES_PER.get(unit ?? "");
-
-  return scale === undefined ? undefined : Number(amount) * scale;
-}
 
 const gzipKilobytes = (bytes: Uint8Array) => gzipSync(bytes, { level: 9 }).length / 1024;
 

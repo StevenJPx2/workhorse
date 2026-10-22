@@ -43,3 +43,4 @@ jobs:
         run: |
           echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
           bun budgets/measure.ts
+          bun budgets/link-memory.ts

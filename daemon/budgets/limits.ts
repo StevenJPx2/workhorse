@@ -9,6 +9,11 @@ export type Budget = {
 };
 
 export const BUDGETS = {
+  linkMemory: {
+    name: "additional private memory per accepted link",
+    unit: "MB",
+    limit: { darwin: 1, linux: 1 },
+  },
   // Memory the idle daemon wrote: Linux Private_Dirty, macOS phys_footprint. Not RSS: resident
   // pages of the 140 MB workerd binary are file-backed and reclaimable, and dominate RSS on Linux.
   privateMemory: {

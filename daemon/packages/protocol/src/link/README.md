@@ -4,14 +4,19 @@ The contract for links between daemons: the handshake messages, the bytes each s
 
 ## Contents
 
-| Module                 | Export                                                                                          | Responsibility                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `handshake.ts`         | `Nonce`, `Signature`                                                                            | 32 random bytes and an Ed25519 signature, as unpadded base64url     |
-| `handshake.ts`         | `LinkHelloParams`, `LinkHelloResult`, `LinkProveParams`                                         | The three handshake payloads                                        |
-| `transcript.ts`        | `linkTranscript`, `LinkRole`, `LinkSide`                                                        | The exact bytes a side signs                                        |
-| `read-link-message.ts` | `readLinkMessage`, `LinkMessage`                                                                | Classifies one message: request, notification, response, or invalid |
-| `limits.ts`            | `HEARTBEAT_MS`, `SILENCE_LIMIT_MS`, `DIAL_DEADLINE_MS`, `CALL_DEADLINE_MS`, `REDIAL_BACKOFF_MS` | Timing both sides share                                             |
-| `index.ts`             | barrel                                                                                          | The folder's public API                                             |
+| Module                  | Export                                                                                          | Responsibility                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `handshake.ts`          | `Nonce`, `Signature`                                                                            | 32 random bytes and an Ed25519 signature, as unpadded base64url                                            |
+| `handshake.ts`          | `LinkHelloParams`, `LinkHelloResult`, `LinkProveParams`                                         | The three handshake payloads                                                                               |
+| `transcript.ts`         | `linkTranscript`, `LinkRole`, `LinkSide`                                                        | The exact bytes a side signs                                                                               |
+| `link-message.ts`       | `LinkMessage`                                                                                   | Shared classified-message contract: handshake messages, calls, notifications, responses and invalid input. |
+| `read-link-message.ts`  | `readLinkMessage`                                                                               | Parses JSON and classifies the envelope.                                                                   |
+| `read-link-request.ts`  | `readLinkRequest`                                                                               | Decodes handshake requests; passes app-call params through as JSON.                                        |
+| `read-link-response.ts` | `readLinkResponse`                                                                              | Decodes answers to the fixed handshake ids, or returns an ordinary response.                               |
+| `link-invalid.ts`       | `linkInvalid`                                                                                   | Builds an invalid-message result with its request id where readable.                                       |
+| `upgrade.ts`            | `CERTIFICATE_NAME`, `LINK_PATH`, `LINK_KEY_HEADER`                                              | Shared TLS name, upgrade path, and routing header; the header does not authenticate the peer.              |
+| `limits.ts`             | `HEARTBEAT_MS`, `SILENCE_LIMIT_MS`, `DIAL_DEADLINE_MS`, `CALL_DEADLINE_MS`, `REDIAL_BACKOFF_MS` | Timing both sides share                                                                                    |
+| `index.ts`              | barrel                                                                                          | The folder's public API                                                                                    |
 
 ## Handshake
 

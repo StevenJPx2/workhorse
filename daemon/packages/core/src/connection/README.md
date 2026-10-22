@@ -9,6 +9,7 @@ This directory contains the pure connection state machine for the daemon's JSON-
 | `new-connection.ts` | `newConnection` | Initial `greeting` state; exports the `Connection` state type.                                       |
 | `handle.ts`         | `handle`        | Advances one connection from one decoded `Inbound` message.                                          |
 | `greet.ts`          | `greet`         | Negotiates the highest supported protocol version; exports `Step`, the state/effects result.         |
+| `agree-version.ts`  | `agreeVersion`  | Chooses the highest common version, also used by the peer-link handshake.                            |
 | `route.ts`          | `route`         | Resolves `owner.operation` against the app operation map; rejects direct outside-world capabilities. |
 | `deny.ts`           | `deny`          | Builds a capability-denied action; exports `DenyReason`.                                             |
 | `refuse.ts`         | `refuse`        | Builds a protocol refusal action.                                                                    |
@@ -26,7 +27,8 @@ flowchart TD
     Greet -->|unsupported version| Greeting[greeting state + refusal]
     Handle -->|call before hello| Refuse
     Handle -->|call after hello| Route[route]
-    Route -->|app operation exists| Call[call_app Action]
+    Route -->|local app operation exists| Call[call_app Action]
+    Route -->|app routed to peer| Peer[call_peer Action]
     Route -->|fs/net direct access| Deny[denied Action]
     Route -->|missing operation| Refuse
 ```
@@ -36,20 +38,25 @@ flowchart TD
 ## Usage
 
 ```ts
-import { handle, newConnection, type Apps } from "@workhorse/core";
+import { handle, newConnection, type Directory } from "@workhorse/core";
 import type { Inbound } from "@workhorse/protocol";
 
-const apps: Apps = new Map([["notes", new Set(["read"])]]);
+const directory: Directory = {
+  apps: new Map([["notes", new Set(["read"])]]),
+  routes: new Map([["journal", "home"]]),
+};
 const hello: Inbound = {
   type: "hello",
   id: 1,
   params: { protocol: [1] },
 };
 
-const step = handle(apps, newConnection, hello);
+const step = handle(directory, newConnection, hello);
 // step.connection is ready; step.effects contains a reply action.
 ```
 
 - Call `handle` once for each decoded inbound message, passing the returned connection state to the next call.
 - Interpret `step.effects` in the daemon; do not perform I/O in this package.
 - An outside client can call only manifest-declared app operations. `fs.*` and `net.*` are denied directly.
+- `link.*` is reserved for authenticated links; local clients cannot use the handshake methods.
+- Routes produce `call_peer`; [link rules](../link/README.md) on the receiving daemon check the peer's grants.
