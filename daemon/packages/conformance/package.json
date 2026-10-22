@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./fixtures": "./src/fixtures.ts"
   },
   "dependencies": {
     "@workhorse/protocol": "workspace:*",

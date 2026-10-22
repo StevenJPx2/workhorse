@@ -1,0 +1,10 @@
+{
+  "name": "@workhorse/smoke",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@workhorse/conformance": "workspace:*",
+    "@workhorse/protocol": "workspace:*",
+    "effect": "4.0.5"
+  }
+}

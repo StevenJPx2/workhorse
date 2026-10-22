@@ -5,6 +5,8 @@
   // @effect/tsgo: runs the `effect` task in vite.config.ts, which Fallow does not read.
   // workerd: the CLI resolves its platform binary by path (packages/cli/src/install.ts).
   "ignoreDependencies": ["@effect/tsgo", "workerd"],
+  // Smoke scripts are run by hand (docs/architecture.md, "Proof"); nothing imports them.
+  "entry": ["smoke/[0-9]*.ts"],
   // Public methods of a WorkerEntrypoint are called over Workers RPC, which Fallow cannot see.
   "usedClassMembers": [{ "extends": "WorkerEntrypoint", "members": ["*"] }]
 }

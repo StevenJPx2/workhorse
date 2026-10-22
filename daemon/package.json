@@ -2,7 +2,8 @@
   "name": "workhorse-daemon",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "smoke"
   ],
   "type": "module",
   "scripts": {

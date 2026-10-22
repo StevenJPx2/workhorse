@@ -6,6 +6,7 @@
     { "path": "./packages/core/tsconfig.json" },
     { "path": "./packages/worker/tsconfig.json" },
     { "path": "./packages/cli/tsconfig.json" },
+    { "path": "./smoke/tsconfig.json" },
     { "path": "./packages/conformance/tsconfig.json" }
   ]
 }
