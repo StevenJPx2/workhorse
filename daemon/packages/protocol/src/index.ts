@@ -28,14 +28,45 @@ export { HelloParams, HelloResult } from "./hello.ts";
 export { readRequest, type Inbound } from "./inbound/index.ts";
 
 export {
+  CALL_DEADLINE_MS,
+  DIAL_DEADLINE_MS,
+  HEARTBEAT_MS,
+  LinkHelloParams,
+  LinkHelloResult,
+  LinkProveParams,
+  type LinkMessage,
+  type LinkRole,
+  type LinkSide,
+  linkTranscript,
+  Nonce,
+  readLinkMessage,
+  REDIAL_BACKOFF_MS,
+  Signature,
+  SILENCE_LIMIT_MS,
+} from "./link/index.ts";
+
+export {
   ErrorObject,
   Failure,
   type Json,
   type Message,
+  Notification,
   Request,
   type RequestId,
   Response,
   Success,
 } from "./jsonrpc.ts";
 
-export { AppGrants, AppName, type FsGrant, Policy, RootName } from "./policy.ts";
+export {
+  AppGrants,
+  AppName,
+  Certificate,
+  type FsGrant,
+  MethodName,
+  Peer,
+  PeerAddress,
+  PeerName,
+  Policy,
+  PublicKey,
+  RootName,
+} from "./policy/index.ts";

@@ -1,4 +1,4 @@
-import type { AppName, RootName } from "../policy.ts";
+import type { AppName, RootName } from "../policy/index.ts";
 
 /**
  * The binding name of one granted root's disk directory. Names cannot contain ":", so the

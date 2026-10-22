@@ -62,7 +62,7 @@ export const readPolicy = Effect.fnUntraced(function* (
       : Effect.map(resolveGrant(grants.fs), (fs) => [name, { ...grants, fs }] as const),
   );
 
-  return { apps: Object.fromEntries(apps) };
+  return { ...policy, apps: Object.fromEntries(apps) };
 });
 
 const resolveGrant = Effect.fnUntraced(function* (

@@ -35,7 +35,7 @@ sequenceDiagram
 - **Names:** app and root names cannot contain `:`, so `rootBinding` is unambiguous. The policy alone knows a root's real folder; app code uses only its name.
 - **Untrusted apps:** the daemon decodes every `Outcome`. An app that returns anything else produces a `failed` reply with reason `invalid_app_outcome`, not a crash.
 - **Invalid deployment:** if `DEPLOYMENT` does not decode, the daemon refuses each connection with `failed: invalid deployment`.
-- **Policy:** the `Policy`, `AppName` and `RootName` schemas live in `../policy.ts`; see [Policy and leases](../../../../docs/architecture.md#policy-and-leases).
+- **Policy:** the `Policy`, `AppName` and `RootName` schemas live in [`../policy/`](../policy/README.md); see [Policy and leases](../../../../docs/architecture.md#policy-and-leases).
 
 ## Usage
 

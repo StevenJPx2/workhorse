@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { AppName } from "../policy.ts";
+import { AppName } from "../policy/index.ts";
 
 /** The name of an app's public operation; its method is `<app>.<operation>`. */
 export const OperationName = Schema.String.check(Schema.isPattern(/^[a-z][a-zA-Z0-9]{0,62}$/));

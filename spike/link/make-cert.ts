@@ -3,6 +3,7 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DateTime } from "effect";
 import { selfSignedCertificate } from "../../daemon/packages/cli/src/identity/self-signed-certificate.ts";
 
 const [dir = ".", side = "home"] = process.argv.slice(2);
@@ -13,8 +14,8 @@ const certificate = selfSignedCertificate(
   {
     name: "peer.workhorse",
     serial: randomBytes(16),
-    notBefore: new Date(now - 60_000),
-    notAfter: new Date(now + 10 * 365 * 86_400_000),
+    notBefore: DateTime.makeUnsafe(now - 60_000),
+    notAfter: DateTime.makeUnsafe(now + 10 * 365 * 86_400_000),
   },
   keys.publicKey,
   keys.privateKey,

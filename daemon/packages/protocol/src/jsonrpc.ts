@@ -18,6 +18,15 @@ export const Request = Schema.Struct({
 
 export type Request = typeof Request.Type;
 
+// A request without an id, which gets no response. Links use it for heartbeats.
+export const Notification = Schema.Struct({
+  jsonrpc: Schema.Literal("2.0"),
+  method: Schema.String,
+  params: Schema.optionalKey(Schema.Json),
+});
+
+export type Notification = typeof Notification.Type;
+
 export const ErrorObject = Schema.Struct({
   code: Schema.Int,
   message: Schema.String,
@@ -47,4 +56,4 @@ export const Response = Schema.Union([Success, Failure]);
 
 export type Response = typeof Response.Type;
 
-export type Message = Request | Response;
+export type Message = Request | Notification | Response;

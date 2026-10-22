@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { Policy } from "../policy.ts";
+import { Policy } from "../policy/index.ts";
 import { AppSpec } from "./app-manifest.ts";
 
 /**
