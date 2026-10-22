@@ -79,11 +79,11 @@ JSON-RPC over Cap'n Proto and Cap'n Web: it is a stable open standard, it shares
 
 ## Identity
 
-| Connection                                               | How the daemon knows it                                         | What it may do                                                                                                |
-| -------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Apps and their MCP servers                               | The daemon loads each one from its manifest as a Dynamic Worker | Every internal feature for its own data, and the outside-world access that the policy grants to that manifest |
-| Outside clients: host adapters, the CLI, the stdio relay | Unknown; it is "local user"                                     | The public operations that apps expose. No outside-world access of its own                                    |
-| Other daemons and devices                                | An Ed25519 key, paired through the policy                       | What the policy grants to that key                                                                            |
+| Connection                                               | How the daemon knows it                                                   | What it may do                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Apps and their MCP servers                               | The daemon loads each one from its manifest as a Dynamic Worker           | Every internal feature for its own data, and the outside-world access that the policy grants to that manifest |
+| Outside clients: host adapters, the CLI, the stdio relay | Unknown; it is "local user"                                               | The public operations that apps expose. No outside-world access of its own                                    |
+| Other daemons and devices                                | An Ed25519 key, paired through the policy ([Remote links](#remote-links)) | The public operations the policy lists for that peer                                                          |
 
 An agent host reaches an app's tools through the daemon, which serves MCP for every app in two framings: MCP's Streamable HTTP transport, and newline-delimited JSON-RPC on the Unix socket, the framing the MCP specification recommends for custom transports over Unix sockets. Hosts that speak only stdio run `workhorse mcp sourcefed`, a native relay that copies bytes between stdio and the socket and parses nothing. No connection ever claims an identity.
 
@@ -208,7 +208,52 @@ The OS service manager runs workerd inside the OS sandbox tool. `workhorse insta
 
 ## Remote links
 
-Remote links are WebSocket over TLS, carrying the same protocol and authenticated by an Ed25519 challenge handshake. The home server is reached through a port-forward with TLS on a public DNS name; Cloudflare is reached directly. workerd serves both ends, so remote links add no native process.
+Remote links are WebSocket over TLS between two daemons, carrying the same protocol in both directions. Each link is held open by a `Link` Durable Object per peer and authenticated by a mutual Ed25519 challenge. Reaching the peer is the network's job: a link needs only an address, so it runs over a LAN, Tailscale, WireGuard, or any other overlay, and Workhorse integrates with none of them. Cloudflare is reached directly (slice 3). workerd serves both ends, so remote links add no native process.
+
+```mermaid
+sequenceDiagram
+    participant C as Client on the laptop
+    participant L as Laptop daemon, Link object
+    participant H as Home daemon, Link object
+    participant A as notes app on home
+    L->>H: TLS to home's pinned certificate, WebSocket upgrade
+    L->>H: link.hello: laptop key, laptop nonce
+    H-->>L: home key, home nonce, home signature
+    L->>H: link.prove: laptop signature
+    H-->>L: ready
+    C->>L: notes.read (Unix socket)
+    L->>H: notes.read (routes.notes = home)
+    H->>A: notes.read, listed in peers.laptop.operations
+    A-->>H: result
+    H-->>L: result
+    L-->>C: result
+```
+
+```json
+{
+  "apps": {},
+  "peers": {
+    "home": {
+      "key": "kLhC7…ed25519-public-key",
+      "certificate": "-----BEGIN CERTIFICATE-----…",
+      "address": "100.104.65.112:7841",
+      "operations": []
+    }
+  },
+  "routes": { "notes": "home" }
+}
+```
+
+| Rule        | Decision                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity    | Each daemon has an Ed25519 key, generated by `workhorse install`; `workhorse key` prints the public half. A link opens with each side signing both nonces and both keys under the label `workhorse-link-v1`. A key that is not in `peers` is refused                                                                                                                                                |
+| TLS         | Each daemon has a self-signed ECDSA P-256 certificate for the fixed name `daemon.workhorse`, made at install by a built-in DER encoder (no dependency). A peer pins that exact certificate and checks the name, so any address works. TLS gives confidentiality and authenticates the listener; the challenge authenticates both sides                                                              |
+| Policy      | `peers.<name>` holds the peer's `key` and `certificate`. `address` (`host:port`) means this daemon dials that peer. `operations` lists the apps' public operations (`app.operation`) the peer may call here; none by default. `routes.<app> = <peer>` sends that app's operations to the peer. A call that arrived over a link is never routed to another peer                                      |
+| Listening   | A daemon listens for links only when installed with `--listen <host:port>`, an address the user picks, such as a tailnet or LAN address. The OS sandbox allows that one port                                                                                                                                                                                                                        |
+| Lifetime    | One `Link` Durable Object per peer holds the link for good: its namespace sets `preventEviction`, which only workerd supports. Without it, spike 6 lost the link after about 140 s. `workhorse warm` starts the dialing objects after every daemon start, since a new object does not dial by itself                                                                                                |
+| Failure     | Both sides send a heartbeat every 5 s and drop the link after 15 s without an answer. The dialer redials with backoff from 100 ms to 2 s, and every dial has a 5 s deadline, because a peer that accepts TCP but never finishes TLS stalls a dial (spike 6)                                                                                                                                         |
+| Unavailable | A call routed to a peer whose link is down returns `-32003 unavailable` at once; a call that gets no answer within 10 s returns it too. Calls are never queued for later                                                                                                                                                                                                                            |
+| Pairing     | `workhorse pair --accept --listen <host:port>` on one machine and `workhorse pair <host:port>` on the other exchange keys and certificates over TLS. Neither side can check the other yet, so both print both key fingerprints and each writes the other into its policy only after you confirm. A new peer may call nothing until you list operations. A policy change causes a controlled restart |
 
 WebSocket over iroh: workerd cannot run iroh, so iroh would need a native gateway on the home server. iroh is reconsidered only if a real-phone test shows it restores calls after a Wi-Fi to mobile-data switch more than 2 seconds faster; a phone then reconnects and the mailbox redelivers anything unacknowledged.
 
@@ -216,12 +261,12 @@ WebSocket over iroh: workerd cannot run iroh, so iroh would need a native gatewa
 
 `workhorse install` writes the workerd configuration, the sandbox profile, and the service definition, then registers the daemon with launchd or `systemd --user`. The service manager keeps one instance running and restarts it on failure, in about 100 ms (spike 4).
 
-| Platform | Rule                                                                                                                                                                                                                                                                                                                                                                         |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Both     | workerd does not remove a stale socket file, so after a crash it cannot bind again unless the service manager handles the socket. workerd loads the daemon's code on the first connection (mostly Effect, 14 ms on macOS and 60 ms on the homelab), so `workhorse warm` sends one `hello` after a start, and the install warms the daemon it started                         |
-| macOS    | The service removes the socket file, then starts the sandbox. launchd runs one instance, so this cannot remove another daemon's socket. `ThrottleInterval` is 1 second; the default 10 seconds delays recovery after a crash. The agent starts at login                                                                                                                      |
-| Linux    | A socket unit owns the socket and passes it to workerd (`--socket-fd`), so connections wait during a restart. The service also starts at login and warms after every start. Start limits are set deliberately (10 starts in 60 seconds), since a crash loop otherwise disables the service. The install warns when lingering is off, since user services then stop at logout |
-| NixOS    | The npm workerd binary expects a standard dynamic loader. The install points it at the store's glibc (`--loader`), or uses `nix-ld`                                                                                                                                                                                                                                          |
+| Platform | Rule                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Both     | workerd does not remove a stale socket file, so after a crash it cannot bind again unless the service manager handles the socket. workerd loads the daemon's code on the first connection (mostly Effect, 14 ms on macOS and 60 ms on the homelab), so `workhorse warm` sends one `hello` after every start, which also starts the daemon's links to the peers it dials. The install warms the daemon it started |
+| macOS    | The service removes the socket file, then starts the sandbox. launchd runs one instance, so this cannot remove another daemon's socket. `ThrottleInterval` is 1 second; the default 10 seconds delays recovery after a crash. The agent starts at login. launchd has no post-start hook, so the service command runs `workhorse warm` in the background after every start                                        |
+| Linux    | A socket unit owns the socket and passes it to workerd (`--socket-fd`), so connections wait during a restart. The service also starts at login and warms after every start. Start limits are set deliberately (10 starts in 60 seconds), since a crash loop otherwise disables the service. The install warns when lingering is off, since user services then stop at logout                                     |
+| NixOS    | The npm workerd binary expects a standard dynamic loader. The install points it at the store's glibc (`--loader`), or uses `nix-ld`                                                                                                                                                                                                                                                                              |
 
 A client that finds no daemon runs `workhorse start`, which asks the service manager to start it. `workhorse daemon` runs in the foreground for development. An upgrade or a policy change regenerates the files, drains, restarts, and resumes; clients reconnect and receive unacknowledged mailbox events again.
 
@@ -326,6 +371,7 @@ Lightness is a gated property, measured where the design is meant to win: the co
 | Cold start to first answer, sandbox included                               | macOS ≤ 50 ms; Linux CI ≤ 70 ms       | macOS: 36–42 ms. Linux CI runners differ: medians 37.9–56.0 ms over four runs, slowest sample 63.8 ms. Homelab: 83–100 ms. Most of it is loading Effect on the first connection (about 14 ms on macOS, 60 ms on the homelab), so the service warms the daemon after every start (slice 1)                                                                                      |
 | Additional RSS per active session                                          | ≤ 1 MB                                | About 0.7 MB per mailbox, not returned (spike 3); slice 4 must return it                                                                                                                                                                                                                                                                                                       |
 | Additional RSS per idle session                                            | ≈ 0, evicted to SQLite                | Eviction and restore observed (spike 3)                                                                                                                                                                                                                                                                                                                                        |
+| Additional memory per open link                                            | ≤ 1 MB                                | About 0.55 MB on the dialing side (`phys_footprint`, spike 6)                                                                                                                                                                                                                                                                                                                  |
 | Additional RSS per loaded app, shared across sessions                      | ≤ 2 MB                                | A trivial Dynamic Worker: 1.96 MB each over 50 (spike 4). An app bundling the MCP SDK: about 29 MB, which is why the daemon speaks MCP for apps                                                                                                                                                                                                                                |
 | stdio relay, per process                                                   | Set from slice 10's first measurement | A Bun relay: 24 MB. A byte pipe (`nc -U`): 2.5 MB (spike 4)                                                                                                                                                                                                                                                                                                                    |
 | Rules package (`core`)                                                     | ≤ 20 KB gzip                          | 0.8 KB (slice 1)                                                                                                                                                                                                                                                                                                                                                               |
@@ -348,11 +394,15 @@ Spikes under `spike/`:
 3. **workerd.** One bundle on plain workerd and on Cloudflare. **Passed**. The core-shape comparison in the same spike measured TypeScript rules against Rust compiled to wasm: TypeScript ran the rules about 20× faster with about 19× less CPU, a 10 KB bundle against 116 KB, less memory, and the same end-to-end latency. Evidence in `spike/workerd/FINDINGS.md`.
 4. **workerd-only daemon.** **Done**: workerd on a Unix socket under `sandbox-exec` with launchd and under bubblewrap with `systemd --user` passed all 13 checks before and after restarts, and without a sandbox the symlink and host-socket escapes succeeded. Restarts take about 100 ms. It also showed that an app bundling the MCP SDK costs about 29 MB, a Bun stdio relay 24 MB, and workerd on Linux x86_64 exceeds the idle-memory and cold-start budgets. Evidence in `spike/daemon/FINDINGS.md`.
 
+Spike 5 (libfx) runs in slice 12.
+
+6. **Standing link.** **Done** on one machine: a Durable Object in workerd holds a WebSocket-over-TLS link to another workerd, with self-signed certificates each side pins, and carries calls both ways. Without `preventEviction` the dialing object was evicted after about 140 s, link included. With it the link survived idle, and the dialer noticed a killed peer at once, a frozen one in 12.7 s through heartbeats, and redialed on the peer's return. A dial to a frozen peer hung, so dials need a deadline. The link costs the dialer about 0.55 MB. Evidence in `spike/link/FINDINGS.md`.
+
 Slices:
 
 0. **Done.** The Bun workspace on Vite+ with every gate in [Proof](#proof), CI, and the vendored anti-slop rules, whose 428 rule tests run in Vitest. Each gate was shown to fail on a deliberate violation.
 1. Protocol, core, the daemon on workerd listening on a Unix socket, `fs.read` through a disk directory, the OS sandbox under the service manager on macOS and Linux, and the conformance harness. A fixture app loaded from a manifest holds the `fs.read` grant, and the suite reaches it through the app's public operation, so outside clients still have no outside-world access of their own. A minimal `cli` package provides `workhorse install`. **Done**: the 16-test conformance suite passes sandboxed in CI (bubblewrap), on macOS under launchd, and on the homelab under `systemd --user`, before and after a SIGKILL; without a sandbox exactly the two symlink-escape tests fail. Every budget passes on macOS and the Linux CI runner; `bun smoke/01-fs-read.ts` shows it by hand. The Linux budget misses came from RSS counting the binary's own pages, a freshly copied binary's unflushed pages counting as private memory, and the first connection loading Effect.
-2. The home link over WebSocket and TLS: key pairing, remote routes, and `unavailable`.
+2. The home link, as in [Remote links](#remote-links): a standing WebSocket-over-TLS link per peer over any network, calls both ways, mutual Ed25519 authentication, self-signed certificates, pairing, routes, peer grants, and `unavailable`. Proof: conformance tests with two daemons, and a live laptop-to-homelab run over the LAN, including restarts of either side.
 3. The same daemon on Cloudflare, with the conformance suite passing there.
 4. Mailboxes, tasks, and state as core transitions, with the full mailbox proof.
 5. `net.fetch` with credential injection.
