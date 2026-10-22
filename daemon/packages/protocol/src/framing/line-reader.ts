@@ -1,18 +1,18 @@
-import type { Message } from "./jsonrpc.ts";
-
-// One JSON-RPC message per line. A line longer than the limit is rejected, never truncated:
-// the reader stops for good and the connection must be closed.
-
-export const MAX_LINE_BYTES = 1_048_576;
-
+/** One complete line from the byte stream, or a line that is not valid UTF-8. */
 export type Frame =
   | { readonly type: "line"; readonly text: string }
   | { readonly type: "invalid_utf8" };
 
+/** The lines completed by one chunk, and whether the current line went over the limit. */
 export type Pushed = { readonly frames: readonly Frame[]; readonly overflow: boolean };
 
 const NEWLINE = 0x0a;
 
+/**
+ * Splits a byte stream into lines, one JSON-RPC message per line. Empty lines are skipped. A line
+ * longer than the limit is rejected, never truncated: the reader stops for good and the
+ * connection must be closed.
+ */
 export class LineReader {
   // Pieces of the current, unfinished line. Joined once, when its newline arrives.
   #pending: Uint8Array[] = [];
@@ -81,9 +81,4 @@ export class LineReader {
       return { type: "invalid_utf8" };
     }
   }
-}
-
-// JSON.stringify escapes newlines inside strings, so the encoded message is exactly one line.
-export function encodeLine(message: Message): string {
-  return `${JSON.stringify(message)}\n`;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { encodeLine, LineReader } from "../src/framing.ts";
+import { encodeLine, LineReader } from "../src/index.ts";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 

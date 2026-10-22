@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ErrorCode } from "../src/constants.ts";
-import { readRequest } from "../src/inbound.ts";
+import { ErrorCode, readRequest } from "../src/index.ts";
 
 const line = (text: string) => readRequest({ type: "line", text });
 

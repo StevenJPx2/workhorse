@@ -13,13 +13,19 @@ export {
   OperationName,
   Outcome,
   rootBinding,
-} from "./deployment.ts";
+} from "./deployment/index.ts";
 
-export { encodeLine, LineReader, MAX_LINE_BYTES, type Frame, type Pushed } from "./framing.ts";
+export {
+  encodeLine,
+  LineReader,
+  MAX_LINE_BYTES,
+  type Frame,
+  type Pushed,
+} from "./framing/index.ts";
 
 export { HelloParams, HelloResult } from "./hello.ts";
 
-export { readRequest, type Inbound } from "./inbound.ts";
+export { readRequest, type Inbound } from "./inbound/index.ts";
 
 export {
   ErrorObject,
