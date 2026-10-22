@@ -13,9 +13,11 @@ import { createRequire } from "node:module";
 import { delimiter, dirname, join } from "node:path";
 import type { AppSpec, Deployment, Policy } from "@workhorse/protocol";
 import { Config, Effect } from "effect";
-import { type DiskRoot, diskRoots, renderConfig } from "./config.ts";
+import { checkLinks } from "./check-links/index.ts";
+import { type DiskRoot, diskRoots, linkConfig, renderConfig } from "./config.ts";
+import { ensureIdentity } from "./identity/ensure-identity.ts";
 import { InstallError, readApp, readPolicy } from "./inputs.ts";
-import { type Layout, layoutOf, MAX_SOCKET_PATH } from "./layout.ts";
+import { type Layout, layoutOf, MAX_SOCKET_PATH, peerCertificateFile } from "./layout.ts";
 import { type Platform, register, serviceFiles } from "./register.ts";
 import { must } from "./run.ts";
 import { type Sandbox, sandboxedArgs, seatbeltProfile } from "./sandbox.ts";
@@ -30,6 +32,8 @@ export type InstallOptions = {
   readonly label: string;
   // A glibc dynamic loader for systems whose loader is not at the standard path (NixOS).
   readonly loader: string | undefined;
+  // `host:port` to accept links on; links are not accepted without it.
+  readonly listen: string | undefined;
 };
 
 export type Installed = {
@@ -52,8 +56,11 @@ export const install = Effect.fnUntraced(function* (
 
   const apps = yield* Effect.forEach(options.apps, readApp);
   yield* checkApps(policy, apps);
+  yield* checkLinks(policy, apps);
+  yield* ensureIdentity(layout);
   const deployment: Deployment = { policy, apps };
   const roots = diskRoots(policy);
+  const links = linkConfig(policy, options.listen);
   yield* attempt("copy the workerd binary", () => {
     copyFileSync(workerdBinary(), layout.workerd);
     // The package may ship it world-writable; the daemon's binary is writable by its owner only.
@@ -82,8 +89,11 @@ export const install = Effect.fnUntraced(function* (
   const command = sandboxedArgs(sandbox, layout, roots);
   yield* attempt("write the configuration", () => {
     writeFileSync(layout.deployment, JSON.stringify(deployment));
-    writeFileSync(layout.config, renderConfig(layout, roots));
+    writeFileSync(layout.config, renderConfig(layout, roots, links));
     writeFileSync(layout.command, JSON.stringify(command));
+
+    for (const peer of links.dialed)
+      writeFileSync(join(layout.etc, peerCertificateFile(peer.name)), peer.certificate);
   });
 
   if (options.service === "os") {
@@ -137,7 +147,7 @@ const chooseSandbox = Effect.fnUntraced(function* (
   if (platform === "darwin") {
     const profile = join(layout.etc, "sandbox.sb");
     yield* attempt("write the sandbox profile", () =>
-      writeFileSync(profile, seatbeltProfile(layout, roots)),
+      writeFileSync(profile, seatbeltProfile(layout, roots, options.listen)),
     );
 
     return { type: "seatbelt", profile };

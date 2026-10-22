@@ -5,6 +5,14 @@ import type { Layout } from "./layout.ts";
 
 export type ServiceFile = { readonly path: string; readonly content: string };
 
+/** How the service runs `workhorse warm`: the runtime, the CLI entry, and the daemon's base folder. */
+export type Warm = { readonly runtime: string; readonly cli: string; readonly base: string };
+
+/** `workhorse warm` as a command line. */
+function warmArgs(warm: Warm): readonly string[] {
+  return [warm.runtime, warm.cli, "warm", "--base", warm.base];
+}
+
 const xml = (text: string) =>
   text
     .replaceAll("&", "&amp;")
@@ -15,13 +23,28 @@ const xml = (text: string) =>
 // macOS. workerd does not remove a stale socket file, so a crashed daemon could never bind
 // again; the agent removes it before starting. launchd runs one instance per label, so the file
 // cannot belong to a live daemon. ThrottleInterval 1: the default 10 s delays crash recovery.
+// launchd has no post-start hook, so the agent starts `workhorse warm` in the background after
+// every start; it retries until the socket answers, and also starts the daemon's links. Its words
+// are positional arguments, never part of the script.
+const LAUNCH = 'rm -f "$0"; "$1" "$2" warm --base "$3" > /dev/null 2>&1 & shift 3; exec "$@"';
+
 export function launchdAgent(
   home: string,
   label: string,
   layout: Layout,
   command: readonly string[],
+  warm: Warm,
 ): ServiceFile {
-  const args = ["/bin/sh", "-c", 'rm -f "$0"; exec "$@"', layout.socket, ...command];
+  const args = [
+    "/bin/sh",
+    "-c",
+    LAUNCH,
+    layout.socket,
+    warm.runtime,
+    warm.cli,
+    warm.base,
+    ...command,
+  ];
 
   return {
     path: join(home, "Library", "LaunchAgents", `${label}.plist`),
@@ -58,11 +81,11 @@ export function systemdUnits(
   label: string,
   layout: Layout,
   command: readonly string[],
-  warm: readonly string[],
+  warm: Warm,
 ): readonly ServiceFile[] {
   const dir = join(home, ".config", "systemd", "user");
   const exec = [...command, "--socket-fd", "main=3"].map(systemdWord).join(" ");
-  const warmUp = warm.map(systemdWord).join(" ");
+  const warmUp = warmArgs(warm).map(systemdWord).join(" ");
 
   return [
     {

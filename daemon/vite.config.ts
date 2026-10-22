@@ -66,10 +66,18 @@ export default defineConfig({
             {
               patterns: [
                 {
-                  group: ["**", "!./**", "!@workhorse/protocol/constants"],
+                  // Sibling folders are named, so `../` cannot leave the package.
+                  group: [
+                    "**",
+                    "!./**",
+                    "!../connection/**",
+                    "!../fs/**",
+                    "!../link/**",
+                    "!@workhorse/protocol/constants",
+                  ],
                   allowTypeImports: true,
                   message:
-                    "core imports only relative files, types, and @workhorse/protocol/constants.",
+                    "core imports only its own files, types, and @workhorse/protocol/constants.",
                 },
               ],
             },

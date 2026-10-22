@@ -1,14 +1,15 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Option, Schema } from "effect";
-import { Nonce, PeerAddress, Policy, PublicKey, Signature } from "../src/index.ts";
+import {
+  Nonce,
+  PeerAddress,
+  Policy,
+  PublicKey,
+  Signature,
+  toBase64url as base64url,
+} from "../src/index.ts";
 
-// protocol runs in workerd too, so its tests use WebCrypto and plain base64 rather than node.
-const base64url = (bytes: Uint8Array) =>
-  btoa(String.fromCodePoint(...bytes))
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/, "");
-
+// protocol runs in workerd too, so its tests use WebCrypto rather than node.
 const random = (size: number) => crypto.getRandomValues(new Uint8Array(size));
 const isKey = (text: string) => Option.isSome(Schema.decodeOption(PublicKey)(text));
 const isNonce = (text: string) => Option.isSome(Schema.decodeOption(Nonce)(text));

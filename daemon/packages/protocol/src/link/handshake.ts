@@ -1,6 +1,12 @@
 import { Schema } from "effect";
 import { PublicKey } from "../policy/index.ts";
 
+/** The dialer's `link.hello` request id; fixed, so its answer is recognised. */
+export const HELLO_ID = "link.hello";
+
+/** The dialer's `link.prove` request id. */
+export const PROVE_ID = "link.prove";
+
 /** 32 random bytes as unpadded base64url; each side's challenge to the other. */
 export const Nonce = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/));
 

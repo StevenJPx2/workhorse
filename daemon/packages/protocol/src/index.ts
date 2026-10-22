@@ -10,8 +10,10 @@ export {
   AppManifest,
   type AppSpec,
   Deployment,
+  Identity,
   OperationName,
   Outcome,
+  peerBinding,
   rootBinding,
 } from "./deployment/index.ts";
 
@@ -29,8 +31,12 @@ export { readRequest, type Inbound } from "./inbound/index.ts";
 
 export {
   CALL_DEADLINE_MS,
+  CERTIFICATE_NAME,
   DIAL_DEADLINE_MS,
   HEARTBEAT_MS,
+  HELLO_ID,
+  LINK_KEY_HEADER,
+  LINK_PATH,
   LinkHelloParams,
   LinkHelloResult,
   LinkProveParams,
@@ -39,6 +45,7 @@ export {
   type LinkSide,
   linkTranscript,
   Nonce,
+  PROVE_ID,
   readLinkMessage,
   REDIAL_BACKOFF_MS,
   Signature,
@@ -56,6 +63,8 @@ export {
   Response,
   Success,
 } from "./jsonrpc.ts";
+
+export { fromBase64url, toBase64url } from "./utils/index.ts";
 
 export {
   AppGrants,

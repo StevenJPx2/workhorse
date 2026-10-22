@@ -17,4 +17,17 @@ export type Action =
       readonly app: string;
       readonly operation: string;
       readonly params: Json | undefined;
+    }
+  | {
+      readonly type: "call_peer";
+      readonly id: RequestId;
+      readonly peer: string;
+      readonly method: string;
+      readonly params: Json | undefined;
     };
+
+/** An answer that refuses a request. */
+export type Refusal = Extract<Action, { readonly type: "refuse" }>;
+
+/** An action served on this daemon; a call from a peer only ever produces one of these. */
+export type LocalAction = Exclude<Action, { readonly type: "call_peer" }>;

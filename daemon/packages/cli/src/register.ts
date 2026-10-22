@@ -5,21 +5,11 @@ import { Console, Effect } from "effect";
 import { InstallError } from "./inputs.ts";
 import type { Layout } from "./layout.ts";
 import { must, run } from "./run.ts";
-import { launchdAgent, type ServiceFile, systemdUnits } from "./service.ts";
+import { launchdAgent, type ServiceFile, systemdUnits, type Warm } from "./service.ts";
 
 export type Platform = "darwin" | "linux";
 
 const uid = () => String(process.getuid?.() ?? 0);
-
-// `workhorse warm` with the runtime and CLI that installed the service. A release ships a
-// standalone CLI; until then the service refers to this checkout.
-const warmCommand = (layout: Layout) => [
-  process.execPath,
-  join(import.meta.dirname, "main.ts"),
-  "warm",
-  "--base",
-  layout.base,
-];
 
 export function serviceFiles(
   platform: Platform,
@@ -27,9 +17,17 @@ export function serviceFiles(
   layout: Layout,
   command: readonly string[],
 ): readonly ServiceFile[] {
+  // `workhorse warm` with the runtime and CLI that installed the service. A release ships a
+  // standalone CLI; until then the service refers to this checkout.
+  const warm: Warm = {
+    runtime: process.execPath,
+    cli: join(import.meta.dirname, "main.ts"),
+    base: layout.base,
+  };
+
   return platform === "darwin"
-    ? [launchdAgent(homedir(), label, layout, command)]
-    : systemdUnits(homedir(), label, layout, command, warmCommand(layout));
+    ? [launchdAgent(homedir(), label, layout, command, warm)]
+    : systemdUnits(homedir(), label, layout, command, warm);
 }
 
 // Writes the service files and starts the daemon under the service manager, replacing any

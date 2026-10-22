@@ -2,8 +2,9 @@ import { describe, expect, it } from "@effect/vitest";
 import { type Deployment, ErrorCode, MAX_LINE_BYTES } from "@workhorse/protocol";
 import { Effect, Option } from "effect";
 import type { Context } from "../src/apps.ts";
-import { admit, type ByteSocket, MAX_CONNECTIONS, responseOf, serve } from "../src/connection.ts";
+import { admit, type ByteSocket, MAX_CONNECTIONS, serve } from "../src/connection.ts";
 import type { Env } from "../src/env.ts";
+import { responseOf } from "../src/response-of.ts";
 
 const deployment: Deployment = { policy: { apps: {} }, apps: [] };
 
@@ -71,8 +72,21 @@ function memorySocket(input: string) {
   };
 }
 
+const noLinks = () => {
+  throw new Error("this test's deployment has no peers");
+};
+
 const env: Env = {
   DEPLOYMENT: deployment,
+  IDENTITY: {},
+  LINK: {
+    get: noLinks,
+    idFromName: noLinks,
+    idFromString: noLinks,
+    newUniqueId: noLinks,
+    getByName: noLinks,
+    jurisdiction: noLinks,
+  },
   LOADER: {
     get: () => {
       throw new Error("this test's deployment has no apps");

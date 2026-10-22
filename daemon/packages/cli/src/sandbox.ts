@@ -31,12 +31,22 @@ export function sandboxedArgs(
 const q = (path: string) => JSON.stringify(path);
 
 // macOS. Denials seen in spike 4 and left denied: syslog, dtrace, ICU and timezone data.
-export function seatbeltProfile(layout: Layout, roots: readonly DiskRoot[]): string {
+// `listen` is the `host:port` links are accepted on; only its port may be bound.
+export function seatbeltProfile(
+  layout: Layout,
+  roots: readonly DiskRoot[],
+  listen: string | undefined,
+): string {
   const rootGrants = roots.map((root) =>
     root.writable
       ? `(allow file-read* file-write* (subpath ${q(root.path)}))`
       : `(allow file-read* (subpath ${q(root.path)}))`,
   );
+
+  const linkGrant =
+    listen === undefined
+      ? "; No links accepted: no TCP port may be bound."
+      : `; Links: this one TCP port only.\n(allow network-bind network-inbound (local ip ${q(`*:${listen.slice(listen.lastIndexOf(":") + 1)}`)}))`;
 
   return `(version 1)
 (deny default)
@@ -67,6 +77,7 @@ ${rootGrants.join("\n")}
 (allow network-outbound (remote ip))
 (allow network-bind network-inbound (local unix-socket (subpath ${q(layout.sock)})))
 (allow network-outbound (remote unix-socket (path-literal "/private/var/run/mDNSResponder")))
+${linkGrant}
 `;
 }
 

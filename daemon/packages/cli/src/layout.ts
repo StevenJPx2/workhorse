@@ -15,6 +15,11 @@ export type Layout = {
   // The exact command the service manager runs, sandbox included; `workhorse daemon` runs it too.
   readonly command: string;
   readonly socket: string;
+  // This daemon's Ed25519 key pair (JWK). Made once and kept, so pairings survive reinstalls.
+  readonly identity: string;
+  // Its self-signed TLS key and certificate for links, also made once and kept.
+  readonly tlsKey: string;
+  readonly tlsCertificate: string;
 };
 
 // sockaddr_un holds 104 bytes on macOS (108 on Linux), including the terminating NUL.
@@ -37,5 +42,13 @@ export function layoutOf(base: string): Layout {
     deployment: join(etc, "deployment.json"),
     command: join(etc, "command.json"),
     socket: join(sock, "daemon.sock"),
+    identity: join(etc, "identity.json"),
+    tlsKey: join(etc, "tls-key.pem"),
+    tlsCertificate: join(etc, "tls-certificate.pem"),
   };
+}
+
+/** The file holding a dialed peer's pinned certificate; the config embeds it by this name. */
+export function peerCertificateFile(peer: string): string {
+  return `peer-${peer}.pem`;
 }

@@ -8,6 +8,10 @@
   // Smoke scripts are run by hand (docs/architecture.md, "Proof"); nothing imports them.
   // budgets/measure.ts runs in CI as its own step.
   "entry": ["smoke/[0-9]*.ts", "budgets/measure.ts"],
-  // Public methods of a WorkerEntrypoint are called over Workers RPC, which Fallow cannot see.
-  "usedClassMembers": [{ "extends": "WorkerEntrypoint", "members": ["*"] }]
+  // Public methods of a WorkerEntrypoint or a DurableObject are called over Workers RPC, which
+  // Fallow cannot see.
+  "usedClassMembers": [
+    { "extends": "WorkerEntrypoint", "members": ["*"] },
+    { "extends": "DurableObject", "members": ["*"] }
+  ]
 }

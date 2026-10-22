@@ -1,13 +1,16 @@
 #!/usr/bin/env bun
 // workhorse install --base <dir> [--policy <file>] [--app <dir>]... [--sandbox os|none]
-//                   [--service os|none] [--label <name>] [--loader <ld.so>]
+//                   [--service os|none] [--label <name>] [--loader <ld.so>] [--listen <host:port>]
+// workhorse key --base <dir>              print this daemon's key and certificate for a peer's policy
 // workhorse daemon --base <dir>           run the installed daemon in the foreground
 // workhorse uninstall [--label <name>]    stop the service and remove its files
 // workhorse warm --base <dir>             load the daemon's code now (the service runs this)
 import { realpathSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { PeerAddress } from "@workhorse/protocol";
 import { Console, Effect, type Option, Schema } from "effect";
 import { runDaemon } from "./daemon.ts";
+import { readPublicIdentity } from "./identity/read-public-identity.ts";
 import { InstallError } from "./inputs.ts";
 import { install, platformOf } from "./install.ts";
 import { layoutOf } from "./layout.ts";
@@ -24,11 +27,14 @@ const { positionals, values } = parseArgs({
     service: { type: "string", default: "os" },
     label: { type: "string", default: "dev.workhorse.daemon" },
     loader: { type: "string" },
+    listen: { type: "string" },
   },
 });
 
 // A command-line string is not yet a mode, so it is decoded as unknown input.
 const decodeMode = Schema.decodeUnknownOption(Schema.Literals(["os", "none"]));
+
+const decodeAddress = Schema.decodeOption(PeerAddress);
 
 const decodeLabel = Schema.decodeOption(
   Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9][a-zA-Z0-9.-]{0,126}$/)),
@@ -61,6 +67,10 @@ const installCommand = Effect.gen(function* () {
     service: yield* option(decodeMode(values.service), "service", values.service),
     label: yield* label,
     loader: values.loader,
+    listen:
+      values.listen === undefined
+        ? undefined
+        : yield* option(decodeAddress(values.listen), "listen", values.listen),
   });
 
   const how = installed.service
@@ -75,6 +85,15 @@ const installCommand = Effect.gen(function* () {
 });
 
 const daemonCommand = Effect.flatMap(base, (dir) => runDaemon(layoutOf(realpathSync(dir))));
+
+// JSON to paste into a peer's policy entry, with the peer's own `address` and `operations`.
+const keyCommand = Effect.gen(function* () {
+  const identity = yield* readPublicIdentity(layoutOf(realpathSync(yield* base)));
+
+  yield* Console.log(JSON.stringify(identity, undefined, 2));
+
+  return 0;
+});
 
 const warmCommand = Effect.as(
   Effect.flatMap(base, (dir) => warm(layoutOf(realpathSync(dir)).socket)),
@@ -94,6 +113,7 @@ const uninstallCommand = Effect.gen(function* () {
 const COMMANDS: ReadonlyMap<string, Effect.Effect<number, InstallError>> = new Map([
   ["install", installCommand],
   ["daemon", daemonCommand],
+  ["key", keyCommand],
   ["uninstall", uninstallCommand],
   ["warm", warmCommand],
 ]);

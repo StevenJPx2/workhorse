@@ -1,4 +1,10 @@
-import { type Action, type Apps, type Connection, handle, newConnection } from "@workhorse/core";
+import {
+  type Action,
+  type Connection,
+  type Directory,
+  handle,
+  newConnection,
+} from "@workhorse/core";
 import {
   type AppSpec,
   type Deployment,
@@ -12,8 +18,12 @@ import {
 } from "@workhorse/protocol";
 import { type Cause, Effect, Option } from "effect";
 import { callApp, type Context } from "./apps.ts";
+import { appsHere } from "./apps-here.ts";
 import { deploymentOf, type Env } from "./env.ts";
+import { callPeer } from "./link/call-peer.ts";
+import { startLinks } from "./link/start-links.ts";
 import { toResponse } from "./outcome.ts";
+import { responseOf } from "./response-of.ts";
 
 // Connections beyond this are refused with `limited` and closed.
 export const MAX_CONNECTIONS = 64;
@@ -23,7 +33,7 @@ let open = 0;
 // What `serve` uses of workerd's Socket.
 export type ByteSocket = Pick<Socket, "readable" | "writable" | "close">;
 
-type Routes = { readonly apps: Apps; readonly specs: ReadonlyMap<string, AppSpec> };
+type Routes = { readonly directory: Directory; readonly specs: ReadonlyMap<string, AppSpec> };
 
 export type Admission =
   | { readonly type: "refused"; readonly response: Response }
@@ -38,15 +48,10 @@ export function admit(deployment: Option.Option<Deployment>, openConnections: nu
     return { type: "refused", response: refusal(ErrorCode.limited, "too many connections") };
   }
 
-  const apps = deployment.value.apps;
+  const { apps, specs } = appsHere(deployment.value);
+  const routes = new Map(Object.entries(deployment.value.policy.routes ?? {}));
 
-  return {
-    type: "admitted",
-    routes: {
-      apps: new Map(apps.map((app) => [app.name, new Set(app.operations)])),
-      specs: new Map(apps.map((app) => [app.name, app])),
-    },
-  };
+  return { type: "admitted", routes: { directory: { apps, routes }, specs } };
 }
 
 // One client connection: read lines, let core decide, perform its actions, reply in order.
@@ -68,6 +73,10 @@ export const serve = Effect.fnUntraced(
 
     open += 1;
     yield* Effect.addFinalizer(() => Effect.sync(() => (open -= 1)));
+    yield* Option.match(deploymentOf(env), {
+      onNone: () => Effect.void,
+      onSome: (deployment) => startLinks(env, deployment.policy),
+    });
     const session: Session = { env, ctx, routes: admission.routes, send };
     const lines = new LineReader(MAX_LINE_BYTES);
     const reader = socket.readable.getReader();
@@ -117,28 +126,30 @@ const answer = Effect.fnUntraced(function* (
   connection: Connection,
   frame: Frame,
 ): Effect.fn.Return<Connection, Cause.UnknownError> {
-  const step = handle(session.routes.apps, connection, readRequest(frame));
+  const step = handle(session.routes.directory, connection, readRequest(frame));
 
-  for (const action of step.effects) {
-    yield* session.send(
-      action.type === "call_app" ? yield* callAction(session, action) : responseOf(action),
-    );
-  }
+  for (const action of step.effects) yield* session.send(yield* responseFor(session, action));
 
   return step.connection;
 });
 
-// The reply for an action core already answered.
-export function responseOf(action: Exclude<Action, { readonly type: "call_app" }>): Response {
-  if (action.type === "reply") return { jsonrpc: "2.0", id: action.id, result: action.result };
-  const error = { code: action.code, message: action.message };
-
-  return {
-    jsonrpc: "2.0",
-    id: action.id,
-    error: action.data === undefined ? error : { ...error, data: action.data },
-  };
-}
+// The response to one action: core's own answer, an app's, or a peer's over its link.
+const responseFor = Effect.fnUntraced(function* (
+  session: Session,
+  action: Action,
+): Effect.fn.Return<Response> {
+  switch (action.type) {
+    case "call_app":
+      return yield* callAction(session, action);
+    case "call_peer":
+      return toResponse(
+        action.id,
+        yield* callPeer(session.env, action.peer, action.method, action.params),
+      );
+    default:
+      return responseOf(action);
+  }
+});
 
 const callAction = Effect.fnUntraced(function* (
   session: Session,

@@ -1,9 +1,16 @@
 import { ErrorCode } from "@workhorse/protocol/constants";
 import type { Inbound } from "@workhorse/protocol";
 import { describe, expect, it } from "vite-plus/test";
-import { type Apps, type Connection, handle, newConnection } from "../src/index.ts";
+import { type Connection, type Directory, handle, newConnection } from "../src/index.ts";
 
-const apps: Apps = new Map([["notes", new Set(["read"])]]);
+const apps: Directory = {
+  apps: new Map([["notes", new Set(["read"])]]),
+  routes: new Map([
+    ["mail", "home"],
+    ["fs", "home"],
+  ]),
+};
+
 const ready: Connection = { phase: "ready", version: 1 };
 
 const hello = (protocol: [number, ...number[]]): Inbound => ({
@@ -75,10 +82,40 @@ describe("handle: routing", () => {
       ]);
     }
   });
+});
 
+describe("handle: routes to peers", () => {
+  it("sends a routed app's operations to its peer, whatever the operation", () => {
+    expect(handle(apps, ready, call("mail.anything")).effects).toEqual([
+      {
+        type: "call_peer",
+        id: 2,
+        peer: "home",
+        method: "mail.anything",
+        params: { path: "todo.md" },
+      },
+    ]);
+  });
+
+  it("never routes outside-world capabilities to a peer, even if the policy names them", () => {
+    expect(handle(apps, ready, call("fs.read")).effects).toMatchObject([
+      { code: ErrorCode.denied },
+    ]);
+  });
+
+  it("reserves link.* for links: a local client cannot reach it", () => {
+    for (const method of ["link.hello", "link.prove", "link.ping"]) {
+      expect(handle(apps, ready, call(method)).effects).toMatchObject([
+        { code: ErrorCode.methodNotFound },
+      ]);
+    }
+  });
+});
+
+describe("handle: unknown and unreadable", () => {
   it("reports unknown apps, operations and malformed method names as not found", () => {
     for (const method of [
-      "mail.read",
+      "chat.read",
       "notes.write",
       "notes",
       ".read",

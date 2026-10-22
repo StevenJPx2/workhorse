@@ -24,10 +24,12 @@ export const BUDGETS = {
     limit: { darwin: 50, linux: 70 },
   },
   rules: { name: "core (rules) bundle, gzip", unit: "KB", limit: { darwin: 20, linux: 20 } },
-  // Set from slice 1's first measurement: 32.8 KB (mostly Effect).
+  // Slice 1 measured 32.8 KB (mostly Effect). Slice 2's standing link (the Link object, its
+  // session, the handshake rules) brought it to 40.9 KB; reset to 42 KB by decision, tighten-only
+  // from here. Cold start and idle memory, which users feel, were unchanged by the reset.
   daemonBundle: {
     name: "daemon bundle, gzip",
     unit: "KB",
-    limit: { darwin: 33, linux: 33 },
+    limit: { darwin: 42, linux: 42 },
   },
 } as const satisfies Record<string, Budget>;

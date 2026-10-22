@@ -5,11 +5,11 @@ import { greet } from "./greet.ts";
 import type { Connection } from "./new-connection.ts";
 import { refuse } from "./refuse.ts";
 import { route } from "./route.ts";
-import type { Apps } from "./route.ts";
+import type { Directory } from "./route.ts";
 import type { Step } from "./greet.ts";
 
 /** Advance a client connection using one decoded inbound protocol message. */
-export function handle(apps: Apps, connection: Connection, inbound: Inbound): Step {
+export function handle(directory: Directory, connection: Connection, inbound: Inbound): Step {
   const stay = (action: Action): Step => ({ connection, effects: [action] });
 
   if (inbound.type === "invalid") {
@@ -26,5 +26,5 @@ export function handle(apps: Apps, connection: Connection, inbound: Inbound): St
   if (connection.phase === "greeting")
     return stay(refuse(inbound.id, ErrorCode.invalidRequest, "hello first"));
 
-  return stay(route(apps, inbound.id, inbound.method, inbound.params));
+  return stay(route(directory, inbound.id, inbound.method, inbound.params));
 }
