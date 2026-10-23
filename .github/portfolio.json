@@ -1,0 +1,16 @@
+{
+  "body": [
+    "An **open protocol** for **durable, sandboxed agent infrastructure**. Its projects live under the **wrkhse** GitHub organisation.",
+    "The `daemon` is a **shared capability daemon** and a framework for building **modular MCP servers**.",
+    "The earlier **autonomous coding fleet** is kept in an archive inside the repository."
+  ],
+  "areas": [
+    "ai-agents",
+    "developer-tools"
+  ],
+  "technologies": {
+    "add": [
+      "mcp"
+    ]
+  }
+}
