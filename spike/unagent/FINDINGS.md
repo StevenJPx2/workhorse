@@ -247,6 +247,23 @@ Adoption figures are npm downloads for 2026-09-19 to 2026-10-18 from `api.npmjs.
 - **Do not take the name.** Even if npm ownership could be negotiated, the name already means "agent detection and skill installer" to its users. The docs link also suggests it may become an unjs project.
 - **Do contribute the verified agent path table**, or publish it as data both projects consume. That helps the ecosystem at low cost.
 
+### a5c-ai adapters (closest overall prior art)
+
+[`a5c-ai/babysitter`](https://github.com/a5c-ai/babysitter) (1,872 stars, MIT) publishes a family of adapters that covers most of the unagent idea:
+
+- `extensions-adapter` compiles one `plugin.json` into 12 agents' plugin formats.
+- `hooks-adapter-*` normalizes hooks for 12 agents. It has shell-hook and in-process families, a handler registry for fan-out, and a most-restrictive-wins merge.
+- `comm-adapter` and `launch-adapter` drive agents from outside.
+
+A hands-on spike ([A5C-SPIKE.md](A5C-SPIKE.md)) found problems in 6.0.0:
+
+- A deny does not block a tool call in Codex 0.164.0.
+- Handler crashes and timeouts fail open.
+- Pi output needs caller glue.
+- Nothing acts on a session between hooks.
+
+**Verdict:** use it as a reference for phase names and merge rules; don't depend on it.
+
 ### Generators (define once, write native files)
 
 | Tool | Generates | Agents | Adoption | Gaps |

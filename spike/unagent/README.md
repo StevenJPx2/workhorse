@@ -208,6 +208,7 @@ The `workhorse` CLI uses `model`, `targets` and `apply` for `workhorse connect <
 
 | Question | Recommended default |
 | --- | --- |
+| Build on a5c-ai's adapters, which cover most of this idea? ([A5C-SPIKE.md](A5C-SPIKE.md)) | No. Its 6.0.0 Codex deny does not block, failures fail open, and it cannot act on sessions. Reuse its phase names and merge table, and report the Codex bug upstream |
 | Is the runtime half also published under its own name (`@workhorse/harness`) so Chauffeur can depend on it without the emitter? | Subpath exports of `@workhorse/agents` (`/decider`, `/harness/opencode`, …). Split it out only if Chauffeur needs it |
 | Do deciders register in a shared file, or with Chauffeur's daemon as the single hub? | The shared registry file; no hub process |
 | Who builds the hook command: a compiled Bun executable in this workspace, or Chauffeur's Rust binary? | A compiled Bun executable here. Chauffeur may ship its own if it passes the same conformance suite |
