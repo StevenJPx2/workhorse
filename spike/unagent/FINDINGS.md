@@ -1,6 +1,6 @@
 # unagent: one TypeScript SDK for every coding agent
 
-Research spike, 2026-10-21. No code was built. All findings are from official docs, source code read at a named commit, or registry data. Items marked **(inferred)** were not confirmed against a primary source.
+Research spike, 2026-10-21. A one-page capability matrix across OpenCode, Pi, Claude Code and Codex is in [MATRIX.md](MATRIX.md). No code was built. All findings are from official docs, source code read at a named commit, or registry data. Items marked **(inferred)** were not confirmed against a primary source.
 
 ## Summary
 
@@ -22,23 +22,24 @@ Several gaps are still open:
 ### Recommendation
 
 1. **Put capabilities in the daemon, behind MCP.** Tools, resources, Skills over MCP (SEP-2640), and tasks are served once by Workhorse. That is the "through Workhorse" option, and it already matches `daemon/docs/architecture.md`. Permissions stay in daemon policy and are never translated into five agent permission dialects.
-2. **Build `unagent` as a small install-time emitter for the residue MCP cannot carry.** That residue is:
+2. **Build `unagent` as a general-purpose emitter (`@workhorse/agents`), not only for Workhorse residue.** It still uses Agent Plugins 1.x as input and covers Workhorse's residue, but v0 is broader and also emits commands, subagents and permissions for third-party authors:
    - registering the MCP endpoint in each agent;
-   - writing skills to disk for agents that do not read Skills over MCP (all five primary agents today);
+   - writing skills to disk (SEP-2640 serving is deferred; see decision 5);
    - an optional instruction fragment;
    - a hook bridge that forwards a few lifecycle events to the daemon for steering and approval.
 
    The input format is Agent Plugins 1.x, so the portable part is a standard, not our invention.
 3. **Do not build a runtime driver in the base.** Harness products (Equestrian, Stable) that need to drive Claude Code or Codex should use ACP or AI SDK harness adapters at their own composition root.
 4. **Make capability differences data.** Keep one frozen table per agent and agent version, a `plan` step that returns every write with a `native | fallback | unsupported` outcome before anything is written, and fail closed for anything security-relevant.
-5. **Pick another name, or a scoped one** such as `@workhorse/agents`. Offer the verified path and capability table to onmax/unagent rather than merging into it. Its scope and design rules do not fit Workhorse (see [onmax/unagent](#onmaxunagent-direct-prior-art)).
+5. **Generate UI from one declarative spec.** Claude Code mods, OpenCode V2 CLI plugins and pi extensions share five surfaces: a status item, a band above the prompt, a panel, a dialog and a toast. They also share a small element vocabulary (Box, Text, Markdown, Input, Select, Button). Workhorse should define a closed spec in json-render's shape (decided) and an event model as an MCP extension, and ship one render-only native renderer per agent. Codex's TUI has no UI extension point, so dialogs fall back to MCP elicitation there. See [section 6](#6-generated-ui-across-agents).
+6. **Pick another name, or a scoped one** such as `@workhorse/agents`. Offer the verified path and capability table to onmax/unagent rather than merging into it. Its scope and design rules do not fit Workhorse (see [onmax/unagent](#onmaxunagent-direct-prior-art)).
 
 ### What belongs where
 
 | Concern | Workhorse daemon or protocol | `unagent` (outside the base) | Neither (harness products or upstream) |
 | --- | --- | --- | --- |
 | Tools, resources, prompts | Served by apps over MCP | Registers the MCP endpoint in each agent's config | — |
-| Skills | Served over MCP as SEP-2640 `skill://` | Writes a filesystem fallback while an agent lacks SEP-2640 | — |
+| Skills | Served over MCP as SEP-2640 `skill://` (deferred in v0) | Writes skills to disk only (decision 5) | — |
 | Permissions over the outside world | Policy, leases, Decide | Never translates them | — |
 | Agents' own built-in tools (`Bash`, `Edit`) | — | Reports them as unsupported in the plan. It may later emit a read-only view | Each agent's permission system |
 | Steering rules, approvals | Rule evaluation in the daemon (Decide, Watch) | Hook bridge: per-agent wire shape to a normalized event, and the decision back | — |
@@ -46,6 +47,7 @@ Several gaps are still open:
 | Instructions (AGENTS.md) | — | Optional marked fragment in AGENTS.md or CLAUDE.md | AGENTS.md standard |
 | Driving an agent session | — | — | ACP, AI SDK harness adapters, used by harness products |
 | Agent detection | — | Optional, read-only | `@vercel/detect-agent` |
+| Generated UI (status, band, panel, dialog, toast, transcript) | Spec, surfaces and events as an MCP extension contract; delivered through the mailbox ([section 6](#6-generated-ui-across-agents)) | Installs one native renderer per agent: a Claude mod, an OpenCode CLI plugin, a pi extension | Workhorse's own web, TUI and phone clients render the same spec |
 
 This follows the doctrine: protocol packages keep contracts only, and runtime packages stay free of concrete providers. `unagent` is a composition-root tool used by the `workhorse` CLI, the same place where the daemon already "regenerates its configuration". Nothing in `protocol`, `core` or `worker` imports it.
 
@@ -369,16 +371,16 @@ Repositories cloned at `main` on 2026-10-21:
 
 ### Scope of v0
 
-`unagent` takes a Workhorse capability package (an Agent Plugins directory) and makes each installed agent able to use it, reporting precisely what each agent will not do. It writes no permissions, no commands and no subagent files in v0.
+`unagent` takes an Agent Plugins directory and makes each installed agent able to use it, reporting precisely what each agent will not do. Decision 1 makes v0 a general-purpose emitter rather than Workhorse-residue only, so commands, subagents and permissions are in scope alongside MCP registration, skills, instructions and the hook bridge.
 
 | Feature | v0 behaviour |
 | --- | --- |
 | MCP endpoint | Native entry in each agent's config: the stdio relay `workhorse mcp <app>`, or HTTP |
-| Skills | Native SEP-2640 when an agent advertises it (none yet). Otherwise a filesystem fallback in `.agents/skills`, plus `.claude/skills` for Claude Code |
+| Skills | Filesystem copies only in v0 (decision 5): `.agents/skills`, plus `.claude/skills` for Claude Code. SEP-2640 serving is deferred |
 | Instructions | Opt-in marked block in `AGENTS.md`; never creates `CLAUDE.md` |
 | Hook bridge | `pre-tool`, `session-start` and `stop` forwarded to the daemon. Native for Claude Code and Codex (command hooks); a generated plugin or extension for OpenCode and pi; `unsupported` for fx |
 | Trust | Reported as a manual step (`codex` trust, `pi --approve`, `fx mcp trust approve`). Never performed |
-| Permissions, commands, subagents | `unsupported` in the plan, with the reason |
+| Permissions, commands, subagents | Emitted as native files where the agent supports them; reported as `native`, `fallback` or `unsupported` per agent |
 
 ### Package layout
 
@@ -507,20 +509,160 @@ Before building, compare the slice with depending on `add-mcp`'s `upsertServer`.
 
 Checked with `curl https://registry.npmjs.org/<name>` and `gh api` on 2026-10-21.
 
+Decision: use `@workhorse/agents` and offer the verified agent table to onmax/unagent.
+
 ---
 
-## 6. Open questions for you
+## 6. Generated UI across agents
 
-1. **Scope.** Should v0 cover only the residue of the "through Workhorse" path (MCP registration, skill fallback, hook bridge)? Or do you want a general-purpose emitter for third-party authors too, which competes with rulesync?
-2. **Name.** Choose between a scoped `@workhorse/agents`, `unagents`, contacting onmax about the name, or something else. Should the verified agent table be offered to onmax/unagent?
-3. **Location.** Should this be a sibling workspace (`agents/`) with its own gates, or packages inside `daemon/packages`?
-4. **Dependencies (approval required).** Safe merging needs a TOML reader and writer that preserves comments (Codex), a JSONC editor (OpenCode), and YAML frontmatter parsing (skills). Options: add libraries, write minimal parsers, or adopt `add-mcp`.
-5. **Skills strategy.** Should Workhorse serve skills over SEP-2640 now and write filesystem copies as the fallback, or keep skills on disk until an agent adopts the extension? Should Workhorse push for SEP-2640 support upstream (OpenCode and pi are open source)?
-6. **Hooks.** Is the bridge's fail-closed behaviour acceptable on Claude Code and Codex, whose own hook failures fail open? The bridge would have to turn a daemon timeout into an explicit deny. Should fx's lack of hooks block steering for fx users, or be accepted as degraded?
-7. **Trust.** Confirm that `unagent` must never grant project trust or approve MCP servers on the user's behalf, even when asked to "just make it work".
-8. **Runtime driving.** When Equestrian or Stable need to drive Claude Code or Codex, is depending on `@ai-sdk/harness-*` or ACP acceptable? Or should the libfx path (spike 5) be the only driver?
-9. **Mailbox wake.** Should the per-host adapter that pushes mailbox events into an idle session (OpenCode plugin, pi extension, Claude Code channels or monitors, which were not researched here) live in this package or with each app?
-10. **Model-cost tests.** Conformance layer 3 calls real models for five agents. What budget and credentials should the nightly job use?
+Goal: a capability defines UI once and it appears in each agent's chat, sidebar, bottom bar and dialogs, and in Workhorse's own web, TUI and phone clients. `ARCHITECTURE.md` already names the approach: "use the extension capabilities of MCP to add `json-render` for generic generative UIs".
+
+### Versions and sources
+
+| Agent | UI extension mechanism | Rendering | Version and source |
+| --- | --- | --- | --- |
+| Claude Code | **Mods**: plugin JS or TS handlers. `on('ui.render', {component}, ($, e, next) => …)` returns a declarative element tree: `Box`, `Text`, `Button`, `Link`, `Code`, `Markdown`, `Input`, `Select`, plus `Svg`, `Image`, `Raster` and `Client`, depending on the surface | Ink in the terminal (per the shipped `claude-code.d.ts`). Desktop and VS Code draw the same tree remotely | Added in 2.1.287; on by default. [Mods overview](https://code.claude.com/docs/en/plugins/mods/overview.md), [interface](https://code.claude.com/docs/en/plugins/mods/interface.md), [reference](https://code.claude.com/docs/en/plugins/mods/reference.md) |
+| OpenCode V2 | **CLI plugins** (`@opencode/plugin/tui`): `context.ui.slot`, `ui.dialog`, `ui.toast`, `ui.panel`, `ui.router`, `keymap.layer` | Solid JSX on OpenTUI (`<box>`, `<text>`, `<markdown>`, `<code>`) | `@opencode/plugin` 2.1.2. [CLI plugins](https://opencode.ai/v2/docs/build/plugins/cli); `packages/plugin/src/tui/context.ts` at `4d59657` |
+| pi | **Extensions**: `ctx.ui.*`, `registerMessageRenderer`, `registerToolRenderer`, tool `renderCall` and `renderResult` | pi-tui components: `render(width) → string[]`, with differential rendering | 1.3.0. `docs/extensions.md`, `docs/tui.md`, `docs/rpc-extension-ui.md`, `src/core/extensions/types.ts` at `16f5f0a` |
+| Codex | **No UI plugin API in the TUI.** `[tui]` config picks from a fixed set of status-line items. Plugins contribute only listing metadata (`extensions["com.openai"].interface`) | The TUI renders built-in views only. App-server clients (desktop, IDE) receive MCP Apps metadata on `McpToolCall` items behind `features.enable_mcp_apps` (under development) | 0.163.0. `tui/src/slash_command.rs`, `tui/src/bottom_pane/status_line_setup.rs`, `app-server-protocol/src/protocol/v2/item.rs` at `c7234c1` |
+
+### Surface matrix
+
+| Surface | Claude Code (mods) | OpenCode V2 (CLI plugin) | pi (extension) | Codex TUI |
+| --- | --- | --- | --- | --- |
+| **Status or bottom bar item** | `$.ui.status(text)`, one line per mod; also the `statusLine` command (output only) | Slots `prompt.footer.status`, `home.footer.status` | `ctx.ui.setStatus(key, text)` | No: fixed item IDs |
+| **Band above the prompt** | `AbovePrompt` render site | Slot `session.composer.top` | `ctx.ui.setWidget(key, lines \| component, {placement: "aboveEditor" \| "belowEditor"})` | No |
+| **Sidebar or side panel** | Pane via `$.ui.open({id, title, …})`: beside the transcript when wide, above the prompt otherwise | Slots `sidebar.content`, `sidebar.footer`; `session.panel` with `ui.panel.open(name, {presentation})` | No sidebar; anchored overlay via `ctx.ui.custom(factory, {overlay, overlayOptions: {anchor}})` | No |
+| **Full screen** | Pane focus | `ui.router.register` and `navigate`; panel `fullscreen` | `ctx.ui.custom(factory)` | No |
+| **Dialog: select, confirm, text** | `Select` and `Input` elements in a pane; `AskUserQuestion` restyling; MCP elicitation dialog | `ui.dialog.alert/confirm/prompt/select/show` | `ctx.ui.select/confirm/input/editor` | MCP elicitation form mode and `request_user_input` only |
+| **Toast or notification** | `$.ui.toast`, `$.ui.notify` | `ui.toast.show`, `attention.notify` | `ctx.ui.notify` | Built-in notifications only |
+| **Transcript: custom message or tool result** | Render sites `ToolUse`, `ToolResult`, `AssistantMessage`, `UserMessage` | **No.** Only `markdown.registerCodeBlockRenderer(lang)`, so a tool could emit a fenced block **(inferred)** | `registerMessageRenderer`, `registerToolRenderer`, `renderCall/renderResult` | No |
+| **Commands and keys** | `/commands` registered by the mod; `Button` `hotkey` | `keymap.layer` commands (`palette`, `slash`, `bind`) | `registerCommand`, `registerShortcut` | No (closed enum) |
+| **Session data in UI** | `$.session` (messages, model, usage, repo) | `context.data.*` (reactive), `data.on(event)` | `ctx.sessionManager`, `pi.on(event)` | — |
+| **UI can act** | `$.prompt.submit`, `$.tool.call`, `$.command.run` | `context.client.*` (prompt), plugin RPC | `pi.sendMessage`, `pi.sendUserMessage` | — |
+| **MCP Apps (`ui://`)** | Not rendered in the CLI (open issue #95149); the Desktop Code tab renders them; SDK hosts get `readMcpResource` | Not supported (none found in source) | Explicitly filtered out (`docs/mcp.md`) | Not in the TUI; protocol plumbing for GUI clients |
+| **MCP elicitation (form)** | Yes, dialog plus `Elicitation` hook | Declared; one open report says requests hang (issue #51856) | Not advertised (issue #10589) | Form mode yes; URL mode auto-declined |
+
+### What they have in common
+
+1. **Every UI extension runs in the agent's process and is written in that agent's language.** That means Claude mods, OpenCode CLI plugins and pi extensions. None of them renders a document sent by an outside service. A shared interface therefore needs **one small native renderer per agent**, plus a serializable spec that all of them draw. That renderer is the "thin per-host adapter" from `daemon/docs/architecture.md`.
+2. **Five surfaces exist in Claude Code, OpenCode and pi:**
+   - a keyed status item;
+   - a band above the prompt;
+   - a modal dialog (select, confirm, text);
+   - a toast;
+   - a larger region (a pane, sidebar panel or overlay).
+
+   Transcript rendering exists only in Claude Code and pi.
+3. **They share an element vocabulary.**
+
+   | Element | Claude mods | OpenCode | pi |
+   | --- | --- | --- | --- |
+   | Box | `Box` | `<box>` | `Box`, `Container` |
+   | Text | `Text` | `<text>` | `Text` |
+   | Markdown | `Markdown` | `<markdown>` | `Markdown` |
+   | Code | `Code` | `<code>` | — |
+   | Input | `Input` | OpenTUI input inside `dialog.show` | `Input` |
+   | Select | `Select` | `dialog.select` | `SelectList` |
+   | Button | `Button` | Command | Command or shortcut |
+
+   All three take theme tokens rather than raw colors.
+4. **Interaction reduces to a few events:**
+   - `submit(value)` from an input or select;
+   - `press(actionId)` from a button;
+   - `dismiss`;
+   - plus host actions such as posting a message to chat or running a tool or command.
+5. **There is already a serializable dialog protocol in each agent.** pi's RPC extension-UI subprotocol carries `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, `setWidget` (lines), `setTitle`. Codex's app-server carries `requestUserInput` and `mcpServer/elicitation/request`. OpenCode has `form.created`, `form.replied` and `form.cancelled`, with typed fields. Claude Code has MCP elicitation. **MCP elicitation form mode is the only dialog a Workhorse MCP server can raise in every agent with no adapter,** where hosts implement it (Claude Code and Codex today).
+6. **Nobody renders a cross-agent declarative format natively.** MCP Apps is HTML in an iframe: it reaches GUI hosts (Claude and Codex desktop, Cursor, VS Code, ChatGPT) and no TUI. json-render (`@json-render/core` 0.21.1, Vercel Labs) is a declarative catalog spec, `{root, elements: {id: {type, props, children}}}` streamed as JSON Patch. It has React, React Native and Ink renderers, and a bridge into MCP Apps (`@json-render/mcp`). A2UI (v0.9.1, Google-originated) is similar but has only a community terminal renderer.
+
+### Proposed interface
+
+**One declarative UI spec, one surface model, one event model.** It is carried over the Workhorse protocol and drawn by a native renderer per agent and per Workhorse client.
+
+```ts
+// Contract (daemon/packages/protocol, as an MCP extension "dev.workhorse/ui"): data only.
+type Surface =
+  | { kind: "status"; key: string }                     // bottom bar item
+  | { kind: "band"; key: string }                       // above the prompt
+  | { kind: "panel"; key: string; title: string }       // sidebar or pane
+  | { kind: "dialog"; id: string }                      // modal; resolves once
+  | { kind: "toast" }
+  | { kind: "transcript"; toolCallId?: string };        // inline in chat
+
+type Spec = {                                           // json-render shape, closed catalog
+  root: string;
+  elements: Record<string, { type: CatalogType; props: unknown; children?: string[] }>;
+};
+type CatalogType = "Box" | "Text" | "Markdown" | "Code" | "Input" | "Select" | "Button" | "Link" | "Progress";
+
+type UiEvent =                                          // host → daemon
+  | { type: "submit"; surface: string; element: string; value: string | number | boolean | string[] }
+  | { type: "press"; surface: string; action: string }
+  | { type: "dismiss"; surface: string };
+
+// Daemon → session: show(surface, spec) | patch(surface, jsonPatch[]) | clear(surface),
+// delivered through the session's mailbox so a reconnecting host redraws.
+```
+
+Each agent gets a fidelity entry in the capability table, which `plan` reports:
+
+| Surface | Claude Code | OpenCode V2 | pi | Codex | Workhorse web, TUI, phone |
+| --- | --- | --- | --- | --- | --- |
+| `status` | native (mod) | native (slot) | native (`setStatus`) | unsupported | native |
+| `band` | native | native | native | unsupported | native |
+| `panel` | native (pane) | native (`sidebar.content`, `session.panel`) | fallback (anchored overlay) | unsupported | native |
+| `dialog` | native (mod), or fallback to MCP elicitation | native (`ui.dialog`) | native (`ctx.ui.*`) | fallback (MCP elicitation form, flat fields only) | native |
+| `toast` | native | native | native | unsupported | native |
+| `transcript` | native (`ToolResult` render site) | unsupported: text fallback until OpenCode has a tool-renderer API (to be proposed upstream) | native (`registerToolRenderer`) | text only in the TUI; GUI clients via MCP Apps (`@json-render/mcp`) when `enable_mcp_apps` ships | native |
+
+**Rules:**
+
+- **Every surface degrades to text.** A tool result carries normal text content for the model and for hosts without a renderer. The spec goes in `_meta["dev.workhorse/ui"]`. OpenAI and the MCP Apps spec both require that tools stay "useful without UI".
+- **The catalog is closed and props are validated by schema.** There is no HTML, no script and no remote assets, because mods, OpenCode plugins and pi extensions run unsandboxed in the agent's process. The renderer is the trust boundary, and its input is hostile. `Link` opens only after the host confirms it.
+- **Dialogs resolve once** with `submit` or `dismiss`. A daemon deadline turns into `dismiss`.
+- **Updates are JSON Patch against the last spec**, as in json-render's SpecStream. Redraw limits follow the host: Claude throttles to 10/s (30/s in the terminal); pi coalesces renders.
+- **Where it lives:**
+  - The spec, surfaces and events are a protocol contract, an MCP extension, in `daemon/packages/protocol`.
+  - The per-agent renderers ship with `unagent` and are installed by its `plan` and `apply`:
+    - a Claude mod;
+    - an OpenCode CLI plugin with a `tui` export;
+    - a pi extension.
+  - Workhorse's own clients render the same spec with React, React Native and Ink.
+
+**Smallest vertical slice for UI:** one `status` item and one `dialog`, driven by a daemon app, drawn natively in Claude Code, OpenCode and pi. Codex gets the dialog through MCP elicitation and `status` is reported as `unsupported`. Proof:
+
+- The dialog's `submit` value reaches the daemon audit trail.
+- The status text, captured from each agent's rendered output, changes after a `patch`.
+
+Mod and plugin tests (`claude plugin test`, OpenCode and pi in-process tests) are the offline layer.
+
+### UI decisions (2026-10-21)
+
+| Question | Decision | Consequence |
+| --- | --- | --- |
+| Wire format | **json-render's spec shape** (`{root, elements}` plus JSON Patch updates) | The protocol schema follows `@json-render/core` 0.21.x. Using its React, React Native, Ink or MCP renderers as libraries still needs dependency approval; the agent renderers (Claude mod, OpenCode plugin, pi extension) map the closed catalog themselves |
+| Codex TUI | **Dialogs only, for now** | `dialog` goes through MCP elicitation form mode; every other surface is `unsupported` in the plan. No upstream proposal yet |
+| OpenCode transcript UI | **Plain text now; propose a tool-renderer API upstream** | `transcript` on OpenCode is `unsupported` (text fallback). The fenced code block workaround is not used |
+| Claude mod scope | **Render only** | The Workhorse mod draws specs and sends `submit`, `press` and `dismiss` to the daemon. It never approves tools, submits prompts or runs commands itself; any action goes through the daemon and its policy. `claude plugin validate` must show no `tool.check`, `prompt.submit` or `command.run` calls |
+
+The same render-only rule applies to the OpenCode plugin and the pi extension: they render and report events, and every effect goes through the daemon.
+
+---
+
+## 7. Decisions (2026-10-21)
+
+| # | Question | Decision | Consequence for the design |
+| --- | --- | --- | --- |
+| 1 | Scope | **General-purpose emitter**, not only Workhorse residue | v0 competes with rulesync and covers commands, subagents and permissions in addition to MCP registration, skill fallback and the hook bridge. The residue-only scope in section 5 is superseded |
+| 2 | Name | **`@workhorse/agents`**; offer the verified agent table to onmax/unagent | Scoped package name; contributes data upstream rather than merging into onmax/unagent |
+| 3 | Location | **Sibling workspace** (`agents/`) | Separate gates, same as `daemon/`; `protocol`, `core` and `worker` never import it |
+| 4 | Dependencies | **Add libraries** | Approved dependency work: a comment-preserving TOML reader and writer, a JSONC editor, and YAML frontmatter parsing |
+| 5 | Skills | **Keep on disk only in v0** | No SEP-2640 serving in v0; filesystem copies are the only skill delivery. SEP-2640 remains a daemon capability for later |
+| 6 | Hooks | **Fail closed; fx degraded** | A daemon timeout becomes an explicit deny on Claude Code and Codex; fx users get no steering |
+| 7 | Trust | **Never grant trust or approve MCP servers** | Trust and approval stay manual steps, even when asked to "just make it work" |
+| 8 | Runtime driving | **AI SDK harness or ACP acceptable** | Harness products may depend on them; the base does not |
+| 9 | Mailbox wake | **In this package** | Per-host adapters for OpenCode, pi, Claude Code and others ship with the emitter |
+| 10 | Model-cost tests | **Nightly, capped budget** | Pinned agent versions, shared CI credentials, cost cap; failures flip table entries to `unsupported` until reviewed |
 
 ## Sources consulted
 
@@ -549,4 +691,10 @@ Checked with `curl https://registry.npmjs.org/<name>` and `gh api` on 2026-10-21
   - READMEs of rulesync, ruler, add-mcp, vercel-labs/skills, cligent, rivet-dev/agents, coder/agentapi
   - npm registry and download API
   - `gh api` repository data
+- **UI:**
+  - Claude Code mods: `code.claude.com/docs/en/plugins/mods/{overview,interface,reference,admin}.md`, `statusline.md`, `output-styles.md`, `agent-sdk/{typescript,user-input}.md`, and `anthropics/claude-code` `mods/types/claude-code.d.ts`
+  - OpenCode: https://opencode.ai/v2/docs/build/plugins/cli, `/build/plugins/rpc`, `/cli/plugins`, `/cli/acp`; source `packages/{plugin,tui,schema,gui-extensions}` at `4d59657`
+  - pi: `docs/{extensions,tui,rpc-extension-ui,themes,packages}.md`, `packages/tui/src/tui.ts`
+  - Codex: `codex-rs/{tui,core-plugins,codex-mcp,app-server-protocol,skills}` at `c7234c1`; developers.openai.com/plugins/build/{chatgpt-ui,extensions}.md
+  - Standards: `modelcontextprotocol/ext-apps` (spec 2026-01-26; `@modelcontextprotocol/ext-apps` 2.0.3), `vercel-labs/json-render` (`@json-render/{core,ink,mcp}` 0.21.1), `a2ui-project/a2ui` (`@a2ui/web_core` 0.14.0), MCP 2026-07-28 elicitation, ACP tool-call schema and elicitation RFD
 - **unjs:** unplugin 3.4.0, unstorage 2.0.0-beta.0, unenv 2.0.0-rc.24, db0 0.4.1, crossws 0.4.15, c12 4.0.0-rc.2, hookable 6.1.2, Nitro 3.0.260903-beta (source on `main`, 2026-10-21).
