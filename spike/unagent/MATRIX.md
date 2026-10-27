@@ -18,6 +18,8 @@ Claude Code has two runtime columns:
 
 Organizations can turn mods off, and the hooks keep working.
 
+Tabled on 2026-10-27, with no columns yet: Cursor, GitHub Copilot CLI, Gemini CLI, Amp, Factory Droid, Goose, Kiro, OpenClaw, Hermes and Antigravity. Each gets a column when its export is built; until then its surfaces are unverified.
+
 ## 1. Install-time surfaces
 
 The files are the same with or without mods, so Claude Code has one column here.
@@ -73,6 +75,15 @@ The files are the same with or without mods, so Claude Code has one column here.
 | `session.interrupt` | ✅ `interrupt` | ✅ `ctx.abort` | ✅ `$.turn.abort` | 🟡 `continue: false` at the next hook | ❌ app-server only |
 | `session.remove` | ✅ `remove` | ❌ | ❌ | ❌ | ❌ app-server only |
 | Runtime registries | ✅ tool, skill, command, MCP, model; agents can only be updated | ✅ tool, command, MCP, provider; no agents | ✅ tool, command, agent | ❌ | ❌ static files |
+| Role the model sees for an appended event | `user`; `description` and `metadata` are not sent | `user`; `customType` and `details` are not sent | `user`, a row nobody typed | `user`, wrapped in `<system-reminder>` **(inferred)** | `developer` |
+| Append a synthetic tool call and result | 🟡 not through `session.synthetic`; the `context` hook may edit request messages **(inferred)** | 🟡 not through `sendMessage`; the `context` event may return edited messages **(inferred)** | ❌ the host refuses other blocks and row types | ❌ | ❌ |
+
+Event delivery: no harness lets a plugin store a tool call the model did not make, so Workhorse's synthetic tool calls (`receive_event__injected`, see `daemon/docs/architecture.md`) exist only in its own loop. Elsewhere an event reaches the model as user or developer text, so its text must name its origin. The request-time routes in OpenCode and Pi are untested. Checked from source and docs, not captured requests, on 2026-10-27:
+
+- OpenCode at `f993a89` (`main`, not the installed 2.1.4): `packages/core/src/session/runner/to-llm-message.ts:256-275`, `core/src/session/model-request.ts:251-296`.
+- Pi installed 1.4.0: `dist/core/messages.js:89-96` (`convertToLlm`); `dist/core/extensions/types.d.ts:679-682`.
+- Claude Code types at `08c6a4f` (`main`): `mods/types/claude-code.d.ts`, `SessionAppendMessage`; hooks from `docs/en/hooks.md`.
+- Codex at `rust-v0.164.0`: `codex-rs/core/src/context/hook_additional_context.rs:24-26`, `core/src/hook_runtime.rs:809-835`.
 
 ## 4. Failure and timing
 

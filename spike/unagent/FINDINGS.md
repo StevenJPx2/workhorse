@@ -681,6 +681,15 @@ The same render-only rule applies to the OpenCode plugin and the pi extension: t
 | 9 | Mailbox wake | **In this package** | Per-host adapters for OpenCode, pi, Claude Code and others ship with the emitter |
 | 10 | Model-cost tests | **Nightly, capped budget** | Pinned agent versions, shared CI credentials, cost cap; failures flip table entries to `unsupported` until reviewed |
 
+**Rescoped on 2026-10-27.** The project is now an unplugin-style plugin SDK, independent of the Workhorse daemon ([README.md](README.md)). That changes these decisions:
+
+- **Decisions 1 and 3:** the scope is a plugin SDK, not a general config emitter. The home is open: probably its own repository.
+- **Decision 2:** the name is open again.
+- **Decision 6:** a handler's error or timeout is a deny enforced by the SDK, not a daemon timeout.
+- **Decision 9:** mailbox wake is not in the package. Workhorse would write its wake as a plugin with this SDK.
+
+Decisions 4, 5, 7, 8 and 10 still stand.
+
 ## Sources consulted
 
 - **Workhorse:** `AGENTS.md`, `ARCHITECTURE.md`, `PHILOSOPHY.md`, `daemon/docs/architecture.md`.

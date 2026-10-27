@@ -6,6 +6,13 @@ A one-page summary of every capability across the four harnesses is in [MATRIX.m
 
 Companion to [FINDINGS.md](FINDINGS.md), which covers install-time generation (`@workhorse/agents`) and records the decisions of 2026-10-21. This file covers the runtime half: hooking a running harness, and acting on it.
 
+> **Superseded in part on 2026-10-27.** The design is now an unplugin-style SDK: each author's plugin becomes a native plugin in each agent ([README.md](README.md)). These parts no longer apply:
+>
+> - the fan-out adapter, registered deciders and the combining rules (summary point 6, sections 1 and 6, the decider SDK in section 8);
+> - deciders holding their own queues (section 5). The SDK keeps queued actions per plugin and session instead.
+>
+> The fidelity tables, event coverage, failure and timing data, delivery paths and the per-agent multi-plugin table in section 6 still hold. That table now describes how plugins built with the SDK combine.
+
 ## Versions checked
 
 | Harness | Version | Evidence |

@@ -1,219 +1,229 @@
-# `@workhorse/agents`: one way to reach every coding agent
+# unagent: write an agent plugin once, run it in every coding agent
 
-**Goal:** a capability author writes a package once. It then works in OpenCode, Pi, Claude Code, Codex and fx: it is installed natively, hooked at run time, and drawn in each agent's UI. Each agent's report states exactly what that agent cannot do.
+**Goal:** what unplugin does for bundlers, done for coding agents. A plugin author writes one plugin against one small SDK. The SDK turns it into a native plugin for OpenCode, Pi, Claude Code and Codex, and reports, per agent, what that agent cannot do.
 
-Status: proposed design. Nothing is built. Evidence is in [FINDINGS.md](FINDINGS.md) (install-time surfaces, prior art, UI), [HARNESS-ADAPTERS.md](HARNESS-ADAPTERS.md) (run-time hooks and actions) and [MATRIX.md](MATRIX.md) (one-page capability matrix). Versions checked: OpenCode 2.1.4, Pi 1.4.0, Claude Code 2.1.310, Codex 0.164.0, fx 0.0.14.
+Status: proposed design, rescoped on 2026-10-27. Nothing is built. Versions checked: OpenCode 2.1.4, Pi 1.4.0, Claude Code 2.1.310, Codex 0.164.0, fx 0.0.14.
 
-## Architecture
+Evidence:
+
+- [MATRIX.md](MATRIX.md): what each agent supports, cell by cell.
+- [HARNESS-ADAPTERS.md](HARNESS-ADAPTERS.md): run-time hooks, actions, failure and timing.
+- [FINDINGS.md](FINDINGS.md): install surfaces, prior art, UI.
+- [A5C-SPIKE.md](A5C-SPIKE.md): the closest existing attempt, tested.
+
+## What changed on 2026-10-27
+
+| Before | Now |
+| --- | --- |
+| A Workhorse package. The daemon's apps were the main consumer | **Independent of the Workhorse daemon.** The daemon is one possible plugin author, nothing more |
+| One adapter per agent fans out to registered deciders and combines their answers | **One native plugin per author, as unplugin does.** Each agent combines several plugins by its own rules |
+| A daemon-defined UI spec, drawn by render-only renderers | The plugin calls UI functions in the SDK directly |
+| Verdicts first, rewrites later | **Rewrites are supported from the start** |
+| Five agents | Four built first. Cursor, Copilot CLI, Gemini CLI and others are tabled and get empty placeholder exports |
+
+## The model
 
 ```mermaid
-flowchart TB
-    Author["Capability author<br/>Agent Plugins directory"] --> Emitter["@workhorse/agents<br/>plan, apply, revert"]
-    Emitter --> Files[("Agent config<br/>MCP, skills, commands, hooks, shims")]
-    Files --> Agent["Coding agent<br/>OpenCode, Pi, Claude Code, Codex, fx"]
-    Agent -- "MCP" --> Daemon["Workhorse daemon<br/>tools, policy, mailboxes"]
-    Agent -- "hooks" --> Adapter["Harness adapter<br/>shim or hook command"]
-    Adapter --> Deciders["Deciders<br/>Workhorse, Chauffeur, sourcefed, opencode-history"]
+flowchart LR
+    Author["Plugin author<br/>createAgentPlugin(factory)"] --> Exports["Per-agent exports<br/>.opencode .pi .claude .codex"]
+    Exports --> OC["OpenCode<br/>server plugin"]
+    Exports --> Pi["Pi<br/>extension"]
+    Exports --> CC["Claude Code<br/>mod, or hook entries"]
+    Exports --> CX["Codex<br/>hook entries"]
+    CC -. "hooks" .-> Runner["Shared hook runner<br/>loads the plugin bundle"]
+    CX -. "hooks" .-> Runner
 ```
 
-The package has three parts. Each runs at a different time:
+unplugin's shape, carried over:
 
-| Part | Runs | Does |
+| unplugin | This SDK |
+| --- | --- |
+| `createUnplugin((options, meta) => ({ name, transform, … }))` | `createAgentPlugin((options, meta) => ({ name, toolBefore, … }))` |
+| `meta.framework` is `vite`, `rollup`, … | `meta.agent` is `opencode`, `pi`, `claude`, `codex` |
+| `unplugin.vite(options)` returns a Vite plugin | `plugin.opencode(options)` returns an OpenCode plugin |
+| `vite: { configureServer }`: native hooks for one bundler | `opencode: { … }`: native hooks for one agent |
+| A table of which hook works in which bundler | The fidelity table, read at build time |
+
+## A plugin
+
+```ts
+import { createAgentPlugin } from "unagent"
+
+export const guard = createAgentPlugin((options: { protected: string[] }, meta) => ({
+  name: "guard",
+
+  toolBefore(call, ctx) {
+    if (call.tool === "bash" && /\brm -rf\b/.test(call.input.command)) return ctx.deny("rm -rf is blocked.")
+    if (call.tool === "bash" && call.input.command.startsWith("git push")) {
+      return ctx.rewrite({ command: `${call.input.command} --dry-run` })
+    }
+  },
+
+  promptSent(prompt, ctx) {
+    return ctx.append(`Protected paths: ${options.protected.join(", ")}`)
+  },
+
+  responseFinished(response, ctx) {
+    if (response.reason === "error") ctx.session.append({ text: "Last turn failed; check the log." }, { delivery: "next" })
+  },
+
+  tools: {
+    guard_status: { description: "List protected paths", input: {}, run: () => options.protected },
+  },
+
+  opencode: {
+    // Native OpenCode hooks, for things the SDK does not cover.
+  },
+}))
+```
+
+Each agent then loads its own export:
+
+| Agent | What the user installs | Where it comes from |
 | --- | --- | --- |
-| **Emitter** | Install time | Turns an Agent Plugins directory into each agent's native files, and reports per agent what is `native`, `fallback` or `unsupported` before writing |
-| **Harness adapter** | Inside or beside a running agent | Turns hooks into standard events, sends them to deciders, combines their answers, and carries actions back to the agent |
-| **UI renderers** | Inside a running agent | Draw a daemon-defined UI spec in each agent's chat, status bar, panels and dialogs, and report user input back |
+| OpenCode | A server plugin module | `export default guard.opencode({ protected: ["infra/"] })` |
+| Pi | An extension | `export default guard.pi({ protected: ["infra/"] })` |
+| Claude Code | A mod, or a plugin directory whose `hooks.json` calls the hook runner | `guard.claude(...)`, packaged by `unagent build` |
+| Codex | A plugin directory whose hooks call the hook runner | `guard.codex(...)`, packaged by `unagent build` |
 
-Capabilities themselves (tools, resources, prompts, tasks, secrets, policy) are served once by the Workhorse daemon over MCP. This package carries only what MCP cannot.
+## Hooks
 
-## Install
+| Hook | Arguments | The plugin can return |
+| --- | --- | --- |
+| `sessionCreated`, `sessionResumed`, `sessionEnded` | session | nothing |
+| `promptSent` | prompt text, `idleSeconds` | block, rewrite text, append context |
+| `toolBefore` | tool name, input | deny, ask, allow, rewrite input |
+| `toolAfter` | tool name, input, result | append context, rewrite result where the agent allows it |
+| `permissionAsked` | the request | allow, deny, leave to the user |
+| `responseFinished` | `reason: done \| aborted \| error` | nothing |
+| `sessionIdle` | session | nothing |
+| `compactionBefore`, `compactionAfter` | session | veto, add instructions |
 
-```mermaid
-flowchart LR
-    Pkg["Agent Plugins directory"] --> Plan["plan<br/>reads fidelity table"]
-    Plan --> Items["Plan items<br/>outcome, writes, manual steps"]
-    Items --> Apply["apply<br/>owned entries, atomic writes"]
-    Apply --> Receipt[("Receipt")]
-```
+Every hook gets `ctx` with `ctx.session` (append `now`, `next` or `wake`; compact; interrupt; change model) and `ctx.ui` (`status`, `toast`, `dialog`, `band`, `panel`). The SDK computes `sessionIdle` and `idleSeconds` for every agent from `responseFinished`.
 
-`revert` takes a receipt and removes exactly what `apply` wrote.
+`tools` are registered natively where the agent can do that in-process (OpenCode, Pi, Claude Code mods). Otherwise the build adds a stdio MCP server that serves the same definitions.
 
-```ts
-const pkg = yield* Package.load("./sourcefed")
-const plan = yield* Plan.make(pkg, { scope: "user", targets: [claude(), codex(), opencode(), pi(), fx()] })
-// plan.items[0] → { target: "fx", feature: "hooks.preTool", outcome: "unsupported", reason: "fx 0.0.14 has no user hooks" }
-const receipt = yield* apply(plan)
-yield* revert(receipt)
-```
+## Running in each agent
 
-| Feature | What `apply` writes |
+| Agent | How the plugin runs | Fails closed on `toolBefore` by | Actions between hooks |
+| --- | --- | --- | --- |
+| OpenCode | In-process server plugin | Throwing in `execute.before` | Direct API calls |
+| Pi | In-process extension | Returning `block` from `tool_call` | Direct API calls |
+| Claude Code, mod | In-process mod | `.catch` returning a deny | Direct `$.session` and `$.prompt` calls |
+| Claude Code, hooks | Hook runner per hook | `onFailure: "block"` on the hook entry | Queued; delivered at the next hook that can carry them |
+| Codex | Hook runner per hook | The runner printing a deny for every internal error | Queued; delivered at the next hook. A missing or crashing runner still fails open |
+
+On every agent, the SDK gives each `toolBefore` a budget. A handler that throws or misses it produces a deny by default. A plugin can set `onError: "allow"` for hooks that only observe.
+
+Queued actions for hook-command agents are kept in a per-plugin, per-session file under the plugin's state folder. The runner drains them at the next hook that can carry them. A hook-command plugin runs only while a hook is running, so it cannot start work on its own; an idle Codex session wakes only at turn end.
+
+### The hook runner
+
+One runner, `unagent-hook`, is installed once and shared by every plugin. A hook entry runs `unagent-hook <plugin bundle> --agent codex`, and the runner loads the bundle, calls the plugin and prints that agent's reply.
+
+- A compiled Bun executable is 89 MB (measured with Bun 1.4.4), so one per plugin is too much.
+- Bun starts in 7 ms and Node in 59 ms on the development machine. The overhead budget is 20 ms at p99 before the plugin runs. Loading a bundle from a compiled runner is expected to stay inside it **(inferred; slice 2 measures it)**.
+
+## Several plugins at once
+
+The SDK makes no attempt to combine plugins. Each plugin is a native plugin, so the agent combines them by its own rules:
+
+| Agent | Several plugins on the same hook |
 | --- | --- |
-| MCP endpoint | A native entry in each agent's config: JSON, JSONC or TOML |
-| Skills | Files in `.agents/skills`, plus `.claude/skills` for Claude Code |
-| Instructions | An opt-in marked block in `AGENTS.md` |
-| Commands, subagents | Native files where the agent has them |
-| Agent permissions | Rules for the agent's own built-in tools (`Bash`, `Edit`) where it has a permission system |
-| Hooks | The harness adapter: a plugin, extension or mod, or hook entries that run the hook command |
-| UI | One renderer per agent: a Claude Code mod, an OpenCode CLI plugin, a Pi extension |
-| Trust | Reported as a manual step, such as `/hooks` in Codex, `pi --approve` or `fx mcp trust approve` |
+| OpenCode | Run in order. Each sees the previous one's changes, and the last write wins |
+| Pi | Run in order. The first `block` wins, but a later result can overwrite its `reason` |
+| Claude Code hooks | Run in parallel: `deny > defer > ask > allow`, and every added context is delivered. How competing rewrites merge is undocumented |
+| Claude Code mods | One chain. A mod that answers without calling `next` skips the rest |
+| Codex | Run concurrently. Any deny wins. Among rewrites, the last to finish wins, which is a race, and a rewrite also approves the call |
 
-## Hooks at run time
+The SDK guarantees what one plugin does. Across plugins it guarantees nothing more than the agent does, and the fidelity report says so per agent. The rewrite race on Codex is the main cost of this model.
 
-### A decision before an action
-
-```mermaid
-flowchart LR
-    Hook["Harness hook<br/>tool.before"] --> Adapter["Adapter<br/>budget, fidelity"]
-    Adapter --> Rewrite["Rewrite phase<br/>deciders in priority order"]
-    Rewrite --> Verdict["Verdict phase<br/>deciders in parallel"]
-    Verdict --> Reply["Harness reply<br/>deny, ask, allow, new input"]
-```
-
-One adapter per agent registers each hook once and fans out to every decider. Deciders are listed in a user-only file, with their events, budgets, priority, failure policy and owned state.
-
-| Point | Combining rule |
-| --- | --- |
-| `tool.before` | Rewrites run in priority order. Verdicts follow: `deny > ask > allow`. An explicit deny always wins. A rewrite goes out only when the combined verdict is `allow` |
-| `prompt.sent` | Any block wins. Text edits run in priority order. Appends are concatenated and de-duplicated by key |
-| `permission.asked` | Any deny wins. If every decider allows, the request is allowed. Otherwise the user decides |
-| `compaction.before` | Any veto wins. Instructions are concatenated |
-| State actions | Accepted only from the decider that declares ownership of that state, such as `session.update.model` |
-
-A decider that misses its budget contributes its `onTimeout` (`block`, `ask` or `allow`). The adapter answers when every decider has answered, or when the deadline passes.
-
-### An action from a decider
-
-**In-process agents:** OpenCode, Pi, and Claude Code with mods.
-
-```mermaid
-flowchart LR
-    Decider["Decider<br/>act(session, action)"] --> Shim["In-process shim<br/>revision check"]
-    Shim --> API["Agent API<br/>synthetic, sendMessage, $.session.append"]
-    API --> Result["Result<br/>delivered, stale, unsupported"]
-```
-
-**Hook-command agents:** Codex, and Claude Code with mods off.
-
-```mermaid
-flowchart LR
-    Decider["Decider<br/>holds pending actions"] -- "drain at next hook" --> Command["Hook command"]
-    Command --> Output["Hook output<br/>additionalContext, Stop block"]
-    Output --> Result["Result reported<br/>to the decider"]
-```
-
-```ts
-const sourcefed = await Decider.serve({ name: "sourcefed", priority: 50 })
-
-await sourcefed.act(session.id, {
-  action: "message.append", parts: [{ text: summary }],
-  delivery: "wake", late: "next", revision: session.revision,
-}) // → { status: "queued", when: "turn-end" } on Codex; { status: "delivered" } on OpenCode
-
-sourcefed.before("tool.before", (e) => policy.check(e) ? e.allow() : e.deny("Outside the lease."),
-  { budget: 1_500, onTimeout: "block" })
-```
-
-### Standard events and actions
-
-| Kind | Names |
-| --- | --- |
-| Events | `session.created`, `session.resumed` (reopened), `session.ended`, `prompt.sent` (with `idle_seconds`), `tool.before`, `tool.after`, `permission.asked`, `response.finished` (with `reason: done \| aborted \| error`), `session.idle`, `compaction.before`, `compaction.after`. Every event carries `agent` and `parent` |
-| Actions | `session` (`create`, `update`, `compact`, `warm`, `interrupt`, `remove`), `message.append` (`now`, `next`, `wake`), `permission.reply`, and registries for `tool`, `skill`, `agent`, `model`, `mcp` and `command` |
-| Edits in `before` | Block, rewrite input, ask the user |
-
-The adapter computes `session.idle` and `idle_seconds` from `response.finished` for every agent.
-
-### What each agent limits
+## What each agent limits
 
 | Agent | Main limits |
 | --- | --- |
-| OpenCode | No resume event. Warming is configuration only. Asking the user goes through `permission.evaluate`. No hook timeouts |
-| Pi | No permission layer, no subagent events, no session removal. Warm can only allow or veto a scheduled refresh. No hook timeouts |
-| Claude Code, mods | `session.start` misses `/clear`, `/resume` and `/branch`. No warm |
-| Claude Code, hooks | `now` and `next` wait for the next hook. Wake goes through the per-session messaging socket or a `Stop` continuation. No compact, model change or registries |
-| Codex | `now` and `next` wait for the next hook; wake works only at turn end. No ask, compact, model change, interrupt or registries through hooks. A rewrite also approves the call. Fails open on any hook error |
-| fx | No hooks. Install only |
+| OpenCode | No resume event. Warming is configuration only. Asking the user goes through `permission.evaluate`. No hook timeouts, so the SDK imposes budgets |
+| Pi | No permission layer, no subagent events, no session removal. No hook timeouts |
+| Claude Code, mods | `sessionCreated` misses `/clear`, `/resume` and `/branch` |
+| Claude Code, hooks | `now` and `next` wait for the next hook. Wake goes through the session's messaging socket or a `Stop` continuation. No compact, model change or tool registration; tools come from the generated MCP server |
+| Codex | `now` and `next` wait for the next hook; wake works only at turn end. No ask, compact, model change or interrupt through hooks. A rewrite approves the call. Fails open if the runner is missing |
+| fx | No hooks. Only the generated MCP server works |
 
 The full matrix, with the API behind each cell, is [MATRIX.md](MATRIX.md).
 
-## UI
+## Build and install
 
 ```mermaid
 flowchart LR
-    App["Daemon app"] --> Mailbox[("Session mailbox<br/>show, patch, clear")]
-    Mailbox --> Renderer["Per-agent renderer<br/>render only"]
-    Renderer --> Events["submit, press, dismiss<br/>to the daemon"]
+    Src["Plugin source"] --> Build["unagent build<br/>reads the fidelity table"]
+    Build --> Report["Report per agent<br/>native, fallback, unsupported"]
+    Build --> Out[("dist/<br/>opencode, pi, claude, codex")]
+    Out --> Install["unagent install<br/>plan, apply, revert"]
 ```
 
-| Surface | Claude Code | OpenCode | Pi | Codex |
-| --- | --- | --- | --- | --- |
-| `status` | mod | slot `prompt.footer.status` | `setStatus` | unsupported |
-| `band` (above the prompt) | `AbovePrompt` | slot `session.composer.top` | `setWidget` | unsupported |
-| `panel` | pane | `sidebar.content`, `session.panel` | anchored overlay | unsupported |
-| `dialog` | mod, or MCP elicitation | `ui.dialog` | `ctx.ui.*` | MCP elicitation form |
-| `toast` | `$.ui.toast` | `ui.toast.show` | `notify` | unsupported |
-| `transcript` | `ToolResult` render site | text | `registerToolRenderer` | text |
-
-The spec has json-render's shape: `{root, elements}`, updated with JSON Patch, using a closed catalog: `Box`, `Text`, `Markdown`, `Code`, `Input`, `Select`, `Button`, `Link`, `Progress`. It is defined as an MCP extension contract in `daemon/packages/protocol`. Every surface falls back to plain text. Workhorse's own web, terminal and phone clients render the same spec.
+- `unagent build` bundles the plugin, writes each agent's package (OpenCode module, Pi extension, Claude Code and Codex plugin directories, the MCP server) and reports what each agent will lose. An unknown agent version fails with the supported range.
+- `unagent install` registers a built plugin in each agent the user has: config entries in JSON, JSONC or TOML, written atomically, with a receipt that `revert` uses to remove exactly what was written.
+- Trust stays manual. The tool reports steps such as `/hooks` in Codex or `pi --approve`, and never performs them.
 
 ## Decisions
 
 | Concern | Decision |
 | --- | --- |
-| Scope | A general-purpose emitter for any capability author. It covers Workhorse's needs as one case |
-| Name and home | `@workhorse/agents`, in a sibling Bun workspace `agents/` next to `daemon/` with the same gates. `protocol`, `core` and `worker` never import it |
-| Input | Agent Plugins 1.x directories. Agent-specific extras sit under a `dev.workhorse/` folder |
-| Capability differences | One frozen fidelity table per agent and version range. Every cell has a source. An unknown version fails with the supported range |
-| Permissions | Rules for agents' built-in tools are emitted per agent. Access to the outside world stays in daemon policy |
-| Skills | On disk. Serving over MCP (SEP-2640) waits until an agent supports it |
-| Trust | Never granted or approved by this package. It is always a manual step |
-| Hooks | Fail closed. A decider timeout becomes an explicit deny. On fx, steering is unavailable and reported as such |
-| Fan-out | One adapter per agent. Deciders register in a user-only file, over Unix sockets in a `0700` directory |
-| Delivery without a connection | Deciders hold their own pending actions. The hook command drains them at the next hook that can carry them |
-| Mailbox wake | Per-agent wake adapters ship in this package. Workhorse's mailbox is one decider |
-| Driving agents | Harness products use AI SDK harness adapters or ACP at their own composition root |
-| UI | json-render's spec shape. Renderers only draw and report input; every effect goes through the daemon. Codex gets dialogs only |
+| Scope | A plugin SDK for any author, shaped like unplugin. Independent of the Workhorse daemon |
+| Combining plugins | Left to each agent. The SDK combines nothing and documents each agent's rules |
+| Rewrites | Supported from the start. On Codex a rewrite also approves the call, and the report says so |
+| Failure | `toolBefore` fails closed by default, with a budget the SDK enforces. `onError: "allow"` opts out per hook |
+| Hook-command agents | One shared runner loads each plugin's bundle. Queued actions are kept per plugin and session |
+| Tools | Native where the agent registers tools in-process; otherwise a generated stdio MCP server |
+| UI | `ctx.ui` calls mapped per agent. Codex gets dialogs only, through MCP elicitation. Every surface falls back to text |
+| Capability differences | One frozen fidelity table per agent and version range, each cell with a source |
+| Trust | Never granted by the tool |
 | Dependencies | Libraries for TOML (comment-preserving), JSONC editing and YAML frontmatter, each approved before it is added |
-| Tests | Golden plans and schema checks; discovery tests against the real CLIs; nightly real-model tests on a capped budget |
+| Tests | One conformance suite every export must pass, against the real CLIs in a throwaway HOME. Nightly real-model runs on a capped budget |
+| Prior art | unplugin is the model. a5c-ai's adapters are the nearest attempt; reuse their phase names, don't depend on them |
+| Tabled | Cursor, GitHub Copilot CLI, Gemini CLI, Amp, Factory Droid, Goose, Kiro, OpenClaw, Hermes, Antigravity, and driving agents from outside (AI SDK harness, ACP). Each tabled agent gets an empty export that fails with "not supported yet" |
 
 ## Package layout
 
 ```text
-agents/
-└── packages/
-    ├── contract/      JSON Schemas (events, actions, RPC), fidelity data per agent, combining rules. No I/O; Rust can read it
-    ├── model/         Agent Plugins read and validation (Effect Schema). No I/O
-    ├── targets/       Pure emitters per agent: claude, codex, opencode, pi, fx
-    ├── apply/         The only writer of agent config: owned entries, atomic writes, receipts, revert
-    ├── harness/       Decider SDK, in-process shims (OpenCode, Pi, Claude mod), hook command
-    ├── ui/            Render-only renderers: Claude mod, OpenCode CLI plugin, Pi extension
-    └── conformance/   Runs the real CLIs headless in a throwaway HOME
+unagent/
+├── src/
+│   ├── index.ts         createAgentPlugin, types
+│   ├── contract/        Events, hook results, fidelity data per agent. No I/O
+│   ├── agents/
+│   │   ├── opencode.ts
+│   │   ├── pi.ts
+│   │   ├── claude.ts    mod export and hook-entry export
+│   │   ├── codex.ts
+│   │   ├── fx.ts        MCP server only
+│   │   └── cursor.ts, copilot.ts, gemini.ts, amp.ts, droid.ts, goose.ts,
+│   │       kiro.ts, openclaw.ts, hermes.ts, antigravity.ts   (empty, tabled)
+│   ├── runner/          unagent-hook: stdin in, native reply out, action queue
+│   ├── mcp/             Generated stdio MCP server for plugin tools
+│   └── cli/             build, install, revert
+└── conformance/         One suite, run against every export
 ```
-
-The `workhorse` CLI uses `model`, `targets` and `apply` for `workhorse connect <agent>`. The hook command is a compiled executable: Bun starts in 7 ms on the development machine, against 59 ms for Node, and the overhead budget is 20 ms at p99.
 
 ## Build order
 
 | Slice | Delivers | Proof |
 | --- | --- | --- |
-| 1 | MCP registration for all five agents, user scope, with plan, apply and revert | Each real CLI lists the server. `revert` removes exactly that entry. A hand-edited neighbouring entry survives both operations |
-| 2 | Skills on disk and the instructions block | Each agent lists the skill; an agent calls a recorder tool using a token found only in the skill body |
-| 3 | Harness adapter: `tool.before` through the OpenCode shim and the Codex hook command, with two deciders | A deny prevents the call (the recorder sees nothing); a decider timeout with `onTimeout: "block"` refuses it on both agents |
-| 4 | `message.append` `now`, `next` and `wake`; Workhorse mailbox wake | An idle OpenCode or Pi session starts a turn; on Codex the action is drained at turn end; the mailbox acknowledges only after `delivered` |
-| 5 | Pi extension and Claude Code mod, with the hook-command fallback | Slices 3 and 4 pass on both agents |
-| 6 | UI: one `status` item and one `dialog` | The dialog's `submit` reaches the daemon audit trail; the status text changes after a `patch` |
-| 7 | Commands, subagents and agent permissions | Golden plans per agent; each agent lists the emitted command and subagent |
+| 1 | `createAgentPlugin`, with `toolBefore` (deny, rewrite) and `promptSent` (append) for OpenCode and Pi | In each real CLI, a deny prevents the call (a recorder tool sees nothing), a rewrite changes what runs, and the appended text reaches the model |
+| 2 | The hook runner for Codex and Claude Code hooks, with the same plugin | The slice 1 tests pass on both. A throwing or slow handler refuses the call. Runner overhead measured under 20 ms at p99 |
+| 3 | `tools`: native on OpenCode and Pi, generated MCP server on Claude Code, Codex and fx | Each agent calls the tool and the recorder sees the call |
+| 4 | `ctx.session.append` with `now`, `next` and `wake`; the action queue for hook-command agents | An idle OpenCode or Pi session starts a turn; on Codex the queued message arrives at turn end |
+| 5 | The Claude Code mod export | Slices 1 to 4 pass on it |
+| 6 | `unagent build` and `unagent install`, with revert | Each agent loads the installed plugin; `revert` removes exactly what was written; a hand-edited neighbouring entry survives both |
+| 7 | `ctx.ui.status` and `ctx.ui.dialog` | The dialog's answer reaches the plugin; the status text changes |
+| Later | Tabled agents and driving agents from outside | — |
 
 ## Open questions
 
 | Question | Recommended default |
 | --- | --- |
-| Build on a5c-ai's adapters, which cover most of this idea? ([A5C-SPIKE.md](A5C-SPIKE.md)) | No. Its 6.0.0 Codex deny does not block, failures fail open, and it cannot act on sessions. Reuse its phase names and merge table, and report the Codex bug upstream |
-| Is the runtime half also published under its own name (`@workhorse/harness`) so Chauffeur can depend on it without the emitter? | Subpath exports of `@workhorse/agents` (`/decider`, `/harness/opencode`, …). Split it out only if Chauffeur needs it |
-| Do deciders register in a shared file, or with Chauffeur's daemon as the single hub? | The shared registry file; no hub process |
-| Who builds the hook command: a compiled Bun executable in this workspace, or Chauffeur's Rust binary? | A compiled Bun executable here. Chauffeur may ship its own if it passes the same conformance suite |
-| On Claude Code, install the mod, the hooks, or both? | Both. The hook command stands down for a session when the mod reports it is active |
-| A Codex rewrite also approves the call. Allow rewrites there? | Only when every decider returns `allow` |
-| Spike Codex's app-server and Claude Code's messaging socket as live delivery paths? | Yes, after slice 4 |
-| Standardize model-request events? | No, until a second consumer needs them |
-| Which TOML, JSONC and YAML libraries? | Chosen in slice 1, from current registry data, and approved before they are added |
+| Name and home. `unagent` is taken on npm (onmax/unagent 0.0.8). Should this live in the Workhorse repo, given it no longer depends on the daemon? | Its own repository, with a free npm name chosen in slice 1 |
+| Should plugins from this SDK coordinate with each other inside one agent, to avoid the Codex rewrite race and OpenCode's last-write-wins? | No, not in v0. Report the agent's rules; revisit if two real plugins collide |
+| Tool-call input differs by agent (`bash` vs `Bash`, `command` vs `cmd`). Normalize it, or pass it through? | Normalize the common tools (shell, read, write, edit) and pass everything else through with the agent's own names |
+| Should the shared runner be installed separately, or bundled with the first plugin that needs it? | Installed by `unagent install` once per machine, versioned, with plugins declaring the runner range they need |
+| On Claude Code, which export by default: the mod or the hook entries? | Hook entries, which work without mods enabled; the mod is opt-in |
+| Which TOML, JSONC and YAML libraries? | Chosen in slice 6 from current registry data, and approved before they are added |
