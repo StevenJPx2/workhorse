@@ -10,4 +10,7 @@ Projects live under the [`wrkhse`](https://github.com/wrkhse) GitHub organizatio
 
 ## Archive
 
-The previous autonomous coding fleet is preserved in [`archive/fleet-v0/`](archive/fleet-v0/README.md).
+Earlier versions of Workhorse live on their own branches:
+
+- [`legacy`](https://github.com/StevenJPx2/workhorse/tree/legacy): the command-line and terminal UI tool.
+- [`fleet-v0`](https://github.com/StevenJPx2/workhorse/tree/fleet-v0): the autonomous coding fleet on Cloudflare.

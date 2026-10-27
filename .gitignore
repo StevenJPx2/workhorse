@@ -6,4 +6,3 @@ node_modules/
 .env.*
 !.env.example
 *.log
-/archive/fleet-v0/.playwright-mcp
