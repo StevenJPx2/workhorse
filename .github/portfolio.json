@@ -1,8 +1,10 @@
 {
+  "description": "Research into open standards for durable, sandboxed agent infrastructure, grown out of the harness that Chauffeur and SourceFed came from.",
   "body": [
-    "An **open protocol** for **durable, sandboxed agent infrastructure**. Its projects live under the **wrkhse** GitHub organisation.",
+    "Began as a **custom agent harness** built on **Pi**: a fleet of coding agents on **Cloudflare** that took a ticket, planned the work and wrote the code in an isolated sandbox. Its steering rules and monitors have since become **Chauffeur** and **SourceFed**, which no longer depend on it and do far more.",
+    "Now a **research project** into open standards for agent infrastructure: an **open protocol** for **durable, sandboxed agents**. Its projects live under the **wrkhse** GitHub organisation.",
     "The `daemon` is a **shared capability daemon** and a framework for building **modular MCP servers**.",
-    "The earlier **autonomous coding fleet** is kept in an archive inside the repository."
+    "The original fleet is kept in an archive inside the repository."
   ],
   "areas": [
     "ai-agents",
