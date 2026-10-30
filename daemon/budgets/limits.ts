@@ -29,12 +29,6 @@ export const BUDGETS = {
     limit: { darwin: 50, linux: 70 },
   },
   rules: { name: "core (rules) bundle, gzip", unit: "KB", limit: { darwin: 20, linux: 20 } },
-  // Slice 1 measured 32.8 KB (mostly Effect). Slice 2's standing link (the Link object, its
-  // session, the handshake rules) brought it to 40.9 KB; reset to 42 KB by decision, tighten-only
-  // from here. Cold start and idle memory, which users feel, were unchanged by the reset.
-  daemonBundle: {
-    name: "daemon bundle, gzip",
-    unit: "KB",
-    limit: { darwin: 42, linux: 42 },
-  },
+  // The daemon bundle's size is reported by measure.ts, not gated: by decision (docs/architecture.md,
+  // "Budgets"), the cold-start and idle-memory budgets above gate what its bytes cost users.
 } as const satisfies Record<string, Budget>;

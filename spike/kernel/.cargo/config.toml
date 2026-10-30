@@ -1,0 +1,4 @@
+[target.wasm32-unknown-unknown]
+# The kernel does not recurse deeply. A 64 KiB stack instead of the default
+# 1 MiB keeps each instance's initial linear memory small.
+rustflags = ["-C", "link-arg=-zstack-size=65536"]

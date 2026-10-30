@@ -1,7 +1,8 @@
 // Measures the lightness budgets on this machine and fails when one is over its limit.
 //   bun budgets/measure.ts [--loader <ld.so>]
 // It installs a throwaway daemon (sandboxed, no service manager), starts it several times, and
-// reports cold start, idle memory and bundle sizes against budgets/limits.ts.
+// reports cold start, idle memory and the rules bundle against budgets/limits.ts. The daemon
+// bundle's size is reported beside them, not gated.
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -140,13 +141,14 @@ const measure = Effect.fnUntraced(function* (daemon: Daemon) {
   }
 
   notes.push(`cold start samples (ms): ${starts.map((ms) => ms.toFixed(1)).join(" ")}`);
+  const daemonBundle = gzipKilobytes(readFileSync(join(daemon.base, "etc", "daemon.js")));
+  notes.push(`daemon bundle, gzip: ${daemonBundle.toFixed(1)} KB (reported, not gated)`);
   const median = starts.toSorted((a, b) => a - b)[Math.floor(RUNS / 2)];
 
   const results = [
     [BUDGETS.privateMemory, memory],
     [BUDGETS.coldStart, median],
     [BUDGETS.rules, gzipKilobytes(coreBundle())],
-    [BUDGETS.daemonBundle, gzipKilobytes(readFileSync(join(daemon.base, "etc", "daemon.js")))],
   ] as const satisfies ReadonlyArray<readonly [Budget, number | undefined]>;
 
   return { results, notes };

@@ -1,0 +1,15 @@
+[package]
+name = "spike-kernel-wasm"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+spike-kernel = { path = "../kernel" }
+
+[lints]
+workspace = true

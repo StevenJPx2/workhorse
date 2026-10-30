@@ -1,0 +1,23 @@
+{
+  "name": "spike-kernel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "cargo build --release --target wasm32-unknown-unknown -p spike-kernel-wasm && mkdir -p dist-wasm && wasm-opt -Oz --strip-debug --strip-producers --enable-bulk-memory --enable-bulk-memory-opt --enable-sign-ext --enable-nontrapping-float-to-int --enable-mutable-globals --enable-multivalue --enable-reference-types target/wasm32-unknown-unknown/release/spike_kernel_wasm.wasm -o dist-wasm/kernel.wasm",
+    "build:ts": "bun build worker/entry-ts.ts --outfile dist-ts/index.js --target browser --format esm --minify --external 'cloudflare:*'",
+    "build:rust": "bun build worker/entry-rust.ts --outfile dist-rust/index.js --target browser --format esm --minify --external 'cloudflare:*' --external '*.wasm' && cp dist-wasm/kernel.wasm dist-rust/",
+    "build:rust-instance": "bun build worker/entry-rust-instance.ts --outfile dist-rust-instance/index.js --target browser --format esm --minify --external 'cloudflare:*' --external '*.wasm' && cp dist-wasm/kernel.wasm dist-rust-instance/",
+    "build:ts-coalesce": "bun build worker/entry-ts-coalesce.ts --outfile dist-ts-coalesce/index.js --target browser --format esm --minify --external 'cloudflare:*'",
+    "build:rust-coalesce": "bun build worker/entry-rust-coalesce.ts --outfile dist-rust-coalesce/index.js --target browser --format esm --minify --external 'cloudflare:*' --external '*.wasm' && cp dist-wasm/kernel.wasm dist-rust-coalesce/",
+    "build": "bun run build:wasm && bun run build:ts && bun run build:rust && bun run build:rust-instance && bun run build:ts-coalesce && bun run build:rust-coalesce",
+    "types": "tsc -p tsconfig.worker.json && tsc -p tsconfig.test.json",
+    "diff": "bun test/diff.ts",
+    "measure": "bun test/measure.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261019.1",
+    "@types/node": "26.2.0",
+    "typescript": "7.0.2",
+    "workerd": "1.20261019.1"
+  }
+}

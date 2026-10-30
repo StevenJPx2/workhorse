@@ -4,7 +4,7 @@
 
 ## Pitch
 
-Workhorse is a set of open contracts for durable agents. An agent is a log plus an inbox. Its capabilities are granted to it; it has no ambient access. Any host that implements the contracts can run, pause and move it: a microcontroller, a laptop daemon, a Durable Object, or Lambda.
+Workhorse is a set of open contracts for durable agents. An agent is a log plus an inbox. Its capabilities are granted to it; it has no ambient access. Any host that implements the contracts can run, pause and move it: a microcontroller, a laptop daemon, a Durable Object, a Rivet actor, or Lambda.
 
 [Infinity](https://github.com/hydro-project/infinity) is one runtime: it owns the agent loop, is tied to AWS, and leaves security to whoever deploys it. In Workhorse terms it would be one host. Workhorse's value is the contracts and the capability and policy layer above them.
 
@@ -26,14 +26,14 @@ Workhorse is a set of open contracts for durable agents. An agent is a log plus 
 flowchart TB
     M["Machines<br/>wasm modules exporting step"] -->|"requested effects"| K["Kernel<br/>Rust no_std"]
     K -->|"allowed effects"| S["Shell<br/>the only per-platform code"]
-    S --> P["Platform<br/>MCU · workerd · Cloudflare"]
+    S --> P["Platform<br/>MCU · OS · workerd · Cloudflare · Rivet"]
 ```
 
 | Piece | Same on every host | What it is |
 |---|---|---|
 | Protocol | Yes | JSON-RPC 2.0 lines, `capability.operation` names, the four error codes, mailbox semantics, the port contract |
 | Machines | Yes | Apps and agents: `step(state, input) → (state, effects)`, never doing I/O themselves |
-| Kernel | Yes | Pure rules for policy, routing, mailboxes, tasks, durability, link sessions and trust-boundary parsing. Native wherever the shell is Rust (MCU, native shell). Wasm only where the shell is JavaScript (workerd, Cloudflare), which run nothing else |
+| Kernel | Yes | Pure rules for policy, routing, mailboxes, tasks, durability, link sessions and trust-boundary parsing. Native wherever the shell is Rust (MCU, native shell, Rivet). Wasm only where the shell is JavaScript (workerd, Cloudflare), which run nothing else |
 | Shell | No | Performs effects: storage, timers, sockets, `fetch`. Nothing else varies between hosts |
 | Conformance | Yes | One black-box suite, run against every shell |
 
@@ -51,11 +51,11 @@ flowchart TB
 | Boundary | Contract | Implementations | Proof |
 |---|---|---|---|
 | Machine ↔ Kernel | Machine interface: `alloc`, `step`, JSON inputs and effects, memory and CPU limits | Machine SDKs: Rust first | Machine interface suite |
-| Kernel ↔ Shell | Port contract: effect families and ordering rules | Shells: workerd, native Rust | Shell suite: the kernel's test vectors replayed through a real shell |
-| Shell ↔ Platform | One port per effect family | Port crates: flash, SQLite, Durable Object storage, WAMR, V8, wasmtime | Port suites, such as the storage suite |
+| Kernel ↔ Shell | Port contract: effect families, ordering rules and host guarantees | Shells: workerd, native Rust, Rivet | Shell suite: the kernel's test vectors replayed through a real shell, plus one test per host guarantee |
+| Shell ↔ Platform | One port per effect family | Port crates: flash, SQLite, Durable Object storage, Rivet actor storage, WAMR, V8, wasmtime | Port suites, such as the storage suite |
 | Host ↔ Host | Link protocol | Transports: WebSocket | Conformance over a link |
 | Host ↔ Agent | MCP, plus the harness adapter; ACP later | unagent, one output per harness | unagent's fidelity matrix |
-| Policy ↔ OS | Universal sandbox policy | nono (macOS), bubblewrap (Linux), none (MCU) | Escape probes |
+| Policy ↔ OS | Universal sandbox policy | nono (macOS), bubblewrap (Linux), none (MCU); agentOS a candidate for JavaScript agents on hosts without an OS sandbox | Escape probes |
 
 | Boundary | Pluggable today | Reason |
 |---|---|---|
@@ -86,6 +86,18 @@ A shell announces its ports at startup. The kernel routes an operation whose por
 
 Rust traits for the ports are a convenience for Rust shells, not the definition.
 
+### Host guarantees
+
+Effect shapes are not enough: the kernel's rules also depend on what the platform promises, and platforms keep those promises in different ways. Every shell must provide all five, and each has a shell-suite test.
+
+| Guarantee | Why the kernel needs it | Native (raw) | workerd / Cloudflare | Rivet | Shell-suite test |
+|---|---|---|---|---|---|
+| One live instance per key | Deduplication and sequence numbers assume one writer | Process lock; one in-memory instance per key | The platform runs one Durable Object per ID | The platform runs one actor per key | Two clients race publishes to one key; one sequence, no gaps or duplicates |
+| Saved before shown | A reply or delivery must never get ahead of its commit | `fsync` before replying | Output gates | Writes confirmed after replication to 2 of 3 control-plane instances | SIGKILL during a batch; nothing a client saw is lost |
+| Eviction without notice | Some platforms evict silently, so no rule may wait for a shutdown signal | Process exit | Silent eviction | Drain hooks; an optional optimisation, never relied on | SIGKILL at random points; the next input restores state |
+| Alarms survive restarts | Tasks and redelivery depend on them | Due time in `store`, rearmed at start | Durable Object alarm | Actor scheduling | Kill before the due time; the alarm fires after restart, at least once |
+| Idle holds nothing | A waiting agent is only saved state | Unload the key's state from memory | Hibernation | Actor sleep | Input to an evicted key wakes it with its state |
+
 ## Hosts
 
 | Host | Shell | Bound locally | Routed to a peer |
@@ -93,6 +105,7 @@ Rust traits for the ports are a convenience for Rust shells, not the definition.
 | Microcontroller | Rust on ESP-IDF: flash log, TLS, WebSocket | `store`, `alarm`, `entropy`, `ingress`, `machine`, `net`, `link` | `fs`, deciders, heavy apps |
 | Laptop / home (NixOS) | workerd: today's `worker` | Every port | Whatever `routes` says |
 | Cloud | Cloudflare: the same bundle | Every port except `fs` | `fs` to laptop or home |
+| Self-hosted cloud | Rivet: Rust runner on rivetkit | Every port except `fs` | `fs` to laptop or home |
 
 ```mermaid
 sequenceDiagram
@@ -111,7 +124,7 @@ Shells are composition roots. Port crates depend only on the port contract, neve
 
 ```mermaid
 flowchart LR
-    Ports["Port crates<br/>store-flash · store-sqlite<br/>runtime-wamr · runtime-wasmtime"] --> Roots["Composition roots<br/>host-esp32 · host-linux"]
+    Ports["Port crates<br/>store-flash · store-sqlite · store-rivet<br/>runtime-wamr · runtime-wasmtime"] --> Roots["Composition roots<br/>host-esp32 · host-linux · host-rivet"]
     Kernel["kernel"] --> Roots
     Roots --> Bin["One binary per platform"]
 ```
@@ -120,6 +133,7 @@ flowchart LR
 |---|---|---|
 | workerd (TypeScript) | Laptop, home, Cloudflare | Durable Object storage, Dynamic Workers, `fetch`; the kernel runs inside as wasm |
 | Native Rust | MCU; later Linux and macOS with `std` | Can replace workerd on Linux if its budget gap matters, without a third shell |
+| Rivet (Rust runner) | Self-hosted cloud | Actor SQLite, scheduling and WebSockets through rivetkit-rust. The kernel runs natively and machines in wasmtime, sharing port crates with the native shell. Not the TypeScript runner: it would pay the wasm crossing and Node's baseline memory |
 
 ## Machines
 
@@ -168,6 +182,7 @@ One policy, declared in the app manifest and approved at install, compiled to a 
 | macOS | nono (Seatbelt) | Approved as the first backend |
 | Linux | bubblewrap mount namespace, or nono in supervisor mode | Spike 1: a self-sandboxed nono process can still connect to pathname Unix sockets on Linux, and resolved DNS through `/var/run/nscd/socket` on NixOS |
 | MCU | None | The kernel is the boundary |
+| Hosts without an OS sandbox (Rivet, cloud) | agentOS: a Rust sidecar whose virtual kernel runs guest code in V8 isolates and wasm | Candidate, not adopted ([spike 8](../spike/agentos/FINDINGS.md)). The policy compiles to it cleanly, all 26 escape probes held and egress was broker-only. But only JavaScript agents on its Node 22.0 layer run (Pi 0.73.1, not current Pi or native agents), it is beta, its sidecar runs as the host user, and a Pi agent costs about a third more memory than under nono plus a 60–220 MB sidecar. Its default network policy is not deny, so the full rule set is always sent. Run its sidecar inside the host's own container or VM boundary |
 | Later | nvx or microvm.nix | Only if native processes for agents are needed |
 
 Kernel sandboxes filter by port, not hostname, so no backend enforces network policy in the kernel: each blocks direct network access, and all egress goes through the broker.
@@ -193,7 +208,7 @@ Kernel sandboxes filter by port, not hostname, so no backend enforces network po
 | `protocol` | Contract types (see [Open questions](#open-questions)) |
 | `machine` | Machine SDK and interface glue |
 | `ports/*` | One crate per port implementation |
-| `hosts/*` | Composition roots: `esp32`, `linux` |
+| `hosts/*` | Composition roots: `esp32`, `linux`, `rivet` |
 | `cli` | `workhorse`: install, pair, warm, stdio relay, sandbox backends |
 | `loop` | Agent loop, built as a machine |
 | `machines/*` | sourcefed, chauffeur |
@@ -252,6 +267,9 @@ Kernel sandboxes filter by port, not hostname, so no backend enforces network po
 | Dynamic Workers loading wasm machines | Unverified | Test before building machines |
 | Wasm machine and kernel on an ESP32 | Unverified. The mailbox kernel is 40 KB of wasm (spike 7); WAMR about 85 KB and TLS tens of KB are estimates | Test on hardware or QEMU before committing |
 | nono on Linux | Spike 1: Unix sockets remain reachable for a self-sandboxed process | Keep bubblewrap's mount namespace or use nono's supervisor mode |
+| Rivet's lightness | Rivet's own figures: 6.9 ms cold start, 4.4 ms wake, 72 KB per actor with the Rust SDK, on Azure with NVMe. Its claims against Durable Objects (39× faster creation, 28× faster SQLite writes) do not state their method. None measured against our budgets | Measure the mailbox on a Rivet Rust runner on the homelab before building the shell. A self-hosted control plane is at least three instances, each with a disk, plus a bucket |
+| agentOS as a sandbox | [Spike 8](../spike/agentos/FINDINGS.md): Pi 0.73.1 ran its loop inside; 26 of 26 escape probes held; broker-only egress held; about 120 MB per Pi agent against about 90 MB under nono, and about 2 s to start an agent against 0.74 s, on the homelab | Not adopted; keep nono and bubblewrap. Revisit when agentOS leaves beta and its Node layer runs current agents |
+| `nono run` process lifetime and start-up | Spike 8: SIGKILL to the `nono run` supervisor leaves the sandboxed process running; `nono run` adds about 0.65 s per process start on the homelab (0.74 s against 0.09 s for `node -e 0`). Spike 1's self-sandboxing library mode has no supervisor | If plugins are launched through `nono run`, kill the whole process tree, and count its start-up in the plugin cold-start budget |
 
 ## Kernel retest
 
@@ -314,7 +332,8 @@ The outer structure comes first: every boundary gets its contract, its suite and
 4. **Kernel port.** Mailbox rules, carrying over the simulation suite, then link session rules and crypto.
 5. **sourcefed as a Rust machine**, end to end over MCP.
 6. **MCU shell** on an ESP32, routed to home.
-7. **Remove** the TypeScript `core` and the obsolete parts of `worker`.
+7. **Rivet shell**, a Rust runner reusing the native shell's port crates, passing the same suites.
+8. **Remove** the TypeScript `core` and the obsolete parts of `worker`.
 
 ## Dependencies needing approval
 
@@ -326,13 +345,15 @@ The outer structure comes first: every boundary gets its contract, its suite and
 | `nono` (crate) | macOS sandbox backend; approved as the first backend |
 | WAMR, ESP-IDF | MCU shell |
 | wasmtime | Native shell on Linux and macOS |
+| `rivetkit` (Rust) | Rivet shell |
+| agentOS | Sandbox backend for hosts without an OS sandbox; not proposed now (spike 8) |
 
 ## Open questions
 
 | Question | Recommended default |
 |---|---|
 | Batch frames and compression in the daemon protocol | JSON-RPC batch frames cut cycles per request about 4.5× and WebSocket compression costs 10–17% for small frames, whatever the kernel's language. Decide whether the link protocol encourages batching and whether the daemon negotiates compression |
-| Kernel instances in workerd | One per isolate. Freeing a mailbox when workerd evicts its Durable Object is unsolved, since workerd does not announce eviction |
+| Kernel instances in workerd | One per isolate. Freeing a mailbox when workerd evicts its Durable Object is unsolved, since workerd does not announce eviction. Rivet announces drains, but under the eviction host guarantee no rule may depend on that, so workerd still needs its own answer |
 | Source language for `protocol` | Rust types as the source, exporting JSON Schema, with TypeScript types generated for the workerd shell, `sdk` and `conformance` |
 | Conformance language | Keep TypeScript as an independent implementation of the wire |
 
