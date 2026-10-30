@@ -10,6 +10,7 @@ Evidence:
 - [HARNESS-ADAPTERS.md](HARNESS-ADAPTERS.md): run-time hooks, actions, failure and timing.
 - [FINDINGS.md](FINDINGS.md): install surfaces, prior art, UI.
 - [A5C-SPIKE.md](A5C-SPIKE.md): the closest existing attempt, tested.
+- [REALM-SPIKE.md](REALM-SPIKE.md): whether each agent's plugins can find each other in one process (Pi 1.4.0, OpenCode 2.2.2, Claude Code 2.1.314).
 
 ## What changed on 2026-10-27
 
@@ -30,9 +31,9 @@ flowchart LR
     Exports --> Pi["Pi<br/>extension"]
     Exports --> CC["Claude Code<br/>mod, or hook entries"]
     Exports --> CX["Codex<br/>hook entries"]
-    OC --> Host["Tack host<br/>one per agent process<br/>combines every tack plugin"]
+    OC --> Host["Tack host<br/>one per process and location<br/>combines every tack plugin"]
     Pi --> Host
-    CC --> Host
+    CC --> Chain["Claude Code's mod chain<br/>each tack mod combines with next()"]
     CX -. "hooks" .-> Runner["tack-hook runner<br/>registered once per event<br/>loads every installed tack plugin"]
 ```
 
@@ -156,7 +157,8 @@ Tack plugins in the same agent find each other and combine by one set of rules, 
 
 | Agent | How |
 | --- | --- |
-| OpenCode, Pi, Claude Code mod | Each output function still returns a normal native plugin. On load it looks for a host at `globalThis[Symbol.for("@workhorse/tack/host")]`. The first tack plugin to load creates the host and registers the native hooks; every later one only registers its handlers with that host. This relies on the agent loading all its plugins into one JavaScript realm **(inferred; slice 1 checks OpenCode and Pi, slice 2 the Claude Code mod)** |
+| OpenCode, Pi | Each output function still returns a normal native plugin. On load it looks for a host at `globalThis[Symbol.for("@workhorse/tack/host")]`. The first tack plugin to load creates the host and registers the native hooks; every later one only registers its handlers with that host. Both agents load all plugins into one realm (tested in [REALM-SPIKE.md](REALM-SPIKE.md)). On OpenCode one server holds several projects' plugins, so the host is keyed by `ctx.location`, and a plugin's handlers are dropped in its `setup` cleanup |
+| Claude Code mod | Each mod has its own realm, and only plain data crosses between mods ([REALM-SPIKE.md](REALM-SPIKE.md)), so there is no host. Each tack mod's hook applies its rewrite to the input it receives, passes it on with `next`, and combines its verdict with what `next` returns. The order is Claude Code's chain order, not tack's `priority` |
 | Codex, Claude Code hooks | The runner, registered once per event, loads every installed plugin, so there is only one hook process per event |
 
 The host speaks a versioned protocol. A plugin built against a different major version refuses to load and names both versions; it never silently runs outside the host.
@@ -232,7 +234,7 @@ flowchart LR
 | Home | Its own Bun workspace in the Workhorse repo, next to `daemon/`. Nothing in `daemon/` imports it, and it imports nothing from `daemon/` |
 | Plugin shape | `createAgentPlugin(factory)` with one output function per agent. Per-agent keys in the factory and a second argument to the output function both override the native output: an object merges, a function replaces |
 | Tool input | The common tools (shell, read, write, edit) get one normalized shape. Every other tool passes through with the agent's own name and input, and `call.native` always holds the original |
-| Claude Code | The mod is the default export. Hook entries are the fallback where an organization turns mods off |
+| Claude Code | The mod is the default export. Hook entries are the fallback where an organization turns mods off. Each mod bundles the tack runtime inside its own folder, with no Node built-ins, because Claude Code refuses anything else |
 | Name | `@workhorse/tack`, with the `tack` CLI and the `tack-hook` runner |
 | Combining plugins | Tack plugins in one agent combine through one host per process, or one runner per event on hook-command agents, by one set of rules. Other native plugins follow the agent's rules |
 | Rewrites | Supported from the start. On Codex a rewrite also approves the call, and the report says so |
@@ -287,6 +289,6 @@ tack/                    sibling of daemon/
 | Question | Recommended default |
 | --- | --- |
 | Who owns the `@workhorse` scope on npm? `@workhorse/tack` returned 404 on 2026-10-30, but the scope's owner is not verified | Check before slice 1 and register the scope if it is free |
-| What happens if an agent loads plugins in separate realms, so the in-process host cannot see them all? | Fall back to the agent's own rules for that agent, and mark coordination `unsupported` there in the fidelity table |
+| On Claude Code, tack mods run in the chain's order rather than by `priority`. Should `tack install` write manifest `dependencies` between installed tack mods to impose priority order? | Not in v0. Report the chain order; revisit if order matters for a real pair of plugins |
 | Should the shared runner be installed separately, or bundled with the first plugin that needs it? | Installed by the install command once per machine, versioned, with plugins declaring the runner range they need |
 | Which TOML, JSONC and YAML libraries? | Chosen in slice 6 from current registry data, and approved before they are added |
