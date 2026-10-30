@@ -4,7 +4,7 @@ Workhorse is an open protocol for durable, sandboxed agent infrastructure.
 
 Projects live under the [`wrkhse`](https://github.com/wrkhse) GitHub organization.
 
-Status: being redefined. `main` holds only the high-level overview ([`ARCHITECTURE.md`](ARCHITECTURE.md), [`PHILOSOPHY.md`](PHILOSOPHY.md)) while the protocols are worked out.
+Status: being redefined. Start with [`OVERVIEW.md`](OVERVIEW.md): three layers of protocols (trust, runtime, harness), trust first. [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`PHILOSOPHY.md`](PHILOSOPHY.md) hold the original vision and design principles.
 
 ## Branches
 

@@ -3,7 +3,7 @@
 ## Sources
 
 - **Code:** Before writing, modifying, refactoring, reviewing, or debugging code, load and apply the global `code-discipline` skill and its active language reference.
-- **Architecture:** Before changing protocols, capability boundaries, sandboxing, extensibility, package or crate boundaries, or product responsibilities, read `ARCHITECTURE.md`.
+- **Architecture:** Before changing protocols, capability boundaries, sandboxing, extensibility, package or crate boundaries, or product responsibilities, read `OVERVIEW.md` and `ARCHITECTURE.md`.
 - **Design:** Before introducing or reshaping an abstraction, read `PHILOSOPHY.md`.
 
 Treat files under `spike/`, and the `daemon-v0`, `legacy` and `fleet-v0` branches, as evidence, not production architecture. A successful experiment proves feasibility; it does not define the shipping design.
