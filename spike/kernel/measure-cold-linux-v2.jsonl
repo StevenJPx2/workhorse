@@ -1,9 +1,0 @@
-{"variant":"A-ts","round":0,"platform":"linux","coldOnly":true,"coldStartMs":[51,51,50,47,57,46,62,48,50,50]}
-{"variant":"R-rust","round":0,"platform":"linux","coldOnly":true,"coldStartMs":[53,52,52,51,53,46,53,52,52,61]}
-{"variant":"RI-rust-instance","round":0,"platform":"linux","coldOnly":true,"coldStartMs":[49,55,65,48,45,54,52,49,52,47]}
-{"variant":"A-ts","round":1,"platform":"linux","coldOnly":true,"coldStartMs":[48,50,51,49,50,49,49,65,59,51]}
-{"variant":"R-rust","round":1,"platform":"linux","coldOnly":true,"coldStartMs":[54,73,51,53,52,47,48,53,53,54]}
-{"variant":"RI-rust-instance","round":1,"platform":"linux","coldOnly":true,"coldStartMs":[50,50,51,57,52,55,49,48,45,49]}
-{"variant":"A-ts","round":2,"platform":"linux","coldOnly":true,"coldStartMs":[50,50,51,50,49,49,51,48,50,48]}
-{"variant":"R-rust","round":2,"platform":"linux","coldOnly":true,"coldStartMs":[53,58,47,43,52,48,52,45,48,51]}
-{"variant":"RI-rust-instance","round":2,"platform":"linux","coldOnly":true,"coldStartMs":[49,53,48,52,75,52,80,52,45,45]}

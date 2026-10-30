@@ -1,4 +1,0 @@
-*.tsbuildinfo
-.tsbuild/
-coverage/
-.vitest/
