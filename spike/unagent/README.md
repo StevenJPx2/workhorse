@@ -1,8 +1,8 @@
-# unagent: write an agent plugin once, run it in every coding agent
+# `@workhorse/tack`: write an agent plugin once, run it in every coding agent
 
-**Goal:** what unplugin does for bundlers, done for coding agents. A plugin author writes one plugin against one small SDK. The SDK turns it into a native plugin for OpenCode, Pi, Claude Code and Codex, and reports, per agent, what that agent cannot do.
+**Goal:** what unplugin does for bundlers, done for coding agents. A plugin author writes one plugin against one small SDK. The SDK turns it into a native plugin for OpenCode, Pi, Claude Code and Codex, and reports, per agent, what that agent cannot do. Tack is the gear that lets a rider fit and steer any horse.
 
-Status: proposed design, rescoped on 2026-10-27. Nothing is built. Versions checked: OpenCode 2.1.4, Pi 1.4.0, Claude Code 2.1.310, Codex 0.164.0, fx 0.0.14.
+Status: proposed design, rescoped on 2026-10-27, named and given coordination on 2026-10-30. Nothing is built. This folder keeps its working name, `spike/unagent/`. Versions checked: OpenCode 2.1.4, Pi 1.4.0, Claude Code 2.1.310, Codex 0.164.0, fx 0.0.14.
 
 Evidence:
 
@@ -16,7 +16,7 @@ Evidence:
 | Before | Now |
 | --- | --- |
 | A Workhorse package. The daemon's apps were the main consumer | **Independent of the Workhorse daemon.** The daemon is one possible plugin author, nothing more |
-| One adapter per agent fans out to registered deciders and combines their answers | **One native plugin per author, as unplugin does.** Each agent combines several plugins by its own rules |
+| One adapter per agent fans out to registered deciders and combines their answers | **One native plugin per author, as unplugin does.** Tack plugins in the same agent still find each other and combine by one set of rules (decided 2026-10-30) |
 | A daemon-defined UI spec, drawn by render-only renderers | The plugin calls UI functions in the SDK directly |
 | Verdicts first, rewrites later | **Rewrites are supported from the start** |
 | Five agents | Four built first. Cursor, Copilot CLI, Gemini CLI and others are tabled and get empty placeholder exports |
@@ -30,8 +30,10 @@ flowchart LR
     Exports --> Pi["Pi<br/>extension"]
     Exports --> CC["Claude Code<br/>mod, or hook entries"]
     Exports --> CX["Codex<br/>hook entries"]
-    CC -. "hooks" .-> Runner["Shared hook runner<br/>loads the plugin bundle"]
-    CX -. "hooks" .-> Runner
+    OC --> Host["Tack host<br/>one per agent process<br/>combines every tack plugin"]
+    Pi --> Host
+    CC --> Host
+    CX -. "hooks" .-> Runner["tack-hook runner<br/>registered once per event<br/>loads every installed tack plugin"]
 ```
 
 unplugin's shape, carried over:
@@ -48,7 +50,7 @@ unplugin's shape, carried over:
 ## A plugin
 
 ```ts
-import { createAgentPlugin } from "unagent"
+import { createAgentPlugin } from "@workhorse/tack"
 
 export const guard = createAgentPlugin((options: { protected: string[] }, meta) => ({
   name: "guard",
@@ -140,14 +142,52 @@ Queued actions for hook-command agents are kept in a per-plugin, per-session fil
 
 ### The hook runner
 
-One runner, `unagent-hook`, is installed once and shared by every plugin. A hook entry runs `unagent-hook <plugin bundle> --agent codex`, and the runner loads the bundle, calls the plugin and prints that agent's reply.
+One runner, `tack-hook`, is installed once per machine. `tack install` registers it once per event (`tack-hook --agent codex`), never once per plugin, and lists each installed plugin in a user-only file, `~/.config/tack/plugins.json`. The runner loads every listed bundle in one process, combines them as below and prints the agent's reply.
 
 - A compiled Bun executable is 89 MB (measured with Bun 1.4.4), so one per plugin is too much.
-- Bun starts in 7 ms and Node in 59 ms on the development machine. The overhead budget is 20 ms at p99 before the plugin runs. Loading a bundle from a compiled runner is expected to stay inside it **(inferred; slice 2 measures it)**.
+- Bun starts in 7 ms and Node in 59 ms on the development machine. The overhead budget is 20 ms at p99 for starting and loading every bundle, before any plugin runs. Whether that holds with several bundles is **(inferred; slice 2 measures it with five plugins)**.
+- The plugin list comes only from user configuration, never from a project, because the runner executes every listed bundle.
 
 ## Several plugins at once
 
-The SDK makes no attempt to combine plugins. Each plugin is a native plugin, so the agent combines them by its own rules:
+Tack plugins in the same agent find each other and combine by one set of rules, the same on every agent (decided 2026-10-30).
+
+### Finding each other
+
+| Agent | How |
+| --- | --- |
+| OpenCode, Pi, Claude Code mod | Each output function still returns a normal native plugin. On load it looks for a host at `globalThis[Symbol.for("@workhorse/tack/host")]`. The first tack plugin to load creates the host and registers the native hooks; every later one only registers its handlers with that host. This relies on the agent loading all its plugins into one JavaScript realm **(inferred; slice 1 checks OpenCode and Pi, slice 2 the Claude Code mod)** |
+| Codex, Claude Code hooks | The runner, registered once per event, loads every installed plugin, so there is only one hook process per event |
+
+The host speaks a versioned protocol. A plugin built against a different major version refuses to load and names both versions; it never silently runs outside the host.
+
+### Combining rules
+
+Plugins run in `priority` order (lower first, ties broken by name). Each has its own budget, and the host answers when every plugin has answered or the largest budget has passed.
+
+| Hook | Rule |
+| --- | --- |
+| `toolBefore` | **Rewrites first:** in priority order, each plugin sees the input as rewritten so far. **Then verdicts** on the final input: `deny > ask > allow > no opinion`. A plugin that throws or misses its budget contributes its `onError` (deny by default). The rewrite goes out only when the combined verdict is `allow`, because on Codex a rewrite is also an approval |
+| `promptSent` | Any block wins. Text rewrites run in priority order. Appends are joined in priority order, de-duplicated by key, within a byte cap |
+| `toolAfter` | Result rewrites run in priority order. Appends are joined |
+| `permissionAsked` | Any deny wins. If every plugin allows, the request is allowed. Otherwise the user decides |
+| `compactionBefore` | Any veto wins. Instructions are joined |
+| Observing hooks | Every plugin is called. One plugin's failure does not affect the others |
+| `ctx.session` actions | Not combined. Carried out per plugin, in the order each plugin sent them |
+
+These are the rules from [HARNESS-ADAPTERS.md](HARNESS-ADAPTERS.md) section 6, modelled on Kubernetes admission (rewrite, then validate) and a5c-ai's merge table.
+
+### Example
+
+A user installs two tack plugins. `safe-push` (priority 10) rewrites `git push` to `git push --dry-run`. `signed-push` (priority 20) adds `--signed`. The agent runs `git push origin main`.
+
+| Without coordination | With it |
+| --- | --- |
+| **Codex:** both hooks start at once and see the original command; the last to finish wins, so the push is sometimes a dry run and sometimes real. **OpenCode:** load order decides. **Claude Code hooks:** undocumented | On every agent: `safe-push` rewrites first, `signed-push` sees `git push origin main --dry-run` and returns `git push origin main --dry-run --signed`. If either plugin denies, nothing runs |
+
+### Plugins not built with tack
+
+Between the tack host and other native plugins, the agent's own rules still apply. The build report lists them:
 
 | Agent | Several plugins on the same hook |
 | --- | --- |
@@ -155,19 +195,7 @@ The SDK makes no attempt to combine plugins. Each plugin is a native plugin, so 
 | Pi | Run in order. The first `block` wins, but a later result can overwrite its `reason` |
 | Claude Code hooks | Run in parallel: `deny > defer > ask > allow`, and every added context is delivered. How competing rewrites merge is undocumented |
 | Claude Code mods | One chain. A mod that answers without calling `next` skips the rest |
-| Codex | Run concurrently. Any deny wins. Among rewrites, the last to finish wins, which is a race, and a rewrite also approves the call |
-
-The SDK guarantees what one plugin does. Across plugins it guarantees nothing more than the agent does, and the fidelity report says so per agent. The rewrite race on Codex is the main cost of this model.
-
-**Example.** A user installs two plugins built with this SDK. `safe-push` rewrites `git push` to `git push --dry-run`. `signed-push` rewrites `git push` to `git push --signed`. The agent runs `git push origin main`:
-
-| Agent | What runs |
-| --- | --- |
-| Codex | Both hooks start at once and each sees the original command. Whichever finishes last wins, so the result is sometimes a dry run and sometimes a real signed push, and both rewrites count as approval |
-| OpenCode | Plugins run in load order. If `signed-push` loads second and builds its command from scratch, the result is a real signed push and the dry run is lost; if it appends to what it received, the result is `git push origin main --dry-run --signed` |
-| Claude Code hooks | Both run in parallel; which rewrite wins is undocumented |
-
-Coordination would mean that SDK plugins inside one agent find each other and apply rewrites in a fixed priority order, with any deny winning. In-process agents can do that. On Codex and Claude Code hooks, each plugin's hook is a separate process; coordinating there means registering the shared runner once per event and having it load every installed SDK plugin, which is the fan-out design this rescope dropped.
+| Codex | Run concurrently. Any deny wins. Among rewrites, the last to finish wins, and a rewrite also approves the call |
 
 ## What each agent limits
 
@@ -186,14 +214,14 @@ The full matrix, with the API behind each cell, is [MATRIX.md](MATRIX.md).
 
 ```mermaid
 flowchart LR
-    Src["Plugin source"] --> Build["unagent build<br/>reads the fidelity table"]
+    Src["Plugin source"] --> Build["tack build<br/>reads the fidelity table"]
     Build --> Report["Report per agent<br/>native, fallback, unsupported"]
     Build --> Out[("dist/<br/>opencode, pi, claude, codex")]
-    Out --> Install["unagent install<br/>plan, apply, revert"]
+    Out --> Install["tack install<br/>plan, apply, revert"]
 ```
 
-- `unagent build` bundles the plugin, writes each agent's package (OpenCode module, Pi extension, Claude Code and Codex plugin directories, the MCP server) and reports what each agent will lose. An unknown agent version fails with the supported range.
-- `unagent install` registers a built plugin in each agent the user has: config entries in JSON, JSONC or TOML, written atomically, with a receipt that `revert` uses to remove exactly what was written.
+- `tack build` bundles the plugin, writes each agent's package (OpenCode module, Pi extension, Claude Code and Codex plugin directories, the MCP server) and reports what each agent will lose. An unknown agent version fails with the supported range.
+- `tack install` registers a built plugin in each agent the user has: config entries in JSON, JSONC or TOML, written atomically, with a receipt that `revert` uses to remove exactly what was written.
 - Trust stays manual. The tool reports steps such as `/hooks` in Codex or `pi --approve`, and never performs them.
 
 ## Decisions
@@ -205,10 +233,11 @@ flowchart LR
 | Plugin shape | `createAgentPlugin(factory)` with one output function per agent. Per-agent keys in the factory and a second argument to the output function both override the native output: an object merges, a function replaces |
 | Tool input | The common tools (shell, read, write, edit) get one normalized shape. Every other tool passes through with the agent's own name and input, and `call.native` always holds the original |
 | Claude Code | The mod is the default export. Hook entries are the fallback where an organization turns mods off |
-| Combining plugins | Left to each agent. The SDK combines nothing and documents each agent's rules |
+| Name | `@workhorse/tack`, with the `tack` CLI and the `tack-hook` runner |
+| Combining plugins | Tack plugins in one agent combine through one host per process, or one runner per event on hook-command agents, by one set of rules. Other native plugins follow the agent's rules |
 | Rewrites | Supported from the start. On Codex a rewrite also approves the call, and the report says so |
 | Failure | `toolBefore` fails closed by default, with a budget the SDK enforces. `onError: "allow"` opts out per hook |
-| Hook-command agents | One shared runner loads each plugin's bundle. Queued actions are kept per plugin and session |
+| Hook-command agents | One shared runner, registered once per event, loads every installed plugin from a user-only list. Queued actions are kept per plugin and session |
 | Tools | Native where the agent registers tools in-process; otherwise a generated stdio MCP server |
 | UI | `ctx.ui` calls mapped per agent. Codex gets dialogs only, through MCP elicitation. Every surface falls back to text |
 | Capability differences | One frozen fidelity table per agent and version range, each cell with a source |
@@ -220,10 +249,8 @@ flowchart LR
 
 ## Package layout
 
-The directory takes the package's name once it is chosen; `unagent` is a working name.
-
 ```text
-unagent/                 sibling of daemon/
+tack/                    sibling of daemon/
 ├── src/
 │   ├── index.ts         createAgentPlugin, types
 │   ├── contract/        Events, hook results, fidelity data per agent. No I/O
@@ -235,7 +262,8 @@ unagent/                 sibling of daemon/
 │   │   ├── fx.ts        MCP server only
 │   │   └── cursor.ts, copilot.ts, gemini.ts, amp.ts, droid.ts, goose.ts,
 │   │       kiro.ts, openclaw.ts, hermes.ts, antigravity.ts   (empty, tabled)
-│   ├── runner/          unagent-hook: stdin in, native reply out, action queue
+│   ├── host/            Finds the other tack plugins in the process and combines them
+│   ├── runner/          tack-hook: stdin in, every installed plugin, native reply out, action queue
 │   ├── mcp/             Generated stdio MCP server for plugin tools
 │   └── cli/             build, install, revert
 └── conformance/         One suite, run against every export
@@ -245,12 +273,12 @@ unagent/                 sibling of daemon/
 
 | Slice | Delivers | Proof |
 | --- | --- | --- |
-| 1 | `createAgentPlugin`, with `toolBefore` (deny, rewrite) and `promptSent` (append) for OpenCode and Pi | In each real CLI, a deny prevents the call (a recorder tool sees nothing), a rewrite changes what runs, and the appended text reaches the model |
-| 2 | The Claude Code mod export, and the hook runner for Codex, with the same plugin | The slice 1 tests pass on both. A throwing or slow handler refuses the call. Runner overhead measured under 20 ms at p99 |
+| 1 | `createAgentPlugin`, with `toolBefore` (deny, rewrite) and `promptSent` (append) for OpenCode and Pi, and the host combining two plugins | In each real CLI, a deny prevents the call (a recorder tool sees nothing), a rewrite changes what runs, and the appended text reaches the model. With `safe-push` and `signed-push` loaded in either order, the recorder sees `--dry-run --signed` every time |
+| 2 | The Claude Code mod export, and the hook runner for Codex, with the same plugins | The slice 1 tests pass on both, including the two-plugin test repeated 50 times on Codex. A throwing or slow handler refuses the call. Runner overhead with five plugins measured under 20 ms at p99 |
 | 3 | `tools`: native on OpenCode, Pi and the Claude Code mod; generated MCP server on Codex and fx | Each agent calls the tool and the recorder sees the call |
 | 4 | `ctx.session.append` with `now`, `next` and `wake`; the action queue for hook-command agents | An idle OpenCode, Pi or Claude Code session starts a turn; on Codex the queued message arrives at turn end |
 | 5 | Claude Code hook entries, for when mods are off | Slices 1 to 4 pass with mods disabled |
-| 6 | `unagent build` and `unagent install`, with revert | Each agent loads the installed plugin; `revert` removes exactly what was written; a hand-edited neighbouring entry survives both |
+| 6 | `tack build` and `tack install`, with revert | Each agent loads the installed plugin; `revert` removes exactly what was written; a hand-edited neighbouring entry survives both |
 | 7 | `ctx.ui.status` and `ctx.ui.dialog` | The dialog's answer reaches the plugin; the status text changes |
 | Later | Tabled agents and driving agents from outside | — |
 
@@ -258,7 +286,7 @@ unagent/                 sibling of daemon/
 
 | Question | Recommended default |
 | --- | --- |
-| Name. Taken on npm on 2026-10-30: `unagent`, `harnesses`, `tack`, `bridle`, `halter`, `stirrup`, `rein`, `hitch`, `farrier`, `tackroom`. Free: `@workhorse/tack`, `@workhorse/harnesses`, `saddlery`. Who owns the `@workhorse` npm scope is not verified | `@workhorse/tack`: tack is the gear that lets a rider fit and steer any horse |
-| Should plugins from this SDK coordinate with each other inside one agent? (See the `git push` example) | No, not in v0. Report each agent's rules and warn about Codex's rewrite race in the build report; revisit if two real plugins collide |
+| Who owns the `@workhorse` scope on npm? `@workhorse/tack` returned 404 on 2026-10-30, but the scope's owner is not verified | Check before slice 1 and register the scope if it is free |
+| What happens if an agent loads plugins in separate realms, so the in-process host cannot see them all? | Fall back to the agent's own rules for that agent, and mark coordination `unsupported` there in the fidelity table |
 | Should the shared runner be installed separately, or bundled with the first plugin that needs it? | Installed by the install command once per machine, versioned, with plugins declaring the runner range they need |
 | Which TOML, JSONC and YAML libraries? | Chosen in slice 6 from current registry data, and approved before they are added |

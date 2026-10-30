@@ -11,7 +11,9 @@ Companion to [FINDINGS.md](FINDINGS.md), which covers install-time generation (`
 > - the fan-out adapter, registered deciders and the combining rules (summary point 6, sections 1 and 6, the decider SDK in section 8);
 > - deciders holding their own queues (section 5). The SDK keeps queued actions per plugin and session instead.
 >
-> The fidelity tables, event coverage, failure and timing data, delivery paths and the per-agent multi-plugin table in section 6 still hold. That table now describes how plugins built with the SDK combine.
+> The fidelity tables, event coverage, failure and timing data, delivery paths and the per-agent multi-plugin table in section 6 still hold.
+>
+> **Update, 2026-10-30:** plugins built with `@workhorse/tack` coordinate again, through one host per agent process or one runner per hook event. The combining rules in section 6 apply to them once more, with tack plugins in place of deciders. The per-agent table in section 6 now describes how the tack host combines with plugins not built with tack.
 
 ## Versions checked
 

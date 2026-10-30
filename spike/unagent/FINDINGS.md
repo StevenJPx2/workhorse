@@ -683,8 +683,8 @@ The same render-only rule applies to the OpenCode plugin and the pi extension: t
 
 **Rescoped on 2026-10-27.** The project is now an unplugin-style plugin SDK, independent of the Workhorse daemon ([README.md](README.md)). That changes these decisions:
 
-- **Decisions 1 and 3:** the scope is a plugin SDK, not a general config emitter. The home is open: probably its own repository.
-- **Decision 2:** the name is open again.
+- **Decisions 1 and 3:** the scope is a plugin SDK, not a general config emitter. It stays a sibling workspace next to `daemon/`.
+- **Decision 2:** the name is now `@workhorse/tack` (decided 2026-10-30). It lives in its own workspace in the Workhorse repo.
 - **Decision 6:** a handler's error or timeout is a deny enforced by the SDK, not a daemon timeout.
 - **Decision 9:** mailbox wake is not in the package. Workhorse would write its wake as a plugin with this SDK.
 
