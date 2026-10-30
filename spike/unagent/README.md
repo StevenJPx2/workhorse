@@ -41,7 +41,8 @@ unplugin's shape, carried over:
 | `createUnplugin((options, meta) => ({ name, transform, … }))` | `createAgentPlugin((options, meta) => ({ name, toolBefore, … }))` |
 | `meta.framework` is `vite`, `rollup`, … | `meta.agent` is `opencode`, `pi`, `claude`, `codex` |
 | `unplugin.vite(options)` returns a Vite plugin | `plugin.opencode(options)` returns an OpenCode plugin |
-| `vite: { configureServer }`: native hooks for one bundler | `opencode: { … }`: native hooks for one agent |
+| `vite: { configureServer }`: native hooks for one bundler | `opencode: { … }` adds native hooks for one agent; `opencode: (generated) => …` replaces the output |
+| — | `plugin.opencode(options, override)`: the same override at the call site |
 | A table of which hook works in which bundler | The fidelity table, read at build time |
 
 ## A plugin
@@ -71,20 +72,40 @@ export const guard = createAgentPlugin((options: { protected: string[] }, meta) 
     guard_status: { description: "List protected paths", input: {}, run: () => options.protected },
   },
 
+  // An object adds native hooks next to the generated ones.
   opencode: {
-    // Native OpenCode hooks, for things the SDK does not cover.
+    "session.compacted": async (event) => { /* OpenCode-only behaviour */ },
+  },
+
+  // A function replaces the generated plugin: it receives what the SDK built and returns the final one.
+  codex: (generated) => ({ ...generated, hooks: { ...generated.hooks, Stop: undefined } }),
+}))
+```
+
+Each agent then loads its own output function. Like `unplugin.vite(options)`, it takes the options; a second argument takes the same kind of override, so whoever installs the plugin can change the native output without forking it:
+
+```ts
+// opencode plugin module
+export default guard.opencode({ protected: ["infra/"] })
+
+// the same, with a complete override at the call site
+export default guard.opencode({ protected: ["infra/"] }, (generated) => ({
+  ...generated,
+  "tool.execute.before": async (input, output) => {
+    if (input.tool === "webfetch") throw new Error("No network in this repo.")
+    return generated["tool.execute.before"]?.(input, output)
   },
 }))
 ```
 
-Each agent then loads its own export:
-
 | Agent | What the user installs | Where it comes from |
 | --- | --- | --- |
-| OpenCode | A server plugin module | `export default guard.opencode({ protected: ["infra/"] })` |
-| Pi | An extension | `export default guard.pi({ protected: ["infra/"] })` |
-| Claude Code | A mod, or a plugin directory whose `hooks.json` calls the hook runner | `guard.claude(...)`, packaged by `unagent build` |
-| Codex | A plugin directory whose hooks call the hook runner | `guard.codex(...)`, packaged by `unagent build` |
+| OpenCode | A server plugin module | `guard.opencode(options, override?)` |
+| Pi | An extension | `guard.pi(options, override?)` |
+| Claude Code | A mod by default; a plugin directory whose `hooks.json` calls the hook runner where mods are off | `guard.claude(options, override?)`, packaged by the build command |
+| Codex | A plugin directory whose hooks call the hook runner | `guard.codex(options, override?)`, packaged by the build command |
+
+Override order: the generated plugin, then the author's per-agent key, then the call-site override. An object merges; a function replaces and receives the result so far.
 
 ## Hooks
 
@@ -138,6 +159,16 @@ The SDK makes no attempt to combine plugins. Each plugin is a native plugin, so 
 
 The SDK guarantees what one plugin does. Across plugins it guarantees nothing more than the agent does, and the fidelity report says so per agent. The rewrite race on Codex is the main cost of this model.
 
+**Example.** A user installs two plugins built with this SDK. `safe-push` rewrites `git push` to `git push --dry-run`. `signed-push` rewrites `git push` to `git push --signed`. The agent runs `git push origin main`:
+
+| Agent | What runs |
+| --- | --- |
+| Codex | Both hooks start at once and each sees the original command. Whichever finishes last wins, so the result is sometimes a dry run and sometimes a real signed push, and both rewrites count as approval |
+| OpenCode | Plugins run in load order. If `signed-push` loads second and builds its command from scratch, the result is a real signed push and the dry run is lost; if it appends to what it received, the result is `git push origin main --dry-run --signed` |
+| Claude Code hooks | Both run in parallel; which rewrite wins is undocumented |
+
+Coordination would mean that SDK plugins inside one agent find each other and apply rewrites in a fixed priority order, with any deny winning. In-process agents can do that. On Codex and Claude Code hooks, each plugin's hook is a separate process; coordinating there means registering the shared runner once per event and having it load every installed SDK plugin, which is the fan-out design this rescope dropped.
+
 ## What each agent limits
 
 | Agent | Main limits |
@@ -170,6 +201,10 @@ flowchart LR
 | Concern | Decision |
 | --- | --- |
 | Scope | A plugin SDK for any author, shaped like unplugin. Independent of the Workhorse daemon |
+| Home | Its own Bun workspace in the Workhorse repo, next to `daemon/`. Nothing in `daemon/` imports it, and it imports nothing from `daemon/` |
+| Plugin shape | `createAgentPlugin(factory)` with one output function per agent. Per-agent keys in the factory and a second argument to the output function both override the native output: an object merges, a function replaces |
+| Tool input | The common tools (shell, read, write, edit) get one normalized shape. Every other tool passes through with the agent's own name and input, and `call.native` always holds the original |
+| Claude Code | The mod is the default export. Hook entries are the fallback where an organization turns mods off |
 | Combining plugins | Left to each agent. The SDK combines nothing and documents each agent's rules |
 | Rewrites | Supported from the start. On Codex a rewrite also approves the call, and the report says so |
 | Failure | `toolBefore` fails closed by default, with a budget the SDK enforces. `onError: "allow"` opts out per hook |
@@ -185,8 +220,10 @@ flowchart LR
 
 ## Package layout
 
+The directory takes the package's name once it is chosen; `unagent` is a working name.
+
 ```text
-unagent/
+unagent/                 sibling of daemon/
 ├── src/
 │   ├── index.ts         createAgentPlugin, types
 │   ├── contract/        Events, hook results, fidelity data per agent. No I/O
@@ -209,10 +246,10 @@ unagent/
 | Slice | Delivers | Proof |
 | --- | --- | --- |
 | 1 | `createAgentPlugin`, with `toolBefore` (deny, rewrite) and `promptSent` (append) for OpenCode and Pi | In each real CLI, a deny prevents the call (a recorder tool sees nothing), a rewrite changes what runs, and the appended text reaches the model |
-| 2 | The hook runner for Codex and Claude Code hooks, with the same plugin | The slice 1 tests pass on both. A throwing or slow handler refuses the call. Runner overhead measured under 20 ms at p99 |
-| 3 | `tools`: native on OpenCode and Pi, generated MCP server on Claude Code, Codex and fx | Each agent calls the tool and the recorder sees the call |
-| 4 | `ctx.session.append` with `now`, `next` and `wake`; the action queue for hook-command agents | An idle OpenCode or Pi session starts a turn; on Codex the queued message arrives at turn end |
-| 5 | The Claude Code mod export | Slices 1 to 4 pass on it |
+| 2 | The Claude Code mod export, and the hook runner for Codex, with the same plugin | The slice 1 tests pass on both. A throwing or slow handler refuses the call. Runner overhead measured under 20 ms at p99 |
+| 3 | `tools`: native on OpenCode, Pi and the Claude Code mod; generated MCP server on Codex and fx | Each agent calls the tool and the recorder sees the call |
+| 4 | `ctx.session.append` with `now`, `next` and `wake`; the action queue for hook-command agents | An idle OpenCode, Pi or Claude Code session starts a turn; on Codex the queued message arrives at turn end |
+| 5 | Claude Code hook entries, for when mods are off | Slices 1 to 4 pass with mods disabled |
 | 6 | `unagent build` and `unagent install`, with revert | Each agent loads the installed plugin; `revert` removes exactly what was written; a hand-edited neighbouring entry survives both |
 | 7 | `ctx.ui.status` and `ctx.ui.dialog` | The dialog's answer reaches the plugin; the status text changes |
 | Later | Tabled agents and driving agents from outside | — |
@@ -221,9 +258,7 @@ unagent/
 
 | Question | Recommended default |
 | --- | --- |
-| Name and home. `unagent` is taken on npm (onmax/unagent 0.0.8). Should this live in the Workhorse repo, given it no longer depends on the daemon? | Its own repository, with a free npm name chosen in slice 1 |
-| Should plugins from this SDK coordinate with each other inside one agent, to avoid the Codex rewrite race and OpenCode's last-write-wins? | No, not in v0. Report the agent's rules; revisit if two real plugins collide |
-| Tool-call input differs by agent (`bash` vs `Bash`, `command` vs `cmd`). Normalize it, or pass it through? | Normalize the common tools (shell, read, write, edit) and pass everything else through with the agent's own names |
-| Should the shared runner be installed separately, or bundled with the first plugin that needs it? | Installed by `unagent install` once per machine, versioned, with plugins declaring the runner range they need |
-| On Claude Code, which export by default: the mod or the hook entries? | Hook entries, which work without mods enabled; the mod is opt-in |
+| Name. Taken on npm on 2026-10-30: `unagent`, `harnesses`, `tack`, `bridle`, `halter`, `stirrup`, `rein`, `hitch`, `farrier`, `tackroom`. Free: `@workhorse/tack`, `@workhorse/harnesses`, `saddlery`. Who owns the `@workhorse` npm scope is not verified | `@workhorse/tack`: tack is the gear that lets a rider fit and steer any horse |
+| Should plugins from this SDK coordinate with each other inside one agent? (See the `git push` example) | No, not in v0. Report each agent's rules and warn about Codex's rewrite race in the build report; revisit if two real plugins collide |
+| Should the shared runner be installed separately, or bundled with the first plugin that needs it? | Installed by the install command once per machine, versioned, with plugins declaring the runner range they need |
 | Which TOML, JSONC and YAML libraries? | Chosen in slice 6 from current registry data, and approved before they are added |
