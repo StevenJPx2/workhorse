@@ -6,7 +6,7 @@
 - **Architecture:** Before changing protocols, capability boundaries, sandboxing, extensibility, package or crate boundaries, or product responsibilities, read `OVERVIEW.md` and `ARCHITECTURE.md`.
 - **Design:** Before introducing or reshaping an abstraction, read `PHILOSOPHY.md`.
 
-Treat files under `spike/`, and the `daemon-v0`, `legacy` and `fleet-v0` branches, as evidence, not production architecture. A successful experiment proves feasibility; it does not define the shipping design.
+Treat files under `spike/` and `evidence/`, and the `daemon-v0`, `legacy` and `fleet-v0` branches, as evidence, not production architecture. A successful experiment proves feasibility; it does not define the shipping design.
 
 ## Doctrine
 
