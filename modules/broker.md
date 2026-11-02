@@ -29,10 +29,7 @@ The one network exit for every sandboxed agent. It checks each request against t
 - **Runs inside the daemon** with the gateway, as a separate crate (2026-11-02).
 - **Carries `control` from inside the sandbox** on one reserved path, `/_workhorse/control`, which is never forwarded (2026-11-02). See [`control`](control.md).
 - **Secrets live in one encrypted file** in the user's config, in the [age](https://age-encryption.org/) format (2026-11-02). The file's key is kept in the macOS Keychain or the Linux Secret Service where one exists, so an on-demand daemon starts silently. On a server without a keyring, the daemon asks for a passphrase once and keeps the key in memory until it exits. The `age` crate is a production dependency and needs approval when the broker is built.
-
-## Open questions
-
-- A request in flight when the broker restarts: report an unknown outcome, never resend.
+- **A request in flight when the broker restarts reports an unknown outcome and is never resent** (2026-11-02). Workhorse never repeats a request that may already have had its effect.
 
 ## Evidence
 

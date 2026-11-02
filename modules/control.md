@@ -25,6 +25,7 @@ How a human, the CLI and tack talk to the daemon: start and stop sessions, read 
 - **From inside a sandbox, `control` goes through the broker** (2026-11-02). The broker reserves one path, `/_workhorse/control`, never forwards it, and hands its calls to the daemon in-process. The sandbox keeps exactly one allowed destination.
 - **Inside clients get a smaller method set** (2026-11-02): send an event, receive a verdict, request an approval or a wider grant. Answering approvals and changing grants are only available outside the sandbox, because the agent can read anything tack can, including its token.
 - **A per-session token** identifies inside clients; the daemon issues it when the session starts.
+- **Outside clients on the same machine use a Unix socket** in the user's runtime directory, readable only by the user; its file permissions are the authentication (2026-11-02). A phone comes later, through layer 2's link.
 
 ```mermaid
 flowchart LR
@@ -36,4 +37,4 @@ flowchart LR
 
 ## Open questions
 
-- The transport for outside clients on one machine: a Unix socket is the likely default.
+- The method list itself, inside and outside.

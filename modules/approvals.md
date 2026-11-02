@@ -25,12 +25,9 @@ How a human answers a request for a decision. Two things ask: a steering rule wh
 - **One approval queue** (2026-11-02). Every request for a human decision goes to it, is answered the same way from any device, and is recorded.
 - **An approval is either "once" or "add to the grant"** (2026-11-02).
 - **An approval shows the exact change it would make** (2026-11-02).
-- **An unanswered request is denied after a timeout** (2026-11-02). Each kind of request has a default timeout; the denial is recorded, and the agent is told its request was denied.
-
-## Open questions
-
-- The default timeout for each kind of request.
-- Whether a request ID is required from every requester.
+- **An unanswered request is denied after a timeout** (2026-11-02). The denial is recorded, and the agent is told its request was denied.
+- **Default timeouts: 5 minutes for a steering "ask", 30 minutes for a wider grant** (2026-11-02). A steering ask blocks a running action; a widening is less urgent. A profile can override both.
+- **Every request carries a request ID** chosen by its requester (2026-11-02), so a request or an answer sent twice, or from two devices, applies once.
 
 ## Evidence
 
