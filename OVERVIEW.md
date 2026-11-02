@@ -42,6 +42,8 @@ Decided 2026-11-02:
 - **Tools are granted one by one, by name or pattern** (`github: issues.*`). Rules about arguments belong to steering.
 - **The grant is the ceiling; steering works inside it.** A steering rule can block, rewrite or ask, never widen.
 - **One approval queue.** Every request for a human decision goes to one queue, is answered the same way from any device, and is recorded. An approval is either "once" or "add to the grant".
+- **Profiles live only in the user's config**, `~/.config/workhorse/profiles/`, written in TOML and validated against a published JSON Schema. A repository is untrusted input: it can name a profile, never grant anything.
+- **Grants are visible.** Each session prints a one-screen summary of its grant when it starts, `workhorse status` shows every session's grant and recent denials, and an approval shows the exact change it would make.
 
 | Part of a grant | Example | Enforced by | Changes live |
 |---|---|---|---|
@@ -123,9 +125,7 @@ Arrows mean "depends on". Contracts depend on nothing, and enforcers never depen
 
 ## Open questions
 
-- Whether every target agent resumes a session reliably enough for restart and resume.
-- Where profiles live, and how a session's grant is shown to a human.
-- Which steering events every agent can actually report (see tack's capability matrix).
+- Whether every target agent resumes a session reliably enough for restart and resume, and which steering events each one actually reports and enforces. [Planned spike](spike/resume-and-events/PLAN.md).
 
 ## Evidence
 
