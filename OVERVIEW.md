@@ -96,7 +96,7 @@ Arrows mean "depends on". Contracts depend only on other contracts, with `grant`
 
 ## Roadmap
 
-**Status:** proposed.
+**Status:** agreed. Nothing is built.
 
 Each milestone is a vertical slice: the smallest set of modules that gives the first user something complete, through its real boundaries, on macOS and on the homelab's Linux. A milestone ends when its conformance suites pass, each with a deliberate break that makes it fail, and a real agent does real work under it.
 
@@ -115,14 +115,12 @@ flowchart LR
 |---|---|---|
 | **1 · Contained** | [`grant`](modules/grant.md), [`sandbox`](modules/sandbox.md), [`broker`](modules/broker.md), the `workhorse run` and `workhorse status` commands, and their suites | OpenCode completes a task with a real model under a profile. The model key reaches the provider through the broker and never appears in the agent's files or environment. A request outside the grant is denied and logged. Escape and egress suites pass |
 | **2 · Asked** | [`approvals`](modules/approvals.md), [`control`](modules/control.md) on the Unix socket, live narrowing, widening by approval, restart and resume for file changes | A request to a host outside the grant appears in the queue. Answering it from the CLI as "once" or "add to the grant" takes effect; an unanswered one is denied at its timeout. A file-grant change restarts and resumes the session |
-| **3 · Steered** | [`steering`](modules/steering.md), [`tack`](modules/tack.md) with `control` through the broker, one agent first, then the other three | A rule such as "ask before `git push`" stops the push until it is answered, in every agent. With the daemon down, the push stays blocked |
+| **3 · Steered** | [`steering`](modules/steering.md), [`tack`](modules/tack.md) with `control` through the broker: OpenCode first, because its in-process plugin can fail closed and rewrite tool input; then Pi, Claude Code and Codex | A rule such as "ask before `git push`" stops the push until it is answered, in every agent. With the daemon down, the push stays blocked |
 | **4 · Tools** | [`gateway`](modules/gateway.md), local MCP servers in their own sandboxes | An agent sees and calls only the tools its grant lists. Each server's network traffic goes through the broker |
 | **5 · Reachable** | Layer 2: the link between devices and durable sessions, built from the evidence on `daemon-v0` | An approval is answered from a phone, and an agent session on the homelab survives a restart of the daemon |
 | **6 · Own harness** | Layer 3: the first harness from [`ARCHITECTURE.md`](ARCHITECTURE.md) | Not planned until milestone 5 is done |
 
 The [resume and events spike](spike/resume-and-events/PLAN.md) runs alongside milestone 1. Its results shape restart and resume in milestone 2 and the steering events tack relies on in milestone 3.
-
-**Roadmap question:** which agent tack supports first in milestone 3. Recommended: OpenCode, because its in-process plugin can fail closed and rewrite tool input. Claude Code hooks are the alternative: they need no in-process code but fail open by default.
 
 ## Open questions
 
