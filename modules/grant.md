@@ -24,7 +24,7 @@ Nothing. It is pure Rust with no I/O and also builds for wasm.
 
 Decided 2026-11-02:
 
-- **A grant belongs to a session.** It is created from a reusable profile, so two sessions of one agent can have different access.
+- **A grant belongs to a session.** It is created from a reusable profile, so two sessions of one agent can have different access. A local MCP server that Workhorse launches gets its own grant the same way.
 - **Everything is denied unless listed.** Secrets appear by name only. Symlinks are never followed out of a granted path.
 - **A human can narrow a grant at any time. It widens only when the agent asks and a human approves**, and the approval is recorded.
 - **Network, tools and secrets change live**, because the broker and the gateway see every request. **File access and limits are fixed when the agent starts**, because nono and bubblewrap fix them then. Changing them restarts the agent under the new grant and resumes its session.

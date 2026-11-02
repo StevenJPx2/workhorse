@@ -22,9 +22,18 @@ How a human, the CLI and tack talk to the daemon: start and stop sessions, read 
 
 - **JSON-RPC** (2026-11-02): an existing standard, so only the methods are Workhorse's.
 - **One protocol for every client** (2026-11-02): tack, the CLI and a phone use the same methods.
+- **From inside a sandbox, `control` goes through the broker** (2026-11-02). The broker reserves one path, `/_workhorse/control`, never forwards it, and hands its calls to the daemon in-process. The sandbox keeps exactly one allowed destination.
+- **Inside clients get a smaller method set** (2026-11-02): send an event, receive a verdict, request an approval or a wider grant. Answering approvals and changing grants are only available outside the sandbox, because the agent can read anything tack can, including its token.
+- **A per-session token** identifies inside clients; the daemon issues it when the session starts.
+
+```mermaid
+flowchart LR
+    AG["Agent process<br/>with tack inside"] -->|"https://broker/…"| BR["Broker listener"]
+    AG -->|"POST /_workhorse/control<br/>with the session token"| BR
+    BR -->|"checked against the grant, secret added"| NET["Internet"]
+    BR -->|"in-process call"| CT["Daemon: steering and approvals"]
+```
 
 ## Open questions
 
-- The transport on one machine: a Unix socket is the likely default.
-- How tack authenticates from inside a sandbox, given the sandbox allows only the broker.
-- Whether events and verdicts share this protocol with the human-facing methods, or get their own narrower one.
+- The transport for outside clients on one machine: a Unix socket is the likely default.

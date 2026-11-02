@@ -90,7 +90,8 @@ Arrows mean "depends on". Contracts depend only on other contracts, with `grant`
 | Concern | Decision |
 |---|---|
 | Contracts | Schemas, serialization and rules only, no I/O, so they also build for wasm |
-| Processes | One daemon hosts the broker, gateway, steering and approvals, kept as separate crates. Each agent runs in its own sandboxed process |
+| Processes | One daemon, started on demand, hosts the broker, gateway, steering and approvals, kept as separate crates. Each agent and each local MCP server runs in its own sandbox under its own grant |
+| Inside the sandbox | The broker is the only destination. tack reaches `control` through it on a reserved path, with a per-session token and a smaller set of methods |
 | Standards | MCP for the gateway, JSON-RPC for `control`, ACP for sessions. Workhorse defines only the grant, steering and approval formats and the `control` methods |
 
 ## Order
@@ -105,7 +106,6 @@ Arrows mean "depends on". Contracts depend only on other contracts, with `grant`
 Each module's own open questions are in its file. These span modules:
 
 - Whether every target agent resumes a session reliably enough for restart and resume, and which steering events each one actually reports and enforces. [Planned spike](spike/resume-and-events/PLAN.md).
-- How tack reaches `control` from inside the agent's sandbox, which allows only the broker: a second allowed socket, or `control` carried through the broker.
 
 ## Evidence
 

@@ -25,10 +25,11 @@ How a human answers a request for a decision. Two things ask: a steering rule wh
 - **One approval queue** (2026-11-02). Every request for a human decision goes to it, is answered the same way from any device, and is recorded.
 - **An approval is either "once" or "add to the grant"** (2026-11-02).
 - **An approval shows the exact change it would make** (2026-11-02).
+- **An unanswered request is denied after a timeout** (2026-11-02). Each kind of request has a default timeout; the denial is recorded, and the agent is told its request was denied.
 
 ## Open questions
 
-- What the agent does while a request waits, and what happens when nobody answers: a timeout that denies is the likely default.
+- The default timeout for each kind of request.
 - Whether a request ID is required from every requester.
 
 ## Evidence

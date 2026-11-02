@@ -22,7 +22,8 @@ Turns a grant into an operating-system policy and launches the agent under it. F
 ## Decisions
 
 - **File access and limits are fixed when the agent starts** (2026-11-02). A change restarts the agent under the new grant and resumes its session.
-- **The only network destination is the broker** (2026-11-02).
+- **The only network destination is the broker** (2026-11-02). tack's `control` calls go through it too, on a reserved path.
+- **Agents and local MCP servers both run under it**, each with its own grant (2026-11-02).
 - **Stop the whole process tree** (spike 8): killing the `nono run` supervisor alone leaves the agent running.
 - **agentOS is not adopted** (spike 8). Revisit when it leaves beta and its Node layer runs current agents.
 
