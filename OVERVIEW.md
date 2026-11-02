@@ -28,6 +28,7 @@ Whatever the harness, an agent reaches files, network, secrets and tools only th
 | **Tool gateway** | How an agent reaches MCP servers through one door that applies its grant |
 | **Steering** | Rules that fire on an agent's events and block, rewrite, or ask a human |
 | **Approvals** | How a human answers a request for a decision: a steering "ask" or a request to widen a grant |
+| **Control** | How a human, the CLI and tack talk to the other five: sessions, grants, approvals, steering verdicts |
 
 ### Grants
 
@@ -67,6 +68,52 @@ The agent loop and its context: compaction, prompt caching, skills, codemode, su
 - **A protocol is a contract plus a conformance suite.** Rust provides the reference implementations; each protocol is its own crate, usable alone.
 - **One-way dependencies.** Layer 1 knows nothing of layers 2 and 3.
 
+## Modules
+
+Decided 2026-11-02 for layer 1; layers 2 and 3 are split when they start. Crates follow protocol boundaries; processes are a deployment choice.
+
+```mermaid
+flowchart TB
+    subgraph C["Contracts: pure Rust, no I/O, also built for wasm"]
+        G["grant"]
+        S["steering"]
+        A["approvals"]
+        K["control"]
+    end
+    subgraph E["Enforcers: native"]
+        SB["sandbox<br/>nono and bubblewrap backends"]
+        BR["broker"]
+        GW["gateway"]
+    end
+    E --> C
+    D["workhorse<br/>CLI and daemon, the composition root"] --> E
+    T["tack (TypeScript)"] -->|"control protocol"| D
+```
+
+Arrows mean "depends on". Contracts depend on nothing, and enforcers never depend on each other.
+
+| Module | Owns |
+|---|---|
+| `grant` | Grant and profile schema; whether a grant allows an action; narrowing, and widening by approval |
+| `steering` | Normalized agent events, the rule format, and verdicts: allow, block, rewrite, ask |
+| `approvals` | Request and answer records, the queue's state machine, request IDs |
+| `control` | JSON-RPC methods for sessions, grants, approvals and steering; used by tack, the CLI and a phone |
+| `sandbox` | Turns a grant into an OS policy and launches the agent under it, with nono and bubblewrap backends |
+| `broker` | The one network exit: checks the grant, adds secrets, logs every request, never follows a redirect |
+| `gateway` | An MCP proxy that exposes only the tools a grant lists |
+| `workhorse` | The CLI (`workhorse run --profile p -- opencode`) and the daemon; the only place implementations are chosen |
+| `conformance` | One suite per protocol: grant vectors, escape probes, egress tests |
+| `tack` | On its own branch: forwards agent hook events over `control` and applies verdicts |
+
+| Concern | Decision |
+|---|---|
+| Contracts | Schemas, serialization and rules only, no I/O, so they also build for wasm |
+| Processes | One daemon hosts the broker, gateway, steering and approvals, kept as separate crates. Each agent runs in its own sandboxed process |
+| Steering | Evaluated in the daemon, the one source of truth. tack forwards events and applies verdicts; it embeds the `steering` crate as wasm only if the round trip proves too slow |
+| Secrets over HTTPS | Clients that accept a base URL, such as model providers, point at the broker's own address. A certificate authority trusted inside the sandbox is the fallback, only where a base URL cannot change |
+| `git` | HTTPS through the broker, which adds the token. SSH is denied until there is a real need |
+| Standards | MCP for the gateway, JSON-RPC for `control`, ACP for sessions. Workhorse defines only the grant, steering and approval formats and the `control` methods |
+
 ## Order
 
 1. Layer 1 protocols, one at a time, each with its contract, suite and a Rust implementation. Grants first, since the others enforce it; its shape is settled above. Approvals next, since steering and grants both need it.
@@ -76,8 +123,6 @@ The agent loop and its context: compaction, prompt caching, skills, codemode, su
 
 ## Open questions
 
-- Whether the tool gateway and the broker are one process or two.
-- Traffic the broker cannot carry as HTTP, such as `git` over SSH, under the broker-only rule.
 - Whether every target agent resumes a session reliably enough for restart and resume.
 - Where profiles live, and how a session's grant is shown to a human.
 - Which steering events every agent can actually report (see tack's capability matrix).
