@@ -22,6 +22,51 @@ coding agents, the tool I built for each, and how they work together.
 -->
 
 ---
+
+# Where it started
+
+<div class="grid grid-cols-[2fr_3fr] gap-8 items-center">
+<div>
+
+Workhorse began as one app: hand it a Jira or GitHub issue, and it ran a coding agent
+on it in its own worktree.
+
+Each part became its own project, grew well past where it started, and works with
+whichever coding agent you use, not only inside one app.
+
+</div>
+<div>
+
+```mermaid {scale: 0.6}
+flowchart LR
+    subgraph First["Workhorse, the first app"]
+        direction TB
+        M["monitors<br/>Jira comments, GitHub reviews"]
+        S["steering<br/>reminders for idle agents"]
+        T["tracker and orchestrator<br/>an issue becomes an agent run"]
+    end
+    M -- "pulled out" --> SF["sourcefed<br/>any source, any agent"]
+    S -- "pulled out" --> CH["Chauffeur<br/>judges and steers any agent"]
+    T -- "pulled out" --> AT["atelier<br/>a labelled issue becomes a proven PR"]
+```
+
+</div>
+</div>
+
+<!--
+I started with one app, Workhorse. You gave it a ticket, it spun up a worktree and
+ran an agent on it, watched Jira and GitHub for changes, and nudged the agent when it
+went idle. It worked, but every piece was locked inside that app and tied to its
+harness adapters; in practice only Pi was finished.
+
+So I pulled each piece out. The monitors became sourcefed, the steering became
+Chauffeur, and the issue-to-agent loop became atelier. Each one went much further than
+the original, and each one is harness-agnostic. sourcefed already runs in OpenCode,
+Pi, Claude Code and Codex. Chauffeur's recordings are in OpenCode, and its next
+version reaches the others through tack, which comes at the end.
+-->
+
+---
 layout: center
 ---
 
