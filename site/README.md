@@ -25,7 +25,7 @@ flowchart LR
 
 | Path | Holds |
 | --- | --- |
-| `scripts/pull.ts` | Clones each project at its branch and copies its pages, and the images and videos they show, under `src/<project>/` |
+| `scripts/pull.ts` | Clones each project at its branch and copies its pages, and the images and videos they show, under `src/<project>/`; copies the recordings `deck/slides.md` names into `deck/media/`, from each project's `demos` branch |
 | `src/` | The hub's own pages; the pulled ones beside them are ignored by git |
 | `.vitepress/config.mts` | The sidebar for the hub and for each project, edit links to each page's own repository |
 | `.vitepress/links.ts` | Keeps links to pulled pages on the site, and sends links to code to GitHub at the pulled branch |

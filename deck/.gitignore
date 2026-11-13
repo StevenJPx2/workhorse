@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .slidev/
+# Recordings pulled from each project's repository by site/scripts/pull.ts.
+media/
