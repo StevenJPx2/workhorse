@@ -26,4 +26,4 @@ The contract modules.
 
 ## Evidence
 
-- Spike 8 on `daemon-v0`: 26 escape probes and 12 egress routes, each with a deliberate break that made them fail.
+- Spike 8 in [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0): 26 escape probes and 12 egress routes, each with a deliberate break that made them fail.
