@@ -1,6 +1,6 @@
 # `tack`
 
-**Kind:** bridge, TypeScript. **Status:** designed, not built. Lives on its own [`tack`](https://github.com/StevenJPx2/workhorse/tree/tack) branch.
+**Kind:** bridge, TypeScript. **Status:** designed, not built. Lives in its own repository, [`wrkhse/tack`](https://github.com/wrkhse/tack).
 
 How existing agents reach layer 1. A plugin is written once and runs in OpenCode, Pi, Claude Code and Codex. For Workhorse, it forwards each agent's hook events to [`steering`](steering.md) over [`control`](control.md) and applies the verdicts. It is also useful without Workhorse, as a general plugin SDK for coding agents.
 
@@ -31,4 +31,4 @@ How existing agents reach layer 1. A plugin is written once and runs in OpenCode
 
 ## Evidence
 
-- `spike/unagent/` on the `tack` branch: the design and the capability matrix.
+- `spike/unagent/` in `wrkhse/tack`: the design and the capability matrix.

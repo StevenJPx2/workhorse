@@ -35,4 +35,4 @@ Turns a grant into an operating-system policy and launches the agent under it. F
 
 ## Evidence
 
-- On `daemon-v0`: `spike/sandbox/FINDINGS.md` (spike 1) and `spike/agentos/FINDINGS.md` (spike 8: escape probes, broker-only egress, costs against nono).
+- In [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0): `spike/sandbox/FINDINGS.md` (spike 1) and `spike/agentos/FINDINGS.md` (spike 8: escape probes, broker-only egress, costs against nono).

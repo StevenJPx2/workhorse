@@ -42,7 +42,7 @@ The agent loop and its context: compaction, prompt caching, skills, codemode, su
 
 ## tack: the bridge
 
-[`@workhorse/tack`](https://github.com/StevenJPx2/workhorse/tree/tack) is how existing agents reach layer 1. A plugin is written once and runs in OpenCode, Pi, Claude Code and Codex. It carries steering and tool routing into each agent. It is TypeScript because those agents load JavaScript plugins; its hooks call into layer 1. It is useful on its own and lives on its own branch. See [`modules/tack.md`](modules/tack.md).
+[`@workhorse/tack`](https://github.com/wrkhse/tack) is how existing agents reach layer 1. A plugin is written once and runs in OpenCode, Pi, Claude Code and Codex. It carries steering and tool routing into each agent. It is TypeScript because those agents load JavaScript plugins; its hooks call into layer 1. It is useful on its own and lives in its own repository. See [`modules/tack.md`](modules/tack.md).
 
 ## Rules
 
@@ -85,7 +85,7 @@ Arrows mean "depends on". Contracts depend only on other contracts, with `grant`
 | [`gateway`](modules/gateway.md) | Enforcer | An MCP proxy that exposes only the tools a grant lists |
 | [`workhorse`](modules/workhorse.md) | Composition root | The CLI (`workhorse run --profile p -- opencode`) and the daemon; the only place implementations are chosen |
 | [`conformance`](modules/conformance.md) | Test suites | One suite per protocol: grant vectors, escape probes, egress tests |
-| [`tack`](modules/tack.md) | Bridge | On its own branch: forwards agent hook events over `control` and applies verdicts |
+| [`tack`](modules/tack.md) | Bridge | In its own repository: forwards agent hook events over `control` and applies verdicts |
 
 | Concern | Decision |
 |---|---|
@@ -117,7 +117,7 @@ flowchart LR
 | **2 · Asked** | [`approvals`](modules/approvals.md), [`control`](modules/control.md) on the Unix socket, live narrowing, widening by approval, restart and resume for file changes | A request to a host outside the grant appears in the queue. Answering it from the CLI as "once" or "add to the grant" takes effect; an unanswered one is denied at its timeout. A file-grant change restarts and resumes the session |
 | **3 · Steered** | [`steering`](modules/steering.md), [`tack`](modules/tack.md) with `control` through the broker: OpenCode first, because its in-process plugin can fail closed and rewrite tool input; then Pi, Claude Code and Codex | A rule such as "ask before `git push`" stops the push until it is answered, in every agent. With the daemon down, the push stays blocked |
 | **4 · Tools** | [`gateway`](modules/gateway.md), local MCP servers in their own sandboxes | An agent sees and calls only the tools its grant lists. Each server's network traffic goes through the broker |
-| **5 · Reachable** | Layer 2: the link between devices and durable sessions, built from the evidence on `daemon-v0` | An approval is answered from a phone, and an agent session on the homelab survives a restart of the daemon |
+| **5 · Reachable** | Layer 2: the link between devices and durable sessions, built from the evidence in [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0) | An approval is answered from a phone, and an agent session on the homelab survives a restart of the daemon |
 | **6 · Own harness** | Layer 3: the first harness from [`ARCHITECTURE.md`](ARCHITECTURE.md) | Not planned until milestone 5 is done |
 
 The [resume and events spike](spike/resume-and-events/PLAN.md) runs alongside milestone 1. Its results shape restart and resume in milestone 2 and the steering events tack relies on in milestone 3.
@@ -130,4 +130,4 @@ Each module's own open questions are in its file. These span modules:
 
 ## Evidence
 
-Prior work is evidence, not design. The `daemon-v0` branch holds the capability daemon, the sandbox, link, transport, workerd, kernel and agentOS spikes, and the uniform-stack proposal. The `legacy` and `fleet-v0` branches hold older versions of Workhorse. [`evidence/`](evidence/) holds notes on outside projects and what Workhorse takes from each, starting with [nanocode](evidence/nanocode.md).
+Prior work is evidence, not design. [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0) holds the capability daemon, the sandbox, link, transport, workerd, kernel and agentOS spikes, and the uniform-stack proposal. [`wrkhse/workhorse-legacy`](https://github.com/wrkhse/workhorse-legacy) and [`wrkhse/fleet-v0`](https://github.com/wrkhse/fleet-v0) hold older versions of Workhorse. All three are archived. [`evidence/`](evidence/) holds notes on outside projects and what Workhorse takes from each, starting with [nanocode](evidence/nanocode.md).

@@ -46,4 +46,4 @@ Decided 2026-11-02:
 
 ## Evidence
 
-- The spike 1 sandbox findings and the spike 8 agentOS findings, on `daemon-v0`, show which file and network rules each OS sandbox can enforce.
+- The spike 1 sandbox findings and the spike 8 agentOS findings, in [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0), show which file and network rules each OS sandbox can enforce.

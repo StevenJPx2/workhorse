@@ -30,7 +30,7 @@ flowchart LR
 |---|---|
 | Machines | The MacBook (macOS) and the homelab (NixOS x86_64), as in spike 8 |
 | Agents | Latest release of each, version recorded per result. Headless modes from the matrix: `opencode run`, `pi -p` or `--mode rpc`, `claude -p`, `codex exec` |
-| Model | A scripted local model, extending spike 8's `src/broker.ts` on `daemon-v0`. It must speak all three provider APIs: Codex uses the Responses API and Claude Code uses Anthropic Messages. Turns are deterministic, so every run is comparable |
+| Model | A scripted local model, extending spike 8's `src/broker.ts` in `wrkhse/daemon-v0`. It must speak all three provider APIs: Codex uses the Responses API and Claude Code uses Anthropic Messages. Turns are deterministic, so every run is comparable |
 | Sandbox | `nono run` and bubblewrap with a file root per test. The network allows only the scripted model |
 | Recording | One recording hook or plugin per agent: an OpenCode plugin, a Pi extension, Claude Code hook entries and Codex hook entries. Each writes every event it sees, as received, to a JSON lines file, and answers with a verdict the test chooses |
 

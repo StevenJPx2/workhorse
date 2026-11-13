@@ -33,5 +33,5 @@ The one network exit for every sandboxed agent. It checks each request against t
 
 ## Evidence
 
-- Spike 8 on `daemon-v0`: a scripted model behind a broker; only the broker was reachable out of 12 routes.
+- Spike 8 in [`wrkhse/daemon-v0`](https://github.com/wrkhse/daemon-v0): a scripted model behind a broker; only the broker was reachable out of 12 routes.
 - [nanocode](../evidence/nanocode.md): credentials added by the host, redirects refused on model requests.
