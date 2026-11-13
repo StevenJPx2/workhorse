@@ -583,12 +583,7 @@ around it is deterministic code.
 
 <div class="flex justify-center">
 
-```mermaid {scale: 0.5}
----
-config:
-  sequence:
-    mirrorActors: false
----
+```mermaid {scale: 0.48}
 sequenceDiagram
     participant You
     participant Atelier as atelier daemon
