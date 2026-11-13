@@ -18,6 +18,8 @@ export type Project = {
   pages: string[]
   /** Globs left out of `pages`. */
   exclude: string[]
+  /** The branch the deck's recordings come from, when it is not `branch`. */
+  demos?: string
   /** The plan issue, linked from the roadmap and the deck. */
   plan?: number
 }
@@ -40,7 +42,13 @@ export const hub = {
       repo: `${owner}/workhorse`,
       branch: "main",
       summary: "Open protocols in three layers: trust, runtime and harness",
-      pages: ["README.md", "OVERVIEW.md", "PHILOSOPHY.md", "ARCHITECTURE.md", "modules/*.md"],
+      pages: [
+        "README.md",
+        "OVERVIEW.md",
+        "PHILOSOPHY.md",
+        "ARCHITECTURE.md",
+        "modules/*.md",
+      ],
       exclude: [],
     },
     {
@@ -48,7 +56,8 @@ export const hub = {
       name: "atelier",
       repo: `${owner}/atelier`,
       branch: "main",
-      summary: "A personal software factory: a labelled issue becomes a proven pull request",
+      summary:
+        "A personal software factory: a labelled issue becomes a proven pull request",
       pages: ["**/*.md"],
       exclude: hidden,
       plan: 1,
@@ -68,7 +77,8 @@ export const hub = {
       name: "sourcefed",
       repo: `${owner}/sourcefed`,
       branch: "main",
-      summary: "Tells agents and programs what changed in GitHub, Jira, Slack, feeds and schedules",
+      summary:
+        "Tells agents and programs what changed in GitHub, Jira, Slack, feeds and schedules",
       pages: ["README.md", "docs/**/*.md"],
       exclude: [],
       plan: 3,
@@ -81,6 +91,8 @@ export const hub = {
       summary: "Enhances a coding agent's context as it works: sense, classify, act",
       pages: ["**/*.md"],
       exclude: hidden,
+      // Present v1's feature recordings while the documentation stays on v2.
+      demos: "main",
     },
     {
       id: "tack",

@@ -1,7 +1,9 @@
 ---
 theme: default
 title: Workhorse
-info: A family of projects for safe, steerable, observable coding agents.
+info: >
+  Open projects that let any coding agent hear what changed,
+  stay on course, and ship proven code.
 routerMode: hash
 colorSchema: light
 transition: slide-left
@@ -10,194 +12,434 @@ mdc: true
 
 # Workhorse
 
-Safe, steerable, observable coding agents
+Open projects for every coding agent
 
-<div class="opacity-70 mt-6">A family of small projects, each in its own repository</div>
+<div class="opacity-70 mt-6">sourcefed · Chauffeur · atelier, and what ties them together</div>
+
+<!--
+This isn't a pitch deck. It's a walk through three problems I hit every day with
+coding agents, the tool I built for each, and how they work together.
+-->
+
+---
+layout: center
+---
+
+# Your agent can't hear the world
+
+<div class="grid grid-cols-5 gap-4 mt-8 text-center">
+  <div class="card">A pull request<div class="hint">CI, reviews, conflicts</div></div>
+  <div class="card">A Slack thread<div class="hint">the answer you were waiting for</div></div>
+  <div class="card">A Jira ticket<div class="hint">status, comments, scope</div></div>
+  <div class="card">Your inbox<div class="hint">the mail that matters</div></div>
+  <div class="card">A schedule<div class="hint">every night at 02:00</div></div>
+</div>
+
+<div class="mt-10 opacity-80">
+You use Pi, OpenCode or the Codex CLI. A built-in PR watcher still leaves
+Slack, Jira and your inbox outside the loop.
+You copy the CI log in. You remind it to check the thread.
+</div>
+
+<!--
+Say I'm in Pi, OpenCode or the Codex CLI. I open a PR. Nothing in the harness watches
+it for me. Even if one does have a PR watcher, it doesn't watch a Slack thread, a
+Jira ticket, or my inbox. So I end up being the agent's notification system.
+-->
+
+---
+layout: demo
+---
+
+# sourcefed
+
+**Any source, any agent.**
+
+A few small primitives:
+
+- a **monitor** watches one **source**
+- each change is an **event**, delivered to a **target**: an agent's session, or a
+  program
+- the agent creates its own monitors as it works
+
+The agent opens a pull request, then watches it. When CI fails, the failing log
+arrives as a message, and the agent fixes it and pushes.
+
+::right::
+
+![The agent creates a monitor for its PR; CI fails on GitHub; sourcefed delivers the failing log and the agent fixes, tests and pushes](./media/sourcefed/docs/media/ci-failure.gif)
+
+A real CI failure, delivered. Waiting time is sped up.
+
+<!--
+sourcefed gives any agent the information it needs from any source. Here the agent
+made its own monitor for the PR it just opened. CI fails on GitHub, sourcefed hands
+over the failing log, and the agent fixes it and pushes. Nobody copied anything.
+-->
+
+---
+layout: demo
+---
+
+# Reviews, threads, tickets, feeds
+
+| Source | Watches |
+| --- | --- |
+| GitHub | a PR, or every issue with a label |
+| Slack | a thread, or a DM |
+| Jira | a ticket, or a JQL query |
+| Schedule | a cron time |
+| Feeds | Gmail, RSS, Atom, JSON |
+
+Plugins for OpenCode and Pi, MCP for Claude Code and Codex, HTTP for programs.
+
+::right::
+
+![A reviewer comments; sourcefed delivers the comment and the agent makes the change and pushes](./media/sourcefed/docs/media/review-comment.gif)
+
+A review comment becomes the agent's next task.
+
+<!--
+Same idea for a review comment. And it isn't just GitHub: Slack threads, Jira tickets
+and queries, schedules, Gmail and any other feed. It runs as a plugin in OpenCode and
+Pi, over MCP in Claude Code and Codex, and over HTTP for programs. Every source is a
+provider package on the same Monitor contract, so you can write a new one, or have
+your agent write it.
+-->
 
 ---
 
-# The problem
+# Your source, the same primitives
 
-Agents make code cheap. They don't make it trustworthy.
+```mermaid {scale: 0.8}
+flowchart LR
+    Feed["Your team's feed"] --> Provider["Your Monitor provider<br/>polling or webhooks"]
+    Provider -- "structured events" --> Daemon["sourcefed daemon"]
+    Daemon --> Session["an agent session"]
+    Daemon --> Program["a program"]
+```
 
-<v-clicks>
+Ask your agent to add a provider for your team's deployment feed.
+The provider translates changes into events; sourcefed handles their delivery.
 
-- **Non-deterministic quality.** Coding is not solved; the same prompt gives
-  different code.
-- **They miss the larger picture.** Agents focus on the wrong details and
-  don't learn from mistakes the way people do.
-- **Hidden work.** What an agent did, and why, is often invisible.
-- **Too much reach.** An agent can touch whatever its machine can: files,
-  network, secrets.
+Each source is its own package, registered in the daemon. This is an extension
+point for code, not a feed format every service has to adopt.
 
-</v-clicks>
+<!--
+You can build your own feeds too, or have the agent do it. A new source implements
+the Monitor contract and is registered in the daemon. It doesn't have to
+reinvent the host adapters or event delivery.
+-->
+
+---
+layout: center
+---
+
+# But not every event deserves a turn
+
+A bot's comment. An approval. A status flip. The fifth "thanks!" in a thread.
+
+<div class="mt-6 opacity-80">
+And it isn't only events: agents stray on their own, too.
+</div>
+
+<!--
+Once everything flows in, the next problem shows up: not every message is useful to
+the agent, and every one costs a turn. Agents also wander off on their own. That's
+where Chauffeur comes in.
+-->
+
+---
+layout: demo
+---
+
+# Chauffeur
+
+**Agents write their own tools.**
+
+GPT-6.1 Sol and Opus reach for `sed -i`, heredocs and `node -e` to write files, even
+with the edit tool there and Code Mode on.
+
+Chauffeur combines hard checks with small chains of judgments, using fast
+decision models such as Jev before spending another agent turn.
+
+When the next call rewrites a file through the shell, Chauffeur stops it and
+points the agent to the edit tool, so the change stays reviewable.
+
+::right::
+
+![Chauffeur denying a sed rewrite; the agent switches to the edit tool](./media/chauffeur/docs/media/guard.gif)
+
+Chauffeur v1, OpenCode: a `sed` rewrite denied; the agent uses the edit tool.
+
+<!--
+Have you noticed this? Models like GPT-6.1 Sol, and Opus for that matter, slop out
+their own writing tool even though one exists, even with Code Mode on. Chauffeur puts
+a chain of judges in front of the agent, starting with fast decision models like Jev,
+and checks each step against what you asked for. Here the next call is a sed rewrite,
+so Chauffeur stops it and steers the agent to the edit tool.
+-->
+
+---
+layout: demo
+---
+
+# Permissions, judged
+
+Strict permissions mean a prompt every minute. YOLO mode means `rm -rf` is one bad
+guess away.
+
+A judge sits in between:
+
+- **approves** what clearly serves your task
+- **asks you** about the rest, such as `~/.ssh` or an unrelated folder
+- **blocks** irreversible harm; a force-push to `main` always asks
+
+Every decision lands in `chauffeur audit`.
+These are harness-level checks, not an OS sandbox.
+
+::right::
+
+![Chauffeur approves task-related access outside the project; the edits and tests complete without a permission prompt](./media/chauffeur/docs/media/approvals.gif)
+
+Chauffeur v1, OpenCode: task-related access outside the project, approved.
+
+<!--
+Permissions are either too restrictive, or you flip on YOLO mode and it's too risky.
+That's the perfect place for a judge. It approves what you'd approve anyway, asks
+about what you'd want to see, and blocks what you'd never allow.
+-->
+
+---
+layout: demo
+---
+
+# Your new tool, every time
+
+A tool you keep reminding the agent to use becomes a rule:
+
+**When:** after a tool call.
+
+**Ask:** did it use a browser for X when `twitter-cli` does the job?
+
+**Then:** steer it to `twitter-cli` and attach its skill.
+
+Drop it in `~/.config/chauffeur/rules/` and the agent is steered onto the right path,
+with the skill that shows how.
+
+::right::
+
+![After a browser fetch of an X post, Chauffeur hands over twitter-cli and the agent switches to it](./media/chauffeur/docs/media/drift.gif)
+
+Chauffeur v1, OpenCode: a browser fetch steered to `twitter-cli`.
+
+<!--
+You've got a cool new dev tool and you keep having to remind the agent to use it.
+Write a rule once and Chauffeur steers it onto the right path every time, and hands
+over the skill too.
+-->
+
+---
+layout: demo
+---
+
+# sourcefed, through Chauffeur
+
+Chauffeur sets up monitors for the PR, Jira ticket or Slack thread you are working
+on.
+In OpenCode, before sourcefed delivers an event, it asks Chauffeur whether the agent
+needs to act on it, so bot comments, approvals and status churn stay out.
+
+The PR is a real one, and so is its CI failure.
+
+::right::
+
+![The agent opens a PR, Chauffeur has sourcefed watch it, and a real CI failure resumes the agent to fix and push](./media/chauffeur/docs/media/monitor.gif)
+
+Chauffeur v1, OpenCode: a real CI failure resumes the agent to fix and push.
+
+<!--
+And this is where the two meet. Chauffeur creates the monitors itself and gates what
+comes through, so the agent only hears about events worth a turn.
+-->
+
+---
+layout: center
+---
+
+# Same gates, every project
+
+Format, lint, tests, docs: in every Rust project, the checks are the same.
+
+<div class="mt-6 opacity-80">
+How do you push code out as fast as agents can write it, and keep the process as
+deterministic as possible?
+</div>
+
+<!--
+Now you have all of this. But your process, the CI and the checks you use for
+correctness, is pretty much the same in every project of a language. How do you run
+it so it's as deterministic as possible while still shipping fast? That's atelier.
+-->
+
+---
+layout: demo
+---
+
+# atelier
+
+**A labelled issue becomes a proven pull request.**
+
+Label an issue `atelier:build`. Within a minute, a builder agent is working on it in
+its own worktree.
+It opens a draft PR, fixes what CI reports, and marks it ready once atelier says
+every check passed.
+
+The loop is code, not a prompt: atelier claims, branches, checks and closes, and the
+agent does the writing.
+
+::right::
+
+![A labelled issue is claimed: labels swapped, the builder's session and branch commented, its worktree on the issue's branch](./media/atelier/docs/media/slice-1.gif)
+
+An issue claimed: labels swapped, the builder's session and branch commented.
+
+<!--
+atelier is a personal software factory. Label an issue and a builder agent picks it
+up in its own worktree, opens a PR, fixes CI and marks it ready. The steps around the
+agent are deterministic code.
+-->
+
+---
+layout: demo
+---
+
+# One set of gates
+
+A project lists its gates once. The builder runs them before committing and
+fixes what it can; GitHub independently runs each as its own check.
+
+Next:
+
+- **pipelines** of steps, such as a nightly security audit next to the build
+- **triggers from sourcefed**: a label, a JQL query or a schedule starts a run within
+  moments
+
+::right::
+
+![atelier gates lists the gates; check fails on an unformatted docs table and fix fixes it; the pull request shows each gate as its own check](./media/atelier/docs/media/slice-2.gif)
+
+`check` fails on an unformatted table, and `fix` fixes it.
+
+<!--
+The gates are the same everywhere, so atelier runs them for every commit and every
+PR. Next come pipelines, and triggers from sourcefed, so a label, a Jira query or a 2
+a.m. schedule starts a run.
+-->
 
 ---
 
-# The philosophy
+# Better together
 
-What makes something easy for people to get right makes it _really_ easy for
-agents. What people get wrong, agents get wrong more often.
+```mermaid {scale: 0.75}
+flowchart LR
+    Sources["GitHub, Jira, Slack,<br/>feeds, schedules"] --> SF["sourcefed"]
+    SF -- "is this worth a turn?" --> CH["Chauffeur"]
+    CH -- "only what matters" --> Agent["your coding agent<br/>demos: OpenCode"]
+    CH -- "judges every step" --> Agent
+    SF -. "planned: label, query, schedule" .-> AT["atelier"]
+    AT -- "starts builders" --> Agent
+```
 
-<v-clicks>
+Each one works alone. Together, the agent hears what changed, stays on course, and
+ships through the same gates every time.
 
-- **Hard boundaries.** Each module owns one job and says what it does not own.
-- **Strict APIs.** Make the wrong decision hard to express.
-- **Nothing hidden.** Whatever an agent does, a person can see and change.
-- **Proof.** Done means an executed check that would fail if it broke.
-
-</v-clicks>
+<!--
+Each of these is useful on its own. Together: sourcefed hears the world, Chauffeur
+decides what reaches the agent and keeps it on course, and atelier turns the work
+into proven pull requests.
+-->
 
 ---
 layout: two-cols
 ---
 
-# Three layers of open protocols
+# Workhorse
 
-Each layer depends only on those below it, and each works without those
-above it.
+Open protocols and open projects, for every coding harness you use.
 
-Trust comes first: one developer running existing agents on a laptop and a
-home server, who wants them safe, steerable and observable.
+Each project works on its own, or with the others.
+
+Underneath: three layers of open protocols, trust first.
 
 ::right::
 
-```mermaid {scale: 0.6}
+<div class="flex justify-center">
+
+```mermaid {scale: 0.85}
 flowchart TB
-    H["3 · Harness<br/>agent loop, context, subagents"] --> R
-    R["2 · Runtime<br/>durable mailbox, link between devices, hosts"] --> T
-    T["1 · Trust<br/>grants · sandbox · broker · tool gateway · steering"]
-    E["Existing agents<br/>OpenCode · Pi · Claude Code · Codex"] -->|"tack"| T
+    App["atelier<br/>an application"] --> H
+    H["3 · Harness<br/>Chauffeur"] --> R
+    R["2 · Runtime<br/>sourcefed, the inbox"] --> T
+    T["1 · Trust<br/>grants, sandbox, broker, steering"]
 ```
 
----
+</div>
 
-# The family
-
-| Project | What | Status |
-| --- | --- | --- |
-| **Workhorse** | Open protocols: trust, runtime, harness | Direction agreed |
-| **atelier** | A labelled issue becomes a proven pull request | Slice 3 in progress |
-| **rungs** | A small, proven step machine | `v0.1.0` released |
-| **sourcefed** | What changed in GitHub, Jira, Slack, feeds, schedules | `0.5.1` |
-| **Chauffeur** | Judges what an agent is doing and steers it | Slice 2 next |
-| **tack** | One plugin, every coding agent | Designed |
-
----
-
-# atelier
-
-A personal software factory.
-
-- **What:** label an issue `atelier:build`; a builder agent works in its own
-  worktree, opens a pull request, fixes what CI reports and marks it ready.
-- **Why:** issues in, proven pull requests out, with the owner reviewing
-  rather than typing.
-- **Status:** slices 0 to 2 implemented; slice 3, pipelines made of steps, in
-  progress; slice 4 triggers runs from sourcefed.
-
----
-
-# rungs
-
-A step machine small enough to prove.
-
-```rust
-let plan = Plan::new([
-    Step::new(2),
-    Step::new(2).after([Need::outcome(0, [Outcome(1), Outcome::FAILED])]),
-])?;
-
-let mut run = plan.start();
-assert_eq!(run.advance(), [0]);   // start fast
-run.settle(0, Outcome(1))?;       // unsure
-assert_eq!(run.advance(), [1]);   // start sure
-```
-
-- **Why:** atelier's pipelines and Chauffeur's strategies are the same shape.
-- **Status:** `v0.1.0` released. `no_std`, no allocation, no dependencies,
-  every run proven to end with Kani.
-
----
-
-# sourcefed
-
-How does an agent hear that something changed?
-
-- **What:** monitors on GitHub pull requests and issues, Jira, Slack, feeds
-  and schedules; a daemon with HTTP RPC and an event stream.
-- **Why:** no more copying CI logs or reminding the agent to check its pull
-  request. Programs such as atelier follow the same events.
-- **Status:** `0.5.1`: issue collections, Jira queries, schedules and
-  programs as targets.
-
----
-
-# Chauffeur
-
-Steers a coding agent as it works: sense, classify, act.
-
-- **What:** a daemon reads the harness's events, asks fast and careful judges,
-  and acts: attach skills, compact a cold session, stop a destructive
-  command, hold back noise.
-- **Why:** the right context at the right moment, without the agent having
-  to ask for it.
-- **Status:** `v2` slices 0 and 1 implemented; slice 2 triages sourcefed's
-  events.
-
----
-
-# tack
-
-Write a coding-agent plugin once.
-
-- **What:** one plugin definition becomes a native plugin for OpenCode, Pi,
-  Claude Code and Codex.
-- **Why:** it carries Workhorse's steering and tool routing into the agents
-  people use today.
-- **Status:** designed; OpenCode first, in Workhorse's third milestone.
-
----
-
-# How they connect
-
-```mermaid {scale: 0.65}
-flowchart LR
-    Sources["GitHub, Jira, Slack,<br/>feeds, schedules"] --> SF["sourcefed"]
-    SF -- "chauffeur.gate" --> CH["Chauffeur"]
-    CH --> OC["OpenCode session"]
-    SF -- "item.matched,<br/>schedule.fired" --> AT["atelier"]
-    AT -- "starts builders" --> OC
-    RU["rungs"] --> AT
-    RU --> CH
-    AT -. "builds" .-> CH
-```
-
----
-
-# Where each sits
-
-| Project | Place in Workhorse |
-| --- | --- |
-| rungs | A contract in layer 1's style: pure, no I/O, proven |
-| sourcefed | Layer 2: the inbox |
-| Chauffeur | Layer 3: the harness's context, beside steering |
-| atelier | An application above all three |
-| tack | The bridge from today's agents into layer 1 |
+<!--
+That's Workhorse: open protocols and open projects that apply to every coding harness
+you own. Each can help you on its own, or they work together.
+-->
 
 ---
 
 # What's next
 
-<v-clicks>
+- **atelier**: pipelines of steps, then runs started by sourcefed
+- **Chauffeur v2**: the same behavior, rebuilt as an engine of judges, adapters for
+  Pi, Claude Code and Codex
+- **sourcefed**: one triage for every host, through Chauffeur
+- **Workhorse**: milestone 1, Contained: grants, sandbox and the broker
+- **wrkhse**: every project in one GitHub organization
 
-- **atelier** finishes pipelines on rungs, then starts runs from sourcefed.
-- **Chauffeur** triages sourcefed's events, then escalates on rungs.
-- **Workhorse** builds milestone 1, Contained: grants, sandbox, broker.
-- **wrkhse**: the projects move to one GitHub organisation, a one-line
-  change for this hub.
+---
+layout: section
+---
 
-</v-clicks>
+# Under the hood
+
+Two internal tools for building all of this
+
+---
+
+# tack and rungs
+
+<div class="grid grid-cols-2 gap-10 mt-6">
+<div>
+
+### tack
+
+One interface to write an agent plugin once and run it in every harness: OpenCode,
+Pi, Claude Code and Codex.
+It's how these tools reach every agent without a port per harness.
+
+</div>
+<div>
+
+### rungs
+
+A small step machine: plans of steps that wait on earlier outcomes.
+`no_std`, no allocation, no dependencies, every run proven to end with Kani.
+It is the shared foundation for atelier's pipelines and Chauffeur's strategies.
+
+</div>
+</div>
+
+<!--
+Two internal tools, not the point of the talk. tack is how the plugins reach every
+harness from one definition. rungs is the step machine inside atelier's pipelines and
+Chauffeur's strategies.
+-->
 
 ---
 layout: center
@@ -205,4 +447,4 @@ layout: center
 
 # Read more
 
-The docs for every project: <a href="/" target="_self">the hub</a>
+Every project's docs, in one place: <a href="/" target="_self">the Workhorse hub</a>

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "slidev",
+    "dev": "bun ../site/scripts/pull.ts && slidev",
     "build": "slidev build --base /deck/ --out ../site/.vitepress/dist/deck"
   },
   "devDependencies": {
