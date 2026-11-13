@@ -581,7 +581,9 @@ around it is deterministic code.
 
 # How a feature moves
 
-```mermaid {scale: 0.55}
+<div class="flex justify-center">
+
+```mermaid {scale: 0.5}
 ---
 config:
   sequence:
@@ -606,6 +608,8 @@ sequenceDiagram
     Builder->>PR: mark ready
     PR-->>You: ready for review
 ```
+
+</div>
 
 <!--
 The whole loop. You label an issue; atelier gives a builder its own worktree and
