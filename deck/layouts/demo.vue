@@ -100,12 +100,19 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
-dialog {
+/* The enlarged recording fills the screen, scaling past its natural size. */
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
   position: fixed;
   inset: 0;
   margin: auto;
-  width: min(96vw, 1200px);
-  max-height: 94vh;
+  width: 96vw;
+  height: 94vh;
+  max-width: none;
+  max-height: none;
   padding: 1rem;
   border: 0;
   border-radius: 12px;
@@ -114,19 +121,31 @@ dialog {
   text-align: center;
 }
 
+dialog button {
+  font-size: 0.95rem;
+}
+
 dialog::backdrop {
   background: rgb(0 0 0 / 0.8);
 }
 
+dialog :deep(p:has(img)) {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+}
+
 dialog :deep(img) {
   display: block;
-  margin: 0.75rem auto;
-  max-width: 100%;
-  max-height: calc(82vh - 4rem);
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
 }
 
-dialog :deep(p) {
+dialog :deep(p:not(:has(img))) {
   margin: 0;
   font-size: 1rem;
 }
