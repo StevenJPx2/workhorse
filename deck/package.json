@@ -1,0 +1,13 @@
+{
+  "name": "workhorse-deck",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev",
+    "build": "slidev build --base /deck/ --out ../site/.vitepress/dist/deck"
+  },
+  "devDependencies": {
+    "@slidev/cli": "53.1.0",
+    "@slidev/theme-default": "0.25.0"
+  }
+}
