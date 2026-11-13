@@ -19,3 +19,12 @@
 .slidev-layout table {
   font-size: 0.8rem;
 }
+
+.gates {
+  --slidev-code-font-size: 0.65rem;
+  --slidev-code-line-height: 1.1rem;
+}
+
+.gates li {
+  font-size: 0.85rem;
+}

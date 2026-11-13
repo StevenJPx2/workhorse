@@ -578,6 +578,174 @@ around it is deterministic code.
 -->
 
 ---
+
+# How a feature moves
+
+```mermaid {scale: 0.55}
+---
+config:
+  sequence:
+    mirrorActors: false
+---
+sequenceDiagram
+    participant You
+    participant Atelier as atelier daemon
+    participant Builder as Builder agent
+    participant PR as Pull request and CI
+    participant Critic as Critic agent (planned)
+    You->>Atelier: label issue atelier:build
+    Atelier->>Builder: worktree and session
+    Builder->>PR: draft pull request
+    PR-->>Builder: failed check, via sourcefed
+    Builder->>PR: fix and push
+    PR-->>Atelier: every check passes
+    Atelier->>Critic: every check passed: review it
+    Critic->>PR: findings with evidence
+    Builder->>PR: fix and record
+    Atelier->>Builder: every check and stage passed
+    Builder->>PR: mark ready
+    PR-->>You: ready for review
+```
+
+<!--
+The whole loop. You label an issue; atelier gives a builder its own worktree and
+session. The builder opens a draft PR, and every failed check comes back to it through
+sourcefed until everything passes. Then a critic agent reviews it with evidence and
+the builder records the feature working; those two stages are planned. Only when every
+check and stage has passed does atelier tell the builder to mark it ready, and then
+it's yours.
+-->
+
+---
+
+# One issue, end to end
+
+<div class="grid grid-cols-[3fr_2fr] gap-8">
+<div>
+
+1. **You** write issue #16, "show each issue's pull request in `atelier status`",
+   with what you can do and when it's done, and label it `atelier:build`.
+2. **atelier** claims it: `atelier:working`, a branch, and a builder in its own
+   worktree.
+3. **The builder** opens draft PR #17. Each commit is fixed before it lands, and
+   each failed check comes back to it through sourcefed.
+4. **atelier** sees every check pass and tells the builder, which marks it ready.
+5. **You** review and merge.
+
+</div>
+<div>
+
+```text
+claimed             +0 min
+draft PR #17        +4 min
+ready, all green   +32 min
+merged by a person +34 min
+```
+
+<div class="text-sm opacity-80 mt-4">
+
+PR #17: +132 −8 over two commits. Its body says what you can do, how it works,
+with a diagram, and its proofs, such as a test that runs the real binary against
+a stand-in GitHub.
+
+</div>
+</div>
+</div>
+
+<!--
+A real one from atelier's own repository, which atelier builds. Issue 16 asked for
+the pull request number in atelier status, with a "You can" and a "Done when". The
+builder was claimed at 07:02, opened PR 17 at 07:06, was told every check passed and
+marked it ready at 07:34, and I merged it at 07:36. The PR body follows atelier's
+template: what you can do, how, a diagram, and the proofs.
+-->
+
+---
+
+# Gates are commands, listed once
+
+<div class="grid grid-cols-2 gap-8 gates">
+<div>
+
+```toml
+# .atelier/config.toml
+[commands.fmt]
+run = "cargo fmt --all -- --check"
+fix = "cargo fmt --all"
+
+[commands.clippy]
+run = "cargo clippy --workspace … -- -D warnings"
+
+[commands.mutants]
+run = "cargo mutants --in-diff target/mutants.diff"
+```
+
+- A gate's `fix` runs in a hook before each of the builder's commits, so the fix
+  lands in that commit.
+- Its `run` is one CI check, for each part of the repository the diff touches.
+
+</div>
+<div>
+
+```text
+commands/fmt        pass   25 s
+commands/clippy     pass   24 s
+commands/nextest    pass   58 s
+commands/doctest    pass   21 s
+commands/rustdoc    pass   23 s
+commands/deny       pass  112 s
+commands/shear      pass   64 s
+commands/msrv       pass   32 s
+commands/kani       pass    7 min
+commands/mutants    pass   40 min
+commands/prettier   pass   12 s
+commands/readmes    pass   11 s
+```
+
+<div class="text-sm opacity-80">
+One PR's checks. Ruff and actionlint didn't run: it touched neither
+<code>scripts/</code> nor <code>.github/</code>.
+</div>
+</div>
+</div>
+
+<!--
+A project lists its gates once, as commands. A gate with a fix runs it in a commit
+hook atelier puts in the builder's worktree, so formatting never becomes a CI
+failure. Every gate's run command becomes its own check in GitHub's CI, and only for
+the parts of the repository the diff touches. On the right, atelier's own PR 55:
+twelve gates, each its own check.
+-->
+
+---
+
+# What the gates catch
+
+| Gate | Fails when |
+| --- | --- |
+| fmt, Prettier, Ruff | the style drifts; fixed before the commit lands |
+| Clippy, rustdoc | there's any warning, in the code or its docs |
+| nextest, doctests | behavior breaks, or an example in the docs stops running |
+| cargo-deny, cargo-shear | a licence isn't allowed, a crate is yanked or doubled, a dependency is unused |
+| MSRV | the code needs a newer Rust than the project supports |
+| Kani | a proof about the issue machine no longer holds |
+| cargo-mutants | a test passes whatever the code does: each line the PR touched is broken on purpose, and some test must fail |
+
+<div class="text-sm opacity-80 mt-4">
+Planned: once every check passes, a critic agent reviews the PR with evidence, and a
+recording shows the feature working.
+</div>
+
+<!--
+These are atelier's own gates. The one that matters most for agent-written code is
+mutation testing: agents are good at writing tests that pass. cargo-mutants changes
+each line the PR touched, flipping a condition or returning a default, and fails the
+check if no test notices. That's how you know the tests test something. Language
+plugins will bring these defaults to any Rust, TypeScript or TLA+ project; the
+critic and the recording are the next stages.
+-->
+
+---
 layout: demo
 ---
 
