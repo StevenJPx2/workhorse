@@ -39,7 +39,7 @@ Every project follows [the Workhorse philosophy](/workhorse/PHILOSOPHY):
 Each project's repository is its own source of truth: its plan, its docs and
 its history stay there. The hub is where they meet. Every page under a
 project's name is pulled from that project's repository at the branch
-[`hub.config.ts`](https://github.com/StevenJPx2/workhorse/blob/main/hub.config.ts)
+[`hub.config.ts`](https://github.com/wrkhse/workhorse/blob/main/hub.config.ts)
 names, and every repository the hub mentions is named in that one file.
 
 ## History

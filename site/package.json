@@ -7,6 +7,7 @@
     "dev": "bun run pull && vitepress dev",
     "build": "bun run pull && vitepress build && bun run --cwd ../deck build",
     "preview": "vitepress preview",
+    "test": "bun test ./.vitepress/links.test.ts",
     "deploy": "bun run build && cf deploy"
   },
   "devDependencies": {

@@ -55,7 +55,7 @@ const hubSidebar: DefaultTheme.SidebarItem[] = [
       { text: "What's here and why", link: "/" },
       { text: "How the projects connect", link: "/connections" },
       { text: "Roadmap", link: "/roadmap" },
-      { text: "The move to wrkhse", link: "/wrkhse" },
+      { text: "The wrkhse organization", link: "/wrkhse" },
       deck,
     ],
   },

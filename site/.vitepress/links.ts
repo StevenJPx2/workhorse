@@ -12,6 +12,12 @@ export const address = (page: string) => `/${page.replace(/(^|\/)index\.md$/, "$
 
 const GITHUB = /^https:\/\/github\.com\/([^/]+\/[^/#?]+)\/(?:blob|tree)\/[^/]+\/([^#?]+)(#.*)?$/i
 
+/** `owner/name` for a project's repository and the same name under each former owner. */
+const names = (project: Project) => {
+  const name = project.repo.slice(project.repo.indexOf("/") + 1)
+  return [project.repo, ...hub.formerOwners.map((owner) => `${owner}/${name}`)].map((repo) => repo.toLowerCase())
+}
+
 /**
  * Rewrites the links of pulled pages. A link to a page the hub pulled, whether
  * relative or to it on GitHub, stays on the site; a relative link to anything
@@ -28,7 +34,7 @@ export function linker(pulled: Pulled[]) {
 
   function fromGitHub(href: string): string {
     const [, repo = "", path = "", hash = ""] = href.match(GITHUB) ?? []
-    const project = hub.projects.find((candidate) => candidate.repo.toLowerCase() === repo.toLowerCase())
+    const project = hub.projects.find((candidate) => names(candidate).includes(repo.toLowerCase()))
     const found = project && onSite(project, path.replace(/\/$/, ""))
     return found ? address(found.page) + hash : href
   }

@@ -20,11 +20,11 @@ flowchart LR
 | From | To | What crosses | Where it's planned |
 | --- | --- | --- | --- |
 | sourcefed | an agent | CI failures, reviews, comments and conflicts on its pull request, as messages in its session | [sourcefed](/sourcefed/) |
-| sourcefed | atelier | `item.matched` and `schedule.fired` over the daemon's HTTP API, acknowledged once atelier saves the run | [atelier#42](https://github.com/StevenJPx2/atelier/issues/42), [sourcefed#3](https://github.com/StevenJPx2/sourcefed/issues/3) |
+| sourcefed | atelier | `item.matched` and `schedule.fired` over the daemon's HTTP API, acknowledged once atelier saves the run | [atelier#42](https://github.com/wrkhse/atelier/issues/42), [sourcefed#3](https://github.com/wrkhse/sourcefed/issues/3) |
 | sourcefed | Chauffeur | Each event, asked about before it is queued, so every host gets the same filtered stream | [Chauffeur slice 2](/chauffeur/docs/plans/slices/slice-2) |
-| rungs | atelier | The step machine inside every pipeline | [atelier#43](https://github.com/StevenJPx2/atelier/issues/43) |
+| rungs | atelier | The step machine inside every pipeline | [atelier#43](https://github.com/wrkhse/atelier/issues/43) |
 | rungs | Chauffeur | The step machine inside every strategy | [Chauffeur slice 3](/chauffeur/docs/plans/slices/slice-3) |
-| atelier | Chauffeur | Builds Chauffeur's issues into pull requests | [chauffeur#5](https://github.com/StevenJPx2/chauffeur/issues/5) |
+| atelier | Chauffeur | Builds Chauffeur's issues into pull requests | [chauffeur#5](https://github.com/wrkhse/chauffeur/issues/5) |
 | tack | every agent | One plugin, written once, loaded natively by each agent | [tack](/workhorse/modules/tack) |
 
 ## Where each sits in Workhorse's layers

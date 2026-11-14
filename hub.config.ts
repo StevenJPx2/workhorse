@@ -1,9 +1,8 @@
 /**
  * Every repository the hub names: the projects whose docs it pulls and the
  * archived ones it lists as history. Nothing else holds an owner or a branch.
- * The move to the `wrkhse` organisation changes `owner` alone.
  */
-const owner = "StevenJPx2"
+const owner = "wrkhse"
 
 export type Project = {
   /** The project's path on the site, such as `/atelier/`. */
@@ -35,6 +34,11 @@ export const hub = {
   /** This repository: it builds the hub and is pulled from its own checkout. */
   repo: `${owner}/workhorse`,
   site: "https://workhorse-docs.stevenjpx2.workers.dev",
+  /**
+   * Owners the projects were transferred from. A GitHub link in a project's
+   * docs that still names one reaches the same project.
+   */
+  formerOwners: ["StevenJPx2"],
   projects: [
     {
       id: "workhorse",
@@ -97,7 +101,7 @@ export const hub = {
     {
       id: "tack",
       name: "tack",
-      repo: "wrkhse/tack",
+      repo: `${owner}/tack`,
       branch: "main",
       summary: "Write a coding-agent plugin once and run it in every agent",
       pages: ["**/*.md"],
@@ -106,15 +110,15 @@ export const hub = {
   ] satisfies Project[],
   history: [
     {
-      repo: "wrkhse/daemon-v0",
+      repo: `${owner}/daemon-v0`,
       summary: "The capability daemon and its spikes, as of 2026-10-30",
     },
     {
-      repo: "wrkhse/fleet-v0",
+      repo: `${owner}/fleet-v0`,
       summary: "The autonomous coding fleet on Cloudflare, as of 2026-09-15",
     },
     {
-      repo: "wrkhse/workhorse-legacy",
+      repo: `${owner}/workhorse-legacy`,
       summary: "The original command-line and terminal UI tool, as of 2026-07-14",
     },
   ] satisfies Archived[],

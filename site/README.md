@@ -28,20 +28,21 @@ flowchart LR
 | `scripts/pull.ts` | Clones each project at its branch and copies its pages, and the images and videos they show, under `src/<project>/`; copies the recordings `deck/slides.md` names into `deck/media/`, from each project's `demos` branch |
 | `src/` | The hub's own pages; the pulled ones beside them are ignored by git |
 | `.vitepress/config.mts` | The sidebar for the hub and for each project, edit links to each page's own repository |
-| `.vitepress/links.ts` | Keeps links to pulled pages on the site, and sends links to code to GitHub at the pulled branch |
+| `.vitepress/links.ts` | Keeps links to pulled pages on the site, and sends links to code to GitHub at the pulled branch; `links.test.ts` checks it |
 | `.vitepress/theme/` | Draws `mermaid` blocks in the site's font and colours, fitted to a readable size, full screen on a click |
 | `cloudflare.config.ts` | The Worker and its account; `wrangler.config.ts` names the folder it serves |
 
 - **Run:** `bun install` here and in `../deck`, then `bun run dev`.
+- **Test:** `bun run test` checks the link rewriting.
 - **Build:** `bun run build` pulls every project, builds the site and the
   deck into `.vitepress/dist/`, and fails on a dead link in the hub's own
   pages.
 - **Deploy:** `.github/workflows/docs.yml` builds every pull request, and
   deploys each push to `main` and a daily build with `CLOUDFLARE_API_TOKEN`,
   so changes in the projects' repositories reach the hub within a day.
-- **Links in pulled pages:** a relative link, or a GitHub link, to a page the
-  hub pulled stays on the site; a link to anything else goes to GitHub at the
-  configured branch. A missing image is read from GitHub, so a project's
+- **Links in pulled pages:** a relative link, or a GitHub link under the
+  project's owner or a former one, to a page the hub pulled stays on the
+  site; a link to anything else goes to GitHub at the configured branch. A missing image is read from GitHub, so a project's
   mistake never fails the hub's build.
 - **Diagrams** use Mermaid's `base` theme, classic look and dagre layout, in
   the site's colours, light or dark. Each fits its column, never below 75% of

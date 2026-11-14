@@ -1,38 +1,42 @@
-# The move to wrkhse
+# The wrkhse organization
 
-The projects move to the GitHub organisation
-[`wrkhse`](https://github.com/wrkhse) once their current slices finish:
-atelier, rungs, sourcefed, Chauffeur and Workhorse. tack and the archived
-versions of Workhorse are there already.
+Every project lives in the GitHub organization
+[`wrkhse`](https://github.com/wrkhse). atelier, rungs, sourcefed, Chauffeur
+and Workhorse were transferred there from `StevenJPx2`, with their issues,
+pull requests and releases, and GitHub redirects their former addresses.
 
-| Repository | Now | After the move |
+| Project | Repository | Former address |
 | --- | --- | --- |
-| Workhorse | `StevenJPx2/workhorse` | `wrkhse/workhorse` |
-| atelier | `StevenJPx2/atelier` | `wrkhse/atelier` |
-| rungs | `StevenJPx2/rungs` | `wrkhse/rungs` |
-| sourcefed | `StevenJPx2/sourcefed` | `wrkhse/sourcefed` |
-| Chauffeur | `StevenJPx2/chauffeur` | `wrkhse/chauffeur` |
-| tack | `wrkhse/tack` | `wrkhse/tack` |
-| History | `wrkhse/daemon-v0`, `wrkhse/fleet-v0`, `wrkhse/workhorse-legacy`, archived | unchanged |
+| Workhorse | [`wrkhse/workhorse`](https://github.com/wrkhse/workhorse) | `StevenJPx2/workhorse` |
+| atelier | [`wrkhse/atelier`](https://github.com/wrkhse/atelier) | `StevenJPx2/atelier` |
+| rungs | [`wrkhse/rungs`](https://github.com/wrkhse/rungs) | `StevenJPx2/rungs` |
+| sourcefed | [`wrkhse/sourcefed`](https://github.com/wrkhse/sourcefed) | `StevenJPx2/sourcefed` |
+| Chauffeur | [`wrkhse/chauffeur`](https://github.com/wrkhse/chauffeur) | `StevenJPx2/chauffeur` |
+| tack | [`wrkhse/tack`](https://github.com/wrkhse/tack) | none |
+| History | `wrkhse/daemon-v0`, `wrkhse/fleet-v0`, `wrkhse/workhorse-legacy`, archived | none |
 
-## What changes in the hub
+## Links that name the former owner
 
-One line. [`hub.config.ts`](https://github.com/StevenJPx2/workhorse/blob/main/hub.config.ts)
-names every repository from one `owner`:
+[`hub.config.ts`](https://github.com/wrkhse/workhorse/blob/main/hub.config.ts)
+names every repository from one `owner`, and lists the owners the projects
+came from:
 
 ```ts
 const owner = "wrkhse"
+
+export const hub = {
+  repo: `${owner}/workhorse`,
+  formerOwners: ["StevenJPx2"],
+  …
+}
 ```
 
-The next build pulls each project from its new home, and every link to its
-code, plan and edit page follows. GitHub redirects the old addresses, so
-links inside the projects' own docs keep working until each is updated.
+A GitHub link in a project's docs reaches the same project under either
+owner. A link to a page the hub pulled stays on the site, and any other goes
+to GitHub, which redirects it:
 
-## What each project does
-
-- Transfer the repository in GitHub's settings, which keeps its issues,
-  pull requests, releases and stars.
-- Point its own links, badges, package metadata and Homebrew formula at the
-  new owner.
-- Move its repository secrets, such as `CLOUDFLARE_API_TOKEN`, which a
-  transfer does not carry.
+| Link in a project's docs | On the hub |
+| --- | --- |
+| `github.com/StevenJPx2/sourcefed/blob/main/docs/scriptc.md` | `/sourcefed/docs/scriptc` |
+| `github.com/wrkhse/sourcefed/blob/main/docs/scriptc.md` | `/sourcefed/docs/scriptc` |
+| `github.com/StevenJPx2/sourcefed/blob/main/src/index.ts` | unchanged, to GitHub |
